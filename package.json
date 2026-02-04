@@ -1,0 +1,89 @@
+{
+  "name": "bare-engine",
+  "version": "0.1.0",
+  "scripts": {
+    "analyze": "webpack --config webpack.config.js --env analyze --json=stats.json && webpack-bundle-analyzer stats.json"
+  },
+  "description": "Bare Game Engine - Build for Web",
+  "license": "MIT",
+  "files": [
+    "src",
+    "index.d.ts",
+    "editor.d.ts",
+    "sound.d.ts",
+    "barePhysics.d.ts",
+    "physics.d.ts",
+    "sopiroPhysics.d.ts",
+    "core.d.ts",
+    "LICENSE",
+    "README.md"
+  ],
+  "main": "src/index.ts",
+  "types": "index.d.ts",
+  "sideEffects": [
+    "./src/main.ts"
+  ],
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./src/index.ts"
+    },
+    "./core": {
+      "types": "./core.d.ts",
+      "default": "./src/core.ts"
+    },
+    "./sound": {
+      "types": "./sound.d.ts",
+      "default": "./src/sound.ts"
+    },
+    "./barePhysics": {
+      "types": "./barePhysics.d.ts",
+      "default": "./src/barePhysics.ts"
+    },
+    "./physics": {
+      "types": "./physics.d.ts",
+      "default": "./src/physics.ts"
+    },
+    "./sopiroPhysics": {
+      "types": "./sopiroPhysics.d.ts",
+      "default": "./src/sopiroPhysics.ts"
+    },
+    "./editor": {
+      "types": "./editor.d.ts",
+      "default": "./src/editor.ts"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "editor": [
+        "editor.d.ts"
+      ],
+      "sound": [
+        "sound.d.ts"
+      ],
+      "barePhysics": [
+        "barePhysics.d.ts"
+      ],
+      "physics": [
+        "physics.d.ts"
+      ],
+      "sopiroPhysics": [
+        "sopiroPhysics.d.ts"
+      ],
+      "core": [
+        "core.d.ts"
+      ],
+      "*": [
+        "index.d.ts"
+      ]
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^25.1.0",
+    "@types/rbush": "^3.0.4",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
+    "webpack": "^5.104.1",
+    "webpack-cli": "^6.0.1"
+  }
+}

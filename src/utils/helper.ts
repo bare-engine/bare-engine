@@ -1,0 +1,372 @@
+// helper.ts
+
+import { Vec2, Color } from "../libraries/rapid-render";
+import { GameObject } from "../objects/gameObject";
+import { Rectangle } from './gamesTypes';
+
+export interface Size {
+    width: number;
+    height: number;
+}
+
+export class Helper
+{
+    static ToFixed(value: number, limit = 1e-13): number
+    {
+        return Math.round(value / limit) * limit;
+    }
+
+    static ScaleWithinContainer(obj: GameObject, containerSize: Size): void {
+        const imageRatio = obj.texture!.width / obj.texture!.height;
+        const containerRatio = containerSize.width / containerSize.height;
+        
+        let scale: number;
+
+        obj.x = 0;
+        obj.y = 0;
+
+        if (containerRatio > imageRatio) {
+            // fit to width
+            scale = containerSize.width / obj.texture!.width;
+
+            var heightScaled = obj.texture!.height * scale;
+            var diff = containerSize.height - heightScaled;
+            obj.y = diff / 2;
+        } else {
+            // fit to height
+            scale = containerSize.height / obj.texture!.height;
+
+            var widthScaled = obj.texture!.width * scale;
+            var diff = containerSize.width - widthScaled;
+            obj.x = diff / 2;
+        }
+
+        // Set scale uniformly
+        obj.scale.x = scale;
+        obj.scale.y = scale;
+    }
+
+    static DegreesToRadians(degrees: number): number
+    {
+        return degrees * (Math.PI / 180);
+    }
+    
+    static RadiansToDegrees(radians: number): number
+    {
+        return radians * (180 / Math.PI);
+    }
+
+    static Distance = function(pos1:Vec2, pos2:Vec2)
+    {
+        var distancex = pos1.x - pos2.x;
+        var distancey = pos1.y - pos2.y;
+        return Math.sqrt(distancex * distancex + distancey * distancey);
+    }
+
+    static DistanceNoSqr = function(pos1:Vec2, pos2:Vec2)
+    {
+        var distancex = pos1.x - pos2.x;
+        var distancey = pos1.y - pos2.y;
+        return distancex * distancex + distancey * distancey;
+    }
+
+    static RandomRange(min: number, max: number): number
+    {
+        return Math.random() * (max - min) + min;
+    }
+
+    static GetRanged(inMin: number, inMax: number, outMin: number, outMax: number, _in: number, limit: boolean = false): number
+    {
+        const amountIn: number = (_in - inMin) / (inMax - inMin);
+        const out: number = Helper.Interpolate(outMin, outMax, amountIn, limit);
+        return out;
+    }
+
+    static Interpolate(min: number, max: number, multi: number, limit: boolean = false): number
+    {
+        if (limit == null) limit = false;
+        if (limit) return Math.min(Math.max(Math.min(min, max), Helper.Interpolate(min, max, multi)), Math.max(min, max));
+        return min + (max - min) * multi;
+    }
+
+    static Lerp(min: number, max: number, multi: number, limit: boolean = false): number
+    {
+        return Helper.Interpolate(min, max, multi, limit);
+    }
+
+    static InterpolateVec2(a: Vec2, b: Vec2, t: number): Vec2
+    {
+        return new Vec2(Helper.Interpolate(a.x, b.x, t), Helper.Interpolate(a.y, b.y, t));
+    }
+
+    static Clamp(value: number, min: number, max: number): number
+    {
+        return Math.min(Math.max(value, min), max);
+    }
+
+    // In utils/helper.ts
+    static MobileAndTabletCheck(): boolean
+    {
+        return (('ontouchstart' in window) ||
+            (navigator.maxTouchPoints > 0) ||
+            ((navigator as any).msMaxTouchPoints > 0));
+    }
+
+    static HasNotch(): boolean
+    {
+        // get the <html> element
+        var root = document.documentElement;
+
+        // add CSS variables so we can read them back
+        root.style.setProperty('--notch-top', 'env(safe-area-inset-top)');
+        root.style.setProperty('--notch-right', 'env(safe-area-inset-right)');
+        root.style.setProperty('--notch-bottom', 'env(safe-area-inset-bottom)');
+        root.style.setProperty('--notch-left', 'env(safe-area-inset-left)');
+
+        // get runtime styles
+        var computedStyle = window.getComputedStyle(root);
+
+        // read env values back and check if we have any values
+        var hasNotch = [
+            computedStyle.getPropertyValue('--notch-top') || '-1',
+            computedStyle.getPropertyValue('--notch-right') || '-1',
+            computedStyle.getPropertyValue('--notch-bottom') || '-1',
+            computedStyle.getPropertyValue('--notch-left') || '-1'
+        ]
+            .map(parseInt)
+            .filter(function(val) {
+                return val > 0;
+            })
+            .length > 0;
+
+        // remove CSS variables
+        root.style.removeProperty('--notch-top');
+        root.style.removeProperty('--notch-right');
+        root.style.removeProperty('--notch-bottom');
+        root.style.removeProperty('--notch-left');
+
+        return hasNotch;
+    }
+
+    static IsAndroid(): boolean
+    {
+        const userAgent = navigator.userAgent.toLowerCase();
+        return /android/i.test(userAgent);
+    }
+
+    static async loadRawString(url: string): Promise<string>
+    {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.text();
+    }
+
+    static async loadJSONToString(url: string): Promise<string>
+    {
+        const rawString = await this.loadRawString(url);
+        return rawString;
+    }
+
+    /*static async loadJSONFromString<T extends object>(rawString: string): Promise<T>
+    {
+        return JSON.parse(rawString) as T;
+    }
+
+    static async stringToJson<T extends object>(rawString: string): Promise<T>
+    {
+        return this.loadJSONFromString<T>(rawString);
+    }*/
+
+    static async loadJSON<T extends object>(url: string): Promise<T>
+    {
+        const response = await fetch(url);
+        return response.json() as T;
+    }
+
+    static async loadJSONFile<T extends object>(file: File): Promise<T>
+    {
+        const text = await file.text();
+        return JSON.parse(text) as T;
+    }
+    
+    static async GetFilesInFolder(folderPath: string, recursive: boolean = false): Promise<string[]>
+    {
+        // SPECIFIC FOR THIS PROJECT - FUNCTIONALITY IT webpack/config.dev.js
+        try {
+            const response = await fetch(`/api/list-files?path=${encodeURIComponent(folderPath)}&recursive=${recursive}`);
+            if (!response.ok) {
+                console.warn(`[GetFilesInFolder] Missing list-files endpoint (${response.status}) for ${folderPath}`);
+                return [];
+            }
+
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                console.warn(`[GetFilesInFolder] Unexpected content-type "${contentType}" for ${folderPath}`);
+                return [];
+            }
+
+            const data = await response.json();
+            return data.files || [];
+        } catch (error) {
+            console.warn(`[GetFilesInFolder] Failed to list files for ${folderPath}`, error);
+            return [];
+        }
+    }
+
+    static SetMaxVec2Length(vec2: Vec2, max: number)
+    {
+        const length = Math.sqrt(vec2.x * vec2.x + vec2.y * vec2.y);
+        if (length > max)
+        {
+            const scale = max / length;
+            vec2.x *= scale;
+            vec2.y *= scale;
+        }
+    }
+    
+    static SplitEmojiStr(str: string): string[] {
+        // Pattern to match complete emoji sequences (including ZWJ sequences) and non-emoji characters
+        const pattern = /(\p{Extended_Pictographic}\uFE0F?(?:\u200D\p{Extended_Pictographic}\uFE0F?)*)|(\P{Extended_Pictographic})/gu;
+        return Array.from(str.match(pattern) || []);
+    }
+    
+    static Choose(...array: any[]): any
+    {
+        return array[Math.floor(Math.random() * array.length)];
+    }
+    
+    static ChooseAr(array:Array<string>): string
+    {
+        return array[Math.floor(Math.random() * array.length)];
+    }
+
+    static randomizeMap(map: Map<string, string>): Map<string, string>
+    {
+        // Convert Map to array of entries
+        const entries = Array.from(map.entries());
+        
+        // Shuffle the entries array (Fisher-Yates algorithm)
+        for (let i = entries.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [entries[i], entries[j]] = [entries[j], entries[i]];
+        }
+        
+        // Create a new Map from the shuffled entries
+        return new Map(entries);
+    }
+
+    static VectorLength(vec2:any):number
+    {
+        return Math.sqrt(vec2.x*vec2.x + vec2.y*vec2.y);
+    }
+
+    static PointTowards(direction:number, distance:number):Vec2
+    {
+        var p = new Vec2();
+        p.x = -Math.cos(direction * Math.PI / 180) * distance;
+        p.y = -Math.sin(direction * Math.PI / 180) * distance;
+        return p;
+    };
+
+    static PointTowardsFrom(from:Vec2, direction:number, distance:number)
+    {
+        //return Helper.pointTowards(direction,distance).add(from);
+        var p = Helper.PointTowards(direction, distance);
+        p.x += from.x;
+        p.y += from.y;
+        return p;
+    };
+
+    static PointTowardsFromTo(from:Vec2, to:Vec2, distance:number)
+    {
+        var dx = to.x - from.x;
+        var dy = to.y - from.y;
+        var direction = Math.atan2(dy, dx) * 180 / Math.PI + 180;
+        return Helper.PointTowardsFrom(from, direction, distance);
+    };
+
+    static AngleDifference(angle0:number, angle1:number, positive?:boolean):number
+    {
+        if(positive == null)
+            positive = false;
+
+        if (positive)
+            return Math.abs(Helper.AngleDifference(angle0, angle1));
+
+        var dif = (angle0 - angle1) % 360;
+
+        if (Math.abs(dif) > 180) {
+            if (dif < 0) 
+                dif = dif + 360;
+            else 
+                dif = dif - 360;
+        }
+
+        return dif;
+    }
+
+    static SnapDirection(dir:number, snapTolerance:number)
+    {
+        var normalizedDir = ((dir % 360) + 360) % 360;
+        var cardinalDirections = [0, 90, 180, 270];
+        
+        var closestDir = cardinalDirections[0];
+        var minDiff = Math.abs(Helper.AngleDifference(normalizedDir, closestDir, true));
+        
+        for (var i = 1; i < cardinalDirections.length; i++) {
+            var diff = Math.abs(Helper.AngleDifference(normalizedDir, cardinalDirections[i], true));
+            if (diff < minDiff) {
+                minDiff = diff;
+                closestDir = cardinalDirections[i];
+            }
+        }
+        
+        if (minDiff < snapTolerance) {
+            return closestDir;
+        }
+        
+        return dir;
+    }
+
+    static CapitalizeFirstLetter(val:string)
+    {
+        return String(val).charAt(0).toUpperCase() + String(val).slice(1);
+    }
+
+    static DecapitalizeFirstLetter(val:string)
+    {
+        return String(val).charAt(0).toLocaleLowerCase() + String(val).slice(1);
+    }
+    
+    static MultiplyColors(color1: Color, color2: Color): Color
+    {
+        return new Color(
+            (color1.r / 255) * (color2.r / 255) * 255,
+            (color1.g / 255) * (color2.g / 255) * 255,
+            (color1.b / 255) * (color2.b / 255) * 255,
+            (color1.a / 255) * (color2.a / 255) * 255
+        );
+    }
+
+    static IsPointInRectangle(point: Vec2, rect: Rectangle): boolean
+    {
+        return point.x >= rect.x && point.x <= rect.x + rect.width && point.y >= rect.y && point.y <= rect.y + rect.height;
+    }
+
+    static ObjectsAreEqual(obj1: Object, obj2: Object): boolean
+    {
+        return JSON.stringify(obj1) === JSON.stringify(obj2); // PROBABLY NOT FAST
+    }
+
+    static AlmostEqual(a: number, b: number, eps: number = 0.001): boolean
+    {
+        return Math.abs(a - b) < eps;
+    }
+
+    static JsonArToVec2Ar(jsonAr: { x: number; y: number }[]): Vec2[]
+    {
+        return jsonAr.map(p => new Vec2(p.x, p.y));
+    }
+}
