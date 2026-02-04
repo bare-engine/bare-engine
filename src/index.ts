@@ -7,7 +7,7 @@ export { GameObject } from "./objects/gameObject";
 export { BarePlugin } from "./utils/plugin";
 
 // Core (side-effectful)
-export { StartBare, GameMode, MakePath, events, pipes, game } from "./core";
+export { StartBare, GameMode, MakePath, events, pipes } from "./core";
 
 // Controllers
 export { BaseComponent } from "./controllers/componentController";
