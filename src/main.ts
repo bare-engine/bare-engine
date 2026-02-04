@@ -14,9 +14,6 @@ export const pipes = matt<Pipes>();
 
 export { BareGame } from './bareGame';
 
-export interface GameInstance extends BareGame {}
-export let game: GameInstance | null = null;
-
 export function MakePath(...args: string[]): string
 {
     // CLEAN THE EMPTY ARGS
@@ -304,8 +301,7 @@ export function StartBare<T extends BareGame>(gameClass: new () => T, options?: 
 
             // START!
             var start = () => {
-                game = new gameClass() as GameInstance;
-                (window as any).game = game;
+                new gameClass();
             };
 
             var testGetElementById = document.getElementById('editor-overlay');
