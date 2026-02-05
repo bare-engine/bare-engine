@@ -1,5 +1,4 @@
 import { BaseComponent } from "../controllers/componentController";
-import { GameObject } from "../objects/gameObject";
 import { assetsHandler } from "../utils/assetsHandler";
 import { AnimationData } from "../utils/bareTypes";
 

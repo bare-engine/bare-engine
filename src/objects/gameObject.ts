@@ -4,7 +4,7 @@ import { Entity, GameObjectClass } from '../utils/bareTypes';
 import { Helper } from '../utils/helper';
 import { MakePath, pipes } from '../main';
 import { Vec2, Texture, Color, GLShader, Uniform, MaskType } from "../libraries/rapid-render";
-import type { Component } from "../utils/bareTypes";
+import type { Component, Ctor } from "../utils/bareTypes";
 
 // DOING SOME WORK TO NOT INCLUDE ANIMATION COMPONENT, THOUGH IT ONLY SAVES 1KB (MINIFIED) 🥹
 // YOU'LL HAVE TO CALL GameObject.RegisterComponent(AnimationComponent); NOW, SO A LITTLE ANNOYING
@@ -92,6 +92,20 @@ export class GameObject
         if (texturePath != "")
         {
             this.Init(texturePath);
+        }
+    }
+
+    // CAN SUPPY A CLASS OR INSTANCE OF COMPONENT
+    AddComponent<T extends Component<this>>(componentClass: Ctor<T>): T;
+    AddComponent<T extends Component<this>>(componentInstance: T): T;
+    AddComponent<T extends Component<this>>(arg: Ctor<T> | T): T
+    {
+        if (globalThis.componentController)
+            return globalThis.componentController.AddComponent(this, arg);// NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
+        else
+        {
+            console.error("ComponentController not registered. Call bare.AddClass(ComponentController) at Awake().");
+            return (typeof arg === "function" ? new arg() : arg);
         }
     }
 

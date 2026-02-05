@@ -1,10 +1,6 @@
 import { events, GameMode, pipes } from "../main";
 import { GameObject } from "../objects/gameObject";
-import { Events, Component, Entity } from "../utils/bareTypes";
-
-export type Constructor<T = any> = { new (...args: any[]): T };
-
-type Ctor<T extends BaseComponent> = Constructor<T>;
+import { Events, Component, Entity, Ctor } from "../utils/bareTypes";
 
 // REFERENCING A CLASS EXTENDING BASECOMPONENT WILL AUTOMATICALLY ALSO INCLUDE COMPONENTCONTROLLER
 
@@ -30,7 +26,7 @@ export abstract class BaseComponent<T extends GameObject = GameObject> implement
 export class ComponentController
 {
     public componentsByGameObject = new Map<string, Component<any>[]>() // TODO private
-    private componentsByType = new Map<Constructor<Component<any>>, Component<any>[]>()
+    private componentsByType = new Map<Ctor<Component<any>>, Component<any>[]>()
     private queuedForStart: Component<any>[] = [];
 
     constructor()
@@ -156,8 +152,13 @@ export class ComponentController
         this.CallMethodOnAllComponents('PreSaveLevel');
     }
 
-    AddComponent<T extends GameObject>(go: T, component: Component<T>): Component<T>
-    {
+
+    AddComponent<T extends GameObject, C extends Component<T>>(go: T, componentClass: Ctor<C>): C;
+    AddComponent<T extends GameObject, C extends Component<T>>(go: T, componentInstance: C): C;
+
+    AddComponent<T extends GameObject, C extends Component<T>>(go: T, arg: Ctor<C> | C): C {
+        const component: C = (typeof arg === "function") ? new arg() : arg;
+
         component.go = go;
         component.enabled = true;
 
@@ -168,9 +169,9 @@ export class ComponentController
         }
 
         // make sure there is a list of components for this type
-        if (!this.componentsByType.has(component.constructor as Constructor<Component<any>>))
+        if (!this.componentsByType.has(component.constructor as Ctor<Component<any>>))
         {
-            this.componentsByType.set(component.constructor as Constructor<Component<any>>, [])
+            this.componentsByType.set(component.constructor as Ctor<Component<any>>, [])
         }
 
         // add new component to this gameobject's list
@@ -178,7 +179,7 @@ export class ComponentController
         list.push(component);
 
         // add new component to this type's list
-        const typeList = this.componentsByType.get(component.constructor as Constructor<Component<any>>) as Component<any>[]
+        const typeList = this.componentsByType.get(component.constructor as Ctor<Component<any>>) as Component<any>[]
         typeList.push(component)
 
         if (component.Added)
@@ -203,12 +204,12 @@ export class ComponentController
         return (component as T) ?? null;
     }
 
-    HasComponent<T extends BaseComponent>(go: GameObject, componentType: Constructor<T>): boolean
+    HasComponent<T extends BaseComponent>(go: GameObject, componentType: Ctor<T>): boolean
     {
         return this.GetComponent<T>(go, componentType) != null;
     }
 
-    GetComponentsByType<ComponentType extends Component<any>>(componentType: Constructor<ComponentType>): ComponentType[]
+    GetComponentsByType<ComponentType extends Component<any>>(componentType: Ctor<ComponentType>): ComponentType[]
     {
         return this.componentsByType.get(componentType) as unknown as ComponentType[]
     }
@@ -231,7 +232,7 @@ export class ComponentController
         return components;
     }
 
-    MoveComponent<T extends BaseComponent>(from: GameObject, to: GameObject, componentType: Constructor<T>): T | null
+    MoveComponent<T extends BaseComponent>(from: GameObject, to: GameObject, componentType: Ctor<T>): T | null
     {
         const componentFrom = this.GetComponent(from, componentType);
 
@@ -260,7 +261,7 @@ export class ComponentController
                 components.splice(index, 1);
 
                 // Remove from componentsByType as well
-                const typeComponents = this.componentsByType.get(component.constructor as Constructor<Component<any>>) as Component<any>[];
+                const typeComponents = this.componentsByType.get(component.constructor as Ctor<Component<any>>) as Component<any>[];
                 const typeIndex = typeComponents.indexOf(component);
                 typeComponents.splice(typeIndex, 1);
 
@@ -302,12 +303,12 @@ export class ComponentController
                         this.componentsByGameObject.delete(object.uniqueID)
                     
                     // clear component in componentsByType too
-                    const typeComponents = this.componentsByType.get(component.constructor as Constructor<Component<any>>) as Component<any>[];
+                    const typeComponents = this.componentsByType.get(component.constructor as Ctor<Component<any>>) as Component<any>[];
                     const typeIndex = typeComponents.indexOf(component);
                     typeComponents.splice(typeIndex, 1);
 
                     if (typeComponents.length == 0)
-                        this.componentsByType.delete(component.constructor as Constructor<Component<any>>)
+                        this.componentsByType.delete(component.constructor as Ctor<Component<any>>)
 
                     if (component.Removed)
                     {
@@ -329,7 +330,7 @@ export class ComponentController
         this.queuedForStart = []
     }
 
-    EnableComponent<T extends BaseComponent>(obj: GameObject, componentType: Constructor<T>)
+    EnableComponent<T extends BaseComponent>(obj: GameObject, componentType: Ctor<T>)
     {
         const component = this.GetComponent(obj, componentType);
         if (component)
@@ -343,7 +344,7 @@ export class ComponentController
         }
     }
 
-    DisableComponent<T extends BaseComponent>(obj: GameObject, componentType: Constructor<T>)
+    DisableComponent<T extends BaseComponent>(obj: GameObject, componentType: Ctor<T>)
     {
         const component = this.GetComponent(obj, componentType);
         if (component)
@@ -395,7 +396,7 @@ export class ComponentController
         }
     }
 
-    HasAnyComponentOfType<ComponentType extends Component<any>>(componentType: Constructor<ComponentType>): Boolean
+    HasAnyComponentOfType<ComponentType extends Component<any>>(componentType: Ctor<ComponentType>): Boolean
     {
         var comp = this.componentsByType.get(componentType);
         if (comp)

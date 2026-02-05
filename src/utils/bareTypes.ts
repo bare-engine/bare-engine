@@ -19,6 +19,8 @@ export interface Background
   color: string;
 }
 
+export type Ctor<T> = new (...args: any[]) => T;
+
 export type GameObjectClass = { new (...args: any[]): GameObject };
 
 export interface Entity
