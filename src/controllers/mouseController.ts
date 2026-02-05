@@ -245,35 +245,6 @@ export class MouseController
 
         if (this.mouseIsDown)
             this.mouseFramesDown++;
-
-        // MAKE A GENERAL WARNING HANDLING CLASS? TODO
-        //if (bare.warnings.mouse)
-        {
-            if (!this.screen.position.equals(this.world.position) && globalThis.cameraHandler)
-            {
-                let warnMessage = 'mouseController: screen.position != world.position.\n\nThis is because the ';
-
-                const cameraMoved = (globalThis.cameraHandler.position.x != 0 || globalThis.cameraHandler.position.y != 0);
-                const cameraZoomed = (globalThis.cameraHandler.GetCameraZoom() != 1);
-
-                if (cameraMoved)
-                {
-                    warnMessage += 'camera moved';
-                    if (cameraZoomed)
-                        warnMessage += ' and zoomed';
-                    warnMessage += '.';
-                }
-                else
-                {
-                    if (cameraZoomed)
-                        warnMessage += 'camera zoomed.';
-                }
-
-                warnMessage += '\nMake sure you use the correct variable for the mouse position.';
-                warnMessage += '\n\nTo suppress this warning set bare.warnings.mouse = false.';
-                console.warn(warnMessage);
-            }
-        }
     }
 }
 
