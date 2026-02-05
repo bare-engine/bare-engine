@@ -6,15 +6,6 @@ import { MakePath, pipes } from '../main';
 import { Vec2, Texture, Color, GLShader, Uniform, MaskType } from "../libraries/rapid-render";
 import type { Component, Ctor } from "../utils/bareTypes";
 
-// DOING SOME WORK TO NOT INCLUDE ANIMATION COMPONENT, THOUGH IT ONLY SAVES 1KB (MINIFIED) 🥹
-// YOU'LL HAVE TO CALL GameObject.RegisterComponent(AnimationComponent); NOW, SO A LITTLE ANNOYING
-export interface AnimationComponentDummy extends Component<GameObject> {
-    Play(animationName?: string, animationNameOrSingleCallback?: string | (() => void)): void;
-    Pause(): void;
-    OnComplete(animationName: string, animationNameOrCallback: string | (() => void)): void;
-    SetTextureToFrame(frame: int): void;
-}
-
 export class Transform {
     position = new Vec2();
     scale = new Vec2(1, 1);
@@ -25,8 +16,7 @@ export class Transform {
 export class GameObject
 {
     static gameObjectCounter = -1; // ONE BACK TO NOT COUNT THE DUMMY GAMEOBJECT INSTANCED IN BAREGAME
-    static animationFactory: ((go: GameObject) => AnimationComponentDummy) | null = null;
-
+ 
     name:string;
     customName: string = "";
     uniqueID:string = "";
@@ -63,7 +53,6 @@ export class GameObject
     startPosition = new Vec2();
     
     texturePromise: Promise<Texture> | null = null;
-    _animation: AnimationComponentDummy | null = null;
 
     // CAN I GET RID OF THESE TWO?! TODO
     levelEntity: Entity | null = null; // USED IN COMBINATION WITH ENTITY, TO ALWAYS VARS SAME IN levelEntity, AND ONLY LOOK FOR CHANGES FROM ENTITY AND SAVE THOSE
@@ -123,28 +112,6 @@ export class GameObject
     {
         this.startPosition.x = x;
         this.startPosition.y = y;
-    }
-
-    // CURRENTLY ONLY SUPPORTS ANIMATION-COMPONENT
-    static RegisterComponent(ctor: new () => AnimationComponentDummy): void
-    {
-        GameObject.animationFactory = () => new ctor();
-    }
-
-    get animation(): AnimationComponentDummy
-    {
-        if (this._animation == null)
-        {
-            const factory = GameObject.animationFactory;
-            if (!factory)
-            {
-                throw new Error("AnimationComponent not registered. Call bare.AddClass(AnimationComponent).");
-            }
-
-            this._animation = pipes.run("componentController_AddComponent", this, factory(this)) as AnimationComponentDummy;
-        }
-
-        return this._animation;
     }
     
     static FromTexture(texture: Texture): GameObject
@@ -1051,8 +1018,6 @@ export class GameObject
 
         this.transform = new Transform();
         this.innerTransform = new Transform();
-
-        this._animation = null;
 
         this.SetPivot(0, 0);
         this.RemoveShaders();

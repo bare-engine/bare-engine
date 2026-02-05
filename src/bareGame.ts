@@ -195,9 +195,6 @@ export class BareGame
         // COMPONENT
         if (className.endsWith('Component'))
         {
-            if (className == 'AnimationComponent')
-                GameObject.RegisterComponent(_class); // ANIMATION COMPONENT (SPECIAL CASE)
-
             this.RegisterComponent(_class);
 
             //BareGame.modules[className] = "taken"; // COMMENTED OUT SINCE REGISTERED COMPONENTS ARE LOCAL TO BARE, HAS TO ADD
