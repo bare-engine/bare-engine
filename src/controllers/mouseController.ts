@@ -1,46 +1,54 @@
 import { Helper } from "../utils/helper";
-import { events } from '../main';
+import { events } from "../main";
 import { Vec2 } from "../libraries/rapid-render";
+
+type MouseSpace = {
+    position: Vec2;
+    positionPrev: Vec2;
+    positionOnDown: Vec2;
+    positionOnMiddleDown: Vec2;
+    positionOnRightDown: Vec2;
+};
 
 export class MouseController
 {
-    worldMousePosition: Vec2;
-    worldMousePositionPrev: Vec2;
-    worldMousePositionOnDown: Vec2;
-    worldMousePositionOnMiddleMouseDown: Vec2;
-    
-    globalMousePosition: Vec2 = new Vec2(0, 0);
-    globalMousePositionPrev: Vec2 = new Vec2(0, 0);
-    globalMousePositionOnDown: Vec2 = new Vec2(0, 0);
+    screen: MouseSpace = {
+        position: new Vec2(0, 0),
+        positionPrev: new Vec2(0, 0),
+        positionOnDown: new Vec2(-1000, -1000),
+        positionOnMiddleDown: new Vec2(-1000, -1000),
+        positionOnRightDown: new Vec2(-1000, -1000),
+    };
 
-    mouseIsDown:boolean = false;
-    middleMouseIsDown:boolean = false;
-    rightMouseIsDown:boolean = false;
+    world: MouseSpace = {
+        position: new Vec2(-1000, -1000),
+        positionPrev: new Vec2(-1000, -1000),
+        positionOnDown: new Vec2(-1000, -1000),
+        positionOnMiddleDown: new Vec2(-1000, -1000),
+        positionOnRightDown: new Vec2(-1000, -1000),
+    };
+
+    private mouseIsDown:boolean = false;
+    private middleMouseIsDown:boolean = false;
+    private rightMouseIsDown:boolean = false;
+
+    mouseFramesDown: number = 0;
 
     mouseSpeed: number = 0;
     mouseSpeedDelayed: number = 0;
     mouseDirection: number = 0;
-    mouseDirectionVec2: Vec2;
-    mouseDirectionVecDelayedVec2:Vec2;
+    mouseDirectionVec2: Vec2 = new Vec2(0, 0);
+    mouseDirectionVec2Delayed:Vec2 = new Vec2(0, 0);
 
-    mouseFramesDown: int = 0;
-    mouseDownOnLeave: boolean = false;
-    ignoreNextMouseUp: boolean = false;
+    IsMouseDown(): boolean { return this.mouseIsDown; }
+    IsMiddleMouseDown(): boolean { return this.middleMouseIsDown; }
+    IsRightMouseDown(): boolean { return this.rightMouseIsDown; }
+
+    private mouseDownOnLeave: boolean = false;
 
     constructor()
     {
-        this.worldMousePosition = new Vec2(-1000, -1000);
-        this.worldMousePositionPrev = new Vec2(-1000, -1000);
-        this.worldMousePositionOnDown = new Vec2(-1000, -1000);
-        this.globalMousePositionOnDown = new Vec2(-1000, -1000);
-        this.worldMousePositionOnMiddleMouseDown = new Vec2(-1000, -1000);
-        
-        this.mouseDirectionVec2 = new Vec2(0, 0);
-        this.mouseDirectionVecDelayedVec2 = new Vec2(0, 0);
-        
         events.persistent.on('mouseController_Update', this.Update.bind(this));
-        //events.persistent.on('preUpdate', this.Update.bind(this));
-        events.persistent.on('focusChange', this.OnFocusChange.bind(this));
 
         document.addEventListener('pointerdown', this.PointerDown.bind(this), { passive: false });
         document.addEventListener('pointerup', this.PointerUp.bind(this), { passive: false });
@@ -48,12 +56,6 @@ export class MouseController
         document.addEventListener('pointerenter', this.PointerEnter.bind(this), { passive: false });
         document.addEventListener('pointerleave', this.PointerLeave.bind(this), { passive: false });
         document.addEventListener('dblclick', this.DoubleClick.bind(this), { passive: false });
-    }
-
-    OnFocusChange(hasFocus: boolean)
-    {
-        if (hasFocus)
-            mouseController.ignoreNextMouseUp = true;
     }
 
     PointerEnter(event: PointerEvent)
@@ -64,7 +66,6 @@ export class MouseController
         if (this.mouseDownOnLeave)
         if (!(event.buttons & 1))
         {
-            // Left button is not pressed while entering
             this.PointerUp(event);
         }
 
@@ -76,7 +77,6 @@ export class MouseController
         if (!window.bare || !window.bare.started)
             return;
 
-        // Left button is pressed while leaving
         this.mouseDownOnLeave = (event.buttons & 1) == 1;
     }
 
@@ -86,44 +86,57 @@ export class MouseController
             return;
 
         if (bare.MouseIsOnEditor(event))
-            return; // don't block inputs in editor
+            return;
 
         if (!this.IsFirstTouch(event))
             return;
 
-        this.globalMousePositionPrev.x = this.globalMousePosition.x;
-        this.globalMousePositionPrev.y = this.globalMousePosition.y;
+        this.screen.positionPrev.x = this.screen.position.x;
+        this.screen.positionPrev.y = this.screen.position.y;
 
-        this.globalMousePosition.x = event.clientX;
-        this.globalMousePosition.y = event.clientY;
-        
+        this.screen.position.x = event.clientX;
+        this.screen.position.y = event.clientY;
+
         this.SetMousePosition(event.clientX, event.clientY);
 
-        this.worldMousePositionOnDown.x = this.worldMousePosition.x;
-        this.worldMousePositionOnDown.y = this.worldMousePosition.y;
+        if (event.button == 0)
+        {
+            this.world.positionOnDown.x = this.world.position.x;
+            this.world.positionOnDown.y = this.world.position.y;
 
-        this.globalMousePositionOnDown.x = event.clientX;
-        this.globalMousePositionOnDown.y = event.clientY;
-        
-        this.mouseFramesDown = 0;
+            this.screen.positionOnDown.x = event.clientX;
+            this.screen.positionOnDown.y = event.clientY;
+
+            this.mouseFramesDown = 0;
+            this.mouseIsDown = true;
+        }
+
+        if (event.button == 1)
+        {
+            this.middleMouseIsDown = true;
+
+            this.world.positionOnMiddleDown.x = this.world.position.x;
+            this.world.positionOnMiddleDown.y = this.world.position.y;
+
+            this.screen.positionOnMiddleDown.x = event.clientX;
+            this.screen.positionOnMiddleDown.y = event.clientY;
+        }
 
         if (event.button == 2)
         {
             this.rightMouseIsDown = true;
-        }
-        if (event.button == 1)
-        {
-            this.middleMouseIsDown = true;
-            this.worldMousePositionOnMiddleMouseDown = new Vec2(event.clientX, event.clientY);
+
+            this.world.positionOnRightDown.x = this.world.position.x;
+            this.world.positionOnRightDown.y = this.world.position.y;
+
+            this.screen.positionOnRightDown.x = event.clientX;
+            this.screen.positionOnRightDown.y = event.clientY;
         }
 
-        if (event.button == 0)
-            this.mouseIsDown = true;
-        
         if (!bare.isPaused)
-            events.emit('pointerDown', {mouseX: this.worldMousePosition.x, mouseY: this.worldMousePosition.y, event: event, isLeftButton: event.button == 0});
+            events.emit('pointerDown', {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
 
-        if (!bare.isPaused) // game is paused when info dialog is open, bit hacky way to make text selectable
+        if (!bare.isPaused)
             event.preventDefault();
     }
 
@@ -136,32 +149,22 @@ export class MouseController
             return;
 
         if (event.button == 2)
-        {
             this.rightMouseIsDown = false;
-        }
-        if (event.button == 1)
-        {
-            this.middleMouseIsDown = false;
-        }
 
-        this.mouseIsDown = false;
+        if (event.button == 1)
+            this.middleMouseIsDown = false;
+
+        if (event.button == 0)
+            this.mouseIsDown = false;
+
         this.SetMousePosition(event.clientX, event.clientY);
 
-        if (this.ignoreNextMouseUp)// REALLY ONLY DO THIS TO NOT POSSESS ATM, MOVE TO MOVEMENTCONTROLLER? TODO
-        {
-            this.ignoreNextMouseUp = false;
-
-            if (this.mouseFramesDown <= 10)
-                return;
-        }
-
         if (!bare.isPaused)
-            events.emit('pointerUp', {mouseX: this.worldMousePosition.x, mouseY: this.worldMousePosition.y, event: event, isLeftButton: event.button == 0});
+            events.emit('pointerUp', {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
 
         event.preventDefault();
     }
 
-    // event.button IS -1 EVEN WHEN LEFT MOUSE DOWN? TODO
     PointerMove(event: PointerEvent)
     {
         if (!window.bare || !window.bare.started)
@@ -170,16 +173,16 @@ export class MouseController
         if (!this.IsFirstTouch(event))
             return;
 
-        this.globalMousePositionPrev.x = this.globalMousePosition.x;
-        this.globalMousePositionPrev.y = this.globalMousePosition.y;
+        this.screen.positionPrev.x = this.screen.position.x;
+        this.screen.positionPrev.y = this.screen.position.y;
 
-        this.globalMousePosition.x = event.clientX;
-        this.globalMousePosition.y = event.clientY;
+        this.screen.position.x = event.clientX;
+        this.screen.position.y = event.clientY;
 
         this.SetMousePosition(event.clientX, event.clientY);
 
         if (!bare.isPaused)
-            events.emit('pointerMove', {mouseX: this.worldMousePosition.x, mouseY: this.worldMousePosition.y, event: event, isLeftButton: event.button == 0});
+            events.emit('pointerMove', {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
 
         event.preventDefault();
     }
@@ -190,9 +193,9 @@ export class MouseController
             return;
 
         if (!bare.isPaused)
-            events.emit('doubleClick', {mouseX: this.worldMousePosition.x, mouseY: this.worldMousePosition.y, event: event});
+            events.emit('doubleClick', {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event});
     }
-    
+
     IsMoving()
     {
         return this.mouseSpeed > 0;
@@ -202,7 +205,7 @@ export class MouseController
     {
         if (event.pointerType == 'mouse')
             return true;
-        
+
         return (event.pointerType == 'touch' && event.isPrimary);
     }
 
@@ -213,49 +216,63 @@ export class MouseController
 
     SetMousePosition(x:number, y:number)
     {
-        //trace("global", x, y);
-        
-        var worldPos = bare.ScreenToWorld(x, y);
-        this.worldMousePosition.x = worldPos.x;
-        this.worldMousePosition.y = worldPos.y;
-        
-        //trace("cameraPosition", bare.cameraPosition.x, bare.cameraPosition.y);
-        //trace("world", this.worldMouse.x, this.worldMouse.y);
+        const worldPos = bare.ScreenToWorld(x, y);
+        this.world.position.x = worldPos.x;
+        this.world.position.y = worldPos.y;
     }
 
     Update()
     {
-        if (this.worldMousePosition.x == -1000 && this.worldMousePosition.y == -1000)
-        {
+        if (this.world.position.x == -1000 && this.world.position.y == -1000)
             return;
-        }
 
-        if (isMobile && !mouseController.mouseIsDown)
-        {
+        if (isMobile && !this.mouseIsDown)
             return;
-        }
-        
-        const moveVector = new Vec2(this.worldMousePosition.x - this.worldMousePositionPrev.x, this.worldMousePosition.y - this.worldMousePositionPrev.y);
 
-        // Calculate speed using vector length
+        const moveVector = new Vec2(
+            this.world.position.x - this.world.positionPrev.x,
+            this.world.position.y - this.world.positionPrev.y
+        );
+
         this.mouseSpeed = moveVector.length();
-        
         this.mouseSpeedDelayed = Helper.Interpolate(this.mouseSpeedDelayed, this.mouseSpeed, 0.3);
-
-        this.mouseDirectionVecDelayedVec2 = Helper.InterpolateVec2(this.mouseDirectionVecDelayedVec2, this.mouseDirectionVec2, 0.3);
-
-        // Calculate direction in degrees
         this.mouseDirection = Helper.RadiansToDegrees(Math.atan2(moveVector.y, moveVector.x));
-        
-        // Store direction vector
         this.mouseDirectionVec2 = moveVector;
+        this.mouseDirectionVec2Delayed = Helper.InterpolateVec2(this.mouseDirectionVec2Delayed, this.mouseDirectionVec2, 0.3);
 
-        this.worldMousePositionPrev.x = this.worldMousePosition.x;
-        this.worldMousePositionPrev.y = this.worldMousePosition.y;
+        this.world.positionPrev.x = this.world.position.x;
+        this.world.positionPrev.y = this.world.position.y;
 
         if (this.mouseIsDown)
-        {
             this.mouseFramesDown++;
+
+        // MAKE A GENERAL WARNING HANDLING CLASS? TODO
+        //if (bare.warnings.mouse)
+        {
+            if (!this.screen.position.equals(this.world.position) && globalThis.cameraHandler)
+            {
+                let warnMessage = 'mouseController: screen.position != world.position.\n\nThis is because the ';
+
+                const cameraMoved = (globalThis.cameraHandler.position.x != 0 || globalThis.cameraHandler.position.y != 0);
+                const cameraZoomed = (globalThis.cameraHandler.GetCameraZoom() != 1);
+
+                if (cameraMoved)
+                {
+                    warnMessage += 'camera moved';
+                    if (cameraZoomed)
+                        warnMessage += ' and zoomed';
+                    warnMessage += '.';
+                }
+                else
+                {
+                    if (cameraZoomed)
+                        warnMessage += 'camera zoomed.';
+                }
+
+                warnMessage += '\nMake sure you use the correct variable for the mouse position.';
+                warnMessage += '\n\nTo suppress this warning set bare.warnings.mouse = false.';
+                console.warn(warnMessage);
+            }
         }
     }
 }

@@ -1,16 +1,13 @@
-import { IAttribute, ShaderType, UniformType, WebGLContext } from "../interface"
+import { IAttribute, ShaderType, WebGLContext } from "../interface"
 import Rapid from "../render"
-import { Texture } from "../texture"
 import { Uniform } from "./uniform"
 import { createShaderProgram, generateFragShader } from "./utils"
-
 import graphicFragString from "../shader/graphic.frag";
 import graphicVertString from "../shader/graphic.vert";
 import spriteFragString from "../shader/sprite.frag";
 import spriteVertString from "../shader/sprite.vert";
 import { spriteAttributes } from "../regions/attributes"
 import { graphicAttributes } from "../regions/attributes"
-import SpriteRegion from "../regions/sprite_region"
 import RenderRegion from "../regions/region"
 
 type ShaderPadding = { x: number, y: number }

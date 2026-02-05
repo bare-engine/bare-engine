@@ -175,7 +175,7 @@ export class BarePlugin
           {
               this.movingObjData = {
                   obj,
-                  offset: obj.position.subtract(getMouseController().worldMousePosition),
+                  offset: obj.position.subtract(getMouseController().screen.position),
                   hasMovedAwayEnough: false
               };
 
@@ -193,7 +193,7 @@ export class BarePlugin
     {
         if (!this.movingObjData.hasMovedAwayEnough)
         {
-            var dist = Helper.Distance(getMouseController().globalMousePosition, getMouseController().globalMousePositionOnDown);
+            var dist = Helper.Distance(getMouseController().screen.position, getMouseController().screen.positionOnDown);
             if (dist > 10)
             {
                 this.movingObjData.hasMovedAwayEnough = true;

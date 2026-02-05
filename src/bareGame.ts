@@ -115,7 +115,7 @@ export class BareGame
         
         await this.OnAwake();
 
-        await this.initialSettingsHandler.Process(entityDataJson); // NEEDS TO GO AFTER AWAKE() SINCE IT CAN LOAD ANIMATION FRAMES THAT OVERRIDDEN SHOULD LOAD
+        await this.initialSettingsHandler.Process(entityDataJson); // NEEDS TO GO AFTER ONAWAKE() SINCE IT CAN LOAD ANIMATION FRAMES THAT OVERRIDDEN SHOULD LOAD
 
         this.SetCurrentSettingsHandler(this.initialSettingsHandler);
 

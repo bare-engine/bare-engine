@@ -272,3 +272,4 @@ class CameraHandler {
 }
 
 export const cameraHandler = new CameraHandler();
+globalThis.cameraHandler = cameraHandler;

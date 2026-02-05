@@ -88,7 +88,7 @@ export class EditorControlsHandler {
                     topLeftCopiedObjects.y = obj.y - obj.pivot.y;
             });
 
-            var offset = mouseController.worldMousePosition.subtract(topLeftCopiedObjects);
+            var offset = mouseController.world.position.subtract(topLeftCopiedObjects);
             //offset = new Vec2(0,0);
             
             var objsCreated: GameObject[] = [];
@@ -188,10 +188,10 @@ export class EditorControlsHandler {
         
         if (isLeftButton && this.actionThisFrame == '' && bare.currentSettings.selectionEnabled !== false)
         {
-            var w = mouseController.worldMousePosition.x - mouseController.worldMousePositionOnDown.x;
-            var h = mouseController.worldMousePosition.y - mouseController.worldMousePositionOnDown.y;
-            var x = mouseController.worldMousePositionOnDown.x;
-            var y = mouseController.worldMousePositionOnDown.y;
+            var w = mouseController.world.position.x - mouseController.world.positionOnDown.x;
+            var h = mouseController.world.position.y - mouseController.world.positionOnDown.y;
+            var x = mouseController.world.positionOnDown.x;
+            var y = mouseController.world.positionOnDown.y;
 
             // MAKE SURE RECT X/Y IS ALWAYS AT TOP LEFT
             if (w < 0)
@@ -209,16 +209,16 @@ export class EditorControlsHandler {
     }
     
     private PointerMove({ mouseX, mouseY, event }: Events['pointerMove']): void {
-        if (mouseController.middleMouseIsDown) {
-            var deltaMovedMiddleMouse = mouseController.globalMousePosition.subtract(mouseController.globalMousePositionPrev);
+        if (mouseController.IsMiddleMouseDown()) {
+            var deltaMovedMiddleMouse = mouseController.screen.position.subtract(mouseController.screen.positionPrev);
             var zoom = cameraHandler.GetCameraZoom();
             cameraHandler.AddCameraPosition(-deltaMovedMiddleMouse.x /zoom, -deltaMovedMiddleMouse.y / zoom);
         }
 
-        var w = mouseController.worldMousePosition.x - mouseController.worldMousePositionOnDown.x;
-        var h = mouseController.worldMousePosition.y - mouseController.worldMousePositionOnDown.y;
-        var x = mouseController.worldMousePositionOnDown.x;
-        var y = mouseController.worldMousePositionOnDown.y;
+        var w = mouseController.world.position.x - mouseController.world.positionOnDown.x;
+        var h = mouseController.world.position.y - mouseController.world.positionOnDown.y;
+        var x = mouseController.world.positionOnDown.x;
+        var y = mouseController.world.positionOnDown.y;
 
         // MAKE SURE RECT X/Y IS ALWAYS AT TOP LEFT
         if (w < 0)
@@ -392,7 +392,7 @@ export class EditorControlsHandler {
             return;
         
         this.draggingLevelEntity = obj;
-        this.dragOffset = mouseController.worldMousePosition.subtract(obj.position);
+        this.dragOffset = mouseController.world.position.subtract(obj.position);
         
         this.actionThisFrame = 'objDrag';
     }
@@ -405,7 +405,7 @@ export class EditorControlsHandler {
             return;
         }
 
-        var distMouseMoved = Helper.Distance(mouseController.worldMousePosition, mouseController.worldMousePositionOnDown);
+        var distMouseMoved = Helper.Distance(mouseController.world.position, mouseController.world.positionOnDown);
         if (distMouseMoved == 0)
         {
             if (keyboardController.IsKeyDown("control") && !this.currentPreviewEntity.visible)
@@ -502,8 +502,8 @@ export class EditorControlsHandler {
             var origPosY = this.draggingLevelEntity.y;
 
             // Calculate the desired position
-            const desiredX = mouseController.worldMousePosition.x - this.dragOffset.x;
-            const desiredY = mouseController.worldMousePosition.y - this.dragOffset.y;
+            const desiredX = mouseController.world.position.x - this.dragOffset.x;
+            const desiredY = mouseController.world.position.y - this.dragOffset.y;
 
             if (this.editorController.gridActive)
             {
@@ -543,13 +543,13 @@ export class EditorControlsHandler {
             }
         }
         
-        if (!mouseController.rightMouseIsDown)
+        if (!mouseController.IsRightMouseDown())
             if (this.currentPreviewEntity.visible)
                 this.currentPreviewEntity.alpha = (hitboxController.GetCurrentHitboxHover() && !keyboardController.IsKeyDown("control")) ? 0 : 0.5;
 
         // Calculate preview position
-        const previewX = mouseController.worldMousePosition.x;
-        const previewY = mouseController.worldMousePosition.y;
+        const previewX = mouseController.world.position.x;
+        const previewY = mouseController.world.position.y;
 
         if (this.editorController.gridActive) {
             // Snap preview entity to grid
@@ -562,8 +562,8 @@ export class EditorControlsHandler {
             this.currentPreviewEntity.SetPosition(previewX, previewY);
         }
 
-        var distMouseMoved = Helper.Distance(mouseController.worldMousePosition, mouseController.worldMousePositionOnDown);
-        if (mouseController.rightMouseIsDown && distMouseMoved > 5) {
+        var distMouseMoved = Helper.Distance(mouseController.world.position, mouseController.world.positionOnDown);
+        if (mouseController.IsRightMouseDown() && distMouseMoved > 5) {
             var hover = hitboxController.GetCurrentHitboxHover();
             if (hover) {
                 bare.RemoveGameObject(hover.parent);

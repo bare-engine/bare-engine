@@ -42,7 +42,7 @@ export class ResizableComponent extends BaseComponent
 
     if (!this.go.tapHitbox) return;
 
-    const mouse = mouseController.worldMousePosition;
+    const mouse = mouseController.world.position;
     const hb = this.go.tapHitbox.rectangle;
     const hoveredHitbox = hitboxController.GetCurrentHitboxHover();
     const hoveringThis = hoveredHitbox?.parent === this.go;
@@ -107,7 +107,7 @@ export class ResizableComponent extends BaseComponent
           this.resizing = false;
           this.edge = null;
 
-          this.freeStartPos = mouseController.worldMousePositionOnDown.clone();
+          this.freeStartPos = mouseController.world.positionOnDown.clone();
           this.hoverEdge = null;
           return;
         }
@@ -115,7 +115,7 @@ export class ResizableComponent extends BaseComponent
     }
 
     // ================= FREE RESIZE THRESHOLD =================
-    if (mouseController.mouseIsDown && this.freeResizePending && !this.resizing)
+    if (mouseController.IsMouseDown() && this.freeResizePending && !this.resizing)
     {
       const dx = mouse.x - this.freeStartPos.x;
       const dy = mouse.y - this.freeStartPos.y;
@@ -131,7 +131,7 @@ export class ResizableComponent extends BaseComponent
     }
 
     // ================= DRAG =================
-    if (mouseController.mouseIsDown && this.resizing)
+    if (mouseController.IsMouseDown() && this.resizing)
     {
       // --- FREE RESIZE MODE ---
       if (this.freeResize)
@@ -245,7 +245,7 @@ export class ResizableComponent extends BaseComponent
     }
 
     // ================= RELEASE =================
-    if (!mouseController.mouseIsDown)
+    if (!mouseController.IsMouseDown())
     {
       this.resizing = false;
       this.freeResize = false;

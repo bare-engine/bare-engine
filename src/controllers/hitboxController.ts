@@ -52,13 +52,13 @@ export class HitboxController
         if (!this.active)
             return;
 
-        if (isMobile && !mouseController.mouseIsDown)
+        if (isMobile && !mouseController.IsMouseDown())
             return;
 
         if (this.currentHitboxHover)
         {
             const isUIObject = this.IsUIObject(this.currentHitboxHover.parent);
-            const mouse = isUIObject ? mouseController.globalMousePosition : mouseController.worldMousePosition;
+            const mouse = isUIObject ? mouseController.screen.position : mouseController.world.position;
             const isInsideCurrentHitbox = this.IsPointInsideHitbox(this.currentHitboxHover, mouse, isUIObject);
             if (!isInsideCurrentHitbox)
             {
@@ -134,7 +134,7 @@ export class HitboxController
         if (this.currentHitboxHover)
         {
             const isUIObject = this.IsUIObject(this.currentHitboxHover.parent);
-            const mouse = isUIObject ? mouseController.globalMousePosition : mouseController.worldMousePosition;
+            const mouse = isUIObject ? mouseController.screen.position : mouseController.world.position;
             const isInsideCurrentHitbox = this.IsPointInsideHitbox(this.currentHitboxHover, mouse, isUIObject);
             if (!isInsideCurrentHitbox)
             {
@@ -180,7 +180,7 @@ export class HitboxController
                 if (!hitbox.parent.visibleInEditor)
                     continue;
                 
-                const mouse = isUI ? mouseController.globalMousePosition : mouseController.worldMousePosition;
+                const mouse = isUI ? mouseController.screen.position : mouseController.world.position;
 
                 if (layerCollisionHandlingType == CollisionHandlingType.POINT)
                 {

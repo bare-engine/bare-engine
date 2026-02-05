@@ -93,8 +93,30 @@ export class GameObject
             return globalThis.componentController.AddComponent(this, arg);// NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
         else
         {
-            console.error("ComponentController not registered. Call bare.AddClass(ComponentController) at Awake().");
+            console.error("ComponentController not registered. Call bare.AddClass(ComponentController) at Awake() of your game.");
             return (typeof arg === "function" ? new arg() : arg);
+        }
+    }
+
+    GetComponent<T extends Component<this>>(componentClass: Ctor<T>): T | null
+    {
+        if (globalThis.componentController)
+            return globalThis.componentController.GetComponent(this, componentClass);// NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
+        else
+        {
+            console.error("ComponentController not registered. Call bare.AddClass(ComponentController) at OnAwake() of your game.");
+            return null;
+        }
+    }
+
+    RemoveComponent<T extends Component<this>>(componentClass: Ctor<T>): boolean
+    {
+        if (globalThis.componentController)
+            return globalThis.componentController.RemoveComponent(this, componentClass);// NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
+        else
+        {
+            console.error("ComponentController not registered. Call bare.AddClass(ComponentController) at Awake() of your game.");
+            return false;
         }
     }
 

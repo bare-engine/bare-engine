@@ -9,7 +9,7 @@ export class ResizableRemoveComponent extends BaseComponent
 {
   Removed(): void
   {
-    if (!mouseController.rightMouseIsDown)
+    if (!mouseController.IsRightMouseDown())
       return; // TO PREVENT THIS FROM HAPPENING WHEN CLOSING EDITOR, ONLY WANT TO RECREATE WHEN USER RIGHT CLICKS
 
     // CONSTRUCT ENTITY FROM INITIAL ENTITY DATA, SO WE GET THE RESULTING ORIGNAL VARS

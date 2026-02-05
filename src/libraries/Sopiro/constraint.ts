@@ -1,4 +1,5 @@
-import { Vec2, Vector3 } from "./math";
+import { Vec2 } from "../rapid-render";
+import { Vector3 } from "./math";
 import { RigidBody } from "./rigidbody";
 
 // Children: ContactManifold, Joint

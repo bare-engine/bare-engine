@@ -44,13 +44,13 @@ export class PivotComponent extends BaseComponent
 
         // IF MOVING THE HITBOX, UPDATE THE PIVOT POSITION
         const isMovingHitbox = hitboxController.GetCurrentHitboxDown() == this.hitboxObj.tapHitbox;
-        if (mouseController.mouseIsDown && mouseController.IsMoving() && (isMovingHitbox || this.hitboxComp.resizing))
+        if (mouseController.IsMouseDown() && mouseController.IsMoving() && (isMovingHitbox || this.hitboxComp.resizing))
         {
             this.UpdatePivotOnHitbox();
         }
 
         // IF MOVING THE PIVOT, SNAP IT WHERE PIVOT WOULD BE ACCORDING TO CODE (ApplyEntityToGameObject())
-        if (mouseController.mouseIsDown && hitboxController.GetCurrentHitboxDown() == this.go.tapHitbox)
+        if (mouseController.IsMouseDown() && hitboxController.GetCurrentHitboxDown() == this.go.tapHitbox)
         {
             const preventSnap = keyboardController.IsKeyDown('control');
             if (preventSnap)

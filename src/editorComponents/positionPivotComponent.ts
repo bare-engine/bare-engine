@@ -24,7 +24,7 @@ export class PositionPivotComponent extends BaseComponent
 
     OnUpdate(deltaTime: number): void 
     {
-        if (mouseController.mouseIsDown && hitboxController.GetCurrentHitboxHover() == this.go.tapHitbox)
+        if (mouseController.IsMouseDown() && hitboxController.GetCurrentHitboxHover() == this.go.tapHitbox)
         {
             var hitbox = {
                 x1: this.go.position!.x,

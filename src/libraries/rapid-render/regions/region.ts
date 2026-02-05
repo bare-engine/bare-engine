@@ -1,4 +1,4 @@
-import { IAttribute, UniformType, WebGLContext } from "../interface";
+import { IAttribute, WebGLContext } from "../interface";
 import { WebglBufferArray, ArrayType } from "../math";
 import Rapid from "../render";
 import GLShader from "../webgl/glshader";
