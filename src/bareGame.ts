@@ -96,7 +96,7 @@ export class BareGame
             pipes.set("cameraHandler_GetRenderInfo", () => ({ position: new Vec2(0, 0), offset: new Vec2(0, 0), scale: 1 }));
             pipes.set("cameraHandler_ScreenToWorld", (x: number, y: number) => new Vec2(x, y));
             pipes.set("cameraHandler_WorldToScreen", (x: number, y: number) => new Vec2(x, y));
-            pipes.set("cameraHandler_GetCameraZoom", () => 1);
+            pipes.set("cameraHandler_GetZoom", () => 1);
         }
 
         this.RegisterGameObjectPool(GameObject, BareGame.gameObjectPoolSize);
@@ -1016,7 +1016,7 @@ export class BareGame
 
     GetCameraZoom(): number 
     {
-        return pipes.run("cameraHandler_GetCameraZoom");
+        return pipes.run("cameraHandler_GetZoom");
     }
 
     GetContructorName(gameObject: GameObject): string

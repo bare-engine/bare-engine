@@ -47,7 +47,7 @@ class SoundHandler
     return sound;
   }
 
-  async playEmojiSound(id: string, options: Partial<HowlOptions> = {}, volume = .05, playRandomPitch: boolean = true)
+  async PlayPitchedSound(id: string, options: Partial<HowlOptions> = {}, volume = 1, playRandomPitch: boolean = true)
   {
     if (!SaveData.soundEnabled)
       return;

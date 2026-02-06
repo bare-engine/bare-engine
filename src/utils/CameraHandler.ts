@@ -1,14 +1,8 @@
 import { Vec2 } from "../libraries/rapid-render";
 import { events, pipes } from "../main";
-import type { Dimensions } from "./bareTypes";
+import type { CameraRenderInfo, Dimensions } from "./bareTypes";
 import { CameraScaleMode, Rectangle } from "./gamesTypes";
 import { Helper } from "./helper";
-
-export type CameraRenderInfo = {
-  position: Vec2; // camera center in world space (after clamping)
-  offset: Vec2;   // world offset so camera center maps to screen center
-  scale: number;  // final scale used for rendering
-};
 
 class CameraHandler {
   scaleMode: CameraScaleMode = CameraScaleMode.Cover;
@@ -36,13 +30,13 @@ class CameraHandler {
 
     events.persistent.on("levelLoaded", ({ level }) => {
       const dims: Dimensions = level.dimensions;
-      this.SetCameraBounds({ x: 0, y: 0, width: dims.width, height: dims.height });
-      this.CalculateCameraZoomFit();
+      this.SetBounds({ x: 0, y: 0, width: dims.width, height: dims.height });
+      this.CalculateZoomFit();
       // default to level center
-      this.SetCameraPosition(dims.width / 2, dims.height / 2);
+      this.SetPosition(dims.width / 2, dims.height / 2);
     });
 
-    events.persistent.on("resize", () => this.CalculateCameraZoomFit());
+    events.persistent.on("resize", () => this.CalculateZoomFit());
     events.persistent.on("clear", ({ full }: { full: boolean }) => {
         if (full)
             this.ResetForStart();
@@ -51,7 +45,7 @@ class CameraHandler {
     pipes.set("cameraHandler_GetRenderInfo", (levelEditorOpen: boolean) => this.GetRenderInfo(levelEditorOpen));
     pipes.set("cameraHandler_ScreenToWorld", (x: number, y: number) => this.ScreenToWorld(x, y));
     pipes.set("cameraHandler_WorldToScreen", (x: number, y: number) => this.WorldToScreen(x, y));
-    pipes.set("cameraHandler_GetCameraZoom", () => this.GetCameraZoom());
+    pipes.set("cameraHandler_GetZoom", () => this.GetZoom());
   }
 
   ResetForStart()
@@ -74,38 +68,38 @@ class CameraHandler {
     this.offset.x = 0;
     this.offset.y = 0;
 
-    this.CalculateCameraZoomFit();
+    this.CalculateZoomFit();
   }
 
   // center position
-  SetCameraPosition(x: number, y: number)
+  SetPosition(x: number, y: number)
   {
     this.target.x = x;
     this.target.y = y;
   }
 
   // top-left position
-  SetCameraPositionTopLeft(x: number, y: number) 
+  SetPositionTopLeft(x: number, y: number) 
   {
-    this.SetCameraPosition(x + this.dimensions.width / 2, y + this.dimensions.height / 2);
+    this.SetPosition(x + this.dimensions.width / 2, y + this.dimensions.height / 2);
   }
 
-  AddCameraPosition(dx: number, dy: number): Vec2 
+  AddPosition(dx: number, dy: number): Vec2 
   {
-    this.SetCameraPosition(this.target.x + dx, this.target.y + dy);
+    this.SetPosition(this.target.x + dx, this.target.y + dy);
     return this.target;
   }
 
-  GetCameraPosition(): Vec2 
+  GetPosition(): Vec2 
   {
     return this.position;
   }
 
-  SetCameraDimensions(width: number, height: number)
+  SetDimensions(width: number, height: number)
   {
     this.dimensions.width = width;
     this.dimensions.height = height;
-    this.CalculateCameraZoomFit();
+    this.CalculateZoomFit();
   }
 
   DisableBounds() 
@@ -113,38 +107,38 @@ class CameraHandler {
     this.bounds = { x: 0, y: 0, width: 0, height: 0 };
   }
 
-  SetCameraScaleMode(mode: CameraScaleMode)
+  SetScaleMode(mode: CameraScaleMode)
   {
     this.scaleMode = mode;
-    this.CalculateCameraZoomFit();
+    this.CalculateZoomFit();
   }
 
-  SetCameraBounds(bounds: Rectangle)
+  SetBounds(bounds: Rectangle)
   {
     this.bounds = bounds;
-    this.CalculateCameraZoomFit();
+    this.CalculateZoomFit();
   }
 
-  SetCameraBoundsToScreen() 
+  SetBoundsToScreen() 
   {
-    this.SetCameraBounds({ x: 0, y: 0, width: bare.width, height: bare.height });
+    this.SetBounds({ x: 0, y: 0, width: bare.width, height: bare.height });
   }
 
-  SetCameraBoundsToLevel() 
+  SetBoundsToLevel() 
   {
     if (!globalThis.levelController?.currentLevel) return;
     const dims = globalThis.levelController.currentLevel.dimensions;
-    this.SetCameraBounds({ x: 0, y: 0, width: dims.width, height: dims.height });
+    this.SetBounds({ x: 0, y: 0, width: dims.width, height: dims.height });
   }
   
-  SetCameraDimensionsToLevel() 
+  SetDimensionsToLevel() 
   {
     if (!globalThis.levelController?.currentLevel) return;
     const dims = globalThis.levelController.currentLevel.dimensions;
-    this.SetCameraDimensions(dims.width, dims.height);
+    this.SetDimensions(dims.width, dims.height);
   }
 
-    GetCameraZoom(): number
+    GetZoom(): number
     {
         let finalScale = this.zoomFit * this.zoom;
 
@@ -175,7 +169,7 @@ class CameraHandler {
     }
 
   // zoomFit so that `dimensions` contain/cover the *screen*
-  CalculateCameraZoomFit()
+  CalculateZoomFit()
   {
     const w = Math.max(1, this.dimensions.width);
     const h = Math.max(1, this.dimensions.height);
@@ -195,7 +189,7 @@ class CameraHandler {
 
   GetRenderInfo(levelEditorOpen: boolean): CameraRenderInfo
   {
-    const scale = this.GetCameraZoom();
+    const scale = this.GetZoom();
 
     const screenW = Math.max(1, rapid.width);
     const screenH = Math.max(1, rapid.height);
@@ -245,7 +239,7 @@ class CameraHandler {
   ScreenToWorld(x: number, y: number)
   {
     const p = new Vec2();
-    const scale = this.GetCameraZoom();
+    const scale = this.GetZoom();
 
     const screenW = Math.max(1, rapid.width);
     const screenH = Math.max(1, rapid.height);
@@ -259,7 +253,7 @@ class CameraHandler {
   WorldToScreen(x: number, y: number)
   {
     const p = new Vec2();
-    const scale = this.GetCameraZoom();
+    const scale = this.GetZoom();
 
     const screenW = Math.max(1, rapid.width);
     const screenH = Math.max(1, rapid.height);

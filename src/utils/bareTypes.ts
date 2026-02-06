@@ -211,6 +211,12 @@ export function SetUILayers<T extends Record<string, number>>(UILayers: T) {
   UILayer = UILayers as any;
 }
 
+export type CameraRenderInfo = {
+  position: Vec2; // camera center in world space (after clamping)
+  offset: Vec2;   // world offset so camera center maps to screen center
+  scale: number;  // final scale used for rendering
+};
+
 export interface Events {
     // TODO, REMOVE THOSE SINGLE { deltaTime: number } AND MAKE NUMBER
     startInitialAssetLoad: void;
@@ -271,14 +277,14 @@ export interface Events {
 }
 
 export interface Pipes {
-  cameraHandler_GetRenderInfo: (levelEditorOpen: boolean) => { position: Vec2; offset: Vec2; scale: number };
   componentController_GetAllComponentsFrom: (obj: GameObject) => Component<any>[];
   componentController_ProcessCompentsFromEntity: (entity: Entity, obj: GameObject) => void;
   componentController_AddComponent: (obj: GameObject, componentInstance: Component) => Component;
   
+  cameraHandler_GetRenderInfo: (levelEditorOpen: boolean) => CameraRenderInfo;
   cameraHandler_ScreenToWorld: (x: number, y: number) => Vec2;
   cameraHandler_WorldToScreen: (x: number, y: number) => Vec2;
-  cameraHandler_GetCameraZoom: () => number;
+  cameraHandler_GetZoom: () => number;
 }
 
 export interface Component<T extends GameObject = GameObject> 

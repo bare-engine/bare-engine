@@ -226,12 +226,6 @@ export class Helper
         }
     }
     
-    static SplitEmojiStr(str: string): string[] {
-        // Pattern to match complete emoji sequences (including ZWJ sequences) and non-emoji characters
-        const pattern = /(\p{Extended_Pictographic}\uFE0F?(?:\u200D\p{Extended_Pictographic}\uFE0F?)*)|(\P{Extended_Pictographic})/gu;
-        return Array.from(str.match(pattern) || []);
-    }
-    
     static Choose(...array: any[]): any
     {
         return array[Math.floor(Math.random() * array.length)];

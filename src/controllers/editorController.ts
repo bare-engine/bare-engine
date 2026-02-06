@@ -158,7 +158,7 @@ export class EditorController {
         var dims:Dimensions = this.levelFunctionality.currentLevel.dimensions;
         var s = Math.max(dims.width / rapid.width, dims.height / rapid.height);
         cameraHandler.zoom = 1/s * .62; // ZOOM OUT A BIT, TO FIT RIGHT OF ENTITES WINDOW
-        cameraHandler.SetCameraPosition(dims.width * .25, dims.height / 2); // AND CAMERA LEFT A BIT FOR SAME REASON
+        cameraHandler.SetPosition(dims.width * .25, dims.height / 2); // AND CAMERA LEFT A BIT FOR SAME REASON
 
         cameraHandler.DisableBounds();
 

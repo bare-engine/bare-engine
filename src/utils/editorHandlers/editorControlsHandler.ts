@@ -211,8 +211,8 @@ export class EditorControlsHandler {
     private PointerMove({ mouseX, mouseY, event }: Events['pointerMove']): void {
         if (mouseController.IsMiddleMouseDown()) {
             var deltaMovedMiddleMouse = mouseController.screen.position.subtract(mouseController.screen.positionPrev);
-            var zoom = cameraHandler.GetCameraZoom();
-            cameraHandler.AddCameraPosition(-deltaMovedMiddleMouse.x /zoom, -deltaMovedMiddleMouse.y / zoom);
+            var zoom = cameraHandler.GetZoom();
+            cameraHandler.AddPosition(-deltaMovedMiddleMouse.x /zoom, -deltaMovedMiddleMouse.y / zoom);
         }
 
         var w = mouseController.world.position.x - mouseController.world.positionOnDown.x;
