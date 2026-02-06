@@ -245,37 +245,56 @@ export class ComponentController
         return componentFrom;
     }
 
-    RemoveComponent(go: GameObject, component: Component<any>)
+    RemoveComponent<T extends Component<any>>(go: GameObject, componentClass: Ctor<T>): boolean;
+    RemoveComponent<T extends Component<any>>(go: GameObject, componentInstance: T): boolean;
+    RemoveComponent<T extends Component<any>>(go: GameObject, arg: Ctor<T> | T): boolean
     {
-        const components = this.componentsByGameObject.get(go.uniqueID)
-        if (components)
+        const components = this.componentsByGameObject.get(go.uniqueID);
+        if (!components)
+            return false;
+
+        const component = (typeof arg === "function")
+            ? components.find(c => c instanceof arg) as T | undefined
+            : arg;
+
+        if (!component)
+            return false;
+
+        const index = components.indexOf(component);
+        if (index < 0)
+            return false;
+
+        if (component.Removed)
+            component.Removed();
+
+        components.splice(index, 1);
+
+        // Remove from componentsByType as well
+        const typeComponents = this.componentsByType.get(component.constructor as Ctor<Component<any>>) as Component<any>[] | undefined;
+        if (typeComponents)
         {
-            const index = components.indexOf(component)
-            if (index > -1)
-            {
-                var component = components[index];
-
-                if (component.Removed)
-                    component.Removed();
-
-                components.splice(index, 1);
-
-                // Remove from componentsByType as well
-                const typeComponents = this.componentsByType.get(component.constructor as Ctor<Component<any>>) as Component<any>[];
-                const typeIndex = typeComponents.indexOf(component);
+            const typeIndex = typeComponents.indexOf(component);
+            if (typeIndex > -1)
                 typeComponents.splice(typeIndex, 1);
 
-                // SAVE COMPONENT REMOVED FOR GAMEOBJECT
-                var compName = component.constructor.name.replace('Component', '').toLowerCase();
-
-                if (!go.levelEntity)
-                    go.levelEntity = {name: "", componentsRemoved: []};
-                if (!go.levelEntity.componentsRemoved)
-                    go.levelEntity.componentsRemoved = [];
-
-                go.levelEntity.componentsRemoved.push(compName);
-            }
+            if (typeComponents.length == 0)
+                this.componentsByType.delete(component.constructor as Ctor<Component<any>>);
         }
+
+        // SAVE COMPONENT REMOVED FOR GAMEOBJECT
+        var compName = component.constructor.name.replace('Component', '').toLowerCase();
+
+        if (!go.levelEntity)
+            go.levelEntity = {name: "", componentsRemoved: []};
+        if (!go.levelEntity.componentsRemoved)
+            go.levelEntity.componentsRemoved = [];
+
+        go.levelEntity.componentsRemoved.push(compName);
+
+        if (components.length == 0)
+            this.componentsByGameObject.delete(go.uniqueID);
+
+        return true;
     }
 
     RemoveComponentsForObject(object: GameObject, ignoring: any[] = [])

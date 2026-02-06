@@ -109,10 +109,12 @@ export class GameObject
         }
     }
 
-    RemoveComponent<T extends Component<this>>(componentClass: Ctor<T>): boolean
+    RemoveComponent<T extends Component<this>>(componentClass: Ctor<T>): boolean;
+    RemoveComponent<T extends Component<this>>(componentInstance: T): boolean;
+    RemoveComponent<T extends Component<this>>(arg: Ctor<T> | T): boolean
     {
         if (globalThis.componentController)
-            return globalThis.componentController.RemoveComponent(this, componentClass);// NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
+            return globalThis.componentController.RemoveComponent(this, arg);// NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
         else
         {
             console.error("ComponentController not registered. Call bare.AddClass(ComponentController) at Awake() of your game.");
