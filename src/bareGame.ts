@@ -1104,7 +1104,6 @@ export class BareGame
           const json = await res.json().catch(() => null);
         
           // TELL THE PLUGIN
-
           window.__GAME_DEBUG_API__.notifyEntityDataChanged(this.initialSettingsHandler.GetRaw())
 
           return { ok: res.ok, saved: res.ok, response: json };

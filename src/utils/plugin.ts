@@ -124,15 +124,20 @@ window.__GAME_DEBUG_API__ = {
     return bare.currentSettingsHandler.SnapshotCurrent();
   },
 
-  async setEntityData(newData: SettingsData) {
+  async setEntityData(newData: SettingsData, notifyPlugin: boolean = true)
+  {
+    plugin.doNotifyAfterSave = false;
     await bare.SaveEntityData(newData);
-    //var editorController = getEditorController();
-    //editorController.Restart();
+    plugin.doNotifyAfterSave = true;
+
+    var editorController = getEditorController();
+    editorController.Restart();
   },
 
   notifyEntityDataChanged(newData) {
     //window.postMessage({ __fromGame: true, type: "entityDataChanged" }, "*");
-    window.postMessage({ __fromGame: true, type: "entityData", data: newData }, "*");
+    if (plugin.doNotifyAfterSave)
+      window.postMessage({ __fromGame: true, type: "entityData", data: newData }, "*");
   },
 };
 
@@ -143,6 +148,7 @@ export class BarePlugin
     debugActions: Array<{label?: string, callback?: () => void}> = [];
     movingObj: GameObject;
     movingObjData: { obj: GameObject; offset: Vec2; hasMovedAwayEnough: boolean };
+    doNotifyAfterSave: boolean = true;
 
     constructor()
     {
