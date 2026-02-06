@@ -2,7 +2,7 @@ import { assetsHandler } from "../utils/assetsHandler";
 import { Hitbox } from '../utils/hitbox';
 import { Entity, GameObjectClass } from '../utils/bareTypes';
 import { Helper } from '../utils/helper';
-import { MakePath, pipes } from '../main';
+import { MakePath } from '../main';
 import { Vec2, Texture, Color, GLShader, Uniform, MaskType } from "../libraries/rapid-render";
 import type { Component, Ctor } from "../utils/bareTypes";
 
@@ -118,6 +118,11 @@ export class GameObject
             console.error("ComponentController not registered. Call bare.AddClass(ComponentController) at Awake() of your game.");
             return false;
         }
+    }
+    
+    ApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
+    {
+        // FOR OVERRIDE
     }
 
     ApplyEntityToGameObject(entity: Entity, addComponents: boolean)

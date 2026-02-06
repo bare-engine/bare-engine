@@ -1,3 +1,5 @@
+import { GameObject } from "../../objects/gameObject";
+import { Entity } from "../../utils/bareTypes";
 import { RigidBody, Type } from "./rigidbody";
 import { Settings } from "./settings";
 import * as Util from "./util";
@@ -24,6 +26,16 @@ export class Circle extends RigidBody
             this._inertia = Util.calculateCircleInertia(this.radius, this._mass);
             this._invInertia = 1.0 / this._inertia;
         }
+    }
+    
+    override ApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
+    {
+        if (!entity.physicsRadius)
+        {
+            entity.physicsRadius = Math.min(this.texture.width, this.texture.height) * .5;
+        }
+
+        super.ApplyEntityVarsToGameObject(entity, obj);
     }
 
     set physicsRadius(radius: number)

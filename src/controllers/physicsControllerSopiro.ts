@@ -28,7 +28,6 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 		events.persistent.on('physicsRefreshBody', this.RefreshBody.bind(this));
 		events.persistent.on('clear', this.Clear.bind(this));
 
-		
     	bare.RegisterGameObjectPool(Polygon, 1);
     	bare.RegisterGameObjectPool(Box, 1);
     	bare.RegisterGameObjectPool(Circle, 1);

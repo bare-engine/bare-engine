@@ -22,10 +22,9 @@ export class PhysicsObjectBare extends GameObject
 
     static dummyPhysicsObjectBare: PhysicsObjectBare = new PhysicsObjectBare();
     
-    constructor(x: number = 0, y: number = 0, emoji: string = "")
+    constructor(x: number = 0, y: number = 0, texturePath: string = "")
     {
-        super(x, y, emoji);
-        //this.ResetValues();
+        super(x, y, texturePath);
     }
 
     override ApplyEntityToGameObject(entity: Entity, addComponents: boolean)

@@ -521,11 +521,10 @@ export class BareGame
     ApplyEntityToGameObject(entity: Entity, obj: GameObject, addComponents: boolean = true)
     {
         this.ApplyEntityVarsToGameObject(entity, obj);
+        obj.ApplyEntityToGameObject(entity, addComponents);
 
         obj.entity = entity;
         
-        obj.ApplyEntityToGameObject(entity, addComponents);
-
         if (addComponents)
             pipes.run("componentController_ProcessCompentsFromEntity", entity, obj);
     }
@@ -562,8 +561,10 @@ export class BareGame
         pivot: (o, v) => o.SetPivot(v.x, v.y), // SETPIVOT DOES SOME EXTRA WORK FOR PERCENTAGES, SO CUSTOM MAPPING
     };
 
-    ApplyEntityVarsToGameObject(entity: any, obj: any)
+    ApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
     {
+        obj.ApplyEntityVarsToGameObject(entity, obj);
+
         // PUT STATIC LAST - FOR SOPIRO PHYSICS, IT NEEDS ALL OTHER RIGIDBODY DATA LIKE MASS FIRST, THEN SET STATIC
         if (entity.static)
         {
@@ -725,6 +726,7 @@ export class BareGame
         return gameObject;
     }
 
+    // STILL NEEDED?
     public AddGameObjectFromImagePath(path:string, parent: int | GameObject = Layer.OBJECTS): GameObject
     {
         if (!path.startsWith("/"))

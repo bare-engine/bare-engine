@@ -1,11 +1,12 @@
 import { ContactInfo } from "./contact";
-import { Vec2 } from "../rapid-render";
+import { Texture, Vec2 } from "../rapid-render";
 import { Settings } from "./settings";
 import * as Util from "./util";
 import { Node } from "./aabbtree";
 import { GameObject } from "../../objects/gameObject";
 import { Matrix3 } from "./math";
 import { events } from "../../main";
+import { Entity } from "../../utils/bareTypes";
 
 export enum Type
 {
@@ -78,6 +79,23 @@ export abstract class RigidBody extends GameObject
         {
             // This part is implemented by children.
         }
+    }
+
+    override InitTexture(texturePath: string): Promise<Texture>
+    {
+        var tex = super.InitTexture(texturePath);
+        this.CenterPivot();
+        return tex;
+    }
+        
+    override ApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
+    {
+        if (!entity.pivot)
+        {
+            entity.pivot = {"x": 0.5, "y": 0.5};
+        }
+
+        super.ApplyEntityVarsToGameObject(entity, obj);
     }
 
     override ResetValues(): void

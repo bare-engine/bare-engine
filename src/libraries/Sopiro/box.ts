@@ -3,6 +3,8 @@ import { Vec2 } from "../rapid-render";
 import { Polygon } from "./polygon";
 import * as Util from "./util";
 import { Settings } from "./settings";
+import { Entity } from "../../utils/bareTypes";
+import { GameObject } from "../../objects/gameObject";
 
 export class Box extends Polygon
 {
@@ -15,6 +17,16 @@ export class Box extends Polygon
 
         this.phyWidth = width;
         this.phyHeight = height;
+    }
+
+    override ApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
+    {
+        if (!entity.physicsRect)
+        {
+            entity.physicsRect = {width: this.texture.width, height: this.texture.height};
+        }
+
+        super.ApplyEntityVarsToGameObject(entity, obj);
     }
 
     override set physicsRect(value: { width: number, height: number })
