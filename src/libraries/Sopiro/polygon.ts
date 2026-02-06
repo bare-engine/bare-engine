@@ -22,7 +22,7 @@ export class Polygon extends RigidBody
         if (this.type == Type.Dynamic)
         {
             Util.assert(density > 0);
-
+            
             this._density = density;
             this._mass = density * this.area;
             this._invMass = 1.0 / this._mass;
@@ -94,6 +94,12 @@ export class Polygon extends RigidBody
         area += this.vertices[count - 1].cross(this.vertices[0]);
 
         this.area = Math.abs(area) / 2.0;
+
+        //
+        this._mass = this._density * this.area;
+        this._invMass = 1.0 / this._mass;
+        this._inertia = Util.calculateConvexPolygonInertia(this.vertices, this._mass, this.area);
+        this._invInertia = 1.0 / this._inertia;
 
         // BIT HACKY
         if (!resetPosition)
