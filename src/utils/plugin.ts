@@ -5,6 +5,7 @@ import { Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { BareGame, events } from "../main";
 import { OutlineShader } from "./shaders/outlineShader";
+import { BareClasses } from "..";
 
 // THIS PLUGIN CODE DOES NOT GET INCLUDED IN PRODUCTION
 // ALL CALLS SHOULD BE WRAPPED WITH __DEV__
@@ -29,7 +30,7 @@ window.__GAME_DEBUG_API__ = {
     const obj = objectController.GetObjectById(uid);
     if (!obj) return false;
 
-    var outlineShader = bare.plugin.outlineShader;
+    var outlineShader = plugin.outlineShader;
 
     // CLEAR OUTLINE SHADERS ON ALL
     var objs = objectController.GetLayers().flat();
@@ -65,7 +66,7 @@ window.__GAME_DEBUG_API__ = {
 
   async gotoEntity(name: string) {
     const levelController = getLevelController();
-    if (levelController && levelController.currentLevel.name == name)
+    if (levelController && levelController.currentLevel && levelController.currentLevel.name == name)
     {
         return;
     }
@@ -83,7 +84,7 @@ window.__GAME_DEBUG_API__ = {
   },
 
   getDebugActions() {
-    return bare.plugin?.debugActions;
+    return plugin.debugActions;
   },
 
   getAllObjects() {
@@ -135,7 +136,7 @@ window.__GAME_DEBUG_API__ = {
 
 export class BarePlugin
 {
-    public outlineShader = new OutlineShader();
+    public outlineShader;
     
     debugActions: Array<{label?: string, callback?: () => void}> = [];
     movingObj: GameObject;
@@ -143,7 +144,13 @@ export class BarePlugin
 
     constructor()
     {
-        this.ListenToRightClickForPluginSelect();
+        events.on('gameStarted', () => {
+            this.outlineShader = new OutlineShader()
+            bare.AddClass(BareClasses.EditorController)
+        });
+
+        // RIGHT CLICK FOR PLUGIN SELECT
+        document.addEventListener('pointerdown', this.OnRightClickPointerDown, false);
 
         // RESTART
         this.AddDebugAction("Restart Game", () => bare.Restart(true));
@@ -155,12 +162,6 @@ export class BarePlugin
         this.AddDebugAction("Toggle Debug Visuals", () => window.debug = !window.debug);
         this.AddDebugBreak();
         this.AddDebugBreak();
-    }
-
-    ListenToRightClickForPluginSelect()
-    {
-        // RIGHT CLICK FOR PLUGIN SELECT
-        document.addEventListener('pointerdown', this.OnRightClickPointerDown, false);
     }
 
     private OnRightClickPointerDown = async (ev: PointerEvent) =>
@@ -266,3 +267,6 @@ export class BarePlugin
         this.debugActions.push({});
     }
 }
+
+export const plugin = new BarePlugin();
+globalThis.plugin = plugin;

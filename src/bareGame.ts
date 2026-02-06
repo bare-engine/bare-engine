@@ -6,7 +6,7 @@ import { GameObject } from "./objects/gameObject";
 import { SettingsHandler as SettingsHandler } from "./utils/settingsHandler";
 import { assetsHandler } from "./utils/assetsHandler";
 import { defaultEntityData as defaultEntityData } from "./utils/bareData";
-import { BarePlugin } from "./utils/plugin";
+import { PhysicsObjectBare } from "./barePhysics";
 
 /*Bare.camera.SetPosition(bare.width * .5, bare.height * .5);
 Bare.sound.Play()
@@ -39,8 +39,6 @@ export class BareGame
     static levelPath: string = "_data/levels";
     static soundPath: string = "sounds";
 
-    static plugin:any; // JUST MADE IT STATIC FOR IT TO WORK IN DEMOS
-
     public lastUpdateTimeRef:number;
     public deltaTime: number;
     public gameSpeed: number;
@@ -54,9 +52,6 @@ export class BareGame
 
     get initialSettings(): SettingsData { return this.initialSettingsHandler.Get(); }
     get currentSettings(): SettingsData { return this.currentSettingsHandler.Get(); }
-
-    get plugin(): BarePlugin { return BareGame.plugin; }
-    set plugin(value: BarePlugin) { BareGame.plugin = value; }
 
     time: number = 0;
     count: int = 0;
@@ -87,6 +82,8 @@ export class BareGame
     constructor(entityDataJson:SettingsData = defaultEntityData)
     {
         window.bare = this.GetRapidProxy();
+
+        this.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT
 
         events.emit('firstStart');
 
@@ -166,6 +163,7 @@ export class BareGame
 
     // A CATCH-ALL METHOD TO REGISTER CLASSES
     // CAN BE CONTROLLER/GAMEOBJECT/COMPONENT/PHYSICS/ETC
+    // DOESN'T ALWAYS DO SOMETHING, BUT JUST A HOAX TO LET THE DEV REFFERENCE THE CLASS
     AddClass(_class: any, ...args: any[]): void
     {
         const className = _class.name;
@@ -202,8 +200,8 @@ export class BareGame
             return;
         }
 
-        let instance = new _class(...args);
-        BareGame.registeredClasses[className] = instance;
+        //let instance = new _class(...args);
+        //BareGame.registeredClasses[className] = instance;
     }
 
     RegisterComponent(componentClass: any)
@@ -364,8 +362,14 @@ export class BareGame
             if (entity.hitbox && entity.extendClass == "GameObject") 
                 entity.extendClass = "PhysicsObjectBare";
 
+            // BIT OF A HACK TO MAKE SURE SOPIRO RIGIDBODIES HAVE A CENTER PIVOT
+            // PUT HERE TO LET THE EDITOR PREVIEW ALSO INHERIT IT
+            var sopiroPhysicsClasses = ["Circle", "Box", "Polygon"];
+            if (sopiroPhysicsClasses.includes(entity.extendClass))
+                entity.pivot = { x: .5, y: .5 };
+
             this.FillPresets(entity, settingsData);
-            
+
             return entity
         }
 
@@ -520,11 +524,11 @@ export class BareGame
 
     ApplyEntityToGameObject(entity: Entity, obj: GameObject, addComponents: boolean = true)
     {
+        obj.entity = entity;
+        
         this.ApplyEntityVarsToGameObject(entity, obj);
         obj.ApplyEntityToGameObject(entity, addComponents);
 
-        obj.entity = entity;
-        
         if (addComponents)
             pipes.run("componentController_ProcessCompentsFromEntity", entity, obj);
     }
@@ -869,7 +873,8 @@ export class BareGame
         events.emit('hitboxController_Update', deltaTime);
         events.emit('editorController_Update', deltaTime); 
 
-        this.OnUpdate(deltaTime);
+        if (!this.levelEditorOpen)
+            this.OnUpdate(deltaTime);
 
         events.emit('screenController_Update', deltaTime);
         objectController.Update(deltaTime);
@@ -916,7 +921,10 @@ export class BareGame
         events.emit('componentController_Render');
         events.emit('screenController_Render');
         objectController.Render();
-        this.OnRender();
+
+        if (!this.levelEditorOpen)
+            this.OnRender();
+
         events.emit('physicsController_Render');
         events.emit('componentController_PostRender');
         objectController.PostRender();
@@ -1073,6 +1081,7 @@ export class BareGame
         return rapidProxy;
     }
 
+    // THIS SHOULD NOT BE HERE, TODO
     async SaveEntityData(newRawData: SettingsData)
     {
         this.initialSettingsHandler.SetRaw(newRawData);

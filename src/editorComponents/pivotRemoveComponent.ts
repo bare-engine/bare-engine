@@ -42,15 +42,19 @@ export class PivotRemoveComponent extends BaseComponent
                             }
                         }
 
-        var entity = PhysicsObjectBare.GetDummpyDataFromEntity(mainObj.name, bare.initialSettingsHandler.Get()).entity;
-        var currentHitboxIsZero = entity.hitbox.x1 == 0 && entity.hitbox.y1 == 0 && entity.hitbox.x2 == 0 && entity.hitbox.y2 == 0;
 
-        var currentPivot = this.go.position;
-        if (!currentHitboxIsZero && !Helper.ObjectsAreEqual(pivotOrig, currentPivot))
+        var entity = PhysicsObjectBare.GetDummpyDataFromEntity(mainObj.name, bare.initialSettingsHandler.Get()).entity;
+        if (entity.hitbox)
         {
-            // CURRENT PIVOT IS NOT EQUAL TO DEFAULT ONE, SET IT TO DEFAULT
-            entityBare.position.x = pivotOrig.x;
-            entityBare.position.y = pivotOrig.y;
+            var currentHitboxIsZero = (entity.hitbox.x1 == 0 && entity.hitbox.y1 == 0 && entity.hitbox.x2 == 0 && entity.hitbox.y2 == 0);
+
+            var currentPivot = this.go.position;
+            if (!currentHitboxIsZero && !Helper.ObjectsAreEqual(pivotOrig, currentPivot))
+            {
+                // CURRENT PIVOT IS NOT EQUAL TO DEFAULT ONE, SET IT TO DEFAULT
+                entityBare.position.x = pivotOrig.x;
+                entityBare.position.y = pivotOrig.y;
+            }
         }
         
         var gameObject = editorController.levelFunctionality.AddGameObjectFromLevelEntity(entityBare, 0);

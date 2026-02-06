@@ -63,10 +63,10 @@ export class PhysicsObjectBare extends GameObject
                 else
                     rect.height = (hb.y2) - rect.y; // ABSOLUTE
 
-                rect.x = Math.round(rect.x);
-                rect.y = Math.round(rect.y);
-                rect.width = Math.round(rect.width);
-                rect.height = Math.round(rect.height);
+                rect.x = (rect.x);
+                rect.y = (rect.y);
+                rect.width = (rect.width);
+                rect.height = (rect.height);
 
                 // APPLY
                 entity.hitbox = rect; // CHANGE IN DATA, SO DOESN'T PROCESS NEXT TIME (?)
@@ -98,8 +98,8 @@ export class PhysicsObjectBare extends GameObject
                     else
                         this.pivot.y = (hbRect.y + entity.pivotBasedOnHitbox.y); // ABSOLUTE (IF YOU'D WANT THIS FOR SOME REASON!)
 
-                    this.pivot.x = Math.round(this.pivot.x);
-                    this.pivot.y = Math.round(this.pivot.y);
+                    this.pivot.x = (this.pivot.x);
+                    this.pivot.y = (this.pivot.y);
                 }
             }
 

@@ -28,6 +28,10 @@ class CameraHandler {
   {
     //events.persistent.on("gameStarted", () => this.ResetForStart());
 
+    events.persistent.on("gameStarted", () => {
+      this.SetPosition(bare.width / 2, bare.height / 2);
+    });
+
     events.persistent.on("levelLoaded", ({ level }) => {
       const dims: Dimensions = level.dimensions;
       this.SetBounds({ x: 0, y: 0, width: dims.width, height: dims.height });
@@ -37,6 +41,7 @@ class CameraHandler {
     });
 
     events.persistent.on("resize", () => this.CalculateZoomFit());
+    
     events.persistent.on("clear", ({ full }: { full: boolean }) => {
         if (full)
             this.ResetForStart();
@@ -171,6 +176,9 @@ class CameraHandler {
   // zoomFit so that `dimensions` contain/cover the *screen*
   CalculateZoomFit()
   {
+    if (this.dimensions.width == 0 || this.dimensions.height == 0)
+        return;
+
     const w = Math.max(1, this.dimensions.width);
     const h = Math.max(1, this.dimensions.height);
 
@@ -193,9 +201,6 @@ class CameraHandler {
 
     const screenW = Math.max(1, rapid.width);
     const screenH = Math.max(1, rapid.height);
-
-    const viewW = screenW / scale; // viewport size in world units
-    const viewH = screenH / scale;
 
     let cx = this.target.x;
     let cy = this.target.y;

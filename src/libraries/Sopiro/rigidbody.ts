@@ -81,22 +81,12 @@ export abstract class RigidBody extends GameObject
         }
     }
 
-    override InitTexture(texturePath: string): Promise<Texture>
+    /*override InitTexture(texturePath: string): Promise<Texture>
     {
         var tex = super.InitTexture(texturePath);
         this.CenterPivot();
         return tex;
-    }
-        
-    override ApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
-    {
-        if (!entity.pivot)
-        {
-            entity.pivot = {"x": 0.5, "y": 0.5};
-        }
-
-        super.ApplyEntityVarsToGameObject(entity, obj);
-    }
+    }*/
 
     override ResetValues(): void
     {

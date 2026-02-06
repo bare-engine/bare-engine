@@ -229,7 +229,7 @@ export class SettingsHandler
 
     SnapshotCurrent(): SettingsData
     {
-        return this.clone(this.processed);
+        return this.clone(this.raw);
     }
 
     private clone<T>(data: T): T

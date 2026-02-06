@@ -123,7 +123,7 @@ export class EditorControlsHandler {
 
         if (isLeftButton)
         if (isLeftButton && bare.currentSettings.selectionEnabled !== false)
-            bare.plugin?.CheckClickGameObject(event, false);
+            globalThis.plugin?.CheckClickGameObject(event, false);
 
         if (this.draggingLevelEntity)
             return;
@@ -140,7 +140,7 @@ export class EditorControlsHandler {
                 this.SelectGameObjects([obj], !multiSelect);
 
                 if (bare.currentSettings.selectionEnabled !== false)
-                    bare.plugin?.CheckClickGameObject(event, false); // SELECTS OBJ IN PLUGIN (BIT ROUNDABOUT)
+                    globalThis.plugin?.CheckClickGameObject(event, false); // SELECTS OBJ IN PLUGIN (BIT ROUNDABOUT)
 
                 this.actionThisFrame = 'objCreation';
             }

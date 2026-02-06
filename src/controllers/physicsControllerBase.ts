@@ -16,7 +16,7 @@ export class PhysicsControllerBase
 		events.persistent.on('levelLoaded', this.OnLevelLoaded.bind(this));
 
 		if (__DEV__)
-        	bare.plugin?.AddDebugAction("Toggle Collision", () => this.setCollisionsEnabled(!this.collisionsEnabled));
+        	globalThis.plugin?.AddDebugAction("Toggle Collision", () => this.setCollisionsEnabled(!this.collisionsEnabled));
 	}
 
 	OnResize({ newWidth, newHeight }: Events['resize']): void

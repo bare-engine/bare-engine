@@ -11,20 +11,21 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 
   private x: number;
   private y: number;
-  private width: number = bare.width;
-  private height: number = bare.height;
+  private width: number;
+  private height: number;
   
   public activeCollisions: Set<string> = new Set();
 
   constructor()
   {
       super();
-      this.init();
-  }
 
-  init()
-  {
-    bare.RegisterGameObjectPool(PhysicsObjectBare, 10);
+      events.persistent.on('gameStarted', () => {
+        this.width = bare.width;
+        this.height = bare.height;
+
+        bare.RegisterGameObjectPool(PhysicsObjectBare, 10);
+      });
   }
   
   Add(object: GameObject): void
@@ -637,3 +638,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 		return null;
 	}
 }
+
+export const physicsControllerBare = new PhysicsControllerBare();
+globalThis.physicsControllerBare = physicsControllerBare;
+

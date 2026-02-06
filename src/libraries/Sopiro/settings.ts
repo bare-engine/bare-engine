@@ -72,7 +72,7 @@ export const Settings = {
     regularPolygonMaxVertices: 11,
     defaultDensity: 12.5,
     defaultFriction: 0.7,
-    defaultRestitution: 0.0,
+    defaultRestitution: 0.7,
     blockSolve: true,
     colorizeBody: false,
     colorizeIsland: false,

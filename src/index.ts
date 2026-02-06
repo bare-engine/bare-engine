@@ -43,6 +43,8 @@ import { LevelController } from "./controllers/levelController";
 import { ScreenController } from "./controllers/screenController";
 import { HitboxController } from "./controllers/hitboxController";
 
+//import { BarePlugin } from "./utils/plugin";
+
 import { PhysicsObjectBare } from "./barePhysics";
 
 export const BareClasses = {
@@ -51,6 +53,7 @@ export const BareClasses = {
   PhysicsControllerBare,
   PhysicsObjectBare,
   ComponentController,
+  //BarePlugin,
   
   //ParticleController,
   //HitboxController,

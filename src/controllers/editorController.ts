@@ -100,7 +100,7 @@ export class EditorController {
             this.SetData(bare.currentSettings);
             
             if (__DEV__)
-                bare.plugin?.AddDebugAction("Toggle Level Editor", () => this.Toggle(bare.initialSettingsHandler));
+                globalThis.plugin?.AddDebugAction("Toggle Level Editor", () => this.Toggle(bare.initialSettingsHandler));
         }
     }
 
@@ -154,11 +154,22 @@ export class EditorController {
         else
             await this.levelFunctionality.LoadLevelFromData(levelPathOrData);
 
-        // SET CAMERA ZOOM AND POSITION SO THAT LEVEL FITS THE SCREEN ACCORDING TO ITS WIDTH AND HEIGHT 
-        var dims:Dimensions = this.levelFunctionality.currentLevel.dimensions;
-        var s = Math.max(dims.width / rapid.width, dims.height / rapid.height);
-        cameraHandler.zoom = 1/s * .62; // ZOOM OUT A BIT, TO FIT RIGHT OF ENTITES WINDOW
-        cameraHandler.SetPosition(dims.width * .25, dims.height / 2); // AND CAMERA LEFT A BIT FOR SAME REASON
+        if (bare.currentSettings.showUI) 
+        {
+            // POSIION CAMERA SO THAT LEVEL SITS A BIT RIGHT, NEXT TO OBJECTS UI
+            var dims:Dimensions = this.levelFunctionality.currentLevel.dimensions;
+            var s = Math.max(dims.width / rapid.width, dims.height / rapid.height);
+            cameraHandler.zoom = 1/s * .62; // ZOOM OUT A BIT, TO FIT RIGHT OF ENTITES WINDOW
+            cameraHandler.SetPosition(dims.width * .25, dims.height / 2); // AND CAMERA LEFT A BIT FOR SAME REASON
+        }
+        else
+        {
+            // CENTER CAMERA, BIT ZOOMED OUT
+            var dims:Dimensions = this.levelFunctionality.currentLevel.dimensions;
+            var s = Math.max(dims.width / rapid.width, dims.height / rapid.height);
+            cameraHandler.zoom = 1/s * .7;
+            cameraHandler.SetPosition(dims.width / 2, dims.height / 2);
+        }
 
         cameraHandler.DisableBounds();
 

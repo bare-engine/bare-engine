@@ -40,6 +40,8 @@ export class MouseController
     mouseDirectionVec2: Vec2 = new Vec2(0, 0);
     mouseDirectionVec2Delayed:Vec2 = new Vec2(0, 0);
 
+    delayFactor: number = .3;
+
     IsMouseDown(): boolean { return this.mouseIsDown; }
     IsMiddleMouseDown(): boolean { return this.middleMouseIsDown; }
     IsRightMouseDown(): boolean { return this.rightMouseIsDown; }
@@ -235,10 +237,10 @@ export class MouseController
         );
 
         this.mouseSpeed = moveVector.length();
-        this.mouseSpeedDelayed = Helper.Interpolate(this.mouseSpeedDelayed, this.mouseSpeed, 0.3);
+        this.mouseSpeedDelayed = Helper.Interpolate(this.mouseSpeedDelayed, this.mouseSpeed, this.delayFactor);
         this.mouseDirection = Helper.RadiansToDegrees(Math.atan2(moveVector.y, moveVector.x));
         this.mouseDirectionVec2 = moveVector;
-        this.mouseDirectionVec2Delayed = Helper.InterpolateVec2(this.mouseDirectionVec2Delayed, this.mouseDirectionVec2, 0.3);
+        this.mouseDirectionVec2Delayed = Helper.InterpolateVec2(this.mouseDirectionVec2Delayed, this.mouseDirectionVec2, this.delayFactor);
 
         this.world.positionPrev.x = this.world.position.x;
         this.world.positionPrev.y = this.world.position.y;
