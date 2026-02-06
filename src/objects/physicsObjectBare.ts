@@ -104,10 +104,10 @@ export class PhysicsObjectBare extends GameObject
             }
 
             // CAN COLLIDE
-            if (this.entity.canCollide != false)
+            if (entity.canCollide != false)
             {
                 this.canCollide = true;
-                this.entity.canCollide = true; // SETTING CANCOLLIDE ON ENTITY TOO, SO IT DOESN'T GET SAVED, SINCE DEFAULT IS FALSE
+                entity.canCollide = true; // SETTING CANCOLLIDE ON ENTITY TOO, SO IT DOESN'T GET SAVED, SINCE DEFAULT IS FALSE
             }
         }
     }
