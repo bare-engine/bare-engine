@@ -198,9 +198,9 @@ export class TweenController
         return tweens[0];
     }
 
-    SetTimer(duration: number, onComplete: () => void)
+    SetTimer(seconds: number, onComplete: () => void)
     {
-        this.AddTween(this).to({}, duration * 1000)
+        this.AddTween(this).to({}, seconds * 1000)
             .onComplete(onComplete)
             .start();
     }

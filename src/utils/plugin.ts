@@ -5,7 +5,7 @@ import { Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { BareGame, events } from "../main";
 import { OutlineShader } from "./shaders/outlineShader";
-import { BareClasses } from "..";
+import { BareClasses, editorController, tweenController } from "..";
 
 // THIS PLUGIN CODE DOES NOT GET INCLUDED IN PRODUCTION
 // ALL CALLS SHOULD BE WRAPPED WITH __DEV__
@@ -71,16 +71,11 @@ window.__GAME_DEBUG_API__ = {
         return;
     }
 
-    bare.Clear();
-
     var editorController = getEditorController();
-    
-    await bare.SetCurrentSettingsHandler(editorController.hitboxDataHandler);
-    editorController.SetData(bare.currentSettings); // EDITOR CONTROLLER COULD CATCH EVENT FOR SET CURRENT DATA INSTEAD, TODO
     
     var levelData = await editorController.CreateHitboxDataFor(name, editorController.hitboxData);
     var saveLevelCallback = () => editorController.SaveHitboxDataToSettingsData();
-    editorController.Open(levelData, saveLevelCallback);
+    editorController.Open(levelData, saveLevelCallback, editorController.hitboxDataHandler);
   },
 
   getDebugActions() {
@@ -130,7 +125,14 @@ window.__GAME_DEBUG_API__ = {
   },
 
   async setEntityData(newData: SettingsData) {
-    bare.SaveEntityData(newData);
+    await bare.SaveEntityData(newData);
+    //var editorController = getEditorController();
+    //editorController.Restart();
+  },
+
+  notifyEntityDataChanged(newData) {
+    //window.postMessage({ __fromGame: true, type: "entityDataChanged" }, "*");
+    window.postMessage({ __fromGame: true, type: "entityData", data: newData }, "*");
   },
 };
 

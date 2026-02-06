@@ -48,7 +48,7 @@ export class EditorController {
     editorButton: HTMLButtonElement;
     OnClickEditorButtonBound: () => void;
 
-    saveLevelCallback: () => void;
+    saveLevelCallback: () => Promise<void>;
 
     get currentLevel(): LevelData { return this.levelFunctionality.currentLevel; }
 
@@ -107,6 +107,11 @@ export class EditorController {
     async Open(levelPathOrData: string | LevelData = '', saveLevelCallback: () => Promise<void> = this.levelFunctionality.SaveLevel,
                    settingsHandler: SettingsHandler = bare.currentSettingsHandler)
     {
+        if (typeof levelPathOrData != 'string')
+            if (settingsHandler.GetRaw().name == bare.currentSettingsHandler.GetRaw().name)
+                if (levelPathOrData.name == this.levelFunctionality.currentLevel?.name)
+                    return; // ALREADY IN TARGET EDITOR AT TARGET LEVEL
+
         bare.Clear();
         
         await bare.SetCurrentSettingsHandler(settingsHandler);
@@ -223,13 +228,22 @@ export class EditorController {
     {
         if (bare.currentSettingsHandler == settingsHandler && window.gameMode == GameMode.Editor)
         {
-            this.Close();
             bare.Restart();
-
             return;
         }
 
         this.Open(levelPathOrData, saveLevelCallback, settingsHandler);
+    }
+
+    async Restart()
+    {
+        //var levelPath = this.levelFunctionality.currentLevel ? this.levelFunctionality.currentLevel : this.currentLevelPath;
+        var levelPath = await editorController.CreateHitboxDataFor(this.levelFunctionality.currentLevel.name, editorController.hitboxData);
+        var saveLevelCallback = this.saveLevelCallback;
+        var settingsHandler = bare.currentSettingsHandler;
+        
+        bare.Restart(); // ALSO CLOSES THE EDITOR
+        this.Open(levelPath, saveLevelCallback, settingsHandler);
     }
 
     async OnClickEditorButton()
@@ -610,7 +624,7 @@ export class EditorController {
 
         // SAVE TO FILE
         await bare.SaveEntityData(newRawSettingsData);
-        //await window.__GAME_DEBUG_API__.setEntityData(targetSettingsData);
+        //await window.__GAME_DEBUG_API__.setEntityData(newRawSettingsData);
     }
 
     Clear()
