@@ -88,9 +88,9 @@ export class SettingsHandler
         }
 
         // SET DEFAULT EXTEND CLASS FOR 'ANY' CASE - COULD STILL BE extendData DOESN'T EXTEND A CLASS SO SHOULD REALLY RECURSE, TODO?
-        if (!settings.entityBases.ANY.extend)
+        if (!settings.entityBases.ANY.extendClass)
         {
-            settings.entityBases.ANY.extend = "GameObject";
+            settings.entityBases.ANY.extendClass = "GameObject";
         }
 
         // PROCESS EACH CATEGORY

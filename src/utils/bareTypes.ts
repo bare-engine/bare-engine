@@ -26,7 +26,8 @@ export type GameObjectClass = { new (...args: any[]): GameObject };
 export interface Entity
 {
   name: string;
-  extend?: string;
+  extendClass?: string;
+  extendData?: string;
   imagePath?: string;
   rotation?: number;
   pivot?: Position;

@@ -361,11 +361,11 @@ export class BareGame
     {
         var final = (entity:Entity) => {
             // ANYTHING WITH A HITBOX IS A PHYSICS OBJECT
-            if (entity.hitbox && entity.extend == "GameObject") 
-                entity.extend = "PhysicsObjectBare";
+            if (entity.hitbox && entity.extendClass == "GameObject") 
+                entity.extendClass = "PhysicsObjectBare";
 
             this.FillPresets(entity, settingsData);
-
+            
             return entity
         }
 
@@ -397,8 +397,8 @@ export class BareGame
             // ARG IS ENTITY
             entity = { ...nameOrEntity }; // CLONING SINCE WE DO entity.extendData = "ANY"; LATER AND DON'T WANT THAT TO APPLY TO ORIGINAL ENTITY, ELSE IT GETS SAVED TOO
 
-            if (entity.extend && settingsData.entityBases && !settingsData.entityBases[entity.extend])
-                return final(entity); // ENTITY HAS ALREADY BEEN CONSTRUCTED, IT'S EXTENDING A CLASS, SINCE IT'S NOT IN ENTITY BASES
+            if (entity.extendClass)
+                return final(entity); // ENTITY HAS ALREADY BEEN CONSTRUCTED
         }
         else
         {
@@ -427,7 +427,7 @@ export class BareGame
             }
         }
     
-        if (!entity.extend)
+        if (!entity.extendData)
         {
             // ENTITY DATA THERE, USE THAT AS BASE
             var entityBaseMaybe = settingsData.entities[entity!.name!];
@@ -456,42 +456,42 @@ export class BareGame
         }
 
         // IF EXTEND DATA NOT SET, DEFAULT TO ANY BASE
-        if (!entity.extend)
+        if (!entity.extendData)
         {
             if (settingsData.entityBases && settingsData.entityBases["ANY"])
             {
-                entity.extend = "ANY";
+                entity.extendData = "ANY";
             }
             else
             {
                 // NOT ANY BASE DATA TO TAKE FROM, JUST EXTEND GAMEOBJECT CLASS
-                entity.extend = "GameObject";
+                entity.extendClass = "GameObject";
                 return final(entity); // EXIT OUT
             }
         }
 
-        while (entity!.extend && settingsData.entityBases![entity!.extend])
+        while (entity.extendData)
         {
             // ENTITY BASE DATA THERE, USE THAT AS BASE
-            var entityBaseMaybe = settingsData.entityBases![entity!.extend];
+            var entityBaseMaybe = settingsData.entityBases![entity!.extendData];
             if (!entityBaseMaybe)
             {
-                entityBaseMaybe = this.ConstructEntity(entity.extend);
+                entityBaseMaybe = this.ConstructEntity(entity.extendData);
             }
 
             var entityBase = entityBaseMaybe as Entity;
         
             // IF EXTEND DATA NOT SET, DEFAULT TO ANY
-            if (!entityBase.extend)
+            if (!entityBase.extendData && !entityBase.extendClass)
             {
                 if (settingsData.entityBases && settingsData.entityBases["ANY"])
                 {
-                    entityBase.extend = "ANY";
+                    entityBase.extendData = "ANY";
                 }
                 else
                 {
                     // NOT ANY BASE DATA TO TAKE FROM, JUST EXTEND GAMEOBJECT CLASS
-                    entity.extend = "GameObject";
+                    entity.extendClass = "GameObject";
                     return final(entity); // EXIT OUT
                 }
             }
@@ -500,7 +500,7 @@ export class BareGame
             entity = { 
                 ...entityBase,
                 ...entity, // TAKES PRECEDENCE OVER BASE
-                extend: entityBase.extend, 
+                extendData: entityBase.extendData, 
                 components: mergeComponents(entityBaseMaybe.components, entity.components),
                 editorComponents: mergeComponents(entityBaseMaybe.editorComponents, entity.editorComponents)
             };
@@ -564,6 +564,14 @@ export class BareGame
     ApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
     {
         obj.ApplyEntityVarsToGameObject(entity, obj);
+
+        // PROCESS POLYGON VERTICES FIRST, SET THE AREA THAT OTHER PHYSICS PROPERTIES NEED
+        if (entity.polygonVertices)
+        {
+            // THIS SHOULD BE A POLYGON OBJECT, BUT SETTING AS ANY SINCE I DON'T WANT TO IMPORT POLYGON CLASS HERE
+            (obj as any).polygonVertices = entity.polygonVertices;
+            delete entity.polygonVertices;
+        }
 
         // PUT STATIC LAST - FOR SOPIRO PHYSICS, IT NEEDS ALL OTHER RIGIDBODY DATA LIKE MASS FIRST, THEN SET STATIC
         if (entity.static)
@@ -683,7 +691,7 @@ export class BareGame
                 var imagePath = split.slice(0, split.length - 1).join("/");
                 var name = split[split.length - 1];
 
-                entity = {imagePath: imagePath, name:name, extend: "GameObject"};
+                entity = {imagePath: imagePath, name:name, extendClass: "GameObject"};
             }
             else
             {
@@ -691,7 +699,7 @@ export class BareGame
                 entity = this.ConstructEntity(input);
             }
 
-            gameObject = this.GetObjectFromPool(entity.extend!);
+            gameObject = this.GetObjectFromPool(entity.extendClass!);
             gameObject.pooled = true;
             gameObject.Init(MakePath(entity.imagePath!, entity.name));
             this.ApplyEntityToGameObject(entity, gameObject);
