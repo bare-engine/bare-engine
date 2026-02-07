@@ -26,10 +26,10 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 
     init()
     {
-		events.persistent.on(BareEvent.physicsRefreshBody, this.RefreshBody.bind(this));
-		events.persistent.on(BareEvent.clear, this.Clear.bind(this));
+		events.persistent.on(BareEvent.physics_refreshBody, this.RefreshBody.bind(this));
+		events.persistent.on(BareEvent.game_clear, this.Clear.bind(this));
 		
-		events.persistent.on(BareEvent.gameStarted, () => {
+		events.persistent.on(BareEvent.game_started, () => {
 			bare.RegisterGameObjectPool(Polygon, 1);
 			bare.RegisterGameObjectPool(Box, 1);
 			bare.RegisterGameObjectPool(Circle, 1);
@@ -102,7 +102,7 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 			{
 				for (const [, pair] of this.activeCollisions)
 				{
-					events.emit(BareEvent.collisionEnd, pair.bodyA, pair.bodyB);
+					events.emit(BareEvent.collision_end, pair.bodyA, pair.bodyB);
 				}
 
 				this.activeCollisions.clear();
@@ -146,12 +146,12 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 				this.activeCollisions.set(key, { bodyA, bodyB });
 				bodyA.OnCollisionStart(bodyB);
 				bodyB.OnCollisionStart(bodyA);
-				events.emit(BareEvent.collisionStart, bodyA, bodyB);
+				events.emit(BareEvent.collision_start, bodyA, bodyB);
 			}
 
 			bodyA.OnCollisionUpdate(bodyB);
 			bodyB.OnCollisionUpdate(bodyA);
-			events.emit(BareEvent.collisionUpdate, bodyA, bodyB);
+			events.emit(BareEvent.collision_update, bodyA, bodyB);
 		}
 
 		for (const [key, pair] of this.activeCollisions)
@@ -161,7 +161,7 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 
 			pair.bodyA.OnCollisionEnd(pair.bodyB);
 			pair.bodyB.OnCollisionEnd(pair.bodyA);
-			events.emit(BareEvent.collisionEnd, pair.bodyA, pair.bodyB);
+			events.emit(BareEvent.collision_end, pair.bodyA, pair.bodyB);
 			this.activeCollisions.delete(key);
 		}
 	}

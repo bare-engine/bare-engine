@@ -33,9 +33,9 @@ export class ParticleController
 
     private init()
     {
-        events.persistent.on(BareEvent.update, this.Update.bind(this));
-        events.persistent.on(BareEvent.postRender, this.Render.bind(this));
-        events.persistent.on(BareEvent.clear, this.Clear.bind(this));
+        events.persistent.on(BareEvent.game_update, this.Update.bind(this));
+        events.persistent.on(BareEvent.game_postRender, this.Render.bind(this));
+        events.persistent.on(BareEvent.game_clear, this.Clear.bind(this));
     }
 
     Add(emitter: ParticleEmitter, options: ParticleEmitterOptions = {})

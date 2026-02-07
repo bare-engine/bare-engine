@@ -41,13 +41,13 @@ export class ComponentController
         events.persistent.on(BareEvent.componentController_PostRender, this.PostRender.bind(this));
         events.persistent.on(BareEvent.componentController_OnLevelChanged, this.OnLevelChanged.bind(this));
 
-        events.persistent.on(BareEvent.collisionStart, this.OnCollisionStart.bind(this));
-        events.persistent.on(BareEvent.collisionUpdate, this.OnCollisionUpdate.bind(this));
-        events.persistent.on(BareEvent.collisionEnd, this.OnCollisionEnd.bind(this));
+        events.persistent.on(BareEvent.collision_start, this.OnCollisionStart.bind(this));
+        events.persistent.on(BareEvent.collision_update, this.OnCollisionUpdate.bind(this));
+        events.persistent.on(BareEvent.collision_end, this.OnCollisionEnd.bind(this));
 
-        events.persistent.on(BareEvent.gameObjectRemoved, this.RemoveComponentsForObject.bind(this));
+        events.persistent.on(BareEvent.game_objectRemoved, this.RemoveComponentsForObject.bind(this));
 
-        events.persistent.on(BareEvent.preSaveLevel, this.OnPreSaveLevel.bind(this));
+        events.persistent.on(BareEvent.level_preSave, this.OnPreSaveLevel.bind(this));
         
         pipes.set("componentController_GetAllComponentsFrom", (obj) => this.GetAllComponentsFrom(obj));
         pipes.set("componentController_ProcessCompentsFromEntity", (entity, obj) => this.ProcessCompentsFromEntity(entity, obj));

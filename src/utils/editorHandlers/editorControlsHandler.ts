@@ -58,17 +58,17 @@ export class EditorControlsHandler {
     init()
     {
         events.persistent.on(BareEvent.editorController_Update, this.Update.bind(this));
-        events.persistent.on(BareEvent.pointerDown, this.PointerDown.bind(this));
-        events.persistent.on(BareEvent.pointerMove, this.PointerMove.bind(this));
-        events.persistent.on(BareEvent.pointerUp, this.PointerUp.bind(this));
-        events.persistent.on(BareEvent.doubleClick, this.DoubleClick.bind(this));
-        events.persistent.on(BareEvent.postRender, this.PostRender.bind(this));
-        events.persistent.on(BareEvent.keyPressed, this.KeyPressed.bind(this));
-        events.persistent.on(BareEvent.keyReleased, this.KeyReleased.bind(this));
+        events.persistent.on(BareEvent.pointer_down, this.PointerDown.bind(this));
+        events.persistent.on(BareEvent.pointer_move, this.PointerMove.bind(this));
+        events.persistent.on(BareEvent.pointer_up, this.PointerUp.bind(this));
+        events.persistent.on(BareEvent.pointer_doubleClick, this.DoubleClick.bind(this));
+        events.persistent.on(BareEvent.game_postRender, this.PostRender.bind(this));
+        events.persistent.on(BareEvent.key_pressed, this.KeyPressed.bind(this));
+        events.persistent.on(BareEvent.key_released, this.KeyReleased.bind(this));
         events.persistent.on(BareEvent.editor_layerSelected, this.LayerSelected.bind(this));
     }
 
-    KeyPressed({ key, allKeys }: BareEventPayload['keyPressed'])
+    KeyPressed({ key, allKeys }: BareEventPayload['key_pressed'])
     {
         if (allKeys[0] == 'control')
         {
@@ -105,7 +105,7 @@ export class EditorControlsHandler {
         }
     }
 
-    KeyReleased({ key, allKeys }: BareEventPayload['keyReleased'])
+    KeyReleased({ key, allKeys }: BareEventPayload['key_released'])
     {
         if (key == 'control')
         {
@@ -114,7 +114,7 @@ export class EditorControlsHandler {
         }
     }
 
-    private PointerDown({ mouseX, mouseY, event, isLeftButton }: BareEventPayload['pointerDown']): void {
+    private PointerDown({ mouseX, mouseY, event, isLeftButton }: BareEventPayload['pointer_down']): void {
         if (this.MouseIsOnEditor(event))
             return;
 
@@ -208,7 +208,7 @@ export class EditorControlsHandler {
         }
     }
     
-    private PointerMove({ mouseX, mouseY, event }: BareEventPayload['pointerMove']): void {
+    private PointerMove({ mouseX, mouseY, event }: BareEventPayload['pointer_move']): void {
         if (mouseController.IsMiddleMouseDown()) {
             var deltaMovedMiddleMouse = mouseController.screen.position.subtract(mouseController.screen.positionPrev);
             var zoom = cameraHandler.GetZoom();
@@ -237,7 +237,7 @@ export class EditorControlsHandler {
         }
     }
 
-    private PointerUp({ mouseX, mouseY, event, isLeftButton }: BareEventPayload['pointerUp']): void
+    private PointerUp({ mouseX, mouseY, event, isLeftButton }: BareEventPayload['pointer_up']): void
     {
         if (this.actionThisFrame == 'selectionRect')
         {
@@ -258,7 +258,7 @@ export class EditorControlsHandler {
         this.editorController.SaveLevel();
     }
     
-    private DoubleClick({ mouseX, mouseY, event }: BareEventPayload['doubleClick']): void
+    private DoubleClick({ mouseX, mouseY, event }: BareEventPayload['pointer_doubleClick']): void
     {
         var multiSelect = keyboardController.IsKeyDown("shift");
         if (multiSelect)

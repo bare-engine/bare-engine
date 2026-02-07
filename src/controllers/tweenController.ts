@@ -16,10 +16,10 @@ export class TweenController
 
     init()
     {
-        events.persistent.on(BareEvent.gameObjectRemoved, this.GameObjectRemoved.bind(this));
-        events.persistent.on(BareEvent.focusChange, this.OnFocusChange.bind(this));
-        events.persistent.on(BareEvent.update, () => this.Update(bare.time));
-        events.persistent.on(BareEvent.clear, () => this.Deactivate());
+        events.persistent.on(BareEvent.game_objectRemoved, this.GameObjectRemoved.bind(this));
+        events.persistent.on(BareEvent.game_focusChange, this.OnFocusChange.bind(this));
+        events.persistent.on(BareEvent.game_update, () => this.Update(bare.time));
+        events.persistent.on(BareEvent.game_clear, () => this.Deactivate());
     }
 
     GameObjectRemoved(obj: GameObject)

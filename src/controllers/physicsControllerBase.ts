@@ -9,21 +9,21 @@ export class PhysicsControllerBase
 	{
 		events.persistent.on(BareEvent.physicsController_Update, this.Update.bind(this));
 		events.persistent.on(BareEvent.physicsController_Render, this.Render.bind(this));
-		events.persistent.on(BareEvent.resize, this.OnResize.bind(this));
-		events.persistent.on(BareEvent.gameObjectAdded, this.OnGameObjectAdded.bind(this));
-		events.persistent.on(BareEvent.gameObjectRemoved, this.OnGameObjectRemoved.bind(this));
-		events.persistent.on(BareEvent.levelLoaded, this.OnLevelLoaded.bind(this));
+		events.persistent.on(BareEvent.game_resize, this.OnResize.bind(this));
+		events.persistent.on(BareEvent.game_objectAdded, this.OnGameObjectAdded.bind(this));
+		events.persistent.on(BareEvent.game_objectRemoved, this.OnGameObjectRemoved.bind(this));
+		events.persistent.on(BareEvent.level_Loaded, this.OnLevelLoaded.bind(this));
 
 		if (__DEV__)
         	globalThis.plugin?.AddDebugAction("Toggle Collision", () => this.setCollisionsEnabled(!this.collisionsEnabled));
 	}
 
-	OnResize({ newWidth, newHeight }: BareEventPayload['resize']): void
+	OnResize({ newWidth, newHeight }: BareEventPayload['game_resize']): void
 	{
         this.setDimensions(0, 0, newWidth, newHeight);
 	}
 
-	OnGameObjectAdded({ gameObject, layer }: BareEventPayload['gameObjectAdded']): void
+	OnGameObjectAdded({ gameObject, layer }: BareEventPayload['game_objectAdded']): void
 	{
 		if (typeof layer === 'number' && layer < UI_LAYER && (gameObject as any).isPhysicsObject)
 		{
@@ -39,7 +39,7 @@ export class PhysicsControllerBase
 		}
 	}
 
-	OnLevelLoaded({ level }: BareEventPayload['levelLoaded']): void
+	OnLevelLoaded({ level }: BareEventPayload['level_Loaded']): void
 	{
 		var dims:Dimensions = level.dimensions;
         this.setDimensions(0, 0, dims.width, dims.height);

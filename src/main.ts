@@ -267,7 +267,7 @@ export function StartBare<T extends BareGame>(gameClass: new () => T, options?: 
                 if (bare.levelEditorOpen)
                     return;
 
-                events.emit(BareEvent.focusChange, window.hasFocus);
+                events.emit(BareEvent.game_focusChange, window.hasFocus);
 
                 // HANDLE VISUAL OF focusOverlay
                 if (window.hasFocus) {

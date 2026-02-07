@@ -75,8 +75,8 @@ export class EditorController {
 
     init()
     {
-        events.persistent.on(BareEvent.gameStarted, this.Start.bind(this));
-        events.persistent.on(BareEvent.clear, this.Clear.bind(this));
+        events.persistent.on(BareEvent.game_started, this.Start.bind(this));
+        events.persistent.on(BareEvent.game_clear, this.Clear.bind(this));
         
         if (this.editorUIHandler)
             this.editorControlsHandler.init();
@@ -125,7 +125,7 @@ export class EditorController {
 
         window.gameMode = GameMode.Editor;
 
-        events.on(BareEvent.preRender, this.PreRender.bind(this));
+        events.on(BareEvent.game_preRender, this.PreRender.bind(this));
 
         this.active = true;
 

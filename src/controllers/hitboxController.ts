@@ -34,15 +34,15 @@ export class HitboxController
     init()
     {
         events.persistent.on(BareEvent.hitboxController_Update, this.Update.bind(this));
-        events.persistent.on(BareEvent.postRender, this.RenderHitboxes.bind(this));
-        events.persistent.on(BareEvent.clear, this.Deactivate.bind(this));
+        events.persistent.on(BareEvent.game_postRender, this.RenderHitboxes.bind(this));
+        events.persistent.on(BareEvent.game_clear, this.Deactivate.bind(this));
         
-        events.persistent.on(BareEvent.pointerDown, this.PointerDown.bind(this));
-        events.persistent.on(BareEvent.pointerUp, this.PointerUp.bind(this));
-        events.persistent.on(BareEvent.pointerMove, this.PointerMove.bind(this));
+        events.persistent.on(BareEvent.pointer_down, this.PointerDown.bind(this));
+        events.persistent.on(BareEvent.pointer_up, this.PointerUp.bind(this));
+        events.persistent.on(BareEvent.pointer_move, this.PointerMove.bind(this));
     }
 
-    private PointerMove({ mouseX, mouseY, event }: BareEventPayload['pointerMove']): void
+    private PointerMove({ mouseX, mouseY, event }: BareEventPayload['pointer_move']): void
     {
         this.Update();
     }
@@ -379,7 +379,7 @@ export class HitboxController
         this.currentHitboxHover = hitbox;
     }
 
-    private PointerDown({ mouseX, mouseY, event, isLeftButton }: BareEventPayload['pointerDown']): void
+    private PointerDown({ mouseX, mouseY, event, isLeftButton }: BareEventPayload['pointer_down']): void
     {
         if (!isLeftButton)
             return;
@@ -391,7 +391,7 @@ export class HitboxController
         event.preventDefault();
     }
 
-    private PointerUp({ mouseX, mouseY, event }: BareEventPayload['pointerUp']): void
+    private PointerUp({ mouseX, mouseY, event }: BareEventPayload['pointer_up']): void
     {
         if (!this.currentHitboxDown)
             return;

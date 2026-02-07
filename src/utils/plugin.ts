@@ -152,13 +152,13 @@ export class BarePlugin
 
     constructor()
     {
-        events.on(BareEvent.gameStarted, () => {
+        events.on(BareEvent.game_started, () => {
             this.outlineShader = new OutlineShader()
             bare.AddClass(BareClasses.EditorController)
-        });
 
-        // RIGHT CLICK FOR PLUGIN SELECT
-        document.addEventListener('pointerdown', this.OnRightClickPointerDown, false);
+            // RIGHT CLICK FOR PLUGIN SELECT
+            document.addEventListener('pointerdown', this.OnRightClickPointerDown, false);
+        });
 
         // RESTART
         this.AddDebugAction("Restart Game", () => bare.Restart(true));
@@ -189,8 +189,8 @@ export class BarePlugin
               };
 
               const pointerMoveBound = this.PointerMove.bind(this);
-              events.on(BareEvent.pointerMove, pointerMoveBound);
-              events.once(BareEvent.pointerUp, () => events.off(BareEvent.pointerMove, pointerMoveBound));
+              events.on(BareEvent.pointer_move, pointerMoveBound);
+              events.once(BareEvent.pointer_up, () => events.off(BareEvent.pointer_move, pointerMoveBound));
           }
       }
 
@@ -198,7 +198,7 @@ export class BarePlugin
       return false;
   };
     
-    private PointerMove({ mouseX, mouseY, event }: BareEventPayload['pointerMove']): void
+    private PointerMove({ mouseX, mouseY, event }: BareEventPayload['pointer_move']): void
     {
         if (!this.movingObjData.hasMovedAwayEnough)
         {

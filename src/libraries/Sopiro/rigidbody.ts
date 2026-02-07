@@ -283,7 +283,7 @@ export abstract class RigidBody extends GameObject
         this.awake();
 		
         if (this.type == Type.Static)
-            events.emit(BareEvent.physicsRefreshBody, this);
+            events.emit(BareEvent.physics_refreshBody, this);
             //physicsControllerSopiro.RefreshBody(this); // CALLING UP
     }
     

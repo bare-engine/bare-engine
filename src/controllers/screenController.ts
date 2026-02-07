@@ -1,4 +1,4 @@
-import { events } from "../main";
+import { events, pipes } from "../main";
 import { BareScreen, BareEvent } from '../utils/bareTypes';
 type BareScreenClass<T extends BareScreen = BareScreen> = new () => T;
 
@@ -13,9 +13,9 @@ export class ScreenController
 
     init()
     {
-        events.persistent.on(BareEvent.screenController_Update, this.Update.bind(this));
+        pipes.set("screenController_Update", this.Update.bind(this));
         events.persistent.on(BareEvent.screenController_Render, this.Render.bind(this));
-        events.persistent.on(BareEvent.clear, this.Clear.bind(this));
+        events.persistent.on(BareEvent.game_clear, this.Clear.bind(this));
     }
 
     Clear()

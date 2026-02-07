@@ -27,7 +27,7 @@ export class LevelController
 
     init()
     {
-        events.persistent.on(BareEvent.clear, this.Deactivate.bind(this));
+        events.persistent.on(BareEvent.game_clear, this.Deactivate.bind(this));
     }
 
     get objectsLayer(): GameObject[]
@@ -132,7 +132,7 @@ export class LevelController
 
         trace('Level loaded:', levelStr);
         
-        events.emit(BareEvent.levelLoaded, {levelStr: levelStr, level: this.currentLevel});
+        events.emit(BareEvent.level_Loaded, {levelStr: levelStr, level: this.currentLevel});
 
         return level;
     }
@@ -161,7 +161,7 @@ export class LevelController
 
     async SaveLevel()
     {
-        events.emit(BareEvent.preSaveLevel, {levelStr: SaveData.currentLevelStr});
+        events.emit(BareEvent.level_preSave, {levelStr: SaveData.currentLevelStr});
 
         const level = (this.currentLevel as LevelData);
         this.SerializeLevel(level);
@@ -169,7 +169,7 @@ export class LevelController
         SaveData.levelCache.set(SaveData.currentLevelStr, level);
         SaveDataHandler.Save();
 
-        events.emit(BareEvent.postSaveLevel, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
+        events.emit(BareEvent.level_postSave, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
         
         return level;
     }

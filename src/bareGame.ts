@@ -85,7 +85,7 @@ export class BareGame
 
         this.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT
 
-        events.emit(BareEvent.gameFirstStart);
+        events.emit(BareEvent.game_firstStart);
 
         if (!pipes.has("cameraHandler_ScreenToWorld")) //IF CAMERAHANDLER HAS NOT ALREADY SET THESE
         {
@@ -151,7 +151,7 @@ export class BareGame
 
         this.started = true;
         
-        events.emit(BareEvent.gameStarted);
+        events.emit(BareEvent.game_started);
     }
 
     OnStart(): void | Promise<void>
@@ -733,7 +733,7 @@ export class BareGame
         gameObject.Added();
 
         // NOTIFY
-        events.emit(BareEvent.gameObjectAdded, { gameObject: gameObject, layer: parent });
+        events.emit(BareEvent.game_objectAdded, { gameObject: gameObject, layer: parent });
 
         return gameObject;
     }
@@ -793,7 +793,7 @@ export class BareGame
         gameObject.Removed();
 
         // NOTIFY
-        events.emit(BareEvent.gameObjectRemoved, gameObject);
+        events.emit(BareEvent.game_objectRemoved, gameObject);
 
         if (wasPooled)
         {
@@ -826,7 +826,7 @@ export class BareGame
 
         rapid.resize(newWidth, newHeight);
 
-        events.emit(BareEvent.resize, { prevWidth: prevWidth, prevHeight: prevHeight, newWidth: newWidth, newHeight: newHeight });
+        events.emit(BareEvent.game_resize, { prevWidth: prevWidth, prevHeight: prevHeight, newWidth: newWidth, newHeight: newHeight });
 
         // PERSIST UI LAYOUT
         var uiControllerObjs = uiController.GetLayers();
@@ -867,7 +867,7 @@ export class BareGame
         if (this.isPaused)
             return;
         
-        events.emit(BareEvent.preUpdate, { deltaTime: deltaTime });
+        events.emit(BareEvent.game_preUpdate, { deltaTime: deltaTime });
 
         events.emit(BareEvent.mouseController_Update, deltaTime);
         events.emit(BareEvent.hitboxController_Update, deltaTime);
@@ -876,13 +876,13 @@ export class BareGame
         if (!this.levelEditorOpen)
             this.OnUpdate(deltaTime);
 
-        events.emit(BareEvent.screenController_Update, deltaTime);
+        pipes.run("screenController_Update", deltaTime);
         objectController.Update(deltaTime);
         uiController.Update(deltaTime);
         events.emit(BareEvent.physicsController_Update, deltaTime);
         events.emit(BareEvent.componentController_Update, deltaTime);
 
-        events.emit(BareEvent.update, { deltaTime: deltaTime });
+        events.emit(BareEvent.game_update, { deltaTime: deltaTime });
     }
 
     OnUpdate(deltaTime: number)
@@ -914,7 +914,7 @@ export class BareGame
             saveTransform: false
         });
         
-        events.emit(BareEvent.preRender);
+        events.emit(BareEvent.game_preRender);
 
         events.emit(BareEvent.componentController_PreRender); // ALL THIS EMITS MIGHT BE SLOW? ESPECIALLY FOR COMPONENT-CONTROLLER, SENDING MORE TO COMPONENTS
         objectController.PreRender();
@@ -929,7 +929,7 @@ export class BareGame
         events.emit(BareEvent.componentController_PostRender);
         objectController.PostRender();
 
-        events.emit(BareEvent.postRender);
+        events.emit(BareEvent.game_postRender);
         rapid.restore();
         
         uiController.Render();
@@ -1168,7 +1168,7 @@ export class BareGame
 
     Clear(full:boolean = false)
     {
-        events.emit(BareEvent.clear, { full: full });
+        events.emit(BareEvent.game_clear, { full: full });
 
         this.ClearScene();
         this.OnClear(full);

@@ -137,7 +137,7 @@ export class MouseController
         }
 
         if (!bare.isPaused)
-            events.emit(BareEvent.pointerDown, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
+            events.emit(BareEvent.pointer_down, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
 
         if (!bare.isPaused)
             event.preventDefault();
@@ -163,7 +163,7 @@ export class MouseController
         this.SetMousePosition(event.clientX, event.clientY);
 
         if (!bare.isPaused)
-            events.emit(BareEvent.pointerUp, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
+            events.emit(BareEvent.pointer_up, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
 
         event.preventDefault();
     }
@@ -185,7 +185,7 @@ export class MouseController
         this.SetMousePosition(event.clientX, event.clientY);
 
         if (!bare.isPaused)
-            events.emit(BareEvent.pointerMove, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
+            events.emit(BareEvent.pointer_move, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
 
         event.preventDefault();
     }
@@ -196,7 +196,7 @@ export class MouseController
             return;
 
         if (!bare.isPaused)
-            events.emit(BareEvent.doubleClick, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event});
+            events.emit(BareEvent.pointer_doubleClick, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event});
     }
 
     IsMoving()

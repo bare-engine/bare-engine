@@ -28,11 +28,11 @@ class CameraHandler {
   {
     //events.persistent.on(BareEvent.gameStarted, () => this.ResetForStart());
 
-    events.persistent.on(BareEvent.gameStarted, () => {
+    events.persistent.on(BareEvent.game_started, () => {
       this.SetPosition(bare.width / 2, bare.height / 2);
     });
 
-    events.persistent.on(BareEvent.levelLoaded, ({ level }) => {
+    events.persistent.on(BareEvent.level_Loaded, ({ level }) => {
       const dims: Dimensions = level.dimensions;
       this.SetBounds({ x: 0, y: 0, width: dims.width, height: dims.height });
       this.CalculateZoomFit();
@@ -40,9 +40,9 @@ class CameraHandler {
       this.SetPosition(dims.width / 2, dims.height / 2);
     });
 
-    events.persistent.on(BareEvent.resize, () => this.CalculateZoomFit());
+    events.persistent.on(BareEvent.game_resize, () => this.CalculateZoomFit());
     
-    events.persistent.on(BareEvent.clear, ({ full }: { full: boolean }) => {
+    events.persistent.on(BareEvent.game_clear, ({ full }: { full: boolean }) => {
         //if (full)
             this.ResetForStart();
     });

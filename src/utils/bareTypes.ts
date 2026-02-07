@@ -221,49 +221,47 @@ export type CameraRenderInfo = {
 const ev = <T>() => undefined as T | undefined;
 
 const eventDefs = {
-  gameFirstStart: undefined,
-  gameStarted: undefined,
-  preUpdate: ev<{ deltaTime: number }>(),
-  midUpdate: ev<{ deltaTime: number }>(),
-  update: ev<{ deltaTime: number }>(),
-  preRender: undefined,
-  postRender: undefined,
-  clear: ev<{ full: boolean }>(),
-  resize: ev<{ prevWidth: number; prevHeight: number; newWidth: number; newHeight: number }>(),
+  game_firstStart: undefined,
+  game_started: undefined,
+  game_preUpdate: ev<{ deltaTime: number }>(),
+  game_update: ev<{ deltaTime: number }>(),
+  game_preRender: undefined,
+  game_postRender: undefined,
+  game_clear: ev<{ full: boolean }>(),
+  game_resize: ev<{ prevWidth: number; prevHeight: number; newWidth: number; newHeight: number }>(),
 
-  levelLoaded: ev<{ levelStr: string; level: LevelData }>(),
-  preSaveLevel: ev<{ levelStr: string }>(),
-  postSaveLevel: ev<{ levelStr: string; level: LevelData }>(),
-  savedLevelToDisk: ev<{ levelStr: string; level: LevelData }>(),
-  levelCompleted: ev<{ levelNum: int }>(),
-  levelFailed: ev<{ levelNum: int }>(),
-  restarLevel: undefined,
+  level_Loaded: ev<{ levelStr: string; level: LevelData }>(),
+  level_preSave: ev<{ levelStr: string }>(),
+  level_postSave: ev<{ levelStr: string; level: LevelData }>(),
+  level_savedToDisk: ev<{ levelStr: string; level: LevelData }>(),
+  level_completed: ev<{ levelNum: int }>(),
+  level_failed: ev<{ levelNum: int }>(),
+  level_restart: undefined,
 
-  gameObjectAdded: ev<{ gameObject: GameObject; layer: number | GameObject }>(),
-  gameObjectRemoved: ev<GameObject>(),
+  game_objectAdded: ev<{ gameObject: GameObject; layer: number | GameObject }>(),
+  game_objectRemoved: ev<GameObject>(),
 
-  collisionStart: ev<[GameObject, GameObject]>(),
-  collisionUpdate: ev<[GameObject, GameObject]>(),
-  collisionEnd: ev<[GameObject, GameObject]>(),
+  collision_start: ev<[GameObject, GameObject]>(),
+  collision_update: ev<[GameObject, GameObject]>(),
+  collision_end: ev<[GameObject, GameObject]>(),
 
-  pointerDown: ev<{ mouseX: number; mouseY: number; event: PointerEvent; isLeftButton: boolean }>(),
-  pointerUp: ev<{ mouseX: number; mouseY: number; event: PointerEvent; isLeftButton: boolean }>(),
-  pointerMove: ev<{ mouseX: number; mouseY: number; event: PointerEvent; isLeftButton: boolean }>(),
-  doubleClick: ev<{ mouseX: number; mouseY: number; event: MouseEvent }>(),
+  pointer_down: ev<{ mouseX: number; mouseY: number; event: PointerEvent; isLeftButton: boolean }>(),
+  pointer_up: ev<{ mouseX: number; mouseY: number; event: PointerEvent; isLeftButton: boolean }>(),
+  pointer_move: ev<{ mouseX: number; mouseY: number; event: PointerEvent; isLeftButton: boolean }>(),
+  pointer_doubleClick: ev<{ mouseX: number; mouseY: number; event: MouseEvent }>(),
 
-  keyPressed: ev<{ key: string; allKeys: Array<string> }>(),
-  keyDown: ev<{ key: string; allKeys: Array<string> }>(),
-  keyReleased: ev<{ key: string; allKeys: Array<string> }>(),
+  key_pressed: ev<{ key: string; allKeys: Array<string> }>(),
+  key_down: ev<{ key: string; allKeys: Array<string> }>(),
+  key_released: ev<{ key: string; allKeys: Array<string> }>(),
 
-  focusChange: ev<boolean>(),
+  game_focusChange: ev<boolean>(),
 
   editor_layerSelected: ev<{ layerName: string }>(),
   editor_opened: ev<{ name: string }>(),
   editor_closed: ev<{ name: string }>(),
 
-  physicsRefreshBody: ev<GameObject>(),
+  physics_refreshBody: ev<GameObject>(),
 
-  screenController_Update: ev<number>(),
   mouseController_Update: ev<number>(),
   hitboxController_Update: ev<number>(),
   physicsController_Update: ev<number>(),
@@ -288,15 +286,17 @@ export const BareEvent = baseBareEvent as typeof baseBareEvent & BareEventExtens
 
 type EventPayloads<T> = { [K in keyof T]: T[K] extends undefined ? void : NonNullable<T[K]> };
 
-export interface BareEventPayloadExtensions {}
+export interface BareUserEvents {}
 export type BareEventPayload =
-  EventPayloads<typeof eventDefs> & BareEventPayloadExtensions;
+  EventPayloads<typeof eventDefs> & BareUserEvents;
 
 // Events must be the merged type
 export type Events = BareEventPayload & Record<string, any>;
 //
 
 export interface Pipes {
+  screenController_Update: (deltaTime: number) => void;
+
   componentController_GetAllComponentsFrom: (obj: GameObject) => Component<any>[];
   componentController_ProcessCompentsFromEntity: (entity: Entity, obj: GameObject) => void;
   componentController_AddComponent: (obj: GameObject, componentInstance: Component) => Component;

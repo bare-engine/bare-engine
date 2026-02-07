@@ -122,7 +122,7 @@ export class EditorLevelHandler {
             console.error('❌ Save error:', error);
         }
 
-        events.emit(BareEvent.savedLevelToDisk, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
+        events.emit(BareEvent.level_savedToDisk, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
     }
 
     AddGameObject(entityOrName: Entity | string, layer: int = 0): GameObject

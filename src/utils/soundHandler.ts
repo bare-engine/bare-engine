@@ -12,7 +12,7 @@ class SoundHandler
 
   init()
   {
-    events.on(BareEvent.focusChange, (hasFocus) => Howler.mute(!hasFocus));
+    events.on(BareEvent.game_focusChange, (hasFocus) => Howler.mute(!hasFocus));
   }
 
   registerSound(id: string, src: string) {

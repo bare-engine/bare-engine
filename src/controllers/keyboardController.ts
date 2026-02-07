@@ -11,7 +11,7 @@ export class KeyboardController
     {
         this.setupEventListeners();
         
-        events.persistent.on(BareEvent.update, this.Update.bind(this));
+        events.persistent.on(BareEvent.game_update, this.Update.bind(this));
     }
 
     private setupEventListeners(): void
@@ -31,10 +31,10 @@ export class KeyboardController
             if (!this.keysPressed.has(key))
             {
                 this.keysPressed.add(key);
-                events.emit(BareEvent.keyPressed, { key: key, allKeys: Array.from(this.keysPressed) });
+                events.emit(BareEvent.key_pressed, { key: key, allKeys: Array.from(this.keysPressed) });
             }
 
-            events.emit(BareEvent.keyDown, { key: key, allKeys: Array.from(this.keysPressed) });
+            events.emit(BareEvent.key_down, { key: key, allKeys: Array.from(this.keysPressed) });
 
             event.preventDefault();
         });
@@ -48,7 +48,7 @@ export class KeyboardController
             this.keysPressed.delete(key);
             this.keysJustPressed.delete(key);
 
-            events.emit(BareEvent.keyReleased, { key: key, allKeys: Array.from(this.keysPressed) });
+            events.emit(BareEvent.key_released, { key: key, allKeys: Array.from(this.keysPressed) });
         });
 
         // Handle window focus/blur to reset keys
