@@ -57,7 +57,6 @@ export class EditorControlsHandler {
 
     init()
     {
-        pipes.set("editorController_Update", this.Update.bind(this));
         events.persistent.on(BareEvent.pointer_down, this.PointerDown.bind(this));
         events.persistent.on(BareEvent.pointer_move, this.PointerMove.bind(this));
         events.persistent.on(BareEvent.pointer_up, this.PointerUp.bind(this));
@@ -66,10 +65,15 @@ export class EditorControlsHandler {
         events.persistent.on(BareEvent.key_pressed, this.KeyPressed.bind(this));
         events.persistent.on(BareEvent.key_released, this.KeyReleased.bind(this));
         events.persistent.on(BareEvent.editor_layerSelected, this.LayerSelected.bind(this));
+
+        pipes.set("editorController_Update", this.Update.bind(this));
     }
 
     KeyPressed({ key, allKeys }: BareEventPayload['key_pressed'])
     {
+        if (!this.editorController.active)
+            return;
+        
         if (allKeys[0] == 'control')
         {
             hitboxController.ClearExclusiveLayers();
@@ -107,6 +111,9 @@ export class EditorControlsHandler {
 
     KeyReleased({ key, allKeys }: BareEventPayload['key_released'])
     {
+        if (!this.editorController.active)
+            return;
+        
         if (key == 'control')
         {
             const layer = this.GetSelectedLayer();
@@ -209,6 +216,9 @@ export class EditorControlsHandler {
     }
     
     private PointerMove({ mouseX, mouseY, event }: BareEventPayload['pointer_move']): void {
+        if (!this.editorController.active)
+            return;
+
         if (mouseController.IsMiddleMouseDown()) {
             var deltaMovedMiddleMouse = mouseController.screen.position.subtract(mouseController.screen.positionPrev);
             var zoom = cameraHandler.GetZoom();
@@ -239,6 +249,9 @@ export class EditorControlsHandler {
 
     private PointerUp({ mouseX, mouseY, event, isLeftButton }: BareEventPayload['pointer_up']): void
     {
+        if (!this.editorController.active)
+            return;
+
         if (this.actionThisFrame == 'selectionRect')
         {
             this.SelectGameObjectsInRect(this.selectionRect);
@@ -260,6 +273,9 @@ export class EditorControlsHandler {
     
     private DoubleClick({ mouseX, mouseY, event }: BareEventPayload['pointer_doubleClick']): void
     {
+        if (!this.editorController.active)
+            return;
+        
         var multiSelect = keyboardController.IsKeyDown("shift");
         if (multiSelect)
             return;
@@ -581,6 +597,9 @@ export class EditorControlsHandler {
 
     PostRender()
     {
+        if (!this.editorController.active)
+            return;
+        
         if (this.actionThisFrame == 'selectionRect')
         {
             // TRANSPARENT RECT 
