@@ -34,9 +34,7 @@ export class EditorController {
     public levelFunctionality: EditorLevelHandler;
     
     // State management
-    private gameCameraZoom: number;
     private backgroundColorOrig: Color;
-    private editorCameraZoom: number = -1;
     public draggingLevelEntity: GameObject | null = null;
     public gridSize: number = 64;
     public gridActive: boolean = false;
@@ -146,9 +144,6 @@ export class EditorController {
         const editorButton = document.getElementById('editor-button') as HTMLButtonElement;
         editorButton.style.display = 'none';
 
-        this.gameCameraZoom = cameraHandler.zoom;
-        this.editorCameraZoom != -1 ? this.gameCameraZoom = this.editorCameraZoom : -1; // ??
-
         this.editorControlsHandler.OpenEditor();
         this.editorUIHandler.OpenEditor();
         
@@ -209,9 +204,6 @@ export class EditorController {
 
         this.editorControlsHandler.Close();
         this.editorUIHandler.Close();
-
-        this.editorCameraZoom = cameraHandler.zoom;
-        cameraHandler.zoom = this.gameCameraZoom;
 
         events.emit('editor_closed', {name: bare.currentSettings.name || 'levelEditor'});
 
@@ -633,6 +625,8 @@ export class EditorController {
         {
             this.Close();
         }
+        
+        this.levelFunctionality.currentLevel = null;
 
         const editorButton = document.getElementById('editor-button') as HTMLButtonElement;
         editorButton.style.display = 'none';

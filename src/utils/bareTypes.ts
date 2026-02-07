@@ -47,7 +47,6 @@ export interface Entity
   customName?: string;
   componentsRemoved?: string[]; // REMOVE IGNORE?
   propertiesRemoved?: string[]; // REMOVE IGNORE?
-  presets?: Array<string>;
 
   position?: Position; // ONLY USED WITHIN LEVEL DATA
   interactableInEditor?:boolean;
@@ -220,6 +219,7 @@ export type CameraRenderInfo = {
 
 export interface Events {
     // TODO, REMOVE THOSE SINGLE { deltaTime: number } AND MAKE NUMBER
+    // Todo: MAKE THESE TYPES: Event.firstStart
     startInitialAssetLoad: void;
     firstStart: void;
     gameStarted: void;

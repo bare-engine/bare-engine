@@ -43,7 +43,7 @@ class CameraHandler {
     events.persistent.on("resize", () => this.CalculateZoomFit());
     
     events.persistent.on("clear", ({ full }: { full: boolean }) => {
-        if (full)
+        //if (full)
             this.ResetForStart();
     });
 
