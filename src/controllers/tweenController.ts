@@ -1,3 +1,4 @@
+import { BareEvent } from '../utils/bareTypes';
 import Easing from "../libraries/tweenJS/Easing";
 import Tween from "../libraries/tweenJS/Tween";
 import { events } from "../main";
@@ -15,10 +16,10 @@ export class TweenController
 
     init()
     {
-        events.persistent.on('gameObjectRemoved', this.GameObjectRemoved.bind(this));
-        events.persistent.on('focusChange', this.OnFocusChange.bind(this));
-        events.persistent.on('update', () => this.Update(bare.time));
-        events.persistent.on('clear', () => this.Deactivate());
+        events.persistent.on(BareEvent.gameObjectRemoved, this.GameObjectRemoved.bind(this));
+        events.persistent.on(BareEvent.focusChange, this.OnFocusChange.bind(this));
+        events.persistent.on(BareEvent.update, () => this.Update(bare.time));
+        events.persistent.on(BareEvent.clear, () => this.Deactivate());
     }
 
     GameObjectRemoved(obj: GameObject)

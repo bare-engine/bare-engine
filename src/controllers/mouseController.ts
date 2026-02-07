@@ -1,3 +1,4 @@
+import { BareEvent } from '../utils/bareTypes';
 import { Helper } from "../utils/helper";
 import { events } from "../main";
 import { Vec2 } from "../libraries/rapid-render";
@@ -50,7 +51,7 @@ export class MouseController
 
     constructor()
     {
-        events.persistent.on('mouseController_Update', this.Update.bind(this));
+        events.persistent.on(BareEvent.mouseController_Update, this.Update.bind(this));
 
         document.addEventListener('pointerdown', this.PointerDown.bind(this), { passive: false });
         document.addEventListener('pointerup', this.PointerUp.bind(this), { passive: false });
@@ -136,7 +137,7 @@ export class MouseController
         }
 
         if (!bare.isPaused)
-            events.emit('pointerDown', {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
+            events.emit(BareEvent.pointerDown, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
 
         if (!bare.isPaused)
             event.preventDefault();
@@ -162,7 +163,7 @@ export class MouseController
         this.SetMousePosition(event.clientX, event.clientY);
 
         if (!bare.isPaused)
-            events.emit('pointerUp', {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
+            events.emit(BareEvent.pointerUp, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
 
         event.preventDefault();
     }
@@ -184,7 +185,7 @@ export class MouseController
         this.SetMousePosition(event.clientX, event.clientY);
 
         if (!bare.isPaused)
-            events.emit('pointerMove', {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
+            events.emit(BareEvent.pointerMove, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
 
         event.preventDefault();
     }
@@ -195,7 +196,7 @@ export class MouseController
             return;
 
         if (!bare.isPaused)
-            events.emit('doubleClick', {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event});
+            events.emit(BareEvent.doubleClick, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event});
     }
 
     IsMoving()

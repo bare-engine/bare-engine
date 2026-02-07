@@ -4,7 +4,7 @@ import { Hitbox } from "../hitbox";
 import { Color } from "../../libraries/rapid-render";
 import { Helper } from "../helper";
 import { assetsHandler } from "../assetsHandler";
-import { Entity, LevelData, SaveData } from "../bareTypes";
+import { Entity, LevelData, SaveData, BareEvent } from '../bareTypes';
 import { EditorController } from "../../controllers/editorController";
 import { HitboxType } from "../gamesTypes";
 import { events, MakePath } from "../../main";
@@ -122,7 +122,7 @@ export class EditorLevelHandler {
             console.error('❌ Save error:', error);
         }
 
-        events.emit('savedLevelToDisk', {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
+        events.emit(BareEvent.savedLevelToDisk, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
     }
 
     AddGameObject(entityOrName: Entity | string, layer: int = 0): GameObject

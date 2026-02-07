@@ -1,5 +1,5 @@
 import { SaveDataHandler } from "./SaveDataHandler";
-import { Events, SettingsData } from "./bareTypes";
+import { BareEvent, BareEventPayload, SettingsData } from "./bareTypes";
 import { Helper } from "./helper";
 import { Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
@@ -152,7 +152,7 @@ export class BarePlugin
 
     constructor()
     {
-        events.on('gameStarted', () => {
+        events.on(BareEvent.gameStarted, () => {
             this.outlineShader = new OutlineShader()
             bare.AddClass(BareClasses.EditorController)
         });
@@ -189,8 +189,8 @@ export class BarePlugin
               };
 
               const pointerMoveBound = this.PointerMove.bind(this);
-              events.on('pointerMove', pointerMoveBound);
-              events.once('pointerUp', () => events.off('pointerMove', pointerMoveBound));
+              events.on(BareEvent.pointerMove, pointerMoveBound);
+              events.once(BareEvent.pointerUp, () => events.off(BareEvent.pointerMove, pointerMoveBound));
           }
       }
 
@@ -198,7 +198,7 @@ export class BarePlugin
       return false;
   };
     
-    private PointerMove({ mouseX, mouseY, event }: Events['pointerMove']): void
+    private PointerMove({ mouseX, mouseY, event }: BareEventPayload['pointerMove']): void
     {
         if (!this.movingObjData.hasMovedAwayEnough)
         {

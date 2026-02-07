@@ -1,8 +1,7 @@
 import { ParticleEmitter } from "../libraries/rapid-render/particle";
 import { Vec2 } from "../libraries/rapid-render";
 import { events } from "../main";
-import { Events } from "../utils/bareTypes";
-
+import { Events, BareEvent } from '../utils/bareTypes';
 type ParticleEmitterEntry = {
     emitter: ParticleEmitter;
     autoRemove: boolean;
@@ -34,9 +33,9 @@ export class ParticleController
 
     private init()
     {
-        events.persistent.on('update', this.Update.bind(this));
-        events.persistent.on('postRender', this.Render.bind(this));
-        events.persistent.on('clear', this.Clear.bind(this));
+        events.persistent.on(BareEvent.update, this.Update.bind(this));
+        events.persistent.on(BareEvent.postRender, this.Render.bind(this));
+        events.persistent.on(BareEvent.clear, this.Clear.bind(this));
     }
 
     Add(emitter: ParticleEmitter, options: ParticleEmitterOptions = {})
@@ -80,7 +79,7 @@ export class ParticleController
         return this.emitters.some(entry => entry.emitter === emitter);
     }
 
-    Update(input: Events['update'] | number): void
+    Update(input: BareEventPayload['update'] | number): void
     {
         const deltaTime = typeof input === 'number' ? input : input.deltaTime;
         for (let i = this.emitters.length - 1; i >= 0; i--)

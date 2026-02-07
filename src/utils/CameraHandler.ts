@@ -1,6 +1,6 @@
 import { Vec2 } from "../libraries/rapid-render";
 import { events, pipes } from "../main";
-import type { CameraRenderInfo, Dimensions } from "./bareTypes";
+import { BareEvent, type CameraRenderInfo, type Dimensions } from "./bareTypes";
 import { CameraScaleMode, Rectangle } from "./gamesTypes";
 import { Helper } from "./helper";
 
@@ -26,13 +26,13 @@ class CameraHandler {
 
   constructor()
   {
-    //events.persistent.on("gameStarted", () => this.ResetForStart());
+    //events.persistent.on(BareEvent.gameStarted, () => this.ResetForStart());
 
-    events.persistent.on("gameStarted", () => {
+    events.persistent.on(BareEvent.gameStarted, () => {
       this.SetPosition(bare.width / 2, bare.height / 2);
     });
 
-    events.persistent.on("levelLoaded", ({ level }) => {
+    events.persistent.on(BareEvent.levelLoaded, ({ level }) => {
       const dims: Dimensions = level.dimensions;
       this.SetBounds({ x: 0, y: 0, width: dims.width, height: dims.height });
       this.CalculateZoomFit();
@@ -40,9 +40,9 @@ class CameraHandler {
       this.SetPosition(dims.width / 2, dims.height / 2);
     });
 
-    events.persistent.on("resize", () => this.CalculateZoomFit());
+    events.persistent.on(BareEvent.resize, () => this.CalculateZoomFit());
     
-    events.persistent.on("clear", ({ full }: { full: boolean }) => {
+    events.persistent.on(BareEvent.clear, ({ full }: { full: boolean }) => {
         //if (full)
             this.ResetForStart();
     });

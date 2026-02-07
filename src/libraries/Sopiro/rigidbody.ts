@@ -6,8 +6,7 @@ import { Node } from "./aabbtree";
 import { GameObject } from "../../objects/gameObject";
 import { Matrix3 } from "./math";
 import { events } from "../../main";
-import { Entity } from "../../utils/bareTypes";
-
+import { Entity, BareEvent } from '../../utils/bareTypes';
 export enum Type
 {
     Static = 0,
@@ -284,7 +283,7 @@ export abstract class RigidBody extends GameObject
         this.awake();
 		
         if (this.type == Type.Static)
-            events.emit('physicsRefreshBody', this);
+            events.emit(BareEvent.physicsRefreshBody, this);
             //physicsControllerSopiro.RefreshBody(this); // CALLING UP
     }
     

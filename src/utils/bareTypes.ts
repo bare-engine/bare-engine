@@ -217,65 +217,84 @@ export type CameraRenderInfo = {
   scale: number;  // final scale used for rendering
 };
 
-export interface Events {
-    // TODO, REMOVE THOSE SINGLE { deltaTime: number } AND MAKE NUMBER
-    // Todo: MAKE THESE TYPES: Event.firstStart
-    startInitialAssetLoad: void;
-    firstStart: void;
-    gameStarted: void;
-    preUpdate: { deltaTime: number };
-    midUpdate: { deltaTime: number };
-    update: { deltaTime: number };
-    preRender: void;
-    postRender: void;
-    clear: { full: boolean };
-    resize: { prevWidth: number; prevHeight: number, newWidth: number, newHeight: number };
+// EVENTS MONSTER - SINCE IT WANT TO EASILY ADD BARE-EVENTS AND LET IT TAKE USER STRINGS
+const ev = <T>() => undefined as T | undefined;
 
-    levelLoaded: {levelStr: string, level: LevelData};
-    preSaveLevel: { levelStr: string };
-    postSaveLevel: { levelStr: string, level: LevelData };
-    savedLevelToDisk: { levelStr: string, level: LevelData };
-    levelCompleted: {levelNum: int};
-    levelFailed: {levelNum: int};
-    restarLevel: void;
+const eventDefs = {
+  gameFirstStart: undefined,
+  gameStarted: undefined,
+  preUpdate: ev<{ deltaTime: number }>(),
+  midUpdate: ev<{ deltaTime: number }>(),
+  update: ev<{ deltaTime: number }>(),
+  preRender: undefined,
+  postRender: undefined,
+  clear: ev<{ full: boolean }>(),
+  resize: ev<{ prevWidth: number; prevHeight: number; newWidth: number; newHeight: number }>(),
 
-    gameObjectAdded: {gameObject: GameObject, layer: number | GameObject};
-    gameObjectRemoved: GameObject;
+  levelLoaded: ev<{ levelStr: string; level: LevelData }>(),
+  preSaveLevel: ev<{ levelStr: string }>(),
+  postSaveLevel: ev<{ levelStr: string; level: LevelData }>(),
+  savedLevelToDisk: ev<{ levelStr: string; level: LevelData }>(),
+  levelCompleted: ev<{ levelNum: int }>(),
+  levelFailed: ev<{ levelNum: int }>(),
+  restarLevel: undefined,
 
-    collisionStart: [GameObject, GameObject]; // COLLISION EVENTS USE DIFFERENT FORMAT, TO EASILY CHANGE THE TYPE ON LISTEN METHOD
-    collisionUpdate: [GameObject, GameObject];
-    collisionEnd: [GameObject, GameObject];
+  gameObjectAdded: ev<{ gameObject: GameObject; layer: number | GameObject }>(),
+  gameObjectRemoved: ev<GameObject>(),
 
-    pointerDown: {mouseX: number, mouseY: number, event:PointerEvent, isLeftButton: boolean};
-    pointerUp: {mouseX: number, mouseY: number, event:PointerEvent, isLeftButton: boolean};
-    pointerMove: {mouseX: number, mouseY: number, event:PointerEvent, isLeftButton: boolean};
-    doubleClick: {mouseX: number, mouseY: number, event:MouseEvent};
+  collisionStart: ev<[GameObject, GameObject]>(),
+  collisionUpdate: ev<[GameObject, GameObject]>(),
+  collisionEnd: ev<[GameObject, GameObject]>(),
 
-    keyPressed: { key:string, allKeys: Array<string> };
-    keyDown: { key:string, allKeys: Array<string> };
-    keyReleased: { key:string, allKeys: Array<string> };
+  pointerDown: ev<{ mouseX: number; mouseY: number; event: PointerEvent; isLeftButton: boolean }>(),
+  pointerUp: ev<{ mouseX: number; mouseY: number; event: PointerEvent; isLeftButton: boolean }>(),
+  pointerMove: ev<{ mouseX: number; mouseY: number; event: PointerEvent; isLeftButton: boolean }>(),
+  doubleClick: ev<{ mouseX: number; mouseY: number; event: MouseEvent }>(),
 
-    focusChange: boolean;
+  keyPressed: ev<{ key: string; allKeys: Array<string> }>(),
+  keyDown: ev<{ key: string; allKeys: Array<string> }>(),
+  keyReleased: ev<{ key: string; allKeys: Array<string> }>(),
 
-    editor_layerSelected: { layerName:string };
-    editor_opened: { name: string };
-    editor_closed: { name: string };
+  focusChange: ev<boolean>(),
 
-    physicsRefreshBody: GameObject;
+  editor_layerSelected: ev<{ layerName: string }>(),
+  editor_opened: ev<{ name: string }>(),
+  editor_closed: ev<{ name: string }>(),
 
-    screenController_Update: number;
-    mouseController_Update: number;
-    hitboxController_Update: number;
-    physicsController_Update: number;
-    editorController_Update: number;
-    screenController_Render: void;
-    physicsController_Render: void;
-    componentController_Update: number;
-    componentController_PreRender: void;
-    componentController_Render: void;
-    componentController_PostRender: void;
-    componentController_OnLevelChanged: { uids:string[] };
-}
+  physicsRefreshBody: ev<GameObject>(),
+
+  screenController_Update: ev<number>(),
+  mouseController_Update: ev<number>(),
+  hitboxController_Update: ev<number>(),
+  physicsController_Update: ev<number>(),
+  editorController_Update: ev<number>(),
+  screenController_Render: undefined,
+  physicsController_Render: undefined,
+  componentController_Update: ev<number>(),
+  componentController_PreRender: undefined,
+  componentController_Render: undefined,
+  componentController_PostRender: undefined,
+  componentController_OnLevelChanged: ev<{ uids: string[] }>(),
+} as const;
+
+const createEventMap = <T extends Record<string, any>>(defs: T) =>
+  Object.fromEntries(Object.keys(defs).map((k) => [k, k])) as {
+    [K in keyof T]: K;
+  };
+
+export interface BareEventExtensions {}
+const baseBareEvent = createEventMap(eventDefs);
+export const BareEvent = baseBareEvent as typeof baseBareEvent & BareEventExtensions;
+
+type EventPayloads<T> = { [K in keyof T]: T[K] extends undefined ? void : NonNullable<T[K]> };
+
+export interface BareEventPayloadExtensions {}
+export type BareEventPayload =
+  EventPayloads<typeof eventDefs> & BareEventPayloadExtensions;
+
+// Events must be the merged type
+export type Events = BareEventPayload & Record<string, any>;
+//
 
 export interface Pipes {
   componentController_GetAllComponentsFrom: (obj: GameObject) => Component<any>[];

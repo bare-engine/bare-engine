@@ -3,7 +3,7 @@ import { Color, Vec2 } from "../libraries/rapid-render";
 import { EditorControlsHandler } from "../utils/editorHandlers/editorControlsHandler";
 import { EditorUIHandler } from "../utils/editorHandlers/editorUIHandler";
 import { EditorLevelHandler } from "../utils/editorHandlers/editorLevelHandler";
-import { SettingsData, Entity, LevelData, Dimensions, SaveData } from "../utils/bareTypes";
+import { SettingsData, Entity, LevelData, Dimensions, SaveData, BareEvent } from "../utils/bareTypes";
 import { SaveDataHandler } from "../utils/SaveDataHandler";
 import { GameObject } from "../objects/gameObject";
 import { assetsHandler } from "../utils/assetsHandler";
@@ -75,8 +75,8 @@ export class EditorController {
 
     init()
     {
-        events.persistent.on('gameStarted', this.Start.bind(this));
-        events.persistent.on('clear', this.Clear.bind(this));
+        events.persistent.on(BareEvent.gameStarted, this.Start.bind(this));
+        events.persistent.on(BareEvent.clear, this.Clear.bind(this));
         
         if (this.editorUIHandler)
             this.editorControlsHandler.init();
@@ -125,7 +125,7 @@ export class EditorController {
 
         window.gameMode = GameMode.Editor;
 
-        events.on('preRender', this.PreRender.bind(this));
+        events.on(BareEvent.preRender, this.PreRender.bind(this));
 
         this.active = true;
 
@@ -190,7 +190,7 @@ export class EditorController {
             this.editorUIHandler.Show();
         }
 
-        events.emit('editor_opened', {name: bare.currentSettings.name || 'levelEditor'});
+        events.emit(BareEvent.editor_opened, {name: bare.currentSettings.name || 'levelEditor'});
     }
 
     Close()
@@ -205,7 +205,7 @@ export class EditorController {
         this.editorControlsHandler.Close();
         this.editorUIHandler.Close();
 
-        events.emit('editor_closed', {name: bare.currentSettings.name || 'levelEditor'});
+        events.emit(BareEvent.editor_closed, {name: bare.currentSettings.name || 'levelEditor'});
 
         // DISABLE THE LEVEL CACHE, SO LEVELS GETS RELOADED
         SaveData.levelCache.clear();
@@ -625,7 +625,7 @@ export class EditorController {
         {
             this.Close();
         }
-        
+
         this.levelFunctionality.currentLevel = null;
 
         const editorButton = document.getElementById('editor-button') as HTMLButtonElement;

@@ -2,7 +2,7 @@ import { BareGame, events, MakePath } from "../../main";
 import { Color, Vec2 } from "../../libraries/rapid-render";
 import { GameObject } from "../../objects/gameObject";
 import { Helper } from "../helper";
-import { Entity, Events, Layer } from "../bareTypes";
+import { BareEvent, BareEventPayload, Entity, Layer } from "../bareTypes";
 import { EditorController } from "../../controllers/editorController";
 import { Rectangle } from "../gamesTypes";
 import { OutlineShader } from "../shaders/outlineShader";
@@ -57,18 +57,18 @@ export class EditorControlsHandler {
 
     init()
     {
-        events.persistent.on('editorController_Update', this.Update.bind(this));
-        events.persistent.on('pointerDown', this.PointerDown.bind(this));
-        events.persistent.on('pointerMove', this.PointerMove.bind(this));
-        events.persistent.on('pointerUp', this.PointerUp.bind(this));
-        events.persistent.on('doubleClick', this.DoubleClick.bind(this));
-        events.persistent.on('postRender', this.PostRender.bind(this));
-        events.persistent.on('keyPressed', this.KeyPressed.bind(this));
-        events.persistent.on('keyReleased', this.KeyReleased.bind(this));
-        events.persistent.on('editor_layerSelected', this.LayerSelected.bind(this));
+        events.persistent.on(BareEvent.editorController_Update, this.Update.bind(this));
+        events.persistent.on(BareEvent.pointerDown, this.PointerDown.bind(this));
+        events.persistent.on(BareEvent.pointerMove, this.PointerMove.bind(this));
+        events.persistent.on(BareEvent.pointerUp, this.PointerUp.bind(this));
+        events.persistent.on(BareEvent.doubleClick, this.DoubleClick.bind(this));
+        events.persistent.on(BareEvent.postRender, this.PostRender.bind(this));
+        events.persistent.on(BareEvent.keyPressed, this.KeyPressed.bind(this));
+        events.persistent.on(BareEvent.keyReleased, this.KeyReleased.bind(this));
+        events.persistent.on(BareEvent.editor_layerSelected, this.LayerSelected.bind(this));
     }
 
-    KeyPressed({ key, allKeys }: Events['keyPressed'])
+    KeyPressed({ key, allKeys }: BareEventPayload['keyPressed'])
     {
         if (allKeys[0] == 'control')
         {
@@ -105,7 +105,7 @@ export class EditorControlsHandler {
         }
     }
 
-    KeyReleased({ key, allKeys }: Events['keyReleased'])
+    KeyReleased({ key, allKeys }: BareEventPayload['keyReleased'])
     {
         if (key == 'control')
         {
@@ -114,7 +114,7 @@ export class EditorControlsHandler {
         }
     }
 
-    private PointerDown({ mouseX, mouseY, event, isLeftButton }: Events['pointerDown']): void {
+    private PointerDown({ mouseX, mouseY, event, isLeftButton }: BareEventPayload['pointerDown']): void {
         if (this.MouseIsOnEditor(event))
             return;
 
@@ -208,7 +208,7 @@ export class EditorControlsHandler {
         }
     }
     
-    private PointerMove({ mouseX, mouseY, event }: Events['pointerMove']): void {
+    private PointerMove({ mouseX, mouseY, event }: BareEventPayload['pointerMove']): void {
         if (mouseController.IsMiddleMouseDown()) {
             var deltaMovedMiddleMouse = mouseController.screen.position.subtract(mouseController.screen.positionPrev);
             var zoom = cameraHandler.GetZoom();
@@ -237,7 +237,7 @@ export class EditorControlsHandler {
         }
     }
 
-    private PointerUp({ mouseX, mouseY, event, isLeftButton }: Events['pointerUp']): void
+    private PointerUp({ mouseX, mouseY, event, isLeftButton }: BareEventPayload['pointerUp']): void
     {
         if (this.actionThisFrame == 'selectionRect')
         {
@@ -257,8 +257,8 @@ export class EditorControlsHandler {
         
         this.editorController.SaveLevel();
     }
-
-    private DoubleClick({ mouseX, mouseY, event}: Events['doubleClick']): void
+    
+    private DoubleClick({ mouseX, mouseY, event }: BareEventPayload['doubleClick']): void
     {
         var multiSelect = keyboardController.IsKeyDown("shift");
         if (multiSelect)
@@ -440,7 +440,7 @@ export class EditorControlsHandler {
         this.draggingLevelEntity = null;
     }
 
-    private LayerSelected({ layerName }: Events['editor_layerSelected']): void
+    private LayerSelected({ layerName }: BareEventPayload['editor_layerSelected']): void
     {
         this.ClearSelection();
 

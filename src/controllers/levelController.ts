@@ -4,7 +4,7 @@ import { Helper } from "../utils/helper";
 import { SaveDataHandler } from "../utils/SaveDataHandler";
 import { Color, Texture } from "../libraries/rapid-render";
 import { assetsHandler } from "../utils/assetsHandler";
-import { Entity, LevelData, Component, Layer, SaveData } from "../utils/bareTypes";
+import { Entity, LevelData, Component, Layer, SaveData, BareEvent } from '../utils/bareTypes';
 import { events, GameMode, MakePath, pipes } from "../main";
 import { defaultEntityData } from "../utils/bareData";
 import { EditorController } from "..";
@@ -27,7 +27,7 @@ export class LevelController
 
     init()
     {
-        events.persistent.on('clear', this.Deactivate.bind(this));
+        events.persistent.on(BareEvent.clear, this.Deactivate.bind(this));
     }
 
     get objectsLayer(): GameObject[]
@@ -85,7 +85,7 @@ export class LevelController
 
         bare.AfterLoadLevel(level);
 
-        events.emit('componentController_OnLevelChanged', { uids: persistenObjUIDs });
+        events.emit(BareEvent.componentController_OnLevelChanged, { uids: persistenObjUIDs });
         
         return level;
     }
@@ -132,7 +132,7 @@ export class LevelController
 
         trace('Level loaded:', levelStr);
         
-        events.emit('levelLoaded', {levelStr: levelStr, level: this.currentLevel});
+        events.emit(BareEvent.levelLoaded, {levelStr: levelStr, level: this.currentLevel});
 
         return level;
     }
@@ -161,7 +161,7 @@ export class LevelController
 
     async SaveLevel()
     {
-        events.emit('preSaveLevel', {levelStr: SaveData.currentLevelStr});
+        events.emit(BareEvent.preSaveLevel, {levelStr: SaveData.currentLevelStr});
 
         const level = (this.currentLevel as LevelData);
         this.SerializeLevel(level);
@@ -169,7 +169,7 @@ export class LevelController
         SaveData.levelCache.set(SaveData.currentLevelStr, level);
         SaveDataHandler.Save();
 
-        events.emit('postSaveLevel', {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
+        events.emit(BareEvent.postSaveLevel, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
         
         return level;
     }
@@ -395,7 +395,7 @@ export class LevelController
         this.LoadLevel(GameData.currentLevelStr);
         hitboxController.Activate();
 
-        events.emit('restarLevel');
+        events.emit(BareEvent.restarLevel);
     }*/
 
     Deactivate()

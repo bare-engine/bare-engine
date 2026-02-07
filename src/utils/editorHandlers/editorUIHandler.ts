@@ -1,4 +1,4 @@
-import { Entity, LayerInfo, SettingsData } from "../bareTypes";
+import { Entity, LayerInfo, SettingsData, BareEvent } from '../bareTypes';
 import { assetsHandler } from "../assetsHandler";
 import { EditorController } from "../../controllers/editorController";
 import { events, MakePath } from "../../main";
@@ -422,7 +422,7 @@ export class EditorUIHandler {
         //const layerName = layerElement.id;
         //this.FlashObjectsInLayer(layerName);
 
-        events.emit('editor_layerSelected', { layerName: layerElement.id });
+        events.emit(BareEvent.editor_layerSelected, { layerName: layerElement.id });
     }
 
     public SelectLayerItemByInt(layerI: int): void {

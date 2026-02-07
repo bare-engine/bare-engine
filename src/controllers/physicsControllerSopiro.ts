@@ -4,6 +4,7 @@ import { Settings } from "../libraries/Sopiro/settings";
 import { PhysicsControllerBase } from "./physicsControllerBase";
 import { events } from "../main";
 import * as Util from "../libraries/Sopiro/util";
+import { BareEvent } from "../utils/bareTypes";
 
 export class PhysicsControllerSopiro extends PhysicsControllerBase
 {
@@ -25,10 +26,10 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 
     init()
     {
-		events.persistent.on('physicsRefreshBody', this.RefreshBody.bind(this));
-		events.persistent.on('clear', this.Clear.bind(this));
+		events.persistent.on(BareEvent.physicsRefreshBody, this.RefreshBody.bind(this));
+		events.persistent.on(BareEvent.clear, this.Clear.bind(this));
 		
-		events.persistent.on('gameStarted', () => {
+		events.persistent.on(BareEvent.gameStarted, () => {
 			bare.RegisterGameObjectPool(Polygon, 1);
 			bare.RegisterGameObjectPool(Box, 1);
 			bare.RegisterGameObjectPool(Circle, 1);
@@ -101,7 +102,7 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 			{
 				for (const [, pair] of this.activeCollisions)
 				{
-					events.emit('collisionEnd', pair.bodyA, pair.bodyB);
+					events.emit(BareEvent.collisionEnd, pair.bodyA, pair.bodyB);
 				}
 
 				this.activeCollisions.clear();
@@ -145,12 +146,12 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 				this.activeCollisions.set(key, { bodyA, bodyB });
 				bodyA.OnCollisionStart(bodyB);
 				bodyB.OnCollisionStart(bodyA);
-				events.emit('collisionStart', bodyA, bodyB);
+				events.emit(BareEvent.collisionStart, bodyA, bodyB);
 			}
 
 			bodyA.OnCollisionUpdate(bodyB);
 			bodyB.OnCollisionUpdate(bodyA);
-			events.emit('collisionUpdate', bodyA, bodyB);
+			events.emit(BareEvent.collisionUpdate, bodyA, bodyB);
 		}
 
 		for (const [key, pair] of this.activeCollisions)
@@ -160,7 +161,7 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 
 			pair.bodyA.OnCollisionEnd(pair.bodyB);
 			pair.bodyB.OnCollisionEnd(pair.bodyA);
-			events.emit('collisionEnd', pair.bodyA, pair.bodyB);
+			events.emit(BareEvent.collisionEnd, pair.bodyA, pair.bodyB);
 			this.activeCollisions.delete(key);
 		}
 	}

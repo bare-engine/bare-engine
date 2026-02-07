@@ -1,30 +1,29 @@
-import { BareGame, events } from "../main";
+import { events } from "../main";
 import { GameObject } from "../objects/gameObject";
-import { Dimensions, Events, UI_LAYER } from "../utils/bareTypes";
-
+import { BareEventPayload, Dimensions, UI_LAYER, BareEvent } from '../utils/bareTypes';
 export class PhysicsControllerBase
 {
   	public collisionsEnabled: boolean = true;
 
 	constructor()
 	{
-		events.persistent.on('physicsController_Update', this.Update.bind(this));
-		events.persistent.on('physicsController_Render', this.Render.bind(this));
-		events.persistent.on('resize', this.OnResize.bind(this));
-		events.persistent.on('gameObjectAdded', this.OnGameObjectAdded.bind(this));
-		events.persistent.on('gameObjectRemoved', this.OnGameObjectRemoved.bind(this));
-		events.persistent.on('levelLoaded', this.OnLevelLoaded.bind(this));
+		events.persistent.on(BareEvent.physicsController_Update, this.Update.bind(this));
+		events.persistent.on(BareEvent.physicsController_Render, this.Render.bind(this));
+		events.persistent.on(BareEvent.resize, this.OnResize.bind(this));
+		events.persistent.on(BareEvent.gameObjectAdded, this.OnGameObjectAdded.bind(this));
+		events.persistent.on(BareEvent.gameObjectRemoved, this.OnGameObjectRemoved.bind(this));
+		events.persistent.on(BareEvent.levelLoaded, this.OnLevelLoaded.bind(this));
 
 		if (__DEV__)
         	globalThis.plugin?.AddDebugAction("Toggle Collision", () => this.setCollisionsEnabled(!this.collisionsEnabled));
 	}
 
-	OnResize({ newWidth, newHeight }: Events['resize']): void
+	OnResize({ newWidth, newHeight }: BareEventPayload['resize']): void
 	{
         this.setDimensions(0, 0, newWidth, newHeight);
 	}
 
-	OnGameObjectAdded({ gameObject, layer }: Events['gameObjectAdded']): void
+	OnGameObjectAdded({ gameObject, layer }: BareEventPayload['gameObjectAdded']): void
 	{
 		if (typeof layer === 'number' && layer < UI_LAYER && (gameObject as any).isPhysicsObject)
 		{
@@ -40,7 +39,7 @@ export class PhysicsControllerBase
 		}
 	}
 
-	OnLevelLoaded({ level }: Events['levelLoaded']): void
+	OnLevelLoaded({ level }: BareEventPayload['levelLoaded']): void
 	{
 		var dims:Dimensions = level.dimensions;
         this.setDimensions(0, 0, dims.width, dims.height);

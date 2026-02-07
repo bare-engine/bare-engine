@@ -1,6 +1,5 @@
 import { events } from "../main";
-import { BareScreen } from "../utils/bareTypes";
-
+import { BareScreen, BareEvent } from '../utils/bareTypes';
 type BareScreenClass<T extends BareScreen = BareScreen> = new () => T;
 
 export class ScreenController
@@ -14,9 +13,9 @@ export class ScreenController
 
     init()
     {
-        events.persistent.on('screenController_Update', this.Update.bind(this));
-        events.persistent.on('screenController_Render', this.Render.bind(this));
-        events.persistent.on('clear', this.Clear.bind(this));
+        events.persistent.on(BareEvent.screenController_Update, this.Update.bind(this));
+        events.persistent.on(BareEvent.screenController_Render, this.Render.bind(this));
+        events.persistent.on(BareEvent.clear, this.Clear.bind(this));
     }
 
     Clear()

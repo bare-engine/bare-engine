@@ -1,6 +1,5 @@
 import { events } from "../main";
-import { SaveData } from "./bareTypes";
-
+import { SaveData, BareEvent } from './bareTypes';
 export class SaveDataHandler
 {
     static saveEnabled: boolean = true;
@@ -154,7 +153,7 @@ export class SaveDataHandler
 
 SaveDataHandler.InitDefaults();
 
-events.persistent.on('clear', ({ full }) => {
+events.persistent.on(BareEvent.clear, ({ full }) => {
     if (full)
     {
         SaveDataHandler.Clear();

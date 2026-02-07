@@ -1,7 +1,7 @@
 import { events, GameMode, MakePath, pipes } from "./main";
 import { Color, FrameBufferObject, RenderTexture, Texture, Vec2 } from "./libraries/rapid-render";
 import { PoolHandler } from "./utils/poolHandler";
-import { Entity, GameObjectClass, Layer, LayerInfo, LevelData, SaveData, SettingsData, UI_LAYER } from "./utils/bareTypes";
+import { BareEvent, Entity, GameObjectClass, Layer, LayerInfo, LevelData, SaveData, SettingsData, UI_LAYER } from "./utils/bareTypes";
 import { GameObject } from "./objects/gameObject";
 import { SettingsHandler as SettingsHandler } from "./utils/settingsHandler";
 import { assetsHandler } from "./utils/assetsHandler";
@@ -85,7 +85,7 @@ export class BareGame
 
         this.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT
 
-        events.emit('firstStart');
+        events.emit(BareEvent.gameFirstStart);
 
         if (!pipes.has("cameraHandler_ScreenToWorld")) //IF CAMERAHANDLER HAS NOT ALREADY SET THESE
         {
@@ -151,7 +151,7 @@ export class BareGame
 
         this.started = true;
         
-        events.emit('gameStarted');
+        events.emit(BareEvent.gameStarted);
     }
 
     OnStart(): void | Promise<void>
@@ -733,7 +733,7 @@ export class BareGame
         gameObject.Added();
 
         // NOTIFY
-        events.emit('gameObjectAdded', { gameObject: gameObject, layer: parent });
+        events.emit(BareEvent.gameObjectAdded, { gameObject: gameObject, layer: parent });
 
         return gameObject;
     }
@@ -793,7 +793,7 @@ export class BareGame
         gameObject.Removed();
 
         // NOTIFY
-        events.emit('gameObjectRemoved', gameObject);
+        events.emit(BareEvent.gameObjectRemoved, gameObject);
 
         if (wasPooled)
         {
@@ -826,7 +826,7 @@ export class BareGame
 
         rapid.resize(newWidth, newHeight);
 
-        events.emit('resize', { prevWidth: prevWidth, prevHeight: prevHeight, newWidth: newWidth, newHeight: newHeight });
+        events.emit(BareEvent.resize, { prevWidth: prevWidth, prevHeight: prevHeight, newWidth: newWidth, newHeight: newHeight });
 
         // PERSIST UI LAYOUT
         var uiControllerObjs = uiController.GetLayers();
@@ -867,22 +867,22 @@ export class BareGame
         if (this.isPaused)
             return;
         
-        events.emit('preUpdate', { deltaTime: deltaTime });
+        events.emit(BareEvent.preUpdate, { deltaTime: deltaTime });
 
-        events.emit('mouseController_Update', deltaTime);
-        events.emit('hitboxController_Update', deltaTime);
-        events.emit('editorController_Update', deltaTime); 
+        events.emit(BareEvent.mouseController_Update, deltaTime);
+        events.emit(BareEvent.hitboxController_Update, deltaTime);
+        events.emit(BareEvent.editorController_Update, deltaTime); 
 
         if (!this.levelEditorOpen)
             this.OnUpdate(deltaTime);
 
-        events.emit('screenController_Update', deltaTime);
+        events.emit(BareEvent.screenController_Update, deltaTime);
         objectController.Update(deltaTime);
         uiController.Update(deltaTime);
-        events.emit('physicsController_Update', deltaTime);
-        events.emit('componentController_Update', deltaTime);
+        events.emit(BareEvent.physicsController_Update, deltaTime);
+        events.emit(BareEvent.componentController_Update, deltaTime);
 
-        events.emit('update', { deltaTime: deltaTime });
+        events.emit(BareEvent.update, { deltaTime: deltaTime });
     }
 
     OnUpdate(deltaTime: number)
@@ -914,22 +914,22 @@ export class BareGame
             saveTransform: false
         });
         
-        events.emit('preRender');
+        events.emit(BareEvent.preRender);
 
-        events.emit('componentController_PreRender'); // ALL THIS EMITS MIGHT BE SLOW? ESPECIALLY FOR COMPONENT-CONTROLLER, SENDING MORE TO COMPONENTS
+        events.emit(BareEvent.componentController_PreRender); // ALL THIS EMITS MIGHT BE SLOW? ESPECIALLY FOR COMPONENT-CONTROLLER, SENDING MORE TO COMPONENTS
         objectController.PreRender();
-        events.emit('componentController_Render');
-        events.emit('screenController_Render');
+        events.emit(BareEvent.componentController_Render);
+        events.emit(BareEvent.screenController_Render);
         objectController.Render();
 
         if (!this.levelEditorOpen)
             this.OnRender();
 
-        events.emit('physicsController_Render');
-        events.emit('componentController_PostRender');
+        events.emit(BareEvent.physicsController_Render);
+        events.emit(BareEvent.componentController_PostRender);
         objectController.PostRender();
 
-        events.emit('postRender');
+        events.emit(BareEvent.postRender);
         rapid.restore();
         
         uiController.Render();
@@ -1168,7 +1168,7 @@ export class BareGame
 
     Clear(full:boolean = false)
     {
-        events.emit('clear', { full: full });
+        events.emit(BareEvent.clear, { full: full });
 
         this.ClearScene();
         this.OnClear(full);

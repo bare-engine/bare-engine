@@ -1,5 +1,5 @@
 import { Howl, HowlOptions, Howler } from '../libraries/howler/howler.core.js';
-import { SaveData } from './bareTypes';
+import { SaveData, BareEvent } from './bareTypes';
 import { Helper } from './helper';
 import { events } from '../main';
 
@@ -12,7 +12,7 @@ class SoundHandler
 
   init()
   {
-    events.on('focusChange', (hasFocus) => Howler.mute(!hasFocus));
+    events.on(BareEvent.focusChange, (hasFocus) => Howler.mute(!hasFocus));
   }
 
   registerSound(id: string, src: string) {

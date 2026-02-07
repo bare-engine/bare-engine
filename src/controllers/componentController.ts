@@ -1,7 +1,6 @@
 import { events, GameMode, pipes } from "../main";
 import { GameObject } from "../objects/gameObject";
-import { Events, Component, Entity, Ctor } from "../utils/bareTypes";
-
+import { Component, Entity, Ctor, BareEventPayload, BareEvent } from '../utils/bareTypes';
 // REFERENCING A CLASS EXTENDING BASECOMPONENT WILL AUTOMATICALLY ALSO INCLUDE COMPONENTCONTROLLER
 
 export abstract class BaseComponent<T extends GameObject = GameObject> implements Component<T>
@@ -36,19 +35,19 @@ export class ComponentController
 
     init()
     {
-        events.persistent.on('componentController_Update', this.Update.bind(this));
-        events.persistent.on('componentController_PreRender', this.PreRender.bind(this));
-        events.persistent.on('componentController_Render', this.Render.bind(this));
-        events.persistent.on('componentController_PostRender', this.PostRender.bind(this));
-        events.persistent.on('componentController_OnLevelChanged', this.OnLevelChanged.bind(this));
+        events.persistent.on(BareEvent.componentController_Update, this.Update.bind(this));
+        events.persistent.on(BareEvent.componentController_PreRender, this.PreRender.bind(this));
+        events.persistent.on(BareEvent.componentController_Render, this.Render.bind(this));
+        events.persistent.on(BareEvent.componentController_PostRender, this.PostRender.bind(this));
+        events.persistent.on(BareEvent.componentController_OnLevelChanged, this.OnLevelChanged.bind(this));
 
-        events.persistent.on('collisionStart', this.OnCollisionStart.bind(this));
-        events.persistent.on('collisionUpdate', this.OnCollisionUpdate.bind(this));
-        events.persistent.on('collisionEnd', this.OnCollisionEnd.bind(this));
+        events.persistent.on(BareEvent.collisionStart, this.OnCollisionStart.bind(this));
+        events.persistent.on(BareEvent.collisionUpdate, this.OnCollisionUpdate.bind(this));
+        events.persistent.on(BareEvent.collisionEnd, this.OnCollisionEnd.bind(this));
 
-        events.persistent.on('gameObjectRemoved', this.RemoveComponentsForObject.bind(this));
+        events.persistent.on(BareEvent.gameObjectRemoved, this.RemoveComponentsForObject.bind(this));
 
-        events.persistent.on('preSaveLevel', this.OnPreSaveLevel.bind(this));
+        events.persistent.on(BareEvent.preSaveLevel, this.OnPreSaveLevel.bind(this));
         
         pipes.set("componentController_GetAllComponentsFrom", (obj) => this.GetAllComponentsFrom(obj));
         pipes.set("componentController_ProcessCompentsFromEntity", (entity, obj) => this.ProcessCompentsFromEntity(entity, obj));
@@ -129,7 +128,7 @@ export class ComponentController
             ProcessComponents('editorComponents');
     }
 
-    private OnLevelChanged({ uids }: Events['componentController_OnLevelChanged']): void
+    private OnLevelChanged({ uids }): void
     {
         // CALL ONLEVELCHANGED ON PERSISTENT OBJECTS
         for (var i = 0; i < uids.length; i++)
@@ -147,11 +146,10 @@ export class ComponentController
         }
     }
 
-    private OnPreSaveLevel({ }: Events['preSaveLevel']): void
+    private OnPreSaveLevel(): void
     {
         this.CallMethodOnAllComponents('PreSaveLevel');
     }
-
 
     AddComponent<T extends GameObject, C extends Component<T>>(go: T, componentClass: Ctor<C>): C;
     AddComponent<T extends GameObject, C extends Component<T>>(go: T, componentInstance: C): C;

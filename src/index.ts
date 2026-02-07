@@ -100,7 +100,6 @@ export type {
   Component,
   Dimensions,
   Entity,
-  Events,
   Pipes,
   FrameRect,
   GameObjectClass,

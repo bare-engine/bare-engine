@@ -6,7 +6,7 @@ import { Helper } from "./utils/helper";
 import mitt from './libraries/mitt';
 import matt from './libraries/matt';
 import { BareGame } from './bareGame';
-import { Events, Pipes } from './utils/bareTypes';
+import { Pipes, BareEvent, Events } from './utils/bareTypes';
 import Tween from './libraries/tweenJS/Tween';
 
 export const events = mitt<Events>();
@@ -267,7 +267,7 @@ export function StartBare<T extends BareGame>(gameClass: new () => T, options?: 
                 if (bare.levelEditorOpen)
                     return;
 
-                events.emit('focusChange', window.hasFocus);
+                events.emit(BareEvent.focusChange, window.hasFocus);
 
                 // HANDLE VISUAL OF focusOverlay
                 if (window.hasFocus) {

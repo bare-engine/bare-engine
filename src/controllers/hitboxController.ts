@@ -3,7 +3,7 @@ import { GameObject } from "../objects/gameObject";
 import { Helper } from "../utils/helper";
 import { Hitbox } from "../utils/hitbox";
 import { HitboxType } from "../utils/gamesTypes";
-import { CollisionHandlingType, Events, UI_LAYER } from '../utils/bareTypes';
+import { BareEventPayload, CollisionHandlingType, UI_LAYER, BareEvent } from '../utils/bareTypes';
 import { Vec2 } from "../libraries/rapid-render";
 import { mouseController } from "./mouseController";
 
@@ -33,16 +33,16 @@ export class HitboxController
 
     init()
     {
-        events.persistent.on('hitboxController_Update', this.Update.bind(this));
-        events.persistent.on('postRender', this.RenderHitboxes.bind(this));
-        events.persistent.on('clear', this.Deactivate.bind(this));
+        events.persistent.on(BareEvent.hitboxController_Update, this.Update.bind(this));
+        events.persistent.on(BareEvent.postRender, this.RenderHitboxes.bind(this));
+        events.persistent.on(BareEvent.clear, this.Deactivate.bind(this));
         
-        events.persistent.on('pointerDown', this.PointerDown.bind(this));
-        events.persistent.on('pointerUp', this.PointerUp.bind(this));
-        events.persistent.on('pointerMove', this.PointerMove.bind(this));
+        events.persistent.on(BareEvent.pointerDown, this.PointerDown.bind(this));
+        events.persistent.on(BareEvent.pointerUp, this.PointerUp.bind(this));
+        events.persistent.on(BareEvent.pointerMove, this.PointerMove.bind(this));
     }
 
-    private PointerMove({ mouseX, mouseY, event }: Events['pointerMove']): void
+    private PointerMove({ mouseX, mouseY, event }: BareEventPayload['pointerMove']): void
     {
         this.Update();
     }
@@ -379,7 +379,7 @@ export class HitboxController
         this.currentHitboxHover = hitbox;
     }
 
-    private PointerDown({ mouseX, mouseY, event, isLeftButton }: Events['pointerDown']): void
+    private PointerDown({ mouseX, mouseY, event, isLeftButton }: BareEventPayload['pointerDown']): void
     {
         if (!isLeftButton)
             return;
@@ -391,7 +391,7 @@ export class HitboxController
         event.preventDefault();
     }
 
-    private PointerUp({ mouseX, mouseY, event }: Events['pointerUp']): void
+    private PointerUp({ mouseX, mouseY, event }: BareEventPayload['pointerUp']): void
     {
         if (!this.currentHitboxDown)
             return;
