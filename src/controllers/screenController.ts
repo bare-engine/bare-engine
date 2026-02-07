@@ -14,7 +14,7 @@ export class ScreenController
     init()
     {
         pipes.set("screenController_Update", this.Update.bind(this));
-        events.persistent.on(BareEvent.screenController_Render, this.Render.bind(this));
+        pipes.set("screenController_Render", this.Render.bind(this));
         events.persistent.on(BareEvent.game_clear, this.Clear.bind(this));
     }
 

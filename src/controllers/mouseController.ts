@@ -1,6 +1,6 @@
 import { BareEvent } from '../utils/bareTypes';
 import { Helper } from "../utils/helper";
-import { events } from "../main";
+import { events, pipes } from "../main";
 import { Vec2 } from "../libraries/rapid-render";
 
 type MouseSpace = {
@@ -51,7 +51,7 @@ export class MouseController
 
     constructor()
     {
-        events.persistent.on(BareEvent.mouseController_Update, this.Update.bind(this));
+        pipes.set("mouseController_Update", this.Update.bind(this));
 
         document.addEventListener('pointerdown', this.PointerDown.bind(this), { passive: false });
         document.addEventListener('pointerup', this.PointerUp.bind(this), { passive: false });
@@ -224,7 +224,7 @@ export class MouseController
         this.world.position.y = worldPos.y;
     }
 
-    Update()
+    Update(_deltaTime?: number)
     {
         if (this.world.position.x == -1000 && this.world.position.y == -1000)
             return;

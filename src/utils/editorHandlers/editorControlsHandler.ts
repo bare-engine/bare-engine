@@ -1,4 +1,4 @@
-import { BareGame, events, MakePath } from "../../main";
+import { BareGame, events, MakePath, pipes } from "../../main";
 import { Color, Vec2 } from "../../libraries/rapid-render";
 import { GameObject } from "../../objects/gameObject";
 import { Helper } from "../helper";
@@ -57,7 +57,7 @@ export class EditorControlsHandler {
 
     init()
     {
-        events.persistent.on(BareEvent.editorController_Update, this.Update.bind(this));
+        pipes.set("editorController_Update", this.Update.bind(this));
         events.persistent.on(BareEvent.pointer_down, this.PointerDown.bind(this));
         events.persistent.on(BareEvent.pointer_move, this.PointerMove.bind(this));
         events.persistent.on(BareEvent.pointer_up, this.PointerUp.bind(this));
@@ -490,7 +490,7 @@ export class EditorControlsHandler {
         return bare.MouseIsOnEditor(event);
     }
 
-    Update() {
+    Update(_deltaTime?: number) {
         if (!this.editorController.active)
             return;
 

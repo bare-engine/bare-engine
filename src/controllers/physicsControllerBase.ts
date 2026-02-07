@@ -1,4 +1,4 @@
-import { events } from "../main";
+import { events, pipes } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { BareEventPayload, Dimensions, UI_LAYER, BareEvent } from '../utils/bareTypes';
 export class PhysicsControllerBase
@@ -7,15 +7,26 @@ export class PhysicsControllerBase
 
 	constructor()
 	{
-		events.persistent.on(BareEvent.physicsController_Update, this.Update.bind(this));
-		events.persistent.on(BareEvent.physicsController_Render, this.Render.bind(this));
 		events.persistent.on(BareEvent.game_resize, this.OnResize.bind(this));
 		events.persistent.on(BareEvent.game_objectAdded, this.OnGameObjectAdded.bind(this));
 		events.persistent.on(BareEvent.game_objectRemoved, this.OnGameObjectRemoved.bind(this));
 		events.persistent.on(BareEvent.level_Loaded, this.OnLevelLoaded.bind(this));
 
+		events.persistent.on(BareEvent.game_clear, () => {
+			pipes.remove("physicsController_Update");
+			pipes.remove("physicsController_Render");
+		});
+
+		this.Init();
+
 		if (__DEV__)
         	globalThis.plugin?.AddDebugAction("Toggle Collision", () => this.setCollisionsEnabled(!this.collisionsEnabled));
+	}
+
+	Init(): void
+	{
+		pipes.set("physicsController_Update", this.Update.bind(this));
+		pipes.set("physicsController_Render", this.Render.bind(this));	
 	}
 
 	OnResize({ newWidth, newHeight }: BareEventPayload['game_resize']): void

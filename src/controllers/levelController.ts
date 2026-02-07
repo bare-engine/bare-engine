@@ -85,7 +85,7 @@ export class LevelController
 
         bare.AfterLoadLevel(level);
 
-        events.emit(BareEvent.componentController_OnLevelChanged, { uids: persistenObjUIDs });
+        pipes.run("componentController_OnLevelChanged", { uids: persistenObjUIDs });
         
         return level;
     }

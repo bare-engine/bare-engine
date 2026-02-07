@@ -174,10 +174,15 @@ export class BareGame
             return;
         }
 
-        // CONTROLLERS - SHOULD NOT CREATE ANOTHER INSTANCE
+        // CONTROLLERS
         var classNameFirstLowercase = className.charAt(0).toLowerCase() + className.slice(1);
         if (globalThis[classNameFirstLowercase])
         {
+            if (globalThis[classNameFirstLowercase].Init)
+            {
+                globalThis[classNameFirstLowercase].Init(); // USED FOR PhysicsControllerBase, TO RE-SET PIPES, NEED FOR DEMO
+            }
+
             return;
         }
 
@@ -869,9 +874,9 @@ export class BareGame
         
         events.emit(BareEvent.game_preUpdate, { deltaTime: deltaTime });
 
-        events.emit(BareEvent.mouseController_Update, deltaTime);
-        events.emit(BareEvent.hitboxController_Update, deltaTime);
-        events.emit(BareEvent.editorController_Update, deltaTime); 
+        pipes.run("mouseController_Update", deltaTime);
+        pipes.run("hitboxController_Update", deltaTime);
+        pipes.run("editorController_Update", deltaTime); 
 
         if (!this.levelEditorOpen)
             this.OnUpdate(deltaTime);
@@ -879,8 +884,8 @@ export class BareGame
         pipes.run("screenController_Update", deltaTime);
         objectController.Update(deltaTime);
         uiController.Update(deltaTime);
-        events.emit(BareEvent.physicsController_Update, deltaTime);
-        events.emit(BareEvent.componentController_Update, deltaTime);
+        pipes.run("physicsController_Update", deltaTime);
+        pipes.run("componentController_Update", deltaTime);
 
         events.emit(BareEvent.game_update, { deltaTime: deltaTime });
     }
@@ -916,17 +921,17 @@ export class BareGame
         
         events.emit(BareEvent.game_preRender);
 
-        events.emit(BareEvent.componentController_PreRender); // ALL THIS EMITS MIGHT BE SLOW? ESPECIALLY FOR COMPONENT-CONTROLLER, SENDING MORE TO COMPONENTS
+        pipes.run("componentController_PreRender"); // ALL THIS EMITS MIGHT BE SLOW? ESPECIALLY FOR COMPONENT-CONTROLLER, SENDING MORE TO COMPONENTS
         objectController.PreRender();
-        events.emit(BareEvent.componentController_Render);
-        events.emit(BareEvent.screenController_Render);
+        pipes.run("componentController_Render");
+        pipes.run("screenController_Render");
         objectController.Render();
 
         if (!this.levelEditorOpen)
             this.OnRender();
 
-        events.emit(BareEvent.physicsController_Render);
-        events.emit(BareEvent.componentController_PostRender);
+        pipes.run("physicsController_Render");
+        pipes.run("componentController_PostRender");
         objectController.PostRender();
 
         events.emit(BareEvent.game_postRender);

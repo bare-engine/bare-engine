@@ -21,11 +21,6 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 		super();
     	this.world = new World();
 
-        this.init();
-    }
-
-    init()
-    {
 		events.persistent.on(BareEvent.physics_refreshBody, this.RefreshBody.bind(this));
 		events.persistent.on(BareEvent.game_clear, this.Clear.bind(this));
 		
@@ -34,7 +29,7 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 			bare.RegisterGameObjectPool(Box, 1);
 			bare.RegisterGameObjectPool(Circle, 1);
 		});
-	}
+    }
 
 	Add(object: any): void
 	{

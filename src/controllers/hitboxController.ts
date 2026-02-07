@@ -1,4 +1,4 @@
-import { events } from "../main";
+import { events, pipes } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { Helper } from "../utils/helper";
 import { Hitbox } from "../utils/hitbox";
@@ -33,7 +33,7 @@ export class HitboxController
 
     init()
     {
-        events.persistent.on(BareEvent.hitboxController_Update, this.Update.bind(this));
+        pipes.set("hitboxController_Update", this.Update.bind(this));
         events.persistent.on(BareEvent.game_postRender, this.RenderHitboxes.bind(this));
         events.persistent.on(BareEvent.game_clear, this.Deactivate.bind(this));
         
@@ -47,7 +47,7 @@ export class HitboxController
         this.Update();
     }
 
-    Update(): void
+    Update(_deltaTime?: number): void
     {
         if (!this.active)
             return;

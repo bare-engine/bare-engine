@@ -1,12 +1,13 @@
 import { ContactInfo } from "./contact";
-import { Texture, Vec2 } from "../rapid-render";
+import { Vec2 } from "../rapid-render";
 import { Settings } from "./settings";
 import * as Util from "./util";
 import { Node } from "./aabbtree";
 import { GameObject } from "../../objects/gameObject";
 import { Matrix3 } from "./math";
 import { events } from "../../main";
-import { Entity, BareEvent } from '../../utils/bareTypes';
+import { BareEvent } from '../../utils/bareTypes';
+
 export enum Type
 {
     Static = 0,

@@ -1,6 +1,6 @@
 import { events, GameMode, pipes } from "../main";
 import { GameObject } from "../objects/gameObject";
-import { Component, Entity, Ctor, BareEventPayload, BareEvent } from '../utils/bareTypes';
+import { Component, Entity, Ctor, BareEvent } from '../utils/bareTypes';
 // REFERENCING A CLASS EXTENDING BASECOMPONENT WILL AUTOMATICALLY ALSO INCLUDE COMPONENTCONTROLLER
 
 export abstract class BaseComponent<T extends GameObject = GameObject> implements Component<T>
@@ -35,11 +35,11 @@ export class ComponentController
 
     init()
     {
-        events.persistent.on(BareEvent.componentController_Update, this.Update.bind(this));
-        events.persistent.on(BareEvent.componentController_PreRender, this.PreRender.bind(this));
-        events.persistent.on(BareEvent.componentController_Render, this.Render.bind(this));
-        events.persistent.on(BareEvent.componentController_PostRender, this.PostRender.bind(this));
-        events.persistent.on(BareEvent.componentController_OnLevelChanged, this.OnLevelChanged.bind(this));
+        pipes.set("componentController_Update", this.Update.bind(this));
+        pipes.set("componentController_PreRender", this.PreRender.bind(this));
+        pipes.set("componentController_Render", this.Render.bind(this));
+        pipes.set("componentController_PostRender", this.PostRender.bind(this));
+        pipes.set("componentController_OnLevelChanged", this.OnLevelChanged.bind(this));
 
         events.persistent.on(BareEvent.collision_start, this.OnCollisionStart.bind(this));
         events.persistent.on(BareEvent.collision_update, this.OnCollisionUpdate.bind(this));

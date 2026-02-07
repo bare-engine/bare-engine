@@ -4,10 +4,14 @@
 // Core
 export { BareGame } from "./bareGame";
 export { GameObject } from "./objects/gameObject";
-export { BarePlugin } from "./utils/plugin";
 
 // Core (side-effectful)
 export { StartBare, GameMode, MakePath, events, pipes } from "./core";
+
+export { BareEvent } from "./utils/bareTypes";
+
+export { BarePlugin } from "./utils/plugin";
+export { plugin } from "./utils/plugin";
 
 // Controllers
 export { BaseComponent } from "./controllers/componentController";

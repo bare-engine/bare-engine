@@ -262,17 +262,6 @@ const eventDefs = {
 
   physics_refreshBody: ev<GameObject>(),
 
-  mouseController_Update: ev<number>(),
-  hitboxController_Update: ev<number>(),
-  physicsController_Update: ev<number>(),
-  editorController_Update: ev<number>(),
-  screenController_Render: undefined,
-  physicsController_Render: undefined,
-  componentController_Update: ev<number>(),
-  componentController_PreRender: undefined,
-  componentController_Render: undefined,
-  componentController_PostRender: undefined,
-  componentController_OnLevelChanged: ev<{ uids: string[] }>(),
 } as const;
 
 const createEventMap = <T extends Record<string, any>>(defs: T) =>
@@ -295,7 +284,18 @@ export type Events = BareEventPayload & Record<string, any>;
 //
 
 export interface Pipes {
+  mouseController_Update: (deltaTime: number) => void;
+  hitboxController_Update: (deltaTime: number) => void;
+  physicsController_Update: (deltaTime: number) => void;
+  editorController_Update: (deltaTime: number) => void;
   screenController_Update: (deltaTime: number) => void;
+  screenController_Render: () => void;
+  physicsController_Render: () => void;
+  componentController_Update: (deltaTime: number) => void;
+  componentController_PreRender: () => void;
+  componentController_Render: () => void;
+  componentController_PostRender: () => void;
+  componentController_OnLevelChanged: (payload: { uids: string[] }) => void;
 
   componentController_GetAllComponentsFrom: (obj: GameObject) => Component<any>[];
   componentController_ProcessCompentsFromEntity: (entity: Entity, obj: GameObject) => void;

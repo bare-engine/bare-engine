@@ -642,4 +642,3 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 
 export const physicsControllerBare = new PhysicsControllerBare();
 globalThis.physicsControllerBare = physicsControllerBare;
-
