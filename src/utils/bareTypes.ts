@@ -230,7 +230,7 @@ const eventDefs = {
   game_clear: ev<{ full: boolean }>(),
   game_resize: ev<{ prevWidth: number; prevHeight: number; newWidth: number; newHeight: number }>(),
 
-  level_Loaded: ev<{ levelStr: string; level: LevelData }>(),
+  level_loaded: ev<{ levelStr: string; level: LevelData }>(),
   level_preSave: ev<{ levelStr: string }>(),
   level_postSave: ev<{ levelStr: string; level: LevelData }>(),
   level_savedToDisk: ev<{ levelStr: string; level: LevelData }>(),

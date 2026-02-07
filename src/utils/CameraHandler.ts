@@ -32,7 +32,7 @@ class CameraHandler {
       this.SetPosition(bare.width / 2, bare.height / 2);
     });
 
-    events.persistent.on(BareEvent.level_Loaded, ({ level }) => {
+    events.persistent.on(BareEvent.level_loaded, ({ level }) => {
       const dims: Dimensions = level.dimensions;
       this.SetBounds({ x: 0, y: 0, width: dims.width, height: dims.height });
       this.CalculateZoomFit();

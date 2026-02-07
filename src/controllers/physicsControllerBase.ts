@@ -10,7 +10,7 @@ export class PhysicsControllerBase
 		events.persistent.on(BareEvent.game_resize, this.OnResize.bind(this));
 		events.persistent.on(BareEvent.game_objectAdded, this.OnGameObjectAdded.bind(this));
 		events.persistent.on(BareEvent.game_objectRemoved, this.OnGameObjectRemoved.bind(this));
-		events.persistent.on(BareEvent.level_Loaded, this.OnLevelLoaded.bind(this));
+		events.persistent.on(BareEvent.level_loaded, this.OnLevelLoaded.bind(this));
 
 		events.persistent.on(BareEvent.game_clear, () => {
 			pipes.remove("physicsController_Update");
@@ -50,7 +50,7 @@ export class PhysicsControllerBase
 		}
 	}
 
-	OnLevelLoaded({ level }: BareEventPayload['level_Loaded']): void
+	OnLevelLoaded({ level }: BareEventPayload['level_loaded']): void
 	{
 		var dims:Dimensions = level.dimensions;
         this.setDimensions(0, 0, dims.width, dims.height);

@@ -1,5 +1,5 @@
 import { ContactInfo } from "./contact";
-import { Vec2 } from "../rapid-render";
+import { Texture, Vec2 } from "../rapid-render";
 import { Settings } from "./settings";
 import * as Util from "./util";
 import { Node } from "./aabbtree";
@@ -81,12 +81,14 @@ export abstract class RigidBody extends GameObject
         }
     }
 
-    /*override InitTexture(texturePath: string): Promise<Texture>
+    // SET PIVOT TO CENTER, ALREADY HAPPENS IN ENTITY CREATION IN BARE GAME
+    // BUT ALSO NEEDS TO HAPPEN HERE, IN CASE RIGIDBODY IS CREATED DYNAMICALLY
+    override InitTexture(texturePath: string): Promise<Texture>
     {
         var tex = super.InitTexture(texturePath);
         this.CenterPivot();
         return tex;
-    }*/
+    }
 
     override ResetValues(): void
     {

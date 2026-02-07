@@ -132,7 +132,7 @@ export class LevelController
 
         trace('Level loaded:', levelStr);
         
-        events.emit(BareEvent.level_Loaded, {levelStr: levelStr, level: this.currentLevel});
+        events.emit(BareEvent.level_loaded, {levelStr: levelStr, level: this.currentLevel});
 
         return level;
     }
