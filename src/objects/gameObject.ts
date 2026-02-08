@@ -973,6 +973,17 @@ export class GameObject
 
     RemoveChild(child: GameObject)
     {
+        if (!child.parent)
+        {
+            console.error("Trying to remove child that doesn't have a parent");
+            return;
+        }
+        if (child.parent != this)
+        {
+            console.error("Trying to remove child that doesn't belong to this parent");
+            return;
+        }
+        
         // RESET CACHED VALUES SO THEY GET RECALCULATED
         //this.cachedChildrenWidth = -1;
         //this.cachedChildrenHeight = -1;

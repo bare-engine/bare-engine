@@ -204,6 +204,29 @@ export class SettingsHandler
         return settings;
     }
 
+    // HACK TO REPROCESS ANIMATIONS
+    ReprocessAnimations()
+    {
+        var settings = this.raw;
+
+        // REPROCESS ANIMATIONS - ADD THEM AND LOAD THEIR TEXTURES IF THEY'RE NOT IN ALREADY
+        if (settings.animations)
+        {
+            for (const [animName, animDataInfo] of Object.entries(settings.animations))
+            {
+                var exsistingAnimation = assetsHandler.GetAnimation(animName);
+
+                // TAKE PROVIDED VALUES OR FALLBACK TO DEFAULTS
+                var animationFrames = animDataInfo.frames as string[] ?? exsistingAnimation?.animFrames ?? []; // FALLBACK TO ANIMATION FRAMES SET BEFORE IN JSON
+                var framesPerSecond = animDataInfo.framesPerSecond ?? 8;
+                var loop = animDataInfo.loop ?? true;
+                
+                // WILL ALSO OVERRIDE PREVIOUSLY SET ANIMATION IN JSON FROM _INITIAL FOLDER
+                assetsHandler.AddAnimation(animName, animationFrames, framesPerSecond, loop);
+            }
+        }
+    }
+
     Get(): SettingsData
     {
         return this.processed;

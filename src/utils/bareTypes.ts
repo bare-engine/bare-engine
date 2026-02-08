@@ -273,6 +273,13 @@ export interface BareEventExtensions {}
 const baseBareEvent = createEventMap(eventDefs);
 export const BareEvent = baseBareEvent as typeof baseBareEvent & BareEventExtensions;
 
+// ABOVE BECOMES:
+/*export const BareEvent = {
+  game_firstStart: "game_firstStart",
+  game_started: "game_started",
+  ...
+} as const;*/
+
 type EventPayloads<T> = { [K in keyof T]: T[K] extends undefined ? void : NonNullable<T[K]> };
 
 export interface BareUserEvents {}
@@ -281,6 +288,8 @@ export type BareEventPayload =
 
 // Events must be the merged type
 export type Events = BareEventPayload & Record<string, any>;
+// Runtime placeholder so bundlers that don't honor type-only exports won't warn.
+export const Events = undefined as unknown as Events;
 //
 
 export interface Pipes {

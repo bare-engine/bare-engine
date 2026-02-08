@@ -110,6 +110,8 @@ export class EditorController {
                 if (levelPathOrData.name == this.levelFunctionality.currentLevel?.name)
                     return; // ALREADY IN TARGET EDITOR AT TARGET LEVEL
 
+        //this.levelLoadedBeforeOpen = levelController.currentLevel;
+
         bare.Clear();
         
         await bare.SetCurrentSettingsHandler(settingsHandler);
@@ -213,7 +215,7 @@ export class EditorController {
         
         window.gameMode = GameMode.Game; // SETTING IT IN BARE.START() NOW, BUT ALSO KINDA MAKES SENSE HERE
 
-        //bare.LoadLevel();
+        levelController.LoadLevel(SaveData.currentLevelStr);
     }
 
     async Toggle(settingsHandler: SettingsHandler, levelPathOrData: string | LevelData = '', saveLevelCallback: () => Promise<void> = this.levelFunctionality.SaveLevel)

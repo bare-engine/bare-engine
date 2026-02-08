@@ -8,7 +8,7 @@ export { GameObject } from "./objects/gameObject";
 // Core (side-effectful)
 export { StartBare, GameMode, MakePath, events, pipes } from "./core";
 
-export { BareEvent } from "./utils/bareTypes";
+export { BareEvent, Events } from "./utils/bareTypes";
 
 export { BarePlugin } from "./utils/plugin";
 export { plugin } from "./utils/plugin";

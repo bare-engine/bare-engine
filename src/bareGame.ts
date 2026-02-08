@@ -106,15 +106,18 @@ export class BareGame
 
     async Awake(entityDataJson:SettingsData)
     {
+        rapid.backgroundColor = Color.White;
+
         this.ResizeCanvas();
 
         this.ImplementInitialTextures();
         
+        await this.initialSettingsHandler.Process(entityDataJson); // NEEDS TO GO AFTER ONAWAKE() SINCE IT CAN LOAD ANIMATION FRAMES THAT OVERRIDDEN SHOULD LOAD
+        this.SetCurrentSettingsHandler(this.initialSettingsHandler);
+
         await this.OnAwake();
 
-        await this.initialSettingsHandler.Process(entityDataJson); // NEEDS TO GO AFTER ONAWAKE() SINCE IT CAN LOAD ANIMATION FRAMES THAT OVERRIDDEN SHOULD LOAD
-
-        this.SetCurrentSettingsHandler(this.initialSettingsHandler);
+        this.initialSettingsHandler.ReprocessAnimations(); // NEEDED SINCE AN ATLAS WITH ANIMATIONS CAN BE LOADED IN AT AWAKE() ABOVE
 
         await this.Start();
 
@@ -136,7 +139,7 @@ export class BareGame
 
         window.gameMode = GameMode.Game;
 
-        rapid.backgroundColor = Color.White;
+        //rapid.backgroundColor = Color.White;
 
         this.SetCurrentSettingsHandler(this.initialSettingsHandler);
 
