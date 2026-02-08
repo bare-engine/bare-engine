@@ -87,10 +87,10 @@ export class LevelController
 
         await bare.BeforeLoadLevel();
 
-        if (this.currentLevel)
+        /*if (this.currentLevel)
         {
             this.Deactivate();
-        }
+        }*/
 
         var level = await this.LoadSingleLevel(levelInput || SaveData.currentLevelStr); // IF NO LEVEL SUPPLIED, RELOAD CURRENT LEVEL
 

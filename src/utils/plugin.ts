@@ -1,11 +1,12 @@
 import { SaveDataHandler } from "./SaveDataHandler";
-import { BareEvent, BareEventPayload, SettingsData } from "./bareTypes";
+import { BareEvent, BareEventPayload, LevelData, SaveData, SettingsData } from "./bareTypes";
 import { Helper } from "./helper";
 import { Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { BareGame, events } from "../main";
 import { OutlineShader } from "./shaders/outlineShader";
-import { BareClasses, editorController, tweenController } from "..";
+import { BareClasses, editorController, levelController, tweenController } from "..";
+import { create } from "node:domain";
 
 // THIS PLUGIN CODE DOES NOT GET INCLUDED IN PRODUCTION
 // ALL CALLS SHOULD BE WRAPPED WITH __DEV__
@@ -64,6 +65,15 @@ window.__GAME_DEBUG_API__ = {
     window.postMessage({ __fromGame: true, type: "selectObject", id: uid, openObjectsTab: openObjectsTab }, "*");
   },
 
+  gotoLevelView(levelPath: string) {
+    levelController.LoadLevel(levelPath);
+  },
+
+  async gotoLevelEdit(levelPath: string) {
+    await levelController.LoadLevel(levelPath);
+    editorController.Open();
+  },
+
   async gotoEntity(name: string) {
     const levelController = getLevelController();
     if (levelController && levelController.currentLevel && levelController.currentLevel.name == name)
@@ -84,6 +94,14 @@ window.__GAME_DEBUG_API__ = {
 
   getAllObjects() {
     return objectController.GetLayers().flat().filter((o: any) => o.customName != 'ignoreInPlugin').map((o: any) => ({ id: o.uniqueID, name: o.name }));
+  },
+
+  GetLevelFiles() {
+    return Helper.GetFilesInFolder(`${bare.levelPath}/`, true);
+  },
+
+  async GetLevelData(levelStr: string): Promise<LevelData> {
+     return await Helper.loadJSON<LevelData>(`${bare.levelPath}/${levelStr}.json`);
   },
 
   getObject(id: string) {
@@ -139,6 +157,54 @@ window.__GAME_DEBUG_API__ = {
     if (plugin.doNotifyAfterSave)
       window.postMessage({ __fromGame: true, type: "entityData", data: newData }, "*");
   },
+
+  refreshLevelFiles() {
+    window.postMessage({ __fromGame: true, type: "refreshLevelFiles" }, "*");
+  },
+
+  async createLevel(levelName: string) {
+      try {
+          var levelData: LevelData = { name: levelName, dimensions: { width: 800, height: 600 }, entitiesByLayer: {} };
+          var path = `${bare.levelPath}/${levelName}.json`;
+          const res = await fetch('/api/create-level', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+              path: path,
+              levelData: levelData
+          })
+        });
+        const json = await res.json().catch(() => null);
+        return { ok: res.ok, saved: res.ok, response: json };
+      } catch (error: any) {
+        console.error('Failed to create level', error);
+        return { ok: false, error: error?.message ?? String(error) };
+      }
+  },
+
+  async removeLevel(levelName: string) {
+      try {
+          var path = `${bare.levelPath}/${levelName}.json`;
+          const res = await fetch('/api/remove-level', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+              path: path
+          })
+        });
+        const json = await res.json().catch(() => null);
+
+        if (editorController.active && SaveData.currentLevelStr == levelName)
+        {
+            SaveData.currentLevelStr = '';
+            bare.Restart(); // CLOSES THE EDITOR TOO
+        }
+        return { ok: res.ok, saved: res.ok, response: json };
+      } catch (error: any) {
+        console.error('Failed to remove level', error);
+        return { ok: false, error: error?.message ?? String(error) };
+      }
+  }
 };
 
 export class BarePlugin
@@ -158,6 +224,10 @@ export class BarePlugin
 
             // RIGHT CLICK FOR PLUGIN SELECT
             document.addEventListener('pointerdown', this.OnRightClickPointerDown, false);
+        });
+
+        events.persistent.on(BareEvent.game_started, () => {
+            window.__GAME_DEBUG_API__.refreshLevelFiles();
         });
 
         // RESTART

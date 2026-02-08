@@ -1148,6 +1148,7 @@ export class BareGame
     // MAKE THESE EVENTS? TODO
     async BeforeLoadLevel()
     {
+        this.Clear();
         this.doRender = false;
     }
     
