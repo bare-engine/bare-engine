@@ -12,9 +12,12 @@ export class PhysicsControllerBase
 		events.persistent.on(BareEvent.game_objectRemoved, this.OnGameObjectRemoved.bind(this));
 		events.persistent.on(BareEvent.level_loaded, this.OnLevelLoaded.bind(this));
 
-		events.persistent.on(BareEvent.game_clear, () => {
-			pipes.remove("physicsController_Update");
-			pipes.remove("physicsController_Render");
+		events.persistent.on(BareEvent.game_clear, ({full}) => {
+			if (full)
+			{
+				pipes.remove("physicsController_Update");
+				pipes.remove("physicsController_Render");
+			}
 		});
 
 		this.Init();
@@ -24,7 +27,7 @@ export class PhysicsControllerBase
 	}
 
 	Init(): void
-	{
+	{  
 		pipes.set("physicsController_Update", this.Update.bind(this));
 		pipes.set("physicsController_Render", this.Render.bind(this));	
 	}

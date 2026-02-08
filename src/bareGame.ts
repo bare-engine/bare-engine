@@ -7,6 +7,7 @@ import { SettingsHandler as SettingsHandler } from "./utils/settingsHandler";
 import { assetsHandler } from "./utils/assetsHandler";
 import { defaultEntityData as defaultEntityData } from "./utils/bareData";
 import { PhysicsObjectBare } from "./barePhysics";
+import { SaveDataHandler } from "./utils/SaveDataHandler";
 
 /*Bare.camera.SetPosition(bare.width * .5, bare.height * .5);
 Bare.sound.Play()
@@ -1210,6 +1211,8 @@ export class BareGame
         // SHOULDN'T REALLY BE NECESSARY, BUT THE DEMO PROJECT NEEDS IT SINCE IT 
         // HANDLES MULTIPLE BARE-GAME CLASSES. NOT RECOMMEND FOR OTHER PROJECTS
 
+        SaveDataHandler.Clear();
+        
         bare.Clear(true);
         assetsHandler.Clear();
         

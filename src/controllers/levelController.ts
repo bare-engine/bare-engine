@@ -13,6 +13,7 @@ export class LevelController
 {
     currentLevel: LevelData;
     levelCache: Map<string, LevelData> = new Map();
+    cleared: boolean = false;
     
     constructor()
     {
@@ -27,7 +28,17 @@ export class LevelController
 
     init()
     {
-        events.persistent.on(BareEvent.game_clear, this.Deactivate.bind(this));
+        events.persistent.on(BareEvent.game_started, this.Started.bind(this));
+        events.persistent.on(BareEvent.game_clear, this.Clear.bind(this));
+    }
+
+    Started()
+    {
+        // IF WE GET HERE AFTER RESTART, LOAD LAST LEVEL
+        if (SaveData.currentLevelStr && this.cleared)
+            this.LoadLevel(SaveData.currentLevelStr);
+
+        this.cleared = false;
     }
 
     get objectsLayer(): GameObject[]
@@ -415,6 +426,16 @@ export class LevelController
                 bare.RemoveGameObject(obj);
             }
         }
+
+    }
+
+    Clear({ full }: { full: boolean })
+    {
+        this.Deactivate();
+        this.currentLevel = null;
+
+        if (!full)
+        this.cleared = true;
     }
 }
 

@@ -75,6 +75,7 @@ export class EditorController {
 
     init()
     {
+        events.persistent.on(BareEvent.level_loaded, this.OnLoadedLevel.bind(this));
         events.persistent.on(BareEvent.game_started, this.Start.bind(this));
         events.persistent.on(BareEvent.game_clear, this.Clear.bind(this));
         
@@ -82,11 +83,18 @@ export class EditorController {
             this.editorControlsHandler.init();
     }
 
-    Start()
+    OnLoadedLevel(data: LevelData)
     {
         const editorButton = document.getElementById('editor-button') as HTMLButtonElement;
-        editorButton.style.display = 'block';
-        
+
+        if (levelController.currentLevel)
+            editorButton.style.display = 'block';
+        else
+            editorButton.style.display = 'none';
+    }
+
+    Start()
+    {
         if (!this.editorControlsHandler && bare.currentSettingsHandler)
         {
             // ONCE
@@ -215,7 +223,7 @@ export class EditorController {
         
         window.gameMode = GameMode.Game; // SETTING IT IN BARE.START() NOW, BUT ALSO KINDA MAKES SENSE HERE
 
-        levelController.LoadLevel(SaveData.currentLevelStr);
+        //levelController.LoadLevel(SaveData.currentLevelStr);
     }
 
     async Toggle(settingsHandler: SettingsHandler, levelPathOrData: string | LevelData = '', saveLevelCallback: () => Promise<void> = this.levelFunctionality.SaveLevel)
