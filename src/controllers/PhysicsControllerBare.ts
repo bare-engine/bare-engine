@@ -10,10 +10,10 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 {
   public objects: PhysicsObjectBare[] = [];
 
-  private x: number;
-  private y: number;
-  private width: number;
-  private height: number;
+  private x: number = 0;
+  private y: number = 0;
+  private width: number = 0;
+  private height: number = 0;
   
   public activeCollisions: Set<string> = new Set();
 
@@ -22,8 +22,8 @@ export class PhysicsControllerBare extends PhysicsControllerBase
       super();
 
       events.persistent.on(BareEvent.game_started, () => {
-        this.width = bare.width;
-        this.height = bare.height;
+        if (this.width == 0 && this.height == 0)
+          this.setDimensions(0, 0, bare.width, bare.height);
 
         bare.RegisterGameObjectPool(PhysicsObjectBare, 10);
       });

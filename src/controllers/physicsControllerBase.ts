@@ -1,6 +1,7 @@
 import { events, pipes } from "../main";
 import { GameObject } from "../objects/gameObject";
-import { BareEventPayload, Dimensions, UI_LAYER, BareEvent } from '../utils/bareTypes';
+import { BareEventPayload, Dimensions, UI_LAYER, BareEvent, SaveData } from '../utils/bareTypes';
+
 export class PhysicsControllerBase
 {
   	public collisionsEnabled: boolean = true;
@@ -34,7 +35,8 @@ export class PhysicsControllerBase
 
 	OnResize({ newWidth, newHeight }: BareEventPayload['game_resize']): void
 	{
-        this.setDimensions(0, 0, newWidth, newHeight);
+		if (SaveData.currentLevelStr == '') /// ONLY SET BOUNDS TO SCREEN IF THERE IS NO LEVEL
+       		this.setDimensions(0, 0, newWidth, newHeight);
 	}
 
 	OnGameObjectAdded({ gameObject, layer }: BareEventPayload['game_objectAdded']): void

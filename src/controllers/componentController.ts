@@ -20,6 +20,7 @@ export abstract class BaseComponent<T extends GameObject = GameObject> implement
 
     OnStart?(): void;
     OnUpdate?(deltaTime: number): void;
+    OnRemoved?(): void;
 }
 
 export class ComponentController
@@ -262,8 +263,8 @@ export class ComponentController
         if (index < 0)
             return false;
 
-        if (component.Removed)
-            component.Removed();
+        if (component.OnRemoved)
+            component.OnRemoved();
 
         components.splice(index, 1);
 
@@ -327,10 +328,8 @@ export class ComponentController
                     if (typeComponents.length == 0)
                         this.componentsByType.delete(component.constructor as Ctor<Component<any>>)
 
-                    if (component.Removed)
-                    {
-                        component.Removed()
-                    }
+                    if (component.OnRemoved)
+                        component.OnRemoved()
                 }
             }
         }
@@ -338,7 +337,7 @@ export class ComponentController
 
     RemoveAllComponents()
     {
-        this.CallMethodOnAllComponents('Removed');
+        this.CallMethodOnAllComponents('OnRemoved');
 
         // Clear all component references
         this.componentsByGameObject.clear()

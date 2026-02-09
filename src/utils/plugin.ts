@@ -252,6 +252,8 @@ export class BarePlugin
           const obj = this.CheckClickGameObject(ev);
           if (obj)
           {
+              this.SelectObjectInPlugin(obj.uniqueID, true);
+
               this.movingObjData = {
                   obj,
                   offset: obj.position.subtract(getMouseController().world.position),

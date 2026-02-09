@@ -318,9 +318,10 @@ export interface Component<T extends GameObject = GameObject>
     enabled?: boolean;
     go: T; 
 
+    // CLEAN UP, ON...
     Added?(go: T): void
     OnStart?: () => void
-    Removed?: () => void
+    OnRemoved?: () => void
     OnEnable?: () => void
     OnDisable?: () => void
     OnCollisionStart?: (initiatingObject: GameObject, collidingObject: GameObject) => void
