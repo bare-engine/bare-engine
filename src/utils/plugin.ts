@@ -218,7 +218,7 @@ export class BarePlugin
 
     constructor()
     {
-        events.on(BareEvent.game_started, () => {
+        events.persistent.once(BareEvent.game_started, () => {
             this.outlineShader = new OutlineShader()
             bare.AddClass(BareClasses.EditorController)
 
@@ -254,7 +254,7 @@ export class BarePlugin
           {
               this.movingObjData = {
                   obj,
-                  offset: obj.position.subtract(getMouseController().screen.position),
+                  offset: obj.position.subtract(getMouseController().world.position),
                   hasMovedAwayEnough: false
               };
 
@@ -272,7 +272,7 @@ export class BarePlugin
     {
         if (!this.movingObjData.hasMovedAwayEnough)
         {
-            var dist = Helper.Distance(getMouseController().screen.position, getMouseController().screen.positionOnDown);
+            var dist = Helper.Distance(getMouseController().screen.position, getMouseController().screen.positionOnRightDown);
             if (dist > 10)
             {
                 this.movingObjData.hasMovedAwayEnough = true;
@@ -333,6 +333,11 @@ export class BarePlugin
         }
 
         return foundObj;
+    }
+
+    SelectObjectInPlugin(uid: string, openObjectsTab: boolean = false)
+    {
+        window.__GAME_DEBUG_API__.selectObjectInPlugin(uid, openObjectsTab);
     }
 
     AddDebugAction(label: string, callback: () => void)

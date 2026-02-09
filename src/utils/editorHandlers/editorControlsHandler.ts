@@ -128,12 +128,10 @@ export class EditorControlsHandler {
         if (!this.editorController.active)
             return;
 
-        if (isLeftButton)
-        if (isLeftButton && bare.currentSettings.selectionEnabled !== false)
-            globalThis.plugin?.CheckClickGameObject(event, false);
-
         if (this.draggingLevelEntity)
+        {
             return;
+        }
 
         const layer = this.GetSelectedLayer();
 
@@ -145,9 +143,6 @@ export class EditorControlsHandler {
                
                 var multiSelect = keyboardController.IsKeyDown("shift");
                 this.SelectGameObjects([obj], !multiSelect);
-
-                if (bare.currentSettings.selectionEnabled !== false)
-                    globalThis.plugin?.CheckClickGameObject(event, false); // SELECTS OBJ IN PLUGIN (BIT ROUNDABOUT)
 
                 this.actionThisFrame = 'objCreation';
             }
@@ -382,6 +377,10 @@ export class EditorControlsHandler {
             //obj.color = Color.fromHex('#707070ff');
             this.selectedObjects.push(obj);
         }
+
+        // IF SINGLE OBJECT SELECTED, SELECT IN PLUGIN
+        if (objs.length == 1)
+            globalThis.plugin?.SelectObjectInPlugin(objs[0].uniqueID, true);
     }
 
     private OnScroll(ev: WheelEvent)
