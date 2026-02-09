@@ -106,12 +106,12 @@ export class EditorController {
             this.SetData(bare.currentSettings);
             
             if (__DEV__)
-                globalThis.plugin?.AddDebugAction("Toggle Level Editor", () => this.Toggle(bare.initialSettingsHandler));
+                globalThis.plugin?.AddDebugAction("Toggle Level Editor", () => this.Toggle(bare.baseSettingsHandler));
         }
     }
 
     async Open(levelPathOrData: string | LevelData = '', saveLevelCallback: () => Promise<void> = this.levelFunctionality.SaveLevel,
-                   settingsHandler: SettingsHandler = bare.currentSettingsHandler)
+                   settingsHandler: SettingsHandler = bare.baseSettingsHandler)
     {
         if (typeof levelPathOrData != 'string')
             if (settingsHandler.GetRaw().name == bare.currentSettingsHandler.GetRaw().name)
@@ -122,8 +122,11 @@ export class EditorController {
 
         bare.Clear();
         
-        await bare.SetCurrentSettingsHandler(settingsHandler);
-        this.SetData(bare.currentSettings);
+        if (settingsHandler != bare.currentSettingsHandler)
+        {
+            await bare.SetCurrentSettingsHandler(settingsHandler);
+            this.SetData(bare.currentSettings);
+        }
         
         if (levelPathOrData == '')
             levelPathOrData = `${bare.levelPath}/${SaveData.currentLevelStr}.json`;
@@ -203,7 +206,7 @@ export class EditorController {
         events.emit(BareEvent.editor_opened, {name: bare.currentSettings.name || 'levelEditor'});
     }
 
-    Close()
+    Close(loadLevelAfter: boolean = true)
     {
         this.active = false;
 
@@ -223,29 +226,38 @@ export class EditorController {
         
         window.gameMode = GameMode.Game; // SETTING IT IN BARE.START() NOW, BUT ALSO KINDA MAKES SENSE HERE
 
-        //levelController.LoadLevel(SaveData.currentLevelStr);
+        if (loadLevelAfter)
+            levelController.LoadCurrentLevel();
     }
 
     async Toggle(settingsHandler: SettingsHandler, levelPathOrData: string | LevelData = '', saveLevelCallback: () => Promise<void> = this.levelFunctionality.SaveLevel)
     {
         if (bare.currentSettingsHandler == settingsHandler && window.gameMode == GameMode.Editor)
         {
-            bare.Restart();
+            this.Close();
             return;
         }
 
         this.Open(levelPathOrData, saveLevelCallback, settingsHandler);
     }
 
+    // COULD DO THIS BETTER, BY JUST CLEARING THE LEVEL AND REPOPULATING IT
+    // THOUGH THAT'S NOT ALWAYS SUFFICIENT FOR ALL USE CASES, EG CATEGORIES GET CHANGED
+    // THIS COVERS ALL CASES OVER-SUFFICIENTLY ATM
     async Restart()
     {
-        //var levelPath = this.levelFunctionality.currentLevel ? this.levelFunctionality.currentLevel : this.currentLevelPath;
-        var levelPath = await editorController.CreateHitboxDataFor(this.levelFunctionality.currentLevel.name, editorController.hitboxData);
+        var levelPath: string | LevelData;
+        
+        if (bare.currentSettingsHandler.GetRaw().name == 'hitboxEditor')
+            levelPath = await editorController.CreateHitboxDataFor(this.levelFunctionality.currentLevel.name, editorController.hitboxData);
+        else
+            levelPath = this.levelFunctionality.currentLevel ? this.levelFunctionality.currentLevel : this.currentLevelPath;
+        
         var saveLevelCallback = this.saveLevelCallback;
         var settingsHandler = bare.currentSettingsHandler;
         
-        bare.Restart(); // ALSO CLOSES THE EDITOR
-        this.Open(levelPath, saveLevelCallback, settingsHandler);
+        this.Clear();
+        await this.Open(levelPath, saveLevelCallback, settingsHandler);
     }
 
     async OnClickEditorButton()
@@ -459,7 +471,7 @@ export class EditorController {
         if (!hitboxData.processed)
             await bare.currentSettingsHandler.Process(hitboxData); // NEEDED? TODO
 
-        var settingsData = bare.initialSettingsHandler.Get();
+        var settingsData = bare.baseSettingsHandler.Get();
 
         // CONSTRUCT ENTITY FROM INITIAL ENTITY DATA, SO WE GET THE HITBOX DEFINED THERE
         var entityConstructedFromSettingsData = bare.ConstructEntity(objectName, settingsData);
@@ -569,7 +581,7 @@ export class EditorController {
         };
 
         // CONSTRUCT ENTITY FROM INITIAL ENTITY DATA, SO WE GET THE RESULTING ORIGNAL VARS
-        var obj = PhysicsObjectBare.GetDummpyDataFromEntity(mainEntity.name, bare.initialSettingsHandler.Get(), { propsToIgnoreInEntity: ["pivot", "hitbox", "pivotBasedOnHitbox"] }).gameObject; // NOT SEARCHING IN ENTITY DATA, SO WE GET THE ORIGNAL VARS
+        var obj = PhysicsObjectBare.GetDummpyDataFromEntity(mainEntity.name, bare.baseSettingsHandler.Get(), { propsToIgnoreInEntity: ["pivot", "hitbox", "pivotBasedOnHitbox"] }).gameObject; // NOT SEARCHING IN ENTITY DATA, SO WE GET THE ORIGNAL VARS
         var pivotOrig = obj.pivot;
         var pivotOrigRounded = { x: Math.round(pivotOrig.x), y: Math.round(pivotOrig.y) };
         var hitboxOrig = (obj as any).physicsHitbox ? (obj as any).physicsHitbox?.rectangle : {x: 0, y: 0, width: 0, height: 0};
@@ -578,7 +590,7 @@ export class EditorController {
         var resetPivotBasedOnHitbox = (mainEntity.pivotBasedOnHitbox && mainEntity.pivotBasedOnHitbox.x == -1 && mainEntity.pivotBasedOnHitbox.y == -1);
 
         // APPLY NEW VALUES TO THE INITIAL ENTITY SETTING
-        const newRawSettingsData = bare.initialSettingsHandler.UpdateRaw((draft) => {
+        const newRawSettingsData = bare.baseSettingsHandler.UpdateRaw((draft) => {
             draft.entities[mainEntityName] ??= {};
             const entityDraft = draft.entities[mainEntityName];
 
@@ -633,7 +645,7 @@ export class EditorController {
     {
         if (bare.levelEditorOpen)
         {
-            this.Close();
+            this.Close(false); // DON'T WANT TO LOAD THE LEVEL
         }
 
         this.levelFunctionality.currentLevel = null;

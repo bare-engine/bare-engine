@@ -289,7 +289,6 @@ export const Events = undefined as unknown as Events;
 //
 
 export interface Pipes {
-  levelController_Restarted: (full: boolean) => Promise<void>;
   mouseController_Update: (deltaTime: number) => void;
   hitboxController_Update: (deltaTime: number) => void;
   physicsController_Update: (deltaTime: number) => void;

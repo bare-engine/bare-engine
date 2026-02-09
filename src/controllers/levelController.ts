@@ -27,14 +27,7 @@ export class LevelController
 
     init()
     {
-        pipes.set("levelController_Restarted", this.Restarted.bind(this));
         events.persistent.on(BareEvent.game_clear, this.Clear.bind(this));
-    }
-
-    async Restarted(full: boolean): Promise<void>
-    {
-        if (!full && SaveData.currentLevelStr)
-            await this.LoadLevel(SaveData.currentLevelStr);
     }
 
     get objectsLayer(): GameObject[]
@@ -59,6 +52,11 @@ export class LevelController
         }
 
         return level;
+    }
+
+    async LoadCurrentLevel(): Promise<LevelData>
+    {
+        return this.LoadLevel(SaveData.currentLevelStr);
     }
 
     async LoadLevel(levelInput: string | LevelData = ""):Promise<LevelData>

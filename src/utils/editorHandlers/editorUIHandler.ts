@@ -4,6 +4,7 @@ import { EditorController } from "../../controllers/editorController";
 import { events, MakePath } from "../../main";
 import { FlashShader } from "../shaders/flashShader";
 import { TweenTo } from "../../controllers/tweenController";
+import { levelController } from '../..';
 
 /*
     BUILD SETUP/CONTROLS UI
@@ -463,7 +464,7 @@ export class EditorUIHandler {
         const editorButton = document.getElementById('close-editor-btn') as HTMLButtonElement;
         editorButton.addEventListener('click', (event: MouseEvent) => {
             event.preventDefault();
-            bare.Restart(); // CLEARS ALL EDITORS TOO
+            levelController.LoadCurrentLevel();
         });
 
         // MINIMIZE BUTTON HOVER

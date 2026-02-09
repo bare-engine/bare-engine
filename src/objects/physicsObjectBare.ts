@@ -166,7 +166,7 @@ export class PhysicsObjectBare extends GameObject
             this.ResetVelocity();
     }
 
-    static GetDummpyDataFromEntity(nameOrEntity: string | Entity, settingsData: SettingsData = bare.initialSettingsHandler.Get(), options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): {entity: Entity, gameObject: GameObject}
+    static GetDummpyDataFromEntity(nameOrEntity: string | Entity, settingsData: SettingsData = bare.baseSettingsHandler.Get(), options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): {entity: Entity, gameObject: GameObject}
     {
         var entityConstructed = bare.ConstructEntity(nameOrEntity, settingsData, options);
         PhysicsObjectBare.dummyPhysicsObjectBare.ResetValues();

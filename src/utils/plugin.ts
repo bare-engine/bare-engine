@@ -148,8 +148,15 @@ window.__GAME_DEBUG_API__ = {
     await bare.SaveEntityData(newData);
     plugin.doNotifyAfterSave = true;
 
-    var editorController = getEditorController();
-    editorController.Restart();
+    if (bare.levelEditorOpen)
+    {
+      var editorController = getEditorController();
+      await editorController.Restart();
+    }
+    else
+    {
+      await bare.Restart();
+    }
   },
 
   notifyEntityDataChanged(newData) {
@@ -194,10 +201,10 @@ window.__GAME_DEBUG_API__ = {
         });
         const json = await res.json().catch(() => null);
 
-        if (editorController.active && SaveData.currentLevelStr == levelName)
+        if (SaveData.currentLevelStr == levelName)
         {
             SaveData.currentLevelStr = '';
-            bare.Restart(); // CLOSES THE EDITOR TOO
+            bare.Restart(); // DON'T HAVE LEVEL TO GO TO, SINCE WE JUST REMOVED IT, SO JUST RESTART GAME
         }
         return { ok: res.ok, saved: res.ok, response: json };
       } catch (error: any) {

@@ -48,10 +48,10 @@ export class BareGame
 
     public componentClasses: Record<string, any> = {};
 
-    public initialSettingsHandler: SettingsHandler = new SettingsHandler();
+    public baseSettingsHandler: SettingsHandler = new SettingsHandler();
     public currentSettingsHandler: SettingsHandler;
 
-    get initialSettings(): SettingsData { return this.initialSettingsHandler.Get(); }
+    get baseSettings(): SettingsData { return this.baseSettingsHandler.Get(); }
     get currentSettings(): SettingsData { return this.currentSettingsHandler.Get(); }
 
     time: number = 0;
@@ -111,14 +111,14 @@ export class BareGame
 
         this.ImplementInitialTextures();
         
-        await this.initialSettingsHandler.Process(entityDataJson);
-        this.SetCurrentSettingsHandler(this.initialSettingsHandler);
+        await this.baseSettingsHandler.Process(entityDataJson);
+        this.SetCurrentSettingsHandler(this.baseSettingsHandler);
 
         events.emit(BareEvent.game_awake);
 
         await this.OnAwake();
 
-        this.initialSettingsHandler.ReprocessAnimations(); // NEEDED SINCE AN ATLAS WITH ANIMATIONS CAN BE LOADED IN AT AWAKE() ABOVE
+        this.baseSettingsHandler.ReprocessAnimations(); // NEEDED SINCE AN ATLAS WITH ANIMATIONS CAN BE LOADED IN AT AWAKE() ABOVE
 
         await this.Start();
 
@@ -142,7 +142,7 @@ export class BareGame
 
         //rapid.backgroundColor = Color.White;
 
-        this.SetCurrentSettingsHandler(this.initialSettingsHandler);
+        this.SetCurrentSettingsHandler(this.baseSettingsHandler);
 
         window.bare = this.GetRapidProxy(); // HACK FOR DEMO
         
@@ -261,7 +261,7 @@ export class BareGame
     {
         this.currentSettingsHandler = settingsHandler;
 
-        var isBase = (this.currentSettingsHandler === this.initialSettingsHandler);
+        var isBase = (this.currentSettingsHandler === this.baseSettingsHandler);
         this.ApplyLayerInfoToSettings(this.currentSettings, isBase);
 
         return this.currentSettingsHandler;
@@ -628,7 +628,7 @@ export class BareGame
         }
     }
 
-    GetDummpyDataFromEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.initialSettingsHandler.Get(), options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): {entity: Entity, gameObject: GameObject}
+    GetDummpyDataFromEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.baseSettingsHandler.Get(), options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): {entity: Entity, gameObject: GameObject}
     {
         var entityConstructed = this.ConstructEntity(nameOrEntity, settingsData, options);
         this.dummyGameObject.ResetValues();
@@ -1093,8 +1093,8 @@ export class BareGame
     // THIS SHOULD NOT BE HERE, TODO
     async SaveEntityData(newRawData: SettingsData)
     {
-        this.initialSettingsHandler.SetRaw(newRawData);
-        await this.initialSettingsHandler.Process();
+        this.baseSettingsHandler.SetRaw(newRawData);
+        await this.baseSettingsHandler.Process();
     
         // Persist to disk via dev-server endpoint when available (local only)
         if (!window.isLocalhost) {
@@ -1106,14 +1106,14 @@ export class BareGame
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                entityData: this.initialSettingsHandler.GetRaw(),
+                entityData: this.baseSettingsHandler.GetRaw(),
                 skipReload: true
             })
           });
           const json = await res.json().catch(() => null);
         
           // TELL THE PLUGIN
-          window.__GAME_DEBUG_API__.notifyEntityDataChanged(this.initialSettingsHandler.GetRaw())
+          window.__GAME_DEBUG_API__.notifyEntityDataChanged(this.baseSettingsHandler.GetRaw())
 
           return { ok: res.ok, saved: res.ok, response: json };
         } catch (error: any) {
@@ -1173,7 +1173,6 @@ export class BareGame
     async Restart(full:boolean = false)
     {
         this.Clear(full);
-        await pipes.run("levelController_Restarted", full); // POTENTALLY LOAD LATEST LEVEL
         await this.Start();
     }
 

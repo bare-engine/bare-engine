@@ -77,7 +77,7 @@ export class PivotComponent extends BaseComponent
                     entity.pivotBasedOnHitbox = {x: x, y: y};
                 }
 
-                var origEntity = bare.ConstructEntity(entity, bare.initialSettingsHandler.Get());
+                var origEntity = bare.ConstructEntity(entity, bare.baseSettingsHandler.Get());
                 var obj = new PhysicsObjectBare()
                 bare.ApplyEntityToGameObject(origEntity, obj);
                 var pivotPosOrig = obj.pivot;

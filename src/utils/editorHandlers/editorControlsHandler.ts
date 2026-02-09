@@ -41,7 +41,7 @@ export class EditorControlsHandler {
         if (window.isLocalhost)
         document.addEventListener('keydown', (e: KeyboardEvent) => {
             if (e.key.toLowerCase() == "x") {
-                this.editorController.Toggle(bare.initialSettingsHandler);
+                this.editorController.Toggle(bare.baseSettingsHandler);
             }
         }, { passive: false });
 

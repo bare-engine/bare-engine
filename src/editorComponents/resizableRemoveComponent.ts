@@ -14,7 +14,7 @@ export class ResizableRemoveComponent extends BaseComponent
 
     // CONSTRUCT ENTITY FROM INITIAL ENTITY DATA, SO WE GET THE RESULTING ORIGNAL VARS
     var mainObj = objectController.GetAllObjects().find((o: GameObject) => o.customName == "main")!;
-    var obj = PhysicsObjectBare.GetDummpyDataFromEntity(mainObj.name, bare.initialSettings, { propsToIgnoreInEntity: ["hitbox"] }).gameObject; // NOT SEARCHING IN ENTITY DATA, SO WE GET THE ORIGNAL VARS
+    var obj = PhysicsObjectBare.GetDummpyDataFromEntity(mainObj.name, bare.baseSettings, { propsToIgnoreInEntity: ["hitbox"] }).gameObject; // NOT SEARCHING IN ENTITY DATA, SO WE GET THE ORIGNAL VARS
     var hitboxOrig = (obj as any).physicsHitbox ? (obj as any).physicsHitbox?.rectangle : {x: 0, y: 0, width: 0, height: 0};
 
     var entityBare = {name: "collisionRect",
