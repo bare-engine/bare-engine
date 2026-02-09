@@ -1,4 +1,4 @@
-import { Entity, LayerInfo, SettingsData, BareEvent } from '../bareTypes';
+import { Entity, LayerInfo, SettingsData, BareEvent, SaveData } from '../bareTypes';
 import { assetsHandler } from "../assetsHandler";
 import { EditorController } from "../../controllers/editorController";
 import { events, MakePath } from "../../main";
@@ -464,7 +464,11 @@ export class EditorUIHandler {
         const editorButton = document.getElementById('close-editor-btn') as HTMLButtonElement;
         editorButton.addEventListener('click', (event: MouseEvent) => {
             event.preventDefault();
-            levelController.LoadCurrentLevel();
+
+            if (SaveData.currentLevelStr != '')
+                levelController.LoadCurrentLevel();
+            else
+                bare.Restart(); // THERE IS NO LEVEL, JUST RESTART. THIS HAPPENS FOR HITBOX EDITOR
         });
 
         // MINIMIZE BUTTON HOVER
