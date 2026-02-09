@@ -89,11 +89,6 @@ export class LevelController
 
         await bare.BeforeLoadLevel();
 
-        /*if (this.currentLevel)
-        {
-            this.Deactivate();
-        }*/
-
         var level = await this.LoadSingleLevel(levelInput || SaveData.currentLevelStr); // IF NO LEVEL SUPPLIED, RELOAD CURRENT LEVEL
 
         bare.AfterLoadLevel(level);
@@ -401,39 +396,8 @@ export class LevelController
             .filter(name => name.length > 0);
     }
 
-    /*RestartLevel()
-    {
-        this.Deactivate();
-        
-        this.LoadLevel(GameData.currentLevelStr);
-        hitboxController.Activate();
-
-        events.emit(BareEvent.restarLevel);
-    }*/
-
-    Deactivate()
-    {
-        var gameLayers = objectController.GetLayers();
-        for (var i = 0; i < gameLayers.length; i++)
-        {
-            var layer = gameLayers[i];
-            for (var j = layer.length - 1; j >= 0; j--)
-            {
-                var obj = layer[j];
-                if (obj.persistent)
-                {
-                    continue;
-                }
-
-                bare.RemoveGameObject(obj);
-            }
-        }
-
-    }
-
     Clear({ full }: { full: boolean })
     {
-        this.Deactivate();
         this.currentLevel = null;
     }
 }

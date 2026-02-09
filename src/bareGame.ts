@@ -8,6 +8,7 @@ import { assetsHandler } from "./utils/assetsHandler";
 import { defaultEntityData as defaultEntityData } from "./utils/bareData";
 import { PhysicsObjectBare } from "./barePhysics";
 import { SaveDataHandler } from "./utils/SaveDataHandler";
+import { ObjectController } from "./controllers/objectController";
 
 /*Bare.camera.SetPosition(bare.width * .5, bare.height * .5);
 Bare.sound.Play()
@@ -1146,6 +1147,7 @@ export class BareGame
     }
     
     // MAKE THESE EVENTS? TODO
+    // ALSO HANDY TO OVERRIDE THOUGH
     async BeforeLoadLevel()
     {
         this.Clear();
@@ -1166,8 +1168,30 @@ export class BareGame
 
     RemoveAll()
     {
-        objectController.Clear();
-        uiController.Clear();
+        var removeAllFrom = (objectControllerArg: ObjectController) => {
+            var layers = objectControllerArg.GetLayers();
+            for (var i = 0; i < layers.length; i++)
+            {
+                var layer = layers[i];
+                for (var j = layer.length - 1; j >= 0; j--)
+                {
+                    var obj = layer[j];
+                    if (obj.persistent)
+                    {
+                        continue;
+                    }
+
+                    bare.RemoveGameObject(obj);
+                }
+            }
+        }
+
+        removeAllFrom(objectController);
+        removeAllFrom(uiController);
+        
+        // WAY I DID IT BEFORE. WAY FASTER, DIRECT, BUT DOESN'T TAKE INTO ACCOUNT POOLS AND PERSISTENT PROPERTY
+        //objectController.Clear();
+        //uiController.Clear();
     }
 
     async Restart(full:boolean = false)
@@ -1199,7 +1223,7 @@ export class BareGame
     {
         // NOT SENDING CLEAR EVENT HERE... WANT THAT?
 
-        this.ApplyLayerInfoToSettings(this.currentSettings, true);
+        this.ApplyLayerInfoToSettings(this.currentSettings, true); // ?
 
         this.RemoveAll();
 

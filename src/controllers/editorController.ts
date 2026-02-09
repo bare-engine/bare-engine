@@ -118,8 +118,6 @@ export class EditorController {
                 if (levelPathOrData.name == this.levelFunctionality.currentLevel?.name)
                     return; // ALREADY IN TARGET EDITOR AT TARGET LEVEL
 
-        //this.levelLoadedBeforeOpen = levelController.currentLevel;
-
         bare.Clear();
         
         if (settingsHandler != bare.currentSettingsHandler)
