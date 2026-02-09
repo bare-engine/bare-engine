@@ -221,12 +221,16 @@ export type CameraRenderInfo = {
 const ev = <T>() => undefined as T | undefined;
 
 const eventDefs = {
-  game_firstStart: undefined,
+  game_awake: undefined,
   game_started: undefined,
+  game_restart: ev<{ full: boolean }>(),
   game_preUpdate: ev<{ deltaTime: number }>(),
   game_update: ev<{ deltaTime: number }>(),
   game_preRender: undefined,
   game_postRender: undefined,
+  game_objectAdded: ev<{ gameObject: GameObject; layer: number | GameObject }>(),
+  game_objectRemoved: ev<GameObject>(),
+  game_focusChange: ev<boolean>(),
   game_clear: ev<{ full: boolean }>(),
   game_resize: ev<{ prevWidth: number; prevHeight: number; newWidth: number; newHeight: number }>(),
 
@@ -234,12 +238,7 @@ const eventDefs = {
   level_preSave: ev<{ levelStr: string }>(),
   level_postSave: ev<{ levelStr: string; level: LevelData }>(),
   level_savedToDisk: ev<{ levelStr: string; level: LevelData }>(),
-  level_completed: ev<{ levelNum: int }>(),
-  level_failed: ev<{ levelNum: int }>(),
   level_restart: undefined,
-
-  game_objectAdded: ev<{ gameObject: GameObject; layer: number | GameObject }>(),
-  game_objectRemoved: ev<GameObject>(),
 
   collision_start: ev<[GameObject, GameObject]>(),
   collision_update: ev<[GameObject, GameObject]>(),
@@ -254,14 +253,11 @@ const eventDefs = {
   key_down: ev<{ key: string; allKeys: Array<string> }>(),
   key_released: ev<{ key: string; allKeys: Array<string> }>(),
 
-  game_focusChange: ev<boolean>(),
-
   editor_layerSelected: ev<{ layerName: string }>(),
   editor_opened: ev<{ name: string }>(),
   editor_closed: ev<{ name: string }>(),
 
   physics_refreshBody: ev<GameObject>(),
-
 } as const;
 
 const createEventMap = <T extends Record<string, any>>(defs: T) =>
@@ -293,6 +289,7 @@ export const Events = undefined as unknown as Events;
 //
 
 export interface Pipes {
+  levelController_Restarted: (full: boolean) => Promise<void>;
   mouseController_Update: (deltaTime: number) => void;
   hitboxController_Update: (deltaTime: number) => void;
   physicsController_Update: (deltaTime: number) => void;

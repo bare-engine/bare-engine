@@ -86,8 +86,6 @@ export class BareGame
 
         this.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT
 
-        events.emit(BareEvent.game_firstStart);
-
         if (!pipes.has("cameraHandler_ScreenToWorld")) //IF CAMERAHANDLER HAS NOT ALREADY SET THESE
         {
             // LET THEM RETURN DEFAULT VALUES
@@ -113,8 +111,10 @@ export class BareGame
 
         this.ImplementInitialTextures();
         
-        await this.initialSettingsHandler.Process(entityDataJson); // NEEDS TO GO AFTER ONAWAKE() SINCE IT CAN LOAD ANIMATION FRAMES THAT OVERRIDDEN SHOULD LOAD
+        await this.initialSettingsHandler.Process(entityDataJson);
         this.SetCurrentSettingsHandler(this.initialSettingsHandler);
+
+        events.emit(BareEvent.game_awake);
 
         await this.OnAwake();
 
@@ -1173,6 +1173,7 @@ export class BareGame
     async Restart(full:boolean = false)
     {
         this.Clear(full);
+        await pipes.run("levelController_Restarted", full); // POTENTALLY LOAD LATEST LEVEL
         await this.Start();
     }
 
