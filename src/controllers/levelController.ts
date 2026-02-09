@@ -56,7 +56,15 @@ export class LevelController
 
     async LoadCurrentLevel(): Promise<LevelData>
     {
+        if (SaveData.currentLevelStr == '')
+            return; // NO CURRENT LEVEL
+
         return this.LoadLevel(SaveData.currentLevelStr);
+    }
+
+    async RestartLevel(): Promise<LevelData>
+    {
+        return this.LoadCurrentLevel();
     }
 
     async LoadLevel(levelInput: string | LevelData = ""):Promise<LevelData>

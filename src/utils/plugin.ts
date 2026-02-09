@@ -239,7 +239,7 @@ export class BarePlugin
 
         // RESTART
         this.AddDebugAction("Restart Game", () => bare.Restart(true));
-        this.AddDebugAction("Restart Level", () => bare.Restart(false));
+        this.AddDebugAction("Restart Level", () => levelController.RestartLevel());
         this.AddDebugAction("Clear Save Data", () => SaveDataHandler.Clear());
         this.AddDebugBreak();
 
