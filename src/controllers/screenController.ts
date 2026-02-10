@@ -39,7 +39,8 @@ export class ScreenController
     {
         for (var scene of this.currentScenes)
         {
-            scene.OnUpdate(deltaTime);
+            if (scene.started)
+                scene.OnUpdate(deltaTime);
         }
     }
     
@@ -47,11 +48,12 @@ export class ScreenController
     {
         for (var scene of this.currentScenes)
         {
-            scene.OnRender();
+            if (scene.started)
+                scene.OnRender();
         }
     }
 
-    async Goto<T extends BareGame>(sceneClass: BareGameClass<T>, ...args): Promise<T>
+    Goto<T extends BareGame>(sceneClass: BareGameClass<T>, ...args):T
     {
         this.Clear();
 
