@@ -13,12 +13,9 @@ export class PhysicsControllerBase
 		events.persistent.on(BareEvent.game_objectRemoved, this.OnGameObjectRemoved.bind(this));
 		events.persistent.on(BareEvent.level_loaded, this.OnLevelLoaded.bind(this));
 
-		events.persistent.on(BareEvent.game_clear, ({full}) => {
-			if (full)
-			{
-				pipes.remove("physicsController_Update");
-				pipes.remove("physicsController_Render");
-			}
+		events.persistent.on(BareEvent.game_completeClear, () => {
+			pipes.remove("physicsController_Update");
+			pipes.remove("physicsController_Render");
 		});
 
 		this.Init();

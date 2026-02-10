@@ -118,17 +118,17 @@ export class EditorController {
                 if (levelPathOrData.name == this.levelFunctionality.currentLevel?.name)
                     return; // ALREADY IN TARGET EDITOR AT TARGET LEVEL
 
-        bare.Clear();
+        if (levelPathOrData == '')
+            levelPathOrData = `${bare.levelPath}/${SaveData.currentLevelStr}.json`;
+
+        bare.Clear(true); // CLEARS ALL PERSISTENT OBJECTS TOO
         
-        if (settingsHandler != bare.currentSettingsHandler)
+        //if (settingsHandler != bare.currentSettingsHandler)
         {
             await bare.SetCurrentSettingsHandler(settingsHandler);
             this.SetData(bare.currentSettings);
         }
         
-        if (levelPathOrData == '')
-            levelPathOrData = `${bare.levelPath}/${SaveData.currentLevelStr}.json`;
-
         if (typeof levelPathOrData == 'string')
             this.currentLevelPath = levelPathOrData;
 

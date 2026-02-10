@@ -328,7 +328,8 @@ export class EditorControlsHandler {
             }
         }
 
-        this.SelectGameObjects(objsToSelect);
+        var multiSelect = keyboardController.IsKeyDown("shift");
+        this.SelectGameObjects(objsToSelect, !multiSelect);
     }
 
     ClearSelection()

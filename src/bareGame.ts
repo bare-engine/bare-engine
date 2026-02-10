@@ -348,6 +348,7 @@ export class BareGame
 
     // HOW USEFUL IS THIS POOLING REALLY? TODO
     // NO CONTROL OVER CACHE LOCALITY IN JS, MAYBE FASTER INITIALIZATION FOR MANY OBJECTS
+    // REUSE OF OBJECTS IS KINDA NICE
     RegisterGameObjectPool(cls: GameObjectClass, defaultPoolSize: number = 10): void
     {
         const name = cls.name.startsWith("_") ? cls.name.substring(1) : cls.name;
@@ -761,7 +762,8 @@ export class BareGame
 
     RemoveGameObject(gameObject: GameObject, parent?: int | GameObject)
     {
-        if (!gameObject.addedToLevel)
+        var isUI = (parent !== undefined && !(parent instanceof GameObject) && parent >= UI_LAYER);
+        if (!gameObject.addedToLevel && !isUI)
         {
             // GAMEOBJECT WAS ALREADY REMOVED
             return;
@@ -772,7 +774,7 @@ export class BareGame
 
         var removed = false;
 
-        if (parent)
+        if (parent !== undefined)
         {
             if (parent instanceof GameObject)
             {
@@ -1166,9 +1168,10 @@ export class BareGame
         // FOR OVERRIDE
     }
 
-    RemoveAll()
+    // full = true WILL REMOVE ALL OBJECTS, INCLUDING PERSISTENT
+    RemoveAll(full:boolean = false)
     {
-        var removeAllFrom = (objectControllerArg: ObjectController) => {
+        var removeAllFrom = (objectControllerArg: ObjectController, isUI: boolean = false) => {
             var layers = objectControllerArg.GetLayers();
             for (var i = 0; i < layers.length; i++)
             {
@@ -1176,19 +1179,27 @@ export class BareGame
                 for (var j = layer.length - 1; j >= 0; j--)
                 {
                     var obj = layer[j];
-                    if (obj.persistent)
-                    {
+                    
+                    if (!full && obj.persistent)
                         continue;
-                    }
 
-                    bare.RemoveGameObject(obj);
+                    var actualLayer = (isUI ? (UI_LAYER + i) : i);
+                    bare.RemoveGameObject(obj, actualLayer);
                 }
             }
         }
 
         removeAllFrom(objectController);
-        removeAllFrom(uiController);
+
+        if (full)
+            removeAllFrom(uiController, true);
         
+        if (full)
+        {
+            objectController.Clear();
+            uiController.Clear();
+        }
+
         // WAY I DID IT BEFORE. WAY FASTER, DIRECT, BUT DOESN'T TAKE INTO ACCOUNT POOLS AND PERSISTENT PROPERTY
         //objectController.Clear();
         //uiController.Clear();
@@ -1204,14 +1215,8 @@ export class BareGame
     {
         events.emit(BareEvent.game_clear, { full: full });
 
-        this.ClearScene();
+        this.ClearScene(full);
         this.OnClear(full);
-
-        if (full)
-        {
-            cancelAnimationFrame(this.RunMainLoopId);
-            this.RunMainLoopId = -1;
-        }
     }
 
     OnClear(full:boolean = false)
@@ -1219,13 +1224,13 @@ export class BareGame
         // FOR OVERRIDE
     }
 
-    ClearScene()
+    ClearScene(full:boolean = false)
     {
         // NOT SENDING CLEAR EVENT HERE... WANT THAT?
 
         this.ApplyLayerInfoToSettings(this.currentSettings, true); // ?
 
-        this.RemoveAll();
+        this.RemoveAll(full);
 
         events.clear(); // LEAVES PERSISTENT EVENTS
     }
@@ -1241,6 +1246,9 @@ export class BareGame
         bare.Clear(true);
         assetsHandler.Clear();
         
+        cancelAnimationFrame(bare.RunMainLoopId);
+        bare.RunMainLoopId = -1;
+
         //BareGame.registeredClasses = {};
         //events.clearAll();
         //pipes.clear();

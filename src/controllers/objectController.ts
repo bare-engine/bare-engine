@@ -115,6 +115,13 @@ export class ObjectController
 	private RemoveFromLayer(obj: GameObject, layer: int): boolean
 	{
         var layerNum = this.GetLayerNumber(layer);
+        
+        if (!this.layers[layerNum])
+        {
+            console.warn(`Layer ${layer} does not exist`);
+            return false;
+        }
+
 		for (let i = 0; i < this.layers[layerNum].length; i++)
 		{
 			if (this.layers[layerNum][i] === obj)

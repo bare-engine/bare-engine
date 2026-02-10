@@ -232,6 +232,7 @@ const eventDefs = {
   game_objectRemoved: ev<GameObject>(),
   game_focusChange: ev<boolean>(),
   game_clear: ev<{ full: boolean }>(),
+  game_completeClear: undefined,
   game_resize: ev<{ prevWidth: number; prevHeight: number; newWidth: number; newHeight: number }>(),
 
   level_loaded: ev<{ levelStr: string; level: LevelData }>(),

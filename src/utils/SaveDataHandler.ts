@@ -153,10 +153,7 @@ export class SaveDataHandler
 
 SaveDataHandler.InitDefaults();
 
-events.persistent.on(BareEvent.game_clear, ({ full }) => {
-    if (full)
-    {
-        SaveDataHandler.Clear();
-        SaveDataHandler.InitDefaults();
-    }
+events.persistent.on(BareEvent.game_completeClear, () => {
+    SaveDataHandler.Clear();
+    SaveDataHandler.InitDefaults();
 });
