@@ -1,59 +1,69 @@
-import { events, pipes } from "../main";
+import { BareGame, events, MakePath, pipes } from "../main";
+import { GameObject } from "../objects/gameObject";
+import { assetsHandler } from "../utils/assetsHandler";
 import { BareScreen, BareEvent } from '../utils/bareTypes';
-type BareScreenClass<T extends BareScreen = BareScreen> = new () => T;
+import { SaveDataHandler } from "../utils/SaveDataHandler";
+type BareGameClass<T extends BareGame = BareGame> = new () => T;
 
 export class ScreenController
 {
-    currentScreen?: BareScreen;
+
+    currentScenes: BareGame[] = [];
 
     constructor()
     {
-        this.init();
     }
 
     init()
     {
-        pipes.set("screenController_Update", this.Update.bind(this));
-        pipes.set("screenController_Render", this.Render.bind(this));
-        events.persistent.on(BareEvent.game_clear, this.Clear.bind(this));
+        //pipes.set("screenController_Update", this.Update.bind(this));
+        //pipes.set("screenController_Render", this.Render.bind(this));
+        //events.persistent.on(BareEvent.game_clear, this.Clear.bind(this));
     }
 
     Clear()
     {
-        this.currentScreen?.OnDestroy?.();
-        this.currentScreen = undefined;
+        for (var i = this.currentScenes.length - 1; i >= 0; i--)
+        {
+            const scene = this.currentScenes[i];
+        
+            if (scene.persistent)
+                continue;
+
+            scene.Clear();
+            this.currentScenes.splice(i, 1);
+        }
     }
     
     Update(deltaTime: number): void
     {
-        this.currentScreen?.OnUpdate?.(deltaTime);
+        for (var scene of this.currentScenes)
+        {
+            scene.OnUpdate(deltaTime);
+        }
     }
     
     Render(): void
     {
-        this.currentScreen?.OnRender?.();
+        for (var scene of this.currentScenes)
+        {
+            scene.OnRender();
+        }
     }
 
-    async Goto<T extends BareScreen>(screenClass: BareScreenClass<T>): Promise<T>
+    async Goto<T extends BareGame>(sceneClass: BareGameClass<T>, ...args): Promise<T>
     {
-        this.currentScreen?.OnDestroy?.();
-        bare.ClearScene();
+        this.Clear();
 
-        const next = new screenClass();
+        const newScene = new sceneClass();
+        this.currentScenes.push(newScene);
 
-        await next.OnAwake?.();
-        
-        this.currentScreen = next;
-        next.OnStart?.();
+        // NO AWAIT...
 
-        return next;
-    }
+        //await next.OnAwake?.();
+        //await next.OnStart?.();
 
-    RestartCurrentScreen(): void
-    {
-        this.currentScreen?.OnDestroy?.();
-        bare.ClearScene();
-        this.currentScreen?.OnStart?.();
+        return newScene;
     }
 }
 

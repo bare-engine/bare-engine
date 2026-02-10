@@ -6,6 +6,7 @@ export { BareGame } from "./bareGame";
 export { GameObject } from "./objects/gameObject";
 
 // Core (side-effectful)
+export { BareEngine } from "./bareEngine";
 export { StartBare, GameMode, MakePath, events, pipes } from "./core";
 
 export { BareEvent, Events } from "./utils/bareTypes";

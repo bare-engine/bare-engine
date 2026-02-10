@@ -8,6 +8,9 @@ import matt from './libraries/matt';
 import { BareGame } from './bareGame';
 import { Pipes, BareEvent, Events } from './utils/bareTypes';
 import Tween from './libraries/tweenJS/Tween';
+import { screenController } from './controllers/screenController';
+import { assetsHandler } from './utils/assetsHandler';
+import { BareEngine } from './bareEngine';
 
 export const events = mitt<Events>();
 export const pipes = matt<Pipes>();
@@ -59,7 +62,7 @@ declare global
 
     var destroyTextFunc:Function | null;
 
-    var bare: BareGame & Rapid;
+    var bare: BareGame & BareEngine & Rapid;
     
     var objectController:ObjectController
     var uiController:ObjectController
@@ -300,8 +303,8 @@ export function StartBare<T extends BareGame>(gameClass: new () => T, options?: 
             });
 
             // START!
-            var start = () => {
-                new gameClass();
+            var start = async () => {
+                new BareEngine(gameClass);
             };
 
             var testGetElementById = document.getElementById('editor-overlay');

@@ -18,6 +18,8 @@ import { FileDropHandler } from "../utils/fileDropHandler";
 import { levelController } from "./levelController";
 import { cameraHandler } from "../utils/CameraHandler";
 import { PhysicsObjectBare } from "../barePhysics";
+import { EditorScene } from "../scenes/editorScene";
+import { screenController } from "./screenController";
 
 /*
     EDITOR CONTROLLER (MAIN)
@@ -121,8 +123,6 @@ export class EditorController {
         if (levelPathOrData == '')
             levelPathOrData = `${bare.levelPath}/${SaveData.currentLevelStr}.json`;
 
-        bare.Clear(true); // CLEARS ALL PERSISTENT OBJECTS TOO
-        
         //if (settingsHandler != bare.currentSettingsHandler)
         {
             await bare.SetCurrentSettingsHandler(settingsHandler);
@@ -266,7 +266,8 @@ export class EditorController {
             return;
         }
 
-        this.Open();
+        screenController.Goto(EditorScene);
+        //this.Open();
     }
 
     private SetupFileDropZone()

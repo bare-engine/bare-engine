@@ -5,8 +5,9 @@ import { Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { BareGame, events } from "../main";
 import { OutlineShader } from "./shaders/outlineShader";
-import { BareClasses, editorController, levelController, tweenController } from "..";
+import { BareClasses, editorController, levelController, screenController, tweenController } from "..";
 import { create } from "node:domain";
+import { EditorScene } from "../scenes/editorScene";
 
 // THIS PLUGIN CODE DOES NOT GET INCLUDED IN PRODUCTION
 // ALL CALLS SHOULD BE WRAPPED WITH __DEV__
@@ -71,7 +72,7 @@ window.__GAME_DEBUG_API__ = {
 
   async gotoLevelEdit(levelPath: string) {
     await levelController.LoadLevel(levelPath);
-    editorController.Open();
+    screenController.Goto(EditorScene);
   },
 
   async gotoEntity(name: string) {

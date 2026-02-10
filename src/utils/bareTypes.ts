@@ -341,7 +341,7 @@ export interface BareScreen
   OnStart?(): void;
   OnUpdate?(dt: number): void;
   OnRender?(): void;
-  OnDestroy?(): void;
+  newScene?(): void;
 }
 
 // BIT DIFFERENT THAN THE REST?

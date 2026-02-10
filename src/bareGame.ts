@@ -41,11 +41,8 @@ export class BareGame
     static levelPath: string = "_data/levels";
     static soundPath: string = "sounds";
 
-    public lastUpdateTimeRef:number;
-    public deltaTime: number;
-    public gameSpeed: number;
-
     public started: boolean = false;
+    public persistent: boolean = false;
 
     public componentClasses: Record<string, any> = {};
 
@@ -54,17 +51,9 @@ export class BareGame
 
     get baseSettings(): SettingsData { return this.baseSettingsHandler.Get(); }
     get currentSettings(): SettingsData { return this.currentSettingsHandler.Get(); }
-
-    time: number = 0;
-    count: int = 0;
     
     isPaused: boolean = false;
     doRender: boolean = true;
-
-    RunMainLoopId: number = -1;
-    RunMainLoopBound: () => void;
-
-    public dummyGameObject: GameObject = new GameObject(); // JUST USED FOR DEFAULT VALUES AND DUMMY CONSTRUCTION
 
     layerInfos: Record<int, LayerInfo> = {};
     layerNames: string[];
@@ -78,7 +67,6 @@ export class BareGame
     get levelPath(): string { return BareGame.rootPath + "/" + BareGame.levelPath; }
     get soundPath(): string { return BareGame.rootPath + "/" + BareGame.soundPath; }
 
-    get levelEditorOpen(): boolean { return window.gameMode == GameMode.Editor; }
     get currentLevelStr(): string { return SaveData.currentLevelStr; }
 
     constructor(entityDataJson:SettingsData = defaultEntityData)
@@ -99,8 +87,6 @@ export class BareGame
         this.RegisterGameObjectPool(GameObject, BareGame.gameObjectPoolSize);
         //this.LoadComponents();
 
-        this.RunMainLoopBound = this.RunMainLoop.bind(this);
-
         this.Awake(entityDataJson);
     }
 
@@ -108,10 +94,6 @@ export class BareGame
     {
         rapid.backgroundColor = Color.White;
 
-        this.ResizeCanvas();
-
-        this.ImplementInitialTextures();
-        
         await this.baseSettingsHandler.Process(entityDataJson);
         this.SetCurrentSettingsHandler(this.baseSettingsHandler);
 
@@ -124,10 +106,6 @@ export class BareGame
         await this.Start();
 
         this.HideLoadingText();
-
-        window.addEventListener('resize', this.ResizeCanvas.bind(this));
-
-        this.lastUpdateTimeRef = performance.now();
     }
 
     OnAwake(): void | Promise<void>
@@ -143,16 +121,11 @@ export class BareGame
 
         //rapid.backgroundColor = Color.White;
 
-        this.SetCurrentSettingsHandler(this.baseSettingsHandler);
+        this.SetCurrentSettingsHandler(this.baseSettingsHandler);// DOUBLE
 
         window.bare = this.GetRapidProxy(); // HACK FOR DEMO
         
         await this.OnStart();
-
-        if (this.RunMainLoopId == -1)
-        {
-            this.RunMainLoopId = requestAnimationFrame(this.RunMainLoopBound);
-        }
 
         this.started = true;
         
@@ -218,44 +191,6 @@ export class BareGame
     {
         var classNameNoLeadingUnderscore = componentClass.name.replace(/^_/, ''); // REMOVE LEADING _ THAT SOME COMPONENTS GET
         bare.componentClasses[classNameNoLeadingUnderscore] = componentClass;
-    }
-
-    ImplementInitialTextures()
-    {
-        var entries = Object.entries(window.initialAssets);
-        var entriesIgnore = new Set<string>();
-
-        for (const [name, asset] of entries)
-        {
-            // FIND JSON WITH MATCHING WEBP, THEN ADD AS SPRITESHEET
-            if (name.endsWith(".json"))
-            {
-                const json = window.initialAssets[name];
-
-                if (!json.frames || !json.meta || !json.meta.image)
-                    continue; // SKIP, NOT AN ATLAS
-
-                const imgName = json.meta.image;
-                const img = window.initialAssets[imgName];
-                assetsHandler.ProcessAtlas(json, img);
-
-                // ATLAS IS PROCESSED AND ADDED ANIMATIONS POTENTIALLY,
-                // MORE ANIMATION DATA LIKE FPS AND LOOP CAN BE SET LATER IN ENTITY SETTINGS PROCESS()
-
-                entriesIgnore.add(imgName); // PREVENT ADDING ATLAS TO TEXTURES BELOW
-            }
-        }
-        
-        for (const [name, asset] of entries)
-        {
-            if (!name.endsWith('.webp')) continue;
-            if (entriesIgnore.has(name)) continue;
-            
-            // ADD REGULAR TEXTURE
-            var texture = rapid.textures.addImageFromSource(asset);
-            var nameMinusExt = name.split('.')[0];
-            assetsHandler.AddTexture(nameMinusExt, texture);
-        }
     }
 
     SetCurrentSettingsHandler(settingsHandler:SettingsHandler): SettingsHandler
@@ -633,11 +568,11 @@ export class BareGame
     GetDummpyDataFromEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.baseSettingsHandler.Get(), options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): {entity: Entity, gameObject: GameObject}
     {
         var entityConstructed = this.ConstructEntity(nameOrEntity, settingsData, options);
-        this.dummyGameObject.ResetValues();
-        this.dummyGameObject.InitTexture(MakePath(entityConstructed.imagePath!, entityConstructed.name)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
-        this.ApplyEntityToGameObject(entityConstructed, this.dummyGameObject);
+        bare.dummyGameObject.ResetValues();
+        bare.dummyGameObject.InitTexture(MakePath(entityConstructed.imagePath!, entityConstructed.name)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
+        this.ApplyEntityToGameObject(entityConstructed, bare.dummyGameObject);
 
-        return {entity: entityConstructed, gameObject: this.dummyGameObject};
+        return {entity: entityConstructed, gameObject: bare.dummyGameObject};
     }
 
     GetObjectFromPool(objectName: string): GameObject
@@ -818,7 +753,7 @@ export class BareGame
 
     MouseIsOnEditor(event: PointerEvent | WheelEvent): boolean
     {
-        if (!this.levelEditorOpen)
+        if (!bare.levelEditorOpen)
             return false;
 
         const target = event.target as HTMLElement;
@@ -829,123 +764,20 @@ export class BareGame
         return onEditor;
     }
 
-    ResizeCanvas()
-    {
-        var prevWidth = rapid.width;
-        var prevHeight = rapid.height;
-        var newWidth = window.innerWidth;
-        var newHeight = window.innerHeight;
-
-        rapid.resize(newWidth, newHeight);
-
-        events.emit(BareEvent.game_resize, { prevWidth: prevWidth, prevHeight: prevHeight, newWidth: newWidth, newHeight: newHeight });
-
-        // PERSIST UI LAYOUT
-        var uiControllerObjs = uiController.GetLayers();
-        for (var i = 0; i < uiControllerObjs.length; i++)
-        {
-            var objs = uiControllerObjs[i];
-            for (var j = 0; j < objs.length; j++)
-            {
-                var obj = objs[j];
-                obj.SetPosition(obj.x * newWidth / prevWidth, obj.y * newHeight / prevHeight);
-            }
-        }
-    }
-
-    RunMainLoop()
-    {
-        if (window.isLocalhost || hasFocus)
-        {
-            const currentTime = performance.now();
-            this.deltaTime = (currentTime - this.lastUpdateTimeRef) / 1000;
-            this.lastUpdateTimeRef = currentTime;
-            this.time = currentTime;
-            this.gameSpeed = 1 / (this.deltaTime / .0166666);
-            this.count++;
-            //trace("gameSpeed", this.gameSpeed);
-
-            this.Update(this.deltaTime);
-
-            if (this.doRender)
-                this.RenderOuter();
-        }
-
-        this.RunMainLoopId = requestAnimationFrame(this.RunMainLoopBound);
-    }
-
-    Update(deltaTime:number)
-    {
-        if (this.isPaused)
-            return;
-        
-        events.emit(BareEvent.game_preUpdate, { deltaTime: deltaTime });
-
-        pipes.run("mouseController_Update", deltaTime);
-        pipes.run("hitboxController_Update", deltaTime);
-        pipes.run("editorController_Update", deltaTime); 
-
-        if (!this.levelEditorOpen)
-            this.OnUpdate(deltaTime);
-
-        pipes.run("screenController_Update", deltaTime);
-        objectController.Update(deltaTime);
-        uiController.Update(deltaTime);
-        pipes.run("physicsController_Update", deltaTime);
-        pipes.run("componentController_Update", deltaTime);
-
-        events.emit(BareEvent.game_update, { deltaTime: deltaTime });
-    }
-
     OnUpdate(deltaTime: number)
     {
         // FOR OVERRIDE    
     }
 
     // CAN BE OVERRIDEN TO INSERT SOME POST PROCESSING https://nightre.github.io/Rapid.js/docs/docs.html?doc=fbo
-    RenderOuter()
+    /*RenderOuter()
     {
         rapid.clear(rapid.backgroundColor);//
         
         rapid.startRender();
         this.Render();
         rapid.endRender();
-    }
-
-    Render()
-    {
-        rapid.save();
-        
-        const cameraInfo = pipes.run("cameraHandler_GetRenderInfo", this.levelEditorOpen);
-
-        // Apply the camera transform
-        rapid.matrixStack.translate(cameraInfo.offset.x, cameraInfo.offset.y);
-        rapid.renderCamera({
-            position: cameraInfo.position,
-            scale: 1 / cameraInfo.scale,
-            saveTransform: false
-        });
-        
-        events.emit(BareEvent.game_preRender);
-
-        pipes.run("componentController_PreRender"); // ALL THIS EMITS MIGHT BE SLOW? ESPECIALLY FOR COMPONENT-CONTROLLER, SENDING MORE TO COMPONENTS
-        objectController.PreRender();
-        pipes.run("componentController_Render");
-        pipes.run("screenController_Render");
-        objectController.Render();
-
-        if (!this.levelEditorOpen)
-            this.OnRender();
-
-        pipes.run("physicsController_Render");
-        pipes.run("componentController_PostRender");
-        objectController.PostRender();
-
-        events.emit(BareEvent.game_postRender);
-        rapid.restore();
-        
-        uiController.Render();
-    }
+    }*/
 
     OnRender()
     {
@@ -1233,26 +1065,5 @@ export class BareGame
         this.RemoveAll(full);
 
         events.clear(); // LEAVES PERSISTENT EVENTS
-    }
-
-    static ClearAll()
-    {
-        // CLEAR ALL OF BARE
-        // SHOULDN'T REALLY BE NECESSARY, BUT THE DEMO PROJECT NEEDS IT SINCE IT 
-        // HANDLES MULTIPLE BARE-GAME CLASSES. NOT RECOMMEND FOR OTHER PROJECTS
-
-        SaveDataHandler.Clear();
-        
-        bare.Clear(true);
-        assetsHandler.Clear();
-        
-        cancelAnimationFrame(bare.RunMainLoopId);
-        bare.RunMainLoopId = -1;
-
-        //BareGame.registeredClasses = {};
-        //events.clearAll();
-        //pipes.clear();
-
-        bare.started = false;
     }
 }

@@ -79,9 +79,8 @@ export class ParticleController
         return this.emitters.some(entry => entry.emitter === emitter);
     }
 
-    Update(input: BareEventPayload['update'] | number): void
+    Update(deltaTime: number): void
     {
-        const deltaTime = typeof input === 'number' ? input : input.deltaTime;
         for (let i = this.emitters.length - 1; i >= 0; i--)
         {
             const entry = this.emitters[i];
