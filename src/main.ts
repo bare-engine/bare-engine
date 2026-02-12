@@ -38,12 +38,9 @@ export enum GameMode
 // SET UP GLOBALS
 declare global
 {
-    interface TweenWithPromise extends Tween
-    {
-        promise: Promise<Tween>;
-    }
-
     type int = number;
+
+    var bareEngine:BareEngine;
 
     var initialAssetsReady:Function;
     var initialAssets:Record<string, any>;
@@ -292,7 +289,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
 
             // START!
             var start = async () => {
-                new BareEngine(gameClass);
+                window.bareEngine = new BareEngine(gameClass);
             };
 
             var testGetElementById = document.getElementById('editor-overlay');

@@ -1,8 +1,9 @@
 import { BareEvent } from '../utils/bareTypes';
 import Easing from "../libraries/tweenJS/Easing";
-import Tween from "../libraries/tweenJS/Tween";
+import Tween, { TweenWithPromise } from "../libraries/tweenJS/Tween";
 import { events } from "../main";
 import { GameObject } from "../objects/gameObject";
+import { BareEngine } from '../bareEngine';
 
 export class TweenController
 {
@@ -59,7 +60,7 @@ export class TweenController
         return this.TweenTo(object, duration, props, overwrite);
     }
 
-    TweenTo(object: any, duration: number, props: any, overwrite: boolean = true): TweenWithPromise
+    TweenTo(object: any, seconds: number, props: any, overwrite: boolean = true): TweenWithPromise
     {
         //if (object.name && object.name == "sparkPickup")
         //    trace(4)
@@ -106,7 +107,7 @@ export class TweenController
 
         // Create new tween
         const tween = new Tween(object)
-            .to(props, duration * 1000)
+            .to(props, seconds * 1000)
             .easing(props.ease || Easing.Quadratic.Out);
         
         // Apply TweenJS-style configuration
@@ -275,10 +276,32 @@ export class TweenController
 }
 
 // SHORTHAND TWEENTO
-export function TweenTo(object: any, duration: number, props: any, overwrite: boolean = true): TweenWithPromise
+export function TweenTo(object: any, seconds: number, props: any, overwrite: boolean = true): TweenWithPromise
 {
-    return tweenController.TweenTo(object, duration, props, overwrite);
+    return tweenController.TweenTo(object, seconds, props, overwrite);
 }
 
-export const tweenController = new TweenController();
-globalThis.tweenController = tweenController;
+
+
+globalThis.tweenControllerClass = TweenController;
+
+let _instance: TweenController;
+
+export const tweenController = new Proxy({} as TweenController, {
+    get(_, prop)
+    {
+        if (!_instance)
+            throw new Error(
+                "TweenController not registered. Call bare.AddClass(TweenController) at Awake() of your game."
+            );
+
+        return (_instance as any)[prop];
+    },
+    set(_, prop, value)
+    {
+        (_instance as any)[prop] = value;
+        return true;
+    }
+});
+
+BareEngine.AddControllerSet("tweenController", (tweenControllerArg: TweenController) => {_instance = tweenControllerArg});

@@ -17,6 +17,11 @@ import type {EasingFunction} from './Easing'
 import type {InterpolationFunction} from './Interpolation'
 import type Group from './Group'
 
+export interface TweenWithPromise extends Tween
+{
+    promise: Promise<Tween>;
+}
+
 export class Tween<T extends UnknownProps = any> {
 	static autoStartOnUpdate = false
 

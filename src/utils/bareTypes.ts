@@ -393,3 +393,4 @@ export type SceneOptions = {
 
 export type SceneClass<T extends Scene = Scene> = new (sceneOptions?: SceneOptions) => T;
 export type AwakePayload<T> = T extends { OnAwake: (payload: infer P) => any } ? P : T extends { Awake: (payload: infer P) => any } ? P : never;
+

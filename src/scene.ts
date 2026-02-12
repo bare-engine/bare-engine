@@ -54,6 +54,7 @@ export class Scene implements SceneI
     public objectController: ObjectController;
 
     private hitboxController: any; // ANY TO NOT INCLUDE HITBOXCONTROLLER AS DEPENDENCY
+    private tweenController: any; // ANY TO NOT INCLUDE HITBOXCONTROLLER AS DEPENDENCY
 
     get baseSettings(): SettingsData { return this.baseSettingsHandler.Get(); }
     get currentSettings(): SettingsData { return this.currentSettingsHandler.Get(); }
@@ -103,6 +104,9 @@ export class Scene implements SceneI
         }
 
         this.RegisterGameObjectPool(GameObject, Scene.gameObjectPoolSize);
+        
+        this.CheckExist("hitboxController", false);
+        this.CheckExist("tweenController", false);
     }
 
     async Awake(payload?: any): Promise<void>
@@ -115,6 +119,7 @@ export class Scene implements SceneI
         events.emit(BareEvent.game_awake);
 
         await this.OnAwake(payload);
+        BareEngine.SetControllerReferences(this);
 
         this.baseSettingsHandler.ReprocessAnimations(); // NEEDED SINCE AN ATLAS WITH ANIMATIONS CAN BE LOADED IN AT AWAKE() ABOVE
 
@@ -781,10 +786,12 @@ export class Scene implements SceneI
 
     Update(deltaTime: number): void
     {
-        BareEngine.SetControllerReferences();
+        BareEngine.SetControllerReferences(this);
 
         this.hitboxController?.Update(deltaTime);
         this.objectController.Update(deltaTime);
+        this.tweenController?.Update(bareEngine.time); // STUPID TIME VAR - TODO
+
         this.OnUpdate(deltaTime);
     }
 
@@ -1084,7 +1091,7 @@ export class Scene implements SceneI
     }
 
     // HELPER
-    CheckExist(propertyName: string)
+    CheckExist(propertyName: string, throwError: boolean = true)
     {
         if ((this as any)[propertyName])
             return true;
@@ -1094,8 +1101,11 @@ export class Scene implements SceneI
 
         if (!Ctor)
         {
-            const className = propertyName.charAt(0).toUpperCase() + propertyName.slice(1);
-            console.error(className + " not registered. Call bare.AddClass(" + className + ") at OnAwake() of your game.");
+            if (throwError)
+            {
+                const className = propertyName.charAt(0).toUpperCase() + propertyName.slice(1);
+                throw new Error(`${className} not registered. Call bare.AddClass(${className}) at OnAwake() of your game.`);
+            }
 
             return false;
         }

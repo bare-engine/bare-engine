@@ -514,5 +514,5 @@ export const hitboxController = new Proxy({} as HitboxController, {
     }
 });
 
-BareEngine.AddControllerSet((hitboxConroller: HitboxController) => {_instance = hitboxConroller});
+BareEngine.AddControllerSet("hitboxController", () => {_instance = hitboxController});
 

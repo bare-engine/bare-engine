@@ -1,5 +1,5 @@
 import { sceneController } from "./controllers/sceneController";
-import { events, GameMode, pipes } from "./main";
+import { events, GameMode, pipes, Scene } from "./main";
 import { GameObject } from "./objects/gameObject";
 import { assetsHandler } from "./utils/assetsHandler";
 import { BareEvent, SceneClass } from "./utils/bareTypes";
@@ -201,16 +201,21 @@ export class BareEngine
 
 
     private static controllerCallbacks: any[] = [];
-    static AddControllerSet(callback: (conroller: any) => void)
+    private static controllerNames: string[] = [];
+    static AddControllerSet(controllerName:string, callback: (controller: any) => void)
     {
+        this.controllerNames.push(controllerName);
         this.controllerCallbacks.push(callback);
     }
 
-    static SetControllerReferences()
+    static SetControllerReferences(scene:Scene)
     {
+        var i = 0;
         for (const callback of this.controllerCallbacks)
         {
-            callback(this);
+            var controllerName = this.controllerNames[i];
+            callback(scene[controllerName]);
+            i++;
         }
     }
 }
