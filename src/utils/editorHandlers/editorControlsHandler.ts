@@ -65,8 +65,6 @@ export class EditorControlsHandler {
         events.persistent.on(BareEvent.key_pressed, this.KeyPressed.bind(this));
         events.persistent.on(BareEvent.key_released, this.KeyReleased.bind(this));
         events.persistent.on(BareEvent.editor_layerSelected, this.LayerSelected.bind(this));
-
-        pipes.set("editorController_Update", this.Update.bind(this));
     }
 
     KeyPressed({ key, allKeys }: BareEventPayload['key_pressed'])

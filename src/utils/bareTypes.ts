@@ -298,7 +298,6 @@ export interface Pipes {
   mouseController_Update: (deltaTime: number) => void;
   hitboxController_Update: (deltaTime: number) => void;
   physicsController_Update: (deltaTime: number) => void;
-  editorController_Update: (deltaTime: number) => void;
   screenController_Update: (deltaTime: number) => void;
   screenController_Render: () => void;
   physicsController_Render: () => void;
@@ -349,7 +348,6 @@ export interface BareScreen
   newScene?(): void;
 }
 
-// BIT DIFFERENT THAN THE REST?
 export class SaveData
 {
   static currentLevelStr: string = '';
@@ -357,25 +355,6 @@ export class SaveData
   
   static soundEnabled: boolean = true;
   static musicEnabled: boolean = true;
-}
-
-export class AnimationData
-{
-  animName: string;
-  animFrames: string[];
-  framesPerSecond: number;
-  loop: boolean;
-
-  currentFrame:int = 0;
-  currentFrameTime:number = 0;
-
-  constructor(animName: string, animFrames: string[], framesPerSecond: number, loop: boolean)
-  {
-    this.animName = animName;
-    this.animFrames = animFrames;
-    this.framesPerSecond = framesPerSecond;
-    this.loop = loop;
-  }
 }
 
 // TODO
@@ -394,3 +373,22 @@ export type SceneOptions = {
 export type SceneClass<T extends Scene = Scene> = new (sceneOptions?: SceneOptions) => T;
 export type AwakePayload<T> = T extends { OnAwake: (payload: infer P) => any } ? P : T extends { Awake: (payload: infer P) => any } ? P : never;
 
+// CLASSES ARE NOT REALLY TYPES, BUT OK
+export class AnimationData
+{
+  animName: string;
+  animFrames: string[];
+  framesPerSecond: number;
+  loop: boolean;
+
+  currentFrame:int = 0;
+  currentFrameTime:number = 0;
+
+  constructor(animName: string, animFrames: string[], framesPerSecond: number, loop: boolean)
+  {
+    this.animName = animName;
+    this.animFrames = animFrames;
+    this.framesPerSecond = framesPerSecond;
+    this.loop = loop;
+  }
+}

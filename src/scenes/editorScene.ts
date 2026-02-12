@@ -245,6 +245,11 @@ export class EditorScene extends LevelScene
         this.Open(levelPathOrData, saveLevelCallback, settingsHandler);
     }
 
+    OnUpdate(deltaTime: number): void
+    {
+        this.editorControlsHandler?.Update(deltaTime);
+    }
+
     // COULD DO THIS BETTER, BY JUST CLEARING THE LEVEL AND REPOPULATING IT
     // THOUGH THAT'S NOT ALWAYS SUFFICIENT FOR ALL USE CASES, EG CATEGORIES GET CHANGED
     // THIS COVERS ALL CASES OVER-SUFFICIENTLY ATM

@@ -121,13 +121,6 @@ export class Scene implements SceneI
         }
 
         this.RegisterGameObjectPool(GameObject, Scene.gameObjectPoolSize);
-        
-        this.CheckExist("hitboxController", false);
-        this.CheckExist("tweenController", false);
-        this.CheckExist("componentController", false);
-        this.CheckExist("physicsControllerBare", false);
-        this.CheckExist("physicsControllerSopiro", false);
-        this.CheckExist("particleController", false);
 
         BareEngine.SetControllerReferences(this);
     }
@@ -183,7 +176,7 @@ export class Scene implements SceneI
     // A CATCH-ALL METHOD TO REGISTER CLASSES
     // CAN BE CONTROLLER/GAMEOBJECT/COMPONENT/PHYSICS/ETC
     // DOESN'T ALWAYS DO SOMETHING, BUT JUST A HOAX TO LET THE DEV REFFERENCE THE CLASS
-    AddClass(_class: any, ...args: any[]): void
+    AddClass(_class: any): void
     {
         const className = _class.name;
 
@@ -197,10 +190,10 @@ export class Scene implements SceneI
         var classNameFirstLowercase = className.charAt(0).toLowerCase() + className.slice(1);
         if (globalThis[classNameFirstLowercase])
         {
-            if (globalThis[classNameFirstLowercase].Init)
+            /*if (globalThis[classNameFirstLowercase].Init)
             {
                 globalThis[classNameFirstLowercase].Init(); // USED FOR PhysicsControllerBase, TO RE-SET PIPES, NEED FOR DEMO
-            }
+            }*/
 
             return;
         }
@@ -631,6 +624,11 @@ export class Scene implements SceneI
     // INPUT COULD BE: ENTITY, ENTITY NAME, GAMEOBJECT, CLASS TO INSTANTIATE OR TEXTURE
     AddGameObject(input?: Entity | string | GameObject | GameObjectClass | Texture, parent: int | GameObject = Layer.OBJECTS): GameObject
     {
+        if (!this.currentSettingsHandler)
+        {
+            throw new Error("Cannot add a GameObject yet, the scene has not awoken yet.\nCall AddGameObject() in OnAwake() or OnStart().");
+        }
+
         // CREATE
         var gameObject: GameObject;
         if (!input)
@@ -1088,13 +1086,13 @@ export class Scene implements SceneI
     }
     
     // SCENES
-    async Goto<T extends Scene>(sceneClass: SceneClass<T>, payload?: AwakePayload<T>): Promise<T>
+    async GotoScene<T extends Scene>(sceneClass: SceneClass<T>, payload?: AwakePayload<T>): Promise<T>
     {
         sceneController.Remove(this);
         return sceneController.Add(sceneClass, payload);
     }
 
-    async Add<T extends Scene>(scene: Scene | SceneClass<T>, payload?: AwakePayload<T>): Promise<T>
+    async AddScene<T extends Scene>(scene: Scene | SceneClass<T>, payload?: AwakePayload<T>): Promise<T>
     {
         return sceneController.Add(scene, payload);
     }

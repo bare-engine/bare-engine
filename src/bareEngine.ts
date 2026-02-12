@@ -132,8 +132,7 @@ export class BareEngine
         
         events.emit(BareEvent.game_preUpdate, { deltaTime: deltaTime });
 
-        pipes.run("mouseController_Update", deltaTime);
-        pipes.run("editorController_Update", deltaTime); 
+        pipes.run("mouseController_Update", deltaTime); // -TODO
         sceneController.Update(deltaTime);
         //objectController.Update(deltaTime);
         uiController.Update(deltaTime);
@@ -195,8 +194,9 @@ export class BareEngine
     private static controllerNames: string[] = [];
     
     // THIS REGISTERS A CONTROLLER
-    // tweenControllerClass global is made
-    // A controllerCallbacks IS CREATED, SO THAT AN SCENE INSTANCE OF THIS CAN LATER BE ASSIGNED TO GLOBAL tweenController 
+    // A PROXY IS MADE TO BE ABLE TO REDEFINE THE GLOBAL REFERENCE OF THE CONTROLLER
+    // THIS IS USED BEFORE SCENE FUNCTIONALITY IS CALLED, EG: UPDATE()
+    // THEN, FOR EXAMPLE, CALLING tweenController.TweenTo(), WILL GET THE tweenController INSTANCE FROM THE SCENE
     static RegisterControllerProxy<T extends object>(controllerClass: new (...args: any[]) => T, setGlobal: boolean = true): T
     {
         const name = (controllerClass as any).name;
@@ -240,7 +240,14 @@ export class BareEngine
         for (const callback of this.controllerCallbacks)
         {
             var controllerName = this.controllerNames[i];
+
+            // THIS WILL INSTANTIATE THE CONTROLLER ON THE SCENE, IF THE CONTROLLER REFERENCE EXSIST
+            scene.CheckExist(controllerName, false);
+
+            // THIS PASSES ON THE CONTROLLER INSTANCE FROM THE SCENE TO THE CALLBACK
+            // WHICH WILL SET IT AS THE GLOBAL REFERENCE
             callback(scene[controllerName]);
+
             i++;
         }
     }
