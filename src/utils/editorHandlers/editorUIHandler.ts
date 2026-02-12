@@ -1,10 +1,9 @@
 import { Entity, LayerInfo, SettingsData, BareEvent, SaveData } from '../bareTypes';
 import { assetsHandler } from "../assetsHandler";
-import { EditorController } from "../../controllers/editorController";
 import { events, MakePath } from "../../main";
 import { FlashShader } from "../shaders/flashShader";
 import { TweenTo } from "../../controllers/tweenController";
-import { levelController } from '../..';
+import { EditorScene } from '../../scenes/editorScene';
 
 /*
     BUILD SETUP/CONTROLS UI
@@ -16,7 +15,7 @@ export class EditorUIHandler {
 
     private isMinimized: boolean = false;
     private lastMinimize: number = 0;
-    private editorController: EditorController;
+    private editorScene: EditorScene;
 
     private data: SettingsData;
     private gridToggleEl: HTMLElement | null = null;
@@ -25,8 +24,8 @@ export class EditorUIHandler {
     private readonly showIcon = '👁️';
     private readonly hideIcon = '❌';
 
-    constructor(editorController: EditorController) {
-        this.editorController = editorController;
+    constructor(editorScene: EditorScene) {
+        this.editorScene = editorScene;
 
         this.flashShader = new FlashShader()
     }
@@ -77,7 +76,7 @@ export class EditorUIHandler {
         this.data = data;
         this.PopulateSidebar(data);
         this.PopulateLayers(data);
-        this.SyncSettingsUI(this.editorController.gridActive, this.editorController.gridSize);
+        this.SyncSettingsUI(this.editorScene.gridActive, this.editorScene.gridSize);
     }
 
     PopulateSidebar(data: SettingsData): void {
@@ -145,8 +144,8 @@ export class EditorUIHandler {
                             const childEntity = document.createElement('div');
                             childEntity.className = 'child-entity';
                             childEntity.onpointerdown = (e) => {
-                                this.editorController.SelectEntity(entity, childEntity);
-                                this.editorController.editorControlsHandler.SetCurrentPreviewEntity(entity);
+                                this.editorScene.SelectEntity(entity, childEntity);
+                                this.editorScene.editorControlsHandler.SetCurrentPreviewEntity(entity);
                             };
                             childEntity.onclick = (e) => {
                                 e.stopPropagation();
@@ -177,7 +176,7 @@ export class EditorUIHandler {
                 else
                 if (typeof categoryData.entries === 'string') 
                 {
-                    const entity = this.editorController.GetTilesheetEntity(categoryData.entries);
+                    const entity = this.editorScene.GetTilesheetEntity(categoryData.entries);
                     const entityImagePath = this.GetEntityImagePath(entity)!;
 
                     var tilesheetImg = document.createElement('img');
@@ -213,7 +212,7 @@ export class EditorUIHandler {
                             const childEntity = document.createElement('div');
                             childEntity.className = 'child-entity';
                             childEntity.onpointerdown = (e) => {
-                                this.editorController.SelectEntity(entity, childEntity);
+                                this.editorScene.SelectEntity(entity, childEntity);
                             };
                             childEntity.onclick = (e) => {
                                 e.stopPropagation();
@@ -466,7 +465,7 @@ export class EditorUIHandler {
             event.preventDefault();
 
             if (SaveData.currentLevelStr != '')
-                levelController.LoadCurrentLevel();
+                trace('Saving current level...'); //levelController.LoadCurrentLevel();
             else
                 bare.Restart(); // THERE IS NO LEVEL, JUST RESTART. THIS HAPPENS FOR HITBOX EDITOR
         });
@@ -521,8 +520,8 @@ export class EditorUIHandler {
 
         // Open modal when settings button is clicked
         settingsBtn.addEventListener('click', function(): void {
-            // Set modal grid size to current editorController value
-            me.SyncSettingsUI(me.editorController.gridActive, me.editorController.gridSize);
+            // Set modal grid size to current editorScene value
+            me.SyncSettingsUI(me.editorScene.gridActive, me.editorScene.gridSize);
             me.gridModalEl!.style.display = 'block';
         });
 
@@ -552,24 +551,24 @@ export class EditorUIHandler {
             event.stopPropagation();
         });
 
-        // Update editorController.gridSize when grid size input changes
+        // Update editorScene.gridSize when grid size input changes
         const handleGridSizeChange = (value: string, commit: boolean = false) => {
             if (value.trim() === '') {
                 if (commit)
-                    this.SyncSettingsUI(this.editorController.gridActive, this.editorController.gridSize);
+                    this.SyncSettingsUI(this.editorScene.gridActive, this.editorScene.gridSize);
                 return;
             }
 
             const newGridSize = parseInt(value, 10);
             if (!isNaN(newGridSize) && newGridSize > 0) {
-                me.editorController.gridSize = newGridSize;
+                me.editorScene.gridSize = newGridSize;
 
                 if (commit) {
-                    me.SyncSettingsUI(me.editorController.gridActive, me.editorController.gridSize);
-                    void me.editorController.PersistSettings();
+                    me.SyncSettingsUI(me.editorScene.gridActive, me.editorScene.gridSize);
+                    void me.editorScene.PersistSettings();
                 }
             } else if (commit) {
-                me.SyncSettingsUI(me.editorController.gridActive, me.editorController.gridSize);
+                me.SyncSettingsUI(me.editorScene.gridActive, me.editorScene.gridSize);
             }
         };
 
@@ -590,11 +589,11 @@ export class EditorUIHandler {
 
     ToggleGrid(persist: boolean = false)
     {
-        this.editorController.gridActive = !this.editorController.gridActive;
-        this.SyncSettingsUI(this.editorController.gridActive, this.editorController.gridSize);
+        this.editorScene.gridActive = !this.editorScene.gridActive;
+        this.SyncSettingsUI(this.editorScene.gridActive, this.editorScene.gridSize);
 
         if (persist)
-            void this.editorController.PersistSettings();
+            void this.editorScene.PersistSettings();
     }
 
     SyncSettingsUI(gridEnabled: boolean, gridSize: number): void

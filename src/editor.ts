@@ -1,6 +1,5 @@
 // Editor-only entrypoint to keep core imports tree-shakeable.
 
-export { EditorController } from "./controllers/editorController";
 export { PivotComponent } from "./editorComponents/pivotComponent";
 export { PivotRemoveComponent } from "./editorComponents/pivotRemoveComponent";
 export { PositionPivotComponent } from "./editorComponents/positionPivotComponent";

@@ -4,30 +4,42 @@ import { Helper } from "../utils/helper";
 import { SaveDataHandler } from "../utils/SaveDataHandler";
 import { Color, Texture } from "../libraries/rapid-render";
 import { assetsHandler } from "../utils/assetsHandler";
-import { Entity, LevelData, Component, Layer, SaveData, BareEvent } from '../utils/bareTypes';
-import { events, GameMode, MakePath, pipes } from "../main";
+import { Entity, LevelData, Component, Layer, SaveData, BareEvent, SettingsData, SceneOptions } from '../utils/bareTypes';
+import { Scene, events, GameMode, MakePath, pipes } from "../main";
 import { defaultEntityData } from "../utils/bareData";
-import { EditorController } from "..";
+import { sceneController } from "../controllers/sceneController";
 
-export class LevelController
+export class LevelScene extends Scene
 {
+    private static editorSceneRequested: boolean = false;
+
     currentLevel: LevelData;
     levelCache: Map<string, LevelData> = new Map();
     
-    constructor()
+    constructor(sceneOptions: SceneOptions)
     {
-        this.init();
+        super(sceneOptions);
 
-        // WILL INCLUDE EDITOR CONTROLLER AND EVERYTHING THAT COMES WITH IT
-        // EDITOR BUTTON WILL APPEAR ON THE SCREEN
-        // NOT IN PRODUCTION, DEV CAN INCLUDE THIS THEMSELVES IF THEY WANT PLAYERS TO EDIT
         if (__DEV__)
-            EditorController
+            void LevelScene.EnsureEditorSceneRegistered();
     }
 
-    init()
+    override OnAwake(payload?: { levelInput: string | LevelData } | string): void | Promise<void>
     {
-        events.persistent.on(BareEvent.game_clear, this.Clear.bind(this));
+        if (typeof payload === "string")
+        {
+            return this.LoadLevel(payload).then(() => {});
+        }
+
+        if (payload?.levelInput)
+            return this.LoadLevel(payload.levelInput).then(() => {});
+    }
+
+    override Clear(full: boolean = false)
+    {
+        this.currentLevel = null;
+
+        super.Clear(full);
     }
 
     get objectsLayer(): GameObject[]
@@ -87,18 +99,21 @@ export class LevelController
             }
         }
 
-        await bare.BeforeLoadLevel();
+        this.Clear();
+        this.doRender = false;
+        await this.OnBeforeLoadLevel();
 
-        var level = await this.LoadSingleLevel(levelInput || SaveData.currentLevelStr); // IF NO LEVEL SUPPLIED, RELOAD CURRENT LEVEL
+        var level = await this.LoadLevelOnly(levelInput || SaveData.currentLevelStr); // IF NO LEVEL SUPPLIED, RELOAD CURRENT LEVEL
 
-        bare.AfterLoadLevel(level);
+        this.doRender = true;
+        this.OnAfterLoadedLevel(level);
 
         pipes.run("componentController_OnLevelChanged", { uids: persistenObjUIDs });
         
         return level;
     }
 
-    async LoadSingleLevel(levelInput: string | LevelData): Promise<LevelData>
+    async LoadLevelOnly(levelInput: string | LevelData): Promise<LevelData>
     {
         var level: LevelData;
         var levelStr: string = "";
@@ -123,15 +138,15 @@ export class LevelController
             rapid.backgroundColor = Color.fromHex(level.background.color);
 
         // LOAD ALL TEXTURES
-        await Promise.all(bare.CreatePromiseLevelTextures(level));
+        await Promise.all(this.CreatePromiseLevelTextures(level));
 
         // CREATE ALL OBJECTS
         for (var layerName in level.entitiesByLayer) {
             var entities = level.entitiesByLayer[layerName];
             entities.forEach((levelEntity: Entity) => {
                 var layerNameLowerCase = Helper.CapitalizeFirstLetter(layerName.toLowerCase());
-                var layer = bare.layerNames.indexOf(layerNameLowerCase);
-                var gameObject = bare.AddGameObject(levelEntity, layer);
+                var layer = this.layerNames.indexOf(layerNameLowerCase);
+                var gameObject = this.AddGameObject(levelEntity, layer);
 
                 gameObject.levelEntity = levelEntity;
                 gameObject.save = true;
@@ -152,7 +167,7 @@ export class LevelController
         for (var layerName in level.entitiesByLayer) {
             var entities = level.entitiesByLayer[layerName];
             entities.forEach((entity: any) => {
-                var entityConstructed = bare.ConstructEntity(entity);
+                var entityConstructed = this.ConstructEntity(entity);
                 var imagePath = entityConstructed.imagePath;
                 var fullPath = imagePath + "/" + entity.name;
 
@@ -188,7 +203,7 @@ export class LevelController
         var gameLayers = objectController.GetLayers();
         for (var i = 0; i < gameLayers.length; i++)
         {
-            var layerInfo = bare.layerInfos[i];
+            var layerInfo = this.layerInfos[i];
 
             // SHOULD BE A SAVEABLE LAYER
             if (!layerInfo.doSave)
@@ -259,10 +274,10 @@ export class LevelController
 
         // GET VARS TO SAVE
         var varsToSave: string[] = []
-        var saveVars = bare.currentSettings.saveVars;
+        var saveVars = this.currentSettings.saveVars;
         if (saveVars)
         {
-            var constructorName = bare.GetContructorName(gameObject);
+            var constructorName = this.GetContructorName(gameObject);
 
             if (saveVars[constructorName])
             {
@@ -372,7 +387,7 @@ export class LevelController
     SerializeComponent(component: Component): any
     {
         var componentData: any = {};
-        var constructorVarNames = LevelController.getConstructorParamNames(component.constructor);
+        var constructorVarNames = Helper.GetConstructorParamNames(component.constructor);
         
         // Loop through each constructor parameter name
         for (let i = 0; i < constructorVarNames.length; i++)
@@ -385,22 +400,17 @@ export class LevelController
         return componentData;
     }
 
-    static getConstructorParamNames(cls:Function): string[] {
-        const constructorString = cls.toString();
-        const match = constructorString.match(/constructor\s*\(([^)]*)\)/);
-        if (!match) return [];
-        
-        return match[1]
-            .split(',')
-            .map(param => param.trim().split(/[:=\s]/)[0].trim())
-            .filter(name => name.length > 0);
-    }
-
-    Clear({ full }: { full: boolean })
+    private static async EnsureEditorSceneRegistered(): Promise<void>
     {
-        this.currentLevel = null;
+        if (__DEV__)
+        {
+            if (LevelScene.editorSceneRequested)
+                return;
+
+            LevelScene.editorSceneRequested = true;
+
+            const { EditorScene } = await import("./editorScene");
+            sceneController.Add(EditorScene);
+        }
     }
 }
-
-export const levelController = new LevelController();
-globalThis.levelController = levelController;

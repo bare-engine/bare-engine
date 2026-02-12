@@ -1,14 +1,14 @@
 import { events, GameMode, MakePath, pipes } from "./main";
 import { Color, FrameBufferObject, RenderTexture, Texture, Vec2 } from "./libraries/rapid-render";
 import { PoolHandler } from "./utils/poolHandler";
-import { BareEvent, Entity, GameObjectClass, Layer, LayerInfo, LevelData, SaveData, SettingsData, UI_LAYER } from "./utils/bareTypes";
+import { AwakePayload, BareEvent, SceneClass, Entity, GameObjectClass, Layer, LayerInfo, LevelData, SaveData, SceneOptions, SettingsData, UI_LAYER, SceneI } from "./utils/bareTypes";
 import { GameObject } from "./objects/gameObject";
 import { SettingsHandler as SettingsHandler } from "./utils/settingsHandler";
 import { assetsHandler } from "./utils/assetsHandler";
 import { defaultEntityData as defaultEntityData } from "./utils/bareData";
 import { PhysicsObjectBare } from "./barePhysics";
-import { SaveDataHandler } from "./utils/SaveDataHandler";
 import { ObjectController } from "./controllers/objectController";
+import { sceneController } from "./controllers/sceneController";
 
 /*Bare.camera.SetPosition(bare.width * .5, bare.height * .5);
 Bare.sound.Play()
@@ -29,9 +29,8 @@ Bare.textures.Load(); // assetHandler
 Bare.storage.Load(); // saveHandler
 Bare.pool.Add(); // poolHandler */
 
-export class BareGame
+export class Scene implements SceneI
 {
-    static initialized: boolean = false;
     static gameObjectPoolSize: int = 50;
     static gameObjectPools: Map<string, PoolHandler<GameObject>> = new Map();
     static registeredClasses: Record<string, any> = {};
@@ -49,6 +48,8 @@ export class BareGame
     public baseSettingsHandler: SettingsHandler = new SettingsHandler();
     public currentSettingsHandler: SettingsHandler;
 
+    public objectController: ObjectController;
+
     get baseSettings(): SettingsData { return this.baseSettingsHandler.Get(); }
     get currentSettings(): SettingsData { return this.currentSettingsHandler.Get(); }
     
@@ -63,14 +64,23 @@ export class BareGame
     // initialObjectsLayer WILL BE USED TO SET IT BACK TO ITS ORIGINAL VALUE
     initialObjectsLayer: int = -1;
 
-    get imagePath(): string { return BareGame.rootPath + "/" + BareGame.imagePath; }
-    get levelPath(): string { return BareGame.rootPath + "/" + BareGame.levelPath; }
-    get soundPath(): string { return BareGame.rootPath + "/" + BareGame.soundPath; }
+    private sceneOptions: SceneOptions;
+
+    get imagePath(): string { return Scene.rootPath + "/" + Scene.imagePath; }
+    get levelPath(): string { return Scene.rootPath + "/" + Scene.levelPath; }
+    get soundPath(): string { return Scene.rootPath + "/" + Scene.soundPath; }
 
     get currentLevelStr(): string { return SaveData.currentLevelStr; }
 
-    constructor(entityDataJson:SettingsData = defaultEntityData)
+    constructor(sceneOptions: SceneOptions = {entityData: defaultEntityData})
     {
+        if (!sceneOptions.entityData)
+            sceneOptions.entityData = defaultEntityData;
+        
+        this.sceneOptions = sceneOptions;
+
+        this.objectController = new ObjectController();
+        
         window.bare = this.GetRapidProxy();
 
         this.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT
@@ -84,22 +94,19 @@ export class BareGame
             pipes.set("cameraHandler_GetZoom", () => 1);
         }
 
-        this.RegisterGameObjectPool(GameObject, BareGame.gameObjectPoolSize);
-        //this.LoadComponents();
-
-        this.Awake(entityDataJson);
+        this.RegisterGameObjectPool(GameObject, Scene.gameObjectPoolSize);
     }
 
-    async Awake(entityDataJson:SettingsData)
+    async Awake(payload?: any): Promise<void>
     {
         rapid.backgroundColor = Color.White;
 
-        await this.baseSettingsHandler.Process(entityDataJson);
+        await this.baseSettingsHandler.Process(this.sceneOptions.entityData);
         this.SetCurrentSettingsHandler(this.baseSettingsHandler);
 
         events.emit(BareEvent.game_awake);
 
-        await this.OnAwake();
+        await this.OnAwake(payload);
 
         this.baseSettingsHandler.ReprocessAnimations(); // NEEDED SINCE AN ATLAS WITH ANIMATIONS CAN BE LOADED IN AT AWAKE() ABOVE
 
@@ -108,12 +115,12 @@ export class BareGame
         this.HideLoadingText();
     }
 
-    OnAwake(): void | Promise<void>
+    OnAwake(payload?: any): void | Promise<void>
     {
         // FOR OVERRIDE
     }
 
-    async Start()
+    async Start(): Promise<void>
     {
         // IT GETS HERE ON INITIALIZATION AND RESTART
 
@@ -128,8 +135,6 @@ export class BareGame
         await this.OnStart();
 
         this.started = true;
-        
-        events.emit(BareEvent.game_started);
     }
 
     OnStart(): void | Promise<void>
@@ -146,7 +151,7 @@ export class BareGame
     {
         const className = _class.name;
 
-        if (BareGame.registeredClasses[className])
+        if (Scene.registeredClasses[className])
         {
             //console.warn(`Module ${className} is already registered`);
             return;
@@ -169,7 +174,7 @@ export class BareGame
         {
             this.RegisterGameObjectPool(_class, 1);
 
-            BareGame.registeredClasses[className] = "taken";
+            Scene.registeredClasses[className] = "taken";
             return;
         }
 
@@ -178,13 +183,13 @@ export class BareGame
         {
             this.RegisterComponent(_class);
 
-            //BareGame.modules[className] = "taken"; // COMMENTED OUT SINCE REGISTERED COMPONENTS ARE LOCAL TO BARE, HAS TO ADD
+            //Scene.modules[className] = "taken"; // COMMENTED OUT SINCE REGISTERED COMPONENTS ARE LOCAL TO BARE, HAS TO ADD
 
             return;
         }
 
         //let instance = new _class(...args);
-        //BareGame.registeredClasses[className] = instance;
+        //Scene.registeredClasses[className] = instance;
     }
 
     RegisterComponent(componentClass: any)
@@ -287,7 +292,7 @@ export class BareGame
     RegisterGameObjectPool(cls: GameObjectClass, defaultPoolSize: number = 10): void
     {
         const name = cls.name.startsWith("_") ? cls.name.substring(1) : cls.name;
-        BareGame.gameObjectPools.set(name, new PoolHandler(() => new cls(), defaultPoolSize));
+        Scene.gameObjectPools.set(name, new PoolHandler(() => new cls(), defaultPoolSize));
     }
     
     HideLoadingText()
@@ -577,7 +582,7 @@ export class BareGame
 
     GetObjectFromPool(objectName: string): GameObject
     {
-        var pool = BareGame.gameObjectPools.get(objectName);
+        var pool = Scene.gameObjectPools.get(objectName);
         if (!pool)
         {
             throw new Error(`No pool found for ${objectName}`);
@@ -603,7 +608,7 @@ export class BareGame
         if (typeof input === "function")
         {
             // GameObjectClass CASE, INSTANTIATE FROM POOL IF IT EXISTS
-            const pool = BareGame.gameObjectPools.get(input.name);
+            const pool = Scene.gameObjectPools.get(input.name);
             if (pool)
                 gameObject = pool.Grab();
             else
@@ -671,9 +676,9 @@ export class BareGame
             var layer = parent;
 
             if (layer < UI_LAYER)
-                objectController.Add(gameObject, layer);
+                this.objectController.Add(gameObject, layer);
             else
-                uiController.Add(gameObject, layer);
+                uiController.Add(gameObject, layer);//TODO
         }
 
         gameObject.Added();
@@ -724,14 +729,14 @@ export class BareGame
                 var layer = parent;
 
                 if (layer < UI_LAYER)
-                    removed = objectController.Remove(gameObject, layer);
+                    removed = this.objectController.Remove(gameObject, layer);
                 else
                     removed = uiController.Remove(gameObject, layer);
             }
         }
         else
         {
-            removed = objectController.Remove(gameObject) || uiController.Remove(gameObject);
+            removed = this.objectController.Remove(gameObject) || uiController.Remove(gameObject);
         }
         
         if (!removed)
@@ -745,7 +750,7 @@ export class BareGame
         if (wasPooled)
         {
             const className = this.GetContructorName(gameObject);
-            const pool = BareGame.gameObjectPools.get(className);
+            const pool = Scene.gameObjectPools.get(className);
             if (pool)
                 pool.Release(gameObject);
         }
@@ -764,6 +769,12 @@ export class BareGame
         return onEditor;
     }
 
+    Update(deltaTime: number): void
+    {
+        this.objectController.Update(deltaTime);
+        this.OnUpdate(deltaTime);
+    }
+
     OnUpdate(deltaTime: number)
     {
         // FOR OVERRIDE    
@@ -778,6 +789,12 @@ export class BareGame
         this.Render();
         rapid.endRender();
     }*/
+
+    Render(): void
+    {
+        this.objectController.Render();
+        this.OnRender();
+    }
 
     OnRender()
     {
@@ -836,7 +853,7 @@ export class BareGame
 
     MoveGameObjectToUI(gameObject: GameObject, uiLayer: int = UI_LAYER): void
     {
-        objectController.Remove(gameObject);
+        this.objectController.Remove(gameObject);
         uiController.Add(gameObject, uiLayer);
 
         var screenPos = this.WorldToScreenPos(gameObject.position);
@@ -847,7 +864,7 @@ export class BareGame
     MoveGameObjectToWorld(gameObject: GameObject, layer: int = 0): void
     {
         uiController.Remove(gameObject);
-        objectController.Add(gameObject, layer);
+        this.objectController.Add(gameObject, layer);
 
         var worldPos = this.ScreenToWorldPos(gameObject.position);
         gameObject.x = worldPos.x;
@@ -980,22 +997,12 @@ export class BareGame
         return promisesAr;
     }
     
-    // MAKE THESE EVENTS? TODO
-    // ALSO HANDY TO OVERRIDE THOUGH
-    async BeforeLoadLevel()
+    async OnBeforeLoadLevel()
     {
-        this.Clear();
-        this.doRender = false;
+        // FOR OVERRIDE
     }
     
-    AfterLoadLevel(level:LevelData)
-    {
-        this.doRender = true;
-
-        this.OnLoadedLevel(level);
-    }
-
-    OnLoadedLevel(level:LevelData)
+    OnAfterLoadedLevel(level:LevelData)
     {
         // FOR OVERRIDE
     }
@@ -1021,14 +1028,14 @@ export class BareGame
             }
         }
 
-        removeAllFrom(objectController);
+        removeAllFrom(this.objectController);
 
         if (full)
             removeAllFrom(uiController, true);
         
         if (full)
         {
-            objectController.Clear();
+            this.objectController.Clear();
             uiController.Clear();
         }
 
@@ -1065,5 +1072,18 @@ export class BareGame
         this.RemoveAll(full);
 
         events.clear(); // LEAVES PERSISTENT EVENTS
+    }
+
+    
+
+    async Goto<T extends Scene>(sceneClass: SceneClass<T>, payload?: AwakePayload<T>): Promise<T>
+    {
+        sceneController.Remove(this);
+        return sceneController.Add(sceneClass, payload);
+    }
+
+    async Add<T extends Scene>(scene: Scene | SceneClass<T>, payload?: AwakePayload<T>): Promise<T>
+    {
+        return sceneController.Add(scene, payload);
     }
 }

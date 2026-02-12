@@ -363,4 +363,17 @@ export class Helper
     {
         return jsonAr.map(p => new Vec2(p.x, p.y));
     }
+
+    // EG: Helper.GetConstructorParamNames(this.constructor);
+    static GetConstructorParamNames(cls:Function): string[]
+    {
+        const constructorString = cls.toString();
+        const match = constructorString.match(/constructor\s*\(([^)]*)\)/);
+        if (!match) return [];
+        
+        return match[1]
+            .split(',')
+            .map(param => param.trim().split(/[:=\s]/)[0].trim())
+            .filter(name => name.length > 0);
+    }
 }

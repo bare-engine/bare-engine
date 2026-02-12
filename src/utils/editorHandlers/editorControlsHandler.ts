@@ -1,9 +1,8 @@
-import { BareGame, events, MakePath, pipes } from "../../main";
+import { Scene, events, MakePath, pipes } from "../../main";
 import { Color, Vec2 } from "../../libraries/rapid-render";
 import { GameObject } from "../../objects/gameObject";
 import { Helper } from "../helper";
 import { BareEvent, BareEventPayload, Entity, Layer } from "../bareTypes";
-import { EditorController } from "../../controllers/editorController";
 import { Rectangle } from "../gamesTypes";
 import { OutlineShader } from "../shaders/outlineShader";
 import { keyboardController } from "../../controllers/keyboardController";
@@ -11,6 +10,7 @@ import { hitboxController } from "../../controllers/hitboxController";
 import { mouseController } from "../../controllers/mouseController";
 import { cameraHandler } from "../CameraHandler";
 import { PhysicsObjectBare } from "../../barePhysics";
+import { EditorScene } from "../../scenes/editorScene";
 
 /*
     BUILD CONTROLS INGAME
@@ -22,7 +22,7 @@ export class EditorControlsHandler {
     private draggingLevelEntity: GameObject | null = null;
     private dragOffset: Vec2;
     
-    private editorController: EditorController;
+    private editorScene: EditorScene;
 
     private actionThisFrame: string = '';
 
@@ -33,15 +33,15 @@ export class EditorControlsHandler {
 
     private outlineShader = new OutlineShader();
     
-    constructor(editorController: any) {
-        this.editorController = editorController;
+    constructor(editorScene: any) {
+        this.editorScene = editorScene;
         this.draggingLevelEntity = null;
 
         // Keyboard controls
         if (window.isLocalhost)
         document.addEventListener('keydown', (e: KeyboardEvent) => {
             if (e.key.toLowerCase() == "x") {
-                this.editorController.Toggle(bare.baseSettingsHandler);
+                this.editorScene.Toggle(bare.baseSettingsHandler);
             }
         }, { passive: false });
 
@@ -71,7 +71,7 @@ export class EditorControlsHandler {
 
     KeyPressed({ key, allKeys }: BareEventPayload['key_pressed'])
     {
-        if (!this.editorController.active)
+        if (!this.editorScene.active)
             return;
         
         if (allKeys[0] == 'control')
@@ -99,19 +99,19 @@ export class EditorControlsHandler {
             const layer = this.GetSelectedLayer();
             this.copiedObjects.forEach(obj => {
                 var entity = bare.ConstructEntity(obj.name);
-                var objCreated = this.editorController.levelFunctionality.AddGameObjectAtPosition(obj.x + offset.x, obj.y + offset.y, entity, layer);
+                var objCreated = this.editorScene.AddGameObjectAtPosition(obj.x + offset.x, obj.y + offset.y, entity, layer);
                 objsCreated.push(objCreated);
             });
 
             this.SelectGameObjects(objsCreated);
 
-            this.editorController.SaveLevel();
+            this.editorScene.SaveLevel();
         }
     }
 
     KeyReleased({ key, allKeys }: BareEventPayload['key_released'])
     {
-        if (!this.editorController.active)
+        if (!this.editorScene.active)
             return;
         
         if (key == 'control')
@@ -125,7 +125,7 @@ export class EditorControlsHandler {
         if (this.MouseIsOnEditor(event))
             return;
 
-        if (!this.editorController.active)
+        if (!this.editorScene.active)
             return;
 
         if (this.draggingLevelEntity)
@@ -139,7 +139,7 @@ export class EditorControlsHandler {
         {
             if (this.currentPreviewEntity && this.currentPreviewEntity.visible)
             {
-                var obj = this.editorController.levelFunctionality.AddGameObjectAtPosition(this.currentPreviewEntity.x, this.currentPreviewEntity.y, this.currentPreviewEntity.name, layer);
+                var obj = this.editorScene.AddGameObjectAtPosition(this.currentPreviewEntity.x, this.currentPreviewEntity.y, this.currentPreviewEntity.name, layer);
                
                 var multiSelect = keyboardController.IsKeyDown("shift");
                 this.SelectGameObjects([obj], !multiSelect);
@@ -211,7 +211,7 @@ export class EditorControlsHandler {
     }
     
     private PointerMove({ mouseX, mouseY, event }: BareEventPayload['pointer_move']): void {
-        if (!this.editorController.active)
+        if (!this.editorScene.active)
             return;
 
         if (mouseController.IsMiddleMouseDown()) {
@@ -244,7 +244,7 @@ export class EditorControlsHandler {
 
     private PointerUp({ mouseX, mouseY, event, isLeftButton }: BareEventPayload['pointer_up']): void
     {
-        if (!this.editorController.active)
+        if (!this.editorScene.active)
             return;
 
         if (this.actionThisFrame == 'selectionRect')
@@ -257,18 +257,18 @@ export class EditorControlsHandler {
             
         this.actionThisFrame = '';
 
-        if (!this.editorController.active)
+        if (!this.editorScene.active)
             return;
 
         if (!(event.button == 0 || event.button == 2))
             return;
         
-        this.editorController.SaveLevel();
+        this.editorScene.SaveLevel();
     }
     
     private DoubleClick({ mouseX, mouseY, event }: BareEventPayload['pointer_doubleClick']): void
     {
-        if (!this.editorController.active)
+        if (!this.editorScene.active)
             return;
         
         var multiSelect = keyboardController.IsKeyDown("shift");
@@ -386,7 +386,7 @@ export class EditorControlsHandler {
 
     private OnScroll(ev: WheelEvent)
     {
-        if (!this.editorController.active)
+        if (!this.editorScene.active)
             return;
 
         if (this.MouseIsOnEditor(ev))
@@ -427,7 +427,7 @@ export class EditorControlsHandler {
             if (keyboardController.IsKeyDown("control") && !this.currentPreviewEntity.visible)
             {
                 var layerOfObj = objectController.GetObjectLayer(obj);
-                this.editorController.editorUIHandler.SelectLayerItemByInt(layerOfObj);
+                this.editorScene.editorUIHandler.SelectLayerItemByInt(layerOfObj);
                 
                 hitboxController.ClearExclusiveLayers();
             }
@@ -437,7 +437,7 @@ export class EditorControlsHandler {
             if (bare.currentSettings.showUI !== false)
             {
                 const entity = bare.ConstructEntity(obj.name);
-                this.editorController.SelectEntity(entity);
+                this.editorScene.SelectEntity(entity);
             }
 
             var multiSelect = keyboardController.IsKeyDown("shift");
@@ -507,7 +507,7 @@ export class EditorControlsHandler {
     }
 
     Update(_deltaTime?: number) {
-        if (!this.editorController.active)
+        if (!this.editorScene.active)
             return;
 
         if (this.draggingLevelEntity)
@@ -521,10 +521,10 @@ export class EditorControlsHandler {
             const desiredX = mouseController.world.position.x - this.dragOffset.x;
             const desiredY = mouseController.world.position.y - this.dragOffset.y;
 
-            if (this.editorController.gridActive)
+            if (this.editorScene.gridActive)
             {
                 // Snap to grid
-                const gridSize = this.editorController.gridSize;
+                const gridSize = this.editorScene.gridSize;
                 const snappedX = Math.round(desiredX / gridSize) * gridSize;
                 const snappedY = Math.round(desiredY / gridSize) * gridSize;
                 this.draggingLevelEntity.SetPosition(snappedX, snappedY);
@@ -567,9 +567,9 @@ export class EditorControlsHandler {
         const previewX = mouseController.world.position.x;
         const previewY = mouseController.world.position.y;
 
-        if (this.editorController.gridActive) {
+        if (this.editorScene.gridActive) {
             // Snap preview entity to grid
-            const gridSize = this.editorController.gridSize;
+            const gridSize = this.editorScene.gridSize;
             const snappedPreviewX = Math.round(previewX / gridSize) * gridSize;
             const snappedPreviewY = Math.round(previewY / gridSize) * gridSize;
             this.currentPreviewEntity.SetPosition(snappedPreviewX, snappedPreviewY);
@@ -597,7 +597,7 @@ export class EditorControlsHandler {
 
     PostRender()
     {
-        if (!this.editorController.active)
+        if (!this.editorScene.active)
             return;
         
         if (this.actionThisFrame == 'selectionRect')

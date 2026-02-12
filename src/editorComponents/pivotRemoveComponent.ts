@@ -2,7 +2,9 @@ import { Helper } from "../utils/helper";
 import { BaseComponent } from "../controllers/componentController";
 import { GameObject } from "../objects/gameObject";
 import { mouseController } from "../controllers/mouseController";
-import { editorController, PhysicsObjectBare } from "..";
+import { sceneController } from "../controllers/sceneController";
+import { EditorScene } from "../scenes/editorScene";
+import { PhysicsObjectBare } from "../barePhysics";
 
 export class PivotRemoveComponent extends BaseComponent
 {
@@ -57,7 +59,7 @@ export class PivotRemoveComponent extends BaseComponent
             }
         }
         
-        var gameObject = editorController.levelFunctionality.AddGameObjectFromLevelEntity(entityBare, 0);
+        var gameObject = sceneController.Get(EditorScene).AddGameObject(entityBare, 0);
         objectController.BringToFront(gameObject);
     }
 }

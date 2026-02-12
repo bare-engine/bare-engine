@@ -2,14 +2,17 @@
 // Avoid re-exporting from `main.ts` here since it has global side effects.
 
 // Core
-export { BareGame } from "./bareGame";
+export { Scene } from "./scene";
 export { GameObject } from "./objects/gameObject";
 
 // Core (side-effectful)
 export { BareEngine } from "./bareEngine";
 export { StartBare, GameMode, MakePath, events, pipes } from "./core";
 
+export { LevelScene } from "./scenes/levelScene";
+
 export { BareEvent, Events } from "./utils/bareTypes";
+export type { SceneI } from "./utils/bareTypes";
 
 export { BarePlugin } from "./utils/plugin";
 export { plugin } from "./utils/plugin";
@@ -18,13 +21,11 @@ export { plugin } from "./utils/plugin";
 export { BaseComponent } from "./controllers/componentController";
 export { HitboxController } from "./controllers/hitboxController";
 export { KeyboardController } from "./controllers/keyboardController";
-export { LevelController } from "./controllers/levelController";
 export { MouseController } from "./controllers/mouseController";
 export { ObjectController } from "./controllers/objectController";
 export { TweenController } from "./controllers/tweenController";
 export { ComponentController } from "./controllers/componentController";
-export { ScreenController } from "./controllers/screenController";
-export { EditorController } from "./controllers/editorController";
+export { SceneController } from "./controllers/sceneController";
 export { ParticleController } from "./controllers/particleController";
 
 // Controllers instances
@@ -33,19 +34,15 @@ export { hitboxController } from "./controllers/hitboxController";
 export { mouseController } from "./controllers/mouseController";
 export { tweenController } from "./controllers/tweenController";
 export { componentController } from "./controllers/componentController";
-export { screenController } from "./controllers/screenController";
-export { levelController } from "./controllers/levelController";
-export { editorController } from "./controllers/editorController";
+export { sceneController } from "./controllers/sceneController";
 export { particleController } from "./controllers/particleController";
 
 import { PhysicsControllerBare } from "./controllers/PhysicsControllerBare";
 import { PhysicsControllerSopiro } from "./controllers/physicsControllerSopiro";
-import { EditorController } from "./controllers/editorController";
 import { ComponentController } from "./controllers/componentController";
 import { ParticleController } from "./controllers/particleController";
 import { TweenController } from "./controllers/tweenController";
-import { LevelController } from "./controllers/levelController";
-import { ScreenController } from "./controllers/screenController";
+import { SceneController } from "./controllers/sceneController";
 import { HitboxController } from "./controllers/hitboxController";
 
 //import { BarePlugin } from "./utils/plugin";
@@ -53,7 +50,6 @@ import { HitboxController } from "./controllers/hitboxController";
 import { PhysicsObjectBare } from "./barePhysics";
 
 export const BareClasses = {
-  EditorController,
   PhysicsControllerSopiro,
   PhysicsControllerBare,
   PhysicsObjectBare,

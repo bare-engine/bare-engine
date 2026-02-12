@@ -292,7 +292,14 @@ export class GameObject
         if (this.texture)
             this.RenderSprite(inheritedColor);
         
+        this.OnRender();
+
         rapid.restore();
+    }
+
+    OnRender()
+    {
+        // FOR OVERRIDE
     }
 
     PostRender()

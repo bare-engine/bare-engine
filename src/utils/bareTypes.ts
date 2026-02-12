@@ -1,5 +1,6 @@
 import { GameObject } from "../objects/gameObject";
 import type { Vec2 } from "../libraries/rapid-render";
+import { Scene } from "../main";
 
 // Type definitions for level data
 export interface Position
@@ -235,6 +236,10 @@ const eventDefs = {
   game_completeClear: undefined,
   game_resize: ev<{ prevWidth: number; prevHeight: number; newWidth: number; newHeight: number }>(),
 
+  scene_added: ev<{ scene: Scene; }>(),
+  scene_removed: ev<{ scene: Scene; }>(),
+  scene_changed: ev<{ scene: Scene; type: 'added' | 'removed' }>(),
+
   level_loaded: ev<{ levelStr: string; level: LevelData }>(),
   level_preSave: ev<{ levelStr: string }>(),
   level_postSave: ev<{ levelStr: string; level: LevelData }>(),
@@ -337,7 +342,7 @@ export interface Component<T extends GameObject = GameObject>
 
 export interface BareScreen
 {
-  OnAwake?(): Promise<void> | void;
+  OnAwake?(payload?: any): Promise<void> | void;
   OnStart?(): void;
   OnUpdate?(dt: number): void;
   OnRender?(): void;
@@ -372,3 +377,19 @@ export class AnimationData
     this.loop = loop;
   }
 }
+
+// TODO
+export interface SceneI
+{
+    //Add?: (obj: GameObject) => void
+    //Remove?: (obj: GameObject) => void
+    //Clear?: (full:boolean) => void
+}
+
+export type SceneOptions = {
+    entityData?: SettingsData;
+    persistent?: boolean;
+}
+
+export type SceneClass<T extends Scene = Scene> = new (sceneOptions?: SceneOptions) => T;
+export type AwakePayload<T> = T extends { OnAwake: (payload: infer P) => any } ? P : T extends { Awake: (payload: infer P) => any } ? P : never;

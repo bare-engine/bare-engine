@@ -1,8 +1,8 @@
-import { screenController } from "./controllers/screenController";
-import { events, GameMode, MakePath, pipes } from "./main";
+import { sceneController } from "./controllers/sceneController";
+import { events, GameMode, pipes } from "./main";
 import { GameObject } from "./objects/gameObject";
 import { assetsHandler } from "./utils/assetsHandler";
-import { BareEvent, Entity, SettingsData } from "./utils/bareTypes";
+import { BareEvent, SceneClass } from "./utils/bareTypes";
 import { SaveDataHandler } from "./utils/SaveDataHandler";
 
 export class BareEngine
@@ -23,22 +23,25 @@ export class BareEngine
     
     get levelEditorOpen(): boolean { return window.gameMode == GameMode.Editor; }
 
-    constructor(gameClass)
+    constructor(sceneClass: SceneClass)
     {
-        console.log('BareEngine');
-        
-        this.RunMainLoopBound = this.RunMainLoop.bind(this);
+        this.Start(sceneClass);
+    }
 
-        this.lastUpdateTimeRef = performance.now();
-        
+    async Start(sceneClass: SceneClass)
+    {
+        this.ImplementInitialTextures();
+        this.ResizeCanvas();
+
+        await sceneController.Goto(sceneClass);
+
         window.addEventListener('resize', this.ResizeCanvas.bind(this));
 
-        this.ResizeCanvas();
-        this.ImplementInitialTextures();
-
-        screenController.Goto(gameClass);
-
+        this.RunMainLoopBound = this.RunMainLoop.bind(this);
         this.RunMainLoopId = requestAnimationFrame(this.RunMainLoopBound);
+        this.lastUpdateTimeRef = performance.now();
+        
+        events.emit(BareEvent.game_started);
     }
 
     ResizeCanvas()
@@ -132,8 +135,8 @@ export class BareEngine
         pipes.run("mouseController_Update", deltaTime);
         pipes.run("hitboxController_Update", deltaTime);
         pipes.run("editorController_Update", deltaTime); 
-        screenController.Update(deltaTime);
-        objectController.Update(deltaTime);
+        sceneController.Update(deltaTime);
+        //objectController.Update(deltaTime);
         uiController.Update(deltaTime);
         pipes.run("physicsController_Update", deltaTime);
         pipes.run("componentController_Update", deltaTime);
@@ -164,7 +167,7 @@ export class BareEngine
         pipes.run("componentController_PreRender"); // ALL THIS EMITS MIGHT BE SLOW? ESPECIALLY FOR COMPONENT-CONTROLLER, SENDING MORE TO COMPONENTS
         objectController.PreRender();
         pipes.run("componentController_Render");
-        screenController.Render();
+        sceneController.Render();
         objectController.Render();
         pipes.run("physicsController_Render");
         pipes.run("componentController_PostRender");
@@ -192,7 +195,7 @@ export class BareEngine
         cancelAnimationFrame(this.RunMainLoopId);
         this.RunMainLoopId = -1;
 
-        //BareGame.registeredClasses = {};
+        //Scene.registeredClasses = {};
         //events.clearAll();
         //pipes.clear();
     }

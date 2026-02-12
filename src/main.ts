@@ -5,17 +5,15 @@ import { ObjectController } from "./controllers/objectController";
 import { Helper } from "./utils/helper";
 import mitt from './libraries/mitt';
 import matt from './libraries/matt';
-import { BareGame } from './bareGame';
-import { Pipes, BareEvent, Events } from './utils/bareTypes';
+import { Scene } from './scene';
+import { Pipes, BareEvent, Events, SceneClass } from './utils/bareTypes';
 import Tween from './libraries/tweenJS/Tween';
-import { screenController } from './controllers/screenController';
-import { assetsHandler } from './utils/assetsHandler';
 import { BareEngine } from './bareEngine';
 
 export const events = mitt<Events>();
 export const pipes = matt<Pipes>();
 
-export { BareGame } from './bareGame';
+export { Scene } from './scene';
 
 export function MakePath(...args: string[]): string
 {
@@ -62,7 +60,7 @@ declare global
 
     var destroyTextFunc:Function | null;
 
-    var bare: BareGame & BareEngine & Rapid;
+    var bare: Scene & BareEngine & Rapid;
     
     var objectController:ObjectController
     var uiController:ObjectController
@@ -105,18 +103,8 @@ export type BareOptions = {
   levelPath?: string;
 };
 
-export function StartBare<T extends BareGame>(gameClass: new () => T, options?: BareOptions): void
+export function StartBare(gameClass: SceneClass, options?: BareOptions): void
 {
-    if (BareGame.initialized)
-    {
-        // THIS IS REALLY ONLY HERE FOR THE DEMOS. TO MAKE IT SEEM StartBare WAS CALLED
-        return;
-        
-        // SHOULD REALLY JUST:
-        //throw new Error("BareGame already initialized");
-    }
-    BareGame.initialized = true;
-
     // DEFAULTS + OVERRIDE OPTIONS
     options = { ...{
         antiAlias: true,
@@ -129,17 +117,17 @@ export function StartBare<T extends BareGame>(gameClass: new () => T, options?: 
     // MAYBE NOT THE BEST SETTING THESE AS STATIC
     // BUT WILL DO FOR NOW TO SET THE VARS BEFORE GAME-CLASS GETS CONSTRUCTED - TODO
     if (options.imagePath)
-        BareGame.imagePath = options.imagePath;
+        Scene.imagePath = options.imagePath;
 
     if (options.levelPath)
-        BareGame.levelPath = options.levelPath;
+        Scene.levelPath = options.levelPath;
 
     window.initialAssetsReady =(assets = [])=>{
         const doesSupportWebGL = supportsWebGL(canvas);
         if (doesSupportWebGL)
         {
             if (options.gameObjectPoolSize !== undefined)
-                BareGame.gameObjectPoolSize = options.gameObjectPoolSize;
+                Scene.gameObjectPoolSize = options.gameObjectPoolSize;
 
             // START RAPID
             let rapid = new Rapid({

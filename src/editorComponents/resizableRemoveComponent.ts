@@ -3,7 +3,8 @@ import { PivotComponent } from './pivotComponent';
 import { GameObject } from '../objects/gameObject';
 import { Helper } from '../utils/helper';
 import { mouseController } from '../controllers/mouseController';
-import { editorController, PhysicsObjectBare } from '..';
+import { PhysicsObjectBare, sceneController } from '..';
+import { EditorScene } from '../scenes/editorScene';
 
 export class ResizableRemoveComponent extends BaseComponent
 {
@@ -46,7 +47,8 @@ export class ResizableRemoveComponent extends BaseComponent
       objectController.GetObjectByName(mainObj.name)!.pivotBasedOnHitbox.set(-1, -1);
     }
     
-    var gameObject = editorController.levelFunctionality.AddGameObjectFromLevelEntity(entityBare, 0);
+    var editorScene = sceneController.Get(EditorScene);
+    var gameObject = editorScene.AddGameObject(entityBare, 0);
     objectController.MoveWithinLayer(gameObject, 2);
 
     var pivotOjb = objectController.GetObjectByName("dot")!;

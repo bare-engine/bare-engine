@@ -37,7 +37,7 @@ class CameraHandler {
       this.SetBounds({ x: 0, y: 0, width: dims.width, height: dims.height });
       this.CalculateZoomFit();
       // default to level center
-      this.SetPosition(dims.width / 2, dims.height / 2);
+      //this.SetPosition(dims.width / 2, dims.height / 2);
     });
 
     events.persistent.on(BareEvent.game_resize, () => this.CalculateZoomFit());

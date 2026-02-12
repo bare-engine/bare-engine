@@ -3,10 +3,9 @@ import { BareEvent, BareEventPayload, LevelData, SaveData, SettingsData } from "
 import { Helper } from "./helper";
 import { Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
-import { BareGame, events } from "../main";
+import {  events } from "../main";
 import { OutlineShader } from "./shaders/outlineShader";
-import { BareClasses, editorController, levelController, screenController, tweenController } from "..";
-import { create } from "node:domain";
+import { BareClasses, LevelScene, ObjectController, sceneController } from "..";
 import { EditorScene } from "../scenes/editorScene";
 
 // THIS PLUGIN CODE DOES NOT GET INCLUDED IN PRODUCTION
@@ -15,10 +14,6 @@ import { EditorScene } from "../scenes/editorScene";
 // THIS HACK IS NEEDED SO THAT AT INIT, WE DON'T DIRECTLY IMPORT THESE CONTROLLERS LEADING TO THEM NOT FINDING EVENTS
 const getMouseController = () =>
   (require("../controllers/mouseController") as typeof import("../controllers/mouseController")).mouseController;
-const getLevelController = () =>
-  (require("../controllers/levelController") as typeof import("../controllers/levelController")).levelController;
-const getEditorController = () =>
-  (require("../controllers/editorController") as typeof import("../controllers/editorController")).editorController;
 
 declare global {
   interface Window {
@@ -26,38 +21,35 @@ declare global {
   }
 }
 
-window.__GAME_DEBUG_API__ = {
-  // called by the panel (via injector) to select in-game
-  selectObjectInGame(uid: string) {
-    const obj = objectController.GetObjectById(uid);
-    if (!obj) return false;
+window.__GAME_DEBUG_API__ = {// called by the panel (via injector) to select in-game
+  selectObjectInGame(uid: string)
+  {
+      const outlineShader = plugin.outlineShader;
 
-    var outlineShader = plugin.outlineShader;
+      var objs = sceneController.GetAllSceneObjects();
+      let selected: any = objs.find(o => o.uniqueID === uid) ?? null;
 
-    // CLEAR OUTLINE SHADERS ON ALL
-    var objs = objectController.GetLayers().flat();
-    for (var i in objs)
-    {
-        let obj = objs[i];
+      // CLEAR OUTLINE SHADERS ON ALL (across all scenes)
+      for (const o of objs)
+      {
+          if (o.customName === 'ignoreInPlugin') continue;
+          if (!o.visible || !o.visibleInEditor) continue;
 
-        if (obj.customName == 'ignoreInPlugin')
-            continue;
+          const idx = o.shaders.indexOf(outlineShader);
+          if (idx !== -1)
+          {
+              outlineShader.stop(o);
+              o.shaders.splice(idx, 1);
+          }
+      }
 
-        if (!obj.visible || !obj.visibleInEditor)
-            continue;
+      if (!selected) return false;
 
-        if (obj.shaders.indexOf(outlineShader) != -1)
-        {
-            outlineShader.stop(obj);
-            obj.shaders.splice(obj.shaders.indexOf(outlineShader), 1);
-        }
-    }
+      // ADD TO SELECTED
+      outlineShader.start(selected, [1.0, 1.0, 1.0, 1.0], 8.0);
+      selected.shaders.push(outlineShader);
 
-    // ADD TO SELECTED
-    outlineShader.start(obj, [1.0, 1.0, 1.0, 1.0], 8.0);
-    obj.shaders.push(outlineShader);
-
-    return true;
+      return true;
   },
 
   // called by the game to notify the panel
@@ -67,26 +59,25 @@ window.__GAME_DEBUG_API__ = {
   },
 
   gotoLevelView(levelPath: string) {
-    levelController.LoadLevel(levelPath);
+    //levelController.LoadLevel(levelPath);
   },
 
   async gotoLevelEdit(levelPath: string) {
-    await levelController.LoadLevel(levelPath);
-    screenController.Goto(EditorScene);
+    sceneController.Goto(EditorScene, {levelInput: levelPath});
   },
 
   async gotoEntity(name: string) {
-    const levelController = getLevelController();
+    /*const levelController = getLevelController();
     if (levelController && levelController.currentLevel && levelController.currentLevel.name == name)
     {
         return;
-    }
+    }*/
 
-    var editorController = getEditorController();
+    var editorScene = sceneController.Get(EditorScene)
     
-    var levelData = await editorController.CreateHitboxDataFor(name, editorController.hitboxData);
-    var saveLevelCallback = () => editorController.SaveHitboxDataToSettingsData();
-    editorController.Open(levelData, saveLevelCallback, editorController.hitboxDataHandler);
+    var levelData = await editorScene.CreateHitboxDataFor(name, editorScene.hitboxData);
+    var saveLevelCallback = async () => await editorScene.SaveHitboxDataToSettingsData();
+    editorScene.Open(levelData, saveLevelCallback, editorScene.hitboxDataHandler);
   },
 
   getDebugActions() {
@@ -94,7 +85,20 @@ window.__GAME_DEBUG_API__ = {
   },
 
   getAllObjects() {
-    return objectController.GetLayers().flat().filter((o: any) => o.customName != 'ignoreInPlugin').map((o: any) => ({ id: o.uniqueID, name: o.name }));
+    const allScenes = sceneController.GetAllScenes();
+
+    return allScenes
+        .map(scene => scene.objectController)
+        .flatMap(controller =>
+            controller
+                .GetLayers()
+                .flat()
+                .filter(o => o.customName !== 'ignoreInPlugin')
+                .map(o => ({
+                    id: o.uniqueID,
+                    name: o.name
+                }))
+        );
   },
 
   GetLevelFiles() {
@@ -151,8 +155,7 @@ window.__GAME_DEBUG_API__ = {
 
     if (bare.levelEditorOpen)
     {
-      var editorController = getEditorController();
-      await editorController.Restart();
+      await sceneController.Get(EditorScene).Restart();
     }
     else
     {
@@ -228,7 +231,7 @@ export class BarePlugin
     {
         events.persistent.once(BareEvent.game_started, () => {
             this.outlineShader = new OutlineShader()
-            bare.AddClass(BareClasses.EditorController)
+            //bare.AddClass(BareClasses.EditorController)
 
             // RIGHT CLICK FOR PLUGIN SELECT
             document.addEventListener('pointerdown', this.OnRightClickPointerDown, false);
@@ -240,7 +243,7 @@ export class BarePlugin
 
         // RESTART
         this.AddDebugAction("Restart Game", () => bare.Restart(true));
-        this.AddDebugAction("Restart Level", () => levelController.RestartLevel());
+        this.AddDebugAction("Restart Level", () => sceneController.Get(LevelScene).RestartLevel()); //
         this.AddDebugAction("Clear Save Data", () => SaveDataHandler.Clear());
         this.AddDebugBreak();
 
@@ -300,7 +303,7 @@ export class BarePlugin
 
     CheckClickGameObject(ev: PointerEvent, outline: boolean = true): GameObject | null
     {
-        var objs = objectController.GetLayers().flat();
+        var objs = sceneController.GetAllSceneObjects();
         var foundObj:GameObject | null = null;
         for (var i in objs)
         {
