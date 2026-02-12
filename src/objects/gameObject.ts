@@ -2,7 +2,7 @@ import { assetsHandler } from "../utils/assetsHandler";
 import { Hitbox } from '../utils/hitbox';
 import { Entity, GameObjectClass } from '../utils/bareTypes';
 import { Helper } from '../utils/helper';
-import { MakePath } from '../main';
+import { MakePath, Scene } from '../main';
 import { Vec2, Texture, Color, GLShader, Uniform, MaskType } from "../libraries/rapid-render";
 import type { Component, Ctor } from "../utils/bareTypes";
 
@@ -43,7 +43,7 @@ export class GameObject
     shader: GLShader | undefined;
     uniforms: Uniform | undefined;
 
-    tapHitbox: Hitbox | null = null;
+    tapHitbox: Hitbox | null = null; // COULD MAKE THIS ANY, TO UNREF HITBOX - TODO
     hitboxColor:Color = new Color(255,255,255,80);
 
     revertPivotOnSave: boolean = false;
@@ -61,6 +61,8 @@ export class GameObject
     private mask: GameObject | null = null;
     private maskType: MaskType = MaskType.Include;
     private renderParentTransform: Float32Array | null = null;
+
+    public scene: Scene | null = null;
 
     //private cachedChildrenWidth: number = -1;
     //private cachedChildrenHeight: number = -1;
@@ -82,6 +84,48 @@ export class GameObject
         {
             this.Init(texturePath);
         }
+    }
+
+    OnPointerDown(callback = null)
+    {
+        if (this.scene)
+        {
+            this.scene.OnPointerDown(this, callback);
+        }
+    }
+
+    OnPointerUp(callback = null)
+    {
+        if (this.scene)
+        {
+            this.scene.OnPointerUp(this, callback);
+        }
+    }
+
+    OnPointerEnter(callback = null)
+    {
+        if (this.scene)
+        {
+            this.scene.OnPointerEnter(this, callback);
+        }
+    }
+
+    OnPointerLeave(callback = null)
+    {
+        if (this.scene)
+        {
+            this.scene.OnPointerLeave(this, callback);
+        }
+    }
+
+    OffPointers()
+    {
+        this.OnPointerDown();
+        this.OnPointerUp();
+        this.OnPointerEnter();
+        this.OnPointerLeave();
+
+        this.tapHitbox = null;
     }
 
     // CAN SUPPY A CLASS OR INSTANCE OF COMPONENT

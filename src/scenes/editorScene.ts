@@ -21,7 +21,6 @@ import { sceneController } from "../controllers/sceneController";
 import { HitboxType } from "../utils/gamesTypes";
 import { Hitbox } from "../utils/hitbox";
 import { Text } from "./../libraries/rapid-render/texture";
-import { hitboxController } from "../controllers/hitboxController";
 
 /*
     EDITOR CONTROLLER (MAIN)
@@ -82,7 +81,7 @@ export class EditorScene extends LevelScene
         this.AddGameObject(this.editorButton);
         this.editorButton.save = false;
 
-        hitboxController.AssignButton(this.editorButton, this.OnClickEditorButton.bind(this));
+        this.editorButton.OnPointerDown(this.OnClickEditorButton.bind(this));
 
         // HIDE EDITOR BUTTON IN PRODUCTION
         if (!window.isLocalhost)

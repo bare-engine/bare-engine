@@ -2,6 +2,7 @@ import { BareEvent } from '../utils/bareTypes';
 import { Helper } from "../utils/helper";
 import { events, pipes } from "../main";
 import { Vec2 } from "../libraries/rapid-render";
+import { sceneController } from './sceneController';
 
 type MouseSpace = {
     position: Vec2;
@@ -139,6 +140,15 @@ export class MouseController
         if (!bare.isPaused)
             events.emit(BareEvent.pointer_down, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
 
+        var scenes = sceneController.GetAllScenes();
+        for (var scene of scenes)
+        {
+            if (!scene.active)
+                continue;
+
+            scene.events.emit(BareEvent.pointer_down, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
+        }
+
         if (!bare.isPaused)
             event.preventDefault();
     }
@@ -164,6 +174,16 @@ export class MouseController
 
         if (!bare.isPaused)
             events.emit(BareEvent.pointer_up, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
+
+        // SEND OUT EVENT TO SCENES
+        var scenes = sceneController.GetAllScenes();
+        for (var scene of scenes)
+        {
+            if (!scene.active)
+                continue;
+            
+            scene.events.emit(BareEvent.pointer_up, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
+        }
 
         event.preventDefault();
     }

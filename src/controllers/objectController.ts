@@ -287,8 +287,23 @@ export class ObjectController
         return false;
     }
     
-    Clear()
+    Clear(includingPersistent: boolean = false)
     {
-        this.layers = [];
+        var layers = this.GetLayers();
+        for (var i = 0; i < layers.length; i++)
+        {
+            var layer = layers[i];
+            for (var j = layer.length - 1; j >= 0; j--)
+            {
+                var obj = layer[j];
+                
+                if (!includingPersistent && obj.persistent)
+                    continue;
+
+                bare.RemoveGameObject(obj, i);
+            }
+        }
+
+        //this.layers = [];
     }
 }

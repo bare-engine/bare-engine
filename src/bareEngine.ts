@@ -133,7 +133,6 @@ export class BareEngine
         events.emit(BareEvent.game_preUpdate, { deltaTime: deltaTime });
 
         pipes.run("mouseController_Update", deltaTime);
-        pipes.run("hitboxController_Update", deltaTime);
         pipes.run("editorController_Update", deltaTime); 
         sceneController.Update(deltaTime);
         //objectController.Update(deltaTime);
@@ -198,5 +197,20 @@ export class BareEngine
         //Scene.registeredClasses = {};
         //events.clearAll();
         //pipes.clear();
+    }
+
+
+    private static controllerCallbacks: any[] = [];
+    static AddControllerSet(callback: (conroller: any) => void)
+    {
+        this.controllerCallbacks.push(callback);
+    }
+
+    static SetControllerReferences()
+    {
+        for (const callback of this.controllerCallbacks)
+        {
+            callback(this);
+        }
     }
 }

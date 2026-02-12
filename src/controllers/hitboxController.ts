@@ -3,9 +3,12 @@ import { GameObject } from "../objects/gameObject";
 import { Helper } from "../utils/helper";
 import { Hitbox } from "../utils/hitbox";
 import { HitboxType } from "../utils/gamesTypes";
-import { BareEventPayload, CollisionHandlingType, UI_LAYER, BareEvent } from '../utils/bareTypes';
+import { BareEventPayload, CollisionHandlingType, UI_LAYER, BareEvent, Events } from '../utils/bareTypes';
 import { Vec2 } from "../libraries/rapid-render";
 import { mouseController } from "./mouseController";
+import { ObjectController } from "./objectController";
+import { Emitter } from "../libraries/mitt";
+import { BareEngine } from "../bareEngine";
 
 type AnyPress = (go: any, ...args: any[]) => any;
 
@@ -21,21 +24,16 @@ type ButtonHandlers<Arg extends GameObject = GameObject> = {
 export class HitboxController
 {
     public active: boolean = true;
+    private objectController: ObjectController;
+
     private currentHitboxHover: Hitbox | null = null;
     private currentHitboxDown: Hitbox | null = null;
 
     private exclusiveLayers: int[] = [];
 
-    constructor()
+    constructor(objectController: ObjectController, events:Emitter<Events>)
     {
-        this.init();
-    }
-
-    init()
-    {
-        pipes.set("hitboxController_Update", this.Update.bind(this));
-        events.persistent.on(BareEvent.game_postRender, this.RenderHitboxes.bind(this));
-        events.persistent.on(BareEvent.game_clear, this.Deactivate.bind(this));
+        this.objectController = objectController;
         
         events.persistent.on(BareEvent.pointer_down, this.PointerDown.bind(this));
         events.persistent.on(BareEvent.pointer_up, this.PointerUp.bind(this));
@@ -66,22 +64,19 @@ export class HitboxController
             }
         }
         
-        this.HandleUpdate(objectController.GetLayers(), false);
-        this.HandleUpdate(uiController.GetLayers(), true);
+        this.HandleUpdate(this.objectController.GetLayers(), false);
     }
 
-    RenderHitboxes()
+    Render()
     {
         if (!window.debug)
             return;
 
-        var objs = objectController.GetAllObjects();
-        var uis = uiController.GetAllObjects();
-        var all = [...objs, ...uis];
+        var objs = this.objectController.GetAllObjects();
 
-        for (var i = all.length - 1; i >= 0; i--)
+        for (var i = objs.length - 1; i >= 0; i--)
         {
-            var obj = all[i];
+            var obj = objs[i];
             var hitbox = obj.tapHitbox;
             const isUIObject = this.IsUIObject(obj);
 
@@ -417,7 +412,7 @@ export class HitboxController
         this.active = true;
     }
 
-    Deactivate()
+    Clear()
     {
         bare.SetCursor('inherit');
         this.currentHitboxHover = null;
@@ -468,11 +463,56 @@ export class HitboxController
         hitbox.OnEnter   = (...a: any[]) => handlers.OnEnter?.(gameObject, ...a);
         hitbox.OnLeave   = (...a: any[]) => handlers.OnLeave?.(gameObject, ...a);
 
-        (gameObject as any).tapHitbox = hitbox;
+        gameObject.tapHitbox = hitbox;
         
         return hitbox;
     }
+
+    OnPointerDown(gameobject: GameObject, callback: AnyPress): void
+    {
+        this.AssignCallback(gameobject, "OnPress", callback);
+    }
+
+    OnPointerUp(gameobject: GameObject, callback: AnyPress): void
+    {
+        this.AssignCallback(gameobject, "OnRelease", callback);
+    }
+
+    OnPointerEnter(gameobject: GameObject, callback: AnyPress): void
+    {
+        this.AssignCallback(gameobject, "OnEnter", callback);
+    }
+
+    OnPointerLeave(gameobject: GameObject, callback: AnyPress): void
+    {
+        this.AssignCallback(gameobject, "OnLeave", callback);
+    }
+
+    AssignCallback(gameobject: GameObject, type: "OnPress" | "OnRelease" | "OnEnter" | "OnLeave", callback: AnyPress): void
+    {
+        var rect = {x1: 0, y1: 0, x2: gameobject.width, y2: gameobject.height};
+        const hitbox = gameobject.tapHitbox ?? new Hitbox(gameobject, rect);
+        hitbox[type] = callback;
+        gameobject.tapHitbox = hitbox;
+    }
 }
 
-export const hitboxController = new HitboxController();
-globalThis.hitboxController = hitboxController;
+
+globalThis.hitboxControllerClass = HitboxController;
+
+let _instance: HitboxController;
+
+export const hitboxController = new Proxy({} as HitboxController, {
+    get(_, prop)
+    {
+        return (_instance as any)[prop];
+    },
+    set(_, prop, value)
+    {
+        (_instance as any)[prop] = value;
+        return true;
+    }
+});
+
+BareEngine.AddControllerSet((hitboxConroller: HitboxController) => {_instance = hitboxConroller});
+

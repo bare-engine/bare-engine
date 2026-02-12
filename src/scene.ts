@@ -1,7 +1,7 @@
 import { events, GameMode, MakePath, pipes } from "./main";
 import { Color, FrameBufferObject, RenderTexture, Texture, Vec2 } from "./libraries/rapid-render";
 import { PoolHandler } from "./utils/poolHandler";
-import { AwakePayload, BareEvent, SceneClass, Entity, GameObjectClass, Layer, LayerInfo, LevelData, SaveData, SceneOptions, SettingsData, UI_LAYER, SceneI } from "./utils/bareTypes";
+import { AwakePayload, BareEvent, SceneClass, Entity, GameObjectClass, Layer, LayerInfo, LevelData, SaveData, SceneOptions, SettingsData, UI_LAYER, SceneI, Events } from "./utils/bareTypes";
 import { GameObject } from "./objects/gameObject";
 import { SettingsHandler as SettingsHandler } from "./utils/settingsHandler";
 import { assetsHandler } from "./utils/assetsHandler";
@@ -9,6 +9,8 @@ import { defaultEntityData as defaultEntityData } from "./utils/bareData";
 import { PhysicsObjectBare } from "./barePhysics";
 import { ObjectController } from "./controllers/objectController";
 import { sceneController } from "./controllers/sceneController";
+import mitt from "./libraries/mitt";
+import { BareEngine } from "./bareEngine";
 
 /*Bare.camera.SetPosition(bare.width * .5, bare.height * .5);
 Bare.sound.Play()
@@ -40,6 +42,7 @@ export class Scene implements SceneI
     static levelPath: string = "_data/levels";
     static soundPath: string = "sounds";
 
+    public active: boolean = true;
     public started: boolean = false;
     public persistent: boolean = false;
 
@@ -49,6 +52,8 @@ export class Scene implements SceneI
     public currentSettingsHandler: SettingsHandler;
 
     public objectController: ObjectController;
+
+    private hitboxController: any; // ANY TO NOT INCLUDE HITBOXCONTROLLER AS DEPENDENCY
 
     get baseSettings(): SettingsData { return this.baseSettingsHandler.Get(); }
     get currentSettings(): SettingsData { return this.currentSettingsHandler.Get(); }
@@ -72,6 +77,9 @@ export class Scene implements SceneI
 
     get currentLevelStr(): string { return SaveData.currentLevelStr; }
 
+    public events = mitt<Events>(); // private todo
+    //private pipes = matt<Pipes>();
+    
     constructor(sceneOptions: SceneOptions = {entityData: defaultEntityData})
     {
         if (!sceneOptions.entityData)
@@ -660,6 +668,8 @@ export class Scene implements SceneI
             this.ApplyEntityToGameObject(entity, gameObject);
         }
 
+        gameObject.scene = this;
+
         // ADD
         //if (gameObject.name == "")
             //trace("added gameobject with no name");
@@ -771,6 +781,9 @@ export class Scene implements SceneI
 
     Update(deltaTime: number): void
     {
+        BareEngine.SetControllerReferences();
+
+        this.hitboxController?.Update(deltaTime);
         this.objectController.Update(deltaTime);
         this.OnUpdate(deltaTime);
     }
@@ -792,6 +805,7 @@ export class Scene implements SceneI
 
     Render(): void
     {
+        this.hitboxController?.Render();
         this.objectController.Render();
         this.OnRender();
     }
@@ -1007,43 +1021,6 @@ export class Scene implements SceneI
         // FOR OVERRIDE
     }
 
-    // full = true WILL REMOVE ALL OBJECTS, INCLUDING PERSISTENT
-    RemoveAll(full:boolean = false)
-    {
-        var removeAllFrom = (objectControllerArg: ObjectController, isUI: boolean = false) => {
-            var layers = objectControllerArg.GetLayers();
-            for (var i = 0; i < layers.length; i++)
-            {
-                var layer = layers[i];
-                for (var j = layer.length - 1; j >= 0; j--)
-                {
-                    var obj = layer[j];
-                    
-                    if (!full && obj.persistent)
-                        continue;
-
-                    var actualLayer = (isUI ? (UI_LAYER + i) : i);
-                    bare.RemoveGameObject(obj, actualLayer);
-                }
-            }
-        }
-
-        removeAllFrom(this.objectController);
-
-        if (full)
-            removeAllFrom(uiController, true);
-        
-        if (full)
-        {
-            this.objectController.Clear();
-            uiController.Clear();
-        }
-
-        // WAY I DID IT BEFORE. WAY FASTER, DIRECT, BUT DOESN'T TAKE INTO ACCOUNT POOLS AND PERSISTENT PROPERTY
-        //objectController.Clear();
-        //uiController.Clear();
-    }
-
     async Restart(full:boolean = false)
     {
         this.Clear(full);
@@ -1052,9 +1029,15 @@ export class Scene implements SceneI
 
     Clear(full:boolean = false)
     {
+        this.events.clear();
+
         events.emit(BareEvent.game_clear, { full: full });
 
-        this.ClearScene(full);
+        this.objectController.Clear();
+        this.hitboxController?.Clear();
+
+        this.ApplyLayerInfoToSettings(this.currentSettings, true); // ?
+
         this.OnClear(full);
     }
 
@@ -1062,20 +1045,8 @@ export class Scene implements SceneI
     {
         // FOR OVERRIDE
     }
-
-    ClearScene(full:boolean = false)
-    {
-        // NOT SENDING CLEAR EVENT HERE... WANT THAT?
-
-        this.ApplyLayerInfoToSettings(this.currentSettings, true); // ?
-
-        this.RemoveAll(full);
-
-        events.clear(); // LEAVES PERSISTENT EVENTS
-    }
-
     
-
+    // SCENES
     async Goto<T extends Scene>(sceneClass: SceneClass<T>, payload?: AwakePayload<T>): Promise<T>
     {
         sceneController.Remove(this);
@@ -1086,4 +1057,56 @@ export class Scene implements SceneI
     {
         return sceneController.Add(scene, payload);
     }
+
+    // POINTERS
+    OnPointerDown(gameObject: GameObject, callback: any)
+    {
+        this.CheckExist("hitboxController");
+        this.hitboxController.OnPointerDown(gameObject, callback);
+    }
+
+    OnPointerUp(gameObject: GameObject, callback: any)
+    {
+        this.CheckExist("hitboxController");
+        this.hitboxController.OnPointerUp(gameObject, callback);
+    }
+
+    OnPointerEnter(gameObject: GameObject, callback: any)
+    {
+        this.CheckExist("hitboxController");
+        this.hitboxController.OnPointerEnter(gameObject, callback);
+    }
+
+    OnPointerLeave(gameObject: GameObject, callback: any)
+    {
+        this.CheckExist("hitboxController");
+        this.hitboxController.OnPointerLeave(gameObject, callback);
+    }
+
+    // HELPER
+    CheckExist(propertyName: string)
+    {
+        if ((this as any)[propertyName])
+            return true;
+
+        const classKey = propertyName + "Class";
+        const Ctor = (globalThis as any)[classKey];
+
+        if (!Ctor)
+        {
+            const className = propertyName.charAt(0).toUpperCase() + propertyName.slice(1);
+            console.error(className + " not registered. Call bare.AddClass(" + className + ") at OnAwake() of your game.");
+
+            return false;
+        }
+
+        var args = [];
+        if (propertyName == "hitboxController")
+            args = [this.objectController, this.events];
+
+        (this as any)[propertyName] = new Ctor(...args);
+
+        return true;
+    }
 }
+

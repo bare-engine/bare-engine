@@ -157,3 +157,8 @@ events.persistent.on(BareEvent.game_completeClear, () => {
     SaveDataHandler.Clear();
     SaveDataHandler.InitDefaults();
 });
+
+events.persistent.on(BareEvent.level_postSave, ({level}) => {
+    SaveData.levelCache.set(SaveData.currentLevelStr, level);
+    SaveDataHandler.Save();
+});

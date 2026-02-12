@@ -1,7 +1,6 @@
 
 import { GameObject } from "../objects/gameObject";
 import { Helper } from "../utils/helper";
-import { SaveDataHandler } from "../utils/SaveDataHandler";
 import { Color, Texture } from "../libraries/rapid-render";
 import { assetsHandler } from "../utils/assetsHandler";
 import { Entity, LevelData, Component, Layer, SaveData, BareEvent, SettingsData, SceneOptions } from '../utils/bareTypes';
@@ -188,9 +187,6 @@ export class LevelScene extends Scene
 
         const level = (this.currentLevel as LevelData);
         this.SerializeLevel(level);
-
-        SaveData.levelCache.set(SaveData.currentLevelStr, level);
-        SaveDataHandler.Save();
 
         events.emit(BareEvent.level_postSave, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
         
