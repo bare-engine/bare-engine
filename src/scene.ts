@@ -55,6 +55,10 @@ export class Scene implements SceneI
 
     private hitboxController: any; // ANY TO NOT INCLUDE HITBOXCONTROLLER AS DEPENDENCY
     private tweenController: any; // ANY TO NOT INCLUDE HITBOXCONTROLLER AS DEPENDENCY
+    private componentController: any; // ANY TO NOT INCLUDE COMPONENTCONTROLLER AS DEPENDENCY
+    private physicsControllerBare: any; // ANY TO NOT INCLUDE PHYSICSCONTROLLERBARE AS DEPENDENCY
+    private physicsControllerSopiro: any; // ANY TO NOT INCLUDE PHYSICSCONTROLLERSOPIRO AS DEPENDENCY
+    private particleController: any; // ANY TO NOT INCLUDE PARTICLECONTROLLER AS DEPENDENCY
 
     get baseSettings(): SettingsData { return this.baseSettingsHandler.Get(); }
     get currentSettings(): SettingsData { return this.currentSettingsHandler.Get(); }
@@ -81,12 +85,25 @@ export class Scene implements SceneI
     public events = mitt<Events>(); // private todo
     //private pipes = matt<Pipes>();
     
-    constructor(sceneOptions: SceneOptions = {entityData: defaultEntityData})
+    constructor(sceneOptions: SceneOptions | SettingsData = {entityData: defaultEntityData})
     {
-        if (!sceneOptions.entityData)
-            sceneOptions.entityData = defaultEntityData;
+        let options: SceneOptions;
+
+        if ("entityData" in sceneOptions)
+        {
+            // IS A SCENEOPTIONS
+            options = sceneOptions;
+        }
+        else
+        {
+            // IS A SETTINGSDATA DIRECTLY
+            options = { entityData: sceneOptions as SettingsData };
+        }
         
-        this.sceneOptions = sceneOptions;
+        if (!options.entityData)
+            options.entityData = defaultEntityData;
+        
+        this.sceneOptions = options;
 
         this.objectController = new ObjectController();
         
@@ -107,6 +124,12 @@ export class Scene implements SceneI
         
         this.CheckExist("hitboxController", false);
         this.CheckExist("tweenController", false);
+        this.CheckExist("componentController", false);
+        this.CheckExist("physicsControllerBare", false);
+        this.CheckExist("physicsControllerSopiro", false);
+        this.CheckExist("particleController", false);
+
+        BareEngine.SetControllerReferences(this);
     }
 
     async Awake(payload?: any): Promise<void>
@@ -786,11 +809,13 @@ export class Scene implements SceneI
 
     Update(deltaTime: number): void
     {
-        BareEngine.SetControllerReferences(this);
-
         this.hitboxController?.Update(deltaTime);
         this.objectController.Update(deltaTime);
         this.tweenController?.Update(bareEngine.time); // STUPID TIME VAR - TODO
+        this.physicsControllerBare?.Update(deltaTime);
+        this.physicsControllerSopiro?.Update(deltaTime);
+        this.componentController?.Update(deltaTime);
+        this.particleController?.Update(deltaTime);
 
         this.OnUpdate(deltaTime);
     }
@@ -813,7 +838,15 @@ export class Scene implements SceneI
     Render(): void
     {
         this.hitboxController?.Render();
+        this.componentController?.PreRender();
+        this.objectController.PreRender();
+        this.componentController?.Render();
         this.objectController.Render();
+        this.physicsControllerBare?.Render();
+        this.physicsControllerSopiro?.Render();
+        this.componentController?.PostRender();
+        this.objectController.PostRender();
+        this.particleController?.Render();
         this.OnRender();
     }
 
@@ -1042,6 +1075,7 @@ export class Scene implements SceneI
 
         this.objectController.Clear();
         this.hitboxController?.Clear();
+        this.particleController?.Clear();
 
         this.ApplyLayerInfoToSettings(this.currentSettings, true); // ?
 

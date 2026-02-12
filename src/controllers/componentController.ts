@@ -1,6 +1,7 @@
 import { events, GameMode, pipes } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { Component, Entity, Ctor, BareEvent } from '../utils/bareTypes';
+import { BareEngine } from "../bareEngine";
 // REFERENCING A CLASS EXTENDING BASECOMPONENT WILL AUTOMATICALLY ALSO INCLUDE COMPONENTCONTROLLER
 
 export abstract class BaseComponent<T extends GameObject = GameObject> implements Component<T>
@@ -528,5 +529,4 @@ export class ComponentController
     }
 }
 
-export const componentController = new ComponentController();
-globalThis.componentController = componentController;
+export const componentController = BareEngine.RegisterControllerProxy(ComponentController);

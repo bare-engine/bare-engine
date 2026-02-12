@@ -1,7 +1,6 @@
 import { ParticleEmitter } from "../libraries/rapid-render/particle";
 import { Vec2 } from "../libraries/rapid-render";
-import { events } from "../main";
-import { Events, BareEvent } from '../utils/bareTypes';
+import { BareEngine } from "../bareEngine";
 type ParticleEmitterEntry = {
     emitter: ParticleEmitter;
     autoRemove: boolean;
@@ -28,14 +27,6 @@ export class ParticleController
 
     constructor()
     {
-        this.init();
-    }
-
-    private init()
-    {
-        events.persistent.on(BareEvent.game_update, this.Update.bind(this));
-        events.persistent.on(BareEvent.game_postRender, this.Render.bind(this));
-        events.persistent.on(BareEvent.game_clear, this.Clear.bind(this));
     }
 
     Add(emitter: ParticleEmitter, options: ParticleEmitterOptions = {})
@@ -128,5 +119,4 @@ export class ParticleController
     }
 }
 
-export const particleController = new ParticleController();
-globalThis.particleController = particleController;
+export const particleController = BareEngine.RegisterControllerProxy(ParticleController);

@@ -498,21 +498,5 @@ export class HitboxController
 }
 
 
-globalThis.hitboxControllerClass = HitboxController;
-
-let _instance: HitboxController;
-
-export const hitboxController = new Proxy({} as HitboxController, {
-    get(_, prop)
-    {
-        return (_instance as any)[prop];
-    },
-    set(_, prop, value)
-    {
-        (_instance as any)[prop] = value;
-        return true;
-    }
-});
-
-BareEngine.AddControllerSet("hitboxController", () => {_instance = hitboxController});
+export const hitboxController = BareEngine.RegisterControllerProxy(HitboxController);
 

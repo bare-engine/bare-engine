@@ -5,6 +5,7 @@ import { PhysicsControllerBase } from "./physicsControllerBase";
 import { events } from "../main";
 import * as Util from "../libraries/Sopiro/util";
 import { BareEvent } from "../utils/bareTypes";
+import { BareEngine } from "../bareEngine";
 
 export class PhysicsControllerSopiro extends PhysicsControllerBase
 {
@@ -167,5 +168,4 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 	}
 }
 
-export const physicsControllerSopiro = new PhysicsControllerSopiro();
-globalThis.physicsControllerSopiro = physicsControllerSopiro;
+export const physicsControllerSopiro = BareEngine.RegisterControllerProxy(PhysicsControllerSopiro);

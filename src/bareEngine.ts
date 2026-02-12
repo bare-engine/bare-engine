@@ -137,8 +137,6 @@ export class BareEngine
         sceneController.Update(deltaTime);
         //objectController.Update(deltaTime);
         uiController.Update(deltaTime);
-        pipes.run("physicsController_Update", deltaTime);
-        pipes.run("componentController_Update", deltaTime);
 
         events.emit(BareEvent.game_update, { deltaTime: deltaTime });
     }
@@ -163,14 +161,7 @@ export class BareEngine
         
         events.emit(BareEvent.game_preRender);
 
-        pipes.run("componentController_PreRender"); // ALL THIS EMITS MIGHT BE SLOW? ESPECIALLY FOR COMPONENT-CONTROLLER, SENDING MORE TO COMPONENTS
-        objectController.PreRender();
-        pipes.run("componentController_Render");
         sceneController.Render();
-        objectController.Render();
-        pipes.run("physicsController_Render");
-        pipes.run("componentController_PostRender");
-        objectController.PostRender();
 
         events.emit(BareEvent.game_postRender);
         rapid.restore();
@@ -202,10 +193,45 @@ export class BareEngine
 
     private static controllerCallbacks: any[] = [];
     private static controllerNames: string[] = [];
-    static AddControllerSet(controllerName:string, callback: (controller: any) => void)
+    
+    // THIS REGISTERS A CONTROLLER
+    // tweenControllerClass global is made
+    // A controllerCallbacks IS CREATED, SO THAT AN SCENE INSTANCE OF THIS CAN LATER BE ASSIGNED TO GLOBAL tweenController 
+    static RegisterControllerProxy<T extends object>(controllerClass: new (...args: any[]) => T, setGlobal: boolean = true): T
     {
+        const name = (controllerClass as any).name;
+        const controllerName = name.charAt(0).toLowerCase() + name.slice(1);
+
+        const classKey = controllerName + "Class";
+        (globalThis as any)[classKey] = controllerClass;
+
+        let _instance: T;
+
+        const proxy = new Proxy({} as T, {
+            get(_, prop)
+            {
+                if (!_instance)
+                    throw new Error(
+                        `${controllerClass.name} not registered. Call bare.AddClass(${controllerClass.name}) at Awake() of your game.`
+                    );
+
+                return (_instance as any)[prop];
+            },
+            set(_, prop, value)
+            {
+                (_instance as any)[prop] = value;
+                return true;
+            }
+        });
+
         this.controllerNames.push(controllerName);
-        this.controllerCallbacks.push(callback);
+        this.controllerCallbacks.push((controllerArg: T) => {
+            _instance = controllerArg;
+            if (setGlobal)
+                (globalThis as any)[controllerName] = proxy;
+        });
+
+        return proxy;
     }
 
     static SetControllerReferences(scene:Scene)

@@ -281,27 +281,4 @@ export function TweenTo(object: any, seconds: number, props: any, overwrite: boo
     return tweenController.TweenTo(object, seconds, props, overwrite);
 }
 
-
-
-globalThis.tweenControllerClass = TweenController;
-
-let _instance: TweenController;
-
-export const tweenController = new Proxy({} as TweenController, {
-    get(_, prop)
-    {
-        if (!_instance)
-            throw new Error(
-                "TweenController not registered. Call bare.AddClass(TweenController) at Awake() of your game."
-            );
-
-        return (_instance as any)[prop];
-    },
-    set(_, prop, value)
-    {
-        (_instance as any)[prop] = value;
-        return true;
-    }
-});
-
-BareEngine.AddControllerSet("tweenController", (tweenControllerArg: TweenController) => {_instance = tweenControllerArg});
+export const tweenController = BareEngine.RegisterControllerProxy(TweenController);

@@ -5,6 +5,7 @@ import { Vec2 } from "../libraries/rapid-render";
 import { PhysicsControllerBase } from "./physicsControllerBase";
 import { GameObject } from "../objects/gameObject";
 import { BareEvent } from "../utils/bareTypes";
+import { BareEngine } from "../bareEngine";
 
 export class PhysicsControllerBare extends PhysicsControllerBase
 {
@@ -640,5 +641,4 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 	}
 }
 
-export const physicsControllerBare = new PhysicsControllerBare();
-globalThis.physicsControllerBare = physicsControllerBare;
+export const physicsControllerBare = BareEngine.RegisterControllerProxy(PhysicsControllerBare);

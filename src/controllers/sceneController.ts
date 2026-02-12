@@ -1,3 +1,4 @@
+import { BareEngine } from "../bareEngine";
 import { Scene, events } from "../main";
 import { AwakePayload, BareEvent, SceneClass, SceneOptions } from "../utils/bareTypes";
 
@@ -31,8 +32,13 @@ export class SceneController
     
     Update(deltaTime: number): void
     {
+        var moneThanOneScene = (this.currentScenes.length > 1);
+
         for (var scene of this.currentScenes)
         {
+            if (moneThanOneScene)
+                BareEngine.SetControllerReferences(scene);
+
             if (scene.started)
                 scene.Update(deltaTime);
         }
