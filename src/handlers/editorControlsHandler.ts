@@ -1,4 +1,4 @@
-import { Scene, events, MakePath, pipes } from "../main";
+import { Scene, globalEvents, MakePath, pipes } from "../main";
 import { Color, Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { Helper } from "../utils/helper";
@@ -57,14 +57,14 @@ export class EditorControlsHandler {
 
     init()
     {
-        events.persistent.on(BareEvent.pointer_down, this.PointerDown.bind(this));
-        events.persistent.on(BareEvent.pointer_move, this.PointerMove.bind(this));
-        events.persistent.on(BareEvent.pointer_up, this.PointerUp.bind(this));
-        events.persistent.on(BareEvent.pointer_doubleClick, this.DoubleClick.bind(this));
-        events.persistent.on(BareEvent.game_postRender, this.PostRender.bind(this));
-        events.persistent.on(BareEvent.key_pressed, this.KeyPressed.bind(this));
-        events.persistent.on(BareEvent.key_released, this.KeyReleased.bind(this));
-        events.persistent.on(BareEvent.editor_layerSelected, this.LayerSelected.bind(this));
+        bare.events.persistent.on(BareEvent.pointer_down, this.PointerDown.bind(this));
+        bare.events.persistent.on(BareEvent.pointer_move, this.PointerMove.bind(this));
+        bare.events.persistent.on(BareEvent.pointer_up, this.PointerUp.bind(this));
+        bare.events.persistent.on(BareEvent.pointer_doubleClick, this.DoubleClick.bind(this));
+        bare.events.persistent.on(BareEvent.game_postRender, this.PostRender.bind(this));
+        bare.events.persistent.on(BareEvent.key_pressed, this.KeyPressed.bind(this));
+        bare.events.persistent.on(BareEvent.key_released, this.KeyReleased.bind(this));
+        bare.events.persistent.on(BareEvent.editor_layerSelected, this.LayerSelected.bind(this));
     }
 
     KeyPressed({ key, allKeys }: BareEventPayload['key_pressed'])

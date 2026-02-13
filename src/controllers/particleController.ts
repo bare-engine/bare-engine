@@ -25,10 +25,6 @@ export class ParticleController
 {
     private emitters: ParticleEmitterEntry[] = [];
 
-    constructor()
-    {
-    }
-
     Add(emitter: ParticleEmitter, options: ParticleEmitterOptions = {})
     {
         if (this.Has(emitter))

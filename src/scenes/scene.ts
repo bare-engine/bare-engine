@@ -1,4 +1,4 @@
-import { events, GameMode, MakePath, pipes } from "../main";
+import { globalEvents, GameMode, MakePath, pipes } from "../main";
 import { Color, FrameBufferObject, RenderTexture, Texture, Vec2 } from "../libraries/rapid-render";
 import { PoolHandler } from "../handlers/poolHandler";
 import { AwakePayload, BareEvent, SceneClass, Entity, GameObjectClass, Layer, LayerInfo, LevelData, SaveData, SceneOptions, SettingsData, UI_LAYER, SceneI, Events, CameraRenderInfo } from "../types/bareTypes";
@@ -122,7 +122,7 @@ export class Scene implements SceneI
 
         this.RegisterGameObjectPool(GameObject, Scene.gameObjectPoolSize);
 
-        BareEngine.SetControllerReferences(this);
+        BareEngine.SetControllerReferencesOnScene(this);
     }
 
     async Awake(payload?: any): Promise<void>
@@ -132,10 +132,10 @@ export class Scene implements SceneI
         await this.baseSettingsHandler.Process(this.sceneOptions.entityData);
         this.SetCurrentSettingsHandler(this.baseSettingsHandler);
 
-        events.emit(BareEvent.scene_awake);
+        globalEvents.emit(BareEvent.scene_awake);
 
         await this.OnAwake(payload);
-        BareEngine.SetControllerReferences(this);
+        BareEngine.SetControllerReferencesOnScene(this);
 
         this.baseSettingsHandler.ReprocessAnimations(); // NEEDED SINCE AN ATLAS WITH ANIMATIONS CAN BE LOADED IN AT AWAKE() ABOVE
 
@@ -149,9 +149,14 @@ export class Scene implements SceneI
         // FOR OVERRIDE
     }
 
+    // START IS CALLED ON INITIALIZATION AND RESTART
     async Start(): Promise<void>
     {
-        // IT GETS HERE ON INITIALIZATION AND RESTART
+        var classes = BareEngine.controllerNames;
+        for (let i = 0; i < classes.length; i++)
+        {
+            this[classes[i]].Start?.();
+        }
 
         window.gameMode = GameMode.Game;
 
@@ -319,6 +324,13 @@ export class Scene implements SceneI
     RegisterGameObjectPool(cls: GameObjectClass, defaultPoolSize: number = 10): void
     {
         const name = cls.name.startsWith("_") ? cls.name.substring(1) : cls.name;
+
+        if (Scene.gameObjectPools.has(name))
+        {
+            // SET DIFFERENT defaultPoolSize?
+            return;
+        }
+
         Scene.gameObjectPools.set(name, new PoolHandler(() => new cls(), defaultPoolSize));
     }
     
@@ -718,7 +730,7 @@ export class Scene implements SceneI
         gameObject.Added();
 
         // NOTIFY
-        events.emit(BareEvent.game_objectAdded, { gameObject: gameObject, layer: parent });
+        globalEvents.emit(BareEvent.game_objectAdded, { gameObject: gameObject, layer: parent });
 
         return gameObject;
     }
@@ -779,7 +791,7 @@ export class Scene implements SceneI
         gameObject.Removed();
 
         // NOTIFY
-        events.emit(BareEvent.game_objectRemoved, gameObject);
+        globalEvents.emit(BareEvent.game_objectRemoved, gameObject);
 
         if (wasPooled)
         {
@@ -1075,12 +1087,13 @@ export class Scene implements SceneI
     {
         this.events.clear();
 
-        events.emit(BareEvent.game_clear, { full: full });
+        globalEvents.emit(BareEvent.game_clear, { full: full });
 
-        this.objectController.Clear();
-        this.hitboxController?.Clear();
-        this.particleController?.Clear();
-        this.levelHandler?.Clear();
+        var classes = BareEngine.controllerNames;
+        for (let i = 0; i < classes.length; i++)
+        {
+            this[classes[i]].Clear?.();
+        }
 
         this.ApplyLayerInfoToSettings(this.currentSettings, true); // ?
 
@@ -1130,33 +1143,37 @@ export class Scene implements SceneI
     }
 
     // HELPER
-    CheckExist(propertyName: string, throwError: boolean = true)
+    CheckExist(propertyName: string): boolean
     {
-        if ((this as any)[propertyName])
-            return true;
-
         const classKey = propertyName + "Class";
         const Ctor = (globalThis as any)[classKey];
 
         if (!Ctor)
         {
-            if (throwError)
-            {
-                const className = propertyName.charAt(0).toUpperCase() + propertyName.slice(1);
-                throw new Error(`${className} not registered. Call bare.AddClass(${className}) at OnAwake() of your game.`);
-            }
-
-            return false;
+            const className = propertyName.charAt(0).toUpperCase() + propertyName.slice(1);
+            throw new Error(`${className} not registered. Call bare.AddClass(${className}) at OnAwake() of your game.`);
         }
 
-        // CUSTOM ARGS SETUP FOR HITBOXCONTROLLER
-        var args = [];
-        if (propertyName == "hitboxController")
-            args = [this.objectController, this.events];
-
-        (this as any)[propertyName] = new Ctor(...args);
-
         return true;
+    }
+
+    CreateClassIfNotExist(propertyName: string):void
+    {
+        if ((this as any)[propertyName])
+            return;
+
+        const classKey = propertyName + "Class";
+        const Ctor = (globalThis as any)[classKey];
+
+        if (Ctor)
+        {
+            // CUSTOM ARGS SETUP FOR HITBOXCONTROLLER
+            var args = [];
+            if (propertyName == "hitboxController")
+                args = [this.objectController];
+
+            (this as any)[propertyName] = new Ctor(...args);
+        }
     }
 
     get currentLevel(): LevelData

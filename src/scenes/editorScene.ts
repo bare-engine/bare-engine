@@ -1,4 +1,4 @@
-import { events, GameMode, MakePath, Scene } from "../main";
+import { globalEvents, GameMode, MakePath, Scene } from "../main";
 import { Color, Vec2 } from "../libraries/rapid-render";
 import { EditorControlsHandler } from "../handlers/editorControlsHandler";
 import { EditorUIHandler } from "../handlers/editorUIHandler";
@@ -89,7 +89,7 @@ export class EditorScene extends Scene
         if (!window.isLocalhost)
             this.editorButton.visible = false;
 
-        events.persistent.on(BareEvent.scene_changed, this.OnSceneChanged.bind(this));
+        bare.events.persistent.on(BareEvent.scene_changed, this.OnSceneChanged.bind(this));
     }
 
     init()
@@ -149,7 +149,7 @@ export class EditorScene extends Scene
 
         window.gameMode = GameMode.Editor;
 
-        events.on(BareEvent.game_preRender, this.PreRender.bind(this));
+        globalEvents.on(BareEvent.game_preRender, this.PreRender.bind(this));
 
         this.active = true;
 
@@ -210,7 +210,7 @@ export class EditorScene extends Scene
             this.editorUIHandler.Show();
         }
 
-        events.emit(BareEvent.editor_opened, {name: bare.currentSettings.name || 'levelEditor'});
+        globalEvents.emit(BareEvent.editor_opened, {name: bare.currentSettings.name || 'levelEditor'});
     }
 
     Close(loadLevelAfter: boolean = true)
@@ -224,7 +224,7 @@ export class EditorScene extends Scene
         this.editorControlsHandler.Close();
         this.editorUIHandler.Close();
 
-        events.emit(BareEvent.editor_closed, {name: bare.currentSettings.name || 'levelEditor'});
+        globalEvents.emit(BareEvent.editor_closed, {name: bare.currentSettings.name || 'levelEditor'});
 
         // DISABLE THE LEVEL CACHE, SO LEVELS GETS RELOADED
         SaveData.levelCache.clear();
@@ -699,7 +699,7 @@ export class EditorScene extends Scene
             console.error('❌ Save error:', error);
         }
 
-        events.emit(BareEvent.level_savedToDisk, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
+        globalEvents.emit(BareEvent.level_savedToDisk, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
 
         return level;
     }

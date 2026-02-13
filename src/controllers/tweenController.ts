@@ -1,7 +1,7 @@
 import { BareEvent } from '../types/bareTypes';
 import Easing from "../libraries/tweenJS/Easing";
 import Tween, { TweenWithPromise } from "../libraries/tweenJS/Tween";
-import { events } from "../main";
+import { globalEvents } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { BareEngine } from '../bareEngine';
 
@@ -10,17 +10,12 @@ export class TweenController
     tweens: Array<Tween> = [];
     time: number = 0;
 
-    constructor()
+    Start()
     {
-        this.init();
-    }
-
-    init()
-    {
-        events.persistent.on(BareEvent.game_objectRemoved, this.GameObjectRemoved.bind(this));
-        events.persistent.on(BareEvent.game_focusChange, this.OnFocusChange.bind(this));
-        events.persistent.on(BareEvent.game_update, () => this.Update(bare.time));
-        events.persistent.on(BareEvent.game_clear, () => this.Deactivate());
+        bare.events.on(BareEvent.game_objectRemoved, this.GameObjectRemoved.bind(this));
+        //bare.events.on(BareEvent.game_focusChange, this.OnFocusChange.bind(this));
+        bare.events.on(BareEvent.game_update, () => this.Update(bare.time));
+        //bare.events.on(BareEvent.game_clear, () => this.Deactivate());
     }
 
     GameObjectRemoved(obj: GameObject)
@@ -267,7 +262,7 @@ export class TweenController
         this.RemoveTweensFrom(this);
     }
 
-    Deactivate()
+    Clear()
     {
         this.RemoveTweensFrom(this);
 

@@ -1,6 +1,6 @@
 export type EventType = string | symbol;
 
-type EventArgs<T> = T extends any[] ? T : [T];
+export type EventArgs<T> = T extends any[] ? T : [T];
 
 export type Handler<T = unknown> = (...event: EventArgs<T>) => void;
 export type WildcardHandler<Events extends object> = <K extends keyof Events>(

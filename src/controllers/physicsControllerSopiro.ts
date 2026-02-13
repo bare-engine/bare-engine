@@ -2,7 +2,7 @@ import { Box, Circle, Polygon, World } from "../exports/sopiroPhysics";
 import { RigidBody } from "../libraries/Sopiro/rigidbody";
 import { Settings } from "../libraries/Sopiro/settings";
 import { PhysicsControllerBase } from "./physicsControllerBase";
-import { events } from "../main";
+import { globalEvents } from "../main";
 import * as Util from "../libraries/Sopiro/util";
 import { BareEvent } from "../types/bareTypes";
 import { BareEngine } from "../bareEngine";
@@ -22,15 +22,18 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 		super();
     	this.world = new World();
 
-		events.persistent.on(BareEvent.physics_refreshBody, this.RefreshBody.bind(this));
-		events.persistent.on(BareEvent.game_clear, this.Clear.bind(this));
-		
-		events.persistent.on(BareEvent.game_started, () => {
-			bare.RegisterGameObjectPool(Polygon, 1);
-			bare.RegisterGameObjectPool(Box, 1);
-			bare.RegisterGameObjectPool(Circle, 1);
+		bare.events.persistent.on(BareEvent.game_started, () => {
 		});
     }
+
+	Start(): void
+	{  
+		bare.events.on(BareEvent.physics_refreshBody, this.RefreshBody.bind(this));
+
+		bare.RegisterGameObjectPool(Polygon, 1);
+		bare.RegisterGameObjectPool(Box, 1);
+		bare.RegisterGameObjectPool(Circle, 1);
+	}
 
 	Add(object: any): void
 	{
@@ -98,7 +101,7 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 			{
 				for (const [, pair] of this.activeCollisions)
 				{
-					events.emit(BareEvent.collision_end, pair.bodyA, pair.bodyB);
+					globalEvents.emit(BareEvent.collision_end, pair.bodyA, pair.bodyB);
 				}
 
 				this.activeCollisions.clear();
@@ -142,12 +145,12 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 				this.activeCollisions.set(key, { bodyA, bodyB });
 				bodyA.OnCollisionStart(bodyB);
 				bodyB.OnCollisionStart(bodyA);
-				events.emit(BareEvent.collision_start, bodyA, bodyB);
+				globalEvents.emit(BareEvent.collision_start, bodyA, bodyB);
 			}
 
 			bodyA.OnCollisionUpdate(bodyB);
 			bodyB.OnCollisionUpdate(bodyA);
-			events.emit(BareEvent.collision_update, bodyA, bodyB);
+			globalEvents.emit(BareEvent.collision_update, bodyA, bodyB);
 		}
 
 		for (const [key, pair] of this.activeCollisions)
@@ -157,7 +160,7 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 
 			pair.bodyA.OnCollisionEnd(pair.bodyB);
 			pair.bodyB.OnCollisionEnd(pair.bodyA);
-			events.emit(BareEvent.collision_end, pair.bodyA, pair.bodyB);
+			globalEvents.emit(BareEvent.collision_end, pair.bodyA, pair.bodyB);
 			this.activeCollisions.delete(key);
 		}
 	}

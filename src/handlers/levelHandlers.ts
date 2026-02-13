@@ -4,7 +4,7 @@ import { Helper } from "../utils/helper";
 import { Color, Texture } from "../libraries/rapid-render";
 import { assetsHandler } from "./assetsHandler";
 import { Entity, LevelData, Component, Layer, SaveData, BareEvent } from '../types/bareTypes';
-import { events, GameMode, MakePath, pipes } from "../main";
+import { globalEvents, GameMode, MakePath, pipes } from "../main";
 import { defaultEntityData } from "../types/bareData";
 import { sceneController } from "../controllers/sceneController";
 import { GameObject } from "../objects/gameObject";
@@ -135,7 +135,7 @@ export class LevelHandler
 
         trace('Level loaded:', levelStr);
         
-        events.emit(BareEvent.level_loaded, {levelStr: levelStr, level: this.currentLevel});
+        globalEvents.emit(BareEvent.level_loaded, {levelStr: levelStr, level: this.currentLevel});
 
         return level;
     }
@@ -164,12 +164,12 @@ export class LevelHandler
 
     async SaveLevel()
     {
-        events.emit(BareEvent.level_preSave, {levelStr: SaveData.currentLevelStr});
+        globalEvents.emit(BareEvent.level_preSave, {levelStr: SaveData.currentLevelStr});
 
         const level = (this.currentLevel as LevelData);
         this.SerializeLevel(level);
 
-        events.emit(BareEvent.level_postSave, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
+        globalEvents.emit(BareEvent.level_postSave, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
         
         return level;
     }

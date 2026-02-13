@@ -8,8 +8,9 @@ import matt from './libraries/matt';
 import { Scene } from './scenes/scene';
 import { Pipes, BareEvent, Events, SceneClass } from './types/bareTypes';
 import { BareEngine } from './bareEngine';
+import { sceneController } from './exports';
 
-export const events = mitt<Events>();
+export const globalEvents = mitt<Events>();
 export const pipes = matt<Pipes>();
 
 export { Scene } from './scenes/scene';
@@ -255,7 +256,8 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
                 if (bare.levelEditorOpen)
                     return;
 
-                events.emit(BareEvent.game_focusChange, window.hasFocus);
+                globalEvents.emit(BareEvent.game_focusChange, window.hasFocus);
+                //sceneController.SendEvent(BareEvent.game_focusChange, window.hasFocus);
 
                 // HANDLE VISUAL OF focusOverlay
                 if (window.hasFocus) {

@@ -1,6 +1,6 @@
 import { PhysicsObjectBare } from "../objects/physicsObjectBare";
 import { HitboxType } from "../types/gamesTypes";
-import { events } from "../main";
+import { globalEvents } from "../main";
 import { Vec2 } from "../libraries/rapid-render";
 import { PhysicsControllerBase } from "../controllers/physicsControllerBase";
 import { GameObject } from "../objects/gameObject";
@@ -22,7 +22,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
   {
       super();
 
-      events.persistent.on(BareEvent.game_started, () => {
+      bare.events.persistent.on(BareEvent.game_started, () => {
         if (this.width == 0 && this.height == 0)
           this.setDimensions(0, 0, bare.width, bare.height);
 
@@ -320,7 +320,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 
             if (object1 && object2)
             {
-              events.emit(BareEvent.collision_end, object1, object2);
+              globalEvents.emit(BareEvent.collision_end, object1, object2);
             }
             
             this.activeCollisions.delete(collisionKey);
@@ -501,13 +501,13 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 
           object1.OnCollisionStart(object2);
           object2.OnCollisionStart(object1);
-          events.emit(BareEvent.collision_start, object1, object2);
+          globalEvents.emit(BareEvent.collision_start, object1, object2);
       }
       
       // Emit ongoing collision
       object1.OnCollisionUpdate(object2);
       object2.OnCollisionUpdate(object1);
-      events.emit(BareEvent.collision_update, object1, object2);
+      globalEvents.emit(BareEvent.collision_update, object1, object2);
   }
 
   private CheckCollisionEnd()
@@ -524,7 +524,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
         {
           object1.OnCollisionEnd(object2);
           object2.OnCollisionEnd(object1);
-          events.emit(BareEvent.collision_end, object1 as PhysicsObjectBare, object2 as PhysicsObjectBare);
+          globalEvents.emit(BareEvent.collision_end, object1 as PhysicsObjectBare, object2 as PhysicsObjectBare);
           this.activeCollisions.delete(collisionKey);
         }
       }

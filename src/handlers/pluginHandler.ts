@@ -3,7 +3,7 @@ import { BareEvent, BareEventPayload, LevelData, SaveData, SettingsData } from "
 import { Helper } from "../utils/helper";
 import { Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
-import {  events } from "../main";
+import {  globalEvents } from "../main";
 import { OutlineShader } from "../shaders/outlineShader";
 import { BareClasses, ObjectController, sceneController } from "../exports";
 import { EditorScene } from "../scenes/editorScene";
@@ -229,15 +229,13 @@ export class PluginHandler
 
     constructor()
     {
-        events.persistent.once(BareEvent.game_started, () => {
+        globalEvents.persistent.once(BareEvent.game_started, () => {
             this.outlineShader = new OutlineShader()
             //bare.AddClass(BareClasses.EditorController)
 
             // RIGHT CLICK FOR PLUGIN SELECT
             document.addEventListener('pointerdown', this.OnRightClickPointerDown, false);
-        });
-
-        events.persistent.on(BareEvent.game_started, () => {
+            
             window.__GAME_DEBUG_API__.refreshLevelFiles();
         });
 
@@ -272,8 +270,10 @@ export class PluginHandler
               };
 
               const pointerMoveBound = this.PointerMove.bind(this);
-              events.on(BareEvent.pointer_move, pointerMoveBound);
-              events.once(BareEvent.pointer_up, () => events.off(BareEvent.pointer_move, pointerMoveBound));
+              globalEvents.on(BareEvent.pointer_move, pointerMoveBound);
+              //bare.On(BareEvent.pointer_up, () => globalEvents.off(BareEvent.pointer_move, pointerMoveBound));
+              //bareEngine.events.on(BareEvent.pointer_up, () => globalEvents.off(BareEvent.pointer_move, pointerMoveBound));
+              globalEvents.once(BareEvent.pointer_up, () => globalEvents.off(BareEvent.pointer_move, pointerMoveBound));
           }
       }
 

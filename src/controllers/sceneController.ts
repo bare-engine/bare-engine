@@ -1,6 +1,7 @@
 import { BareEngine } from "../bareEngine";
-import { Scene, events } from "../main";
-import { AwakePayload, BareEvent, SceneClass, SceneOptions } from "../types/bareTypes";
+import { Scene, globalEvents } from "../main";
+import { EventArgs } from "../libraries/mitt";
+import { AwakePayload, BareEvent, Events, SceneClass, SceneOptions } from "../types/bareTypes";
 
 export class SceneController
 {
@@ -37,7 +38,7 @@ export class SceneController
         for (var scene of this.currentScenes)
         {
             if (moneThanOneScene)
-                BareEngine.SetControllerReferences(scene);
+                BareEngine.SetControllerReferencesOnScene(scene);
 
             if (scene.started)
                 scene.Update(deltaTime);
@@ -75,8 +76,8 @@ export class SceneController
 
         await newScene.Awake(payload);
 
-        events.emit(BareEvent.scene_added, { scene: newScene });
-        events.emit(BareEvent.scene_changed, { scene: newScene, type: "added" });
+        globalEvents.emit(BareEvent.scene_added, { scene: newScene });
+        globalEvents.emit(BareEvent.scene_changed, { scene: newScene, type: "added" });
 
         return newScene;
     }
@@ -89,8 +90,8 @@ export class SceneController
             scene.Clear();
             this.currentScenes.splice(i, 1);
 
-            events.emit(BareEvent.scene_removed, { scene: scene });
-            events.emit(BareEvent.scene_changed, { scene: scene, type: "removed" });
+            globalEvents.emit(BareEvent.scene_removed, { scene: scene });
+            globalEvents.emit(BareEvent.scene_changed, { scene: scene, type: "removed" });
         }
         else
         {
@@ -118,6 +119,15 @@ export class SceneController
         return this.currentScenes
             .map(scene => scene.objectController)
             .flatMap(controller => controller.GetLayers().flat());
+    }
+    
+    SendEvent<K extends keyof Events>(type: K, ...event: EventArgs<Events[K]>): void
+    {
+        for (var scene of this.currentScenes)
+        {
+            if (scene.started)
+                scene.events.emit(type, ...event);
+        }
     }
 }
 

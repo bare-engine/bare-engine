@@ -1,6 +1,6 @@
 import { BareEvent } from '../types/bareTypes';
 import { Helper } from "../utils/helper";
-import { events, pipes } from "../main";
+import { globalEvents, pipes } from "../main";
 import { Vec2 } from "../libraries/rapid-render";
 import { sceneController } from './sceneController';
 
@@ -138,7 +138,7 @@ export class MouseController
         }
 
         if (!bare.isPaused)
-            events.emit(BareEvent.pointer_down, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
+            globalEvents.emit(BareEvent.pointer_down, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
 
         var scenes = sceneController.GetAllScenes();
         for (var scene of scenes)
@@ -173,7 +173,7 @@ export class MouseController
         this.SetMousePosition(event.clientX, event.clientY);
 
         if (!bare.isPaused)
-            events.emit(BareEvent.pointer_up, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
+            globalEvents.emit(BareEvent.pointer_up, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
 
         // SEND OUT EVENT TO SCENES
         var scenes = sceneController.GetAllScenes();
@@ -205,7 +205,7 @@ export class MouseController
         this.SetMousePosition(event.clientX, event.clientY);
 
         if (!bare.isPaused)
-            events.emit(BareEvent.pointer_move, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
+            globalEvents.emit(BareEvent.pointer_move, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
 
         event.preventDefault();
     }
@@ -216,7 +216,7 @@ export class MouseController
             return;
 
         if (!bare.isPaused)
-            events.emit(BareEvent.pointer_doubleClick, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event});
+            globalEvents.emit(BareEvent.pointer_doubleClick, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event});
     }
 
     IsMoving()

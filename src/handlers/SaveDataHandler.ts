@@ -1,4 +1,4 @@
-import { events } from "../main";
+import { globalEvents } from "../main";
 import { SaveData, BareEvent } from '../types/bareTypes';
 export class SaveDataHandler
 {
@@ -153,16 +153,16 @@ export class SaveDataHandler
 
 SaveDataHandler.InitDefaults();
 
-events.persistent.on(BareEvent.game_awake, () => {
+globalEvents.persistent.on(BareEvent.game_awake, () => {
     SaveDataHandler.InitDefaults();
 });
 
-events.persistent.on(BareEvent.game_completeClear, () => {
+globalEvents.persistent.on(BareEvent.game_completeClear, () => {
     SaveDataHandler.Clear();
     SaveDataHandler.InitDefaults();
 });
 
-events.persistent.on(BareEvent.level_postSave, ({level}) => {
+globalEvents.persistent.on(BareEvent.level_postSave, ({level}) => {
     SaveData.levelCache.set(SaveData.currentLevelStr, level);
     SaveDataHandler.Save();
 });

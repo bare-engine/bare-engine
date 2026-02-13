@@ -1,4 +1,4 @@
-import { events, GameMode, pipes } from "../main";
+import { globalEvents, GameMode, pipes } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { Component, Entity, Ctor, BareEvent } from '../types/bareTypes';
 import { BareEngine } from "../bareEngine";
@@ -32,7 +32,18 @@ export class ComponentController
 
     constructor()
     {
-        this.init();
+        
+    }
+    
+	Start(): void
+	{
+        bare.events.persistent.on(BareEvent.collision_start, this.OnCollisionStart.bind(this));
+        bare.events.persistent.on(BareEvent.collision_update, this.OnCollisionUpdate.bind(this));
+        bare.events.persistent.on(BareEvent.collision_end, this.OnCollisionEnd.bind(this));
+
+        bare.events.persistent.on(BareEvent.game_objectRemoved, this.RemoveComponentsForObject.bind(this));
+
+        bare.events.persistent.on(BareEvent.level_preSave, this.OnPreSaveLevel.bind(this));
     }
 
     init()
@@ -43,14 +54,6 @@ export class ComponentController
         pipes.set("componentController_PostRender", this.PostRender.bind(this));
         pipes.set("componentController_OnLevelChanged", this.OnLevelChanged.bind(this));
 
-        events.persistent.on(BareEvent.collision_start, this.OnCollisionStart.bind(this));
-        events.persistent.on(BareEvent.collision_update, this.OnCollisionUpdate.bind(this));
-        events.persistent.on(BareEvent.collision_end, this.OnCollisionEnd.bind(this));
-
-        events.persistent.on(BareEvent.game_objectRemoved, this.RemoveComponentsForObject.bind(this));
-
-        events.persistent.on(BareEvent.level_preSave, this.OnPreSaveLevel.bind(this));
-        
         pipes.set("componentController_GetAllComponentsFrom", (obj) => this.GetAllComponentsFrom(obj));
         pipes.set("componentController_ProcessCompentsFromEntity", (entity, obj) => this.ProcessCompentsFromEntity(entity, obj));
         pipes.set("componentController_AddComponent", (obj, componentInstance) => this.AddComponent(obj, componentInstance));

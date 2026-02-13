@@ -1,7 +1,7 @@
 import { Howl, HowlOptions, Howler } from '../libraries/howler/howler.core.js';
 import { SaveData, BareEvent } from '../types/bareTypes';
 import { Helper } from '../utils/helper';
-import { events } from '../main';
+import { globalEvents } from '../main';
 
 class SoundHandler
 {
@@ -12,7 +12,7 @@ class SoundHandler
 
   init()
   {
-    events.on(BareEvent.game_focusChange, (hasFocus) => Howler.mute(!hasFocus));
+    globalEvents.on(BareEvent.game_focusChange, (hasFocus) => Howler.mute(!hasFocus));
   }
 
   registerSound(id: string, src: string) {

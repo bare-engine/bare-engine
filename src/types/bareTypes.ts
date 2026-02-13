@@ -222,6 +222,7 @@ export type CameraRenderInfo = {
 const ev = <T>() => undefined as T | undefined;
 
 const eventDefs = {
+  // GLOBAL
   game_awake: undefined,
   game_started: undefined,
   game_restart: ev<{ full: boolean }>(),
@@ -241,10 +242,10 @@ const eventDefs = {
   scene_removed: ev<{ scene: Scene; }>(),
   scene_changed: ev<{ scene: Scene; type: 'added' | 'removed' }>(),
 
+  // ALL LOCAL TO SCENE
   level_loaded: ev<{ levelStr: string; level: LevelData }>(),
   level_preSave: ev<{ levelStr: string }>(),
   level_postSave: ev<{ levelStr: string; level: LevelData }>(),
-  level_savedToDisk: ev<{ levelStr: string; level: LevelData }>(),
   level_restart: undefined,
 
   collision_start: ev<[GameObject, GameObject]>(),
@@ -260,11 +261,13 @@ const eventDefs = {
   key_down: ev<{ key: string; allKeys: Array<string> }>(),
   key_released: ev<{ key: string; allKeys: Array<string> }>(),
 
+  physics_refreshBody: ev<GameObject>(),
+
+  // MOVE TO EDITOR, PROBABLY MAKE EVENTS STRINGS
   editor_layerSelected: ev<{ layerName: string }>(),
   editor_opened: ev<{ name: string }>(),
   editor_closed: ev<{ name: string }>(),
-
-  physics_refreshBody: ev<GameObject>(),
+  level_savedToDisk: ev<{ levelStr: string; level: LevelData }>(),//
 } as const;
 
 const createEventMap = <T extends Record<string, any>>(defs: T) =>

@@ -1,4 +1,4 @@
-import { events, pipes } from "../main";
+import { globalEvents, pipes } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { Helper } from "../utils/helper";
 import { Hitbox } from "../types/hitbox";
@@ -34,10 +34,13 @@ export class HitboxController
     constructor(objectController: ObjectController, events:Emitter<Events>)
     {
         this.objectController = objectController;
-        
-        events.persistent.on(BareEvent.pointer_down, this.PointerDown.bind(this));
-        events.persistent.on(BareEvent.pointer_up, this.PointerUp.bind(this));
-        events.persistent.on(BareEvent.pointer_move, this.PointerMove.bind(this));
+    }
+
+	Start(): void
+	{
+        bare.events.on(BareEvent.pointer_down, this.PointerDown.bind(this));
+        bare.events.on(BareEvent.pointer_up, this.PointerUp.bind(this));
+        //bare.events.on(BareEvent.pointer_move, this.PointerMove.bind(this));
     }
 
     private PointerMove({ mouseX, mouseY, event }: BareEventPayload['pointer_move']): void
@@ -45,7 +48,7 @@ export class HitboxController
         this.Update();
     }
 
-    Update(_deltaTime?: number): void
+    Update(): void
     {
         if (!this.active)
             return;

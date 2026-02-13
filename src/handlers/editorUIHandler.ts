@@ -1,6 +1,6 @@
 import { Entity, LayerInfo, SettingsData, BareEvent, SaveData } from '../types/bareTypes';
 import { assetsHandler } from "./assetsHandler";
-import { events, MakePath } from "../main";
+import { globalEvents, MakePath } from "../main";
 import { FlashShader } from "../shaders/flashShader";
 import { TweenTo } from "../controllers/tweenController";
 import { EditorScene } from '../scenes/editorScene';
@@ -422,7 +422,7 @@ export class EditorUIHandler {
         //const layerName = layerElement.id;
         //this.FlashObjectsInLayer(layerName);
 
-        events.emit(BareEvent.editor_layerSelected, { layerName: layerElement.id });
+        globalEvents.emit(BareEvent.editor_layerSelected, { layerName: layerElement.id });
     }
 
     public SelectLayerItemByInt(layerI: int): void {

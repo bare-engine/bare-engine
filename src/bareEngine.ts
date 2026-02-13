@@ -1,5 +1,5 @@
 import { sceneController } from "./controllers/sceneController";
-import { events, GameMode, pipes, Scene } from "./main";
+import { globalEvents, GameMode, pipes, Scene } from "./main";
 import { GameObject } from "./objects/gameObject";
 import { assetsHandler } from "./handlers/assetsHandler";
 import { BareEvent, CameraRenderInfo, SceneClass } from "./types/bareTypes";
@@ -40,7 +40,7 @@ export class BareEngine
 
         window.bareEngine = this;
         
-        events.emit(BareEvent.game_awake);
+        globalEvents.emit(BareEvent.game_awake);
 
         await sceneController.Goto(sceneClass);
 
@@ -50,7 +50,7 @@ export class BareEngine
         this.RunMainLoopId = requestAnimationFrame(this.RunMainLoopBound);
         this.lastUpdateTimeRef = performance.now();
         
-        events.emit(BareEvent.game_started);
+        globalEvents.emit(BareEvent.game_started);
     }
 
     ResizeCanvas()
@@ -62,7 +62,7 @@ export class BareEngine
 
         rapid.resize(newWidth, newHeight);
 
-        events.emit(BareEvent.game_resize, { prevWidth: prevWidth, prevHeight: prevHeight, newWidth: newWidth, newHeight: newHeight });
+        globalEvents.emit(BareEvent.game_resize, { prevWidth: prevWidth, prevHeight: prevHeight, newWidth: newWidth, newHeight: newHeight });
 
         // PERSIST UI LAYOUT
         var uiControllerObjs = uiController.GetLayers();
@@ -139,14 +139,14 @@ export class BareEngine
         if (this.isPaused)
             return;
         
-        events.emit(BareEvent.game_preUpdate, { deltaTime: deltaTime });
+        globalEvents.emit(BareEvent.game_preUpdate, { deltaTime: deltaTime });
 
         pipes.run("mouseController_Update", deltaTime); // -TODO
         sceneController.Update(deltaTime);
         //objectController.Update(deltaTime);
         uiController.Update(deltaTime);
 
-        events.emit(BareEvent.game_update, { deltaTime: deltaTime });
+        globalEvents.emit(BareEvent.game_update, { deltaTime: deltaTime });
     }
 
     Render()
@@ -157,11 +157,11 @@ export class BareEngine
 
         rapid.save();
         
-        events.emit(BareEvent.game_preRender);
+        globalEvents.emit(BareEvent.game_preRender);
 
         sceneController.Render();
 
-        events.emit(BareEvent.game_postRender);
+        globalEvents.emit(BareEvent.game_postRender);
         rapid.restore();
         
         uiController.Render();
@@ -192,7 +192,7 @@ export class BareEngine
 
     
     private static controllerCallbacks: any[] = [];
-    private static controllerNames: string[] = [];
+    public static controllerNames: string[] = [];
     
     // THIS REGISTERS A CONTROLLER
     // A PROXY IS MADE TO BE ABLE TO REDEFINE THE GLOBAL REFERENCE OF THE CONTROLLER
@@ -237,7 +237,7 @@ export class BareEngine
         return proxy;
     }
 
-    static SetControllerReferences(scene:Scene)
+    static SetControllerReferencesOnScene(scene:Scene)
     {
         window.currentSceneProcessing = scene;
 
@@ -247,7 +247,7 @@ export class BareEngine
             var controllerName = this.controllerNames[i];
 
             // THIS WILL INSTANTIATE THE CONTROLLER ON THE SCENE, IF THE CONTROLLER REFERENCE EXSIST
-            scene.CheckExist(controllerName, false);
+            scene.CreateClassIfNotExist(controllerName);
 
             // THIS PASSES ON THE CONTROLLER INSTANCE FROM THE SCENE TO THE CALLBACK
             // WHICH WILL SET IT AS THE GLOBAL REFERENCE
