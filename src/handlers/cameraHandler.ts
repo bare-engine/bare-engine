@@ -296,5 +296,6 @@ function createProxy<T extends object>(target: T): T
     });
 }
 
-export const cameraHandler = createProxy(new CameraHandler());
+globalThis.cameraHandlerDirect = new CameraHandler();
+export const cameraHandler = createProxy(globalThis.cameraHandlerDirect);
 globalThis.cameraHandler = cameraHandler;

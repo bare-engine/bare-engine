@@ -1,7 +1,7 @@
 import { events, GameMode, MakePath, pipes } from "../main";
 import { Color, FrameBufferObject, RenderTexture, Texture, Vec2 } from "../libraries/rapid-render";
 import { PoolHandler } from "../handlers/poolHandler";
-import { AwakePayload, BareEvent, SceneClass, Entity, GameObjectClass, Layer, LayerInfo, LevelData, SaveData, SceneOptions, SettingsData, UI_LAYER, SceneI, Events } from "../types/bareTypes";
+import { AwakePayload, BareEvent, SceneClass, Entity, GameObjectClass, Layer, LayerInfo, LevelData, SaveData, SceneOptions, SettingsData, UI_LAYER, SceneI, Events, CameraRenderInfo } from "../types/bareTypes";
 import { GameObject } from "../objects/gameObject";
 import { SettingsHandler as SettingsHandler } from "../handlers/settingsHandler";
 import { assetsHandler } from "../handlers/assetsHandler";
@@ -108,14 +108,14 @@ export class Scene implements SceneI
 
         this.objectController = new ObjectController();
         
-        window.bare = this.GetRapidProxy();
+        window.bare = bareEngine.GetRapidProxy();//
 
         this.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT
 
         if (!pipes.has("cameraHandler_ScreenToWorld")) //IF CAMERAHANDLER HAS NOT ALREADY SET THESE
         {
             // LET THEM RETURN DEFAULT VALUES
-            pipes.set("cameraHandler_GetRenderInfo", () => ({ position: new Vec2(0, 0), offset: new Vec2(0, 0), scale: 1 }));
+            //pipes.set("cameraHandler_GetRenderInfo", () => ({ position: new Vec2(0, 0), offset: new Vec2(0, 0), scale: 1 }));
             pipes.set("cameraHandler_ScreenToWorld", (x: number, y: number) => new Vec2(x, y));
             pipes.set("cameraHandler_WorldToScreen", (x: number, y: number) => new Vec2(x, y));
             pipes.set("cameraHandler_GetZoom", () => 1);
@@ -133,7 +133,7 @@ export class Scene implements SceneI
         await this.baseSettingsHandler.Process(this.sceneOptions.entityData);
         this.SetCurrentSettingsHandler(this.baseSettingsHandler);
 
-        events.emit(BareEvent.game_awake);
+        events.emit(BareEvent.scene_awake);
 
         await this.OnAwake(payload);
         BareEngine.SetControllerReferences(this);
@@ -160,7 +160,7 @@ export class Scene implements SceneI
 
         this.SetCurrentSettingsHandler(this.baseSettingsHandler);// DOUBLE
 
-        window.bare = this.GetRapidProxy(); // HACK FOR DEMO
+        window.bare = bareEngine.GetRapidProxy(); // HACK FOR DEMO
         
         await this.OnStart();
 
@@ -836,6 +836,8 @@ export class Scene implements SceneI
 
     Render(): void
     {
+        rapid.save();
+
         this.SetCameraTransform();
         
         this.componentController?.PreRender();
@@ -852,16 +854,18 @@ export class Scene implements SceneI
         this.componentController?.PostRender();
         this.objectController.PostRender();
         this.particleController?.Render();
+
+        rapid.restore();
     }
 
     SetCameraTransform()
     {
         // GET CAMERA TRANSFORM
         var cameraInfo:CameraRenderInfo; 
-        if (globalThis.cameraHandler && globalThis.cameraHandler.scene == this)
+        if (globalThis.cameraHandlerDirect && globalThis.cameraHandlerDirect.scene == this)
         {
             // THE CAMERA IS SET TO THIS SCENE EXCLUSIVELY
-            cameraInfo = globalThis.cameraHandler?.GetRenderInfo(bareEngine.levelEditorOpen);
+            cameraInfo = globalThis.cameraHandlerDirect?.GetRenderInfo(bareEngine.levelEditorOpen);
         }
         else
         {
@@ -964,17 +968,41 @@ export class Scene implements SceneI
 
     ScreenToWorld(x:number, y:number)
     {
-        return pipes.run("cameraHandler_ScreenToWorld", x, y);
+        if (globalThis.cameraHandlerDirect && globalThis.cameraHandlerDirect.scene == this)
+        {
+            // THE CAMERA IS SET TO THIS SCENE EXCLUSIVELY
+            return globalThis.cameraHandlerDirect?.ScreenToWorld(x, y);
+        }
+        else
+        {
+            return new Vec2(x, y);
+        }
     }
 
     WorldToScreen(x: number, y: number)
     {
-        return pipes.run("cameraHandler_WorldToScreen", x, y);
+        if (globalThis.cameraHandlerDirect && globalThis.cameraHandlerDirect.scene == this)
+        {
+            // THE CAMERA IS SET TO THIS SCENE EXCLUSIVELY
+            return globalThis.cameraHandlerDirect?.WorldToScreen(x, y);
+        }
+        else
+        {
+            return new Vec2(x, y);
+        }
     }
 
     GetCameraZoom(): number 
     {
-        return pipes.run("cameraHandler_GetZoom");
+        if (globalThis.cameraHandlerDirect && globalThis.cameraHandlerDirect.scene == this)
+        {
+            // THE CAMERA IS SET TO THIS SCENE EXCLUSIVELY
+            return globalThis.cameraHandlerDirect?.GetZoom();
+        }
+        else
+        {
+            return 1;
+        }
     }
 
     GetContructorName(gameObject: GameObject): string
@@ -990,37 +1018,6 @@ export class Scene implements SceneI
     SetCursor(cursorStr: string): void
     {
         rapid.canvas.style.cursor = cursorStr;
-    }
-
-    // NOT GREAT! BETTER WAY? MOVE OVERWRITE/CALL THROUGH ALL THE RAPID VARS? TODO
-    GetRapidProxy()
-    {
-        const rapidProxy = new Proxy(this as any, {
-            get: (target, prop, receiver) => {
-                if (prop === "rapid") return rapid;
-                if (prop in target)
-                {
-                    const value = Reflect.get(target, prop, receiver);
-                    return typeof value === "function" ? value.bind(target) : value;
-                }
-                const rapidValue = (rapid as any)[prop];
-                return typeof rapidValue === "function" ? rapidValue.bind(rapid) : rapidValue;
-            },
-            set: (target, prop, value, receiver) => {
-                if (prop in target || prop === "rapid")
-                {
-                    return Reflect.set(target, prop, value, receiver);
-                }
-                (rapid as any)[prop] = value;
-                return true;
-            },
-            has: (target, prop) => {
-                if (prop in target || prop === "rapid") return true;
-                return prop in (rapid as any);
-            }
-        });
-
-        return rapidProxy;
     }
 
     // THIS SHOULD NOT BE HERE, TODO

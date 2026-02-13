@@ -224,7 +224,7 @@ export class HitboxController
         if (isUIObject)
             return point;
 
-        return bare.WorldToScreen(point.x, point.y);
+        return currentSceneProcessing.WorldToScreen(point.x, point.y);
     }
 
     private GetHitboxCircleCenter(hitbox: Hitbox, isUIObject: boolean): Vec2
