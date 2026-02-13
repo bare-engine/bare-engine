@@ -323,21 +323,22 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
 window.bare = new Proxy({} as unknown as Scene & BareEngine & Rapid, {
     get(_, prop: string)
     {
-        if (window.bareEngine?.isEngine)
+        if (window.bareEngine?.isEngine && prop in window.bareEngine)
         {
             const v = (window.bareEngine as any)[prop];
-            if (v !== undefined) return v;
+            if (v !== undefined) return typeof v === "function" ? v.bind(window.bareEngine) : v;
         }
 
-        if (window.rapid?.isRapid)
+        if (window.rapid?.isRapid && prop in window.rapid)
         {
             const v = (window.rapid as any)[prop];
-            if (v !== undefined) return v;
+            if (v !== undefined) return typeof v === "function" ? v.bind(window.rapid) : v;
         }
 
-        if (window.currentSceneProcessing?.isScene)
+        if (window.currentSceneProcessing?.isScene && prop in window.currentSceneProcessing)
         {
-            return (window.currentSceneProcessing as any)[prop];
+            const v = (window.currentSceneProcessing as any)[prop];
+            return typeof v === "function" ? v.bind(window.currentSceneProcessing) : v;
         }
 
         return undefined;
@@ -345,24 +346,32 @@ window.bare = new Proxy({} as unknown as Scene & BareEngine & Rapid, {
 
     set(_, prop: string, value)
     {
-        if (window.bareEngine?.isEngine)
+        if (window.bareEngine?.isEngine && prop in window.bareEngine)
         {
             (window.bareEngine as any)[prop] = value;
             return true;
         }
 
-        if (window.rapid?.isRapid)
+        if (window.rapid?.isRapid && prop in window.rapid)
         {
             (window.rapid as any)[prop] = value;
             return true;
         }
 
-        if (window.currentSceneProcessing?.isScene)
+        if (window.currentSceneProcessing?.isScene && prop in window.currentSceneProcessing)
         {
             (window.currentSceneProcessing as any)[prop] = value;
             return true;
         }
 
+        return false;
+    }
+    ,
+    has(_, prop: string)
+    {
+        if (window.bareEngine?.isEngine && prop in window.bareEngine) return true;
+        if (window.rapid?.isRapid && prop in window.rapid) return true;
+        if (window.currentSceneProcessing?.isScene && prop in window.currentSceneProcessing) return true;
         return false;
     }
 });
