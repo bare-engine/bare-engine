@@ -653,7 +653,8 @@ export class EditorScene extends Scene
             this.Close(false); // DON'T WANT TO LOAD THE LEVEL
         }
 
-        this.editorButton.visible = false;
+        if (this.editorButton)
+            this.editorButton.visible = false;
 
         //this.editorButton.removeEventListener('click', this.OnClickEditorButtonBound);
     }

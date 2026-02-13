@@ -111,7 +111,7 @@ export class ComponentController
             {
                 // FIND COMPONENT CLASS BASED ON NAME e.g. goal -> GoalComponent
                 const className = componentName.charAt(0).toUpperCase() + componentName.slice(1) + 'Component';
-                const ComponentClass = bare.componentClasses[className];
+                const ComponentClass = bareEngine.componentClasses[className];
 
                 if (!ComponentClass) // THIS IS NEEDED FOR RELEASE BUILD, SOME P COMPONENT GETS ADDED THAT'S NOT THERE IN GAME, TODO
                     continue;

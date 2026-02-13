@@ -1,1 +1,1 @@
-export * from "./src/sopiroPhysics";
+export * from "../src/exports/sopiroPhysics";

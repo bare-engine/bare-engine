@@ -23,6 +23,10 @@ export class BareEngine
     public isPaused: boolean = false;
     
     get levelEditorOpen(): boolean { return window.gameMode == GameMode.Editor; }
+    
+    public componentClasses: Record<string, any> = {};
+
+    public isEngine: boolean = true;
 
     constructor(sceneClass: SceneClass)
     {
@@ -35,7 +39,7 @@ export class BareEngine
         this.ResizeCanvas();
 
         window.bareEngine = this;
-        window.bare = this.GetRapidProxy();
+        
         events.emit(BareEvent.game_awake);
 
         await sceneController.Goto(sceneClass);
@@ -185,52 +189,6 @@ export class BareEngine
     }
 
 
-
-    // NOT GREAT! BETTER WAY? MOVE OVERWRITE/CALL THROUGH ALL THE RAPID VARS? TODO
-    GetRapidProxy()
-    {
-        const rapidProxy = new Proxy(this as any, {
-            get: (target, prop, receiver) => {
-                if (prop === "rapid") return rapid;
-                if (prop === "layerInfos") return window.currentSceneProcessing?.layerInfos;
-                if (prop in target)
-                {
-                    const value = Reflect.get(target, prop, receiver);
-                    return typeof value === "function" ? value.bind(target) : value;
-                }
-                const rapidValue = (rapid as any)[prop];
-                return typeof rapidValue === "function" ? rapidValue.bind(rapid) : rapidValue;
-            },
-            set: (target, prop, value, receiver) => {
-                if (
-                    prop in target ||
-                    prop === "rapid" ||
-                    prop === "layerInfos"
-                )
-                {
-                    if (prop === "layerInfos" && window.currentSceneProcessing)
-                    {
-                        window.currentSceneProcessing.layerInfos = value;
-                        return true;
-                    }
-                    return Reflect.set(target, prop, value, receiver);
-                }
-                (rapid as any)[prop] = value;
-                return true;
-            },
-            has: (target, prop) => {
-                if (
-                    prop in target ||
-                    prop === "rapid" ||
-                    prop === "layerInfos"
-                )
-                    return true;
-                return prop in (rapid as any);
-            }
-        });
-
-        return rapidProxy;
-    }
 
     
     private static controllerCallbacks: any[] = [];

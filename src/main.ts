@@ -320,4 +320,49 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
     }
 }
 
+window.bare = new Proxy({} as unknown as Scene & BareEngine & Rapid, {
+    get(_, prop: string)
+    {
+        if (window.bareEngine?.isEngine)
+        {
+            const v = (window.bareEngine as any)[prop];
+            if (v !== undefined) return v;
+        }
 
+        if (window.rapid?.isRapid)
+        {
+            const v = (window.rapid as any)[prop];
+            if (v !== undefined) return v;
+        }
+
+        if (window.currentSceneProcessing?.isScene)
+        {
+            return (window.currentSceneProcessing as any)[prop];
+        }
+
+        return undefined;
+    },
+
+    set(_, prop: string, value)
+    {
+        if (window.bareEngine?.isEngine)
+        {
+            (window.bareEngine as any)[prop] = value;
+            return true;
+        }
+
+        if (window.rapid?.isRapid)
+        {
+            (window.rapid as any)[prop] = value;
+            return true;
+        }
+
+        if (window.currentSceneProcessing?.isScene)
+        {
+            (window.currentSceneProcessing as any)[prop] = value;
+            return true;
+        }
+
+        return false;
+    }
+});

@@ -46,8 +46,6 @@ export class Scene implements SceneI
     public started: boolean = false;
     public persistent: boolean = false;
 
-    public componentClasses: Record<string, any> = {};
-
     public baseSettingsHandler: SettingsHandler = new SettingsHandler();
     public currentSettingsHandler: SettingsHandler;
 
@@ -86,6 +84,9 @@ export class Scene implements SceneI
     public events = mitt<Events>(); // private todo
     //private pipes = matt<Pipes>();
     
+
+    public isScene: boolean = true;
+
     constructor(sceneOptions: SceneOptions | SettingsData = {entityData: defaultEntityData})
     {
         let options: SceneOptions;
@@ -107,8 +108,6 @@ export class Scene implements SceneI
         this.sceneOptions = options;
 
         this.objectController = new ObjectController();
-        
-        window.bare = bareEngine.GetRapidProxy();//
 
         this.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT
 
@@ -160,8 +159,6 @@ export class Scene implements SceneI
 
         this.SetCurrentSettingsHandler(this.baseSettingsHandler);// DOUBLE
 
-        window.bare = bareEngine.GetRapidProxy(); // HACK FOR DEMO
-        
         await this.OnStart();
 
         this.started = true;
@@ -225,7 +222,7 @@ export class Scene implements SceneI
     RegisterComponent(componentClass: any)
     {
         var classNameNoLeadingUnderscore = componentClass.name.replace(/^_/, ''); // REMOVE LEADING _ THAT SOME COMPONENTS GET
-        bare.componentClasses[classNameNoLeadingUnderscore] = componentClass;
+        bareEngine.componentClasses[classNameNoLeadingUnderscore] = componentClass;
     }
 
     SetCurrentSettingsHandler(settingsHandler:SettingsHandler): SettingsHandler
