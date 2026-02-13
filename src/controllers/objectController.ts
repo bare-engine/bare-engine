@@ -1,5 +1,5 @@
 import { GameObject } from "../objects/gameObject";
-import { UI_LAYER } from "../utils/bareTypes";
+import { UI_LAYER } from "../types/bareTypes";
 
 export class ObjectController
 {

@@ -2,10 +2,10 @@
 import { GameObject } from "../objects/gameObject";
 import { Helper } from "../utils/helper";
 import { Color, Texture } from "../libraries/rapid-render";
-import { assetsHandler } from "../utils/assetsHandler";
-import { Entity, LevelData, Component, Layer, SaveData, BareEvent, SettingsData, SceneOptions } from '../utils/bareTypes';
+import { assetsHandler } from "../handlers/assetsHandler";
+import { Entity, LevelData, Component, Layer, SaveData, BareEvent, SettingsData, SceneOptions } from '../types/bareTypes';
 import { Scene, events, GameMode, MakePath, pipes } from "../main";
-import { defaultEntityData } from "../utils/bareData";
+import { defaultEntityData } from "../types/bareData";
 import { sceneController } from "../controllers/sceneController";
 
 export class LevelScene extends Scene

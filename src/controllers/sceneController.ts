@@ -1,6 +1,6 @@
 import { BareEngine } from "../bareEngine";
 import { Scene, events } from "../main";
-import { AwakePayload, BareEvent, SceneClass, SceneOptions } from "../utils/bareTypes";
+import { AwakePayload, BareEvent, SceneClass, SceneOptions } from "../types/bareTypes";
 
 export class SceneController
 {

@@ -6,7 +6,7 @@ import { Node } from "./aabbtree";
 import { GameObject } from "../../objects/gameObject";
 import { Matrix3 } from "./math";
 import { events } from "../../main";
-import { BareEvent } from '../../utils/bareTypes';
+import { BareEvent } from '../../types/bareTypes';
 
 export enum Type
 {

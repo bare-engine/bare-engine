@@ -1,4 +1,4 @@
-import { ShaderType, Uniform } from "../../libraries/rapid-render";
+import { ShaderType, Uniform } from "../libraries/rapid-render";
 
 export class FlashShader
 {

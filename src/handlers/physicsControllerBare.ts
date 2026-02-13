@@ -1,10 +1,10 @@
 import { PhysicsObjectBare } from "../objects/physicsObjectBare";
-import { HitboxType } from "../utils/gamesTypes";
+import { HitboxType } from "../types/gamesTypes";
 import { events } from "../main";
 import { Vec2 } from "../libraries/rapid-render";
-import { PhysicsControllerBase } from "./physicsControllerBase";
+import { PhysicsControllerBase } from "../controllers/physicsControllerBase";
 import { GameObject } from "../objects/gameObject";
-import { BareEvent } from "../utils/bareTypes";
+import { BareEvent } from "../types/bareTypes";
 import { BareEngine } from "../bareEngine";
 
 export class PhysicsControllerBare extends PhysicsControllerBase

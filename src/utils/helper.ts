@@ -2,7 +2,7 @@
 
 import { Vec2, Color } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
-import { Rectangle } from './gamesTypes';
+import { Rectangle } from '../types/gamesTypes';
 
 export interface Size {
     width: number;
@@ -104,7 +104,7 @@ export class Helper
         return Math.min(Math.max(value, min), max);
     }
 
-    // In utils/helper.ts
+    // In handlers/helper.ts
     static MobileAndTabletCheck(): boolean
     {
         return (('ontouchstart' in window) ||

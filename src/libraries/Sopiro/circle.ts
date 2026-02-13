@@ -1,6 +1,6 @@
 
 import { GameObject } from "../../objects/gameObject";
-import { Entity } from "../../utils/bareTypes";
+import { Entity } from "../../types/bareTypes";
 import { RigidBody, Type } from "./rigidbody";
 import { Settings } from "./settings";
 import * as Util from "./util";

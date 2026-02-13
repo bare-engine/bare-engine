@@ -1,11 +1,11 @@
 import { SaveDataHandler } from "./SaveDataHandler";
-import { BareEvent, BareEventPayload, LevelData, SaveData, SettingsData } from "./bareTypes";
-import { Helper } from "./helper";
+import { BareEvent, BareEventPayload, LevelData, SaveData, SettingsData } from "../types/bareTypes";
+import { Helper } from "../utils/helper";
 import { Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import {  events } from "../main";
-import { OutlineShader } from "./shaders/outlineShader";
-import { BareClasses, LevelScene, ObjectController, sceneController } from "..";
+import { OutlineShader } from "../shaders/outlineShader";
+import { BareClasses, LevelScene, ObjectController, sceneController } from "../exports";
 import { EditorScene } from "../scenes/editorScene";
 
 // THIS PLUGIN CODE DOES NOT GET INCLUDED IN PRODUCTION
@@ -218,7 +218,7 @@ window.__GAME_DEBUG_API__ = {// called by the panel (via injector) to select in-
   }
 };
 
-export class BarePlugin
+export class PluginHandler
 {
     public outlineShader;
     
@@ -364,5 +364,5 @@ export class BarePlugin
     }
 }
 
-export const plugin = new BarePlugin();
+export const plugin = new PluginHandler();
 globalThis.plugin = plugin;

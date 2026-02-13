@@ -1,9 +1,9 @@
 import { sceneController } from "./controllers/sceneController";
 import { events, GameMode, pipes, Scene } from "./main";
 import { GameObject } from "./objects/gameObject";
-import { assetsHandler } from "./utils/assetsHandler";
-import { BareEvent, SceneClass } from "./utils/bareTypes";
-import { SaveDataHandler } from "./utils/SaveDataHandler";
+import { assetsHandler } from "./handlers/assetsHandler";
+import { BareEvent, SceneClass } from "./types/bareTypes";
+import { SaveDataHandler } from "./handlers/SaveDataHandler";
 
 export class BareEngine
 {

@@ -1,4 +1,4 @@
-import { BareEvent } from '../utils/bareTypes';
+import { BareEvent } from '../types/bareTypes';
 import { events } from "../main";
 
 export class KeyboardController

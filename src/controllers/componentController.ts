@@ -1,6 +1,6 @@
 import { events, GameMode, pipes } from "../main";
 import { GameObject } from "../objects/gameObject";
-import { Component, Entity, Ctor, BareEvent } from '../utils/bareTypes';
+import { Component, Entity, Ctor, BareEvent } from '../types/bareTypes';
 import { BareEngine } from "../bareEngine";
 // REFERENCING A CLASS EXTENDING BASECOMPONENT WILL AUTOMATICALLY ALSO INCLUDE COMPONENTCONTROLLER
 

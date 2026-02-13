@@ -1,6 +1,6 @@
 import { Howl, HowlOptions, Howler } from '../libraries/howler/howler.core.js';
-import { SaveData, BareEvent } from './bareTypes';
-import { Helper } from './helper';
+import { SaveData, BareEvent } from '../types/bareTypes';
+import { Helper } from '../utils/helper';
 import { events } from '../main';
 
 class SoundHandler

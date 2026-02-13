@@ -1,7 +1,7 @@
 
 import { Texture } from '../libraries/rapid-render';
-import { AnimationData, Atlas } from './bareTypes';
-import { Helper } from './helper';
+import { AnimationData, Atlas } from '../types/bareTypes';
+import { Helper } from '../utils/helper';
 
 class AssetsHandler
 {

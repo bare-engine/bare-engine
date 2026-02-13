@@ -3,7 +3,7 @@ import { Vec2 } from "../rapid-render";
 import { Polygon } from "./polygon";
 import * as Util from "./util";
 import { Settings } from "./settings";
-import { Entity } from "../../utils/bareTypes";
+import { Entity } from "../../types/bareTypes";
 import { GameObject } from "../../objects/gameObject";
 
 export class Box extends Polygon

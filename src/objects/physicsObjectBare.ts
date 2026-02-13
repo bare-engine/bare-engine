@@ -1,8 +1,8 @@
 import { Vec2, Color } from "../libraries/rapid-render";
 import { MakePath } from "../main";
-import { Entity, SettingsData } from "../utils/bareTypes";
-import { HitboxType, Rectangle, Rectangle2Vec } from "../utils/gamesTypes";
-import { Hitbox } from "../utils/hitbox";
+import { Entity, SettingsData } from "../types/bareTypes";
+import { HitboxType, Rectangle, Rectangle2Vec } from "../types/gamesTypes";
+import { Hitbox } from "../types/hitbox";
 import { GameObject } from "./gameObject";
 
 export class PhysicsObjectBare extends GameObject

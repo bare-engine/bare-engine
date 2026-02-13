@@ -1,9 +1,9 @@
 import { events, pipes } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { Helper } from "../utils/helper";
-import { Hitbox } from "../utils/hitbox";
-import { HitboxType } from "../utils/gamesTypes";
-import { BareEventPayload, CollisionHandlingType, UI_LAYER, BareEvent, Events } from '../utils/bareTypes';
+import { Hitbox } from "../types/hitbox";
+import { HitboxType } from "../types/gamesTypes";
+import { BareEventPayload, CollisionHandlingType, UI_LAYER, BareEvent, Events } from '../types/bareTypes';
 import { Vec2 } from "../libraries/rapid-render";
 import { mouseController } from "./mouseController";
 import { ObjectController } from "./objectController";

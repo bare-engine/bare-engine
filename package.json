@@ -18,63 +18,63 @@
     "LICENSE",
     "README.md"
   ],
-  "main": "src/index.ts",
+  "main": "src/exports/index.ts",
   "types": "index.d.ts",
   "sideEffects": [
     "./src/main.ts"
   ],
   "exports": {
     ".": {
-      "types": "./index.d.ts",
-      "default": "./src/index.ts"
+      "types": "./typeDefs/index.d.ts",
+      "default": "./src/exports/index.ts"
     },
     "./core": {
-      "types": "./core.d.ts",
-      "default": "./src/core.ts"
+      "types": "./typeDefs/core.d.ts",
+      "default": "./src/exports/core.ts"
     },
     "./sound": {
-      "types": "./sound.d.ts",
-      "default": "./src/sound.ts"
+      "types": "./typeDefs/sound.d.ts",
+      "default": "./src/exports/sound.ts"
     },
     "./barePhysics": {
-      "types": "./barePhysics.d.ts",
-      "default": "./src/barePhysics.ts"
+      "types": "./typeDefs/barePhysics.d.ts",
+      "default": "./src/exports/barePhysics.ts"
     },
     "./physics": {
-      "types": "./physics.d.ts",
-      "default": "./src/physics.ts"
+      "types": "./typeDefs/physics.d.ts",
+      "default": "./src/exports/physics.ts"
     },
     "./sopiroPhysics": {
-      "types": "./sopiroPhysics.d.ts",
-      "default": "./src/sopiroPhysics.ts"
+      "types": "./typeDefs/sopiroPhysics.d.ts",
+      "default": "./src/exports/sopiroPhysics.ts"
     },
     "./editor": {
-      "types": "./editor.d.ts",
-      "default": "./src/editor.ts"
+      "types": "./typeDefs/editor.d.ts",
+      "default": "./src/exports/editor.ts"
     }
   },
   "typesVersions": {
     "*": {
       "editor": [
-        "editor.d.ts"
+        "typeDefs/editor.d.ts"
       ],
       "sound": [
-        "sound.d.ts"
+        "typeDefs/sound.d.ts"
       ],
       "barePhysics": [
-        "barePhysics.d.ts"
+        "typeDefs/barePhysics.d.ts"
       ],
       "physics": [
-        "physics.d.ts"
+        "typeDefs/physics.d.ts"
       ],
       "sopiroPhysics": [
-        "sopiroPhysics.d.ts"
+        "typeDefs/sopiroPhysics.d.ts"
       ],
       "core": [
-        "core.d.ts"
+        "typeDefs/core.d.ts"
       ],
       "*": [
-        "index.d.ts"
+        "typeDefs/index.d.ts"
       ]
     }
   },

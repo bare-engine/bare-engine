@@ -4,7 +4,7 @@ import { GameObject } from "../objects/gameObject";
 import { mouseController } from "../controllers/mouseController";
 import { sceneController } from "../controllers/sceneController";
 import { EditorScene } from "../scenes/editorScene";
-import { PhysicsObjectBare } from "../barePhysics";
+import { PhysicsObjectBare } from "../exports/barePhysics";
 
 export class PivotRemoveComponent extends BaseComponent
 {

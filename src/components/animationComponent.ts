@@ -1,6 +1,6 @@
 import { BaseComponent } from "../controllers/componentController";
-import { assetsHandler } from "../utils/assetsHandler";
-import { AnimationData } from "../utils/bareTypes";
+import { assetsHandler } from "../handlers/assetsHandler";
+import { AnimationData } from "../types/bareTypes";
 
 export class AnimationComponent extends BaseComponent
 {

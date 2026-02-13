@@ -2,11 +2,11 @@ import { ResizableComponent } from "./resizableComponent";
 import { Helper } from "../utils/helper";
 import { BaseComponent, componentController } from "../controllers/componentController";
 import { GameObject } from "../objects/gameObject";
-import { Entity } from "../utils/bareTypes";
+import { Entity } from "../types/bareTypes";
 import { keyboardController } from "../controllers/keyboardController";
 import { hitboxController } from "../controllers/hitboxController";
 import { mouseController } from "../controllers/mouseController";
-import { PhysicsObjectBare } from "../barePhysics";
+import { PhysicsObjectBare } from "../exports/barePhysics";
 
 export class PivotComponent extends BaseComponent
 {

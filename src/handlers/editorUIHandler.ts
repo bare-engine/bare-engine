@@ -1,9 +1,9 @@
-import { Entity, LayerInfo, SettingsData, BareEvent, SaveData } from '../bareTypes';
-import { assetsHandler } from "../assetsHandler";
-import { events, MakePath } from "../../main";
+import { Entity, LayerInfo, SettingsData, BareEvent, SaveData } from '../types/bareTypes';
+import { assetsHandler } from "./assetsHandler";
+import { events, MakePath } from "../main";
 import { FlashShader } from "../shaders/flashShader";
-import { TweenTo } from "../../controllers/tweenController";
-import { EditorScene } from '../../scenes/editorScene';
+import { TweenTo } from "../controllers/tweenController";
+import { EditorScene } from '../scenes/editorScene';
 
 /*
     BUILD SETUP/CONTROLS UI

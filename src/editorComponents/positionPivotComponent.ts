@@ -1,4 +1,4 @@
-import { PhysicsObjectBare } from "../barePhysics";
+import { PhysicsObjectBare } from "../exports/barePhysics";
 import { BaseComponent } from "../controllers/componentController";
 import { hitboxController } from "../controllers/hitboxController";
 import { mouseController } from "../controllers/mouseController";

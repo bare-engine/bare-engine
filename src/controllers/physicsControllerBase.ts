@@ -1,6 +1,6 @@
 import { events, pipes } from "../main";
 import { GameObject } from "../objects/gameObject";
-import { BareEventPayload, Dimensions, UI_LAYER, BareEvent, SaveData } from '../utils/bareTypes';
+import { BareEventPayload, Dimensions, UI_LAYER, BareEvent, SaveData } from '../types/bareTypes';
 
 export class PhysicsControllerBase
 {

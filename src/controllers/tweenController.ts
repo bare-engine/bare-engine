@@ -1,4 +1,4 @@
-import { BareEvent } from '../utils/bareTypes';
+import { BareEvent } from '../types/bareTypes';
 import Easing from "../libraries/tweenJS/Easing";
 import Tween, { TweenWithPromise } from "../libraries/tweenJS/Tween";
 import { events } from "../main";

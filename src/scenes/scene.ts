@@ -1,16 +1,16 @@
-import { events, GameMode, MakePath, pipes } from "./main";
-import { Color, FrameBufferObject, RenderTexture, Texture, Vec2 } from "./libraries/rapid-render";
-import { PoolHandler } from "./utils/poolHandler";
-import { AwakePayload, BareEvent, SceneClass, Entity, GameObjectClass, Layer, LayerInfo, LevelData, SaveData, SceneOptions, SettingsData, UI_LAYER, SceneI, Events } from "./utils/bareTypes";
-import { GameObject } from "./objects/gameObject";
-import { SettingsHandler as SettingsHandler } from "./utils/settingsHandler";
-import { assetsHandler } from "./utils/assetsHandler";
-import { defaultEntityData as defaultEntityData } from "./utils/bareData";
-import { PhysicsObjectBare } from "./barePhysics";
-import { ObjectController } from "./controllers/objectController";
-import { sceneController } from "./controllers/sceneController";
-import mitt from "./libraries/mitt";
-import { BareEngine } from "./bareEngine";
+import { events, GameMode, MakePath, pipes } from "../main";
+import { Color, FrameBufferObject, RenderTexture, Texture, Vec2 } from "../libraries/rapid-render";
+import { PoolHandler } from "../handlers/poolHandler";
+import { AwakePayload, BareEvent, SceneClass, Entity, GameObjectClass, Layer, LayerInfo, LevelData, SaveData, SceneOptions, SettingsData, UI_LAYER, SceneI, Events } from "../types/bareTypes";
+import { GameObject } from "../objects/gameObject";
+import { SettingsHandler as SettingsHandler } from "../handlers/settingsHandler";
+import { assetsHandler } from "../handlers/assetsHandler";
+import { defaultEntityData as defaultEntityData } from "../types/bareData";
+import { PhysicsObjectBare } from "../exports/barePhysics";
+import { ObjectController } from "../controllers/objectController";
+import { sceneController } from "../controllers/sceneController";
+import mitt from "../libraries/mitt";
+import { BareEngine } from "../bareEngine";
 
 /*Bare.camera.SetPosition(bare.width * .5, bare.height * .5);
 Bare.sound.Play()

@@ -1,5 +1,5 @@
 import { events } from "../main";
-import { SaveData, BareEvent } from './bareTypes';
+import { SaveData, BareEvent } from '../types/bareTypes';
 export class SaveDataHandler
 {
     static saveEnabled: boolean = true;

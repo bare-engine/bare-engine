@@ -2,7 +2,7 @@ import { RigidBody, Type } from "./rigidbody";
 import { Vec2 } from "../rapid-render";
 import * as Util from "./util";
 import { Settings } from "./settings";
-import { Entity, GameObject } from "../..";
+import { Entity, GameObject } from "../../exports";
 
 // Children: Box
 export class Polygon extends RigidBody

@@ -3,7 +3,7 @@ import { PivotComponent } from './pivotComponent';
 import { GameObject } from '../objects/gameObject';
 import { Helper } from '../utils/helper';
 import { mouseController } from '../controllers/mouseController';
-import { PhysicsObjectBare, sceneController } from '..';
+import { PhysicsObjectBare, sceneController } from '../exports';
 import { EditorScene } from '../scenes/editorScene';
 
 export class ResizableRemoveComponent extends BaseComponent

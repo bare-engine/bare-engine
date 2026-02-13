@@ -1,8 +1,8 @@
 import { Vec2 } from "../libraries/rapid-render";
 import { events, pipes } from "../main";
-import { BareEvent, type CameraRenderInfo, type Dimensions } from "./bareTypes";
-import { CameraScaleMode, Rectangle } from "./gamesTypes";
-import { Helper } from "./helper";
+import { BareEvent, type CameraRenderInfo, type Dimensions } from "../types/bareTypes";
+import { CameraScaleMode, Rectangle } from "../types/gamesTypes";
+import { Helper } from "../utils/helper";
 
 class CameraHandler {
   scaleMode: CameraScaleMode = CameraScaleMode.Cover;

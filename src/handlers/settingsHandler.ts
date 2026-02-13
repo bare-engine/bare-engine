@@ -1,8 +1,8 @@
 import { Texture } from "../libraries/rapid-render/texture";
 import { assetsHandler } from "./assetsHandler";
-import { defaultEntityData } from "./bareData";
-import { SettingsData } from "./bareTypes";
-import { Helper } from "./helper";
+import { defaultEntityData } from "../types/bareData";
+import { SettingsData } from "../types/bareTypes";
+import { Helper } from "../utils/helper";
 
 // SETTINGS-STORE KEEPS TRACK OF RAW AND PROCESSED SETTINGS
 // BIT CLUMSY TO HAVE THEM BOTH, BUT HAVING ONLY ONE WOULD MEAN I'D HAVE TO UNDO THE CHANGES THAT HAPPEN IN PROCESS()

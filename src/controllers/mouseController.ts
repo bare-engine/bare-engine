@@ -1,4 +1,4 @@
-import { BareEvent } from '../utils/bareTypes';
+import { BareEvent } from '../types/bareTypes';
 import { Helper } from "../utils/helper";
 import { events, pipes } from "../main";
 import { Vec2 } from "../libraries/rapid-render";

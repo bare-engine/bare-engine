@@ -1,25 +1,25 @@
 import { events, GameMode, MakePath } from "../main";
 import { Color, Vec2 } from "../libraries/rapid-render";
-import { EditorControlsHandler } from "../utils/editorHandlers/editorControlsHandler";
-import { EditorUIHandler } from "../utils/editorHandlers/editorUIHandler";
-import { SettingsData, Entity, LevelData, Dimensions, SaveData, BareEvent } from "../utils/bareTypes";
-import { SaveDataHandler } from "../utils/SaveDataHandler";
+import { EditorControlsHandler } from "../handlers/editorControlsHandler";
+import { EditorUIHandler } from "../handlers/editorUIHandler";
+import { SettingsData, Entity, LevelData, Dimensions, SaveData, BareEvent } from "../types/bareTypes";
+import { SaveDataHandler } from "../handlers/SaveDataHandler";
 import { GameObject } from "../objects/gameObject";
-import { assetsHandler } from "../utils/assetsHandler";
+import { assetsHandler } from "../handlers/assetsHandler";
 import { Helper } from "../utils/helper";
-import { SettingsHandler } from "../utils/settingsHandler";
+import { SettingsHandler } from "../handlers/settingsHandler";
 import { PivotComponent } from "../editorComponents/pivotComponent";
 import { PivotRemoveComponent } from "../editorComponents/pivotRemoveComponent";
 import { ResizableComponent } from "../editorComponents/resizableComponent";
 import { ResizableRemoveComponent } from "../editorComponents/resizableRemoveComponent";
 import { PositionPivotComponent } from "../editorComponents/positionPivotComponent";
-import { FileDropHandler } from "../utils/fileDropHandler";
-import { cameraHandler } from "../utils/CameraHandler";
-import { PhysicsObjectBare } from "../barePhysics";
+import { FileDropHandler } from "../handlers/fileDropHandler";
+import { cameraHandler } from "../handlers/cameraHandler";
+import { PhysicsObjectBare } from "../exports/barePhysics";
 import { LevelScene } from "../scenes/levelScene";
 import { sceneController } from "../controllers/sceneController";
-import { HitboxType } from "../utils/gamesTypes";
-import { Hitbox } from "../utils/hitbox";
+import { HitboxType } from "../types/gamesTypes";
+import { Hitbox } from "../types/hitbox";
 import { Text } from "./../libraries/rapid-render/texture";
 
 /*

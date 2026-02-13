@@ -5,15 +5,14 @@ import { ObjectController } from "./controllers/objectController";
 import { Helper } from "./utils/helper";
 import mitt from './libraries/mitt';
 import matt from './libraries/matt';
-import { Scene } from './scene';
-import { Pipes, BareEvent, Events, SceneClass } from './utils/bareTypes';
-import Tween from './libraries/tweenJS/Tween';
+import { Scene } from './scenes/scene';
+import { Pipes, BareEvent, Events, SceneClass } from './types/bareTypes';
 import { BareEngine } from './bareEngine';
 
 export const events = mitt<Events>();
 export const pipes = matt<Pipes>();
 
-export { Scene } from './scene';
+export { Scene } from './scenes/scene';
 
 export function MakePath(...args: string[]): string
 {

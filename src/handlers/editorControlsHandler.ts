@@ -1,16 +1,16 @@
-import { Scene, events, MakePath, pipes } from "../../main";
-import { Color, Vec2 } from "../../libraries/rapid-render";
-import { GameObject } from "../../objects/gameObject";
-import { Helper } from "../helper";
-import { BareEvent, BareEventPayload, Entity, Layer } from "../bareTypes";
-import { Rectangle } from "../gamesTypes";
+import { Scene, events, MakePath, pipes } from "../main";
+import { Color, Vec2 } from "../libraries/rapid-render";
+import { GameObject } from "../objects/gameObject";
+import { Helper } from "../utils/helper";
+import { BareEvent, BareEventPayload, Entity, Layer } from "../types/bareTypes";
+import { Rectangle } from "../types/gamesTypes";
 import { OutlineShader } from "../shaders/outlineShader";
-import { keyboardController } from "../../controllers/keyboardController";
-import { hitboxController } from "../../controllers/hitboxController";
-import { mouseController } from "../../controllers/mouseController";
-import { cameraHandler } from "../CameraHandler";
-import { PhysicsObjectBare } from "../../barePhysics";
-import { EditorScene } from "../../scenes/editorScene";
+import { keyboardController } from "../controllers/keyboardController";
+import { hitboxController } from "../controllers/hitboxController";
+import { mouseController } from "../controllers/mouseController";
+import { cameraHandler } from "./cameraHandler";
+import { PhysicsObjectBare } from "../exports/barePhysics";
+import { EditorScene } from "../scenes/editorScene";
 
 /*
     BUILD CONTROLS INGAME

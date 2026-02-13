@@ -1,10 +1,10 @@
-import { Box, Circle, Polygon, World } from "../sopiroPhysics";
+import { Box, Circle, Polygon, World } from "../exports/sopiroPhysics";
 import { RigidBody } from "../libraries/Sopiro/rigidbody";
 import { Settings } from "../libraries/Sopiro/settings";
 import { PhysicsControllerBase } from "./physicsControllerBase";
 import { events } from "../main";
 import * as Util from "../libraries/Sopiro/util";
-import { BareEvent } from "../utils/bareTypes";
+import { BareEvent } from "../types/bareTypes";
 import { BareEngine } from "../bareEngine";
 
 export class PhysicsControllerSopiro extends PhysicsControllerBase
