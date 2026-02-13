@@ -5,7 +5,7 @@ import { Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import {  events } from "../main";
 import { OutlineShader } from "../shaders/outlineShader";
-import { BareClasses, LevelScene, ObjectController, sceneController } from "../exports";
+import { BareClasses, ObjectController, sceneController } from "../exports";
 import { EditorScene } from "../scenes/editorScene";
 
 // THIS PLUGIN CODE DOES NOT GET INCLUDED IN PRODUCTION
@@ -243,7 +243,7 @@ export class PluginHandler
 
         // RESTART
         this.AddDebugAction("Restart Game", () => bare.Restart(true));
-        this.AddDebugAction("Restart Level", () => sceneController.Get(LevelScene).RestartLevel()); //
+        //this.AddDebugAction("Restart Level", () => sceneController.Get(LevelScene).RestartLevel()); //
         this.AddDebugAction("Clear Save Data", () => SaveDataHandler.Clear());
         this.AddDebugBreak();
 

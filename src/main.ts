@@ -57,6 +57,7 @@ declare global
     var destroyTextFunc:Function | null;
 
     var bare: Scene & BareEngine & Rapid;
+    var currentSceneProcessing: Scene;
     
     var objectController:ObjectController
     var uiController:ObjectController

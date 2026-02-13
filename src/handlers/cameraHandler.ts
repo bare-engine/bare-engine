@@ -1,5 +1,5 @@
 import { Vec2 } from "../libraries/rapid-render";
-import { events, pipes } from "../main";
+import { events, pipes, Scene } from "../main";
 import { BareEvent, type CameraRenderInfo, type Dimensions } from "../types/bareTypes";
 import { CameraScaleMode, Rectangle } from "../types/gamesTypes";
 import { Helper } from "../utils/helper";
@@ -23,12 +23,13 @@ class CameraHandler {
   // derived
   zoomFit: number = 1;
   offset: Vec2 = new Vec2(0, 0);
+  scene: Scene;
 
   constructor()
   {
     //events.persistent.on(BareEvent.gameStarted, () => this.ResetForStart());
 
-    events.persistent.on(BareEvent.game_started, () => {
+    events.persistent.on(BareEvent.game_awake, () => {
       this.SetPosition(bare.width / 2, bare.height / 2);
     });
 
@@ -270,5 +271,30 @@ class CameraHandler {
   }
 }
 
-export const cameraHandler = new CameraHandler();
+// CREATE CAMERA PROXY, SO THAT WE CAN INTERCEPT cameraHandler REFERENCES WHEN CALLING ITS METHODS
+// AND SET THE scene FIELD. THEN WE USE THAT TO APPLY THE CAMERA TRANSFORM ONLY FOR THAT SCENE
+// THIS PREVENTS NEEDING TO HAVE CAMERA HANDLERS ON EVERY SCENE, WHICH IS REALLY NOT NEEDED
+// A GAME WILL HAVE ONE SCENE WITH A CAMERA HANDLER MOST OF THE TIME, SO NOW THAT'S ENFORCED
+// CAN ALWAYS COME BACK TO THIS WHEN THAT TURNS OUT UNTRUE
+function createProxy<T extends object>(target: T): T
+{
+    return new Proxy(target, {
+        get(obj, prop, receiver)
+        {
+            (obj as CameraHandler).scene = window.currentSceneProcessing;
+
+            const value = Reflect.get(obj, prop, receiver);
+            
+            // preserve method "this"
+            if (typeof value === "function")
+            {
+                return value.bind(obj);
+            }
+
+            return value;
+        }
+    });
+}
+
+export const cameraHandler = createProxy(new CameraHandler());
 globalThis.cameraHandler = cameraHandler;

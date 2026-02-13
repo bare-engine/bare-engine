@@ -54,11 +54,12 @@ export class Scene implements SceneI
     public objectController: ObjectController;
 
     private hitboxController: any; // ANY TO NOT INCLUDE HITBOXCONTROLLER AS DEPENDENCY
-    private tweenController: any; // ANY TO NOT INCLUDE HITBOXCONTROLLER AS DEPENDENCY
-    private componentController: any; // ANY TO NOT INCLUDE COMPONENTCONTROLLER AS DEPENDENCY
-    private physicsControllerBare: any; // ANY TO NOT INCLUDE PHYSICSCONTROLLERBARE AS DEPENDENCY
-    private physicsControllerSopiro: any; // ANY TO NOT INCLUDE PHYSICSCONTROLLERSOPIRO AS DEPENDENCY
-    private particleController: any; // ANY TO NOT INCLUDE PARTICLECONTROLLER AS DEPENDENCY
+    private tweenController: any; 
+    private componentController: any; 
+    private physicsControllerBare: any; 
+    private physicsControllerSopiro: any; 
+    private particleController: any; 
+    private levelHandler: any; 
 
     get baseSettings(): SettingsData { return this.baseSettingsHandler.Get(); }
     get currentSettings(): SettingsData { return this.currentSettingsHandler.Get(); }
@@ -835,17 +836,45 @@ export class Scene implements SceneI
 
     Render(): void
     {
-        this.hitboxController?.Render();
+        this.SetCameraTransform();
+        
         this.componentController?.PreRender();
         this.objectController.PreRender();
+
+        this.hitboxController?.Render();
         this.componentController?.Render();
         this.objectController.Render();
         this.physicsControllerBare?.Render();
         this.physicsControllerSopiro?.Render();
+
+        this.OnRender();
+
         this.componentController?.PostRender();
         this.objectController.PostRender();
         this.particleController?.Render();
-        this.OnRender();
+    }
+
+    SetCameraTransform()
+    {
+        // GET CAMERA TRANSFORM
+        var cameraInfo:CameraRenderInfo; 
+        if (globalThis.cameraHandler && globalThis.cameraHandler.scene == this)
+        {
+            // THE CAMERA IS SET TO THIS SCENE EXCLUSIVELY
+            cameraInfo = globalThis.cameraHandler?.GetRenderInfo(bareEngine.levelEditorOpen);
+        }
+        else
+        {
+            cameraInfo = {position: new Vec2(0, 0), offset: new Vec2(0, 0), scale: 1 }
+        }
+
+        // SET TRANSFORM
+        rapid.matrixStack.translate(cameraInfo.offset.x, cameraInfo.offset.y);
+        rapid.renderCamera({
+            position: cameraInfo.position,
+            scale: 1 / cameraInfo.scale,
+            saveTransform: false
+        });
     }
 
     OnRender()
@@ -1029,24 +1058,7 @@ export class Scene implements SceneI
     // OVERRIDE THIS TO LOAD SOME MORE TEXTURES DURING LEVEL LOAD
     CreatePromiseLevelTextures(level: LevelData): Promise<Texture>[]
     {
-        var promisesAr: Array<Promise<Texture>> = [];
-        var texturesFound = new Set<string>();
-        for (var layerName in level.entitiesByLayer) {
-            var entities = level.entitiesByLayer[layerName];
-            entities.forEach((entity: any) => {
-                var entityConstructed = this.ConstructEntity(entity);
-                var imagePath = entityConstructed.imagePath;
-                var fullPath = imagePath + "/" + entity.name;
-
-                if (texturesFound.has(fullPath))
-                    return;
-
-                promisesAr.push(assetsHandler.GetTexturePromise(MakePath(imagePath!, entity.name)));
-                texturesFound.add(fullPath);
-            });
-        }
-
-        return promisesAr;
+        return [];
     }
     
     async OnBeforeLoadLevel()
@@ -1074,6 +1086,7 @@ export class Scene implements SceneI
         this.objectController.Clear();
         this.hitboxController?.Clear();
         this.particleController?.Clear();
+        this.levelHandler?.Clear();
 
         this.ApplyLayerInfoToSettings(this.currentSettings, true); // ?
 
@@ -1142,6 +1155,7 @@ export class Scene implements SceneI
             return false;
         }
 
+        // CUSTOM ARGS SETUP FOR HITBOXCONTROLLER
         var args = [];
         if (propertyName == "hitboxController")
             args = [this.objectController, this.events];
@@ -1149,6 +1163,18 @@ export class Scene implements SceneI
         (this as any)[propertyName] = new Ctor(...args);
 
         return true;
+    }
+
+    get currentLevel(): LevelData
+    {
+        this.CheckExist("levelHandler");
+        return this.levelHandler?.currentLevel;
+    }
+
+    LoadLevel(levelInput: string | LevelData = ""): Promise<LevelData>
+    {
+        this.CheckExist("levelHandler");
+        return this.levelHandler?.LoadLevel(levelInput);
     }
 }
 

@@ -2,8 +2,9 @@ import { sceneController } from "./controllers/sceneController";
 import { events, GameMode, pipes, Scene } from "./main";
 import { GameObject } from "./objects/gameObject";
 import { assetsHandler } from "./handlers/assetsHandler";
-import { BareEvent, SceneClass } from "./types/bareTypes";
+import { BareEvent, CameraRenderInfo, SceneClass } from "./types/bareTypes";
 import { SaveDataHandler } from "./handlers/SaveDataHandler";
+import { Vec2 } from "./exports";
 
 export class BareEngine
 {
@@ -148,16 +149,6 @@ export class BareEngine
 
         rapid.save();
         
-        const cameraInfo = pipes.run("cameraHandler_GetRenderInfo", this.levelEditorOpen);
-
-        // Apply the camera transform
-        rapid.matrixStack.translate(cameraInfo.offset.x, cameraInfo.offset.y);
-        rapid.renderCamera({
-            position: cameraInfo.position,
-            scale: 1 / cameraInfo.scale,
-            saveTransform: false
-        });
-        
         events.emit(BareEvent.game_preRender);
 
         sceneController.Render();
@@ -199,8 +190,10 @@ export class BareEngine
     // THEN, FOR EXAMPLE, CALLING tweenController.TweenTo(), WILL GET THE tweenController INSTANCE FROM THE SCENE
     static RegisterControllerProxy<T extends object>(controllerClass: new (...args: any[]) => T, setGlobal: boolean = true): T
     {
-        const name = (controllerClass as any).name;
-        const controllerName = name.charAt(0).toLowerCase() + name.slice(1);
+        var name = (controllerClass as any).name;
+        
+        name = controllerClass.name.replace(/^_/, ''); //REMOVE LEADING _
+        const controllerName = name.charAt(0).toLowerCase() + name.slice(1); // LOWERCASE FIRST LETTER
 
         const classKey = controllerName + "Class";
         (globalThis as any)[classKey] = controllerClass;

@@ -8,13 +8,6 @@
   "license": "MIT",
   "files": [
     "src",
-    "index.d.ts",
-    "editor.d.ts",
-    "sound.d.ts",
-    "barePhysics.d.ts",
-    "physics.d.ts",
-    "sopiroPhysics.d.ts",
-    "core.d.ts",
     "LICENSE",
     "README.md"
   ],
@@ -80,7 +73,6 @@
   },
   "devDependencies": {
     "@types/node": "^25.1.0",
-    "@types/rbush": "^3.0.4",
     "ts-loader": "^9.5.4",
     "typescript": "^5.9.3",
     "webpack": "^5.104.1",

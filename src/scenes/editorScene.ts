@@ -1,4 +1,4 @@
-import { events, GameMode, MakePath } from "../main";
+import { events, GameMode, MakePath, Scene } from "../main";
 import { Color, Vec2 } from "../libraries/rapid-render";
 import { EditorControlsHandler } from "../handlers/editorControlsHandler";
 import { EditorUIHandler } from "../handlers/editorUIHandler";
@@ -16,18 +16,18 @@ import { PositionPivotComponent } from "../editorComponents/positionPivotCompone
 import { FileDropHandler } from "../handlers/fileDropHandler";
 import { cameraHandler } from "../handlers/cameraHandler";
 import { PhysicsObjectBare } from "../exports/barePhysics";
-import { LevelScene } from "../scenes/levelScene";
 import { sceneController } from "../controllers/sceneController";
 import { HitboxType } from "../types/gamesTypes";
 import { Hitbox } from "../types/hitbox";
 import { Text } from "./../libraries/rapid-render/texture";
+import { levelHandler, LevelHandler } from "../handlers/levelHandlers";
 
 /*
     EDITOR CONTROLLER (MAIN)
     Orchestrates all editor system components and manages the overall editor state
 */
 
-export class EditorScene extends LevelScene
+export class EditorScene extends Scene
 {
     public active: boolean = false; // DOUBLES TRUTH WITH bare.levelEditorOpen
     public data: SettingsData;
@@ -51,7 +51,7 @@ export class EditorScene extends LevelScene
 
     saveLevelCallback: () => Promise<LevelData>;
 
-    get currentLevel2(): LevelScene
+    /*get currentLevel2(): LevelScene
     { 
         var scenes = sceneController.currentScenes;
         for (var scene of scenes)
@@ -62,12 +62,14 @@ export class EditorScene extends LevelScene
         }
 
         return null;
-    }
+    }*/
 
     constructor()
     {  
         super({ persistent: true });
         
+        this.AddClass(LevelHandler);
+
         this.SetupFileDropZone();
 
         this.SetHitboxData(); // KEEP IN HERE? TODO
@@ -98,10 +100,10 @@ export class EditorScene extends LevelScene
 
     OnSceneChanged()
     {
-        if (sceneController.Has(LevelScene))
+        /*if (sceneController.Has(LevelScene))
             this.editorButton.visible = true;
         else
-            this.editorButton.visible = false;
+            this.editorButton.visible = false;*/
     }
 
     override Start(): Promise<void>
@@ -560,7 +562,7 @@ export class EditorScene extends LevelScene
         var level = this.currentLevel;
     
         // SERIALIZE, DATA IS EASIER TO FETCH? NO NEED, TODO
-        this.SerializeLevel(level);
+        levelHandler.SerializeLevel(level);
 
         // GET HITBOX AND PIVOT
         var mainEntity = level.entitiesByLayer.OBJECTS[0];
@@ -651,8 +653,6 @@ export class EditorScene extends LevelScene
             this.Close(false); // DON'T WANT TO LOAD THE LEVEL
         }
 
-        this.currentLevel = null;
-
         this.editorButton.visible = false;
 
         //this.editorButton.removeEventListener('click', this.OnClickEditorButtonBound);
@@ -673,7 +673,7 @@ export class EditorScene extends LevelScene
         var level = (this.currentLevel as LevelData);
         var levelPath = this.currentLevelPath;
     
-        this.SerializeLevel(level);
+        levelHandler.SerializeLevel(level);
             
         try {
             const response = await fetch('/api/save-level', {
