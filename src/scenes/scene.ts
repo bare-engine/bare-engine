@@ -1,7 +1,7 @@
 import { globalEvents, GameMode, MakePath, pipes } from "../main";
 import { Color, FrameBufferObject, RenderTexture, Texture, Vec2 } from "../libraries/rapid-render";
 import { PoolHandler } from "../handlers/poolHandler";
-import { AwakePayload, BareEvent, SceneClass, Entity, GameObjectClass, Layer, LayerInfo, LevelData, SaveData, SceneOptions, SettingsData, UI_LAYER, SceneI, Events, CameraRenderInfo } from "../types/bareTypes";
+import { AwakePayload, BareEvent, SceneClass, Entity, GameObjectClass, Layer, LayerInfo, LevelData, SaveData, SceneOptions, SettingsData, UI_LAYER, SceneI, Events } from "../types/bareTypes";
 import { GameObject } from "../objects/gameObject";
 import { SettingsHandler as SettingsHandler } from "../handlers/settingsHandler";
 import { assetsHandler } from "../handlers/assetsHandler";
@@ -50,7 +50,6 @@ export class Scene implements SceneI
     public currentSettingsHandler: SettingsHandler;
 
     public objectController: ObjectController;
-
     private hitboxController: any; // ANY TO NOT INCLUDE HITBOXCONTROLLER AS DEPENDENCY
     private tweenController: any; 
     private componentController: any; 
@@ -58,6 +57,7 @@ export class Scene implements SceneI
     private physicsControllerSopiro: any; 
     private particleController: any; 
     private levelHandler: any; 
+    private cameraHandler: any; 
 
     get baseSettings(): SettingsData { return this.baseSettingsHandler.Get(); }
     get currentSettings(): SettingsData { return this.currentSettingsHandler.Get(); }
@@ -134,6 +134,7 @@ export class Scene implements SceneI
 
         globalEvents.emit(BareEvent.scene_awake);
 
+        BareEngine.SetControllerReferencesOnScene(this);
         await this.OnAwake(payload);
         BareEngine.SetControllerReferencesOnScene(this);
 
@@ -847,8 +848,8 @@ export class Scene implements SceneI
     {
         rapid.save();
 
-        this.SetCameraTransform();
-        
+        this.cameraHandler?.SetTransform();
+
         this.componentController?.PreRender();
         this.objectController.PreRender();
 
@@ -857,37 +858,14 @@ export class Scene implements SceneI
         this.objectController.Render();
         this.physicsControllerBare?.Render();
         this.physicsControllerSopiro?.Render();
+        this.particleController?.Render();
 
         this.OnRender();
 
         this.componentController?.PostRender();
         this.objectController.PostRender();
-        this.particleController?.Render();
 
         rapid.restore();
-    }
-
-    SetCameraTransform()
-    {
-        // GET CAMERA TRANSFORM
-        var cameraInfo:CameraRenderInfo; 
-        if (globalThis.cameraHandlerDirect && globalThis.cameraHandlerDirect.scene == this)
-        {
-            // THE CAMERA IS SET TO THIS SCENE EXCLUSIVELY
-            cameraInfo = globalThis.cameraHandlerDirect?.GetRenderInfo(bareEngine.levelEditorOpen);
-        }
-        else
-        {
-            cameraInfo = {position: new Vec2(0, 0), offset: new Vec2(0, 0), scale: 1 }
-        }
-
-        // SET TRANSFORM
-        rapid.matrixStack.translate(cameraInfo.offset.x, cameraInfo.offset.y);
-        rapid.renderCamera({
-            position: cameraInfo.position,
-            scale: 1 / cameraInfo.scale,
-            saveTransform: false
-        });
     }
 
     OnRender()
@@ -977,10 +955,10 @@ export class Scene implements SceneI
 
     ScreenToWorld(x:number, y:number)
     {
-        if (globalThis.cameraHandlerDirect && globalThis.cameraHandlerDirect.scene == this)
+        if (this.cameraHandler && this.cameraHandler.scene == this)
         {
             // THE CAMERA IS SET TO THIS SCENE EXCLUSIVELY
-            return globalThis.cameraHandlerDirect?.ScreenToWorld(x, y);
+            return this.cameraHandler?.ScreenToWorld(x, y);
         }
         else
         {
@@ -990,10 +968,10 @@ export class Scene implements SceneI
 
     WorldToScreen(x: number, y: number)
     {
-        if (globalThis.cameraHandlerDirect && globalThis.cameraHandlerDirect.scene == this)
+        if (this.cameraHandler && this.cameraHandler.scene == this)
         {
             // THE CAMERA IS SET TO THIS SCENE EXCLUSIVELY
-            return globalThis.cameraHandlerDirect?.WorldToScreen(x, y);
+            return this.cameraHandler?.WorldToScreen(x, y);
         }
         else
         {
@@ -1003,10 +981,10 @@ export class Scene implements SceneI
 
     GetCameraZoom(): number 
     {
-        if (globalThis.cameraHandlerDirect && globalThis.cameraHandlerDirect.scene == this)
+        if (this.cameraHandler && this.cameraHandler.scene == this)
         {
             // THE CAMERA IS SET TO THIS SCENE EXCLUSIVELY
-            return globalThis.cameraHandlerDirect?.GetZoom();
+            return this.cameraHandler?.GetZoom();
         }
         else
         {
@@ -1167,12 +1145,7 @@ export class Scene implements SceneI
 
         if (Ctor)
         {
-            // CUSTOM ARGS SETUP FOR HITBOXCONTROLLER
-            var args = [];
-            if (propertyName == "hitboxController")
-                args = [this.objectController];
-
-            (this as any)[propertyName] = new Ctor(...args);
+            (this as any)[propertyName] = new Ctor();
         }
     }
 

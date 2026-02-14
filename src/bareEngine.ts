@@ -2,9 +2,7 @@ import { sceneController } from "./controllers/sceneController";
 import { globalEvents, GameMode, pipes, Scene } from "./main";
 import { GameObject } from "./objects/gameObject";
 import { assetsHandler } from "./handlers/assetsHandler";
-import { BareEvent, CameraRenderInfo, SceneClass } from "./types/bareTypes";
-import { SaveDataHandler } from "./handlers/SaveDataHandler";
-import { Vec2 } from "./exports";
+import { BareEvent, SceneClass } from "./types/bareTypes";
 
 export class BareEngine
 {

@@ -8,6 +8,8 @@ import { globalEvents, GameMode, MakePath, pipes } from "../main";
 import { defaultEntityData } from "../types/bareData";
 import { sceneController } from "../controllers/sceneController";
 import { GameObject } from "../objects/gameObject";
+import { objectController } from "../controllers/objectController";
+import { EditorScene } from "../scenes/editorScene";
 
 export class LevelHandler
 {
@@ -79,7 +81,7 @@ export class LevelHandler
             }
         }
 
-        this.Clear();
+        bare.Clear();
         bare.doRender = false;
         await bare.OnBeforeLoadLevel();
 
@@ -391,7 +393,7 @@ export class LevelHandler
 
             LevelHandler.editorSceneRequested = true;
 
-            const { EditorScene } = await import("./../scenes/editorScene");
+            //const { EditorScene } = await import("../scenes/editorScene");
             sceneController.Add(EditorScene);
         }
     }

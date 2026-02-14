@@ -17,10 +17,10 @@ import { FileDropHandler } from "../handlers/fileDropHandler";
 import { cameraHandler } from "../handlers/cameraHandler";
 import { PhysicsObjectBare } from "../exports/barePhysics";
 import { sceneController } from "../controllers/sceneController";
-import { HitboxType } from "../types/gamesTypes";
+import { CameraScaleMode, HitboxType } from "../types/gamesTypes";
 import { Hitbox } from "../types/hitbox";
 import { Text } from "./../libraries/rapid-render/texture";
-import { levelHandler, LevelHandler } from "../handlers/levelHandlers";
+import { levelHandler, LevelHandler } from "../handlers/levelHandler";
 
 /*
     EDITOR CONTROLLER (MAIN)
@@ -90,6 +90,8 @@ export class EditorScene extends Scene
             this.editorButton.visible = false;
 
         bare.events.persistent.on(BareEvent.scene_changed, this.OnSceneChanged.bind(this));
+
+        cameraHandler.SetScaleMode(CameraScaleMode.Contain);
     }
 
     init()

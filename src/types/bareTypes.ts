@@ -212,12 +212,6 @@ export function SetUILayers<T extends Record<string, number>>(UILayers: T) {
   UILayer = UILayers as any;
 }
 
-export type CameraRenderInfo = {
-  position: Vec2; // camera center in world space (after clamping)
-  offset: Vec2;   // world offset so camera center maps to screen center
-  scale: number;  // final scale used for rendering
-};
-
 // EVENTS MONSTER - SINCE IT WANT TO EASILY ADD BARE-EVENTS AND LET IT TAKE USER STRINGS
 const ev = <T>() => undefined as T | undefined;
 
@@ -315,7 +309,6 @@ export interface Pipes {
   componentController_ProcessCompentsFromEntity: (entity: Entity, obj: GameObject) => void;
   componentController_AddComponent: (obj: GameObject, componentInstance: Component) => Component;
   
-  cameraHandler_GetRenderInfo: (levelEditorOpen: boolean) => CameraRenderInfo;
   cameraHandler_ScreenToWorld: (x: number, y: number) => Vec2;
   cameraHandler_WorldToScreen: (x: number, y: number) => Vec2;
   cameraHandler_GetZoom: () => number;

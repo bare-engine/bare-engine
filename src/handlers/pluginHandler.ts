@@ -7,6 +7,7 @@ import {  globalEvents } from "../main";
 import { OutlineShader } from "../shaders/outlineShader";
 import { BareClasses, ObjectController, sceneController } from "../exports";
 import { EditorScene } from "../scenes/editorScene";
+import { objectController } from "../controllers/objectController";
 
 // THIS PLUGIN CODE DOES NOT GET INCLUDED IN PRODUCTION
 // ALL CALLS SHOULD BE WRAPPED WITH __DEV__

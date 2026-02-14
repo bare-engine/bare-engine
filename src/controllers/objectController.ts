@@ -1,3 +1,4 @@
+import { BareEngine } from "../exports";
 import { GameObject } from "../objects/gameObject";
 import { UI_LAYER } from "../types/bareTypes";
 
@@ -307,3 +308,5 @@ export class ObjectController
         //this.layers = [];
     }
 }
+
+export const objectController = BareEngine.RegisterControllerProxy(ObjectController);

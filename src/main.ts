@@ -60,8 +60,7 @@ declare global
     var bare: Scene & BareEngine & Rapid;
     var currentSceneProcessing: Scene;
     
-    var objectController:ObjectController
-    var uiController:ObjectController
+    var uiController:ObjectController//
 
     var whitePixelTexture:Texture;
 
@@ -175,8 +174,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
 
             window.rapid = rapid;
 
-            window.objectController = new ObjectController();
-            window.uiController = new ObjectController();
+            window.uiController = new ObjectController();//
 
             const gl = rapid.gl;
             const glTexture:WebGLTexture | null = gl.createTexture();

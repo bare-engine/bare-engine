@@ -1,6 +1,7 @@
+import { BareEngine } from "../exports";
 import { Vec2 } from "../libraries/rapid-render";
 import { globalEvents, pipes, Scene } from "../main";
-import { BareEvent, type CameraRenderInfo, type Dimensions } from "../types/bareTypes";
+import { BareEvent, type Dimensions } from "../types/bareTypes";
 import { CameraScaleMode, Rectangle } from "../types/gamesTypes";
 import { Helper } from "../utils/helper";
 
@@ -42,16 +43,20 @@ class CameraHandler {
     });
 
     globalEvents.persistent.on(BareEvent.game_resize, () => this.CalculateZoomFit());
-    
-    globalEvents.persistent.on(BareEvent.game_clear, ({ full }: { full: boolean }) => {
-        //if (full)
-            this.ResetForStart();
-    });
 
-    pipes.set("cameraHandler_GetRenderInfo", (levelEditorOpen: boolean) => this.GetRenderInfo(levelEditorOpen));
     pipes.set("cameraHandler_ScreenToWorld", (x: number, y: number) => this.ScreenToWorld(x, y));
     pipes.set("cameraHandler_WorldToScreen", (x: number, y: number) => this.WorldToScreen(x, y));
     pipes.set("cameraHandler_GetZoom", () => this.GetZoom());
+  }
+
+  Start()
+  {
+      this.ResetForStart();
+  }
+
+  Clear()
+  {
+      this.ResetForStart();
   }
 
   ResetForStart()
@@ -59,7 +64,7 @@ class CameraHandler {
     this.dimensions.width = bare.width;
     this.dimensions.height = bare.height;
 
-    this.bounds = { x: 0, y: 0, width: bare.width, height: bare.height };
+    //this.bounds = { x: 0, y: 0, width: bare.width, height: bare.height };
 
     this.zoomFit = 1;
     this.zoom = 1;
@@ -196,8 +201,11 @@ class CameraHandler {
         this.zoomFit = 1;
   }
 
-  GetRenderInfo(levelEditorOpen: boolean): CameraRenderInfo
+  SetTransform(): void
   {
+    //if (this.position.x == 0 && this.position.y == 0 && this.zoom == 1)
+    //  return;
+
     const scale = this.GetZoom();
 
     const screenW = Math.max(1, rapid.width);
@@ -208,7 +216,7 @@ class CameraHandler {
 
     const hasBounds = this.bounds.width > 0 && this.bounds.height > 0;
 
-    if (!levelEditorOpen && hasBounds)
+    if (!bareEngine.levelEditorOpen && hasBounds)
     {
         const bx = this.bounds.x;
         const by = this.bounds.y;
@@ -235,11 +243,13 @@ class CameraHandler {
     this.offset.x = -screenW / 2 / scale;
     this.offset.y = -screenH / 2 / scale;
 
-    return {
-      position: this.position,
-      offset: this.offset,
-      scale,
-    };
+    // SET TRANSFORM
+    rapid.matrixStack.translate(this.offset.x, this.offset.y);
+    rapid.renderCamera({
+        position: this.position,
+        scale: 1 / scale,
+        saveTransform: false
+    });
   }
 
   ScreenToWorld(x: number, y: number)
@@ -271,31 +281,4 @@ class CameraHandler {
   }
 }
 
-// CREATE CAMERA PROXY, SO THAT WE CAN INTERCEPT cameraHandler REFERENCES WHEN CALLING ITS METHODS
-// AND SET THE scene FIELD. THEN WE USE THAT TO APPLY THE CAMERA TRANSFORM ONLY FOR THAT SCENE
-// THIS PREVENTS NEEDING TO HAVE CAMERA HANDLERS ON EVERY SCENE, WHICH IS REALLY NOT NEEDED
-// A GAME WILL HAVE ONE SCENE WITH A CAMERA HANDLER MOST OF THE TIME, SO NOW THAT'S ENFORCED
-// CAN ALWAYS COME BACK TO THIS WHEN THAT TURNS OUT UNTRUE
-function createProxy<T extends object>(target: T): T
-{
-    return new Proxy(target, {
-        get(obj, prop, receiver)
-        {
-            (obj as CameraHandler).scene = window.currentSceneProcessing;
-
-            const value = Reflect.get(obj, prop, receiver);
-            
-            // preserve method "this"
-            if (typeof value === "function")
-            {
-                return value.bind(obj);
-            }
-
-            return value;
-        }
-    });
-}
-
-globalThis.cameraHandlerDirect = new CameraHandler();
-export const cameraHandler = createProxy(globalThis.cameraHandlerDirect);
-globalThis.cameraHandler = cameraHandler;
+export const cameraHandler = BareEngine.RegisterControllerProxy(CameraHandler);

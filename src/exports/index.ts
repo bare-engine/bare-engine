@@ -14,6 +14,7 @@ export type { SceneI } from "../types/bareTypes";
 
 export { PluginHandler as BarePlugin } from "../handlers/pluginHandler";
 export { plugin } from "../handlers/pluginHandler";
+export { LevelHandler } from "../handlers/levelHandler";
 
 // Controllers
 export { BaseComponent } from "../controllers/componentController";

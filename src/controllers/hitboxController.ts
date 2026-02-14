@@ -6,9 +6,8 @@ import { HitboxType } from "../types/gamesTypes";
 import { BareEventPayload, CollisionHandlingType, UI_LAYER, BareEvent, Events } from '../types/bareTypes';
 import { Vec2 } from "../libraries/rapid-render";
 import { mouseController } from "./mouseController";
-import { ObjectController } from "./objectController";
-import { Emitter } from "../libraries/mitt";
 import { BareEngine } from "../bareEngine";
+import { objectController } from "./objectController";
 
 type AnyPress = (go: any, ...args: any[]) => any;
 
@@ -24,17 +23,11 @@ type ButtonHandlers<Arg extends GameObject = GameObject> = {
 export class HitboxController
 {
     public active: boolean = true;
-    private objectController: ObjectController;
 
     private currentHitboxHover: Hitbox | null = null;
     private currentHitboxDown: Hitbox | null = null;
 
     private exclusiveLayers: int[] = [];
-
-    constructor(objectController: ObjectController, events:Emitter<Events>)
-    {
-        this.objectController = objectController;
-    }
 
 	Start(): void
 	{
@@ -67,7 +60,7 @@ export class HitboxController
             }
         }
         
-        this.HandleUpdate(this.objectController.GetLayers(), false);
+        this.HandleUpdate(objectController.GetLayers(), false);
     }
 
     Render()
@@ -75,7 +68,7 @@ export class HitboxController
         if (!window.debug)
             return;
 
-        var objs = this.objectController.GetAllObjects();
+        var objs = objectController.GetAllObjects();
 
         for (var i = objs.length - 1; i >= 0; i--)
         {
