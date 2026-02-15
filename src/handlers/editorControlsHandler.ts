@@ -11,6 +11,7 @@ import { mouseController } from "../controllers/mouseController";
 import { cameraHandler } from "./cameraHandler";
 import { PhysicsObjectBare } from "../exports/barePhysics";
 import { EditorScene } from "../scenes/editorScene";
+import { objectController } from "../controllers/objectController";
 
 /*
     BUILD CONTROLS INGAME
@@ -57,19 +58,19 @@ export class EditorControlsHandler {
 
     init()
     {
-        bare.events.persistent.on(BareEvent.pointer_down, this.PointerDown.bind(this));
-        bare.events.persistent.on(BareEvent.pointer_move, this.PointerMove.bind(this));
-        bare.events.persistent.on(BareEvent.pointer_up, this.PointerUp.bind(this));
-        bare.events.persistent.on(BareEvent.pointer_doubleClick, this.DoubleClick.bind(this));
-        bare.events.persistent.on(BareEvent.game_postRender, this.PostRender.bind(this));
-        bare.events.persistent.on(BareEvent.key_pressed, this.KeyPressed.bind(this));
-        bare.events.persistent.on(BareEvent.key_released, this.KeyReleased.bind(this));
-        bare.events.persistent.on(BareEvent.editor_layerSelected, this.LayerSelected.bind(this));
+        bare.events.on(BareEvent.pointer_down, this.PointerDown.bind(this));
+        bare.events.on(BareEvent.pointer_move, this.PointerMove.bind(this));
+        bare.events.on(BareEvent.pointer_up, this.PointerUp.bind(this));
+        bare.events.on(BareEvent.pointer_doubleClick, this.DoubleClick.bind(this));
+        bare.events.on(BareEvent.game_postRender, this.PostRender.bind(this));
+        bare.events.on(BareEvent.key_pressed, this.KeyPressed.bind(this));
+        bare.events.on(BareEvent.key_released, this.KeyReleased.bind(this));
+        bare.events.on(BareEvent.editor_layerSelected, this.LayerSelected.bind(this));
     }
 
     KeyPressed({ key, allKeys }: BareEventPayload['key_pressed'])
     {
-        if (!this.editorScene.active)
+        if (!this.editorScene.opened)
             return;
         
         if (allKeys[0] == 'control')
@@ -109,7 +110,7 @@ export class EditorControlsHandler {
 
     KeyReleased({ key, allKeys }: BareEventPayload['key_released'])
     {
-        if (!this.editorScene.active)
+        if (!this.editorScene.opened)
             return;
         
         if (key == 'control')
@@ -123,7 +124,7 @@ export class EditorControlsHandler {
         if (this.MouseIsOnEditor(event))
             return;
 
-        if (!this.editorScene.active)
+        if (!this.editorScene.opened)
             return;
 
         if (this.draggingLevelEntity)
@@ -209,7 +210,7 @@ export class EditorControlsHandler {
     }
     
     private PointerMove({ mouseX, mouseY, event }: BareEventPayload['pointer_move']): void {
-        if (!this.editorScene.active)
+        if (!this.editorScene.opened)
             return;
 
         if (mouseController.IsMiddleMouseDown()) {
@@ -242,7 +243,7 @@ export class EditorControlsHandler {
 
     private PointerUp({ mouseX, mouseY, event, isLeftButton }: BareEventPayload['pointer_up']): void
     {
-        if (!this.editorScene.active)
+        if (!this.editorScene.opened)
             return;
 
         if (this.actionThisFrame == 'selectionRect')
@@ -255,7 +256,7 @@ export class EditorControlsHandler {
             
         this.actionThisFrame = '';
 
-        if (!this.editorScene.active)
+        if (!this.editorScene.opened)
             return;
 
         if (!(event.button == 0 || event.button == 2))
@@ -266,7 +267,7 @@ export class EditorControlsHandler {
     
     private DoubleClick({ mouseX, mouseY, event }: BareEventPayload['pointer_doubleClick']): void
     {
-        if (!this.editorScene.active)
+        if (!this.editorScene.opened)
             return;
         
         var multiSelect = keyboardController.IsKeyDown("shift");
@@ -384,7 +385,7 @@ export class EditorControlsHandler {
 
     private OnScroll(ev: WheelEvent)
     {
-        if (!this.editorScene.active)
+        if (!this.editorScene.opened)
             return;
 
         if (this.MouseIsOnEditor(ev))
@@ -505,7 +506,7 @@ export class EditorControlsHandler {
     }
 
     Update(_deltaTime?: number) {
-        if (!this.editorScene.active)
+        if (!this.editorScene.opened)
             return;
 
         if (this.draggingLevelEntity)
@@ -595,7 +596,7 @@ export class EditorControlsHandler {
 
     PostRender()
     {
-        if (!this.editorScene.active)
+        if (!this.editorScene.opened)
             return;
         
         if (this.actionThisFrame == 'selectionRect')

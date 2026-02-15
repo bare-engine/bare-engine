@@ -29,7 +29,7 @@ import { levelHandler, LevelHandler } from "../handlers/levelHandler";
 
 export class EditorScene extends Scene
 {
-    public active: boolean = false; // DOUBLES TRUTH WITH bare.levelEditorOpen
+    public opened: boolean = false; // DOUBLES TRUTH WITH bare.levelEditorOpen
     public data: SettingsData;
     
     // Component classes
@@ -135,8 +135,12 @@ export class EditorScene extends Scene
                 if (levelPathOrData.name == this.currentLevel?.name)
                     return; // ALREADY IN TARGET EDITOR AT TARGET LEVEL
 
+        var levelName = '';
         if (levelPathOrData == '')
-            levelPathOrData = `${bare.levelPath}/${SaveData.currentLevelStr}.json`;
+        {
+            levelName = SaveData.currentLevelStr;
+            levelPathOrData = `${bare.levelPath}/${levelName}.json`;
+        }
 
         //if (settingsHandler != bare.currentSettingsHandler)
         {
@@ -149,11 +153,7 @@ export class EditorScene extends Scene
 
         this.saveLevelCallback = saveLevelCallback.bind(this);
 
-        window.gameMode = GameMode.Editor;
-
         globalEvents.on(BareEvent.game_preRender, this.PreRender.bind(this));
-
-        this.active = true;
 
         const el = document.getElementById("editor-content");
         const hasEditorContent = (el.children.length > 0);
@@ -174,7 +174,10 @@ export class EditorScene extends Scene
         
         this.backgroundColorOrig = rapid.backgroundColor;
 
-        await this.LoadLevel(levelPathOrData);
+        await this.LoadLevel(levelName);
+
+        window.gameMode = GameMode.Editor;
+        this.opened = true;
 
         if (bare.currentSettings.showUI) 
         {
@@ -217,7 +220,7 @@ export class EditorScene extends Scene
 
     Close(loadLevelAfter: boolean = true)
     {
-        this.active = false;
+        this.opened = false;
 
         rapid.backgroundColor = this.backgroundColorOrig;
         
@@ -229,6 +232,7 @@ export class EditorScene extends Scene
         globalEvents.emit(BareEvent.editor_closed, {name: bare.currentSettings.name || 'levelEditor'});
 
         // DISABLE THE LEVEL CACHE, SO LEVELS GETS RELOADED
+        // DON'T NECESSARY WANT SAVEDATA FOR EACH LEVEL - TODO
         SaveData.levelCache.clear();
         SaveDataHandler.Save();
         
@@ -281,8 +285,8 @@ export class EditorScene extends Scene
             return;
         }
 
-        sceneController.Goto(EditorScene, {levelInput: SaveData.currentLevelStr});
-        //this.Open();
+        //sceneController.Goto(EditorScene, {levelInput: SaveData.currentLevelStr});
+        this.Open();
     }
 
     private SetupFileDropZone()
@@ -420,7 +424,7 @@ export class EditorScene extends Scene
     }
 
     PreRender() {
-        if (!this.active)
+        if (!this.opened)
             return;
 
         if (!this.currentLevel)
@@ -778,31 +782,39 @@ export class EditorScene extends Scene
 
 class Button extends GameObject
 {
-    text: string;
+    text: Text;
+    marge: number = 10;
 
     constructor(text: string)
     {
         super();
         this.name = "button: " + text;
-        this.text = text;
+        this.text = new Text({text: text, fontSize: 22, fontFamily: 'monospace', color: '#fff'});
     }
 
     override OnRender(): void
     {
-        var text = new Text({text: this.text, fontSize: 22, fontFamily: 'monospace', color: '#fff'});
-        var marge = 10;
-
         bare.renderRect({ 
             position: new Vec2(0, 0), 
-            width: text.width + marge * 2, 
-            height: text.height + marge * 2, 
+            width: this.text.width + this.marge * 2, 
+            height: this.text.height + this.marge * 2, 
             color: Color.fromHex('#014f00')
         });
 
         bare.renderSprite({
-            texture: text, 
-            position: new Vec2(marge, marge)
+            texture: this.text, 
+            position: new Vec2(this.marge, this.marge)
         });
+    }
+
+    get width(): number
+    {
+        return this.text.width + this.marge * 2
+    }
+
+    get height(): number
+    {
+        return this.text.height + this.marge * 2
     }
 }
 

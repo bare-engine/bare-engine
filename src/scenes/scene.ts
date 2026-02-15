@@ -107,8 +107,7 @@ export class Scene implements SceneI
         
         this.sceneOptions = options;
 
-        this.objectController = new ObjectController();
-
+        this.AddClass(ObjectController);
         this.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT
 
         if (!pipes.has("cameraHandler_ScreenToWorld")) //IF CAMERAHANDLER HAS NOT ALREADY SET THESE
@@ -1057,13 +1056,14 @@ export class Scene implements SceneI
 
     async Restart(full:boolean = false)
     {
-        this.Clear(full);
+        this.Clear(true);
         await this.Start();
     }
 
     Clear(full:boolean = false)
     {
-        this.events.clear();
+        if (full)
+            this.events.clear();
 
         globalEvents.emit(BareEvent.game_clear, { full: full });
 

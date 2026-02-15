@@ -2,7 +2,8 @@ import { sceneController } from "./controllers/sceneController";
 import { globalEvents, GameMode, pipes, Scene } from "./main";
 import { GameObject } from "./objects/gameObject";
 import { assetsHandler } from "./handlers/assetsHandler";
-import { BareEvent, SceneClass } from "./types/bareTypes";
+import { BareEvent, Events, SceneClass } from "./types/bareTypes";
+import { EventArgs } from "./libraries/mitt";
 
 export class BareEngine
 {
@@ -175,7 +176,7 @@ export class BareEngine
 
         //SaveDataHandler.Clear(); // DONT HARD REF THIS - TODO
         
-        bare.Clear(true);
+        sceneController.Clear();
         assetsHandler.Clear();
         
         cancelAnimationFrame(this.RunMainLoopId);
@@ -187,6 +188,28 @@ export class BareEngine
     }
 
 
+
+    SendEvent<K extends keyof Events>(type: K, ...event: EventArgs<Events[K]>): void
+    {
+        // SEND GLOBALLY
+        globalEvents.emit(type, ...event);
+
+        var origScene = window.currentSceneProcessing!;
+
+        // SEND LOCALLY - TO ACTIVE SCENES
+        var scenes = sceneController.GetAllScenes();
+        for (var scene of scenes)
+        {
+            if (!scene.active)
+                continue;
+
+            BareEngine.SetControllerReferencesOnScene(scene);
+            scene.events.emit(type, ...event);
+        }
+
+        // RESET GLOBAL REFERENCES
+        BareEngine.SetControllerReferencesOnScene(origScene);
+    }
 
     
     private static controllerCallbacks: any[] = [];
@@ -250,6 +273,9 @@ export class BareEngine
             // THIS PASSES ON THE CONTROLLER INSTANCE FROM THE SCENE TO THE CALLBACK
             // WHICH WILL SET IT AS THE GLOBAL REFERENCE
             callback(scene[controllerName]);
+
+            if (scene[controllerName].scene)
+                scene[controllerName].scene = scene;
 
             i++;
         }

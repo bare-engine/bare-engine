@@ -288,7 +288,7 @@ export class ObjectController
         return false;
     }
     
-    Clear(includingPersistent: boolean = false)
+    Clear(includingPersistent: boolean = true)
     {
         var layers = this.GetLayers();
         for (var i = 0; i < layers.length; i++)

@@ -81,7 +81,7 @@ export class LevelHandler
             }
         }
 
-        bare.Clear();
+        bare.Clear(true); // CLEARS EVENTS TOO
         bare.doRender = false;
         await bare.OnBeforeLoadLevel();
 

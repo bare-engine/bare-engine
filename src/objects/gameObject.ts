@@ -5,6 +5,7 @@ import { Helper } from '../utils/helper';
 import { MakePath, Scene } from '../main';
 import { Vec2, Texture, Color, GLShader, Uniform, MaskType } from "../libraries/rapid-render";
 import type { Component, Ctor } from "../types/bareTypes";
+import { objectController } from "../controllers/objectController";
 
 export class Transform {
     position = new Vec2();
@@ -410,6 +411,9 @@ export class GameObject
 
     RemoveMask()
     {
+        if (!this.mask)
+            return;
+        
         this.mask.visible = true;
         this.mask = null;
     }
@@ -1109,6 +1113,8 @@ export class GameObject
 
         this.transform = new Transform();
         this.innerTransform = new Transform();
+
+        this.RemoveMask();
 
         this.SetPivot(0, 0);
         this.RemoveShaders();

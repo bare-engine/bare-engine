@@ -4,6 +4,7 @@ import { globalEvents, MakePath } from "../main";
 import { FlashShader } from "../shaders/flashShader";
 import { TweenTo } from "../controllers/tweenController";
 import { EditorScene } from '../scenes/editorScene';
+import { objectController } from '../controllers/objectController';
 
 /*
     BUILD SETUP/CONTROLS UI
@@ -465,7 +466,9 @@ export class EditorUIHandler {
             event.preventDefault();
 
             if (SaveData.currentLevelStr != '')
-                trace('Saving current level...'); //levelController.LoadCurrentLevel();
+            {
+                this.editorScene.Close();
+            }
             else
                 bare.Restart(); // THERE IS NO LEVEL, JUST RESTART. THIS HAPPENS FOR HITBOX EDITOR
         });
