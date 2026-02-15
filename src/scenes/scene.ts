@@ -42,9 +42,11 @@ export class Scene implements SceneI
     static levelPath: string = "_data/levels";
     static soundPath: string = "sounds";
 
-    public active: boolean = true;
     public started: boolean = false;
+    public enabled: boolean = true;
+    public paused: boolean = false;
     public persistent: boolean = false;
+    public UI: boolean = false;
 
     public baseSettingsHandler: SettingsHandler = new SettingsHandler();
     public currentSettingsHandler: SettingsHandler;
@@ -106,6 +108,9 @@ export class Scene implements SceneI
             options.entityData = defaultEntityData;
         
         this.sceneOptions = options;
+
+        this.UI = options.UI ?? false;
+        this.persistent = options.persistent ?? false;
 
         this.AddClass(ObjectController);
         this.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT
@@ -820,8 +825,7 @@ export class Scene implements SceneI
         this.hitboxController?.Update(deltaTime);
         this.objectController.Update(deltaTime);
         this.tweenController?.Update(bareEngine.time); // STUPID TIME VAR - TODO
-        this.physicsControllerBare?.Update(deltaTime);
-        this.physicsControllerSopiro?.Update(deltaTime);
+        (this.physicsControllerBare || this.physicsControllerSopiro)?.Update(deltaTime);
         this.componentController?.Update(deltaTime);
         this.particleController?.Update(deltaTime);
 
@@ -849,14 +853,15 @@ export class Scene implements SceneI
 
         this.cameraHandler?.SetTransform();
 
+        this.OnPreRender();
+
         this.componentController?.PreRender();
         this.objectController.PreRender();
 
         this.hitboxController?.Render();
         this.componentController?.Render();
         this.objectController.Render();
-        this.physicsControllerBare?.Render();
-        this.physicsControllerSopiro?.Render();
+        (this.physicsControllerBare || this.physicsControllerSopiro)?.Render();
         this.particleController?.Render();
 
         this.OnRender();
@@ -864,12 +869,24 @@ export class Scene implements SceneI
         this.componentController?.PostRender();
         this.objectController.PostRender();
 
+        this.OnPostRender();
+
         rapid.restore();
+    }
+
+    OnPreRender()
+    {
+        // FOR OVERRIDE
     }
 
     OnRender()
     {
         // FOR OVERRIDE   
+    }
+
+    OnPostRender()
+    {
+        // FOR OVERRIDE
     }
 
     /**

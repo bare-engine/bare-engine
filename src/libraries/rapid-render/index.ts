@@ -1,12 +1,12 @@
 import Rapid from "./render";
 import GLShader from "./webgl/glshader";
-import { Text } from "./texture";
+import { BareText } from "./texture";
 import { Uniform } from "./webgl/uniform";
 import { spriteAttributes, graphicAttributes } from "./regions/attributes";
 import { ParticleEmitter } from "./particle";
 
 export {
-    Text,
+    BareText,
     Rapid,
     GLShader,
     Uniform,

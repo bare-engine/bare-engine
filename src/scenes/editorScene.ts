@@ -19,7 +19,6 @@ import { PhysicsObjectBare } from "../exports/barePhysics";
 import { sceneController } from "../controllers/sceneController";
 import { CameraScaleMode, HitboxType } from "../types/gamesTypes";
 import { Hitbox } from "../types/hitbox";
-import { Text } from "./../libraries/rapid-render/texture";
 import { levelHandler, LevelHandler } from "../handlers/levelHandler";
 
 /*
@@ -45,9 +44,6 @@ export class EditorScene extends Scene
     
     public hitboxDataHandler: SettingsHandler = new SettingsHandler();
     get hitboxData(): SettingsData { return this.hitboxDataHandler.Get(); }
-
-    editorButton: Button;
-    OnClickEditorButtonBound: () => void;
 
     saveLevelCallback: () => Promise<LevelData>;
 
@@ -79,19 +75,11 @@ export class EditorScene extends Scene
 
     OnStart(): void | Promise<void>
     {
-        this.editorButton = new Button("Open Editor");
-        this.AddGameObject(this.editorButton);
-        this.editorButton.save = false;
-
-        this.editorButton.OnPointerDown(this.OnClickEditorButton.bind(this));
-
-        // HIDE EDITOR BUTTON IN PRODUCTION
-        if (!window.isLocalhost)
-            this.editorButton.visible = false;
-
         bare.events.persistent.on(BareEvent.scene_changed, this.OnSceneChanged.bind(this));
 
         cameraHandler.SetScaleMode(CameraScaleMode.Contain);
+
+        this.Open();
     }
 
     init()
@@ -124,6 +112,9 @@ export class EditorScene extends Scene
                 globalThis.plugin?.AddDebugAction("Toggle Level Editor", () => this.Toggle(bare.baseSettingsHandler));
         }
 
+        this.editorControlsHandler.editorScene = this;
+        this.editorUIHandler.editorScene = this;
+
         return super.Start();
     }
 
@@ -153,8 +144,6 @@ export class EditorScene extends Scene
 
         this.saveLevelCallback = saveLevelCallback.bind(this);
 
-        globalEvents.on(BareEvent.game_preRender, this.PreRender.bind(this));
-
         const el = document.getElementById("editor-content");
         const hasEditorContent = (el.children.length > 0);
 
@@ -167,13 +156,14 @@ export class EditorScene extends Scene
         this.editorUIHandler.PopulateWithData(this.data);
         this.editorUIHandler.SyncSettingsUI(this.gridActive, this.gridSize);
 
-        this.editorButton.visible = false;
-
         this.editorControlsHandler.OpenEditor();
         this.editorUIHandler.OpenEditor();
         
         this.backgroundColorOrig = rapid.backgroundColor;
 
+        sceneController.DisableAllScenes();
+        this.enabled = true;
+        
         await this.LoadLevel(levelName);
 
         window.gameMode = GameMode.Editor;
@@ -224,8 +214,6 @@ export class EditorScene extends Scene
 
         rapid.backgroundColor = this.backgroundColorOrig;
         
-        this.editorButton.visible = true;
-
         this.editorControlsHandler.Close();
         this.editorUIHandler.Close();
 
@@ -237,6 +225,9 @@ export class EditorScene extends Scene
         SaveDataHandler.Save();
         
         window.gameMode = GameMode.Game; // SETTING IT IN BARE.START() NOW, BUT ALSO KINDA MAKES SENSE HERE
+
+        sceneController.Remove(EditorScene); // this DIDN'T WORK, FIX! TODO
+        sceneController.EnableAllScenes();
 
         //if (loadLevelAfter)
         //    levelController.LoadCurrentLevel();
@@ -275,18 +266,6 @@ export class EditorScene extends Scene
         
         this.Clear();
         await this.Open(levelPath, saveLevelCallback, settingsHandler);
-    }
-
-    async OnClickEditorButton()
-    {
-        if (SaveData.currentLevelStr === '')
-        {
-            console.warn('[editor] No level loaded, cannot open editor');
-            return;
-        }
-
-        //sceneController.Goto(EditorScene, {levelInput: SaveData.currentLevelStr});
-        this.Open();
     }
 
     private SetupFileDropZone()
@@ -423,7 +402,8 @@ export class EditorScene extends Scene
             this.editorControlsHandler.SetCurrentPreviewEntity(null);*/
     }
 
-    PreRender() {
+    OnPreRender()
+    {
         if (!this.opened)
             return;
 
@@ -437,7 +417,6 @@ export class EditorScene extends Scene
             width: this.currentLevel.dimensions.width,
             height: this.currentLevel.dimensions.height,
             color: this.currentLevel.background?.color ? Color.fromHex(this.currentLevel.background.color) : Color.fromHex('666666'),
-            points: [],
         });
 
         if (!this.gridActive)
@@ -658,13 +637,7 @@ export class EditorScene extends Scene
         {
             this.Close(false); // DON'T WANT TO LOAD THE LEVEL
         }
-
-        if (this.editorButton)
-            this.editorButton.visible = false;
-
-        //this.editorButton.removeEventListener('click', this.OnClickEditorButtonBound);
     }
-
 
 
 
@@ -780,43 +753,6 @@ export class EditorScene extends Scene
     }
 } 
 
-class Button extends GameObject
-{
-    text: Text;
-    marge: number = 10;
-
-    constructor(text: string)
-    {
-        super();
-        this.name = "button: " + text;
-        this.text = new Text({text: text, fontSize: 22, fontFamily: 'monospace', color: '#fff'});
-    }
-
-    override OnRender(): void
-    {
-        bare.renderRect({ 
-            position: new Vec2(0, 0), 
-            width: this.text.width + this.marge * 2, 
-            height: this.text.height + this.marge * 2, 
-            color: Color.fromHex('#014f00')
-        });
-
-        bare.renderSprite({
-            texture: this.text, 
-            position: new Vec2(this.marge, this.marge)
-        });
-    }
-
-    get width(): number
-    {
-        return this.text.width + this.marge * 2
-    }
-
-    get height(): number
-    {
-        return this.text.height + this.marge * 2
-    }
-}
 
 //export const editorController = new EditorController();
 //globalThis.editorController = editorController;

@@ -361,8 +361,7 @@ export class GameObject
                 offset: new Vec2(0, 0),
                 radius: 4 / bare.GetCameraZoom(),
                 color: new Color(0, 0, 0, 255),
-                segments: 16,
-                points: [],
+                segments: 16
             });
 
             rapid.restore();
@@ -413,7 +412,7 @@ export class GameObject
     {
         if (!this.mask)
             return;
-        
+
         this.mask.visible = true;
         this.mask = null;
     }

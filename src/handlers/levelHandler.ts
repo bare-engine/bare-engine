@@ -1,19 +1,19 @@
 
 import { BareEngine } from "../bareEngine";
-import { Helper } from "../utils/helper";
-import { Color, Texture } from "../libraries/rapid-render";
-import { assetsHandler } from "./assetsHandler";
-import { Entity, LevelData, Component, Layer, SaveData, BareEvent } from '../types/bareTypes';
-import { globalEvents, GameMode, MakePath, pipes } from "../main";
-import { defaultEntityData } from "../types/bareData";
-import { sceneController } from "../controllers/sceneController";
-import { GameObject } from "../objects/gameObject";
 import { objectController } from "../controllers/objectController";
-import { EditorScene } from "../scenes/editorScene";
+import { sceneController } from "../controllers/sceneController";
+import { Color, Texture } from "../libraries/rapid-render";
+import { GameMode, globalEvents, MakePath, pipes } from "../main";
+import { GameObject } from "../objects/gameObject";
+import { EditorUIScene } from "../scenes/editorUIScene";
+import { defaultEntityData } from "../types/bareData";
+import { BareEvent, Component, Entity, Layer, LevelData, SaveData } from '../types/bareTypes';
+import { Helper } from "../utils/helper";
+import { assetsHandler } from "./assetsHandler";
 
 export class LevelHandler
 {
-    private static editorSceneRequested: boolean = false;
+    private static editorUISceneRequested: boolean = false;
 
     currentLevel: LevelData;
     levelCache: Map<string, LevelData> = new Map();
@@ -138,6 +138,7 @@ export class LevelHandler
         trace('Level loaded:', levelStr);
         
         globalEvents.emit(BareEvent.level_loaded, {levelStr: levelStr, level: this.currentLevel});
+        bare.events.emit(BareEvent.level_loaded, {levelStr: levelStr, level: this.currentLevel});
 
         return level;
     }
@@ -388,13 +389,13 @@ export class LevelHandler
     {
         if (__DEV__)
         {
-            if (LevelHandler.editorSceneRequested)
+            if (LevelHandler.editorUISceneRequested)
                 return;
 
-            LevelHandler.editorSceneRequested = true;
+            LevelHandler.editorUISceneRequested = true;
 
             //const { EditorScene } = await import("../scenes/editorScene");
-            sceneController.Add(EditorScene);
+            sceneController.Add(EditorUIScene);
         }
     }
 }

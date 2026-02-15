@@ -40,7 +40,7 @@ export class SceneController
             if (moneThanOneScene)
                 BareEngine.SetControllerReferencesOnScene(scene);
 
-            if (scene.started)
+            if (scene.started && scene.enabled && !scene.paused)
                 scene.Update(deltaTime);
         }
     }
@@ -49,7 +49,7 @@ export class SceneController
     {
         for (var scene of this.currentScenes)
         {
-            if (scene.started)
+            if (scene.started && scene.enabled)
                 scene.Render();
         }
     }
@@ -81,8 +81,7 @@ export class SceneController
         else
             this.currentScenes.push(scene);
 
-        if (currentScene)
-            BareEngine.SetControllerReferencesOnScene(currentScene); // DON'T WANT TO SWITCH SCENES
+        BareEngine.SetControllerReferencesOnScene(newScene);
         
         await newScene.Awake(payload);
 
@@ -95,16 +94,23 @@ export class SceneController
         return newScene;
     }
 
-    Remove(scene: Scene, i = -1): void
+    Remove<T extends Scene>(scene: Scene | SceneClass<T>, i = -1): void
     {
-        var i = (i == -1 ? this.currentScenes.indexOf(scene) : i);
-        if (i != -1)
-        {
-            scene.Clear();
-            this.currentScenes.splice(i, 1);
+        const targetIndex = (i === -1)
+            ? (typeof scene === "function"
+                ? this.currentScenes.findIndex(current => current instanceof scene)
+                : this.currentScenes.indexOf(scene))
+            : i;
 
-            globalEvents.emit(BareEvent.scene_removed, { scene: scene });
-            globalEvents.emit(BareEvent.scene_changed, { scene: scene, type: "removed" });
+        const targetScene = this.currentScenes[targetIndex];
+
+        if (targetIndex !== -1 && targetScene)
+        {
+            targetScene.Clear();
+            this.currentScenes.splice(targetIndex, 1);
+
+            globalEvents.emit(BareEvent.scene_removed, { scene: targetScene });
+            globalEvents.emit(BareEvent.scene_changed, { scene: targetScene, type: "removed" });
         }
         else
         {
@@ -133,6 +139,22 @@ export class SceneController
             .map(scene => scene.objectController)
             .flatMap(controller => controller.GetLayers().flat());
     }
+
+    DisableAllScenes()
+    {
+        for (var scene of this.currentScenes)
+        {
+            scene.enabled = false;
+        }
+    }
+
+    EnableAllScenes()
+    {
+        for (var scene of this.currentScenes)
+        {
+            scene.enabled = true;
+        }
+    }
     
     SendEvent<K extends keyof Events>(type: K, ...event: EventArgs<Events[K]>): void
     {
@@ -140,6 +162,22 @@ export class SceneController
         {
             if (scene.started)
                 scene.events.emit(type, ...event);
+        }
+    }
+
+    OnResize( prevWidth: number, prevHeight: number, newWidth: number, newHeight: number)
+    {
+        for (var scene of this.currentScenes)
+        {
+            if (!scene.UI)
+                continue;
+            
+            var objs = scene.objectController.GetAllObjects();
+            for (var i = 0; i < objs.length; i++)
+            {
+                var obj = objs[i];
+                obj.SetPosition(obj.x * newWidth / prevWidth, obj.y * newHeight / prevHeight);
+            }
         }
     }
 }

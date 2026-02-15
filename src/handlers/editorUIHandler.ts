@@ -16,7 +16,7 @@ export class EditorUIHandler {
 
     private isMinimized: boolean = false;
     private lastMinimize: number = 0;
-    private editorScene: EditorScene;
+    public editorScene: EditorScene;
 
     private data: SettingsData;
     private gridToggleEl: HTMLElement | null = null;

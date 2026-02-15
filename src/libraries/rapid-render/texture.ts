@@ -87,7 +87,7 @@ class TextureCache {
      * @returns A new `Text` instance.
      */
     createText(options: ITextTextureOptions) {
-        return new Text(options)
+        return new BareText(options)
     }
     /**
      * Destroy the texture
@@ -417,7 +417,7 @@ class RenderTexture extends Texture {
  * @ignore
  */
 export const SCALEFACTOR = 2
-class Text extends Texture {
+class BareText extends Texture {
     private options: ITextTextureOptions;
     protected override scale: number = 1 / SCALEFACTOR
     text: string;
@@ -618,7 +618,7 @@ class FrameBufferObject extends BaseTexture {
 }
 
 export {
-    Text,
+    BareText,
     Texture,
     RenderTexture,
     BaseTexture,

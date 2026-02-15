@@ -365,6 +365,7 @@ export interface SceneI
 export type SceneOptions = {
     entityData?: SettingsData;
     persistent?: boolean;
+    UI?: boolean;
 }
 
 export type SceneClass<T extends Scene = Scene> = new (sceneOptions?: SceneOptions) => T;

@@ -23,7 +23,7 @@ export class EditorControlsHandler {
     private draggingLevelEntity: GameObject | null = null;
     private dragOffset: Vec2;
     
-    private editorScene: EditorScene;
+    public editorScene: EditorScene;
 
     private actionThisFrame: string = '';
 

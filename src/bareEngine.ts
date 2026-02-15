@@ -64,16 +64,7 @@ export class BareEngine
         globalEvents.emit(BareEvent.game_resize, { prevWidth: prevWidth, prevHeight: prevHeight, newWidth: newWidth, newHeight: newHeight });
 
         // PERSIST UI LAYOUT
-        var uiControllerObjs = uiController.GetLayers();
-        for (var i = 0; i < uiControllerObjs.length; i++)
-        {
-            var objs = uiControllerObjs[i];
-            for (var j = 0; j < objs.length; j++)
-            {
-                var obj = objs[j];
-                obj.SetPosition(obj.x * newWidth / prevWidth, obj.y * newHeight / prevHeight);
-            }
-        }
+        sceneController.OnResize(prevWidth, prevHeight, newWidth, newHeight);
     }
     
     ImplementInitialTextures()
@@ -200,7 +191,7 @@ export class BareEngine
         var scenes = sceneController.GetAllScenes();
         for (var scene of scenes)
         {
-            if (!scene.active)
+            if (!scene.enabled)
                 continue;
 
             BareEngine.SetControllerReferencesOnScene(scene);

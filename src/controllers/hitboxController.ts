@@ -13,7 +13,7 @@ type AnyPress = (go: any, ...args: any[]) => any;
 
 type Handler<Arg extends GameObject = GameObject> = (go?: Arg | null, ...args: any[]) => any;
 
-type ButtonHandlers<Arg extends GameObject = GameObject> = {
+export type ButtonHandlers<Arg extends GameObject = GameObject> = {
   OnPress?: Handler<Arg>;
   OnRelease?: Handler<Arg>;
   OnEnter?: Handler<Arg>;
@@ -96,8 +96,7 @@ export class HitboxController
                 rapid.renderCircle({
                     offset: new Vec2(center.x, center.y),
                     radius: radius,
-                    segments: 32,
-                    points: [],
+                    segments: 32
                 });
             }
             else if (hitbox.type == HitboxType.Rectangle)
@@ -108,7 +107,6 @@ export class HitboxController
                     offset: new Vec2(rect.x1, rect.y1),
                     width: rect.width,
                     height: rect.height,
-                    points: [],
                     color: obj.hitboxColor
                 });
             }

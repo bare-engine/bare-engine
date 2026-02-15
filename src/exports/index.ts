@@ -15,10 +15,12 @@ export type { SceneI } from "../types/bareTypes";
 export { PluginHandler as BarePlugin } from "../handlers/pluginHandler";
 export { plugin } from "../handlers/pluginHandler";
 export { LevelHandler } from "../handlers/levelHandler";
+export { Button } from "../objects/button";
 
 // Controllers
 export { BaseComponent } from "../controllers/componentController";
 export { HitboxController } from "../controllers/hitboxController";
+export type { ButtonHandlers } from "../controllers/hitboxController";
 export { KeyboardController } from "../controllers/keyboardController";
 export { MouseController } from "../controllers/mouseController";
 export { ObjectController } from "../controllers/objectController";
@@ -122,7 +124,7 @@ export { Uniform } from "../libraries/rapid-render/webgl/uniform";
 export { graphicAttributes, spriteAttributes } from "../libraries/rapid-render/regions/attributes";
 export { Particle } from "../libraries/rapid-render/particle";
 export { ParticleEmitter } from "../libraries/rapid-render/particle";
-export { Text } from "../libraries/rapid-render/texture";
+export { BareText } from "../libraries/rapid-render/texture";
 export * from "../libraries/rapid-render/math";
 export * from "../libraries/rapid-render/interface";
 export * from "../libraries/rapid-render/texture";
