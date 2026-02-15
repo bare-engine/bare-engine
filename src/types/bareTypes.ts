@@ -305,10 +305,6 @@ export interface Pipes {
   componentController_PostRender: () => void;
   componentController_OnLevelChanged: (payload: { uids: string[] }) => void;
 
-  componentController_GetAllComponentsFrom: (obj: GameObject) => Component<any>[];
-  componentController_ProcessCompentsFromEntity: (entity: Entity, obj: GameObject) => void;
-  componentController_AddComponent: (obj: GameObject, componentInstance: Component) => Component;
-  
   cameraHandler_ScreenToWorld: (x: number, y: number) => Vec2;
   cameraHandler_WorldToScreen: (x: number, y: number) => Vec2;
   cameraHandler_GetZoom: () => number;

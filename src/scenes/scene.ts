@@ -527,7 +527,7 @@ export class Scene implements SceneI
         obj.ApplyEntityToGameObject(entity, addComponents);
 
         if (addComponents)
-            pipes.run("componentController_ProcessCompentsFromEntity", entity, obj);
+            this.componentController?.ProcessCompentsFromEntity(entity, obj);
     }
 
     FillPresets(entity: Entity, settingsData: SettingsData = this.currentSettings)
@@ -1063,10 +1063,21 @@ export class Scene implements SceneI
     {
         // FOR OVERRIDE
     }
+
+    AfterLoadedLevel(level:LevelData, uids:string[])
+    {
+        this.componentController?.AfterLoadedLevel(uids);
+        this.OnAfterLoadedLevel(level);
+    }
     
     OnAfterLoadedLevel(level:LevelData)
     {
         // FOR OVERRIDE
+    }
+
+    GetAllComponentsFrom(obj:GameObject):any[]
+    {
+        return this.componentController?.GetAllComponentsFrom(obj);
     }
 
     async Restart(full:boolean = false)

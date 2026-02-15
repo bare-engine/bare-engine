@@ -37,26 +37,13 @@ export class ComponentController
     
 	Start(): void
 	{
-        bare.events.persistent.on(BareEvent.collision_start, this.OnCollisionStart.bind(this));
-        bare.events.persistent.on(BareEvent.collision_update, this.OnCollisionUpdate.bind(this));
-        bare.events.persistent.on(BareEvent.collision_end, this.OnCollisionEnd.bind(this));
+        bare.events.on(BareEvent.collision_start, this.OnCollisionStart.bind(this));
+        bare.events.on(BareEvent.collision_update, this.OnCollisionUpdate.bind(this));
+        bare.events.on(BareEvent.collision_end, this.OnCollisionEnd.bind(this));
 
-        bare.events.persistent.on(BareEvent.game_objectRemoved, this.RemoveComponentsForObject.bind(this));
+        bare.events.on(BareEvent.game_objectRemoved, this.RemoveComponentsForObject.bind(this));
 
-        bare.events.persistent.on(BareEvent.level_preSave, this.OnPreSaveLevel.bind(this));
-    }
-
-    init()
-    {
-        pipes.set("componentController_Update", this.Update.bind(this));
-        pipes.set("componentController_PreRender", this.PreRender.bind(this));
-        pipes.set("componentController_Render", this.Render.bind(this));
-        pipes.set("componentController_PostRender", this.PostRender.bind(this));
-        pipes.set("componentController_OnLevelChanged", this.OnLevelChanged.bind(this));
-
-        pipes.set("componentController_GetAllComponentsFrom", (obj) => this.GetAllComponentsFrom(obj));
-        pipes.set("componentController_ProcessCompentsFromEntity", (entity, obj) => this.ProcessCompentsFromEntity(entity, obj));
-        pipes.set("componentController_AddComponent", (obj, componentInstance) => this.AddComponent(obj, componentInstance));
+        bare.events.on(BareEvent.level_preSave, this.OnPreSaveLevel.bind(this));
     }
 
     public ProcessCompentsFromEntity(entity:Entity, obj:GameObject)
@@ -133,7 +120,7 @@ export class ComponentController
             ProcessComponents('editorComponents');
     }
 
-    private OnLevelChanged({ uids }): void
+    public AfterLoadedLevel({ uids }): void
     {
         // CALL ONLEVELCHANGED ON PERSISTENT OBJECTS
         for (var i = 0; i < uids.length; i++)
