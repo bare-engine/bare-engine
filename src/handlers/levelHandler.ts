@@ -88,9 +88,7 @@ export class LevelHandler
         var level = await this.LoadLevelOnly(levelInput || SaveData.currentLevelStr); // IF NO LEVEL SUPPLIED, RELOAD CURRENT LEVEL
 
         bare.doRender = true;
-        bare.OnAfterLoadedLevel(level);
-
-        pipes.run("componentController_OnLevelChanged", { uids: persistenObjUIDs });
+        bare.AfterLoadedLevel(level, persistenObjUIDs);
         
         return level;
     }
@@ -221,7 +219,7 @@ export class LevelHandler
                 if (Object.keys(objDiff).length > 0)
                     Object.assign(retObj, objDiff);
 
-                var components = pipes.run("componentController_GetAllComponentsFrom", obj);
+                var components = bare.GetAllComponentsFrom(obj);
                 
                 if (gameMode == GameMode.Game)
                 {
