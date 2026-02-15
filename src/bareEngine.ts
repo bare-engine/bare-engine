@@ -281,3 +281,21 @@ export class BareEngine
         }
     }
 }
+
+declare global {
+    function __await<T>(value: Promise<T> | T): Promise<T>;
+    interface Window {
+        __await: typeof __await;
+    }
+}
+
+export function __await<T>(value: Promise<T> | T): Promise<T> {
+    const sceneAtCall = window.currentSceneProcessing;
+
+    return Promise.resolve(value).finally(() => {
+        if (sceneAtCall)
+            BareEngine.SetControllerReferencesOnScene(sceneAtCall);
+    });
+}
+
+window.__await = __await;
