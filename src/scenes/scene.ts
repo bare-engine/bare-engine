@@ -11,6 +11,7 @@ import { ObjectController } from "../controllers/objectController";
 import { sceneController } from "../controllers/sceneController";
 import mitt from "../libraries/mitt";
 import { BareEngine } from "../bareEngine";
+import { mouseController } from "../exports";
 
 /*Bare.camera.SetPosition(bare.width * .5, bare.height * .5);
 Bare.sound.Play()
@@ -52,7 +53,8 @@ export class Scene implements SceneI
     public currentSettingsHandler: SettingsHandler;
 
     public objectController: ObjectController;
-    private hitboxController: any; // ANY TO NOT INCLUDE HITBOXCONTROLLER AS DEPENDENCY
+    private mouseController: any; // ANY TO NOT INCLUDE HITBOXCONTROLLER AS DEPENDENCY
+    private hitboxController: any;
     private tweenController: any; 
     private componentController: any; 
     private physicsControllerBare: any; 
@@ -822,6 +824,7 @@ export class Scene implements SceneI
 
     Update(deltaTime: number): void
     {
+        this.mouseController?.Update(deltaTime);
         this.hitboxController?.Update(deltaTime);
         this.objectController.Update(deltaTime);
         this.tweenController?.Update(bareEngine.time); // STUPID TIME VAR - TODO

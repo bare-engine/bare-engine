@@ -131,7 +131,6 @@ export class BareEngine
         
         globalEvents.emit(BareEvent.game_preUpdate, { deltaTime: deltaTime });
 
-        pipes.run("mouseController_Update", deltaTime); // -TODO
         sceneController.Update(deltaTime);
         //objectController.Update(deltaTime);
         uiController.Update(deltaTime);

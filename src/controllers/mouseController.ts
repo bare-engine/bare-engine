@@ -3,6 +3,7 @@ import { Helper } from "../utils/helper";
 import { globalEvents, pipes } from "../main";
 import { Vec2 } from "../libraries/rapid-render";
 import { sceneController } from './sceneController';
+import { BareEngine } from '../exports';
 
 type MouseSpace = {
     position: Vec2;
@@ -52,8 +53,6 @@ export class MouseController
 
     constructor()
     {
-        pipes.set("mouseController_Update", this.Update.bind(this));
-
         document.addEventListener('pointerdown', this.PointerDown.bind(this), { passive: false });
         document.addEventListener('pointerup', this.PointerUp.bind(this), { passive: false });
         document.addEventListener('pointermove', this.PointerMove.bind(this), { passive: false });
@@ -233,6 +232,9 @@ export class MouseController
         if (isMobile && !this.mouseIsDown)
             return;
 
+        var screenMousePos = mouseController.screen.position;
+        mouseController.SetMousePosition(screenMousePos.x, screenMousePos.y);
+        
         const moveVector = new Vec2(
             this.world.position.x - this.world.positionPrev.x,
             this.world.position.y - this.world.positionPrev.y
@@ -252,4 +254,4 @@ export class MouseController
     }
 }
 
-export const mouseController = new MouseController();
+export const mouseController = BareEngine.RegisterControllerProxy(MouseController);

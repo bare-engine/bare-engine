@@ -450,7 +450,8 @@ export class HitboxController
     AssignButton(gameObject: GameObject, arg: any): Hitbox
     {
         const handlers: ButtonHandlers<any> = (typeof arg === "function" ? { OnPress: arg } : arg);
-        const hitbox = new Hitbox(gameObject, 50);
+        var rect = { x1: 0, y1: 0, x2: gameObject.width, y2: gameObject.height };
+        const hitbox = new Hitbox(gameObject, rect);
 
         hitbox.OnPress   = (...a: any[]) => handlers.OnPress?.(gameObject, ...a);
         hitbox.OnRelease = (...a: any[]) => handlers.OnRelease?.(gameObject, ...a);

@@ -292,8 +292,8 @@ export type Events = BareEventPayload & Record<string, any>;
 export const Events = undefined as unknown as Events;
 //
 
+// TRIM - TODO
 export interface Pipes {
-  mouseController_Update: (deltaTime: number) => void;
   hitboxController_Update: (deltaTime: number) => void;
   physicsController_Update: (deltaTime: number) => void;
   screenController_Update: (deltaTime: number) => void;
