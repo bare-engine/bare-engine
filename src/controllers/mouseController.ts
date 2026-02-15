@@ -1,4 +1,4 @@
-import { BareEvent } from '../types/bareTypes';
+import { BareEvent, BareEventPayload } from '../types/bareTypes';
 import { Helper } from "../utils/helper";
 import { globalEvents, pipes } from "../main";
 import { Vec2 } from "../libraries/rapid-render";
@@ -45,70 +45,47 @@ export class MouseController
 
     delayFactor: number = .3;
 
+    static lastMouseX: number = -10000;
+    static lastMouseY: number = -10000;
+
     IsMouseDown(): boolean { return this.mouseIsDown; }
     IsMiddleMouseDown(): boolean { return this.middleMouseIsDown; }
     IsRightMouseDown(): boolean { return this.rightMouseIsDown; }
 
-    private mouseDownOnLeave: boolean = false;
-
-    constructor()
+    Start()
     {
-        document.addEventListener('pointerdown', this.PointerDown.bind(this), { passive: false });
-        document.addEventListener('pointerup', this.PointerUp.bind(this), { passive: false });
-        document.addEventListener('pointermove', this.PointerMove.bind(this), { passive: false });
-        document.addEventListener('pointerenter', this.PointerEnter.bind(this), { passive: false });
-        document.addEventListener('pointerleave', this.PointerLeave.bind(this), { passive: false });
-        document.addEventListener('dblclick', this.DoubleClick.bind(this), { passive: false });
-    }
+        bare.events.on(BareEvent.pointer_down, this.PointerDown.bind(this));
+        bare.events.on(BareEvent.pointer_move, this.PointerMove.bind(this));
+        bare.events.on(BareEvent.pointer_up, this.PointerUp.bind(this));
 
-    PointerEnter(event: PointerEvent)
-    {
-        if (!window.bare || !window.bare.started)
-            return;
-
-        if (this.mouseDownOnLeave)
-        if (!(event.buttons & 1))
+        // SET MOUSE POSITION TO LAST KNOW POSITION
+        // THIS IS NEEDED AFTER A SCENE SWITCH, SO THE VALUES ARE UP TO TO DATE
+        // SO WE DON'T HAVE TO WAIT ON THE NEXT MOUSE MOVE
+        if (MouseController.lastMouseX != -10000)
         {
-            this.PointerUp(event);
+            this.screen.position.x = MouseController.lastMouseX;
+            this.screen.position.y = MouseController.lastMouseY;
+            this.SetMousePosition(MouseController.lastMouseX, MouseController.lastMouseY);
         }
-
-        this.mouseDownOnLeave = false;
     }
 
-    PointerLeave(event: PointerEvent)
+    PointerDown({ mouseX, mouseY, event }: BareEventPayload['pointer_down']): void
     {
-        if (!window.bare || !window.bare.started)
-            return;
-
-        this.mouseDownOnLeave = (event.buttons & 1) == 1;
-    }
-
-    PointerDown(event: PointerEvent)
-    {
-        if (!window.bare || !window.bare.started)
-            return;
-
-        if (bare.MouseIsOnEditor(event))
-            return;
-
-        if (!this.IsFirstTouch(event))
-            return;
-
         this.screen.positionPrev.x = this.screen.position.x;
         this.screen.positionPrev.y = this.screen.position.y;
 
-        this.screen.position.x = event.clientX;
-        this.screen.position.y = event.clientY;
+        this.screen.position.x = mouseX;
+        this.screen.position.y = mouseY;
 
-        this.SetMousePosition(event.clientX, event.clientY);
+        this.SetMousePosition(this.screen.position.x, this.screen.position.y);
 
         if (event.button == 0)
         {
             this.world.positionOnDown.x = this.world.position.x;
             this.world.positionOnDown.y = this.world.position.y;
 
-            this.screen.positionOnDown.x = event.clientX;
-            this.screen.positionOnDown.y = event.clientY;
+            this.screen.positionOnDown.x = this.screen.position.x;
+            this.screen.positionOnDown.y = this.screen.position.x;
 
             this.mouseFramesDown = 0;
             this.mouseIsDown = true;
@@ -135,22 +112,10 @@ export class MouseController
             this.screen.positionOnRightDown.x = event.clientX;
             this.screen.positionOnRightDown.y = event.clientY;
         }
-
-        if (!bare.isPaused)
-            bareEngine.SendEvent(BareEvent.pointer_down, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
-            
-        if (!bare.isPaused)
-            event.preventDefault();
     }
 
-    PointerUp(event: PointerEvent)
+    PointerUp({ mouseX, mouseY, event }: BareEventPayload['pointer_up']): void
     {
-        if (!window.bare || !window.bare.started)
-            return;
-
-        if (!this.IsFirstTouch(event))
-            return;
-
         if (event.button == 2)
             this.rightMouseIsDown = false;
 
@@ -160,56 +125,26 @@ export class MouseController
         if (event.button == 0)
             this.mouseIsDown = false;
 
-        this.SetMousePosition(event.clientX, event.clientY);
-
-        if (!bare.isPaused)
-            bareEngine.SendEvent(BareEvent.pointer_up, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
-
-        event.preventDefault();
+        this.SetMousePosition(mouseX, mouseY);
     }
 
-    PointerMove(event: PointerEvent)
+    PointerMove({ mouseX, mouseY, event }: BareEventPayload['pointer_move'])
     {
-        if (!window.bare || !window.bare.started)
-            return;
-
-        if (!this.IsFirstTouch(event))
-            return;
-
         this.screen.positionPrev.x = this.screen.position.x;
         this.screen.positionPrev.y = this.screen.position.y;
 
-        this.screen.position.x = event.clientX;
-        this.screen.position.y = event.clientY;
+        this.screen.position.x = mouseX;
+        this.screen.position.y = mouseY;
 
-        this.SetMousePosition(event.clientX, event.clientY);
+        MouseController.lastMouseX = mouseX;
+        MouseController.lastMouseY = mouseY;
 
-        if (!bare.isPaused)
-            bareEngine.SendEvent(BareEvent.pointer_move, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event, isLeftButton: event.button == 0});
-
-        event.preventDefault();
-    }
-
-    DoubleClick(event: MouseEvent)
-    {
-        if (!window.bare || !window.bare.started)
-            return;
-
-        if (!bare.isPaused)
-            bareEngine.SendEvent(BareEvent.pointer_doubleClick, {mouseX: this.world.position.x, mouseY: this.world.position.y, event: event});
+        this.SetMousePosition(this.screen.position.x, this.screen.position.y);
     }
 
     IsMoving()
     {
         return this.mouseSpeed > 0;
-    }
-
-    IsFirstTouch(event:PointerEvent): boolean
-    {
-        if (event.pointerType == 'mouse')
-            return true;
-
-        return (event.pointerType == 'touch' && event.isPrimary);
     }
 
     IsMousePressed(): boolean
@@ -232,9 +167,6 @@ export class MouseController
         if (isMobile && !this.mouseIsDown)
             return;
 
-        var screenMousePos = mouseController.screen.position;
-        mouseController.SetMousePosition(screenMousePos.x, screenMousePos.y);
-        
         const moveVector = new Vec2(
             this.world.position.x - this.world.positionPrev.x,
             this.world.position.y - this.world.positionPrev.y

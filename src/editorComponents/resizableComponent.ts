@@ -266,13 +266,13 @@ export class ResizableComponent extends BaseComponent
     
     if (this.hoverEdge) {
       this.go.tapHitbox.active = false;
-      bare.SetCursor(this.getCursorForEdge(this.hoverEdge));
+      bareEngine.SetCursor(this.getCursorForEdge(this.hoverEdge));
     } else {
       this.go.tapHitbox.active = true;
 
       const hovered = hitboxController.GetCurrentHitboxHover();
       if (hovered == null)
-        bare.SetCursor('inherit');
+        bareEngine.SetCursor('inherit');
     }
   }
 

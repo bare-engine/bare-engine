@@ -20,6 +20,7 @@ import { sceneController } from "../controllers/sceneController";
 import { CameraScaleMode, HitboxType } from "../types/gamesTypes";
 import { Hitbox } from "../types/hitbox";
 import { levelHandler, LevelHandler } from "../handlers/levelHandler";
+import { BareEngine } from "../exports";
 
 /*
     EDITOR CONTROLLER (MAIN)
@@ -228,6 +229,12 @@ export class EditorScene extends Scene
 
         sceneController.Remove(EditorScene); // this DIDN'T WORK, FIX! TODO
         sceneController.EnableAllScenes();
+
+        for (var scene of sceneController.currentScenes)
+        {
+            BareEngine.SetControllerReferencesOnScene(scene);
+            scene.Restart();
+        }
 
         //if (loadLevelAfter)
         //    levelController.LoadCurrentLevel();

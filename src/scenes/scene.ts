@@ -974,7 +974,7 @@ export class Scene implements SceneI
 
     ScreenToWorld(x:number, y:number)
     {
-        if (this.cameraHandler && this.cameraHandler.scene == this)
+        if (this.cameraHandler)
         {
             // THE CAMERA IS SET TO THIS SCENE EXCLUSIVELY
             return this.cameraHandler?.ScreenToWorld(x, y);
@@ -987,7 +987,7 @@ export class Scene implements SceneI
 
     WorldToScreen(x: number, y: number)
     {
-        if (this.cameraHandler && this.cameraHandler.scene == this)
+        if (this.cameraHandler)
         {
             // THE CAMERA IS SET TO THIS SCENE EXCLUSIVELY
             return this.cameraHandler?.WorldToScreen(x, y);
@@ -1000,7 +1000,7 @@ export class Scene implements SceneI
 
     GetCameraZoom(): number 
     {
-        if (this.cameraHandler && this.cameraHandler.scene == this)
+        if (this.cameraHandler)
         {
             // THE CAMERA IS SET TO THIS SCENE EXCLUSIVELY
             return this.cameraHandler?.GetZoom();
@@ -1019,11 +1019,6 @@ export class Scene implements SceneI
             name = name.substring(1);
 
         return name;
-    }
-
-    SetCursor(cursorStr: string): void
-    {
-        rapid.canvas.style.cursor = cursorStr;
     }
 
     // THIS SHOULD NOT BE HERE, TODO

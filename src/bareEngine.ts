@@ -27,6 +27,8 @@ export class BareEngine
 
     public isEngine: boolean = true;
 
+    private mouseDownOnLeave: boolean = false;
+
     constructor(sceneClass: SceneClass)
     {
         this.Start(sceneClass);
@@ -44,6 +46,13 @@ export class BareEngine
         await sceneController.Goto(sceneClass);
 
         window.addEventListener('resize', this.ResizeCanvas.bind(this));
+
+        document.addEventListener('pointerdown', this.PointerDown.bind(this), { passive: false });
+        document.addEventListener('pointerup', this.PointerUp.bind(this), { passive: false });
+        document.addEventListener('pointerenter', this.PointerEnter.bind(this), { passive: false });
+        document.addEventListener('pointerleave', this.PointerLeave.bind(this), { passive: false });
+        document.addEventListener('dblclick', this.DoubleClick.bind(this), { passive: false });
+        document.addEventListener('pointermove', this.PointerMove.bind(this), { passive: false });
 
         this.RunMainLoopBound = this.RunMainLoop.bind(this);
         this.RunMainLoopId = requestAnimationFrame(this.RunMainLoopBound);
@@ -179,6 +188,80 @@ export class BareEngine
 
 
 
+
+    PointerEnter(event: PointerEvent)
+    {
+        if (!window.bare || !window.bare.started)
+            return;
+
+        if (this.mouseDownOnLeave)
+        if (!(event.buttons & 1))
+        {
+            this.PointerUp(event);
+        }
+
+        this.mouseDownOnLeave = false;
+    }
+
+    PointerLeave(event: PointerEvent)
+    {
+        if (!window.bare || !window.bare.started)
+            return;
+
+        this.mouseDownOnLeave = (event.buttons & 1) == 1;
+    }
+
+    PointerDown(event: PointerEvent)
+    {
+        if (bare.MouseIsOnEditor(event))
+            return;
+
+        if (!this.IsFirstTouch(event))
+            return;
+
+        bareEngine.SendEvent(BareEvent.pointer_down, {mouseX: event.clientX, mouseY: event.clientY, event: event, isLeftButton: event.button == 0});
+            
+        event.preventDefault();
+    }
+
+    PointerUp(event: PointerEvent)
+    {
+        if (!this.IsFirstTouch(event))
+            return;
+        
+        bareEngine.SendEvent(BareEvent.pointer_up, {mouseX: event.clientX, mouseY: event.clientY, event: event, isLeftButton: event.button == 0});
+
+        event.preventDefault();
+    }
+
+    PointerMove(event: PointerEvent)
+    {
+        if (!this.IsFirstTouch(event))
+            return;
+
+        bareEngine.SendEvent(BareEvent.pointer_move, {mouseX: event.clientX, mouseY: event.clientY, event: event, isLeftButton: event.button == 0});
+
+        event.preventDefault();
+    }
+
+    DoubleClick(event: MouseEvent)
+    {
+        bareEngine.SendEvent(BareEvent.pointer_doubleClick, {mouseX: event.clientX, mouseY: event.clientY, event: event});
+    }
+
+    IsFirstTouch(event:PointerEvent): boolean
+    {
+        if (event.pointerType == 'mouse')
+            return true;
+
+        return (event.pointerType == 'touch' && event.isPrimary);
+    }
+    
+    SetCursor(cursorStr: string): void
+    {
+        rapid.canvas.style.cursor = cursorStr;
+    }
+
     SendEvent<K extends keyof Events>(type: K, ...event: EventArgs<Events[K]>): void
     {
         // SEND GLOBALLY
@@ -190,7 +273,7 @@ export class BareEngine
         var scenes = sceneController.GetAllScenes();
         for (var scene of scenes)
         {
-            if (!scene.enabled)
+            if (!scene.enabled || scene.paused)
                 continue;
 
             BareEngine.SetControllerReferencesOnScene(scene);
