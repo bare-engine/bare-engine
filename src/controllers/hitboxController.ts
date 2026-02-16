@@ -137,7 +137,7 @@ export class HitboxController
             var curClosestHitbox: Hitbox | null = null;
                 
             const mouse = mouseController.world.position;
-            trace(mouse)
+            
             for (var j = objs.length - 1; j >= 0; j--)
             {
                 var obj = objs[j];

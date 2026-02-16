@@ -111,7 +111,7 @@ export class SceneController
 
         if (targetIndex !== -1 && targetScene)
         {
-            targetScene.Clear();
+            targetScene.Clear(true);
             this.currentScenes.splice(targetIndex, 1);
 
             globalEvents.emit(BareEvent.scene_removed, { scene: targetScene });
@@ -145,6 +145,11 @@ export class SceneController
             .flatMap(controller => controller.GetLayers().flat());
     }
 
+    GetLevelScene(): Scene | null
+    {
+        return this.currentScenes.find(current => current.isLevel);
+    }
+
     DisableAllScenes()
     {
         for (var scene of this.currentScenes)
@@ -170,19 +175,11 @@ export class SceneController
         }
     }
 
-    OnResize( prevWidth: number, prevHeight: number, newWidth: number, newHeight: number)
+    OnResize(prevWidth: number, prevHeight: number, newWidth: number, newHeight: number)
     {
         for (var scene of this.currentScenes)
         {
-            if (!scene.UI)
-                continue;
-            
-            var objs = scene.objectController.GetAllObjects();
-            for (var i = 0; i < objs.length; i++)
-            {
-                var obj = objs[i];
-                obj.SetPosition(obj.x * newWidth / prevWidth, obj.y * newHeight / prevHeight);
-            }
+            scene.Resize(prevWidth, prevHeight, newWidth, newHeight);
         }
     }
 }

@@ -304,10 +304,6 @@ export interface Pipes {
   componentController_Render: () => void;
   componentController_PostRender: () => void;
   componentController_OnLevelChanged: (payload: { uids: string[] }) => void;
-
-  cameraHandler_ScreenToWorld: (x: number, y: number) => Vec2;
-  cameraHandler_WorldToScreen: (x: number, y: number) => Vec2;
-  cameraHandler_GetZoom: () => number;
 }
 
 export interface Component<T extends GameObject = GameObject> 

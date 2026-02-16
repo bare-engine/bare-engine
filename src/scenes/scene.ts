@@ -49,6 +49,8 @@ export class Scene implements SceneI
     public persistent: boolean = false;
     public UI: boolean = false;
 
+    public isLevel: boolean = false;
+
     public baseSettingsHandler: SettingsHandler = new SettingsHandler();
     public currentSettingsHandler: SettingsHandler;
 
@@ -77,7 +79,7 @@ export class Scene implements SceneI
     // initialObjectsLayer WILL BE USED TO SET IT BACK TO ITS ORIGINAL VALUE
     initialObjectsLayer: int = -1;
 
-    private sceneOptions: SceneOptions;
+    sceneOptions: SceneOptions;
 
     get imagePath(): string { return Scene.rootPath + "/" + Scene.imagePath; }
     get levelPath(): string { return Scene.rootPath + "/" + Scene.levelPath; }
@@ -94,18 +96,22 @@ export class Scene implements SceneI
     constructor(sceneOptions: SceneOptions | SettingsData = {entityData: defaultEntityData})
     {
         let options: SceneOptions;
+        const isSceneOptions =
+            sceneOptions &&
+            typeof sceneOptions === "object" &&
+            ("entityData" in sceneOptions || "UI" in sceneOptions || "persistent" in sceneOptions);
 
-        if ("entityData" in sceneOptions)
+        if (isSceneOptions)
         {
             // IS A SCENEOPTIONS
-            options = sceneOptions;
+            options = sceneOptions as SceneOptions;
         }
         else
         {
             // IS A SETTINGSDATA DIRECTLY
             options = { entityData: sceneOptions as SettingsData };
         }
-        
+
         if (!options.entityData)
             options.entityData = defaultEntityData;
         
@@ -116,15 +122,6 @@ export class Scene implements SceneI
 
         this.AddClass(ObjectController);
         this.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT
-
-        if (!pipes.has("cameraHandler_ScreenToWorld")) //IF CAMERAHANDLER HAS NOT ALREADY SET THESE
-        {
-            // LET THEM RETURN DEFAULT VALUES
-            //pipes.set("cameraHandler_GetRenderInfo", () => ({ position: new Vec2(0, 0), offset: new Vec2(0, 0), scale: 1 }));
-            pipes.set("cameraHandler_ScreenToWorld", (x: number, y: number) => new Vec2(x, y));
-            pipes.set("cameraHandler_WorldToScreen", (x: number, y: number) => new Vec2(x, y));
-            pipes.set("cameraHandler_GetZoom", () => 1);
-        }
 
         this.RegisterGameObjectPool(GameObject, Scene.gameObjectPoolSize);
 
@@ -1066,6 +1063,8 @@ export class Scene implements SceneI
 
     AfterLoadedLevel(level:LevelData, uids:string[])
     {
+        this.isLevel = true;
+
         this.componentController?.AfterLoadedLevel(uids);
         this.OnAfterLoadedLevel(level);
     }
@@ -1080,15 +1079,39 @@ export class Scene implements SceneI
         return this.componentController?.GetAllComponentsFrom(obj);
     }
 
+    Resize(prevWidth: number, prevHeight: number, newWidth: number, newHeight: number)
+    {
+        if (this.UI)
+        {
+            // RESIZE UI
+            var objs = this.objectController.GetAllObjects();
+            for (var i = 0; i < objs.length; i++)
+            {
+                var obj = objs[i];
+                obj.SetPosition(obj.x * newWidth / prevWidth, obj.y * newHeight / prevHeight);
+            }
+        }
+
+        this.cameraHandler?.OnResize(prevWidth, prevHeight, newWidth, newHeight);
+        this.OnResize(prevWidth, prevHeight, newWidth, newHeight);
+    }
+
+    OnResize(prevWidth: number, prevHeight: number, newWidth: number, newHeight: number)
+    {
+        // FOR OVERRIDE
+    }
+
     async Restart(full:boolean = false)
     {
-        this.Clear(true);
+        this.Clear();
         await this.Start();
     }
 
     Clear(full:boolean = false)
     {
         if (full)
+            this.events.clearAll();
+        else
             this.events.clear();
 
         globalEvents.emit(BareEvent.game_clear, { full: full });
@@ -1099,7 +1122,7 @@ export class Scene implements SceneI
             this[classes[i]].Clear?.();
         }
 
-        this.ApplyLayerInfoToSettings(this.currentSettings, true); // ?
+        //this.ApplyLayerInfoToSettings(this.currentSettings, true); // ?
 
         this.OnClear(full);
     }

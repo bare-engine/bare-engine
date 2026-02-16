@@ -8,7 +8,7 @@ export class EditorUIScene extends Scene
     
     constructor()
     {
-        super({UI: true});
+        super({UI: true, persistent: true});
     }
 
     OnStart(): void | Promise<void>

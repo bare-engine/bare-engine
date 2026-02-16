@@ -63,7 +63,8 @@ export class EditorScene extends Scene
 
     constructor()
     {  
-        super({ persistent: true });
+        var entityData = sceneController.GetLevelScene().sceneOptions.entityData;
+        super({entityData: entityData, persistent: true });
         
         this.AddClass(LevelHandler);
 
@@ -209,7 +210,7 @@ export class EditorScene extends Scene
         globalEvents.emit(BareEvent.editor_opened, {name: bare.currentSettings.name || 'levelEditor'});
     }
 
-    Close(loadLevelAfter: boolean = true)
+    async Close(loadLevelAfter: boolean = true)
     {
         this.opened = false;
 
@@ -232,8 +233,11 @@ export class EditorScene extends Scene
 
         for (var scene of sceneController.currentScenes)
         {
-            BareEngine.SetControllerReferencesOnScene(scene);
-            scene.Restart();
+            if (!scene.persistent)
+            {
+                BareEngine.SetControllerReferencesOnScene(scene);
+                scene.Restart();
+            }
         }
 
         //if (loadLevelAfter)
@@ -259,7 +263,7 @@ export class EditorScene extends Scene
     // COULD DO THIS BETTER, BY JUST CLEARING THE LEVEL AND REPOPULATING IT
     // THOUGH THAT'S NOT ALWAYS SUFFICIENT FOR ALL USE CASES, EG CATEGORIES GET CHANGED
     // THIS COVERS ALL CASES OVER-SUFFICIENTLY ATM
-    async Restart()
+    /*async Restart()
     {
         var levelPath: string | LevelData;
         
@@ -273,7 +277,7 @@ export class EditorScene extends Scene
         
         this.Clear();
         await this.Open(levelPath, saveLevelCallback, settingsHandler);
-    }
+    }*/
 
     private SetupFileDropZone()
     {

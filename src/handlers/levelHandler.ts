@@ -81,7 +81,7 @@ export class LevelHandler
             }
         }
 
-        bare.Clear(true); // CLEARS EVENTS TOO
+        bare.Clear(); // CLEARS EVENTS TOO
         bare.doRender = false;
         await bare.OnBeforeLoadLevel();
 
@@ -90,6 +90,8 @@ export class LevelHandler
         bare.doRender = true;
         bare.AfterLoadedLevel(level, persistenObjUIDs);
         
+        bareEngine.SendEvent(BareEvent.level_loaded, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
+
         return level;
     }
 
@@ -123,21 +125,22 @@ export class LevelHandler
         // CREATE ALL OBJECTS
         for (var layerName in level.entitiesByLayer) {
             var entities = level.entitiesByLayer[layerName];
-            entities.forEach((levelEntity: Entity) => {
+            for(var levelEntity of entities)
+            {
                 var layerNameLowerCase = Helper.CapitalizeFirstLetter(layerName.toLowerCase());
                 var layer = bare.layerNames.indexOf(layerNameLowerCase);
                 var gameObject = bare.AddGameObject(levelEntity, layer);
 
                 gameObject.levelEntity = levelEntity;
                 gameObject.save = true;
-            });
+            }
         }
 
         trace('Level loaded:', levelStr);
         
-        globalEvents.emit(BareEvent.level_loaded, {levelStr: levelStr, level: this.currentLevel});
-        bare.events.emit(BareEvent.level_loaded, {levelStr: levelStr, level: this.currentLevel});
-
+        //globalEvents.emit(BareEvent.level_loaded, {levelStr: levelStr, level: this.currentLevel});
+        //bare.events.emit(BareEvent.level_loaded, {levelStr: levelStr, level: this.currentLevel});
+        
         return level;
     }
 

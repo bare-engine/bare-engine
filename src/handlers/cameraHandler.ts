@@ -30,23 +30,14 @@ class CameraHandler {
   {
     //events.persistent.on(BareEvent.gameStarted, () => this.ResetForStart());
 
-    globalEvents.persistent.on(BareEvent.game_awake, () => {
-      this.SetPosition(bare.width / 2, bare.height / 2);
-    });
-
-    bare.events.on(BareEvent.level_loaded, ({ level }) => {
+    bare.events.persistent.on(BareEvent.level_loaded, ({ level }) => {
       const dims: Dimensions = level.dimensions;
       this.SetBounds({ x: 0, y: 0, width: dims.width, height: dims.height });
+      //this.SetDimensions(dims.width,  dims.height );
       this.CalculateZoomFit();
       // default to level center
       //this.SetPosition(dims.width / 2, dims.height / 2);
     });
-
-    globalEvents.persistent.on(BareEvent.game_resize, () => this.CalculateZoomFit());
-
-    pipes.set("cameraHandler_ScreenToWorld", (x: number, y: number) => this.ScreenToWorld(x, y));
-    pipes.set("cameraHandler_WorldToScreen", (x: number, y: number) => this.WorldToScreen(x, y));
-    pipes.set("cameraHandler_GetZoom", () => this.GetZoom());
   }
 
   Start()
@@ -57,6 +48,11 @@ class CameraHandler {
   Clear()
   {
       this.ResetForStart();
+  }
+
+  OnResize(prevWidth: number, prevHeight: number, newWidth: number, newHeight: number)
+  {
+    this.CalculateZoomFit();
   }
 
   ResetForStart()
@@ -137,15 +133,19 @@ class CameraHandler {
 
   SetBoundsToLevel() 
   {
-    if (!globalThis.levelController?.currentLevel) return;
-    const dims = globalThis.levelController.currentLevel.dimensions;
+    if (!globalThis.levelHandler?.currentLevel)
+      return;
+
+    const dims = globalThis.levelHandler.currentLevel.dimensions;
     this.SetBounds({ x: 0, y: 0, width: dims.width, height: dims.height });
   }
   
   SetDimensionsToLevel() 
   {
-    if (!globalThis.levelController?.currentLevel) return;
-    const dims = globalThis.levelController.currentLevel.dimensions;
+    if (!globalThis.levelHandler?.currentLevel)
+      return;
+
+    const dims = globalThis.levelHandler.currentLevel.dimensions;
     this.SetDimensions(dims.width, dims.height);
   }
 
@@ -194,7 +194,7 @@ class CameraHandler {
     const sx = screenW / w;
     const sy = screenH / h;
 
-    const contain = this.scaleMode === CameraScaleMode.Contain;
+    const contain = (this.scaleMode == CameraScaleMode.Contain);
     this.zoomFit = contain ? Math.min(sx, sy) : Math.max(sx, sy);
 
     if (!Number.isFinite(this.zoomFit) || this.zoomFit <= 0)
