@@ -365,10 +365,32 @@ declare global {
 export function __await<T>(value: Promise<T> | T): Promise<T> {
     const sceneAtCall = window.currentSceneProcessing;
 
-    return Promise.resolve(value).finally(() => {
-        if (sceneAtCall)
-            BareEngine.SetControllerReferencesOnScene(sceneAtCall);
-    });
+    return Promise.resolve(value).then(
+        (result) =>
+            enqueueSceneContinuation(() => {
+                if (sceneAtCall)
+                    BareEngine.SetControllerReferencesOnScene(sceneAtCall);
+                return result;
+            }),
+        (error) =>
+            enqueueSceneContinuation(() => {
+                if (sceneAtCall)
+                    BareEngine.SetControllerReferencesOnScene(sceneAtCall);
+                throw error;
+            })
+    );
 }
 
 window.__await = __await;
+
+let sceneContinuationQueue: Promise<void> = Promise.resolve();
+
+function enqueueSceneContinuation<T>(fn: () => T | Promise<T>): Promise<T> {
+    const run = () => Promise.resolve().then(fn);
+    const result = sceneContinuationQueue.then(run, run);
+    sceneContinuationQueue = result.then(
+        () => undefined,
+        () => undefined
+    );
+    return result;
+}

@@ -236,7 +236,15 @@ export class EditorScene extends Scene
             if (!scene.persistent)
             {
                 BareEngine.SetControllerReferencesOnScene(scene);
-                scene.Restart();
+                scene.Clear();
+            }
+        }
+        for (var scene of sceneController.currentScenes)
+        {
+            if (!scene.persistent)
+            {
+                BareEngine.SetControllerReferencesOnScene(scene);
+                scene.Start();
             }
         }
 
