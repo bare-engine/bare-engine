@@ -147,9 +147,9 @@ export class SettingsHandler
 
                                 // TURN ENTRIES INTO ARRAY
                                 categoryData.entries = [];
-                                for (var j = 0; i < files.length; i++)
+                                for (var j = 0; j < files.length; j++)
                                 {
-                                    var fileName = files[i].split('.')[0];
+                                    var fileName = files[j].split('.')[0];
                                     categoryData.entries.push(fileName);
 
                                     // ALSO PUSH EACH AS ENTITY SO WE CAN FIND THEM LATER
@@ -174,10 +174,10 @@ export class SettingsHandler
 
             for (const [animName, animDataInfo] of Object.entries(settings.animations))
             {
-                var exsistingAnimation = assetsHandler.GetAnimation(animName);
+                var existingAnimation = assetsHandler.GetAnimation(animName);
 
                 // TAKE PROVIDED VALUES OR FALLBACK TO DEFAULTS
-                var animationFrames = animDataInfo.frames as string[] ?? exsistingAnimation?.animFrames ?? []; // FALLBACK TO ANIMATION FRAMES SET BEFORE IN JSON
+                var animationFrames = animDataInfo.frames as string[] ?? existingAnimation?.animFrames ?? []; // FALLBACK TO ANIMATION FRAMES SET BEFORE IN JSON
                 var framesPerSecond = animDataInfo.framesPerSecond ?? 8;
                 var loop = animDataInfo.loop ?? true;
 
@@ -214,10 +214,10 @@ export class SettingsHandler
         {
             for (const [animName, animDataInfo] of Object.entries(settings.animations))
             {
-                var exsistingAnimation = assetsHandler.GetAnimation(animName);
+                var existingAnimation = assetsHandler.GetAnimation(animName);
 
                 // TAKE PROVIDED VALUES OR FALLBACK TO DEFAULTS
-                var animationFrames = animDataInfo.frames as string[] ?? exsistingAnimation?.animFrames ?? []; // FALLBACK TO ANIMATION FRAMES SET BEFORE IN JSON
+                var animationFrames = animDataInfo.frames as string[] ?? existingAnimation?.animFrames ?? []; // FALLBACK TO ANIMATION FRAMES SET BEFORE IN JSON
                 var framesPerSecond = animDataInfo.framesPerSecond ?? 8;
                 var loop = animDataInfo.loop ?? true;
                 

@@ -970,7 +970,12 @@ export class GameObject
     {
         if (this.parent)
         {
-            this.parent.children.splice(this.parent.children.indexOf(this), 0, this);
+            const idx = this.parent.children.indexOf(this);
+            if (idx !== -1)
+            {
+                this.parent.children.splice(idx, 1);
+                this.parent.children.push(this);
+            }
         }
         else
         {
@@ -982,7 +987,12 @@ export class GameObject
     {
         if (this.parent)
         {
-            this.parent.children.splice(this.parent.children.indexOf(this), 0, this);
+            const idx = this.parent.children.indexOf(this);
+            if (idx !== -1)
+            {
+                this.parent.children.splice(idx, 1);
+                this.parent.children.unshift(this);
+            }
         }
         else
         {

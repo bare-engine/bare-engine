@@ -33,11 +33,11 @@ export class SceneController
     
     Update(deltaTime: number): void
     {
-        var moneThanOneScene = (this.currentScenes.length > 1);
+        var moreThanOneScene = (this.currentScenes.length > 1);
 
         for (var scene of this.currentScenes)
         {
-            if (moneThanOneScene)
+            if (moreThanOneScene)
                 BareEngine.SetControllerReferencesOnScene(scene);
 
             if (scene.started && scene.enabled && !scene.paused)
@@ -47,11 +47,11 @@ export class SceneController
     
     Render(): void
     {
-        var moneThanOneScene = (this.currentScenes.length > 1);
+        var moreThanOneScene = (this.currentScenes.length > 1);
 
         for (var scene of this.currentScenes)
         {
-            if (moneThanOneScene)
+            if (moreThanOneScene)
                 BareEngine.SetControllerReferencesOnScene(scene);
 
             if (scene.started && scene.enabled)

@@ -289,41 +289,40 @@ export class ComponentController
 
     RemoveComponentsForObject(object: GameObject, ignoring: any[] = [])
     {
-        // clear component in componentsByGameObject
-        const entries = this.componentsByGameObject.entries()
-        for (const [, components] of entries)
-        {
-            for (var i = components.length - 1; i >= 0; i--)
-            {
-                var component = components[i];
-                if (component.go == object)
-                {
-                    // Check if this component type should be ignored
-                    const shouldIgnore = ignoring.some(ignoredType => component.constructor === ignoredType);
-                    if (shouldIgnore) {
-                        continue; // Skip this component
-                    }
-                    
-                    // clear component in componentsByGameObject
-                    const index = components.indexOf(component)
-                    components.splice(index, 1);
+        // Direct O(1) lookup by uniqueID instead of iterating all components
+        const components = this.componentsByGameObject.get(object.uniqueID);
+        if (!components)
+            return;
 
-                    if (components.length == 0)
-                        this.componentsByGameObject.delete(object.uniqueID)
-                    
-                    // clear component in componentsByType too
-                    const typeComponents = this.componentsByType.get(component.constructor as Ctor<Component<any>>) as Component<any>[];
-                    const typeIndex = typeComponents.indexOf(component);
+        for (var i = components.length - 1; i >= 0; i--)
+        {
+            var component = components[i];
+
+            // Check if this component type should be ignored
+            const shouldIgnore = ignoring.some(ignoredType => component.constructor === ignoredType);
+            if (shouldIgnore)
+                continue;
+
+            // Remove from componentsByType
+            const typeComponents = this.componentsByType.get(component.constructor as Ctor<Component<any>>) as Component<any>[] | undefined;
+            if (typeComponents)
+            {
+                const typeIndex = typeComponents.indexOf(component);
+                if (typeIndex > -1)
                     typeComponents.splice(typeIndex, 1);
 
-                    if (typeComponents.length == 0)
-                        this.componentsByType.delete(component.constructor as Ctor<Component<any>>)
-
-                    if (component.OnRemoved)
-                        component.OnRemoved()
-                }
+                if (typeComponents.length == 0)
+                    this.componentsByType.delete(component.constructor as Ctor<Component<any>>);
             }
+
+            components.splice(i, 1);
+
+            if (component.OnRemoved)
+                component.OnRemoved();
         }
+
+        if (components.length == 0)
+            this.componentsByGameObject.delete(object.uniqueID);
     }
 
     RemoveAllComponents()

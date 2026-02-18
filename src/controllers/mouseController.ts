@@ -85,7 +85,7 @@ export class MouseController
             this.world.positionOnDown.y = this.world.position.y;
 
             this.screen.positionOnDown.x = this.screen.position.x;
-            this.screen.positionOnDown.y = this.screen.position.x;
+            this.screen.positionOnDown.y = this.screen.position.y;
 
             this.mouseFramesDown = 0;
             this.mouseIsDown = true;
