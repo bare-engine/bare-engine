@@ -2,7 +2,7 @@ import { Box, Circle, Polygon, World } from "../exports/sopiroPhysics";
 import { RigidBody } from "../libraries/Sopiro/rigidbody";
 import { Settings } from "../libraries/Sopiro/settings";
 import { PhysicsControllerBase } from "./physicsControllerBase";
-import { globalEvents } from "../main";
+import { globalEvents, Scene } from "../main";
 import * as Util from "../libraries/Sopiro/util";
 import { BareEvent } from "../types/bareTypes";
 import { BareEngine } from "../bareEngine";
@@ -17,22 +17,23 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 	private readonly maxSubSteps = 5;
 	private activeCollisions: Map<number, { bodyA: RigidBody; bodyB: RigidBody }> = new Map();
 
-    constructor()
-    {
-		super();
+	constructor(scene: Scene)
+	{
+		super(scene);
+
     	this.world = new World();
 
-		bare.events.persistent.on(BareEvent.game_started, () => {
+		this.scene.events.persistent.on(BareEvent.game_started, () => {
 		});
     }
 
 	Start(): void
 	{  
-		bare.events.on(BareEvent.physics_refreshBody, this.RefreshBody.bind(this));
+		this.scene.events.on(BareEvent.physics_refreshBody, this.RefreshBody.bind(this));
 
-		bare.RegisterGameObjectPool(Polygon, 1);
-		bare.RegisterGameObjectPool(Box, 1);
-		bare.RegisterGameObjectPool(Circle, 1);
+		this.scene.RegisterGameObjectPool(Polygon, 1);
+		this.scene.RegisterGameObjectPool(Box, 1);
+		this.scene.RegisterGameObjectPool(Circle, 1);
 	}
 
 	Add(object: any): void
@@ -60,7 +61,7 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 
     override Update(deltaTime: number): void
     {
-		if (bare.levelEditorOpen) return;
+		if (bareEngine.levelEditorOpen) return;
         if (deltaTime <= 0) return;
 
         // Prevent spiral of death after tab-switch or hitch.
@@ -171,4 +172,5 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 	}
 }
 
-export const physicsControllerSopiro = BareEngine.RegisterControllerProxy(PhysicsControllerSopiro);
+export var physicsControllerSopiro:PhysicsControllerSopiro;
+BareEngine.RegisterController(PhysicsControllerSopiro);

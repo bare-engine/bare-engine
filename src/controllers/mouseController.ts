@@ -3,7 +3,8 @@ import { Helper } from "../utils/helper";
 import { globalEvents, pipes } from "../main";
 import { Vec2 } from "../libraries/rapid-render";
 import { sceneController } from './sceneController';
-import { BareEngine } from '../exports';
+import { BareEngine } from '../bareEngine';
+import { Scene } from '../scenes/scene';
 
 type MouseSpace = {
     position: Vec2;
@@ -52,11 +53,18 @@ export class MouseController
     IsMiddleMouseDown(): boolean { return this.middleMouseIsDown; }
     IsRightMouseDown(): boolean { return this.rightMouseIsDown; }
 
+    public scene: Scene;
+
+    constructor(scene: Scene)
+    {
+        this.scene = scene;
+    }
+
     Start()
     {
-        bare.events.on(BareEvent.pointer_down, this.PointerDown.bind(this));
-        bare.events.on(BareEvent.pointer_move, this.PointerMove.bind(this));
-        bare.events.on(BareEvent.pointer_up, this.PointerUp.bind(this));
+        this.scene.events.on(BareEvent.pointer_down, this.PointerDown.bind(this));
+        this.scene.events.on(BareEvent.pointer_move, this.PointerMove.bind(this));
+        this.scene.events.on(BareEvent.pointer_up, this.PointerUp.bind(this));
 
         // SET MOUSE POSITION TO LAST KNOW POSITION
         // THIS IS NEEDED AFTER A SCENE SWITCH, SO THE VALUES ARE UP TO TO DATE
@@ -154,7 +162,7 @@ export class MouseController
 
     SetMousePosition(x:number, y:number)
     {
-        const worldPos = bare.ScreenToWorld(x, y);
+        const worldPos = this.scene.ScreenToWorld(x, y);
         this.world.position.x = worldPos.x;
         this.world.position.y = worldPos.y;
     }
@@ -186,4 +194,5 @@ export class MouseController
     }
 }
 
-export const mouseController = BareEngine.RegisterControllerProxy(MouseController);
+export var mouseController:MouseController;
+BareEngine.RegisterController(MouseController);

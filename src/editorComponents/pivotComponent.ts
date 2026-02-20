@@ -33,7 +33,7 @@ export class PivotComponent extends BaseComponent
 
     OnUpdate(deltaTime: number): void 
     {
-        const zoom = bare.GetCameraZoom();
+        const zoom = this.scene.GetCameraZoom();
 
         this.go.innerScale = 1/zoom;
 
@@ -77,9 +77,9 @@ export class PivotComponent extends BaseComponent
                     entity.pivotBasedOnHitbox = {x: x, y: y};
                 }
 
-                var origEntity = bare.ConstructEntity(entity, bare.baseSettingsHandler.Get());
+                var origEntity = this.scene.ConstructEntity(entity, this.scene.settingsHandler.Get());
                 var obj = new PhysicsObjectBare()
-                bare.ApplyEntityToGameObject(origEntity, obj);
+                this.scene.ApplyEntityToGameObject(origEntity, obj);
                 var pivotPosOrig = obj.pivot;
                 
                 if (pivotPosOrig)

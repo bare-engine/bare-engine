@@ -3,6 +3,7 @@ import { assetsHandler } from "./assetsHandler";
 import { defaultEntityData } from "../types/bareData";
 import { SettingsData } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
+import { Scene } from "../scenes/scene";
 
 // SETTINGS-STORE KEEPS TRACK OF RAW AND PROCESSED SETTINGS
 // BIT CLUMSY TO HAVE THEM BOTH, BUT HAVING ONLY ONE WOULD MEAN I'D HAVE TO UNDO THE CHANGES THAT HAPPEN IN PROCESS()
@@ -13,6 +14,13 @@ export class SettingsHandler
 {
     private raw: SettingsData;
     private processed: SettingsData;
+
+    public scene: Scene;
+
+    constructor(scene: Scene)
+    {
+        this.scene = scene;
+    }
 
     async Process(raw: SettingsData = this.raw): Promise<SettingsData>
     {
@@ -113,7 +121,7 @@ export class SettingsHandler
                             var name = split[0];
                             var count = parseInt(split[1], 10);
 
-                            var entity = bare.ConstructEntity(name + "%", settings);
+                            var entity = this.scene.ConstructEntity(name + "%", settings);
 
                             // TURN ENTRIES INTO ARRAY
                             categoryData.entries = [];
@@ -142,8 +150,8 @@ export class SettingsHandler
                                 const imagePath = match[2]; // eg "editorImages"
 
                                 var entityName = prefix + "_*";
-                                var entity = bare.ConstructEntity(entityName, settings);
-                                var files = await Helper.GetFilesInFolder(`${bare.imagePath}/` + imagePath);
+                                var entity = this.scene.ConstructEntity(entityName, settings);
+                                var files = await Helper.GetFilesInFolder(`${bareEngine.imagePath}/` + imagePath);
 
                                 // TURN ENTRIES INTO ARRAY
                                 categoryData.entries = [];

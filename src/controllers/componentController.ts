@@ -1,4 +1,4 @@
-import { globalEvents, GameMode, pipes } from "../main";
+import { globalEvents, GameMode, pipes, Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { Component, Entity, Ctor, BareEvent } from '../types/bareTypes';
 import { BareEngine } from "../bareEngine";
@@ -6,8 +6,14 @@ import { BareEngine } from "../bareEngine";
 
 export abstract class BaseComponent<T extends GameObject = GameObject> implements Component<T>
 {
+    scene: Scene;
     enabled: boolean = true;
     go!: T;
+
+    constructor(scene: Scene)
+    {
+        this.scene = scene;
+    }
 
     Added(go: T): void
     {
@@ -30,26 +36,28 @@ export class ComponentController
     private componentsByType = new Map<Ctor<Component<any>>, Component<any>[]>()
     private queuedForStart: Component<any>[] = [];
 
-    constructor()
+    public scene: Scene
+
+    constructor(scene: Scene)
     {
-        
+        this.scene = scene
     }
     
 	Start(): void
 	{
-        bare.events.on(BareEvent.collision_start, this.OnCollisionStart.bind(this));
-        bare.events.on(BareEvent.collision_update, this.OnCollisionUpdate.bind(this));
-        bare.events.on(BareEvent.collision_end, this.OnCollisionEnd.bind(this));
+        this.scene.events.on(BareEvent.collision_start, this.OnCollisionStart.bind(this));
+        this.scene.events.on(BareEvent.collision_update, this.OnCollisionUpdate.bind(this));
+        this.scene.events.on(BareEvent.collision_end, this.OnCollisionEnd.bind(this));
 
-        bare.events.on(BareEvent.game_objectRemoved, this.RemoveComponentsForObject.bind(this));
+        this.scene.events.on(BareEvent.game_objectRemoved, this.RemoveComponentsForObject.bind(this));
 
-        bare.events.on(BareEvent.level_preSave, this.OnPreSaveLevel.bind(this));
+        this.scene.events.on(BareEvent.level_preSave, this.OnPreSaveLevel.bind(this));
     }
 
     public ProcessCompentsFromEntity(entity:Entity, obj:GameObject)
     {
         // CREATE COMPONENTS
-        function ProcessComponents(componentType: 'components' | 'editorComponents')
+        const ProcessComponents = (componentType: 'components' | 'editorComponents') =>
         {
             // PREPARE NEW DATA OBJ
             var components: Record<string, Record<string, any>> = {};
@@ -108,7 +116,7 @@ export class ComponentController
 
                 // INSTANCIATE AND ADD COMPONENT - VALUES BECOME ARGUMENTS
                 const componentValues = components[componentName];
-                var componentInstance = new ComponentClass(...Object.values(componentValues));
+                var componentInstance = new ComponentClass(this.scene, ...Object.values(componentValues));
                 componentController.AddComponent(obj, componentInstance);
             }
         }
@@ -147,7 +155,7 @@ export class ComponentController
     AddComponent<T extends GameObject, C extends Component<T>>(go: T, componentInstance: C): C;
 
     AddComponent<T extends GameObject, C extends Component<T>>(go: T, arg: Ctor<C> | C): C {
-        const component: C = (typeof arg === "function") ? new arg() : arg;
+        const component: C = (typeof arg === "function") ? new arg(this.scene) : arg;
 
         component.go = go;
         component.enabled = true;
@@ -518,4 +526,5 @@ export class ComponentController
     }
 }
 
-export const componentController = BareEngine.RegisterControllerProxy(ComponentController);
+export var componentController:ComponentController;
+BareEngine.RegisterController(ComponentController);

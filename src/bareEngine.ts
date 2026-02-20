@@ -2,8 +2,10 @@ import { sceneController } from "./controllers/sceneController";
 import { globalEvents, GameMode, pipes, Scene } from "./main";
 import { GameObject } from "./objects/gameObject";
 import { assetsHandler } from "./handlers/assetsHandler";
-import { BareEvent, Events, SceneClass } from "./types/bareTypes";
+import { BareEvent, Events, GameObjectClass, SceneClass } from "./types/bareTypes";
 import { EventArgs } from "./libraries/mitt";
+import { PoolHandler } from "./handlers/poolHandler";
+import { TextureCache, IGraphicRenderOptions, ICircleRenderOptions, IRenderLineOptions, IRectRenderOptions, ISpriteRenderOptions } from "./exports";
 
 export class BareEngine
 {
@@ -19,8 +21,6 @@ export class BareEngine
 
     public dummyGameObject: GameObject = new GameObject(); // JUST USED FOR DEFAULT VALUES AND DUMMY CONSTRUCTION
 
-    public isPaused: boolean = false;
-    
     get levelEditorOpen(): boolean { return window.gameMode == GameMode.Editor; }
     
     public componentClasses: Record<string, any> = {};
@@ -28,6 +28,20 @@ export class BareEngine
     public isEngine: boolean = true;
 
     private mouseDownOnLeave: boolean = false;
+
+    get imagePath(): string { return Scene.rootPath + "/" + Scene.imagePath; }
+    get levelPath(): string { return Scene.rootPath + "/" + Scene.levelPath; }
+    get soundPath(): string { return Scene.rootPath + "/" + Scene.soundPath; }
+
+    get width(): int { return rapid.width; }
+    get height(): int { return rapid.height; }
+    get textures(): TextureCache { return rapid.textures; }
+
+    get renderGraphic(): (options: IGraphicRenderOptions) => void { return rapid.renderGraphic.bind(rapid); }
+    get renderCircle(): (options: ICircleRenderOptions) => void { return rapid.renderCircle.bind(rapid); }
+    get renderLine(): (options: IRenderLineOptions) => void { return rapid.renderLine.bind(rapid); }
+    get renderRect(): (options: IRectRenderOptions) => void { return rapid.renderRect.bind(rapid); }
+    get renderSprite(): (options: ISpriteRenderOptions) => void { return rapid.renderSprite.bind(rapid); }
 
     constructor(sceneClass: SceneClass)
     {
@@ -135,14 +149,10 @@ export class BareEngine
 
     Update(deltaTime:number)
     {
-        if (this.isPaused)
-            return;
-        
         globalEvents.emit(BareEvent.game_preUpdate, { deltaTime: deltaTime });
 
         sceneController.Update(deltaTime);
         //objectController.Update(deltaTime);
-        uiController.Update(deltaTime);
 
         globalEvents.emit(BareEvent.game_update, { deltaTime: deltaTime });
     }
@@ -161,8 +171,6 @@ export class BareEngine
 
         globalEvents.emit(BareEvent.game_postRender);
         rapid.restore();
-        
-        uiController.Render();
         
         rapid.endRender();
     }
@@ -191,9 +199,6 @@ export class BareEngine
 
     PointerEnter(event: PointerEvent)
     {
-        if (!window.bare || !window.bare.started)
-            return;
-
         if (this.mouseDownOnLeave)
         if (!(event.buttons & 1))
         {
@@ -205,15 +210,12 @@ export class BareEngine
 
     PointerLeave(event: PointerEvent)
     {
-        if (!window.bare || !window.bare.started)
-            return;
-
         this.mouseDownOnLeave = (event.buttons & 1) == 1;
     }
 
     PointerDown(event: PointerEvent)
     {
-        if (bare.MouseIsOnEditor(event))
+        if (this.MouseIsOnEditor(event))
             return;
 
         if (!this.IsFirstTouch(event))
@@ -262,12 +264,41 @@ export class BareEngine
         rapid.canvas.style.cursor = cursorStr;
     }
 
+    MouseIsOnEditor(event: PointerEvent | WheelEvent): boolean
+    {
+        if (!this.levelEditorOpen)
+            return false;
+
+        const target = event.target as HTMLElement;
+        var name = (target.id || target.className);
+
+        var onEditor = (name != "canvas");
+
+        return onEditor;
+    }
+
+    Restart(full: boolean = false): void
+    {
+        for (var scene of sceneController.currentScenes)
+        {
+            if (!scene.persistent)
+            {
+                scene.Clear(full);
+            }
+        }
+        for (var scene of sceneController.currentScenes)
+        {
+            if (!scene.persistent)
+            {
+                scene.Start();
+            }
+        }
+    }
+
     SendEvent<K extends keyof Events>(type: K, ...event: EventArgs<Events[K]>): void
     {
         // SEND GLOBALLY
         globalEvents.emit(type, ...event);
-
-        var origScene = window.currentSceneProcessing!;
 
         // SEND LOCALLY - TO ACTIVE SCENES
         var scenes = sceneController.GetAllScenes();
@@ -276,23 +307,20 @@ export class BareEngine
             if (!scene.enabled || scene.paused)
                 continue;
 
-            BareEngine.SetControllerReferencesOnScene(scene);
             scene.events.emit(type, ...event);
         }
-
-        // RESET GLOBAL REFERENCES
-        BareEngine.SetControllerReferencesOnScene(origScene);
     }
+    
+
 
     
-    private static controllerCallbacks: any[] = [];
     public static controllerNames: string[] = [];
     
     // THIS REGISTERS A CONTROLLER
     // A PROXY IS MADE TO BE ABLE TO REDEFINE THE GLOBAL REFERENCE OF THE CONTROLLER
     // THIS IS USED BEFORE SCENE FUNCTIONALITY IS CALLED, EG: UPDATE()
     // THEN, FOR EXAMPLE, CALLING tweenController.TweenTo(), WILL GET THE tweenController INSTANCE FROM THE SCENE
-    static RegisterControllerProxy<T extends object>(controllerClass: new (...args: any[]) => T, setGlobal: boolean = true): T
+    static RegisterController(controllerClass: new (...args: any[]) => any): void
     {
         var name = (controllerClass as any).name;
         
@@ -302,95 +330,32 @@ export class BareEngine
         const classKey = controllerName + "Class";
         (globalThis as any)[classKey] = controllerClass;
 
-        let _instance: T;
-
-        const proxy = new Proxy({} as T, {
-            get(_, prop)
-            {
-                if (!_instance)
-                    throw new Error(
-                        `${controllerClass.name} not registered. Call bare.AddClass(${controllerClass.name}) at Awake() of your game.`
-                    );
-
-                return (_instance as any)[prop];
-            },
-            set(_, prop, value)
-            {
-                (_instance as any)[prop] = value;
-                return true;
-            }
-        });
-
         this.controllerNames.push(controllerName);
-        this.controllerCallbacks.push((controllerArg: T) => {
-            _instance = controllerArg;
-            if (setGlobal)
-                (globalThis as any)[controllerName] = proxy;
-        });
-
-        return proxy;
     }
 
     static SetControllerReferencesOnScene(scene:Scene)
     {
         window.currentSceneProcessing = scene;
 
-        var i = 0;
-        for (const callback of this.controllerCallbacks)
+        for (const controllerName of this.controllerNames)
         {
-            var controllerName = this.controllerNames[i];
-
             // THIS WILL INSTANTIATE THE CONTROLLER ON THE SCENE, IF THE CONTROLLER REFERENCE EXSIST
-            scene.CreateClassIfNotExist(controllerName);
-
-            // THIS PASSES ON THE CONTROLLER INSTANCE FROM THE SCENE TO THE CALLBACK
-            // WHICH WILL SET IT AS THE GLOBAL REFERENCE
-            callback(scene[controllerName]);
-
-            if (scene[controllerName].scene)
-                scene[controllerName].scene = scene;
-
-            i++;
+            scene.CreateClassIfNotExist(controllerName, scene);
         }
     }
 }
 
-declare global {
-    function __await<T>(value: Promise<T> | T): Promise<T>;
-    interface Window {
-        __await: typeof __await;
-    }
+declare global
+{
+    var SetCurrentSceneProcessingFromContext: (context: any) => void;
 }
 
-export function __await<T>(value: Promise<T> | T): Promise<T> {
-    const sceneAtCall = window.currentSceneProcessing;
+window.SetCurrentSceneProcessingFromContext = (context: any) => {
+    if (!context)
+        throw new Error("context is null");
 
-    return Promise.resolve(value).then(
-        (result) =>
-            enqueueSceneContinuation(() => {
-                if (sceneAtCall)
-                    BareEngine.SetControllerReferencesOnScene(sceneAtCall);
-                return result;
-            }),
-        (error) =>
-            enqueueSceneContinuation(() => {
-                if (sceneAtCall)
-                    BareEngine.SetControllerReferencesOnScene(sceneAtCall);
-                throw error;
-            })
-    );
-}
+    if (!context.scene)
+        throw new Error("context.scene is null");
 
-window.__await = __await;
-
-let sceneContinuationQueue: Promise<void> = Promise.resolve();
-
-function enqueueSceneContinuation<T>(fn: () => T | Promise<T>): Promise<T> {
-    const run = () => Promise.resolve().then(fn);
-    const result = sceneContinuationQueue.then(run, run);
-    sceneContinuationQueue = result.then(
-        () => undefined,
-        () => undefined
-    );
-    return result;
-}
+    window.currentSceneProcessing = context.scene;
+};

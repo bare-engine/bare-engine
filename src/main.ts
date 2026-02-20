@@ -57,11 +57,9 @@ declare global
 
     var destroyTextFunc:Function | null;
 
-    var bare: Scene & BareEngine & Rapid;
+    var bare: Scene;
     var currentSceneProcessing: Scene;
     
-    var uiController:ObjectController//
-
     var whitePixelTexture:Texture;
 
     var hasFocus:boolean;
@@ -174,8 +172,6 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
 
             window.rapid = rapid;
 
-            window.uiController = new ObjectController();//
-
             const gl = rapid.gl;
             const glTexture:WebGLTexture | null = gl.createTexture();
             if (!glTexture) {throw new Error("Failed to create texture");}
@@ -205,8 +201,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
 
             // PREVENT DEFAULT TOUCH BEHAVIORS
             rapid.canvas.addEventListener('touchstart', function(e) {
-                if (!bare.isPaused)
-                    e.preventDefault();
+                e.preventDefault();
             }, { passive: false });
 
             rapid.canvas.addEventListener('touchmove', function(e) {
@@ -219,7 +214,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
             
             // PREVENT SCROLLING WITH KEYBOARD KEYS OR MOUSE WHEEL
             var preventScrollCheck = (ev:MouseEvent | WheelEvent | KeyboardEvent)=>{
-                if (!(ev instanceof KeyboardEvent) && !bare.MouseIsOnEditor(ev as any))
+                if (!(ev instanceof KeyboardEvent) && !bareEngine.MouseIsOnEditor(ev as any))
                     ev.preventDefault();
             };
             window.addEventListener("keydown", function(ev:KeyboardEvent) {
@@ -231,9 +226,6 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
                 
             // PREVENT DEFAULT RIGHT CLICK MENU
             document.addEventListener('contextmenu', (ev) =>{
-                if (bare.isPaused)
-                    return;
-
                 ev.preventDefault();
 
                 return false;
@@ -251,7 +243,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
                 if (window.isLocalhost)
                     return; // CAN BE ANNOYING TO LOSE GAME FOCUS DURING DEVELOPEMENT, SO DISABLING IT HERE 
 
-                if (bare.levelEditorOpen)
+                if (bareEngine.levelEditorOpen)
                     return;
 
                 globalEvents.emit(BareEvent.game_focusChange, window.hasFocus);
@@ -271,7 +263,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
                 window.onFocusChange(hasFocus);
 
                 if (window.hasFocus)
-                    bare.lastUpdateTimeRef = performance.now(); // TO PREVENT DELTA TIME FROM SHOOTING UP
+                    bareEngine.lastUpdateTimeRef = performance.now(); // TO PREVENT DELTA TIME FROM SHOOTING UP
 
                 updateFocus();
             });
@@ -319,59 +311,3 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
         window.initialAssetsReady(window.initialAssets);
     }
 }
-
-window.bare = new Proxy({} as unknown as Scene & BareEngine & Rapid, {
-    get(_, prop: string)
-    {
-        if (window.bareEngine?.isEngine && prop in window.bareEngine)
-        {
-            const v = (window.bareEngine as any)[prop];
-            if (v !== undefined) return typeof v === "function" ? v.bind(window.bareEngine) : v;
-        }
-
-        if (window.rapid?.isRapid && prop in window.rapid)
-        {
-            const v = (window.rapid as any)[prop];
-            if (v !== undefined) return typeof v === "function" ? v.bind(window.rapid) : v;
-        }
-
-        if (window.currentSceneProcessing?.isScene && prop in window.currentSceneProcessing)
-        {
-            const v = (window.currentSceneProcessing as any)[prop];
-            return typeof v === "function" ? v.bind(window.currentSceneProcessing) : v;
-        }
-
-        return undefined;
-    },
-
-    set(_, prop: string, value)
-    {
-        if (window.bareEngine?.isEngine && prop in window.bareEngine)
-        {
-            (window.bareEngine as any)[prop] = value;
-            return true;
-        }
-
-        if (window.rapid?.isRapid && prop in window.rapid)
-        {
-            (window.rapid as any)[prop] = value;
-            return true;
-        }
-
-        if (window.currentSceneProcessing?.isScene && prop in window.currentSceneProcessing)
-        {
-            (window.currentSceneProcessing as any)[prop] = value;
-            return true;
-        }
-
-        return false;
-    }
-    ,
-    has(_, prop: string)
-    {
-        if (window.bareEngine?.isEngine && prop in window.bareEngine) return true;
-        if (window.rapid?.isRapid && prop in window.rapid) return true;
-        if (window.currentSceneProcessing?.isScene && prop in window.currentSceneProcessing) return true;
-        return false;
-    }
-});

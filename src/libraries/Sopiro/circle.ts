@@ -1,4 +1,5 @@
 
+import { Scene } from "../../exports";
 import { GameObject } from "../../objects/gameObject";
 import { Entity } from "../../types/bareTypes";
 import { RigidBody, Type } from "./rigidbody";
@@ -10,9 +11,9 @@ export class Circle extends RigidBody
     public radius: number;
     public area: number;
 
-    constructor(radius: number = 1, type: Type = Type.Dynamic, density: number = Settings.defaultDensity)
+    constructor(scene: Scene, radius: number = 1, type: Type = Type.Dynamic, density: number = Settings.defaultDensity)
     {
-        super(type);
+        super(scene, type);
 
         this.radius = radius;
         this.area = Math.PI * this.radius * this.radius;

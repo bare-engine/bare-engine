@@ -5,7 +5,6 @@ import { Helper } from '../utils/helper';
 import { MakePath, Scene } from '../main';
 import { Vec2, Texture, Color, GLShader, Uniform, MaskType } from "../libraries/rapid-render";
 import type { Component, Ctor } from "../types/bareTypes";
-import { objectController } from "../controllers/objectController";
 
 export class Transform {
     position = new Vec2();
@@ -70,8 +69,10 @@ export class GameObject
 
     //levelEditorAlpha: number = 1; // BIT HACKY VAR TO FADE OUT OBJECTS IN EDITOR BUT NOT ADJUST ACTUALY ALPHA VALUES (HAVE TO STAY IN INTACT FOR SAVING)
     
-    constructor(x:number = 0, y:number = 0, texturePath: string = "")
+    constructor(scene: Scene | null = null, x:number = 0, y:number = 0, texturePath: string = "")
     {
+        this.scene = scene;
+
         this.ResetValues(); // MAKES ABOVE VALUES NOT REALLY MATTER, THESE ARE THE DEFAULTS
         
         this.x = x;
@@ -134,8 +135,9 @@ export class GameObject
     AddComponent<T extends Component<this>>(componentInstance: T): T;
     AddComponent<T extends Component<this>>(arg: Ctor<T> | T): T
     {
-        if (globalThis.componentController)
-            return globalThis.componentController.AddComponent(this, arg);// NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
+        var componentController = this.scene.Get("componentController");
+        if (componentController)
+            return componentController.AddComponent(this, arg);// NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
         else
         {
             console.error("ComponentController not registered. Call bare.AddClass(ComponentController) at Awake() of your game.");
@@ -145,8 +147,9 @@ export class GameObject
 
     GetComponent<T extends Component<this>>(componentClass: Ctor<T>): T | null
     {
-        if (globalThis.componentController)
-            return globalThis.componentController.GetComponent(this, componentClass);// NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
+        var componentController = this.scene.Get("componentController");
+        if (componentController)
+            return componentController.GetComponent(this, componentClass);// NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
         else
         {
             console.error("ComponentController not registered. Call bare.AddClass(ComponentController) at OnAwake() of your game.");
@@ -158,8 +161,9 @@ export class GameObject
     RemoveComponent<T extends Component<this>>(componentInstance: T): boolean;
     RemoveComponent<T extends Component<this>>(arg: Ctor<T> | T): boolean
     {
-        if (globalThis.componentController)
-            return globalThis.componentController.RemoveComponent(this, arg);// NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
+        var componentController = this.scene.Get("componentController");
+        if (componentController)
+            return componentController.RemoveComponent(this, arg);// NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
         else
         {
             console.error("ComponentController not registered. Call bare.AddClass(ComponentController) at Awake() of your game.");
@@ -286,7 +290,7 @@ export class GameObject
     /** @virtual */
     Render(inheritedColor?: Color)
     {
-        if (bare.levelEditorOpen)
+        if (bareEngine.levelEditorOpen)
         {
             if (!this.visibleInEditor)
                 return;
@@ -359,7 +363,7 @@ export class GameObject
 
             rapid.renderCircle({
                 offset: new Vec2(0, 0),
-                radius: 4 / bare.GetCameraZoom(),
+                radius: 4 / this.scene.GetCameraZoom(),
                 color: new Color(0, 0, 0, 255),
                 segments: 16
             });
@@ -979,7 +983,7 @@ export class GameObject
         }
         else
         {
-            objectController.BringToFront(this) || uiController.BringToFront(this);
+            this.scene.objectController.BringToFront(this);
         }
     }
 
@@ -996,7 +1000,7 @@ export class GameObject
         }
         else
         {
-            objectController.BringToBack(this) || uiController.BringToBack(this);
+            this.scene.objectController.BringToBack(this);
         }
     }
 
@@ -1031,7 +1035,7 @@ export class GameObject
         }
         else
         {
-            return bare.AddGameObject(input, this); // CHILD WILL BE POOLED
+            return this.scene.AddGameObject(input, this); // CHILD WILL BE POOLED
         }
     }
 
@@ -1059,7 +1063,7 @@ export class GameObject
         }
         else
         {
-            bare.RemoveGameObject(child, this);
+            this.scene.RemoveGameObject(child, this);
         }
     }
 

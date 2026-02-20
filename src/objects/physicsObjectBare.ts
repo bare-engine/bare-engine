@@ -166,12 +166,12 @@ export class PhysicsObjectBare extends GameObject
             this.ResetVelocity();
     }
 
-    static GetDummpyDataFromEntity(nameOrEntity: string | Entity, settingsData: SettingsData = bare.baseSettingsHandler.Get(), options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): {entity: Entity, gameObject: GameObject}
+    static GetDummpyDataFromEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.scene.settingsHandler.Get(), options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): {entity: Entity, gameObject: GameObject}
     {
-        var entityConstructed = bare.ConstructEntity(nameOrEntity, settingsData, options);
+        var entityConstructed = this.scene.ConstructEntity(nameOrEntity, settingsData, options);
         PhysicsObjectBare.dummyPhysicsObjectBare.ResetValues();
         PhysicsObjectBare.dummyPhysicsObjectBare.InitTexture(MakePath(entityConstructed.imagePath!, entityConstructed.name)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
-        bare.ApplyEntityToGameObject(entityConstructed, PhysicsObjectBare.dummyPhysicsObjectBare);
+        this.scene.ApplyEntityToGameObject(entityConstructed, PhysicsObjectBare.dummyPhysicsObjectBare);
 
         return {entity: entityConstructed, gameObject: PhysicsObjectBare.dummyPhysicsObjectBare};
     }

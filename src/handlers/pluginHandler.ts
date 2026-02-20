@@ -5,7 +5,7 @@ import { Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import {  globalEvents } from "../main";
 import { OutlineShader } from "../shaders/outlineShader";
-import { BareClasses, ObjectController, sceneController } from "../exports";
+import { BareClasses, ObjectController, Scene, sceneController } from "../exports";
 import { EditorScene } from "../scenes/editorScene";
 import { objectController } from "../controllers/objectController";
 
@@ -59,6 +59,10 @@ window.__GAME_DEBUG_API__ = {// called by the panel (via injector) to select in-
     window.postMessage({ __fromGame: true, type: "selectObject", id: uid, openObjectsTab: openObjectsTab }, "*");
   },
 
+  setCurrentScene(sceneClassString: string) {
+    plugin.SetCurrentScene(sceneClassString);
+  },
+
   gotoLevelView(levelPath: string) {
     //levelController.LoadLevel(levelPath);
   },
@@ -103,11 +107,11 @@ window.__GAME_DEBUG_API__ = {// called by the panel (via injector) to select in-
   },
 
   GetLevelFiles() {
-    return Helper.GetFilesInFolder(`${bare.levelPath}/`, true);
+    return Helper.GetFilesInFolder(`${bareEngine.levelPath}/`, true);
   },
 
   async GetLevelData(levelStr: string): Promise<LevelData> {
-     return await Helper.loadJSON<LevelData>(`${bare.levelPath}/${levelStr}.json`);
+     return await Helper.loadJSON<LevelData>(`${bareEngine.levelPath}/${levelStr}.json`);
   },
 
   getObject(id: string) {
@@ -139,28 +143,27 @@ window.__GAME_DEBUG_API__ = {// called by the panel (via injector) to select in-
     if (props.rotation !== undefined) o.rotation = props.rotation;
     if (props.visible !== undefined) o.visible = props.visible;
 
-    return true;
+    return true;  
   },
 
-  getEntityData() {
-    if (!bare) return null;
+  getEntityData():SettingsData {
     // Return a clone so external tools don't accidentally mutate live data (?) TODO
-    return bare.currentSettingsHandler.SnapshotCurrent();
+    return plugin.GetCurrentScene().settingsHandler.SnapshotCurrent();
   },
 
   async setEntityData(newData: SettingsData, notifyPlugin: boolean = true)
   {
     plugin.doNotifyAfterSave = false;
-    await bare.SaveEntityData(newData);
+    await plugin.GetCurrentScene().SaveEntityData(newData);
     plugin.doNotifyAfterSave = true;
 
-    if (bare.levelEditorOpen)
+    if (bareEngine.levelEditorOpen)
     {
       await sceneController.Get(EditorScene).Restart();
     }
     else
     {
-      await bare.Restart();
+      await plugin.GetCurrentScene().Restart();
     }
   },
 
@@ -177,7 +180,7 @@ window.__GAME_DEBUG_API__ = {// called by the panel (via injector) to select in-
   async createLevel(levelName: string) {
       try {
           var levelData: LevelData = { name: levelName, dimensions: { width: 800, height: 600 }, entitiesByLayer: {} };
-          var path = `${bare.levelPath}/${levelName}.json`;
+          var path = `${bareEngine.levelPath}/${levelName}.json`;
           const res = await fetch('/api/create-level', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -196,7 +199,7 @@ window.__GAME_DEBUG_API__ = {// called by the panel (via injector) to select in-
 
   async removeLevel(levelName: string) {
       try {
-          var path = `${bare.levelPath}/${levelName}.json`;
+          var path = `${bareEngine.levelPath}/${levelName}.json`;
           const res = await fetch('/api/remove-level', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -209,7 +212,7 @@ window.__GAME_DEBUG_API__ = {// called by the panel (via injector) to select in-
         if (SaveData.currentLevelStr == levelName)
         {
             SaveData.currentLevelStr = '';
-            bare.Restart(); // DON'T HAVE LEVEL TO GO TO, SINCE WE JUST REMOVED IT, SO JUST RESTART GAME
+            plugin.GetCurrentScene().Restart(); // DON'T HAVE LEVEL TO GO TO, SINCE WE JUST REMOVED IT, SO JUST RESTART GAME
         }
         return { ok: res.ok, saved: res.ok, response: json };
       } catch (error: any) {
@@ -227,12 +230,13 @@ export class PluginHandler
     movingObj: GameObject;
     movingObjData: { obj: GameObject; offset: Vec2; hasMovedAwayEnough: boolean };
     doNotifyAfterSave: boolean = true;
+    currentSceneClassString: string = "";
 
     constructor()
     {
         globalEvents.persistent.once(BareEvent.game_started, () => {
             this.outlineShader = new OutlineShader()
-            //bare.AddClass(BareClasses.EditorController)
+            //this.AddClass(BareClasses.EditorController)
 
             // RIGHT CLICK FOR PLUGIN SELECT
             document.addEventListener('pointerdown', this.OnRightClickPointerDown, false);
@@ -241,7 +245,7 @@ export class PluginHandler
         });
 
         // RESTART
-        this.AddDebugAction("Restart Game", () => bare.Restart(true));
+        this.AddDebugAction("Restart Game", () => bareEngine.Restart(true));
         //this.AddDebugAction("Restart Level", () => sceneController.Get(LevelScene).RestartLevel()); //
         this.AddDebugAction("Clear Save Data", () => SaveDataHandler.Clear());
         this.AddDebugBreak();
@@ -254,7 +258,7 @@ export class PluginHandler
 
     private OnRightClickPointerDown = async (ev: PointerEvent) =>
     {
-      if (bare.levelEditorOpen)
+      if (bareEngine.levelEditorOpen)
           return;
 
       if (ev.button === 2)
@@ -272,8 +276,6 @@ export class PluginHandler
 
               const pointerMoveBound = this.PointerMove.bind(this);
               globalEvents.on(BareEvent.pointer_move, pointerMoveBound);
-              //bare.On(BareEvent.pointer_up, () => globalEvents.off(BareEvent.pointer_move, pointerMoveBound));
-              //bareEngine.events.on(BareEvent.pointer_up, () => globalEvents.off(BareEvent.pointer_move, pointerMoveBound));
               globalEvents.once(BareEvent.pointer_up, () => globalEvents.off(BareEvent.pointer_move, pointerMoveBound));
           }
       }
@@ -319,7 +321,7 @@ export class PluginHandler
             var tl = obj.GetLeftTopPosition();
             var objRect = {x: tl.x, y: tl.y, width: obj.width, height: obj.height};
             var p = new Vec2(ev.clientX, ev.clientY);
-            var pWorld = bare.ScreenToWorldPos(p);
+            var pWorld = plugin.GetCurrentScene().ScreenToWorldPos(p);
 
             if (outline)
             if (obj.shaders.indexOf(this.outlineShader) != -1)
@@ -331,7 +333,7 @@ export class PluginHandler
             if (!foundObj)
             if (Helper.IsPointInRectangle(pWorld, objRect))
             {
-                var openObjectsTab = bare.currentSettings.selectionEnabled !== false;
+                var openObjectsTab = plugin.GetCurrentScene().settingsData.selectionEnabled !== false;
                 window.__GAME_DEBUG_API__.selectObjectInGame(obj.uniqueID, openObjectsTab);
 
                 if (outline)
@@ -362,6 +364,36 @@ export class PluginHandler
     AddDebugBreak()
     {
         this.debugActions.push({});
+    }
+
+    GetSceneClasses(): any[]
+    {
+        var sceneInstances = sceneController.GetAllScenes();
+        var sceneClasses = [];
+        for (var i in sceneInstances)
+        {
+            var sceneInstance = sceneInstances[i];
+            var sceneClass = sceneInstance.constructor as any;
+            sceneClasses.push(sceneClass);
+        }
+        return sceneClasses;
+    }
+
+    SetCurrentScene(sceneClassString: string)
+    {
+        this.currentSceneClassString = sceneClassString;
+    }
+
+    GetCurrentScene(): Scene
+    {
+        var scene = plugin.GetScene(this.currentSceneClassString);
+        return scene;
+    }
+
+    GetScene(sceneClassString: string): Scene
+    {
+        var sceneClass = window[sceneClassString] as any;
+        return sceneController.Get(sceneClass);
     }
 }
 

@@ -5,15 +5,16 @@ import * as Util from "./util";
 import { Settings } from "./settings";
 import { Entity } from "../../types/bareTypes";
 import { GameObject } from "../../objects/gameObject";
+import { Scene } from "../../exports";
 
 export class Box extends Polygon
 {
     phyWidth: number;
     phyHeight: number;
 
-    constructor(width: number = 1, height: number = width, type: Type = Type.Dynamic, density: number = Settings.defaultDensity)
+    constructor(scene: Scene, width: number = 1, height: number = width, type: Type = Type.Dynamic, density: number = Settings.defaultDensity)
     {
-        super([new Vec2(0, 0), new Vec2(0, height), new Vec2(width, height), new Vec2(width, 0)], type, true, density);
+        super(scene, [new Vec2(0, 0), new Vec2(0, height), new Vec2(width, height), new Vec2(width, 0)], type, true, density);
 
         this.phyWidth = width;
         this.phyHeight = height;

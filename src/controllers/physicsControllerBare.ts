@@ -1,8 +1,8 @@
 import { PhysicsObjectBare } from "../objects/physicsObjectBare";
 import { HitboxType } from "../types/gamesTypes";
-import { globalEvents } from "../main";
+import { globalEvents, Scene } from "../main";
 import { Vec2 } from "../libraries/rapid-render";
-import { PhysicsControllerBase } from "../controllers/physicsControllerBase";
+import { PhysicsControllerBase } from "./physicsControllerBase";
 import { GameObject } from "../objects/gameObject";
 import { BareEvent } from "../types/bareTypes";
 import { BareEngine } from "../bareEngine";
@@ -18,15 +18,15 @@ export class PhysicsControllerBare extends PhysicsControllerBase
   
   public activeCollisions: Set<string> = new Set();
 
-  constructor()
+  constructor(scene: Scene)
   {
-      super();
+    super(scene);
 
-      bare.events.persistent.on(BareEvent.game_started, () => {
+      this.scene.events.persistent.on(BareEvent.game_started, () => {
         if (this.width == 0 && this.height == 0)
           this.setDimensions(0, 0, bare.width, bare.height);
 
-        bare.RegisterGameObjectPool(PhysicsObjectBare, 10);
+        scene.RegisterGameObjectPool(PhysicsObjectBare, 10);
       });
   }
   
@@ -72,7 +72,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 
   Update(deltaTime: number = 0): void
   {
-		if (bare.levelEditorOpen) return;
+		if (bareEngine.levelEditorOpen) return;
 
     for (const obj of this.objects)
     {
@@ -641,4 +641,5 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 	}
 }
 
-export const physicsControllerBare = BareEngine.RegisterControllerProxy(PhysicsControllerBare);
+export var physicsControllerBare:PhysicsControllerBare;
+BareEngine.RegisterController(PhysicsControllerBare);

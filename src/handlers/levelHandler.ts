@@ -3,7 +3,7 @@ import { BareEngine } from "../bareEngine";
 import { objectController } from "../controllers/objectController";
 import { sceneController } from "../controllers/sceneController";
 import { Color, Texture } from "../libraries/rapid-render";
-import { GameMode, globalEvents, MakePath, pipes } from "../main";
+import { GameMode, globalEvents, MakePath, pipes, Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { EditorUIScene } from "../scenes/editorUIScene";
 import { defaultEntityData } from "../types/bareData";
@@ -18,8 +18,12 @@ export class LevelHandler
     currentLevel: LevelData;
     levelCache: Map<string, LevelData> = new Map();
     
-    constructor()
+    public scene: Scene;
+    
+    constructor(scene: Scene)
     {
+        this.scene = scene;
+
         if (__DEV__)
             void LevelHandler.EnsureEditorSceneRegistered();
     }
@@ -41,7 +45,7 @@ export class LevelHandler
         }
         else
         {
-            level = await Helper.loadJSON<LevelData>(`${bare.levelPath}/${levelStr}.json`);
+            level = await Helper.loadJSON<LevelData>(`${bareEngine.levelPath}/${levelStr}.json`);
             SaveData.levelCache.set(levelStr, level);
         }
 
@@ -81,14 +85,14 @@ export class LevelHandler
             }
         }
 
-        bare.Clear(); // CLEARS EVENTS TOO
-        bare.doRender = false;
-        await bare.OnBeforeLoadLevel();
+        this.scene.Clear(); // CLEARS EVENTS TOO
+        this.scene.doRender = false;
+        await this.scene.OnBeforeLoadLevel();
 
         var level = await this.LoadLevelOnly(levelInput || SaveData.currentLevelStr); // IF NO LEVEL SUPPLIED, RELOAD CURRENT LEVEL
 
-        bare.doRender = true;
-        bare.AfterLoadedLevel(level, persistenObjUIDs);
+        this.scene.doRender = true;
+        this.scene.AfterLoadedLevel(level, persistenObjUIDs);
         
         bareEngine.SendEvent(BareEvent.level_loaded, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
 
@@ -128,8 +132,8 @@ export class LevelHandler
             for(var levelEntity of entities)
             {
                 var layerNameLowerCase = Helper.CapitalizeFirstLetter(layerName.toLowerCase());
-                var layer = bare.layerNames.indexOf(layerNameLowerCase);
-                var gameObject = bare.AddGameObject(levelEntity, layer);
+                var layer = this.scene.layerNames.indexOf(layerNameLowerCase);
+                var gameObject = this.scene.AddGameObject(levelEntity, layer);
 
                 gameObject.levelEntity = levelEntity;
                 gameObject.save = true;
@@ -139,7 +143,7 @@ export class LevelHandler
         trace('Level loaded:', levelStr);
         
         //globalEvents.emit(BareEvent.level_loaded, {levelStr: levelStr, level: this.currentLevel});
-        //bare.events.emit(BareEvent.level_loaded, {levelStr: levelStr, level: this.currentLevel});
+        //this.scene.events.emit(BareEvent.level_loaded, {levelStr: levelStr, level: this.currentLevel});
         
         return level;
     }
@@ -151,7 +155,7 @@ export class LevelHandler
         for (var layerName in level.entitiesByLayer) {
             var entities = level.entitiesByLayer[layerName];
             entities.forEach((entity: any) => {
-                var entityConstructed = bare.ConstructEntity(entity);
+                var entityConstructed = this.scene.ConstructEntity(entity);
                 var imagePath = entityConstructed.imagePath;
                 var fullPath = imagePath + "/" + entity.name;
 
@@ -184,7 +188,7 @@ export class LevelHandler
         var gameLayers = objectController.GetLayers();
         for (var i = 0; i < gameLayers.length; i++)
         {
-            var layerInfo = bare.layerInfos[i];
+            var layerInfo = this.scene.layerInfos[i];
 
             // SHOULD BE A SAVEABLE LAYER
             if (!layerInfo.doSave)
@@ -222,7 +226,7 @@ export class LevelHandler
                 if (Object.keys(objDiff).length > 0)
                     Object.assign(retObj, objDiff);
 
-                var components = bare.GetAllComponentsFrom(obj);
+                var components = this.scene.GetAllComponentsFrom(obj);
                 
                 if (gameMode == GameMode.Game)
                 {
@@ -255,10 +259,10 @@ export class LevelHandler
 
         // GET VARS TO SAVE
         var varsToSave: string[] = []
-        var saveVars = bare.currentSettings.saveVars;
+        var saveVars = this.scene.settingsData.saveVars;
         if (saveVars)
         {
-            var constructorName = bare.GetContructorName(gameObject);
+            var constructorName = this.scene.GetContructorName(gameObject);
 
             if (saveVars[constructorName])
             {
@@ -309,7 +313,7 @@ export class LevelHandler
                     //if (gameObject.levelEntity.hasOwnProperty(varName)) // ALSO DON'T ALWAYS WANT THIS, EG ADDING pivotBasedOnHitbox ON A HITBOX, THEN WANT IT TO SAVE
                     //    continue; // ALREADY PROCESSED, LEVEL ENTITY TAKES PRECEDENCE - COULD MAKE NEW INST VARTOSAVE AND DELETE THIS PROP FOR PERF
 
-                    var origValue = (entityData[varName] ?? bare.dummyGameObject[varName as keyof GameObject]);
+                    var origValue = (entityData[varName] ?? bareEngine.dummyGameObject[varName as keyof GameObject]);
                     var currentValue = gameObject[varName as keyof GameObject];
 
                     if (origValue !== undefined && currentValue !== undefined)
@@ -401,4 +405,5 @@ export class LevelHandler
     }
 }
 
-export const levelHandler = BareEngine.RegisterControllerProxy(LevelHandler);
+export var levelHandler:LevelHandler;
+BareEngine.RegisterController(LevelHandler);

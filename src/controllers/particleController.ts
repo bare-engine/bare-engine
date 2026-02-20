@@ -1,6 +1,7 @@
 import { ParticleEmitter } from "../libraries/rapid-render/particle";
 import { Vec2 } from "../libraries/rapid-render";
 import { BareEngine } from "../bareEngine";
+import { Scene } from "../scenes/scene";
 type ParticleEmitterEntry = {
     emitter: ParticleEmitter;
     autoRemove: boolean;
@@ -24,6 +25,13 @@ export type ParticleOneShotOptions = {
 export class ParticleController
 {
     private emitters: ParticleEmitterEntry[] = [];
+
+    public scene: Scene;
+
+    constructor(scene: Scene)
+    {
+        this.scene = scene;
+    }
 
     Add(emitter: ParticleEmitter, options: ParticleEmitterOptions = {})
     {
@@ -115,4 +123,5 @@ export class ParticleController
     }
 }
 
-export const particleController = BareEngine.RegisterControllerProxy(ParticleController);
+export var particleController:ParticleController;
+BareEngine.RegisterController(ParticleController);

@@ -3,15 +3,17 @@ import { BaseComponent } from "../controllers/componentController";
 import { hitboxController } from "../controllers/hitboxController";
 import { mouseController } from "../controllers/mouseController";
 import { GameObject } from "../objects/gameObject";
+import { objectController } from "../controllers/objectController";
+import { Scene } from "../scenes/scene";
 
 export class PositionPivotComponent extends BaseComponent
 {
     objName:string;
     pivotName:string;
 
-    constructor(objectName:string, pivotName:string)
+    constructor(scene: Scene, objectName:string, pivotName:string)
     {
-        super();
+        super(scene);
 
         this.objName = objectName;
         this.pivotName = pivotName;
@@ -34,7 +36,7 @@ export class PositionPivotComponent extends BaseComponent
             };
             
             var entity = { name: this.objName, hitbox: hitbox };
-            var origEntity = bare.ConstructEntity(entity, bare.baseSettings);
+            var origEntity = bare.ConstructEntity(entity, bare.settingsData);
             var obj = new PhysicsObjectBare()
             bare.ApplyEntityToGameObject(origEntity, obj);
             var pivotPosOrig = obj.pivot;

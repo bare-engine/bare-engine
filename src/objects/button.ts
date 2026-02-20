@@ -1,5 +1,5 @@
 import { GameObject, Vec2, Color, ITextTextureOptions, hitboxController } from "../exports";
-import type { ButtonHandlers } from "../exports";
+import type { ButtonHandlers, Scene } from "../exports";
 import { BareText } from "../libraries/rapid-render/texture";
 
 interface TextOptions extends ITextTextureOptions, ButtonHandlers<Button> {
@@ -11,9 +11,9 @@ export class Button extends GameObject
     text: BareText;
     marge: number;
 
-    constructor(textOptions: TextOptions | string)
+    constructor(scene: Scene, textOptions: TextOptions | string)
     {
-        super();
+        super(scene);
 
         const options: TextOptions = (typeof textOptions === "string") ? { text: textOptions } : textOptions;
 

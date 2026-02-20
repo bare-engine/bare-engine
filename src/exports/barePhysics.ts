@@ -1,2 +1,2 @@
 export { PhysicsObjectBare } from "../objects/physicsObjectBare";
-export { PhysicsControllerBare } from "../handlers/physicsControllerBare";
+export { PhysicsControllerBare } from "../controllers/physicsControllerBare";

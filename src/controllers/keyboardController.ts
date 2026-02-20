@@ -18,7 +18,7 @@ export class KeyboardController
     {
         // KEY DOWN
         document.addEventListener('keydown', (event: any) => {
-            if (bare.MouseIsOnEditor(event))
+            if (bareEngine.MouseIsOnEditor(event))
                 return; // Allow normal typing inside the editor UI
 
             //trace(event.key)
@@ -41,7 +41,7 @@ export class KeyboardController
 
         // KEY UP
         document.addEventListener('keyup', (event: any) => {
-            if (bare.MouseIsOnEditor(event))
+            if (bareEngine.MouseIsOnEditor(event))
                 return; // Allow normal typing inside the editor UI
 
             const key = event.key.toLowerCase();

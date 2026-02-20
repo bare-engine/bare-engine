@@ -1,7 +1,7 @@
 import { BareEvent } from '../types/bareTypes';
 import Easing from "../libraries/tweenJS/Easing";
 import Tween, { TweenWithPromise } from "../libraries/tweenJS/Tween";
-import { globalEvents } from "../main";
+import { globalEvents, Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { BareEngine } from '../bareEngine';
 
@@ -10,12 +10,19 @@ export class TweenController
     tweens: Array<Tween> = [];
     time: number = 0;
 
+    public scene: Scene;
+
+    constructor(scene: Scene)
+    {
+        this.scene = scene;
+    }
+
     Start()
     {
-        bare.events.on(BareEvent.game_objectRemoved, this.GameObjectRemoved.bind(this));
-        //bare.events.on(BareEvent.game_focusChange, this.OnFocusChange.bind(this));
-        bare.events.on(BareEvent.game_update, () => this.Update(bare.time));
-        //bare.events.on(BareEvent.game_clear, () => this.Deactivate());
+        this.scene.events.on(BareEvent.game_objectRemoved, this.GameObjectRemoved.bind(this));
+        //this.scene.events.on(BareEvent.game_focusChange, this.OnFocusChange.bind(this));
+        this.scene.events.on(BareEvent.game_update, () => this.Update(bareEngine.time));
+        //this.scene.events.on(BareEvent.game_clear, () => this.Deactivate());
     }
 
     GameObjectRemoved(obj: GameObject)
@@ -271,9 +278,11 @@ export class TweenController
 }
 
 // SHORTHAND TWEENTO
-export function TweenTo(object: any, seconds: number, props: any, overwrite: boolean = true): TweenWithPromise
+export function TweenTo(object: any, seconds: number, props: any, overwrite: boolean = true, scene: Scene | null = null): TweenWithPromise
 {
-    return tweenController.TweenTo(object, seconds, props, overwrite);
+    TweenController; // MAKES SURE IT'S REFERENCED
+    return scene['tweenController'].TweenTo(object, seconds, props, overwrite);
 }
 
-export const tweenController = BareEngine.RegisterControllerProxy(TweenController);
+export var tweenController:TweenController;
+BareEngine.RegisterController(TweenController);

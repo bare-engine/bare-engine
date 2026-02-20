@@ -33,13 +33,8 @@ export class SceneController
     
     Update(deltaTime: number): void
     {
-        var moreThanOneScene = (this.currentScenes.length > 1);
-
         for (var scene of this.currentScenes)
         {
-            if (moreThanOneScene)
-                BareEngine.SetControllerReferencesOnScene(scene);
-
             if (scene.started && scene.enabled && !scene.paused)
                 scene.Update(deltaTime);
         }
@@ -47,13 +42,8 @@ export class SceneController
     
     Render(): void
     {
-        var moreThanOneScene = (this.currentScenes.length > 1);
-
         for (var scene of this.currentScenes)
         {
-            if (moreThanOneScene)
-                BareEngine.SetControllerReferencesOnScene(scene);
-
             if (scene.started && scene.enabled)
                 scene.Render();
         }
@@ -61,21 +51,14 @@ export class SceneController
 
     async Goto<T extends Scene>(sceneClass: SceneClass<T>, payload?: AwakePayload<T>): Promise<T>
     {
-        var currentScene = window.currentSceneProcessing;
-        
         this.Clear();
         var scene = await this.Add(sceneClass, payload);
 
-        if (currentScene)
-            BareEngine.SetControllerReferencesOnScene(currentScene); // DON'T WANT TO SWITCH SCENES
-        
         return scene;
     }
 
     async Add<T extends Scene>(scene: Scene | SceneClass<T>, payload?: AwakePayload<T>): Promise<T>
     {
-        var currentScene = window.currentSceneProcessing;
-        
         var newScene: T;
 
         if (typeof scene === "function")
@@ -86,12 +69,7 @@ export class SceneController
         else
             this.currentScenes.push(scene);
 
-        BareEngine.SetControllerReferencesOnScene(newScene);
-        
         await newScene.Awake(payload);
-
-        if (currentScene)
-            BareEngine.SetControllerReferencesOnScene(currentScene); // DON'T WANT TO SWITCH SCENES
 
         globalEvents.emit(BareEvent.scene_added, { scene: newScene });
         globalEvents.emit(BareEvent.scene_changed, { scene: newScene, type: "added" });

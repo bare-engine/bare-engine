@@ -5,7 +5,7 @@ import * as Util from "./util";
 import { Node } from "./aabbtree";
 import { GameObject } from "../../objects/gameObject";
 import { Matrix3 } from "./math";
-import { globalEvents } from "../../main";
+import { globalEvents, Scene } from "../../main";
 import { BareEvent } from '../../types/bareTypes';
 
 export enum Type
@@ -53,9 +53,9 @@ export abstract class RigidBody extends GameObject
     // If the callback returns true, it will reset itself to undefined
     public onContact?: (contactInfo: ContactInfo) => boolean;
 
-    constructor(type: Type)
+    constructor(scene: Scene, type: Type)
     {
-        super();
+        super(scene);
 
         this._force = new Vec2(0, 0);
         this._torque = 0.0;

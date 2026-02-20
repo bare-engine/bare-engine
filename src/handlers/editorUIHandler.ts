@@ -16,7 +16,7 @@ export class EditorUIHandler {
 
     private isMinimized: boolean = false;
     private lastMinimize: number = 0;
-    public editorScene: EditorScene;
+    public scene: EditorScene;
 
     private data: SettingsData;
     private gridToggleEl: HTMLElement | null = null;
@@ -25,8 +25,8 @@ export class EditorUIHandler {
     private readonly showIcon = '👁️';
     private readonly hideIcon = '❌';
 
-    constructor(editorScene: EditorScene) {
-        this.editorScene = editorScene;
+    constructor(scene: EditorScene) {
+        this.scene = scene;
 
         this.flashShader = new FlashShader()
     }
@@ -77,7 +77,7 @@ export class EditorUIHandler {
         this.data = data;
         this.PopulateSidebar(data);
         this.PopulateLayers(data);
-        this.SyncSettingsUI(this.editorScene.gridActive, this.editorScene.gridSize);
+        this.SyncSettingsUI(this.scene.gridActive, this.scene.gridSize);
     }
 
     PopulateSidebar(data: SettingsData): void {
@@ -140,13 +140,13 @@ export class EditorUIHandler {
                 if (Array.isArray(categoryData.entries)) 
                 {
                     categoryData.entries.forEach(entityId => {
-                        const entity = bare.ConstructEntity(entityId);
+                        const entity = this.scene.ConstructEntity(entityId);
                         if (entity) {
                             const childEntity = document.createElement('div');
                             childEntity.className = 'child-entity';
                             childEntity.onpointerdown = (e) => {
-                                this.editorScene.SelectEntity(entity, childEntity);
-                                this.editorScene.editorControlsHandler.SetCurrentPreviewEntity(entity);
+                                this.scene.SelectEntity(entity, childEntity);
+                                this.scene.editorControlsHandler.SetCurrentPreviewEntity(entity);
                             };
                             childEntity.onclick = (e) => {
                                 e.stopPropagation();
@@ -177,7 +177,7 @@ export class EditorUIHandler {
                 else
                 if (typeof categoryData.entries === 'string') 
                 {
-                    const entity = this.editorScene.GetTilesheetEntity(categoryData.entries);
+                    const entity = this.scene.GetTilesheetEntity(categoryData.entries);
                     const entityImagePath = this.GetEntityImagePath(entity)!;
 
                     var tilesheetImg = document.createElement('img');
@@ -213,7 +213,7 @@ export class EditorUIHandler {
                             const childEntity = document.createElement('div');
                             childEntity.className = 'child-entity';
                             childEntity.onpointerdown = (e) => {
-                                this.editorScene.SelectEntity(entity, childEntity);
+                                this.scene.SelectEntity(entity, childEntity);
                             };
                             childEntity.onclick = (e) => {
                                 e.stopPropagation();
@@ -353,17 +353,17 @@ export class EditorUIHandler {
         this.data.layersInfo ??= {};
 
         const existingInfo = this.data.layersInfo[layerName] as LayerInfo | undefined;
-        const layerIndex = bare.layerNames.indexOf(layerName);
+        const layerIndex = this.scene.layerNames.indexOf(layerName);
 
         this.data.layersInfo[layerName] = { ...existingInfo, showInEditor: show };
 
         if (layerIndex !== -1)
-            bare.layerInfos[layerIndex] = { ...bare.layerInfos[layerIndex], showInEditor: show };
+            this.scene.layerInfos[layerIndex] = { ...this.scene.layerInfos[layerIndex], showInEditor: show };
     }
 
     private PersistLayerVisibility(layerName: string, show: boolean)
     {
-        const updatedRaw = bare.currentSettingsHandler.UpdateRaw((raw) => {
+        const updatedRaw = this.scene.settingsHandler.UpdateRaw((raw) => {
             raw.layersInfo ??= {};
             const existingInfo = raw.layersInfo[layerName] as LayerInfo | undefined;
 
@@ -374,7 +374,7 @@ export class EditorUIHandler {
                 raw.layersInfo[layerName] = { ...existingInfo, showInEditor: show };
         });
         
-        bare.SaveEntityData(updatedRaw);
+        this.scene.SaveEntityData(updatedRaw);
     }
 
     private ToggleEntity(element: HTMLElement): void {
@@ -427,7 +427,7 @@ export class EditorUIHandler {
     }
 
     public SelectLayerItemByInt(layerI: int): void {
-        const layerName = bare.layerInfos[layerI].name;
+        const layerName = this.scene.layerInfos[layerI].name;
         var layerElement = document.getElementById(layerName)!;
         this.SelectLayerItem(layerElement);
     }
@@ -447,7 +447,7 @@ export class EditorUIHandler {
     }
 
     private GetCategoryImagePath(imageId: string): string | null {
-        const entity = bare.ConstructEntity(imageId);
+        const entity = this.scene.ConstructEntity(imageId);
 
         if (entity)
             return assetsHandler.GetFullImagePath(MakePath(entity.imagePath!, entity.name));
@@ -467,10 +467,10 @@ export class EditorUIHandler {
 
             if (SaveData.currentLevelStr != '')
             {
-                this.editorScene.Close();
+                this.scene.Close();
             }
             else
-                bare.Restart(); // THERE IS NO LEVEL, JUST RESTART. THIS HAPPENS FOR HITBOX EDITOR
+                this.scene.Restart(); // THERE IS NO LEVEL, JUST RESTART. THIS HAPPENS FOR HITBOX EDITOR
         });
 
         // MINIMIZE BUTTON HOVER
@@ -524,7 +524,7 @@ export class EditorUIHandler {
         // Open modal when settings button is clicked
         settingsBtn.addEventListener('click', function(): void {
             // Set modal grid size to current editorScene value
-            me.SyncSettingsUI(me.editorScene.gridActive, me.editorScene.gridSize);
+            me.SyncSettingsUI(me.scene.gridActive, me.scene.gridSize);
             me.gridModalEl!.style.display = 'block';
         });
 
@@ -558,20 +558,20 @@ export class EditorUIHandler {
         const handleGridSizeChange = (value: string, commit: boolean = false) => {
             if (value.trim() === '') {
                 if (commit)
-                    this.SyncSettingsUI(this.editorScene.gridActive, this.editorScene.gridSize);
+                    this.SyncSettingsUI(this.scene.gridActive, this.scene.gridSize);
                 return;
             }
 
             const newGridSize = parseInt(value, 10);
             if (!isNaN(newGridSize) && newGridSize > 0) {
-                me.editorScene.gridSize = newGridSize;
+                me.scene.gridSize = newGridSize;
 
                 if (commit) {
-                    me.SyncSettingsUI(me.editorScene.gridActive, me.editorScene.gridSize);
-                    void me.editorScene.PersistSettings();
+                    me.SyncSettingsUI(me.scene.gridActive, me.scene.gridSize);
+                    void me.scene.PersistSettings();
                 }
             } else if (commit) {
-                me.SyncSettingsUI(me.editorScene.gridActive, me.editorScene.gridSize);
+                me.SyncSettingsUI(me.scene.gridActive, me.scene.gridSize);
             }
         };
 
@@ -592,11 +592,11 @@ export class EditorUIHandler {
 
     ToggleGrid(persist: boolean = false)
     {
-        this.editorScene.gridActive = !this.editorScene.gridActive;
-        this.SyncSettingsUI(this.editorScene.gridActive, this.editorScene.gridSize);
+        this.scene.gridActive = !this.scene.gridActive;
+        this.SyncSettingsUI(this.scene.gridActive, this.scene.gridSize);
 
         if (persist)
-            void this.editorScene.PersistSettings();
+            void this.scene.PersistSettings();
     }
 
     SyncSettingsUI(gridEnabled: boolean, gridSize: number): void

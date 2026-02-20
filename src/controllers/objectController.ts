@@ -1,14 +1,19 @@
-import { BareEngine } from "../exports";
 import { GameObject } from "../objects/gameObject";
 import { UI_LAYER } from "../types/bareTypes";
+import { BareEngine } from "../bareEngine";
+import { Scene } from "../scenes/scene";
 
 export class ObjectController
 {
     active: boolean = true;
     private layers: Array<Array<GameObject>>;
 
-    constructor()
+    public scene: Scene;
+
+    constructor(scene: Scene)
     {
+        this.scene = scene;
+    
         // TODO: MAKE LAYERS GAMEOBJECTS?
         
         this.layers = [];
@@ -153,7 +158,7 @@ export class ObjectController
 
     GetLayerByName(name: string): GameObject[]
     {
-        const layerI = bare.layerNames.indexOf(name);
+        const layerI = this.scene.layerNames.indexOf(name);
         if (layerI == -1)
         {
             console.error(`Layer ${name} does not exist`);
@@ -301,7 +306,7 @@ export class ObjectController
                 if (!includingPersistent && obj.persistent)
                     continue;
 
-                bare.RemoveGameObject(obj, i);
+                this.scene.RemoveGameObject(obj, i);
             }
         }
 
@@ -309,4 +314,5 @@ export class ObjectController
     }
 }
 
-export const objectController = BareEngine.RegisterControllerProxy(ObjectController);
+export var objectController:ObjectController;
+BareEngine.RegisterController(ObjectController);

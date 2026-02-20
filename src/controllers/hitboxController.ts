@@ -1,4 +1,4 @@
-import { globalEvents, pipes } from "../main";
+import { globalEvents, pipes, Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { Helper } from "../utils/helper";
 import { Hitbox } from "../types/hitbox";
@@ -29,12 +29,19 @@ export class HitboxController
 
     private exclusiveLayers: int[] = [];
 
+    public scene: Scene;
+
+    constructor(scene: Scene)
+    {
+        this.scene = scene;
+    }
+
 	Start(): void
 	{
         bareEngine.SetCursor('inherit');//
 
-        bare.events.on(BareEvent.pointer_down, this.PointerDown.bind(this));
-        bare.events.on(BareEvent.pointer_up, this.PointerUp.bind(this));
+        this.scene.events.on(BareEvent.pointer_down, this.PointerDown.bind(this));
+        this.scene.events.on(BareEvent.pointer_up, this.PointerUp.bind(this));
     }
 
     Update(): void
@@ -117,7 +124,7 @@ export class HitboxController
             }
         }
 
-        var l = Object.keys(bare.layerInfos).length;
+        var l = Object.keys(this.scene.layerInfos).length;
         for (var i = 0; i < layers.length; i++)
         {
             const layer = i;
@@ -128,7 +135,7 @@ export class HitboxController
             if (this.exclusiveLayers.length > 0 && !this.exclusiveLayers.includes(layer))
                 continue;
 
-            var layerCollisionHandlingType = bare.layerInfos[i].pointerCollisionType ?? CollisionHandlingType.POINT;
+            var layerCollisionHandlingType = this.scene.layerInfos[i].pointerCollisionType ?? CollisionHandlingType.POINT;
 
             var objs = layers[i];
             var fullBreak = false;
@@ -146,7 +153,7 @@ export class HitboxController
                 if (!hitbox?.active)
                     continue;
 
-                if (!hitbox.parent.visible && !bare.levelEditorOpen)
+                if (!hitbox.parent.visible && !bareEngine.levelEditorOpen)
                     continue;
 
                 if (!hitbox.parent.visibleInEditor)
@@ -192,11 +199,6 @@ export class HitboxController
             if (layerCollisionHandlingType == CollisionHandlingType.POINT && fullBreak)
                 break;
         }
-    }
-
-    private ToScreenSpace(point: Vec2): Vec2
-    {
-        return currentSceneProcessing.WorldToScreen(point.x, point.y);
     }
 
     private GetHitboxCircleCenter(hitbox: Hitbox): Vec2
@@ -443,6 +445,5 @@ export class HitboxController
     }
 }
 
-
-export const hitboxController = BareEngine.RegisterControllerProxy(HitboxController);
-
+export var hitboxController:HitboxController;
+BareEngine.RegisterController(HitboxController);

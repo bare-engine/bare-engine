@@ -2,7 +2,7 @@ import { RigidBody, Type } from "./rigidbody";
 import { Vec2 } from "../rapid-render";
 import * as Util from "./util";
 import { Settings } from "./settings";
-import { Entity, GameObject } from "../../exports";
+import { Entity, GameObject, Scene } from "../../exports";
 
 // Children: Box
 export class Polygon extends RigidBody
@@ -10,9 +10,9 @@ export class Polygon extends RigidBody
     public vertices: Vec2[];
     public area: number;
 
-    constructor(vertices: Vec2[], type: Type = Type.Dynamic, resetPosition: boolean = true, density: number = Settings.defaultDensity)
+    constructor(scene: Scene, vertices: Vec2[], type: Type = Type.Dynamic, resetPosition: boolean = true, density: number = Settings.defaultDensity)
     {
-        super(type);
+        super(scene, type);
         
         if (!vertices)
             vertices = [new Vec2()];

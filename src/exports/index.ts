@@ -38,7 +38,7 @@ export { componentController } from "../controllers/componentController";
 export { sceneController } from "../controllers/sceneController";
 export { particleController } from "../controllers/particleController";
 
-import { PhysicsControllerBare } from "../handlers/physicsControllerBare";
+import { PhysicsControllerBare } from "../controllers/physicsControllerBare";
 import { PhysicsControllerSopiro } from "../controllers/physicsControllerSopiro";
 import { ComponentController } from "../controllers/componentController";
 import { ParticleController } from "../controllers/particleController";

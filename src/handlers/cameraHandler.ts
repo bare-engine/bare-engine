@@ -26,11 +26,12 @@ class CameraHandler {
   offset: Vec2 = new Vec2(0, 0);
   scene: Scene;
 
-  constructor()
+  constructor(scene: Scene)
   {
+    this.scene = scene;
     //events.persistent.on(BareEvent.gameStarted, () => this.ResetForStart());
 
-    bare.events.persistent.on(BareEvent.level_loaded, ({ level }) => {
+    this.scene.events.persistent.on(BareEvent.level_loaded, ({ level }) => {
       const dims: Dimensions = level.dimensions;
       this.SetBounds({ x: 0, y: 0, width: dims.width, height: dims.height });
       //this.SetDimensions(dims.width,  dims.height );
@@ -133,19 +134,21 @@ class CameraHandler {
 
   SetBoundsToLevel() 
   {
-    if (!globalThis.levelHandler?.currentLevel)
+    var levelHandler = this.scene.Get("levelHandler");
+    if (!levelHandler)
       return;
 
-    const dims = globalThis.levelHandler.currentLevel.dimensions;
+    const dims = levelHandler.currentLevel.dimensions;
     this.SetBounds({ x: 0, y: 0, width: dims.width, height: dims.height });
   }
   
   SetDimensionsToLevel() 
   {
-    if (!globalThis.levelHandler?.currentLevel)
+    var levelHandler = this.scene.Get("levelHandler");
+    if (!levelHandler)
       return;
 
-    const dims = globalThis.levelHandler.currentLevel.dimensions;
+    const dims = levelHandler.currentLevel.dimensions;
     this.SetDimensions(dims.width, dims.height);
   }
 
@@ -281,4 +284,5 @@ class CameraHandler {
   }
 }
 
-export const cameraHandler = BareEngine.RegisterControllerProxy(CameraHandler);
+export var cameraHandler:CameraHandler;
+BareEngine.RegisterController(CameraHandler);

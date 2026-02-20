@@ -13,7 +13,7 @@ export class EditorUIScene extends Scene
 
     OnStart(): void | Promise<void>
     {
-        this.editorButton = new Button({text: "Open Editor", OnPress: this.OnClickEditorButton.bind(this)});
+        this.editorButton = new Button(this, {text: "Open Editor", OnPress: this.OnClickEditorButton.bind(this)});
         this.AddGameObject(this.editorButton);
 
         // HIDE EDITOR BUTTON IN PRODUCTION

@@ -1,17 +1,15 @@
-import { globalEvents, GameMode, MakePath, pipes } from "../main";
-import { Color, FrameBufferObject, RenderTexture, Texture, Vec2 } from "../libraries/rapid-render";
+import { globalEvents, GameMode, MakePath } from "../main";
+import { Color, FrameBufferObject, ICircleRenderOptions, IGraphicRenderOptions, IRectRenderOptions, IRenderLineOptions, ISpriteRenderOptions, MaskType, RenderTexture, Texture, TextureCache, Vec2 } from "../libraries/rapid-render";
 import { PoolHandler } from "../handlers/poolHandler";
 import { AwakePayload, BareEvent, SceneClass, Entity, GameObjectClass, Layer, LayerInfo, LevelData, SaveData, SceneOptions, SettingsData, UI_LAYER, SceneI, Events } from "../types/bareTypes";
 import { GameObject } from "../objects/gameObject";
 import { SettingsHandler as SettingsHandler } from "../handlers/settingsHandler";
-import { assetsHandler } from "../handlers/assetsHandler";
 import { defaultEntityData as defaultEntityData } from "../types/bareData";
 import { PhysicsObjectBare } from "../exports/barePhysics";
 import { ObjectController } from "../controllers/objectController";
 import { sceneController } from "../controllers/sceneController";
-import mitt from "../libraries/mitt";
 import { BareEngine } from "../bareEngine";
-import { mouseController } from "../exports";
+import mitt from "../libraries/mitt";
 
 /*Bare.camera.SetPosition(bare.width * .5, bare.height * .5);
 Bare.sound.Play()
@@ -34,6 +32,8 @@ Bare.pool.Add(); // poolHandler */
 
 export class Scene implements SceneI
 {
+    //private pipes = matt<Pipes>();
+    //private pipes = matt<Pipes>();
     static gameObjectPoolSize: int = 50;
     static gameObjectPools: Map<string, PoolHandler<GameObject>> = new Map();
     static registeredClasses: Record<string, any> = {};
@@ -51,11 +51,8 @@ export class Scene implements SceneI
 
     public isLevel: boolean = false;
 
-    public baseSettingsHandler: SettingsHandler = new SettingsHandler();
-    public currentSettingsHandler: SettingsHandler;
-
     public objectController: ObjectController;
-    private mouseController: any; // ANY TO NOT INCLUDE HITBOXCONTROLLER AS DEPENDENCY
+    private mouseController: any; // ANY TO NOT INCLUDE CLASS AS DEPENDENCY
     private hitboxController: any;
     private tweenController: any; 
     private componentController: any; 
@@ -65,10 +62,10 @@ export class Scene implements SceneI
     private levelHandler: any; 
     private cameraHandler: any; 
 
-    get baseSettings(): SettingsData { return this.baseSettingsHandler.Get(); }
-    get currentSettings(): SettingsData { return this.currentSettingsHandler.Get(); }
+    public settingsHandler: SettingsHandler = new SettingsHandler(this); // COULD ALSO BE PROXY
+    get settingsData(): SettingsData { return this.settingsHandler.Get(); }
     
-    isPaused: boolean = false;
+    isPaused: boolean = false;//
     doRender: boolean = true;
 
     layerInfos: Record<int, LayerInfo> = {};
@@ -81,12 +78,19 @@ export class Scene implements SceneI
 
     sceneOptions: SceneOptions;
 
-    get imagePath(): string { return Scene.rootPath + "/" + Scene.imagePath; }
-    get levelPath(): string { return Scene.rootPath + "/" + Scene.levelPath; }
-    get soundPath(): string { return Scene.rootPath + "/" + Scene.soundPath; }
-
     get currentLevelStr(): string { return SaveData.currentLevelStr; }
 
+    get width(): int { return rapid.width; }
+    get height(): int { return rapid.height; }
+    get textures(): TextureCache { return rapid.textures; }
+
+    get renderGraphic(): (options: IGraphicRenderOptions) => void { return rapid.renderGraphic.bind(rapid); }
+    get renderCircle(): (options: ICircleRenderOptions) => void { return rapid.renderCircle.bind(rapid); }
+    get renderLine(): (options: IRenderLineOptions) => void { return rapid.renderLine.bind(rapid); }
+    get renderRect(): (options: IRectRenderOptions) => void { return rapid.renderRect.bind(rapid); }
+    get renderSprite(): (options: ISpriteRenderOptions) => void { return rapid.renderSprite.bind(rapid); }
+    get drawMask(): (type: MaskType, cb: () => void) => void { return rapid.drawMask.bind(rapid); }
+    get clearMask(): () => void { return rapid.clearMask.bind(rapid); }
     public events = mitt<Events>(); // private todo
     //private pipes = matt<Pipes>();
     
@@ -124,7 +128,7 @@ export class Scene implements SceneI
         this.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT
 
         this.RegisterGameObjectPool(GameObject, Scene.gameObjectPoolSize);
-
+        
         BareEngine.SetControllerReferencesOnScene(this);
     }
 
@@ -132,16 +136,14 @@ export class Scene implements SceneI
     {
         rapid.backgroundColor = Color.White;
 
-        await this.baseSettingsHandler.Process(this.sceneOptions.entityData);
-        this.SetCurrentSettingsHandler(this.baseSettingsHandler);
+        await this.settingsHandler.Process(this.sceneOptions.entityData);
+        this.SetCurrentSettingsHandler(this.settingsHandler);
 
         globalEvents.emit(BareEvent.scene_awake);
 
-        BareEngine.SetControllerReferencesOnScene(this);
         await this.OnAwake(payload);
-        BareEngine.SetControllerReferencesOnScene(this);
 
-        this.baseSettingsHandler.ReprocessAnimations(); // NEEDED SINCE AN ATLAS WITH ANIMATIONS CAN BE LOADED IN AT AWAKE() ABOVE
+        this.settingsHandler.ReprocessAnimations(); // NEEDED SINCE AN ATLAS WITH ANIMATIONS CAN BE LOADED IN AT AWAKE() ABOVE
 
         await this.Start();
 
@@ -166,7 +168,7 @@ export class Scene implements SceneI
 
         //rapid.backgroundColor = Color.White;
 
-        this.SetCurrentSettingsHandler(this.baseSettingsHandler);// DOUBLE
+        this.SetCurrentSettingsHandler(this.settingsHandler);// DOUBLE
 
         await this.OnStart();
 
@@ -180,68 +182,14 @@ export class Scene implements SceneI
         // OPTIONAL TO OVERRIDE AS ASYNC - TO LOAD SOME MORE ASSETS BEFORE THE LOADING SCREEN DISAPPEARS
     }
 
-    // A CATCH-ALL METHOD TO REGISTER CLASSES
-    // CAN BE CONTROLLER/GAMEOBJECT/COMPONENT/PHYSICS/ETC
-    // DOESN'T ALWAYS DO SOMETHING, BUT JUST A HOAX TO LET THE DEV REFFERENCE THE CLASS
-    AddClass(_class: any): void
-    {
-        const className = _class.name;
-
-        if (Scene.registeredClasses[className])
-        {
-            //console.warn(`Module ${className} is already registered`);
-            return;
-        }
-
-        // CONTROLLERS
-        var classNameFirstLowercase = className.charAt(0).toLowerCase() + className.slice(1);
-        if (globalThis[classNameFirstLowercase])
-        {
-            /*if (globalThis[classNameFirstLowercase].Init)
-            {
-                globalThis[classNameFirstLowercase].Init(); // USED FOR PhysicsControllerBase, TO RE-SET PIPES, NEED FOR DEMO
-            }*/
-
-            return;
-        }
-
-        // GAMEOBJECT
-        if (_class.prototype instanceof GameObject)
-        {
-            this.RegisterGameObjectPool(_class, 1);
-
-            Scene.registeredClasses[className] = "taken";
-            return;
-        }
-
-        // COMPONENT
-        if (className.endsWith('Component'))
-        {
-            this.RegisterComponent(_class);
-
-            //Scene.modules[className] = "taken"; // COMMENTED OUT SINCE REGISTERED COMPONENTS ARE LOCAL TO BARE, HAS TO ADD
-
-            return;
-        }
-
-        //let instance = new _class(...args);
-        //Scene.registeredClasses[className] = instance;
-    }
-
-    RegisterComponent(componentClass: any)
-    {
-        var classNameNoLeadingUnderscore = componentClass.name.replace(/^_/, ''); // REMOVE LEADING _ THAT SOME COMPONENTS GET
-        bareEngine.componentClasses[classNameNoLeadingUnderscore] = componentClass;
-    }
-
     SetCurrentSettingsHandler(settingsHandler:SettingsHandler): SettingsHandler
     {
-        this.currentSettingsHandler = settingsHandler;
+        this.settingsHandler = settingsHandler;
 
-        var isBase = (this.currentSettingsHandler === this.baseSettingsHandler);
-        this.ApplyLayerInfoToSettings(this.currentSettings, isBase);
+        var isBase = (this.settingsHandler === this.settingsHandler);
+        this.ApplyLayerInfoToSettings(this.settingsData, isBase);
 
-        return this.currentSettingsHandler;
+        return this.settingsHandler;
     }
 
     // SEPARATE THIS OUT? TODO
@@ -321,22 +269,6 @@ export class Scene implements SceneI
             }
         }
     }
-
-    // HOW USEFUL IS THIS POOLING REALLY? TODO
-    // NO CONTROL OVER CACHE LOCALITY IN JS, MAYBE FASTER INITIALIZATION FOR MANY OBJECTS
-    // REUSE OF OBJECTS IS KINDA NICE
-    RegisterGameObjectPool(cls: GameObjectClass, defaultPoolSize: number = 10): void
-    {
-        const name = cls.name.startsWith("_") ? cls.name.substring(1) : cls.name;
-
-        if (Scene.gameObjectPools.has(name))
-        {
-            // SET DIFFERENT defaultPoolSize?
-            return;
-        }
-
-        Scene.gameObjectPools.set(name, new PoolHandler(() => new cls(), defaultPoolSize));
-    }
     
     HideLoadingText()
     {
@@ -349,7 +281,7 @@ export class Scene implements SceneI
         }
     }
     
-    ConstructEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.currentSettings, options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): Entity
+    ConstructEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): Entity
     {
         var final = (entity:Entity) => {
             // ANYTHING WITH A HITBOX IS A PHYSICS OBJECT
@@ -527,7 +459,7 @@ export class Scene implements SceneI
             this.componentController?.ProcessCompentsFromEntity(entity, obj);
     }
 
-    FillPresets(entity: Entity, settingsData: SettingsData = this.currentSettings)
+    FillPresets(entity: Entity, settingsData: SettingsData = this.settingsData)
     {
         var presets = settingsData.presets;
 
@@ -613,14 +545,14 @@ export class Scene implements SceneI
         }
     }
 
-    GetDummpyDataFromEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.baseSettingsHandler.Get(), options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): {entity: Entity, gameObject: GameObject}
+    GetDummpyDataFromEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsHandler.Get(), options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): {entity: Entity, gameObject: GameObject}
     {
         var entityConstructed = this.ConstructEntity(nameOrEntity, settingsData, options);
-        bare.dummyGameObject.ResetValues();
-        bare.dummyGameObject.InitTexture(MakePath(entityConstructed.imagePath!, entityConstructed.name)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
-        this.ApplyEntityToGameObject(entityConstructed, bare.dummyGameObject);
+        bareEngine.dummyGameObject.ResetValues();
+        bareEngine.dummyGameObject.InitTexture(MakePath(entityConstructed.imagePath!, entityConstructed.name)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
+        this.ApplyEntityToGameObject(entityConstructed, bareEngine.dummyGameObject);
 
-        return {entity: entityConstructed, gameObject: bare.dummyGameObject};
+        return {entity: entityConstructed, gameObject: bareEngine.dummyGameObject};
     }
 
     GetObjectFromPool(objectName: string): GameObject
@@ -638,7 +570,7 @@ export class Scene implements SceneI
     // INPUT COULD BE: ENTITY, ENTITY NAME, GAMEOBJECT, CLASS TO INSTANTIATE OR TEXTURE
     AddGameObject(input?: Entity | string | GameObject | GameObjectClass | Texture, parent: int | GameObject = Layer.OBJECTS): GameObject
     {
-        if (!this.currentSettingsHandler)
+        if (!this.settingsHandler)
         {
             throw new Error("Cannot add a GameObject yet, the scene has not awoken yet.\nCall AddGameObject() in OnAwake() or OnStart().");
         }
@@ -724,11 +656,7 @@ export class Scene implements SceneI
         {
             // ADDING TO LAYER
             var layer = parent;
-
-            if (layer < UI_LAYER)
-                this.objectController.Add(gameObject, layer);
-            else
-                uiController.Add(gameObject, layer);//TODO
+            this.objectController.Add(gameObject, layer);
         }
 
         gameObject.Added();
@@ -777,16 +705,12 @@ export class Scene implements SceneI
             {
                 // REMOVING FROM LAYER
                 var layer = parent;
-
-                if (layer < UI_LAYER)
-                    removed = this.objectController.Remove(gameObject, layer);
-                else
-                    removed = uiController.Remove(gameObject, layer);
+                removed = this.objectController.Remove(gameObject, layer);
             }
         }
         else
         {
-            removed = this.objectController.Remove(gameObject) || uiController.Remove(gameObject);
+            removed = this.objectController.Remove(gameObject);
         }
         
         if (!removed)
@@ -804,19 +728,6 @@ export class Scene implements SceneI
             if (pool)
                 pool.Release(gameObject);
         }
-    }
-
-    MouseIsOnEditor(event: PointerEvent | WheelEvent): boolean
-    {
-        if (!bare.levelEditorOpen)
-            return false;
-
-        const target = event.target as HTMLElement;
-        var name = (target.id || target.className);
-
-        var onEditor = (name != "canvas");
-
-        return onEditor;
     }
 
     Update(deltaTime: number): void
@@ -939,26 +850,6 @@ export class Scene implements SceneI
         return true;
     }
 
-    MoveGameObjectToUI(gameObject: GameObject, uiLayer: int = UI_LAYER): void
-    {
-        this.objectController.Remove(gameObject);
-        uiController.Add(gameObject, uiLayer);
-
-        var screenPos = this.WorldToScreenPos(gameObject.position);
-        gameObject.x = screenPos.x;
-        gameObject.y = screenPos.y;
-    }
-
-    MoveGameObjectToWorld(gameObject: GameObject, layer: int = 0): void
-    {
-        uiController.Remove(gameObject);
-        this.objectController.Add(gameObject, layer);
-
-        var worldPos = this.ScreenToWorldPos(gameObject.position);
-        gameObject.x = worldPos.x;
-        gameObject.y = worldPos.y;
-    }
-
     ScreenToWorldPos(position:Vec2)
     {
         return this.ScreenToWorld(position.x, position.y);
@@ -1021,8 +912,8 @@ export class Scene implements SceneI
     // THIS SHOULD NOT BE HERE, TODO
     async SaveEntityData(newRawData: SettingsData)
     {
-        this.baseSettingsHandler.SetRaw(newRawData);
-        await this.baseSettingsHandler.Process();
+        this.settingsHandler.SetRaw(newRawData);
+        await this.settingsHandler.Process();
     
         // Persist to disk via dev-server endpoint when available (local only)
         if (!window.isLocalhost) {
@@ -1034,14 +925,14 @@ export class Scene implements SceneI
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                entityData: this.baseSettingsHandler.GetRaw(),
+                entityData: this.settingsHandler.GetRaw(),
                 skipReload: true
             })
           });
           const json = await res.json().catch(() => null);
         
           // TELL THE PLUGIN
-          window.__GAME_DEBUG_API__.notifyEntityDataChanged(this.baseSettingsHandler.GetRaw())
+          window.__GAME_DEBUG_API__.notifyEntityDataChanged(this.settingsHandler.GetRaw())
 
           return { ok: res.ok, saved: res.ok, response: json };
         } catch (error: any) {
@@ -1079,6 +970,78 @@ export class Scene implements SceneI
         return this.componentController?.GetAllComponentsFrom(obj);
     }
 
+    // HOW USEFUL IS THIS POOLING REALLY? TODO
+    // NO CONTROL OVER CACHE LOCALITY IN JS, MAYBE FASTER INITIALIZATION FOR MANY OBJECTS
+    // REUSE OF OBJECTS IS KINDA NICE
+    RegisterGameObjectPool(cls: GameObjectClass, defaultPoolSize: number = 10): void
+    {
+        const name = cls.name.startsWith("_") ? cls.name.substring(1) : cls.name;
+
+        if (Scene.gameObjectPools.has(name))
+        {
+            // SET DIFFERENT defaultPoolSize?
+            return;
+        }
+
+        Scene.gameObjectPools.set(name, new PoolHandler(() => new cls(this), defaultPoolSize));// NOT ON SCENE - TODO
+    }
+
+    // A CATCH-ALL METHOD TO REGISTER CLASSES
+    // CAN BE CONTROLLER/GAMEOBJECT/COMPONENT/PHYSICS/ETC
+    // DOESN'T ALWAYS DO SOMETHING, BUT JUST A HOAX TO LET THE DEV REFFERENCE THE CLASS
+    AddClass(_class: any): void
+    {
+        const className = _class.name;
+
+        if (Scene.registeredClasses[className])
+        {
+            //console.warn(`Module ${className} is already registered`);
+            return;
+        }
+
+        // CONTROLLERS
+        var classNameFirstLowercase = className.charAt(0).toLowerCase() + className.slice(1);
+        if (globalThis[classNameFirstLowercase])
+        {
+            /*if (globalThis[classNameFirstLowercase].Init)
+            {
+                globalThis[classNameFirstLowercase].Init(); // USED FOR PhysicsControllerBase, TO RE-SET PIPES, NEED FOR DEMO
+            }*/
+
+            return;
+        }
+
+        // GAMEOBJECT
+        if (_class.prototype instanceof GameObject)
+        {
+            const scene = window.currentSceneProcessing;
+            if (scene)
+                this.RegisterGameObjectPool(_class, 1);
+
+            Scene.registeredClasses[className] = "taken";
+            return;
+        }
+
+        // COMPONENT
+        if (className.endsWith('Component'))
+        {
+            this.RegisterComponent(_class);
+
+            //Scene.modules[className] = "taken"; // COMMENTED OUT SINCE REGISTERED COMPONENTS ARE LOCAL TO BARE, HAS TO ADD
+
+            return;
+        }
+
+        //let instance = new _class(...args);
+        //Scene.registeredClasses[className] = instance;
+    }
+
+    RegisterComponent(componentClass: any)
+    {
+        var classNameNoLeadingUnderscore = componentClass.name.replace(/^_/, ''); // REMOVE LEADING _ THAT SOME COMPONENTS GET
+        bareEngine.componentClasses[classNameNoLeadingUnderscore] = componentClass;
+    }
+
     Resize(prevWidth: number, prevHeight: number, newWidth: number, newHeight: number)
     {
         if (this.UI)
@@ -1099,6 +1062,11 @@ export class Scene implements SceneI
     OnResize(prevWidth: number, prevHeight: number, newWidth: number, newHeight: number)
     {
         // FOR OVERRIDE
+    }
+
+    Get(instanceName: string):any
+    {
+        return this[instanceName];
     }
 
     async Restart(full:boolean = false)
@@ -1184,7 +1152,7 @@ export class Scene implements SceneI
         return true;
     }
 
-    CreateClassIfNotExist(propertyName: string):void
+    CreateClassIfNotExist(propertyName: string, scene:Scene):void
     {
         if ((this as any)[propertyName])
             return;
@@ -1194,7 +1162,7 @@ export class Scene implements SceneI
 
         if (Ctor)
         {
-            (this as any)[propertyName] = new Ctor();
+            (this as any)[propertyName] = new Ctor(scene);
         }
     }
 

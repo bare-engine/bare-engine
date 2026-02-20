@@ -1,4 +1,4 @@
-import { globalEvents, pipes } from "../main";
+import { globalEvents, pipes, Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { BareEventPayload, Dimensions, UI_LAYER, BareEvent, SaveData } from '../types/bareTypes';
 
@@ -6,9 +6,13 @@ export class PhysicsControllerBase
 {
   	public collisionsEnabled: boolean = true;
 
-	constructor()
+	public scene: Scene;
+
+	constructor(scene: Scene)
 	{
-		bare.events.persistent.on(BareEvent.game_completeClear, () => {
+		this.scene = scene;
+	
+		this.scene.events.persistent.on(BareEvent.game_completeClear, () => {
 			//pipes.remove("physicsController_Update");
 			//pipes.remove("physicsController_Render");
 		});
@@ -19,10 +23,10 @@ export class PhysicsControllerBase
 
 	Start(): void
 	{  
-		bare.events.on(BareEvent.game_resize, this.OnResize.bind(this));
-		bare.events.on(BareEvent.game_objectAdded, this.OnGameObjectAdded.bind(this));
-		bare.events.on(BareEvent.game_objectRemoved, this.OnGameObjectRemoved.bind(this));
-		bare.events.on(BareEvent.level_loaded, this.OnLevelLoaded.bind(this));
+		this.scene.events.on(BareEvent.game_resize, this.OnResize.bind(this));
+		this.scene.events.on(BareEvent.game_objectAdded, this.OnGameObjectAdded.bind(this));
+		this.scene.events.on(BareEvent.game_objectRemoved, this.OnGameObjectRemoved.bind(this));
+		this.scene.events.on(BareEvent.level_loaded, this.OnLevelLoaded.bind(this));
 		
 		//pipes.set("physicsController_Update", this.Update.bind(this));
 		//pipes.set("physicsController_Render", this.Render.bind(this));	
