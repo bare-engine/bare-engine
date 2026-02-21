@@ -22,12 +22,8 @@ export class PhysicsControllerBare extends PhysicsControllerBase
   {
     super(scene);
 
-      this.scene.events.persistent.on(BareEvent.game_started, () => {
-        if (this.width == 0 && this.height == 0)
-          this.setDimensions(0, 0, bare.width, bare.height);
-
-        scene.RegisterGameObjectPool(PhysicsObjectBare, 10);
-      });
+    this.setDimensions(0, 0, bare.width, bare.height);
+    scene.RegisterGameObjectPool(PhysicsObjectBare, 10);
   }
   
   Add(object: GameObject): void

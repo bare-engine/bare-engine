@@ -663,6 +663,7 @@ export class Scene implements SceneI
 
         // NOTIFY
         globalEvents.emit(BareEvent.game_objectAdded, { gameObject: gameObject, layer: parent });
+        this.events.emit(BareEvent.game_objectAdded, { gameObject: gameObject, layer: parent });
 
         return gameObject;
     }
@@ -720,6 +721,7 @@ export class Scene implements SceneI
 
         // NOTIFY
         globalEvents.emit(BareEvent.game_objectRemoved, gameObject);
+        this.events.emit(BareEvent.game_objectRemoved, gameObject);
 
         if (wasPooled)
         {
