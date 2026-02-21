@@ -62,7 +62,7 @@ export class EditorControlsHandler {
         this.scene.events.on(BareEvent.pointer_move, this.PointerMove.bind(this));
         this.scene.events.on(BareEvent.pointer_up, this.PointerUp.bind(this));
         this.scene.events.on(BareEvent.pointer_doubleClick, this.DoubleClick.bind(this));
-        this.scene.events.on(BareEvent.game_postRender, this.PostRender.bind(this));
+        //this.scene.events.on(BareEvent.game_postRender, this.PostRender.bind(this));
         this.scene.events.on(BareEvent.key_pressed, this.KeyPressed.bind(this));
         this.scene.events.on(BareEvent.key_released, this.KeyReleased.bind(this));
         this.scene.events.on(BareEvent.editor_layerSelected, this.LayerSelected.bind(this));
@@ -202,8 +202,8 @@ export class EditorControlsHandler {
 
             this.selectionRect.x = x;
             this.selectionRect.y = y;
-            this.selectionRect.width = w;
-            this.selectionRect.height = h;
+            this.selectionRect.width = 0;
+            this.selectionRect.height = 0;
 
             this.actionThisFrame = 'selectionRect';
         }
@@ -299,31 +299,34 @@ export class EditorControlsHandler {
 
     SelectGameObjectsInRect(rect: Rectangle = {x: 0, y: 0, width: 0, height: 0})
     {
-        var selectedLayer = document.querySelector('.selected-layer')!;
-        var layerName = selectedLayer.id;
-        var objs = objectController.GetLayerByName(layerName);
-
-        if (keyboardController.IsKeyDown("control"))
-            objs = objectController.GetAllObjects();
-
         var objsToSelect: GameObject[] = [];
 
-        for (var i = objs.length - 1; i >= 0; i--)
+        if (rect.width != 0 && rect.height != 0)
         {
-            var obj = objs[i];
-            
-            if (!obj.tapHitbox)
-                continue; // COULD BE THE PREVIEW OBJECT
+            var selectedLayer = document.querySelector('.selected-layer')!;
+            var layerName = selectedLayer.id;
+            var objs = objectController.GetLayerByName(layerName);
 
-            var topLeft = {x: obj.x - obj.pivot.x, y: obj.y - obj.pivot.y};
-            var otherRect = {x: topLeft.x, y: topLeft.y, width: obj.tapHitbox.rectangle.width, height: obj.tapHitbox.rectangle.height};
+            if (keyboardController.IsKeyDown("control"))
+                objs = objectController.GetAllObjects();
 
-            if (otherRect.x < rect.x + rect.width &&
-                otherRect.x + otherRect.width > rect.x &&
-                otherRect.y < rect.y + rect.height &&
-                otherRect.y + otherRect.height > rect.y)
+            for (var i = objs.length - 1; i >= 0; i--)
             {
-                objsToSelect.push(obj);
+                var obj = objs[i];
+                
+                if (!obj.tapHitbox)
+                    continue; // COULD BE THE PREVIEW OBJECT
+
+                var topLeft = {x: obj.x - obj.pivot.x, y: obj.y - obj.pivot.y};
+                var otherRect = {x: topLeft.x, y: topLeft.y, width: obj.tapHitbox.rectangle.width, height: obj.tapHitbox.rectangle.height};
+
+                if (otherRect.x < rect.x + rect.width &&
+                    otherRect.x + otherRect.width > rect.x &&
+                    otherRect.y < rect.y + rect.height &&
+                    otherRect.y + otherRect.height > rect.y)
+                {
+                    objsToSelect.push(obj);
+                }
             }
         }
 

@@ -199,17 +199,8 @@ export let Layer = {
   OBJECTS: 0,
 } as LayerMap;
 
-export let UILayer = {
-    UI: UI_LAYER,
-    FADE: UI_LAYER + 1
-} as const;
-
 export function SetLayers<T extends LayerMap>(layers: T) {
   Layer = layers;
-}
-
-export function SetUILayers<T extends Record<string, number>>(UILayers: T) {
-  UILayer = UILayers as any;
 }
 
 // EVENTS MONSTER - SINCE IT WANT TO EASILY ADD BARE-EVENTS AND LET IT TAKE USER STRINGS

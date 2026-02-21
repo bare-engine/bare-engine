@@ -304,8 +304,8 @@ export class BareEngine
         var scenes = sceneController.GetAllScenes();
         for (var scene of scenes)
         {
-            if (!scene.enabled || scene.paused)
-                continue;
+            //if (!scene.enabled || scene.paused)
+            //    continue;
 
             scene.events.emit(type, ...event);
         }

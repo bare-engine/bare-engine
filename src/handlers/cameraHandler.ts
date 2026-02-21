@@ -26,6 +26,23 @@ class CameraHandler {
   offset: Vec2 = new Vec2(0, 0);
   scene: Scene;
 
+  get topLeftTargetX(): number
+  {
+    return this.target.x - this.offset.x
+  }
+  set topLeftTargetX(value: number)
+  {
+    this.target.x = value - this.offset.x;
+  }
+  get topLeftTargetY(): number
+  {
+    return this.target.y - this.dimensions.height / 2;
+  }
+  set topLeftTargetY(value: number)
+  {
+    this.target.y = value + this.dimensions.height / 2;
+  }
+
   constructor(scene: Scene)
   {
     this.scene = scene;
@@ -53,6 +70,23 @@ class CameraHandler {
 
   OnResize(prevWidth: number, prevHeight: number, newWidth: number, newHeight: number)
   {
+    if (this.scene?.UI)
+    {
+      this.dimensions.width = newWidth;
+      this.dimensions.height = newHeight;
+      this.target.x = newWidth / 2;
+      this.target.y = newHeight / 2;
+      this.position.x = this.target.x;
+      this.position.y = this.target.y;
+      this.zoomFit = 1;
+      return;
+    }
+
+    if (prevWidth == this.dimensions.width && prevHeight == this.dimensions.height)
+    {
+      this.dimensions.width = newWidth;
+      this.dimensions.height = newHeight;
+    }
     this.CalculateZoomFit();
   }
 
@@ -206,6 +240,12 @@ class CameraHandler {
 
   SetTransform(): void
   {
+    if (this.dimensions.width == 0 || this.dimensions.height == 0)
+        return;
+    
+    //if (this.dimensions.width == bare.width && this.dimensions.height == bare.height)
+    //    return;
+
     //if (this.position.x == 0 && this.position.y == 0 && this.zoom == 1)
     //  return;
 

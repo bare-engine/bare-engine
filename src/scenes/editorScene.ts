@@ -1,31 +1,25 @@
-import { globalEvents, GameMode, MakePath, Scene } from "../main";
-import { Color, Vec2 } from "../libraries/rapid-render";
-import { EditorControlsHandler } from "../handlers/editorControlsHandler";
-import { EditorUIHandler } from "../handlers/editorUIHandler";
-import { SettingsData, Entity, LevelData, Dimensions, SaveData, BareEvent } from "../types/bareTypes";
-import { SaveDataHandler } from "../handlers/SaveDataHandler";
-import { GameObject } from "../objects/gameObject";
-import { assetsHandler } from "../handlers/assetsHandler";
-import { Helper } from "../utils/helper";
-import { SettingsHandler } from "../handlers/settingsHandler";
+import { sceneController } from "../controllers/sceneController";
 import { PivotComponent } from "../editorComponents/pivotComponent";
 import { PivotRemoveComponent } from "../editorComponents/pivotRemoveComponent";
+import { PositionPivotComponent } from "../editorComponents/positionPivotComponent";
 import { ResizableComponent } from "../editorComponents/resizableComponent";
 import { ResizableRemoveComponent } from "../editorComponents/resizableRemoveComponent";
-import { PositionPivotComponent } from "../editorComponents/positionPivotComponent";
-import { FileDropHandler } from "../handlers/fileDropHandler";
-import { cameraHandler } from "../handlers/cameraHandler";
 import { PhysicsObjectBare } from "../exports/barePhysics";
-import { sceneController } from "../controllers/sceneController";
+import { assetsHandler } from "../handlers/assetsHandler";
+import { cameraHandler } from "../handlers/cameraHandler";
+import { EditorControlsHandler } from "../handlers/editorControlsHandler";
+import { EditorUIHandler } from "../handlers/editorUIHandler";
+import { FileDropHandler } from "../handlers/fileDropHandler";
+import { levelHandler, LevelHandler } from "../handlers/levelHandler";
+import { SaveDataHandler } from "../handlers/SaveDataHandler";
+import { SettingsHandler } from "../handlers/settingsHandler";
+import { Color, Vec2 } from "../libraries/rapid-render";
+import { GameMode, globalEvents, MakePath, Scene } from "../main";
+import { GameObject } from "../objects/gameObject";
+import { BareEvent, Dimensions, Entity, LevelData, SaveData, SettingsData } from "../types/bareTypes";
 import { CameraScaleMode, HitboxType } from "../types/gamesTypes";
 import { Hitbox } from "../types/hitbox";
-import { levelHandler, LevelHandler } from "../handlers/levelHandler";
-import { BareEngine } from "../exports";
-
-/*
-    EDITOR CONTROLLER (MAIN)
-    Orchestrates all editor system components and manages the overall editor state
-*/
+import { Helper } from "../utils/helper";
 
 export class EditorScene extends Scene
 {
@@ -48,54 +42,21 @@ export class EditorScene extends Scene
 
     saveLevelCallback: () => Promise<LevelData>;
 
-    /*get currentLevel2(): LevelScene
-    { 
-        var scenes = sceneController.currentScenes;
-        for (var scene of scenes)
-        {
-            if (scene instanceof LevelScene)
-            if (scene != this)
-                return scene;
-        }
-
-        return null;
-    }*/
-
     constructor()
     {  
         var entityData = sceneController.GetLevelScene().sceneOptions.entityData;
         super({entityData: entityData, persistent: true });
         
-        this.AddClass(LevelHandler);
-
         this.SetupFileDropZone();
 
         this.SetHitboxData(); // KEEP IN HERE? TODO
-
-        this.init();
     }
 
     OnStart(): void | Promise<void>
     {
-        this.events.persistent.on(BareEvent.scene_changed, this.OnSceneChanged.bind(this));
-
         cameraHandler.SetScaleMode(CameraScaleMode.Contain);
 
         this.Open();
-    }
-
-    init()
-    {
-        if (this.editorUIHandler)
-            this.editorControlsHandler.init();
-    }
-
-    OnSceneChanged()
-    {
-        /*if (sceneController.Has(LevelScene))
-            this.editorButton.visible = true;
-        else
-            this.editorButton.visible = false;*/
     }
 
     override Start(): Promise<void>
@@ -231,20 +192,7 @@ export class EditorScene extends Scene
         sceneController.Remove(EditorScene); // this DIDN'T WORK, FIX! TODO
         sceneController.EnableAllScenes();
 
-        for (var scene of sceneController.currentScenes)
-        {
-            if (!scene.persistent)
-            {
-                scene.Clear();
-            }
-        }
-        for (var scene of sceneController.currentScenes)
-        {
-            if (!scene.persistent)
-            {
-                scene.Start();
-            }
-        }
+        bareEngine.Restart();
 
         //if (loadLevelAfter)
         //    levelController.LoadCurrentLevel();
@@ -467,6 +415,17 @@ export class EditorScene extends Scene
                 color: gridColor,
             });
         }
+    }
+
+    OnPostRender()
+    {
+        if (!this.opened)
+            return;
+
+        if (!this.currentLevel)
+            return;
+
+        this.editorControlsHandler.PostRender();
     }
 
     // BIT SEPARATE FROM THIS CLASS, BUT USEFUL HERE AND NOT INCLUDE IN BAREGAME

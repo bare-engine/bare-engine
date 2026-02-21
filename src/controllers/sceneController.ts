@@ -59,6 +59,12 @@ export class SceneController
 
     async Add<T extends Scene>(scene: Scene | SceneClass<T>, payload?: AwakePayload<T>): Promise<T>
     {
+        if (this.Has(scene as SceneClass<T>))
+        {
+            console.warn("SceneController: Scene already added: " + (scene as SceneClass<T>).name);
+            return this.Get(scene as SceneClass<T>);
+        }
+
         var newScene: T;
 
         if (typeof scene === "function")
@@ -71,8 +77,10 @@ export class SceneController
 
         await newScene.Awake(payload);
 
-        globalEvents.emit(BareEvent.scene_added, { scene: newScene });
-        globalEvents.emit(BareEvent.scene_changed, { scene: newScene, type: "added" });
+        //globalEvents.emit(BareEvent.scene_added, { scene: newScene });
+        //globalEvents.emit(BareEvent.scene_changed, { scene: newScene, type: "added" });
+        bareEngine.SendEvent(BareEvent.scene_added, { scene: newScene });
+        bareEngine.SendEvent(BareEvent.scene_changed, { scene: newScene, type: "added" });
 
         return newScene;
     }
@@ -98,6 +106,62 @@ export class SceneController
         else
         {
             console.warn("Scene not found");
+        }
+    }
+
+    MoveUp<T extends Scene>(scene: Scene | SceneClass<T>): void
+    {
+        const index = (typeof scene === "function")
+            ? this.currentScenes.findIndex(current => current instanceof scene)
+            : this.currentScenes.indexOf(scene);
+            
+        if (index !== -1 && index < this.currentScenes.length - 1)
+        {
+            const targetScene = this.currentScenes[index];
+            this.currentScenes.splice(index, 1);
+            this.currentScenes.splice(index + 1, 0, targetScene);
+        }
+    }
+
+    MoveDown<T extends Scene>(scene: Scene | SceneClass<T>): void
+    {
+        const index = (typeof scene === "function")
+            ? this.currentScenes.findIndex(current => current instanceof scene)
+            : this.currentScenes.indexOf(scene);
+
+        if (index !== -1 && index > 0)
+        {
+            const targetScene = this.currentScenes[index];
+            this.currentScenes.splice(index, 1);
+            this.currentScenes.splice(index - 1, 0, targetScene);
+        }
+    }
+
+    MoveToFront<T extends Scene>(scene: Scene | SceneClass<T>): void
+    {
+        const index = (typeof scene === "function")
+            ? this.currentScenes.findIndex(current => current instanceof scene)
+            : this.currentScenes.indexOf(scene);
+
+        if (index !== -1)
+        {
+            const targetScene = this.currentScenes[index];
+            this.currentScenes.splice(index, 1);
+            this.currentScenes.push(targetScene);
+        }
+    }
+
+    MoveToBack<T extends Scene>(scene: Scene | SceneClass<T>): void
+    {
+        const index = (typeof scene === "function")
+            ? this.currentScenes.findIndex(current => current instanceof scene)
+            : this.currentScenes.indexOf(scene);
+
+        if (index !== -1)
+        {
+            const targetScene = this.currentScenes[index];
+            this.currentScenes.splice(index, 1);
+            this.currentScenes.unshift(targetScene);
         }
     }
 

@@ -70,6 +70,7 @@ export { TweenTo } from "../controllers/tweenController";
 
 // Components
 export { AnimationComponent } from "../components/animationComponent";
+export { TextObject } from "../objects/textObject";
 
 // Utils
 export { assetsHandler } from "../handlers/assetsHandler";
@@ -90,9 +91,7 @@ export {
   CollisionHandlingType,
   Layer,
   SetLayers,
-  SetUILayers,
   UI_LAYER,
-  UILayer,
   SaveData,
 } from "../types/bareTypes";
 export type {
