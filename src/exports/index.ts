@@ -91,7 +91,6 @@ export {
   CollisionHandlingType,
   Layer,
   SetLayers,
-  UI_LAYER,
   SaveData,
 } from "../types/bareTypes";
 export type {

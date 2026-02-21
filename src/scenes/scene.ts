@@ -1,7 +1,7 @@
 import { globalEvents, GameMode, MakePath } from "../main";
 import { Color, FrameBufferObject, ICircleRenderOptions, IGraphicRenderOptions, IRectRenderOptions, IRenderLineOptions, ISpriteRenderOptions, MaskType, RenderTexture, Texture, TextureCache, Vec2 } from "../libraries/rapid-render";
 import { PoolHandler } from "../handlers/poolHandler";
-import { AwakePayload, BareEvent, SceneClass, Entity, GameObjectClass, Layer, LayerInfo, LevelData, SaveData, SceneOptions, SettingsData, UI_LAYER, SceneI, Events } from "../types/bareTypes";
+import { AwakePayload, BareEvent, SceneClass, Entity, GameObjectClass, Layer, LayerInfo, LevelData, SaveData, SceneOptions, SettingsData, SceneI, Events } from "../types/bareTypes";
 import { GameObject } from "../objects/gameObject";
 import { SettingsHandler as SettingsHandler } from "../handlers/settingsHandler";
 import { defaultEntityData as defaultEntityData } from "../types/bareData";
@@ -221,7 +221,7 @@ export class Scene implements SceneI
         this.layerNames = data.layers.slice();
 
         // ASSIGN LAYER DATA TO layerInfos
-        if (data.uiLayers)
+        /*if (data.uiLayers)
         {
             for (var j = 0; j < data.uiLayers.length; j++)
             {
@@ -242,7 +242,7 @@ export class Scene implements SceneI
                 const { showInEditor } = layerInfo;
                 data.layersInfo[layerName] = { ...storedInfo, ...(showInEditor === undefined ? {} : { showInEditor }) };
             }
-        }
+        }*/
 
         // HANDLE CHANGE OF OBJECTS LAYER, COULD BE DIFFERENT IN ANOTHER ENTITYDATA.JSON
         // WHICH MESSES WITH CODE HERE THAT USES Layer.OBJECTS, SO CHANGING OR REVERTING THE VALUE HERE
@@ -681,8 +681,7 @@ export class Scene implements SceneI
 
     RemoveGameObject(gameObject: GameObject, parent?: int | GameObject)
     {
-        var isUI = (parent !== undefined && !(parent instanceof GameObject) && parent >= UI_LAYER);
-        if (!gameObject.addedToLevel && !isUI)
+        if (!gameObject.addedToLevel)
         {
             // GAMEOBJECT WAS ALREADY REMOVED
             return;
@@ -738,7 +737,8 @@ export class Scene implements SceneI
         this.hitboxController?.Update(deltaTime);
         this.objectController.Update(deltaTime);
         this.tweenController?.Update(bareEngine.time); // STUPID TIME VAR - TODO
-        (this.physicsControllerBare || this.physicsControllerSopiro)?.Update(deltaTime);
+        this.physicsControllerBare?.Update(deltaTime);
+        this.physicsControllerSopiro?.Update(deltaTime);
         this.componentController?.Update(deltaTime);
         this.particleController?.Update(deltaTime);
 
@@ -774,7 +774,8 @@ export class Scene implements SceneI
         this.hitboxController?.Render();
         this.componentController?.Render();
         this.objectController.Render();
-        (this.physicsControllerBare || this.physicsControllerSopiro)?.Render();
+        this.physicsControllerBare?.Render();
+        this.physicsControllerSopiro?.Render();
         this.particleController?.Render();
 
         this.OnRender();
@@ -1075,13 +1076,16 @@ export class Scene implements SceneI
         await this.Start();
     }
 
-    Clear(full:boolean = false)
+    Clear(full:boolean = false, clearEvents:boolean = true)
     {
-        if (full)
-            this.events.clearAll();
-        else
-            this.events.clear();
-
+        if (clearEvents)
+        {
+            if (full)
+                this.events.clearAll();
+            else
+                this.events.clear();
+        }
+        
         var classes = BareEngine.controllerNames;
         for (let i = 0; i < classes.length; i++)
         {

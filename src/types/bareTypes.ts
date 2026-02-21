@@ -193,8 +193,6 @@ export interface LayerMap {
   OBJECTS: number;
 }
 
-export const UI_LAYER = 50; // NOT THE BEST?
-
 export let Layer = {
   OBJECTS: 0,
 } as LayerMap;

@@ -1,6 +1,6 @@
-import { globalEvents, pipes, Scene } from "../main";
+import { Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
-import { BareEventPayload, Dimensions, UI_LAYER, BareEvent, SaveData } from '../types/bareTypes';
+import { BareEvent, BareEventPayload, Dimensions, SaveData } from '../types/bareTypes';
 
 export class PhysicsControllerBase
 {
@@ -40,7 +40,7 @@ export class PhysicsControllerBase
 
 	OnGameObjectAdded({ gameObject, layer }: BareEventPayload['game_objectAdded']): void
 	{
-		if (typeof layer === 'number' && layer < UI_LAYER && (gameObject as any).isPhysicsObject)
+		if ((gameObject as any).isPhysicsObject)
 		{
 			this.Add(gameObject);
 		}

@@ -21,19 +21,18 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 	{
 		super(scene);
 
-    	this.world = new World();
-
-		this.scene.events.persistent.on(BareEvent.game_started, () => {
-		});
+    	this.world = new World(scene);
     }
 
-	Start(): void
+	override Start(): void
 	{  
 		this.scene.events.on(BareEvent.physics_refreshBody, this.RefreshBody.bind(this));
 
 		this.scene.RegisterGameObjectPool(Polygon, 1);
 		this.scene.RegisterGameObjectPool(Box, 1);
 		this.scene.RegisterGameObjectPool(Circle, 1);
+
+		super.Start();
 	}
 
 	Add(object: any): void

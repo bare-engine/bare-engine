@@ -1,12 +1,12 @@
-import { globalEvents, pipes, Scene } from "../main";
-import { GameObject } from "../objects/gameObject";
-import { Helper } from "../utils/helper";
-import { Hitbox } from "../types/hitbox";
-import { HitboxType } from "../types/gamesTypes";
-import { BareEventPayload, CollisionHandlingType, UI_LAYER, BareEvent, Events } from '../types/bareTypes';
-import { Vec2 } from "../libraries/rapid-render";
-import { mouseController } from "./mouseController";
 import { BareEngine } from "../bareEngine";
+import { Vec2 } from "../libraries/rapid-render";
+import { Scene } from "../main";
+import { GameObject } from "../objects/gameObject";
+import { BareEvent, BareEventPayload, CollisionHandlingType } from '../types/bareTypes';
+import { HitboxType } from "../types/gamesTypes";
+import { Hitbox } from "../types/hitbox";
+import { Helper } from "../utils/helper";
+import { mouseController } from "./mouseController";
 import { objectController } from "./objectController";
 
 type AnyPress = (go: any, ...args: any[]) => any;

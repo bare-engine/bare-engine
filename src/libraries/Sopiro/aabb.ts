@@ -3,6 +3,7 @@ import { Circle } from "./circle";
 import { Vec2 } from "../rapid-render";
 import { Polygon } from "./polygon";
 import { RigidBody } from "./rigidbody";
+import { Scene } from "../../exports";
 
 export class AABB
 {
@@ -34,12 +35,12 @@ export function fix(aabb: AABB): void
     aabb.max.y = maxY;
 }
 
-export function toRigidBody(aabb: AABB): RigidBody
+export function toRigidBody(aabb: AABB, scene: Scene): RigidBody
 {
     let width = aabb.max.x - aabb.min.x;
     let height = aabb.max.y - aabb.min.y;
 
-    let box = new Box(width, height);
+    let box = new Box(scene, width, height);
     box.position.x += aabb.min.x + width / 2.0;
     box.position.y += aabb.min.y + height / 2.0;
 

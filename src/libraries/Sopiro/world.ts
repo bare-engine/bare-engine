@@ -12,11 +12,14 @@ import { Vec2 } from "../rapid-render";
 import { getCollisionPairsNSquared } from "./nsquared";
 import { Renderer } from "./renderer";
 import { Color } from "../rapid-render";
+import { Scene } from "../../exports";
 
 type Registrable = RigidBody | Joint;
 
 export class World
 {
+    public scene: Scene;
+
     private uid = 0;
 
     // Dynamic AABB Tree for broad phase collision detection
@@ -41,8 +44,9 @@ export class World
 
     renderer: Renderer;
 
-    constructor()
+    constructor(scene: Scene)
     {
+        this.scene = scene;
         this.renderer = new Renderer();
     }
 
@@ -517,7 +521,7 @@ export class World
                 continue;
             }
 
-            if (detectCollision(toRigidBody(region), node.body!) != null)
+            if (detectCollision(toRigidBody(region, this.scene), node.body!) != null)
             {
                 res.push(node.body!);
             }

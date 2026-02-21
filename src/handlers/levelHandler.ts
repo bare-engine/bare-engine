@@ -85,7 +85,7 @@ export class LevelHandler
             }
         }
 
-        this.scene.Clear(); // CLEARS EVENTS TOO
+        this.scene.Clear(false, false); 
         this.scene.doRender = false;
         await this.scene.OnBeforeLoadLevel();
 

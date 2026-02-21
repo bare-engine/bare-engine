@@ -1,5 +1,4 @@
 import { GameObject } from "../objects/gameObject";
-import { UI_LAYER } from "../types/bareTypes";
 import { BareEngine } from "../bareEngine";
 import { Scene } from "../scenes/scene";
 
@@ -81,10 +80,6 @@ export class ObjectController
 
     Add(obj: GameObject, layer: int = 0): void
     {
-        // ADD MORE LAYERS IF NEEDED - TODO: PUT AT INITIALIZATION?
-        if (layer >= UI_LAYER)
-            layer -= UI_LAYER;
-        
         if (layer >= this.layers.length)
         {
             for (let i = this.layers.length; i <= layer; i++)
@@ -93,8 +88,7 @@ export class ObjectController
             }
         }
 
-        var layerNum = this.GetLayerNumber(layer);
-        this.layers[layerNum].push(obj);
+        this.layers[layer].push(obj);
     }
 
 	Remove(obj: GameObject, layer?: int): boolean
@@ -120,19 +114,17 @@ export class ObjectController
 
 	private RemoveFromLayer(obj: GameObject, layer: int): boolean
 	{
-        var layerNum = this.GetLayerNumber(layer);
-        
-        if (!this.layers[layerNum])
+        if (!this.layers[layer])
         {
             console.warn(`Layer ${layer} does not exist`);
             return false;
         }
 
-		for (let i = 0; i < this.layers[layerNum].length; i++)
+		for (let i = 0; i < this.layers[layer].length; i++)
 		{
-			if (this.layers[layerNum][i] === obj)
+			if (this.layers[layer][i] === obj)
 			{
-				this.layers[layerNum].splice(i, 1);
+				this.layers[layer].splice(i, 1);
 				return true;
 			}
 		}
@@ -142,18 +134,16 @@ export class ObjectController
 
     GetLayer(layer: int): GameObject[]
     {
-        var layerNum = this.GetLayerNumber(layer);
-        
         // ADD MORE LAYERS IF NEEDED - TODO: PUT AT INITIALIZATION?
-        if (layerNum >= this.layers.length)
+        if (layer >= this.layers.length)
         {
-            for (let i = this.layers.length; i <= layerNum; i++)
+            for (let i = this.layers.length; i <= layer; i++)
             {
                 this.layers.push([]);
             }
         }
 
-        return this.layers[layerNum];
+        return this.layers[layer];
     }
 
     GetLayerByName(name: string): GameObject[]
@@ -166,14 +156,6 @@ export class ObjectController
         }
 
         return this.GetLayer(layerI);
-    }
-
-    GetLayerNumber(layer: int):int
-    {
-        if (layer < UI_LAYER)
-            return layer;
-        else
-            return (layer - UI_LAYER);
     }
 
     GetObjectLayer(obj: GameObject): int
