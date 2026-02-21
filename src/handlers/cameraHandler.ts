@@ -26,6 +26,14 @@ class CameraHandler {
   offset: Vec2 = new Vec2(0, 0);
   scene: Scene;
 
+  // shake
+  private shakeActive: boolean = false;
+  private shakeStartMs: number = 0;
+  private shakeDurationMs: number = 0;
+  private shakeIntensityX: number = 0;
+  private shakeIntensityY: number = 0;
+  private shakeDecay: boolean = true;
+
   get topLeftTargetX(): number
   {
     return this.target.x - this.offset.x
@@ -111,6 +119,8 @@ class CameraHandler {
     this.offset.y = 0;
 
     this.CalculateZoomFit();
+
+    this.StopShake();
   }
 
   // center position
@@ -279,8 +289,9 @@ class CameraHandler {
         else cy = Helper.Clamp(cy, by + viewH / 2, by + bh - viewH / 2);
     }
 
-    this.position.x = cx;
-    this.position.y = cy;
+    const shake = this.GetShakeOffset();
+    this.position.x = cx + shake.x;
+    this.position.y = cy + shake.y;
 
     // offset so that camera center maps to screen center (world units)
     this.offset.x = -screenW / 2 / scale;
@@ -321,6 +332,52 @@ class CameraHandler {
     p.y = (y - this.position.y) * scale + screenH / 2;
 
     return p;
+  }
+
+  StartShakeXY(shakeX: number = 5, shakeY: number = 5, seconds: number = 0.3, decay: boolean = true)
+  {
+    this.shakeActive = true;
+    this.shakeStartMs = bareEngine.time;
+    this.shakeDurationMs = Math.max(0, seconds * 1000);
+    this.shakeIntensityX = Math.max(0, shakeX);
+    this.shakeIntensityY = Math.max(0, shakeY);
+    this.shakeDecay = decay;
+  }
+
+  StartShake(shake: number = 5, seconds: number = 0.3, decay: boolean = true)
+  {
+    this.StartShakeXY(shake, shake, seconds, decay);
+  }
+
+  StopShake()
+  {
+    this.shakeActive = false;
+    this.shakeStartMs = 0;
+    this.shakeDurationMs = 0;
+    this.shakeIntensityX = 0;
+    this.shakeIntensityY = 0;
+  }
+
+  private GetShakeOffset(): Vec2
+  {
+    if (!this.shakeActive || this.shakeDurationMs <= 0 || (this.shakeIntensityX <= 0 && this.shakeIntensityY <= 0))
+      return new Vec2(0, 0);
+
+    const elapsed = Math.max(0, bareEngine.time - this.shakeStartMs);
+    if (elapsed >= this.shakeDurationMs)
+    {
+      this.StopShake();
+      return new Vec2(0, 0);
+    }
+
+    const decay = this.shakeDecay ? (1 - elapsed / this.shakeDurationMs) : 1;
+    const ampX = this.shakeIntensityX * decay;
+    const ampY = this.shakeIntensityY * decay;
+
+    const x = (Math.random() * 2 - 1) * ampX;
+    const y = (Math.random() * 2 - 1) * ampY;
+
+    return new Vec2(x, y);
   }
 }
 
