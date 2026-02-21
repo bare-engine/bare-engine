@@ -1,10 +1,8 @@
+import { BareEngine } from '../bareEngine';
+import { Vec2 } from "../libraries/rapid-render";
+import { Scene } from '../scenes/scene';
 import { BareEvent, BareEventPayload } from '../types/bareTypes';
 import { Helper } from "../utils/helper";
-import { globalEvents, pipes } from "../main";
-import { Vec2 } from "../libraries/rapid-render";
-import { sceneController } from './sceneController';
-import { BareEngine } from '../bareEngine';
-import { Scene } from '../scenes/scene';
 
 type MouseSpace = {
     position: Vec2;

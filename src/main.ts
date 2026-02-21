@@ -58,7 +58,6 @@ declare global
     var destroyTextFunc:Function | null;
 
     var bare: Scene;
-    var currentSceneProcessing: Scene;
     
     var whitePixelTexture:Texture;
 

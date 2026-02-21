@@ -1014,9 +1014,7 @@ export class Scene implements SceneI
         // GAMEOBJECT
         if (_class.prototype instanceof GameObject)
         {
-            const scene = window.currentSceneProcessing;
-            if (scene)
-                this.RegisterGameObjectPool(_class, 1);
+            this.RegisterGameObjectPool(_class, 1);
 
             Scene.registeredClasses[className] = "taken";
             return;
@@ -1081,8 +1079,6 @@ export class Scene implements SceneI
             this.events.clearAll();
         else
             this.events.clear();
-
-        globalEvents.emit(BareEvent.game_clear, { full: full });
 
         var classes = BareEngine.controllerNames;
         for (let i = 0; i < classes.length; i++)

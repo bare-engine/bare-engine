@@ -335,8 +335,6 @@ export class BareEngine
 
     static SetControllerReferencesOnScene(scene:Scene)
     {
-        window.currentSceneProcessing = scene;
-
         for (const controllerName of this.controllerNames)
         {
             // THIS WILL INSTANTIATE THE CONTROLLER ON THE SCENE, IF THE CONTROLLER REFERENCE EXSIST
@@ -344,18 +342,3 @@ export class BareEngine
         }
     }
 }
-
-declare global
-{
-    var SetCurrentSceneProcessingFromContext: (context: any) => void;
-}
-
-window.SetCurrentSceneProcessingFromContext = (context: any) => {
-    if (!context)
-        throw new Error("context is null");
-
-    if (!context.scene)
-        throw new Error("context.scene is null");
-
-    window.currentSceneProcessing = context.scene;
-};

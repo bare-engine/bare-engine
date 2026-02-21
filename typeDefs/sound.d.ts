@@ -1,1 +1,1 @@
-export * from "./src/sound";
+export * from "../src/exports/sound";
