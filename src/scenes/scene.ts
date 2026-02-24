@@ -1154,6 +1154,27 @@ export class Scene implements SceneI
     LoadLevel(levelInput: string | LevelData = ""): Promise<LevelData>
     {
         /* @ AddClass(levelHandler) */
+
+        if (!window.isLocalhost)
+        {
+            // CHECK IF LEVEL IS IN EDITED CACHE, WILL BE SAVED HERE WHEN NOT ON LOCALHOST
+            // SINCE CAN'T SAVE TO DISK
+
+            var levelStr = SaveData.currentLevelStr;
+            if (typeof levelInput === "string")
+                levelStr = levelInput;
+
+            console.log('LOADING LEVEL FROM CACHE', levelStr);
+            var levelCached = SaveData.levelsEditedCache.get(levelStr);
+            if (levelCached)
+            {
+                //var levelPromise = this.levelHandler?.LoadLevel(levelCached);
+                //SaveData.currentLevelStr = levelStr;
+                //return levelPromise;
+                return this.levelHandler?.LoadLevel(levelCached);
+            }
+        }
+
         return this.levelHandler?.LoadLevel(levelInput);
     }
 }

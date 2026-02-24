@@ -191,6 +191,7 @@ export class EditorScene extends Scene
         window.gameMode = GameMode.Game;
     }
 
+    // NOT USING ATM?
     async Close(loadLevelAfter: boolean = true)
     {
         this.opened = false;
@@ -204,8 +205,11 @@ export class EditorScene extends Scene
 
         // DISABLE THE LEVEL CACHE, SO LEVELS GETS RELOADED
         // DON'T NECESSARY WANT SAVEDATA FOR EACH LEVEL - TODO
-        SaveData.levelCache.clear();
-        SaveDataHandler.Save();
+        if (!window.isLocalhost) // FOR PRODUCTION, LEVEL IS ONLY SAVED TO CACHE, NOT TO DISK, SO KEEPING CACHE IN THAT CASE
+        {
+            SaveData.levelCache.clear();
+            SaveDataHandler.Save();
+        }
         
         window.gameMode = GameMode.Game; // SETTING IT IN BARE.START() NOW, BUT ALSO KINDA MAKES SENSE HERE
 
@@ -647,6 +651,15 @@ export class EditorScene extends Scene
     
         levelHandler.SerializeLevel(level);
             
+        if (!window.isLocalhost)
+        {
+            SaveData.levelsEditedCache.set(SaveData.currentLevelStr, level);
+            SaveDataHandler.Save();
+            
+            //globalEvents.emit(BareEvent.level_postSave, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
+            return;
+        }
+
         try {
             const response = await fetch('/api/save-level', {
                 method: 'POST',
@@ -746,5 +759,6 @@ export class EditorScene extends Scene
 } 
 
 
+        SaveDataHandler.Load();
 //export const editorController = new EditorController();
 //globalThis.editorController = editorController;

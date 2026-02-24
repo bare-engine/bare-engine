@@ -109,16 +109,17 @@ export class LevelHandler
             // LEVEL NAME
             level = await this.LoadLevelData(levelInput);
             levelStr = levelInput;
+            SaveData.currentLevelStr = levelStr;
         }
         else
         {
             // LEVEL DATA
             level = levelInput;
-            levelStr = level.name;
+            levelStr = level.name; // DON'T REALLY WANT TO USE THIS LEVEL PROPERTY? NOT SAME AS ACTUAL NAME OF FILE
         }
 
         this.currentLevel = level;
-        SaveData.currentLevelStr = levelStr;
+        //SaveData.currentLevelStr = levelStr;
 
         if (level.background?.color)
             rapid.backgroundColor = Color.fromHex(level.background.color);

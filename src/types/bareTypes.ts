@@ -315,6 +315,7 @@ export class SaveData
 {
   static currentLevelStr: string = '';
   static levelCache: Map<string, LevelData> = new Map();
+  static levelsEditedCache: Map<string, LevelData> = new Map();
   
   static soundEnabled: boolean = true;
   static musicEnabled: boolean = true;
