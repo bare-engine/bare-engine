@@ -20,6 +20,7 @@ import { objectController } from "../controllers/objectController";
 
 export class EditorControlsHandler {
     public currentPreviewEntity: GameObject;
+    public currentPreviewActive:boolean = false;
     private draggingLevelEntity: GameObject | null = null;
     private dragOffset: Vec2;
     
@@ -48,8 +49,8 @@ export class EditorControlsHandler {
 
         this.currentPreviewEntity = new PhysicsObjectBare(this.scene, -100, -100);
         this.currentPreviewEntity.name = 'currentPreviewEntity';
-        this.currentPreviewEntity.customName = 'ignoreInPlugin';
-        this.currentPreviewEntity.visible = false;
+        //this.currentPreviewEntity.customName = 'ignoreInPlugin';
+        this.SetCurrentPreviewActive(false);//
 
         this.init();
 
@@ -106,6 +107,10 @@ export class EditorControlsHandler {
 
             this.scene.SaveLevel();
         }
+        if (allKeys[0] == 'delete')
+        {
+            this.RemoveSelectedObjects();
+        }
     }
 
     KeyReleased({ key, allKeys }: BareEventPayload['key_released'])
@@ -136,7 +141,7 @@ export class EditorControlsHandler {
 
         if (isLeftButton)
         {
-            if (this.currentPreviewEntity && this.currentPreviewEntity.visible)
+            if (this.currentPreviewActive && this.currentPreviewEntity.visible)
             {
                 var obj = this.scene.AddGameObjectAtPosition(this.currentPreviewEntity.x, this.currentPreviewEntity.y, this.currentPreviewEntity.name, layer);
                
@@ -155,21 +160,15 @@ export class EditorControlsHandler {
                 var hover = hitboxController.GetCurrentHitboxHover();
                 if (hover)
                 {
-                    this.scene.RemoveGameObject(hover.parent);
-
                     // ALSO REMOVE OTHER SELECTED ENTITIES
                     var draggedEntityIsSelected = this.selectedObjects.includes(hover.parent);
                     if (draggedEntityIsSelected)
                     {
-                        for (var i = 0; i < this.selectedObjects.length; i++)
-                        {
-                            const obj = this.selectedObjects[i];
-
-                            if (obj == hover.parent)
-                                continue;
-
-                            this.scene.RemoveGameObject(obj);
-                        }
+                        this.RemoveSelectedObjects();
+                    }
+                    else
+                    {
+                        this.scene.RemoveGameObject(hover.parent);
                     }
 
                     hitboxController.ResetCurrentHover();
@@ -180,8 +179,7 @@ export class EditorControlsHandler {
                 {
                     if (this.currentPreviewEntity)
                     {
-                        this.currentPreviewEntity.visible = false;
-                        this.currentPreviewEntity.alpha = 0;
+                        this.SetCurrentPreviewActive(false);
                     }
                 }
             }
@@ -206,6 +204,15 @@ export class EditorControlsHandler {
             this.selectionRect.height = 0;
 
             this.actionThisFrame = 'selectionRect';
+        }
+    }
+
+    RemoveSelectedObjects()
+    {
+        for (var i = 0; i < this.selectedObjects.length; i++)
+        {
+            const obj = this.selectedObjects[i];
+            this.scene.RemoveGameObject(obj);
         }
     }
     
@@ -278,13 +285,16 @@ export class EditorControlsHandler {
         if (hitbox)
         {
             var obj = hitbox.parent;
-
-            const entity = this.scene.ConstructEntity(obj.name);
-
-            if (entity.name != this.currentPreviewEntity.name || !this.currentPreviewEntity.visible)
+            
+            if (!this.currentPreviewActive || obj.name != this.currentPreviewEntity.name) // DOUBLE CLICK FIRST TIME OR DIFFERENT OBJECT
+            {
+                const entity = this.scene.ConstructEntity(obj.name);
                 this.SetCurrentPreviewEntity(entity);
+            }
             else
+            {
                 this.SetCurrentPreviewEntity(null);
+            }
         }
     }
 
@@ -406,7 +416,7 @@ export class EditorControlsHandler {
     public StartDrag(obj: GameObject)
     {
         // PREVENT SELETING THE OBJECT WHEN HAVING STAMP (CURRENTPREVIEW) AND CONTROL KEY DOWN, SO IT'S EASIER TO PLACE
-        if (keyboardController.IsKeyDown("control") && this.currentPreviewEntity.visible)
+        if (keyboardController.IsKeyDown("control") && this.currentPreviewActive)
             return;
         
         this.draggingLevelEntity = obj;
@@ -417,7 +427,7 @@ export class EditorControlsHandler {
 
     public EndDrag(obj: GameObject)
     {
-        if (keyboardController.IsKeyDown("control") && this.currentPreviewEntity.visible)
+        if (keyboardController.IsKeyDown("control") && this.currentPreviewActive)
         {
             this.draggingLevelEntity = null;
             return;
@@ -426,7 +436,7 @@ export class EditorControlsHandler {
         var distMouseMoved = Helper.Distance(mouseController.world.position, mouseController.world.positionOnDown);
         if (distMouseMoved == 0)
         {
-            if (keyboardController.IsKeyDown("control") && !this.currentPreviewEntity.visible)
+            if (keyboardController.IsKeyDown("control") && !this.currentPreviewActive)
             {
                 var layerOfObj = objectController.GetObjectLayer(obj);
                 this.scene.editorUIHandler.SelectLayerItemByInt(layerOfObj);
@@ -482,9 +492,17 @@ export class EditorControlsHandler {
         }*/
     }
 
-    SetCurrentPreviewEntity(entity: Entity | null) {
-        if (!entity) {
-            this.currentPreviewEntity.visible = false;
+    SetCurrentPreviewActive(active: boolean)
+    {
+        this.currentPreviewActive = active;
+        this.currentPreviewEntity.visible = active;
+    }
+
+    SetCurrentPreviewEntity(entity: Entity | null)
+    {
+        if (!entity)
+        {
+            this.SetCurrentPreviewActive(false);
             return;
         }
 
@@ -496,7 +514,8 @@ export class EditorControlsHandler {
 
         this.currentPreviewEntity.Init(MakePath(entityCopy.imagePath!, entityCopy.name));
         this.currentPreviewEntity.alpha = 0.5;
-        this.currentPreviewEntity.visible = true;
+
+        this.SetCurrentPreviewActive(true);
 
         this.currentPreviewEntity.WhenTextureLoaded(() => {
             // WILL END UP SETTING THE PIVOT CORRECTLY
@@ -562,8 +581,8 @@ export class EditorControlsHandler {
         }
         
         if (!mouseController.IsRightMouseDown())
-            if (this.currentPreviewEntity.visible)
-                this.currentPreviewEntity.alpha = (hitboxController.GetCurrentHitboxHover() && !keyboardController.IsKeyDown("control")) ? 0 : 0.5;
+            if (this.currentPreviewActive)
+                this.currentPreviewEntity.visible = !(hitboxController.GetCurrentHitboxHover() && !keyboardController.IsKeyDown("control"));
 
         // Calculate preview position
         const previewX = mouseController.world.position.x;
@@ -665,7 +684,7 @@ export class EditorControlsHandler {
     OpenEditor()
     {
         objectController.Add(this.currentPreviewEntity);
-        this.currentPreviewEntity.visible = false;
+        this.SetCurrentPreviewActive(false);
         this.currentPreviewEntity.alpha = 0;
     }
     

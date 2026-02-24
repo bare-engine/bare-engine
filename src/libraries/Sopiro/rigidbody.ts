@@ -101,6 +101,20 @@ export abstract class RigidBody extends GameObject
         this._friction = Settings.defaultFriction;
         this._restitution = Settings.defaultRestitution;
         this._surfaceSpeed = 0.0;
+        this.sleeping = false;
+        this.resting = 0;
+        this.manifoldIDs = [];
+        this.jointIDs = [];
+        this.node = undefined;
+        this.onContact = undefined;
+        this.islandID = 0;
+        this.id = -1;
+        
+        this._density = 0.0;
+        this._mass = 0.0;
+        this._invMass = 0.0;
+        this._inertia = 0.0;
+        this._invInertia = 0.0;
 
         if (this.type == Type.Static)
         {

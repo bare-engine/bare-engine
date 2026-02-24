@@ -1,8 +1,8 @@
-import { RigidBody, Type } from "./rigidbody";
+import { Scene } from "../../exports";
 import { Vec2 } from "../rapid-render";
-import * as Util from "./util";
+import { RigidBody, Type } from "./rigidbody";
 import { Settings } from "./settings";
-import { Entity, GameObject, Scene } from "../../exports";
+import * as Util from "./util";
 
 // Children: Box
 export class Polygon extends RigidBody
@@ -14,21 +14,20 @@ export class Polygon extends RigidBody
     {
         super(scene, type);
         
+        this._density = density;//
+        
         if (!vertices)
             vertices = [new Vec2()];
         
         this.SetVertices(vertices, resetPosition);
 
-        if (this.type == Type.Dynamic)
-        {
-            Util.assert(density > 0);
-            
-            this._density = density;
-            this._mass = density * this.area;
-            this._invMass = 1.0 / this._mass;
-            this._inertia = Util.calculateConvexPolygonInertia(this.vertices, this._mass, this.area);
-            this._invInertia = 1.0 / this._inertia;
-        }
+    }
+
+    override ResetValues(): void
+    {
+        super.ResetValues();
+        this.vertices = [];
+        this.area = 0;
     }
 
     set polygonVertices(value: number[])
@@ -66,6 +65,7 @@ export class Polygon extends RigidBody
     SetVertices(vertices: Vec2[], resetPosition: boolean = true)
     {
         this.vertices = vertices;
+        //this.vertices = vertices.map(v => new Vec2(v.x, v.y));
 
         let centerOfMass = new Vec2(0, 0);
         let count = this.count;

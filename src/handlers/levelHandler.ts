@@ -158,13 +158,16 @@ export class LevelHandler
             entities.forEach((entity: any) => {
                 var entityConstructed = this.scene.ConstructEntity(entity);
                 var imagePath = entityConstructed.imagePath;
-                var fullPath = imagePath + "/" + entity.name;
+                var fullPath = MakePath(imagePath, entity.name);
 
                 if (texturesFound.has(fullPath))
                     return;
 
-                promisesAr.push(assetsHandler.GetTexturePromise(MakePath(imagePath!, entity.name)));
-                texturesFound.add(fullPath);
+                if (!assetsHandler.HasTexture(fullPath))
+                {
+                    promisesAr.push(assetsHandler.GetTexturePromise(fullPath));
+                    texturesFound.add(fullPath);
+                }
             });
         }
 

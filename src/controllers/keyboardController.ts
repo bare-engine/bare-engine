@@ -23,7 +23,7 @@ export class KeyboardController
 
             //trace(event.key)
 
-            const key = event.key.toLowerCase();
+            const key = event.key.charAt(0).toLowerCase() + event.key.slice(1); // LOWERCASE FIRST LETTER
             if (!this.keysPressed.has(key)) {
                 this.keysJustPressed.add(key);
             }
@@ -31,10 +31,10 @@ export class KeyboardController
             if (!this.keysPressed.has(key))
             {
                 this.keysPressed.add(key);
-                globalEvents.emit(BareEvent.key_pressed, { key: key, allKeys: Array.from(this.keysPressed) });
+                bareEngine.SendEvent(BareEvent.key_pressed, { key: key, allKeys: Array.from(this.keysPressed) });
             }
 
-            globalEvents.emit(BareEvent.key_down, { key: key, allKeys: Array.from(this.keysPressed) });
+            bareEngine.SendEvent(BareEvent.key_down, { key: key, allKeys: Array.from(this.keysPressed) });
 
             event.preventDefault();
         });
@@ -44,11 +44,11 @@ export class KeyboardController
             if (bareEngine.MouseIsOnEditor(event))
                 return; // Allow normal typing inside the editor UI
 
-            const key = event.key.toLowerCase();
+            const key = event.key.charAt(0).toLowerCase() + event.key.slice(1); // LOWERCASE FIRST LETTER
             this.keysPressed.delete(key);
             this.keysJustPressed.delete(key);
 
-            globalEvents.emit(BareEvent.key_released, { key: key, allKeys: Array.from(this.keysPressed) });
+            bareEngine.SendEvent(BareEvent.key_released, { key: key, allKeys: Array.from(this.keysPressed) });
         });
 
         // Handle window focus/blur to reset keys

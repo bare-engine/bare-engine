@@ -173,25 +173,6 @@ export class BareEngine
         rapid.endRender();
     }
 
-    ClearAll()
-    {
-        // CLEAR ALL OF BARE
-        // SHOULDN'T REALLY BE NECESSARY, BUT THE DEMO PROJECT NEEDS IT SINCE IT 
-        // HANDLES MULTIPLE BARE-GAME CLASSES. NOT RECOMMEND FOR OTHER PROJECTS
-
-        //SaveDataHandler.Clear(); // DONT HARD REF THIS - TODO
-        
-        sceneController.Clear();
-        assetsHandler.Clear();
-        
-        cancelAnimationFrame(this.RunMainLoopId);
-        this.RunMainLoopId = -1;
-
-        //Scene.registeredClasses = {};
-        //events.clearAll();
-        //pipes.clear();
-    }
-
 
 
 

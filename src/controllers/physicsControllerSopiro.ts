@@ -28,6 +28,10 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 	{  
 		this.scene.events.on(BareEvent.physics_refreshBody, this.RefreshBody.bind(this));
 
+		/*globalThis.Box = Box;
+		globalThis.Circle = Circle;
+		globalThis.Polygon = Polygon;*/
+
 		this.scene.RegisterGameObjectPool(Polygon, 1);
 		this.scene.RegisterGameObjectPool(Box, 1);
 		this.scene.RegisterGameObjectPool(Circle, 1);
@@ -167,6 +171,8 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 
 	Clear(): void
 	{
+		this.activeCollisions.clear();
+		this.accumulator = 0
 		this.world.reset();
 	}
 }

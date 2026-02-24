@@ -611,7 +611,14 @@ export class Scene implements SceneI
             }
 
             gameObject = this.GetObjectFromPool(entity.extendClass!);
-            gameObject.pooled = true;
+            /*const clsString = entity.extendClass!;
+            const Ctor = (globalThis as any)[clsString];
+
+            if (typeof Ctor !== "function")
+                throw new Error(`Class '${clsString}' not found on globalThis`);
+
+            var gameObject = new Ctor() as GameObject;
+            gameObject.pooled = true;*/
             gameObject.Init(MakePath(entity.imagePath!, entity.name));
             this.ApplyEntityToGameObject(entity, gameObject);
         }
@@ -693,11 +700,11 @@ export class Scene implements SceneI
         if (!removed)
             trace("FAILED TO REMOVE GAMEOBJECT");
         
-        gameObject.Removed();
-
         // NOTIFY
         globalEvents.emit(BareEvent.game_objectRemoved, gameObject);
         this.events.emit(BareEvent.game_objectRemoved, gameObject);
+
+        gameObject.Removed();
 
         if (wasPooled)
         {
@@ -1055,6 +1062,12 @@ export class Scene implements SceneI
 
     Clear(full:boolean = false, clearEvents:boolean = true)
     {
+        var classes = BareEngine.controllerNames;
+        for (let i = 0; i < classes.length; i++)
+        {
+            this[classes[i]].Clear?.();
+        }
+
         if (clearEvents)
         {
             if (full)
@@ -1063,12 +1076,6 @@ export class Scene implements SceneI
                 this.events.clear();
         }
         
-        var classes = BareEngine.controllerNames;
-        for (let i = 0; i < classes.length; i++)
-        {
-            this[classes[i]].Clear?.();
-        }
-
         //this.ApplyLayerInfoToSettings(this.currentSettings, true); // ?
 
         this.OnClear(full);
@@ -1164,14 +1171,12 @@ export class Scene implements SceneI
             if (typeof levelInput === "string")
                 levelStr = levelInput;
 
-            console.log('LOADING LEVEL FROM CACHE', levelStr);
             var levelCached = SaveData.levelsEditedCache.get(levelStr);
             if (levelCached)
             {
-                //var levelPromise = this.levelHandler?.LoadLevel(levelCached);
-                //SaveData.currentLevelStr = levelStr;
-                //return levelPromise;
-                return this.levelHandler?.LoadLevel(levelCached);
+                var levelPromise = this.levelHandler?.LoadLevel(levelCached);
+                SaveData.currentLevelStr = levelStr; // SETTING IT HERE BECAUSE IT'S NOT SET IN LOADLEVEL() SINCE WE SUPPLY A LEVELDATA OBJECT (NOT LEVELNAME STRING)
+                return levelPromise;
             }
         }
 

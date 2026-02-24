@@ -752,10 +752,6 @@ export class EditorScene extends Scene
 
         return tilesheetEntity;
     }
-
-    RemoveGameObject(entity: GameObject): void {
-        
-    }
 } 
 
 

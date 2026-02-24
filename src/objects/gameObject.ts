@@ -11,6 +11,14 @@ export class Transform {
     scale = new Vec2(1, 1);
     rotation = 0;
     flipped = false;
+
+    Reset()
+    {
+        this.position = new Vec2();
+        this.scale = new Vec2(1, 1);
+        this.rotation = 0;
+        this.flipped = false;
+    }
 }
 
 export class GameObject
@@ -1115,12 +1123,12 @@ export class GameObject
         this.persistent = false;
         this.pooled = false;
         this.save = false;
-        this.color = new Color(255, 255, 255, 255);
+        this.color.setRGBA(255, 255, 255, 255);
         this.visible = true;
         this.visibleInEditor = true;
         this.tags = [];
         this.customName = "";
-        this.tapHitbox = null; // NULL PHYSICS HITBOX TOO? TODO
+        this.tapHitbox = null;
         this.revertPivotOnSave = false;
 
         this.entity = null;
@@ -1129,8 +1137,9 @@ export class GameObject
         this.startPosition.set(0);
         this.pivotBasedOnHitbox.set(0);
 
-        this.transform = new Transform();
-        this.innerTransform = new Transform();
+        this.transform.Reset();
+        this.innerTransform.Reset();
+        this.renderParentTransform = null;
 
         this.RemoveMask();
 

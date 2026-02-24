@@ -20,6 +20,13 @@ export class Box extends Polygon
         this.phyHeight = height;
     }
 
+    override ResetValues(): void
+    {
+        super.ResetValues();
+        this.phyWidth = 0;
+        this.phyHeight = 0;
+    }
+
     override ApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
     {
         if (!entity.physicsRect)

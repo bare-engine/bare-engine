@@ -13,6 +13,8 @@ export class TextObject extends GameObject
 
         this.textTexture = new BareText(options);
         this.SetTexture(this.textTexture);
+
+        this.name = options.text;
     }
 
     SetText(text: string)
@@ -24,6 +26,8 @@ export class TextObject extends GameObject
             this.pivotX = this.textTexture.width * this.pivotPercentage.x;
         if (this.pivotPercentage.y != -1)
             this.pivotY = this.textTexture.height * this.pivotPercentage.y;
+        
+        this.name = text;
     }
 
     override SetPivot(x: number, y: number):GameObject

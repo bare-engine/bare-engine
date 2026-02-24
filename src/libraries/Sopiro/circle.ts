@@ -29,6 +29,13 @@ export class Circle extends RigidBody
             this._invInertia = 1.0 / this._inertia;
         }
     }
+
+    override ResetValues(): void
+    {
+        super.ResetValues();
+        this.radius = 0;
+        this.area = 0;
+    }
     
     override ApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
     {
