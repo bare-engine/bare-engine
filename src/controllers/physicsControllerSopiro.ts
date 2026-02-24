@@ -167,7 +167,7 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 
 	Clear(): void
 	{
-		//this.world.reset();
+		this.world.reset();
 	}
 }
 

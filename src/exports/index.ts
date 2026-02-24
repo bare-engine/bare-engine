@@ -86,6 +86,9 @@ export { SettingsHandler as SettingsHandler } from "../handlers/settingsHandler"
 export { FlashShader } from "../shaders/flashShader";
 export { OutlineShader } from "../shaders/outlineShader";
 
+export {EditorScene} from "../scenes/editorScene";
+export {EditorUIScene} from "../scenes/editorUIScene";
+
 // Types and constants
 export {
   AnimationData,

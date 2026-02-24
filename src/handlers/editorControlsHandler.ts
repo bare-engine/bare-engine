@@ -46,7 +46,7 @@ export class EditorControlsHandler {
             }
         }, { passive: false });
 
-        this.currentPreviewEntity = new PhysicsObjectBare(-100, -100);
+        this.currentPreviewEntity = new PhysicsObjectBare(this.scene, -100, -100);
         this.currentPreviewEntity.name = 'currentPreviewEntity';
         this.currentPreviewEntity.customName = 'ignoreInPlugin';
         this.currentPreviewEntity.visible = false;
