@@ -55,15 +55,15 @@ export class Scene implements SceneI
 
     public objectController: ObjectController;
 
-    private mouseController: MouseController;
-    private hitboxController: HitboxController;
-    private tweenController: TweenController; 
-    private componentController: ComponentController; 
-    private physicsControllerBare: PhysicsControllerBare; 
-    private physicsControllerSopiro: PhysicsControllerSopiro; 
-    private particleController: ParticleController; 
-    private levelHandler: LevelHandler; 
-    private cameraHandler: CameraHandler; 
+    public mouseController: MouseController;
+    public hitboxController: HitboxController;
+    public tweenController: TweenController; 
+    public componentController: ComponentController; 
+    public physicsControllerBare: PhysicsControllerBare; 
+    public physicsControllerSopiro: PhysicsControllerSopiro; 
+    public particleController: ParticleController; 
+    public levelHandler: LevelHandler; 
+    public cameraHandler: CameraHandler; 
 
     public settingsHandler: SettingsHandler = new SettingsHandler(this); // COULD ALSO BE PROXY
     get settingsData(): SettingsData { return this.settingsHandler.Get(); }
@@ -131,7 +131,7 @@ export class Scene implements SceneI
     {
         rapid.backgroundColor = Color.White;
 
-        await this.settingsHandler.Process(this.sceneOptions.entityData);
+        await this.settingsHandler.Process(this.sceneOptions.entityData);//this.settingsData
         this.SetCurrentSettingsHandler(this.settingsHandler);
 
         globalEvents.emit(BareEvent.scene_awake);

@@ -163,7 +163,8 @@ export class SettingsHandler
                                     // ALSO PUSH EACH AS ENTITY SO WE CAN FIND THEM LATER
                                     var entityClone = {...entity};
                                     entityClone.name = fileName;
-                                    settings.entities[entityClone.name] = entityClone;
+                                    if (!settings.entities[entityClone.name]) // DON'T OVERWRITE EXISTING ENTRIES
+                                        settings.entities[entityClone.name] = entityClone;
                                 }
 
                                 // REMOVE * ENTRY

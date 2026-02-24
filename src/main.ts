@@ -81,6 +81,7 @@ window.trace = (message: any, ...optionalParams: any[]): void => {
 };
 
 window.isLocalhost = ['localhost'].some(domain => window.location.href.includes(domain));
+//window.isLocalhost = __DEV__;
 window.isMobile = Helper.MobileAndTabletCheck();
     
 window.wait = (seconds: number): Promise<void> => new Promise(resolve => setTimeout(resolve, seconds * 1000));
