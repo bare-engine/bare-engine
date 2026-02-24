@@ -78,17 +78,17 @@ export class ObjectController
         }
     }
 
-    Add(obj: GameObject, layer: int = 0): void
+    Add(obj: GameObject, layer: int | string = "objects"): void
     {
-        if (layer >= this.layers.length)
-        {
-            for (let i = this.layers.length; i <= layer; i++)
-            {
-                this.layers.push([]);
-            }
-        }
+        var layerInt = 0;
 
-        this.layers[layer].push(obj);
+        if (typeof layer === 'string')
+            layerInt = this.scene.layerNames.indexOf(layer as string);
+        else
+            layerInt = layer;
+        
+        var layerAr = this.GetLayer(layerInt);
+        layerAr.push(obj);
     }
 
 	Remove(obj: GameObject, layer?: int): boolean

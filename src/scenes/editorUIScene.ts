@@ -1,4 +1,4 @@
-import { BareEvent, Button, SaveData, sceneController } from "../exports";
+import { BareEvent, Button, globalEvents, SaveData, sceneController } from "../exports";
 import { EditorScene } from "./editorScene";
 import { Scene } from "./scene";
 
@@ -32,6 +32,7 @@ export class EditorUIScene extends Scene
             if (scene.isLevel)
             {
                 this.editorButton.visible = true;
+                sceneController.MoveToFront(this);
                 break;
             }
         }
@@ -46,6 +47,6 @@ export class EditorUIScene extends Scene
         }
 
         sceneController.DisableAllScenes();
-        sceneController.Add(EditorScene, {levelInput: SaveData.currentLevelStr});
+        sceneController.Add(EditorScene);
     }
 }

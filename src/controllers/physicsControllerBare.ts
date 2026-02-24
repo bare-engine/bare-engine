@@ -635,6 +635,11 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 
 		return null;
 	}
+
+  Clear()
+  {
+    this.objects.length = 0;
+  }
 }
 
 export var physicsControllerBare:PhysicsControllerBare;

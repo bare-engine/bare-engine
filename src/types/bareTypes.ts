@@ -127,7 +127,6 @@ export interface SettingsData
   entities?: Record<string, Partial<Entity>>; // SAME ^
   tilesheets?: Array<Entity>;
   layers?: Array<string>;
-  uiLayers?: Array<string>;
   layersInfo?: Record<string, any>;
   presets?: Record<string, Partial<Entity>>;
   saveVars?: Record<string, Array<string>>
@@ -188,19 +187,6 @@ export enum CollisionHandlingType
   RADIUS
 }
 
-// Base layer map. Extend via module augmentation in user space (e.g. _generated/layer.ts).
-export interface LayerMap {
-  OBJECTS: number;
-}
-
-export let Layer = {
-  OBJECTS: 0,
-} as LayerMap;
-
-export function SetLayers<T extends LayerMap>(layers: T) {
-  Layer = layers;
-}
-
 // EVENTS MONSTER - SINCE IT WANT TO EASILY ADD BARE-EVENTS AND LET IT TAKE USER STRINGS
 const ev = <T>() => undefined as T | undefined;
 
@@ -213,7 +199,7 @@ const eventDefs = {
   game_update: ev<{ deltaTime: number }>(),
   game_preRender: undefined,
   game_postRender: undefined,
-  game_objectAdded: ev<{ gameObject: GameObject; layer: number | GameObject }>(),
+  game_objectAdded: ev<{ gameObject: GameObject; layer: int | string | GameObject }>(),
   game_objectRemoved: ev<GameObject>(),
   game_focusChange: ev<boolean>(),
   game_completeClear: undefined,

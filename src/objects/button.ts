@@ -1,5 +1,5 @@
 import { GameObject, Vec2, Color, ITextTextureOptions, hitboxController } from "../exports";
-import type { ButtonHandlers, Scene } from "../exports";
+import type { ButtonHandlers, Scene, Texture } from "../exports";
 import { BareText } from "../libraries/rapid-render/texture";
 
 interface TextOptions extends ITextTextureOptions, ButtonHandlers<Button> {
@@ -21,22 +21,23 @@ export class Button extends GameObject
 
         this.marge = options.marge || 10;
         this.text = new BareText({text: options.text, fontSize: 22, fontFamily: 'monospace', color: '#fff'});
+        this.SetTexture(this.text);
 
         hitboxController.AssignButton(this, options);
     }
 
-    override OnRender(): void
+    override RenderTransformed(inheritedColor?: Color): void
     {
         bare.renderRect({ 
-            position: new Vec2(0, 0), 
-            width: this.text.width + this.marge * 2, 
-            height: this.text.height + this.marge * 2, 
+            position: new Vec2(-this.pivot.x, -this.pivot.y), 
+            width: this.width, 
+            height: this.height, 
             color: Color.fromHex('#014f00')
         });
 
         bare.renderSprite({
             texture: this.text, 
-            position: new Vec2(this.marge, this.marge)
+            position: new Vec2(this.marge - this.pivot.x, this.marge - this.pivot.y)
         });
     }
 

@@ -75,6 +75,7 @@ export { TextObject } from "../objects/textObject";
 // Utils
 export { assetsHandler } from "../handlers/assetsHandler";
 export { cameraHandler } from "../handlers/cameraHandler";
+export { CameraHandler } from "../handlers/cameraHandler";
 export { defaultEntityData } from "../types/bareData";
 export { FileDropHandler } from "../handlers/fileDropHandler";
 export { Helper } from "../utils/helper";
@@ -89,8 +90,6 @@ export { OutlineShader } from "../shaders/outlineShader";
 export {
   AnimationData,
   CollisionHandlingType,
-  Layer,
-  SetLayers,
   SaveData,
 } from "../types/bareTypes";
 export type {
@@ -104,7 +103,6 @@ export type {
   FrameRect,
   GameObjectClass,
   LayerInfo,
-  LayerMap,
   LevelData,
   Position,
   BareScreen,

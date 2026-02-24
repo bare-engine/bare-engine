@@ -23,8 +23,6 @@ class Rapid {
     width: number
     height: number
 
-    public isRapid: boolean = true;
-
     backgroundColor: Color
     readonly devicePixelRatio = window.devicePixelRatio || 1
     readonly maxTextureUnits: number

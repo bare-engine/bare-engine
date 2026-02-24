@@ -524,6 +524,11 @@ export class ComponentController
             }
         }
     }
+
+    Clear()
+    {
+        this.RemoveAllComponents();
+    }
 }
 
 export var componentController:ComponentController;

@@ -2,7 +2,7 @@ import { Scene, globalEvents, MakePath, pipes } from "../main";
 import { Color, Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { Helper } from "../utils/helper";
-import { BareEvent, BareEventPayload, Entity, Layer } from "../types/bareTypes";
+import { BareEvent, BareEventPayload, Entity } from "../types/bareTypes";
 import { Rectangle } from "../types/gamesTypes";
 import { OutlineShader } from "../shaders/outlineShader";
 import { keyboardController } from "../controllers/keyboardController";
@@ -664,7 +664,7 @@ export class EditorControlsHandler {
 
     OpenEditor()
     {
-        objectController.Add(this.currentPreviewEntity, Layer.OBJECTS);
+        objectController.Add(this.currentPreviewEntity);
         this.currentPreviewEntity.visible = false;
         this.currentPreviewEntity.alpha = 0;
     }
@@ -673,6 +673,6 @@ export class EditorControlsHandler {
     {
         hitboxController.ClearExclusiveLayers();
 
-        objectController.Remove(this.currentPreviewEntity, Layer.OBJECTS);
+        objectController.Remove(this.currentPreviewEntity);
     }
 } 

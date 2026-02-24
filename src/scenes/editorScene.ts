@@ -21,6 +21,12 @@ import { CameraScaleMode, HitboxType } from "../types/gamesTypes";
 import { Hitbox } from "../types/hitbox";
 import { Helper } from "../utils/helper";
 
+type EditorSceneAwakePayload = {
+    levelPathOrData?: string | LevelData;
+    saveLevelCallback?: () => Promise<LevelData>;
+    settingsHandler?: SettingsHandler;
+};
+
 export class EditorScene extends Scene
 {
     public opened: boolean = false; // DOUBLES TRUTH WITH this.levelEditorOpen
@@ -42,6 +48,8 @@ export class EditorScene extends Scene
 
     saveLevelCallback: () => Promise<LevelData>;
 
+    private pendingOpenPayload?: EditorSceneAwakePayload;
+
     constructor()
     {  
         var entityData = sceneController.GetLevelScene().sceneOptions.entityData;
@@ -52,33 +60,36 @@ export class EditorScene extends Scene
         this.SetHitboxData(); // KEEP IN HERE? TODO
     }
 
-    OnStart(): void | Promise<void>
+    OnAwake(payload?: EditorSceneAwakePayload): void | Promise<void>
     {
-        cameraHandler.SetScaleMode(CameraScaleMode.Contain);
+        this.editorControlsHandler = new EditorControlsHandler(this);
+        this.editorUIHandler = new EditorUIHandler(this);
 
-        this.Open();
-    }
+        this.RegisterEditorComponents();
 
-    override Start(): Promise<void>
-    {
-        if (!this.editorControlsHandler && this.settingsHandler)
-        {
-            // ONCE
-            this.editorControlsHandler = new EditorControlsHandler(this);
-            this.editorUIHandler = new EditorUIHandler(this);
-
-            this.RegisterEditorComponents();
-
-            this.SetData(this.settingsData);
-            
-            if (__DEV__)
-                globalThis.plugin?.AddDebugAction("Toggle Level Editor", () => this.Toggle(this.settingsHandler));
-        }
+        this.SetData(this.settingsData);
+        
+        if (__DEV__)
+            globalThis.plugin?.AddDebugAction("Toggle Level Editor", () => this.Toggle(this.settingsHandler));
 
         this.editorControlsHandler.scene = this;
         this.editorUIHandler.scene = this;
 
-        return super.Start();
+        cameraHandler.SetScaleMode(CameraScaleMode.Contain);
+
+        // OPEN
+        const { levelPathOrData, saveLevelCallback, settingsHandler } = payload ?? {};
+
+        return this.Open(
+            levelPathOrData ?? '',
+            saveLevelCallback ?? this.SaveLevel,
+            settingsHandler ?? this.settingsHandler
+        );
+    }
+
+    OnStart(): void | Promise<void>
+    {
+        //window.gameMode = GameMode.Editor;
     }
 
     async Open(levelPathOrData: string | LevelData = '', saveLevelCallback: () => Promise<LevelData> = this.SaveLevel,
@@ -95,15 +106,18 @@ export class EditorScene extends Scene
             levelName = SaveData.currentLevelStr;
             levelPathOrData = `${bareEngine.levelPath}/${levelName}.json`;
         }
+        
+        if (typeof levelPathOrData == 'string')
+        {
+            levelName = levelPathOrData.split('/').pop()!.split('.')[0];
+            this.currentLevelPath = levelPathOrData;
+        }
 
         //if (settingsHandler != this.currentSettingsHandler)
         {
             await this.SetCurrentSettingsHandler(settingsHandler);
             this.SetData(this.settingsData);
         }
-        
-        if (typeof levelPathOrData == 'string')
-            this.currentLevelPath = levelPathOrData;
 
         this.saveLevelCallback = saveLevelCallback.bind(this);
 
@@ -127,12 +141,13 @@ export class EditorScene extends Scene
         sceneController.DisableAllScenes();
         this.enabled = true;
         
+        window.gameMode = GameMode.Editor;
         await this.LoadLevel(levelName);
 
         window.gameMode = GameMode.Editor;
         this.opened = true;
 
-        if (this.settingsData.showUI) 
+        if (this.settingsData.showUI !== false)
         {
             // POSIION CAMERA SO THAT LEVEL SITS A BIT RIGHT, NEXT TO OBJECTS UI
             var dims:Dimensions = this.currentLevel.dimensions;
@@ -156,7 +171,7 @@ export class EditorScene extends Scene
         rapid.backgroundColor = new Color(60, 60, 60, 255);
         
         // SELECT OBJECTS LAYER AS DEFAULT
-        var layerElement = document.getElementById('Objects') as HTMLElement;
+        var layerElement = document.getElementById('objects') as HTMLElement;
         this.editorUIHandler.SelectLayerItem(layerElement);
 
         if (this.data.showUI === false)
@@ -169,6 +184,11 @@ export class EditorScene extends Scene
         }
 
         globalEvents.emit(BareEvent.editor_opened, {name: this.settingsData.name || 'levelEditor'});
+    }
+
+    OnClear(full?: boolean): void
+    {
+        window.gameMode = GameMode.Game;
     }
 
     async Close(loadLevelAfter: boolean = true)
@@ -304,10 +324,10 @@ export class EditorScene extends Scene
                 }
             },
             "layers": [
-                "Objects"
+                "objects"
             ],
             "layersInfo": {
-                "Objects": 
+                "objects": 
                 {
                     "doSave": true
                 }
@@ -463,7 +483,7 @@ export class EditorScene extends Scene
                 color: "#3C3C3C"
             },
             entitiesByLayer: {
-                "OBJECTS": [
+                "objects": [
                     {
                         ...entityConstructedFromSettingsData,
                         customName: "main",
@@ -526,9 +546,9 @@ export class EditorScene extends Scene
         levelHandler.SerializeLevel(level);
 
         // GET HITBOX AND PIVOT
-        var mainEntity = level.entitiesByLayer.OBJECTS[0];
-        var collisionRect = level.entitiesByLayer.OBJECTS[1];
-        var pivotObj = level.entitiesByLayer.OBJECTS[2];
+        var mainEntity = level.entitiesByLayer.objects[0];
+        var collisionRect = level.entitiesByLayer.objects[1];
+        var pivotObj = level.entitiesByLayer.objects[2];
         
         var mainEntityName = mainEntity.name;
 
@@ -545,7 +565,7 @@ export class EditorScene extends Scene
         };
 
         // CONSTRUCT ENTITY FROM INITIAL ENTITY DATA, SO WE GET THE RESULTING ORIGNAL VARS
-        var obj = PhysicsObjectBare.GetDummpyDataFromEntity(mainEntity.name, this.settingsHandler.Get(), { propsToIgnoreInEntity: ["pivot", "hitbox", "pivotBasedOnHitbox"] }).gameObject; // NOT SEARCHING IN ENTITY DATA, SO WE GET THE ORIGNAL VARS
+        var obj = PhysicsObjectBare.GetDummpyDataFromEntity(this, mainEntity.name, { propsToIgnoreInEntity: ["pivot", "hitbox", "pivotBasedOnHitbox"] }).gameObject; // NOT SEARCHING IN ENTITY DATA, SO WE GET THE ORIGNAL VARS
         var pivotOrig = obj.pivot;
         var pivotOrigRounded = { x: Math.round(pivotOrig.x), y: Math.round(pivotOrig.y) };
         var hitboxOrig = (obj as any).physicsHitbox ? (obj as any).physicsHitbox?.rectangle : {x: 0, y: 0, width: 0, height: 0};
@@ -609,10 +629,6 @@ export class EditorScene extends Scene
 
     Clear()
     {
-        if (bareEngine.levelEditorOpen)
-        {
-            this.Close(false); // DON'T WANT TO LOAD THE LEVEL
-        }
     }
 
 

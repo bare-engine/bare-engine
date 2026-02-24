@@ -264,6 +264,11 @@ export class GameObject
         return this;
     }
 
+    OnAwake()
+    {
+        // FOR OVERRIDE
+    }
+
     Added()
     {
         this.addedToLevel = true;
@@ -764,7 +769,7 @@ export class GameObject
                 return this;
             }
                 
-            x = x * this.texture!.width;
+            x = x * this.width;
         }
         if (y > 0 && y <= 1)
         {
@@ -774,7 +779,7 @@ export class GameObject
                 return this;
             }
                 
-            y = y * this.texture!.height;
+            y = y * this.height;
         }
 
         this.pivot.x = x;

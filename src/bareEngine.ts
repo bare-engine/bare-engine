@@ -25,8 +25,6 @@ export class BareEngine
     
     public componentClasses: Record<string, any> = {};
 
-    public isEngine: boolean = true;
-
     private mouseDownOnLeave: boolean = false;
 
     get imagePath(): string { return Scene.rootPath + "/" + Scene.imagePath; }

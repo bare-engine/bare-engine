@@ -1,15 +1,17 @@
 import { globalEvents, GameMode, MakePath } from "../main";
 import { Color, FrameBufferObject, ICircleRenderOptions, IGraphicRenderOptions, IRectRenderOptions, IRenderLineOptions, ISpriteRenderOptions, MaskType, RenderTexture, Texture, TextureCache, Vec2 } from "../libraries/rapid-render";
 import { PoolHandler } from "../handlers/poolHandler";
-import { AwakePayload, BareEvent, SceneClass, Entity, GameObjectClass, Layer, LayerInfo, LevelData, SaveData, SceneOptions, SettingsData, SceneI, Events } from "../types/bareTypes";
+import { AwakePayload, BareEvent, SceneClass, Entity, GameObjectClass, LayerInfo, LevelData, SaveData, SceneOptions, SettingsData, SceneI, Events } from "../types/bareTypes";
 import { GameObject } from "../objects/gameObject";
 import { SettingsHandler as SettingsHandler } from "../handlers/settingsHandler";
 import { defaultEntityData as defaultEntityData } from "../types/bareData";
-import { PhysicsObjectBare } from "../exports/barePhysics";
+import { PhysicsControllerBare, PhysicsObjectBare } from "../exports/barePhysics";
 import { ObjectController } from "../controllers/objectController";
 import { sceneController } from "../controllers/sceneController";
 import { BareEngine } from "../bareEngine";
 import mitt from "../libraries/mitt";
+import { CameraHandler, ComponentController, HitboxController, LevelHandler, MouseController, ParticleController, TweenController } from "../exports";
+import { PhysicsControllerSopiro } from "../exports/sopiroPhysics";
 
 /*Bare.camera.SetPosition(bare.width * .5, bare.height * .5);
 Bare.sound.Play()
@@ -52,15 +54,16 @@ export class Scene implements SceneI
     public isLevel: boolean = false;
 
     public objectController: ObjectController;
-    private mouseController: any; // ANY TO NOT INCLUDE CLASS AS DEPENDENCY
-    private hitboxController: any;
-    private tweenController: any; 
-    private componentController: any; 
-    private physicsControllerBare: any; 
-    private physicsControllerSopiro: any; 
-    private particleController: any; 
-    private levelHandler: any; 
-    private cameraHandler: any; 
+
+    private mouseController: MouseController;
+    private hitboxController: HitboxController;
+    private tweenController: TweenController; 
+    private componentController: ComponentController; 
+    private physicsControllerBare: PhysicsControllerBare; 
+    private physicsControllerSopiro: PhysicsControllerSopiro; 
+    private particleController: ParticleController; 
+    private levelHandler: LevelHandler; 
+    private cameraHandler: CameraHandler; 
 
     public settingsHandler: SettingsHandler = new SettingsHandler(this); // COULD ALSO BE PROXY
     get settingsData(): SettingsData { return this.settingsHandler.Get(); }
@@ -70,11 +73,6 @@ export class Scene implements SceneI
 
     layerInfos: Record<int, LayerInfo> = {};
     layerNames: string[];
-
-    // BIT HACKY, BUT STORING THIS SO THAT I CAN CHANGE THE OBJECTS LAYER WHEN USING OTHER SETTINGSDATA, EG GOING TO MAPDATA
-    // THEN Layer.OBJECTS WILL BE CHANGED ACCORDING TO ITS NEW VALUE IN ENTITYDATA.JSON, THEN WHEN GOING BACK TO INITIAL SETTINGSDATA
-    // initialObjectsLayer WILL BE USED TO SET IT BACK TO ITS ORIGINAL VALUE
-    initialObjectsLayer: int = -1;
 
     sceneOptions: SceneOptions;
 
@@ -94,9 +92,6 @@ export class Scene implements SceneI
     public events = mitt<Events>(); // private todo
     //private pipes = matt<Pipes>();
     
-
-    public isScene: boolean = true;
-
     constructor(sceneOptions: SceneOptions | SettingsData = {entityData: defaultEntityData})
     {
         let options: SceneOptions;
@@ -141,6 +136,12 @@ export class Scene implements SceneI
 
         globalEvents.emit(BareEvent.scene_awake);
 
+        var classes = BareEngine.controllerNames;
+        for (let i = 0; i < classes.length; i++)
+        {
+            this[classes[i]].Awake?.();
+        }
+
         await this.OnAwake(payload);
 
         this.settingsHandler.ReprocessAnimations(); // NEEDED SINCE AN ATLAS WITH ANIMATIONS CAN BE LOADED IN AT AWAKE() ABOVE
@@ -164,7 +165,7 @@ export class Scene implements SceneI
             this[classes[i]].Start?.();
         }
 
-        window.gameMode = GameMode.Game;
+        //window.gameMode = GameMode.Game;
 
         //rapid.backgroundColor = Color.White;
 
@@ -201,7 +202,7 @@ export class Scene implements SceneI
         
         for (var j = 0; j < data.layers.length; j++)
         {
-            const layerName = data.layers[j];
+            const layerName = data.layers[j].toLowerCase();
             const storedInfo = data.layersInfo[layerName] ?? {};
             const layerInfo = {
                 name: layerName,
@@ -243,31 +244,6 @@ export class Scene implements SceneI
                 data.layersInfo[layerName] = { ...storedInfo, ...(showInEditor === undefined ? {} : { showInEditor }) };
             }
         }*/
-
-        // HANDLE CHANGE OF OBJECTS LAYER, COULD BE DIFFERENT IN ANOTHER ENTITYDATA.JSON
-        // WHICH MESSES WITH CODE HERE THAT USES Layer.OBJECTS, SO CHANGING OR REVERTING THE VALUE HERE
-        var layerIndexObjects = this.layerNames.indexOf("Objects");
-        if (isBase)
-        {
-            if (this.initialObjectsLayer == -1)
-            {
-                // SAVING FOR REVERT - HAPPENS ONCE
-                this.initialObjectsLayer = layerIndexObjects;
-            }
-            else
-            {
-                // REVERTING BACK
-                Layer.OBJECTS = this.initialObjectsLayer;
-            }
-        }
-        else
-        {
-            if (layerIndexObjects != -1)
-            {
-                // CHANGING TO NEW VALUE
-                Layer.OBJECTS = layerIndexObjects;
-            }
-        }
     }
     
     HideLoadingText()
@@ -568,7 +544,7 @@ export class Scene implements SceneI
     }
 
     // INPUT COULD BE: ENTITY, ENTITY NAME, GAMEOBJECT, CLASS TO INSTANTIATE OR TEXTURE
-    AddGameObject(input?: Entity | string | GameObject | GameObjectClass | Texture, parent: int | GameObject = Layer.OBJECTS): GameObject
+    AddGameObject(input?: Entity | string | GameObject | GameObjectClass | Texture, parent: int | string | GameObject = "objects"): GameObject
     {
         if (!this.settingsHandler)
         {
@@ -659,6 +635,7 @@ export class Scene implements SceneI
             this.objectController.Add(gameObject, layer);
         }
 
+        gameObject.OnAwake();
         gameObject.Added();
 
         // NOTIFY
@@ -669,7 +646,7 @@ export class Scene implements SceneI
     }
 
     // STILL NEEDED?
-    public AddGameObjectFromImagePath(path:string, parent: int | GameObject = Layer.OBJECTS): GameObject
+    public AddGameObjectFromImagePath(path:string, parent: int | string | GameObject = "objects"): GameObject
     {
         if (!path.startsWith("/"))
             path = "/" + path; // NEEDS A SLASH IN FRONT FOR ADDGAMEOBJECT() TO RECOGNIZE IT'S A PATH
@@ -734,7 +711,7 @@ export class Scene implements SceneI
     Update(deltaTime: number): void
     {
         this.mouseController?.Update(deltaTime);
-        this.hitboxController?.Update(deltaTime);
+        this.hitboxController?.Update();
         this.objectController.Update(deltaTime);
         this.tweenController?.Update(bareEngine.time); // STUPID TIME VAR - TODO
         this.physicsControllerBare?.Update(deltaTime);
@@ -1117,30 +1094,30 @@ export class Scene implements SceneI
     // POINTERS
     OnPointerDown(gameObject: GameObject, callback: any)
     {
-        this.CheckExist("hitboxController");
+        /* @ AddClass(HitboxController) */
         this.hitboxController.OnPointerDown(gameObject, callback);
     }
 
     OnPointerUp(gameObject: GameObject, callback: any)
     {
-        this.CheckExist("hitboxController");
+        /* @ AddClass(HitboxController) */
         this.hitboxController.OnPointerUp(gameObject, callback);
     }
 
     OnPointerEnter(gameObject: GameObject, callback: any)
     {
-        this.CheckExist("hitboxController");
+        /* @ AddClass(HitboxController) */
         this.hitboxController.OnPointerEnter(gameObject, callback);
     }
 
     OnPointerLeave(gameObject: GameObject, callback: any)
     {
-        this.CheckExist("hitboxController");
+        /* @ AddClass(HitboxController) */
         this.hitboxController.OnPointerLeave(gameObject, callback);
     }
 
     // HELPER
-    CheckExist(propertyName: string): boolean
+    /*CheckExist(propertyName: string): boolean
     {
         const classKey = propertyName + "Class";
         const Ctor = (globalThis as any)[classKey];
@@ -1152,7 +1129,7 @@ export class Scene implements SceneI
         }
 
         return true;
-    }
+    }*/
 
     CreateClassIfNotExist(propertyName: string, scene:Scene):void
     {
@@ -1170,13 +1147,13 @@ export class Scene implements SceneI
 
     get currentLevel(): LevelData
     {
-        this.CheckExist("levelHandler");
+        /* @ AddClass(levelHandler) */
         return this.levelHandler?.currentLevel;
     }
 
     LoadLevel(levelInput: string | LevelData = ""): Promise<LevelData>
     {
-        this.CheckExist("levelHandler");
+        /* @ AddClass(levelHandler) */
         return this.levelHandler?.LoadLevel(levelInput);
     }
 }

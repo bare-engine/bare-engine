@@ -1,5 +1,5 @@
 import { Vec2, Color } from "../libraries/rapid-render";
-import { MakePath } from "../main";
+import { MakePath, Scene } from "../main";
 import { Entity, SettingsData } from "../types/bareTypes";
 import { HitboxType, Rectangle, Rectangle2Vec } from "../types/gamesTypes";
 import { Hitbox } from "../types/hitbox";
@@ -22,9 +22,9 @@ export class PhysicsObjectBare extends GameObject
 
     static dummyPhysicsObjectBare: PhysicsObjectBare = new PhysicsObjectBare();
     
-    constructor(x: number = 0, y: number = 0, texturePath: string = "")
+    constructor(scene: Scene | null = null, x: number = 0, y: number = 0, texturePath: string = "")
     {
-        super(x, y, texturePath);
+        super(scene, x, y, texturePath);
     }
 
     override ApplyEntityToGameObject(entity: Entity, addComponents: boolean)
@@ -166,12 +166,12 @@ export class PhysicsObjectBare extends GameObject
             this.ResetVelocity();
     }
 
-    static GetDummpyDataFromEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.scene.settingsHandler.Get(), options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): {entity: Entity, gameObject: GameObject}
+    static GetDummpyDataFromEntity(scene: Scene, nameOrEntity: string | Entity, options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): {entity: Entity, gameObject: GameObject}
     {
-        var entityConstructed = this.scene.ConstructEntity(nameOrEntity, settingsData, options);
+        var entityConstructed = scene.ConstructEntity(nameOrEntity, scene.settingsHandler.Get(), options);
         PhysicsObjectBare.dummyPhysicsObjectBare.ResetValues();
         PhysicsObjectBare.dummyPhysicsObjectBare.InitTexture(MakePath(entityConstructed.imagePath!, entityConstructed.name)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
-        this.scene.ApplyEntityToGameObject(entityConstructed, PhysicsObjectBare.dummyPhysicsObjectBare);
+        scene.ApplyEntityToGameObject(entityConstructed, PhysicsObjectBare.dummyPhysicsObjectBare);
 
         return {entity: entityConstructed, gameObject: PhysicsObjectBare.dummyPhysicsObjectBare};
     }

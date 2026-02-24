@@ -7,10 +7,9 @@ export const defaultEntityData: SettingsData = {
     }
   },
   entities: {},
-  layers: ["Objects"],
-  uiLayers: ["Ui"],
+  layers: ["objects"],
   layersInfo: {
-    Objects: {
+    objects: {
       doSave: true
     }
   },

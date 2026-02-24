@@ -5,7 +5,7 @@ import { BareEvent, type Dimensions } from "../types/bareTypes";
 import { CameraScaleMode, Rectangle } from "../types/gamesTypes";
 import { Helper } from "../utils/helper";
 
-class CameraHandler {
+export class CameraHandler {
   scaleMode: CameraScaleMode = CameraScaleMode.Cover;
   zoom: number = 1;
 
@@ -66,7 +66,7 @@ class CameraHandler {
     });
   }
 
-  Start()
+  Awake()
   {
       this.ResetForStart();
   }
@@ -289,7 +289,7 @@ class CameraHandler {
         else cy = Helper.Clamp(cy, by + viewH / 2, by + bh - viewH / 2);
     }
 
-    const shake = this.GetShakeOffset();
+    const shake = this.GetShakeOffset(scale);
     this.position.x = cx + shake.x;
     this.position.y = cy + shake.y;
 
@@ -358,7 +358,7 @@ class CameraHandler {
     this.shakeIntensityY = 0;
   }
 
-  private GetShakeOffset(): Vec2
+  private GetShakeOffset(scale: number): Vec2
   {
     if (!this.shakeActive || this.shakeDurationMs <= 0 || (this.shakeIntensityX <= 0 && this.shakeIntensityY <= 0))
       return new Vec2(0, 0);
@@ -374,8 +374,8 @@ class CameraHandler {
     const ampX = this.shakeIntensityX * decay;
     const ampY = this.shakeIntensityY * decay;
 
-    const x = (Math.random() * 2 - 1) * ampX;
-    const y = (Math.random() * 2 - 1) * ampY;
+    const x = (Math.random() * 2 - 1) * (ampX / scale);
+    const y = (Math.random() * 2 - 1) * (ampY / scale);
 
     return new Vec2(x, y);
   }

@@ -7,7 +7,7 @@ import { GameMode, globalEvents, MakePath, pipes, Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { EditorUIScene } from "../scenes/editorUIScene";
 import { defaultEntityData } from "../types/bareData";
-import { BareEvent, Component, Entity, Layer, LevelData, SaveData } from '../types/bareTypes';
+import { BareEvent, Component, Entity, LevelData, SaveData } from '../types/bareTypes';
 import { Helper } from "../utils/helper";
 import { assetsHandler } from "./assetsHandler";
 
@@ -30,7 +30,7 @@ export class LevelHandler
 
     get objectsLayer(): GameObject[]
     {
-        return objectController.GetLayer(Layer.OBJECTS) as GameObject[];
+        return objectController.GetLayerByName("objects");
     }
 
     async LoadLevelData(levelStr: string): Promise<LevelData>
@@ -131,7 +131,7 @@ export class LevelHandler
             var entities = level.entitiesByLayer[layerName];
             for(var levelEntity of entities)
             {
-                var layerNameLowerCase = Helper.CapitalizeFirstLetter(layerName.toLowerCase());
+                var layerNameLowerCase = layerName.toLowerCase();
                 var layer = this.scene.layerNames.indexOf(layerNameLowerCase);
                 var gameObject = this.scene.AddGameObject(levelEntity, layer);
 
@@ -195,7 +195,7 @@ export class LevelHandler
                 continue;
 
             var gameObjs = gameLayers[i];
-            var layerName = layerInfo.name.toUpperCase();
+            var layerName = layerInfo.name;
 
             level.entitiesByLayer[layerName] = gameObjs
                 .filter(obj => !obj.persistent && obj.save) // ONLY LOOK AT NON-PERSISTENT AND SAVEABLE OBJECTS
@@ -379,6 +379,8 @@ export class LevelHandler
         {
             const paramName = constructorVarNames[i];
             const paramValue = component[paramName as keyof typeof component];
+            if (paramName === "scene" || paramValue instanceof Scene)
+                continue;
             componentData[paramName] = paramValue;
         }
         
