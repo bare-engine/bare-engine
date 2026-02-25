@@ -53,23 +53,13 @@ export class HitboxController
             this.preventUpdateOneFrame = false;
             return;
         }
-        
+
         if (!this.active)
             return;
 
         if (isMobile && !mouseController.IsMouseDown())
             return;
 
-        if (this.currentHitboxHover)
-        {
-            const mouse = mouseController.world.position;
-            const isInsideCurrentHitbox = this.IsPointInsideHitbox(this.currentHitboxHover, mouse);
-            if (!isInsideCurrentHitbox)
-            {
-                this.HandleHitboxLeave(this.currentHitboxHover);
-            }
-        }
-        
         this.HandleUpdate(objectController.GetLayers());
 
         if (this.currentHitboxHover)
@@ -174,13 +164,12 @@ export class HitboxController
 
                 if (layerCollisionHandlingType == CollisionHandlingType.POINT)
                 {
-                    if (hitbox === this.currentHitboxHover)
-                        continue;
-
                     const isInside = this.IsPointInsideHitbox(hitbox, mouse);
                     if (isInside)
                     {
-                        this.HandleHitboxEnter(hitbox);
+                        if (hitbox != this.currentHitboxHover)
+                            this.HandleHitboxEnter(hitbox);
+                        
                         fullBreak = true;
                         break;
                     }
@@ -202,6 +191,9 @@ export class HitboxController
                         }
                     }
                 }
+
+                if (fullBreak)
+                    break;
             }
 
             if (layerCollisionHandlingType == CollisionHandlingType.RADIUS && curClosestHitbox)

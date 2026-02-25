@@ -49,8 +49,9 @@ export class SceneController
                     for (var j = i - 1; j >= 0; j--)
                     {
                         var scene = this.currentScenes[j];
-                        if (scene.hitboxController)
-                            scene.hitboxController.preventUpdateOneFrame = true
+                        if (scene.started && scene.enabled && !scene.paused)
+                            if (scene.hitboxController)
+                                scene.hitboxController.preventUpdateOneFrame = true
                     }
 
                     foundHitboxHover = true;
