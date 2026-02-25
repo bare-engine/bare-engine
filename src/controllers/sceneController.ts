@@ -33,10 +33,29 @@ export class SceneController
     
     Update(deltaTime: number): void
     {
-        for (var scene of this.currentScenes)
+        // UPDATE FROM TOP TO BOTTOM
+        // MOSTLY SO THAT HITBOXCONTROLLER CAN DEACTIVATE HITBOXCONTROLLERS BELOW ONCE IT DETECTS MOUSE COLLISION
+        var foundHitboxHover = false;
+        for (var i = this.currentScenes.length - 1; i >= 0; i--)
         {
+            var scene = this.currentScenes[i];
             if (scene.started && scene.enabled && !scene.paused)
+            {
                 scene.Update(deltaTime);
+
+                // DEACTIVATE HITBOXCONTROLLERS BELOW
+                if (!foundHitboxHover && scene.hitboxController?.GetCurrentHitboxHover())
+                {
+                    for (var j = i - 1; j >= 0; j--)
+                    {
+                        var scene = this.currentScenes[j];
+                        if (scene.hitboxController)
+                            scene.hitboxController.preventUpdateOneFrame = true
+                    }
+
+                    foundHitboxHover = true;
+                }
+            }
         }
     }
     

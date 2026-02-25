@@ -31,6 +31,8 @@ export class HitboxController
 
     public scene: Scene;
 
+    public preventUpdateOneFrame: boolean = false;
+
     constructor(scene: Scene)
     {
         this.scene = scene;
@@ -46,6 +48,12 @@ export class HitboxController
 
     Update(): void
     {
+        if (this.preventUpdateOneFrame)
+        {
+            this.preventUpdateOneFrame = false;
+            return;
+        }
+        
         if (!this.active)
             return;
 
@@ -63,6 +71,11 @@ export class HitboxController
         }
         
         this.HandleUpdate(objectController.GetLayers());
+
+        if (this.currentHitboxHover)
+        {
+
+        }
     }
 
     Render()
@@ -233,19 +246,19 @@ export class HitboxController
         const rect = hitbox.rectangle;
         const parent = hitbox.parent;
 
-        const innerScaleX = parent.innerScale.x;
-        const innerScaleY = parent.innerScale.y;
+        const totalScaleX = parent.totalScaleX;
+        const totalScaleY = parent.totalScaleY;
         const pivotWorld = new Vec2(
             parent.pivot.x * parent.totalScaleX,
             parent.pivot.y * parent.totalScaleY
         );
         const topLeftWorld = parent.position
-            .add(new Vec2(rect.x * innerScaleX, rect.y * innerScaleY))
+            .add(new Vec2(rect.x * totalScaleX, rect.y * totalScaleY))
             .subtract(pivotWorld);
         const bottomRightWorld = parent.position
             .add(new Vec2(
-                (rect.x + rect.width) * innerScaleX,
-                (rect.y + rect.height) * innerScaleY
+                (rect.x + rect.width) * totalScaleX,
+                (rect.y + rect.height) * totalScaleY
             ))
             .subtract(pivotWorld);
 
