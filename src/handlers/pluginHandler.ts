@@ -137,7 +137,7 @@ window.__GAME_DEBUG_API__ = {// called by the panel (via injector) to select in-
   },
 
   setObject(id: string, props: any) {
-    const o = objectController.GetObjectById(id);
+    const o = plugin.GetCurrentScene().objectController.GetObjectById(id);
     if (!o) return false;
 
     if (props.x !== undefined) o.x = props.x;
@@ -282,9 +282,11 @@ export class PluginHandler
           {
               this.SelectObjectInPlugin(obj.uniqueID, true);
 
+              var mouseController2 = this.GetCurrentScene().mouseController; // WITHOUT THE 2, DEV WEBPACK CATCHES THIS - TODO
+
               this.movingObjData = {
                   obj,
-                  offset: obj.position.subtract(getMouseController().world.position),
+                  offset: obj.position.subtract(mouseController2.world.position),
                   hasMovedAwayEnough: false
               };
 
@@ -302,7 +304,8 @@ export class PluginHandler
     {
         if (!this.movingObjData.hasMovedAwayEnough)
         {
-            var dist = Helper.Distance(getMouseController().screen.position, getMouseController().screen.positionOnRightDown);
+            var mouseController2 = this.GetCurrentScene().mouseController;
+            var dist = Helper.Distance(mouseController2.screen.position, mouseController2.screen.positionOnDown);
             if (dist > 10)
             {
                 this.movingObjData.hasMovedAwayEnough = true;
