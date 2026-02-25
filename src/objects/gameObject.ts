@@ -26,6 +26,7 @@ export class GameObject
     static gameObjectCounter = -1; // ONE BACK TO NOT COUNT THE DUMMY GAMEOBJECT INSTANCED IN BAREGAME
  
     name:string;
+    pluginName:string;
     customName: string = "";
     uniqueID:string = "";
     pivot:Vec2 = new Vec2();
@@ -1119,6 +1120,7 @@ export class GameObject
         this.onDestroy = null;
 
         this.name = "";
+        this.pluginName = "";
         this.texture = null;
         this.persistent = false;
         this.pooled = false;

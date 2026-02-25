@@ -14,7 +14,13 @@ export class TextObject extends GameObject
         this.textTexture = new BareText(options);
         this.SetTexture(this.textTexture);
 
-        this.name = options.text;
+        this.SetNameBasedOnText(options.text);
+    }
+
+    SetNameBasedOnText(text: string)
+    {
+        // LIMIT TEXT BY 20 CHARS, ELSE ADD ...
+        this.pluginName = text.length > 20 ? text.substring(0, 17) + "..." : text;
     }
 
     SetText(text: string)
@@ -26,8 +32,8 @@ export class TextObject extends GameObject
             this.pivotX = this.textTexture.width * this.pivotPercentage.x;
         if (this.pivotPercentage.y != -1)
             this.pivotY = this.textTexture.height * this.pivotPercentage.y;
-        
-        this.name = text;
+
+        this.SetNameBasedOnText(text);
     }
 
     override SetPivot(x: number, y: number):GameObject

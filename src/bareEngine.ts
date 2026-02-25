@@ -284,7 +284,7 @@ export class BareEngine
         var scenes = sceneController.GetAllScenes();
         for (var scene of scenes)
         {
-            if (!scene.enabled || scene.paused)
+            if (!scene.enabled || scene.paused) // HERE TO PREVENT INPUT ON DISABLED SCENES, FOR ONE
                 continue;
 
             scene.events.emit(type, ...event);

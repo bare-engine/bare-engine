@@ -59,10 +59,6 @@ window.__GAME_DEBUG_API__ = {// called by the panel (via injector) to select in-
     window.postMessage({ __fromGame: true, type: "selectObject", id: uid, openObjectsTab: openObjectsTab }, "*");
   },
 
-  setCurrentScene(sceneClassString: string) {
-    plugin.SetCurrentScene(sceneClassString);
-  },
-
   gotoLevelView(levelPath: string) {
     //levelController.LoadLevel(levelPath);
   },
@@ -89,21 +85,31 @@ window.__GAME_DEBUG_API__ = {// called by the panel (via injector) to select in-
     return plugin.debugActions;
   },
 
-  getAllObjects() {
-    const allScenes = sceneController.GetAllScenes();
+  getCurrentScene() {
+    return plugin.GetCurrentScene();
+  },
 
-    return allScenes
-        .map(scene => scene.objectController)
-        .flatMap(controller =>
-            controller
+  setCurrentScene(sceneClassString: string) {
+    plugin.SetCurrentScene(sceneClassString);
+  },
+
+  getAllSenes() {
+    var scenes = sceneController.GetAllScenes();
+    var sceneStrings = scenes.map(s => s.constructor.name);
+    return sceneStrings;
+  },
+
+  getAllObjects() {
+    const scene = plugin.GetCurrentScene();
+
+    return scene.objectController
                 .GetLayers()
                 .flat()
                 .filter(o => o.customName !== 'ignoreInPlugin')
                 .map(o => ({
                     id: o.uniqueID,
-                    name: o.name
+                    name: o.pluginName ? o.pluginName : o.name
                 }))
-        );
   },
 
   GetLevelFiles() {
@@ -115,7 +121,7 @@ window.__GAME_DEBUG_API__ = {// called by the panel (via injector) to select in-
   },
 
   getObject(id: string) {
-    const o = objectController.GetObjectById(id);
+    const o = plugin.GetCurrentScene().objectController.GetObjectById(id);
     if (!o) return null;
 
     return {
@@ -175,6 +181,10 @@ window.__GAME_DEBUG_API__ = {// called by the panel (via injector) to select in-
 
   refreshLevelFiles() {
     window.postMessage({ __fromGame: true, type: "refreshLevelFiles" }, "*");
+  },
+
+  refreshScenes() {
+    window.postMessage({ __fromGame: true, type: "refreshScenes" }, "*");
   },
 
   async createLevel(levelName: string) {
@@ -242,6 +252,10 @@ export class PluginHandler
             document.addEventListener('pointerdown', this.OnRightClickPointerDown, false);
             
             window.__GAME_DEBUG_API__.refreshLevelFiles();
+        });
+
+        globalEvents.persistent.on(BareEvent.scene_changed, () => {
+            window.__GAME_DEBUG_API__.refreshScenes();
         });
 
         // RESTART
@@ -386,14 +400,34 @@ export class PluginHandler
 
     GetCurrentScene(): Scene
     {
-        var scene = plugin.GetScene(this.currentSceneClassString);
-        return scene;
+        return this.GetScene(this.currentSceneClassString);
+    }
+
+    private ResolveSceneByName(sceneClassString: string): Scene | null
+    {
+        if (!sceneClassString) return null;
+
+        const scenes = sceneController.GetAllScenes();
+        const byName = scenes.find(s => s.constructor?.name === sceneClassString);
+        if (byName) return byName;
+
+        const sceneClass = (globalThis as any)[sceneClassString] as any;
+        if (sceneClass) return sceneController.Get(sceneClass) ?? null;
+
+        return null;
     }
 
     GetScene(sceneClassString: string): Scene
     {
-        var sceneClass = window[sceneClassString] as any;
-        return sceneController.Get(sceneClass);
+        const resolved = this.ResolveSceneByName(sceneClassString);
+        if (resolved) return resolved;
+
+        const fallback = sceneController.GetLevelScene() ?? sceneController.GetAllScenes()[0] ?? null;
+        if (!fallback)
+            throw new Error("PluginHandler.GetScene: no active scenes to resolve.");
+
+        console.warn(`PluginHandler.GetScene: could not resolve '${sceneClassString}', falling back to '${fallback.constructor?.name ?? "unknown"}'.`);
+        return fallback;
     }
 }
 

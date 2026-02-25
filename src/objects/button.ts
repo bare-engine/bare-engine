@@ -17,7 +17,7 @@ export class Button extends GameObject
 
         const options: TextOptions = (typeof textOptions === "string") ? { text: textOptions } : textOptions;
 
-        this.name = "button: " + options.text;
+        this.name = options.text;
 
         this.marge = options.marge || 10;
         this.text = new BareText({text: options.text, fontSize: 22, fontFamily: 'monospace', color: '#fff'});
