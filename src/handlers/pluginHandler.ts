@@ -96,6 +96,18 @@ window.__GAME_DEBUG_API__ = {// called by the panel (via injector) to select in-
   getAllSenes() {
     var scenes = sceneController.GetAllScenes();
     var sceneStrings = scenes.map(s => s.constructor.name);
+
+    // DON'T SHOW EditorUIScene WHEN THERE'S NO LEVEL
+    for (var i = 0; i < sceneStrings.length; i++)
+    {
+        if (sceneStrings[i] == "EditorUIScene")
+        if (!sceneController.GetLevelScene())
+        {
+            sceneStrings.splice(i, 1);
+            break;
+        }
+    }
+
     return sceneStrings;
   },
 
