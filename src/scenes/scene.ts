@@ -130,6 +130,9 @@ export class Scene implements SceneI
 
     async Awake(payload?: any): Promise<void>
     {
+        this.enabled = true;
+        this.paused = false;
+        
         rapid.backgroundColor = Color.White;
 
         await this.settingsHandler.Process(this.sceneOptions.entityData);//this.settingsData

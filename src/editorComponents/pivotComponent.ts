@@ -7,6 +7,7 @@ import { keyboardController } from "../controllers/keyboardController";
 import { hitboxController } from "../controllers/hitboxController";
 import { mouseController } from "../controllers/mouseController";
 import { PhysicsObjectBare } from "../exports/barePhysics";
+import { objectController } from "../controllers/objectController";
 
 export class PivotComponent extends BaseComponent
 {

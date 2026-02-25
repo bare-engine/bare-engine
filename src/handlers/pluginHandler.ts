@@ -8,6 +8,7 @@ import { OutlineShader } from "../shaders/outlineShader";
 import { BareClasses, ObjectController, Scene, sceneController } from "../exports";
 import { EditorScene } from "../scenes/editorScene";
 import { objectController } from "../controllers/objectController";
+import { HitboxScene } from "../scenes/hitboxScene";
 
 // THIS PLUGIN CODE DOES NOT GET INCLUDED IN PRODUCTION
 // ALL CALLS SHOULD BE WRAPPED WITH __DEV__
@@ -74,11 +75,7 @@ window.__GAME_DEBUG_API__ = {// called by the panel (via injector) to select in-
         return;
     }*/
 
-    var editorScene = sceneController.Get(EditorScene)
-    
-    var levelData = await editorScene.CreateHitboxDataFor(name, editorScene.hitboxData);
-    var saveLevelCallback = async () => await editorScene.SaveHitboxDataToSettingsData();
-    editorScene.Open(levelData, saveLevelCallback, editorScene.hitboxDataHandler);
+    sceneController.Add(HitboxScene, {name: name});
   },
 
   getDebugActions() {

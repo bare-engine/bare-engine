@@ -95,7 +95,10 @@ export class SceneController
         else
             this.currentScenes.push(scene);
 
-        await newScene.Awake(payload);
+        if (newScene.sceneOptions.solo)
+            this.DisableAllScenes();
+
+        await newScene.Awake(payload); // WILL ENABLE THE SCENE AGAIN TOO
 
         //globalEvents.emit(BareEvent.scene_added, { scene: newScene });
         //globalEvents.emit(BareEvent.scene_changed, { scene: newScene, type: "added" });
@@ -122,6 +125,9 @@ export class SceneController
 
             globalEvents.emit(BareEvent.scene_removed, { scene: targetScene });
             globalEvents.emit(BareEvent.scene_changed, { scene: targetScene, type: "removed" });
+
+            if (targetScene.sceneOptions.solo)
+                this.EnableAllScenes();
         }
         else
         {

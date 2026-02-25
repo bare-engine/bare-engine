@@ -36,6 +36,7 @@ export interface Entity
   scale?: Position;
   alpha?: number;
   hitbox?: any; //Rectangle2Vec | String;
+  tapHitbox?: any; //Rectangle2Vec | String;
   hitboxType?: string;
   canCollide?: boolean
   isStatic?: boolean
@@ -333,6 +334,7 @@ export type SceneOptions = {
     entityData?: SettingsData;
     persistent?: boolean;
     UI?: boolean;
+    solo?: boolean;
 }
 
 export type SceneClass<T extends Scene = Scene> = new (sceneOptions?: SceneOptions) => T;
