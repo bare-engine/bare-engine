@@ -542,10 +542,11 @@ export class EditorControlsHandler {
             const desiredX = mouseController.world.position.x - this.dragOffset.x;
             const desiredY = mouseController.world.position.y - this.dragOffset.y;
 
-            if (this.scene.gridActive)
+            var settings = this.scene.settingsData.settings;
+            if (settings?.gridEnabled)
             {
                 // Snap to grid
-                const gridSize = this.scene.gridSize;
+                const gridSize = settings?.gridSize;
                 const snappedX = Math.round(desiredX / gridSize) * gridSize;
                 const snappedY = Math.round(desiredY / gridSize) * gridSize;
                 this.draggingLevelEntity.SetPosition(snappedX, snappedY);
@@ -588,9 +589,10 @@ export class EditorControlsHandler {
         const previewX = mouseController.world.position.x;
         const previewY = mouseController.world.position.y;
 
-        if (this.scene.gridActive) {
+        var settings = this.scene.settingsData.settings;
+        if (settings?.gridEnabled) {
             // Snap preview entity to grid
-            const gridSize = this.scene.gridSize;
+            const gridSize = settings?.gridSize;
             const snappedPreviewX = Math.round(previewX / gridSize) * gridSize;
             const snappedPreviewY = Math.round(previewY / gridSize) * gridSize;
             this.currentPreviewEntity.SetPosition(snappedPreviewX, snappedPreviewY);

@@ -42,7 +42,8 @@ export class Scene implements SceneI
      
     static rootPath: string = "assets";
     static imagePath: string = "images";
-    static levelPath: string = "_data/levels";
+    static dataPath: string = "data";
+    static levelPath: string = "data/levels";
     static soundPath: string = "sounds";
 
     public started: boolean = false;
@@ -611,14 +612,6 @@ export class Scene implements SceneI
             }
 
             gameObject = this.GetObjectFromPool(entity.extendClass!);
-            /*const clsString = entity.extendClass!;
-            const Ctor = (globalThis as any)[clsString];
-
-            if (typeof Ctor !== "function")
-                throw new Error(`Class '${clsString}' not found on globalThis`);
-
-            var gameObject = new Ctor() as GameObject;
-            gameObject.pooled = true;*/
             gameObject.Init(MakePath(entity.imagePath!, entity.name));
             this.ApplyEntityToGameObject(entity, gameObject);
         }
@@ -912,6 +905,7 @@ export class Scene implements SceneI
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+                path: bareEngine.dataPath,
                 entityData: this.settingsHandler.GetRaw(),
                 skipReload: true
             })

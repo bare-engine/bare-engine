@@ -30,7 +30,6 @@ type EditorSceneAwakePayload = {
 export class EditorScene extends Scene
 {
     public opened: boolean = false; // DOUBLES TRUTH WITH this.levelEditorOpen
-    public data: SettingsData;
     
     // Component classes
     public editorControlsHandler: EditorControlsHandler;
@@ -39,8 +38,6 @@ export class EditorScene extends Scene
     // State management
     private backgroundColorOrig: Color;
     public draggingLevelEntity: GameObject | null = null;
-    public gridSize: number = 64;
-    public gridActive: boolean = false;
     public currentLevelPath: string = '';
     
     public hitboxDataHandler: SettingsHandler = new SettingsHandler(this);
@@ -67,8 +64,6 @@ export class EditorScene extends Scene
 
         this.RegisterEditorComponents();
 
-        this.SetData(this.settingsData);
-        
         if (__DEV__)
             globalThis.plugin?.AddDebugAction("Toggle Level Editor", () => this.Toggle(this.settingsHandler));
 
@@ -116,7 +111,6 @@ export class EditorScene extends Scene
         //if (settingsHandler != this.currentSettingsHandler)
         {
             await this.SetCurrentSettingsHandler(settingsHandler);
-            this.SetData(this.settingsData);
         }
 
         this.saveLevelCallback = saveLevelCallback.bind(this);
@@ -130,8 +124,8 @@ export class EditorScene extends Scene
             this.editorUIHandler.SetupEditorControls();
         }
 
-        this.editorUIHandler.PopulateWithData(this.data);
-        this.editorUIHandler.SyncSettingsUI(this.gridActive, this.gridSize);
+        this.editorUIHandler.PopulateWithData(this.settingsData);
+        this.editorUIHandler.SyncSettingsUI();
 
         this.editorControlsHandler.OpenEditor();
         this.editorUIHandler.OpenEditor();
@@ -174,7 +168,7 @@ export class EditorScene extends Scene
         var layerElement = document.getElementById('objects') as HTMLElement;
         this.editorUIHandler.SelectLayerItem(layerElement);
 
-        if (this.data.showUI === false)
+        if (this.settingsData.showUI === false)
         {
             this.editorUIHandler.Hide();
         }
@@ -347,41 +341,6 @@ export class EditorScene extends Scene
         this.hitboxDataHandler.Process(hitboxData); // NO AWAIT, SINCE I KNOW NOTHING WILL TRIGGER A PROMISE IN CURRENT HITBODATA
     }
 
-    SetData(data: SettingsData): EditorScene
-    {
-        this.data = data;
-        this.ApplySettingsFromData(data.settings);
-
-        return this;
-    }
-
-    private ApplySettingsFromData(settings?: SettingsData['settings']): void
-    {
-        this.gridActive = settings?.gridEnabled ?? false;
-        const gridSizeFromData = settings?.gridSize ?? 64;
-        this.gridSize = gridSizeFromData > 0 ? gridSizeFromData : 64;
-    }
-
-    async PersistSettings(): Promise<void>
-    {
-        const settings = {
-            gridEnabled: this.gridActive,
-            gridSize: this.gridSize
-        };
-
-        const updated = this.settingsHandler.UpdateRaw((draft) => {
-            draft.settings ??= { gridEnabled: settings.gridEnabled, gridSize: settings.gridSize };
-            draft.settings.gridEnabled = settings.gridEnabled;
-            draft.settings.gridSize = settings.gridSize;
-        });
-
-        try {
-            await this.SaveEntityData(updated);
-        } catch (error) {
-            console.error('Failed to persist settings', error);
-        }
-    }
-
     SelectEntity(entity: Entity, childEntity: HTMLElement | null = null): void {
         this.editorUIHandler.SelectUIEntity(entity, childEntity);
 
@@ -408,11 +367,11 @@ export class EditorScene extends Scene
             color: this.currentLevel.background?.color ? Color.fromHex(this.currentLevel.background.color) : Color.fromHex('666666'),
         });
 
-        if (!this.gridActive)
+        if (!this.settingsData?.settings?.gridEnabled)
             return;
         
         // DRAW GRID
-        var gridSize = this.gridSize;
+        var gridSize = this.settingsData.settings.gridSize;
         var gridLineWidth = 2;
         var gridColor = new Color(0, 50, 50, 155);
         for (var i = 0; i < this.currentLevel.dimensions.width; i += gridSize)
@@ -740,11 +699,11 @@ export class EditorScene extends Scene
 
     GetTilesheetEntity(name: string): Entity
     {
-        var tilesheetEntity = this.data.tilesheets!.find((e: any) => e.name == name)
+        var tilesheetEntity = this.settingsData.tilesheets!.find((e: any) => e.name == name)
         if (!tilesheetEntity)
         {
             // ENTITY NAME NOT FOUND, SO TAKE THE 'ANY' ENTRY, CLONE IT, AND ASSIGN A NEW NAME
-            var cloneEntity = Object.assign({}, this.data.tilesheets!.find((e: any) => e.name == "ANY")!);
+            var cloneEntity = Object.assign({}, this.settingsData.tilesheets!.find((e: any) => e.name == "ANY")!);
             cloneEntity.name = name;
             
             tilesheetEntity = cloneEntity;
@@ -754,7 +713,7 @@ export class EditorScene extends Scene
     }
 } 
 
+SaveDataHandler.Load();
 
-        SaveDataHandler.Load();
 //export const editorController = new EditorController();
 //globalThis.editorController = editorController;

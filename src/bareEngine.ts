@@ -30,6 +30,7 @@ export class BareEngine
     get imagePath(): string { return Scene.rootPath + "/" + Scene.imagePath; }
     get levelPath(): string { return Scene.rootPath + "/" + Scene.levelPath; }
     get soundPath(): string { return Scene.rootPath + "/" + Scene.soundPath; }
+    get dataPath(): string { return Scene.rootPath + "/" + Scene.dataPath; }
 
     get width(): int { return rapid.width; }
     get height(): int { return rapid.height; }
@@ -283,8 +284,8 @@ export class BareEngine
         var scenes = sceneController.GetAllScenes();
         for (var scene of scenes)
         {
-            //if (!scene.enabled || scene.paused)
-            //    continue;
+            if (!scene.enabled || scene.paused)
+                continue;
 
             scene.events.emit(type, ...event);
         }

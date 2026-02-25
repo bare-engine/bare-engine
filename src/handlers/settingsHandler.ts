@@ -190,12 +190,13 @@ export class SettingsHandler
                 var framesPerSecond = animDataInfo.framesPerSecond ?? 8;
                 var loop = animDataInfo.loop ?? true;
 
-                for (var i = 0; i < animationFrames.length; i++)
+                // TRY TO LOAD SEPARATE IMAGES, DISABLED SINCE THEY WILL LIKELY NOT BE THERE BUT IN ATLAS THAT STILL HAS TO LOAD IN
+                /*for (var i = 0; i < animationFrames.length; i++)
                 {
                     var frame = animationFrames[i];
                     var promiseTexture = assetsHandler.GetTexturePromise(frame);
                     promises.push(promiseTexture);
-                }
+                }*/
                 
                 // WILL ALSO OVERRIDE PREVIOUSLY SET ANIMATION IN JSON FROM _INITIAL FOLDER
                 assetsHandler.AddAnimation(animName, animationFrames, framesPerSecond, loop);

@@ -25,6 +25,8 @@ export class EditorUIHandler {
     private readonly showIcon = '👁️';
     private readonly hideIcon = '❌';
 
+    get settings() { return this.scene.settingsData.settings; };
+
     constructor(scene: EditorScene) {
         this.scene = scene;
 
@@ -77,7 +79,7 @@ export class EditorUIHandler {
         this.data = data;
         this.PopulateSidebar(data);
         this.PopulateLayers(data);
-        this.SyncSettingsUI(this.scene.gridActive, this.scene.gridSize);
+        this.SyncSettingsUI();
     }
 
     PopulateSidebar(data: SettingsData): void {
@@ -524,7 +526,7 @@ export class EditorUIHandler {
         // Open modal when settings button is clicked
         settingsBtn.addEventListener('click', function(): void {
             // Set modal grid size to current editorScene value
-            me.SyncSettingsUI(me.scene.gridActive, me.scene.gridSize);
+            me.SyncSettingsUI();
             me.gridModalEl!.style.display = 'block';
         });
 
@@ -545,7 +547,7 @@ export class EditorUIHandler {
 
         // Toggle switch functionality
         this.gridToggleEl!.addEventListener('click', () => {
-            me.ToggleGrid(true);
+            me.ToggleGrid();
         });
 
         // Prevent modal from closing when clicking inside modal content
@@ -555,52 +557,53 @@ export class EditorUIHandler {
         });
 
         // Update editorScene.gridSize when grid size input changes
-        const handleGridSizeChange = (value: string, commit: boolean = false) => {
-            if (value.trim() === '') {
-                if (commit)
-                    this.SyncSettingsUI(this.scene.gridActive, this.scene.gridSize);
-                return;
-            }
-
+        const handleGridSizeChange = (value: string) => {
             const newGridSize = parseInt(value, 10);
-            if (!isNaN(newGridSize) && newGridSize > 0) {
-                me.scene.gridSize = newGridSize;
+            if (newGridSize > 0)
+            {
+                me.settings.gridSize = newGridSize;
+                me.SyncSettingsUI();
 
-                if (commit) {
-                    me.SyncSettingsUI(me.scene.gridActive, me.scene.gridSize);
-                    void me.scene.PersistSettings();
-                }
-            } else if (commit) {
-                me.SyncSettingsUI(me.scene.gridActive, me.scene.gridSize);
+                const updatedRaw = this.scene.settingsHandler.UpdateRaw((raw) => {
+                    raw.settings.gridSize = newGridSize;
+                });
+                this.scene.SaveEntityData(updatedRaw);
             }
         };
 
         this.gridSizeInputEl!.addEventListener('input', function(this: HTMLInputElement): void {
-            handleGridSizeChange(this.value, false);
+            handleGridSizeChange(this.value);
         });
 
         this.gridSizeInputEl!.addEventListener('keydown', (ev: KeyboardEvent) => {
             if (ev.key === 'Enter')
-                handleGridSizeChange(this.gridSizeInputEl!.value, true);
+                handleGridSizeChange(this.gridSizeInputEl!.value);
         });
 
         // Also update on blur event to handle when user leaves the input
         this.gridSizeInputEl!.addEventListener('blur', function(this: HTMLInputElement): void {
-            handleGridSizeChange(this.value, true);
+            handleGridSizeChange(this.value);
         });
     }
 
-    ToggleGrid(persist: boolean = false)
+    ToggleGrid()
     {
-        this.scene.gridActive = !this.scene.gridActive;
-        this.SyncSettingsUI(this.scene.gridActive, this.scene.gridSize);
+        this.settings.gridEnabled = !this.settings.gridEnabled;
+        this.SyncSettingsUI();
 
-        if (persist)
-            void this.scene.PersistSettings();
+        // SAVE
+        const updatedRaw = this.scene.settingsHandler.UpdateRaw((raw) => {
+            raw.settings ??= {gridEnabled: false, gridSize: 64};
+            raw.settings.gridEnabled = this.settings.gridEnabled;
+        });
+        this.scene.SaveEntityData(updatedRaw);
     }
 
-    SyncSettingsUI(gridEnabled: boolean, gridSize: number): void
+    SyncSettingsUI(): void
     {
+        var gridEnabled = this.settings.gridEnabled;
+        var gridSize = this.settings.gridSize;
+
         if (this.gridToggleEl)
             this.gridToggleEl.classList.toggle('active', gridEnabled);
 
