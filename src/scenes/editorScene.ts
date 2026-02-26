@@ -4,6 +4,7 @@ import { PivotRemoveComponent } from "../editorComponents/pivotRemoveComponent";
 import { PositionPivotComponent } from "../editorComponents/positionPivotComponent";
 import { ResizableComponent } from "../editorComponents/resizableComponent";
 import { ResizableRemoveComponent } from "../editorComponents/resizableRemoveComponent";
+import { defaultEntityData } from "../exports";
 import { PhysicsObjectBare } from "../exports/barePhysics";
 import { assetsHandler } from "../handlers/assetsHandler";
 import { cameraHandler } from "../handlers/cameraHandler";
@@ -16,7 +17,7 @@ import { SettingsHandler } from "../handlers/settingsHandler";
 import { Color, Vec2 } from "../libraries/rapid-render";
 import { GameMode, globalEvents, MakePath, Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
-import { BareEvent, Dimensions, Entity, LevelData, SaveData, SettingsData } from "../types/bareTypes";
+import { BareEvent, Dimensions, Entity, LevelData, SaveData, SceneOptions, SettingsData } from "../types/bareTypes";
 import { CameraScaleMode, HitboxType } from "../types/gamesTypes";
 import { Hitbox } from "../types/hitbox";
 import { Helper } from "../utils/helper";
@@ -42,15 +43,14 @@ export class EditorScene extends Scene
     
     saveLevelCallback: () => Promise<LevelData>;
 
-    constructor()
+    constructor(sceneOptions: SceneOptions | SettingsData = {persistent: true, entityData: sceneController.GetLevelScene().sceneOptions.entityData})
     {  
-        var entityData = sceneController.GetLevelScene().sceneOptions.entityData;
-        super({entityData: entityData, persistent: true });
+        super(sceneOptions);
         
         this.SetupFileDropZone();
     }
 
-    OnAwake(payload?: EditorSceneAwakePayload): void | Promise<void>
+    OnStart(payload?: EditorSceneAwakePayload): void | Promise<void>
     {
         this.editorControlsHandler = new EditorControlsHandler(this);
         this.editorUIHandler = new EditorUIHandler(this);
@@ -75,11 +75,6 @@ export class EditorScene extends Scene
         );
     }
 
-    OnStart(): void | Promise<void>
-    {
-        //window.gameMode = GameMode.Editor;
-    }
-
     async Open(levelPathOrData: string | LevelData = '', saveLevelCallback: () => Promise<LevelData> = this.SaveLevel,
                    settingsHandler: SettingsHandler = this.settingsHandler)
     {
@@ -88,7 +83,7 @@ export class EditorScene extends Scene
                 if (levelPathOrData.name == this.currentLevel?.name)
                     return; // ALREADY IN TARGET EDITOR AT TARGET LEVEL
 
-        var levelName = '';
+        var levelName:string | LevelData = '';
         if (levelPathOrData == '')
         {
             levelName = SaveData.currentLevelStr;
@@ -100,10 +95,9 @@ export class EditorScene extends Scene
             levelName = levelPathOrData.split('/').pop()!.split('.')[0];
             this.currentLevelPath = levelPathOrData;
         }
-
-        //if (settingsHandler != this.currentSettingsHandler)
+        else
         {
-            await this.SetCurrentSettingsHandler(settingsHandler);
+            levelName = levelPathOrData;//
         }
 
         this.saveLevelCallback = saveLevelCallback.bind(this);
@@ -173,9 +167,22 @@ export class EditorScene extends Scene
         globalEvents.emit(BareEvent.editor_opened, {name: this.settingsData.name || 'levelEditor'});// TODO
     }
 
-    OnClear(full?: boolean): void
+    OnClear(full?: boolean, isLevel:boolean = false): void
     {
-        window.gameMode = GameMode.Game;
+        this.editorControlsHandler.Clear(isLevel);
+
+        globalEvents.emit(BareEvent.editor_closed, {name: this.settingsData.name || 'levelEditor'});
+
+        // DISABLE THE LEVEL CACHE, SO LEVELS GETS RELOADED
+        // DON'T NECESSARY WANT SAVEDATA FOR EACH LEVEL - TODO
+        if (!window.isLocalhost) // FOR PRODUCTION, LEVEL IS ONLY SAVED TO CACHE, NOT TO DISK, SO KEEPING CACHE IN THAT CASE
+        {
+            SaveData.levelCache.clear();
+            SaveDataHandler.Save();
+        }
+
+        if (full)
+            window.gameMode = GameMode.Game;
     }
 
     // NOT USING ATM?
@@ -365,9 +372,10 @@ export class EditorScene extends Scene
         this.editorControlsHandler.PostRender();
     }
 
-    Clear()
+    /*Clear()
     {
-    }
+        trace(44)
+    }*/
 
 
 

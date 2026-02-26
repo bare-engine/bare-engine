@@ -252,11 +252,20 @@ export class SettingsHandler
         this.raw = raw;
     }
 
-    UpdateRaw(mutator: (raw: SettingsData) => void): SettingsData 
+    async UpdateRaw(mutator: (raw: SettingsData) => void | Promise<void>): Promise<SettingsData>
     {
         const raw = this.GetRaw();
-        mutator(raw);
 
+        // RUN THE SUPPLIED LAMBDA THAT MODIFIES THE RAW DATA
+        await mutator(raw);
+
+        // REPROCESS THE FRESH RAW DATA
+        // 
+        // KINDA ANNOYING THAT THIS MAKES IT ASYNC (ABOVE AWAIT IT OPTIONAL)
+        // BUT NEEDED FOR WHEN YOU WOULD WANT TO Get() THE PROCESSED DATA RIGHT AFTER.
+        // HAVEN'T HAD A NEED FOR THIS SO FAR BUT PLAYING IT SAFE FOR NOW
+        await this.Process();
+    
         return raw;
     }
 

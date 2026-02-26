@@ -1,13 +1,19 @@
-import { assetsHandler, BareEvent, cameraHandler, Dimensions, GameMode, globalEvents, Helper, LevelData, MakePath, PhysicsObjectBare, sceneController, SettingsData, SettingsHandler } from "../exports";
+import { assetsHandler, EditorScene, Helper, LevelData, MakePath, PhysicsObjectBare, SettingsData, SettingsHandler } from "../exports";
 import { levelHandler } from "../handlers/levelHandler";
-import { Scene } from "./scene";
+import { AwakePayload } from "../types/bareTypes";
 
-type HitboxSceneAwakePayload = {
+type EditorScenePayload = AwakePayload<EditorScene>;
+type HitboxSceneAwakePayload = EditorScenePayload & {
     name: string;
+    settingsHandler: SettingsHandler;
 };
 
-export class HitboxScene extends Scene
+export class HitboxScene extends EditorScene
 {
+    lastObjectName: string = "";
+    settingsHandlerEntity: SettingsHandler;
+    lastPayload: HitboxSceneAwakePayload;
+
     constructor()
     {
         var hitboxData = {
@@ -43,40 +49,39 @@ export class HitboxScene extends Scene
             "selectionEnabled": false
         };
 
-        super({solo:true, entityData: hitboxData});
+        super({solo:true, persistent: true, entityData: hitboxData});
     }
 
-    async OnAwake(payload?: HitboxSceneAwakePayload): Promise<void>
+    override async OnStart(payload: HitboxSceneAwakePayload = this.lastPayload): Promise<void>
     {
-        window.gameMode = GameMode.Editor;
+        this.lastPayload = payload;
 
-        var levelData = await this.CreateHitboxDataFor(payload!.name, this.settingsData);
-        var level = await this.LoadLevel(levelData);
+        const objectName = (payload)?.name;
+        const settingsHandler = (payload)?.settingsHandler;
+        if (!objectName)
+            throw new Error("HitboxScene.OnAwake requires payload.name");
+        if (!settingsHandler)
+            throw new Error("HitboxScene.OnAwake requires payload.entityData");
 
-        // SET UP CAMERA
-        var dims:Dimensions = level.dimensions;
-        var zoomPerfectFit = (1 / Math.max(dims.width / rapid.width, dims.height / rapid.height));
-        cameraHandler.zoom = zoomPerfectFit * .7; // ZOOM OUT A BIT
-        cameraHandler.SetPosition(dims.width / 2, dims.height / 2);
-        cameraHandler.DisableBounds();
+        this.lastObjectName = objectName;
+        this.settingsHandlerEntity = settingsHandler;
+        
+        var levelData = await this.CreateHitboxDataFor(objectName);
+        super.OnStart({levelPathOrData: levelData, saveLevelCallback: this.SaveHitboxDataToSettingsData});
 
-        globalEvents.emit(BareEvent.editor_opened, {name: 'hitboxEditor'});
-
-        this.events.on(BareEvent.pointer_down, ()=>{
+        /*this.events.on(BareEvent.pointer_down, ()=>{
             trace('pointer_down');
             sceneController.Remove(this);
-        });
+        });*/
     }
 
-    async CreateHitboxDataFor(objectName: string, hitboxData: SettingsData): Promise<LevelData>
+    async CreateHitboxDataFor(objectName: string): Promise<LevelData>
     {
-        if (!hitboxData.processed)
-            await this.settingsHandler.Process(hitboxData); // NEEDED? TODO
-
-        var settingsData = this.settingsHandler.Get();
+        //if (!hitboxData.processed)
+        //    await this.settingsHandler.Process(hitboxData); // NEEDED? TODO
 
         // CONSTRUCT ENTITY FROM INITIAL ENTITY DATA, SO WE GET THE HITBOX DEFINED THERE
-        var entityConstructedFromSettingsData = this.ConstructEntity(objectName, settingsData);
+        var entityConstructedFromSettingsData = this.ConstructEntity(objectName, this.settingsHandlerEntity.Get());
         delete entityConstructedFromSettingsData.components;
         delete entityConstructedFromSettingsData.editorComponents;
         
@@ -164,9 +169,10 @@ export class HitboxScene extends Scene
         levelHandler.SerializeLevel(level);
 
         // GET HITBOX AND PIVOT
-        var mainEntity = level.entitiesByLayer.objects[0];
-        var collisionRect = level.entitiesByLayer.objects[1];
-        var pivotObj = level.entitiesByLayer.objects[2];
+        var objs = this.objectController.GetLayer(0);
+        var mainEntity = objs[1].entity; // objs[0] IS currentPreviewEntity, SKIPPING
+        var collisionRect = objs[2];
+        var pivotObj = objs[3];
         
         var mainEntityName = mainEntity.name;
 
@@ -192,7 +198,7 @@ export class HitboxScene extends Scene
         var resetPivotBasedOnHitbox = (mainEntity.pivotBasedOnHitbox && mainEntity.pivotBasedOnHitbox.x == -1 && mainEntity.pivotBasedOnHitbox.y == -1);
 
         // APPLY NEW VALUES TO THE INITIAL ENTITY SETTING
-        const newRawSettingsData = this.settingsHandler.UpdateRaw((draft) => {
+        const newRawSettingsData = await this.settingsHandlerEntity.UpdateRaw((draft) => {
             draft.entities[mainEntityName] ??= {};
             const entityDraft = draft.entities[mainEntityName];
 
@@ -238,10 +244,17 @@ export class HitboxScene extends Scene
             }
         });
 
+        //newRawSettingsData.name = "";
+
         // SAVE TO FILE
         await this.SaveEntityData(newRawSettingsData);
         //await window.__GAME_DEBUG_API__.setEntityData(newRawSettingsData);
 
         return level;
+    }
+
+    async OnSaveEntityData(rawData: SettingsData): Promise<void>
+    {
+        this.settingsHandlerEntity.Process(rawData);
     }
 }

@@ -49,7 +49,7 @@ export class EditorControlsHandler {
 
         this.currentPreviewEntity = new PhysicsObjectBare(this.scene, -100, -100);
         this.currentPreviewEntity.name = 'currentPreviewEntity';
-        //this.currentPreviewEntity.customName = 'ignoreInPlugin';
+        this.currentPreviewEntity.customName = 'ignoreInPlugin';
         this.SetCurrentPreviewActive(false);//
 
         this.init();
@@ -105,7 +105,7 @@ export class EditorControlsHandler {
 
             this.SelectGameObjects(objsCreated);
 
-            this.scene.SaveLevel();
+            this.scene.saveLevelCallback();
         }
         if (allKeys[0] == 'delete')
         {
@@ -269,7 +269,7 @@ export class EditorControlsHandler {
         if (!(event.button == 0 || event.button == 2))
             return;
         
-        this.scene.SaveLevel();
+        this.scene.saveLevelCallback();
     }
     
     private DoubleClick({ mouseX, mouseY, event }: BareEventPayload['pointer_doubleClick']): void
@@ -690,10 +690,17 @@ export class EditorControlsHandler {
         this.currentPreviewEntity.alpha = 0;
     }
     
+    // NOT USING
     Close()
     {
         hitboxController.ClearExclusiveLayers();
 
-        objectController.Remove(this.currentPreviewEntity);
+        this.Clear();
+    }
+    
+    Clear(isLevel: boolean = false)
+    {
+        if (!isLevel)
+            objectController.Remove(this.currentPreviewEntity);
     }
 } 

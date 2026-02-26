@@ -136,7 +136,8 @@ export class Scene implements SceneI
         rapid.backgroundColor = Color.White;
 
         await this.settingsHandler.Process(this.sceneOptions.entityData);//this.settingsData
-        this.SetCurrentSettingsHandler(this.settingsHandler);
+
+        this.layerNames = this.settingsData.layers.slice();
 
         globalEvents.emit(BareEvent.scene_awake);
 
@@ -150,7 +151,7 @@ export class Scene implements SceneI
 
         this.settingsHandler.ReprocessAnimations(); // NEEDED SINCE AN ATLAS WITH ANIMATIONS CAN BE LOADED IN AT AWAKE() ABOVE
 
-        await this.Start();
+        await this.Start(payload);
 
         this.HideLoadingText();
     }
@@ -161,7 +162,7 @@ export class Scene implements SceneI
     }
 
     // START IS CALLED ON INITIALIZATION AND RESTART
-    async Start(): Promise<void>
+    async Start(payload?: any): Promise<void>
     {
         var classes = BareEngine.controllerNames;
         for (let i = 0; i < classes.length; i++)
@@ -173,28 +174,16 @@ export class Scene implements SceneI
 
         //rapid.backgroundColor = Color.White;
 
-        this.SetCurrentSettingsHandler(this.settingsHandler);// DOUBLE
-
-        await this.OnStart();
+        await this.OnStart(payload);
 
         this.started = true;
     }
 
-    OnStart(): void | Promise<void>
+    OnStart(payload?: any): void | Promise<void>
     {
         // FOR OVERRIDE
 
         // OPTIONAL TO OVERRIDE AS ASYNC - TO LOAD SOME MORE ASSETS BEFORE THE LOADING SCREEN DISAPPEARS
-    }
-
-    SetCurrentSettingsHandler(settingsHandler:SettingsHandler): SettingsHandler
-    {
-        this.settingsHandler = settingsHandler;
-
-        var isBase = (this.settingsHandler === this.settingsHandler);
-        this.ApplyLayerInfoToSettings(this.settingsData, isBase);
-
-        return this.settingsHandler;
     }
 
     // SEPARATE THIS OUT? TODO
@@ -892,12 +881,16 @@ export class Scene implements SceneI
         return name;
     }
 
+    async OnSaveEntityData(rawData: SettingsData)
+    {
+        // FOR OVERRIDE
+    }
+
     // THIS SHOULD NOT BE HERE, TODO
     async SaveEntityData(newRawData: SettingsData)
     {
-        this.settingsHandler.SetRaw(newRawData);
-        await this.settingsHandler.Process();
-    
+        await this.OnSaveEntityData(newRawData);
+
         // Persist to disk via dev-server endpoint when available (local only)
         if (!window.isLocalhost) {
           return { ok: true, saved: false, message: 'Save skipped (not localhost)' };
@@ -909,14 +902,14 @@ export class Scene implements SceneI
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 path: bareEngine.dataPath,
-                entityData: this.settingsHandler.GetRaw(),
+                entityData: newRawData,
                 skipReload: true
             })
           });
           const json = await res.json().catch(() => null);
         
           // TELL THE PLUGIN
-          window.__GAME_DEBUG_API__.notifyEntityDataChanged(this.settingsHandler.GetRaw())
+          window.__GAME_DEBUG_API__.notifyEntityDataChanged(newRawData)
 
           return { ok: res.ok, saved: res.ok, response: json };
         } catch (error: any) {
@@ -1057,7 +1050,7 @@ export class Scene implements SceneI
         await this.Start();
     }
 
-    Clear(full:boolean = false, clearEvents:boolean = true)
+    Clear(full:boolean = false, isLevel:boolean = false) // -TODO
     {
         var classes = BareEngine.controllerNames;
         for (let i = 0; i < classes.length; i++)
@@ -1065,7 +1058,7 @@ export class Scene implements SceneI
             this[classes[i]].Clear?.();
         }
 
-        if (clearEvents)
+        if (!isLevel)
         {
             if (full)
                 this.events.clearAll();
@@ -1075,10 +1068,10 @@ export class Scene implements SceneI
         
         //this.ApplyLayerInfoToSettings(this.currentSettings, true); // ?
 
-        this.OnClear(full);
+        this.OnClear(full, isLevel);
     }
 
-    OnClear(full:boolean = false)
+    OnClear(full:boolean = false, isLevel:boolean = false)
     {
         // FOR OVERRIDE
     }

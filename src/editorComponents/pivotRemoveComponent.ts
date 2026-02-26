@@ -22,7 +22,7 @@ export class PivotRemoveComponent extends BaseComponent
 
         // CONSTRUCT ENTITY FROM INITIAL ENTITY DATA, SO WE GET THE RESULTING ORIGNAL VARS
         var mainObj = objectController.GetAllObjects().find((o: GameObject) => o.customName == "main")!;
-        var obj = PhysicsObjectBare.GetDummpyDataFromEntity(mainObj.name, bare.settingsHandler.Get(), { propsToIgnoreInEntity: ["pivot"] }).gameObject; // NOT SEARCHING IN ENTITY DATA, SO WE GET THE ORIGNAL VARS
+        var obj = PhysicsObjectBare.GetDummpyDataFromEntity(this.scene, mainObj.name, { propsToIgnoreInEntity: ["pivot"] }).gameObject; // NOT SEARCHING IN ENTITY DATA, SO WE GET THE ORIGNAL VARS
         var pivotOrig = obj.pivot;
 
         var entityBare = {
@@ -47,7 +47,7 @@ export class PivotRemoveComponent extends BaseComponent
                         }
 
 
-        var entity = PhysicsObjectBare.GetDummpyDataFromEntity(mainObj.name, bare.settingsHandler.Get()).entity;
+        var entity = PhysicsObjectBare.GetDummpyDataFromEntity(this.scene, mainObj.name).entity;
         if (entity.hitbox)
         {
             var currentHitboxIsZero = (entity.hitbox.x1 == 0 && entity.hitbox.y1 == 0 && entity.hitbox.x2 == 0 && entity.hitbox.y2 == 0);

@@ -36,7 +36,7 @@ export class PositionPivotComponent extends BaseComponent
             };
             
             var entity = { name: this.objName, hitbox: hitbox };
-            var origEntity = bare.ConstructEntity(entity, bare.settingsData);
+            var origEntity = bare.ConstructEntity(entity);
             var obj = new PhysicsObjectBare()
             bare.ApplyEntityToGameObject(origEntity, obj);
             var pivotPosOrig = obj.pivot;

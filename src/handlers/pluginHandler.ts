@@ -75,7 +75,7 @@ window.__GAME_DEBUG_API__ = {// called by the panel (via injector) to select in-
         return;
     }*/
 
-    sceneController.Add(HitboxScene, {name: name});
+    sceneController.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
   },
 
   getDebugActions() {
@@ -174,7 +174,7 @@ window.__GAME_DEBUG_API__ = {// called by the panel (via injector) to select in-
 
     if (bareEngine.levelEditorOpen)
     {
-      await sceneController.Get(EditorScene).Restart();
+      await plugin.GetCurrentScene().Restart();//
     }
     else
     {
@@ -263,8 +263,20 @@ export class PluginHandler
             window.__GAME_DEBUG_API__.refreshLevelFiles();
         });
 
-        globalEvents.persistent.on(BareEvent.scene_changed, () => {
+        globalEvents.persistent.on(BareEvent.scene_changed, ({ scene, type }) => {
             window.__GAME_DEBUG_API__.refreshScenes();
+
+            // ADDED SCENE BECOMES CURRENTS SCENE (IF NOT EDITOR UI SCENE)
+            if (type === "added"/* && this.currentSceneClassString == ""*/ && scene.constructor.name != "EditorUIScene")
+                this.SetCurrentScene(scene.constructor.name);
+
+            // IF REMOVED SCENE WAS CURRENT, PICK NEW ONE
+            if (type === "removed" && this.currentSceneClassString == scene.constructor.name)
+            {
+                const scene = this.GetBestScene();
+                if (scene)
+                    this.SetCurrentScene(scene.constructor.name);
+            }
         });
 
         // RESTART
@@ -277,6 +289,23 @@ export class PluginHandler
         this.AddDebugAction("Toggle Debug Visuals", () => window.debug = !window.debug);
         this.AddDebugBreak();
         this.AddDebugBreak();
+    }
+
+    GetBestScene():Scene | null
+    {
+        var levelScene = sceneController.GetLevelScene();
+        if (levelScene)
+            return levelScene;
+
+        var allScenes = sceneController.GetAllScenes();
+        for (var i = 0; i < allScenes.length; i++)
+        {
+            var scene = allScenes[i];
+            if (scene.constructor.name != "EditorUIScene")
+                return scene;
+        }
+
+        return null;
     }
 
     private OnRightClickPointerDown = async (ev: PointerEvent) =>
@@ -434,7 +463,7 @@ export class PluginHandler
         const resolved = this.ResolveSceneByName(sceneClassString);
         if (resolved) return resolved;
 
-        const fallback = sceneController.GetLevelScene() ?? sceneController.GetAllScenes()[0] ?? null;
+        const fallback = this.GetBestScene();
         if (!fallback)
             throw new Error("PluginHandler.GetScene: no active scenes to resolve.");
 

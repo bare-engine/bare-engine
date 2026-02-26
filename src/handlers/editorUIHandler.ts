@@ -363,9 +363,9 @@ export class EditorUIHandler {
             this.scene.layerInfos[layerIndex] = { ...this.scene.layerInfos[layerIndex], showInEditor: show };
     }
 
-    private PersistLayerVisibility(layerName: string, show: boolean)
+    private async PersistLayerVisibility(layerName: string, show: boolean)
     {
-        const updatedRaw = this.scene.settingsHandler.UpdateRaw((raw) => {
+        const updatedRaw = await this.scene.settingsHandler.UpdateRaw((raw) => {
             raw.layersInfo ??= {};
             const existingInfo = raw.layersInfo[layerName] as LayerInfo | undefined;
 
@@ -461,7 +461,7 @@ export class EditorUIHandler {
         return assetsHandler.GetFullImagePath(MakePath(entity.imagePath!, entity.name));
     }
 
-    SetupEditorControls(): void {
+    SetupEditorControls(): Promise<void> {
         // EDITOR BUTTON
         const editorButton = document.getElementById('close-editor-btn') as HTMLButtonElement;
         editorButton.addEventListener('click', (event: MouseEvent) => {
@@ -557,14 +557,14 @@ export class EditorUIHandler {
         });
 
         // Update editorScene.gridSize when grid size input changes
-        const handleGridSizeChange = (value: string) => {
+        const handleGridSizeChange = async (value: string) => {
             const newGridSize = parseInt(value, 10);
             if (newGridSize > 0)
             {
                 me.settings.gridSize = newGridSize;
                 me.SyncSettingsUI();
 
-                const updatedRaw = this.scene.settingsHandler.UpdateRaw((raw) => {
+                const updatedRaw = await this.scene.settingsHandler.UpdateRaw((raw) => {
                     raw.settings.gridSize = newGridSize;
                 });
                 this.scene.SaveEntityData(updatedRaw);
@@ -586,13 +586,13 @@ export class EditorUIHandler {
         });
     }
 
-    ToggleGrid()
+    async ToggleGrid()
     {
         this.settings.gridEnabled = !this.settings.gridEnabled;
         this.SyncSettingsUI();
 
         // SAVE
-        const updatedRaw = this.scene.settingsHandler.UpdateRaw((raw) => {
+        const updatedRaw = await this.scene.settingsHandler.UpdateRaw((raw) => {
             raw.settings ??= {gridEnabled: false, gridSize: 64};
             raw.settings.gridEnabled = this.settings.gridEnabled;
         });

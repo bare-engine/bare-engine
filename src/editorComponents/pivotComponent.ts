@@ -8,6 +8,7 @@ import { hitboxController } from "../controllers/hitboxController";
 import { mouseController } from "../controllers/mouseController";
 import { PhysicsObjectBare } from "../exports/barePhysics";
 import { objectController } from "../controllers/objectController";
+import { Scene } from "../exports";
 
 export class PivotComponent extends BaseComponent
 {
@@ -17,9 +18,9 @@ export class PivotComponent extends BaseComponent
     hitboxObj: GameObject;
     hitboxComp: ResizableComponent;
 
-    constructor(objectName:string, hitboxName:string)
+    constructor(scene: Scene, objectName:string, hitboxName:string)
     {
-        super();
+        super(scene);
 
         this.objName = objectName;
         this.hitboxName = hitboxName;
@@ -133,7 +134,7 @@ export class PivotComponent extends BaseComponent
         // CONSTRUCT THE ENTITY FOR GIVEN OBJECT WITH NEW HITBOX, 
         // SO WE CAN GET THE PIVOT THAT COULD BE SET BY DATA OR CODE (BY OVERRIDING ApplyEntityToGameObject())
         let entity = { name: this.objName, hitbox: hitbox };
-        var obj = PhysicsObjectBare.GetDummpyDataFromEntity(entity).gameObject;
+        var obj = PhysicsObjectBare.GetDummpyDataFromEntity(this.scene, entity).gameObject;
         var pivotPosOrig = obj.pivot;
         
         if (pivotPosOrig)
