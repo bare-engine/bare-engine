@@ -835,7 +835,7 @@ export class GameObject
         return this.SetPivot(.5, .5);
     }
 
-    GetLeftTopPosition(): Vec2
+    GetTopLeftPosition(): Vec2
     {
         return new Vec2(this.x - this.pivot.x, this.y - this.pivot.y);
     }
@@ -845,7 +845,7 @@ export class GameObject
         if (!this.texture)
             return new Vec2(0, 0);
 
-        var leftTop = this.GetLeftTopPosition();
+        var leftTop = this.GetTopLeftPosition();
         var x = (leftTop.x + this.texture!.width * .5);
         var y = (leftTop.y + this.texture!.height * .5);
 

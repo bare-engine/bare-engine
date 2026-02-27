@@ -137,7 +137,8 @@ export class Scene implements SceneI
 
         await this.settingsHandler.Process(this.sceneOptions.entityData);//this.settingsData
 
-        this.layerNames = this.settingsData.layers.slice();
+        this.ApplyLayerInfoToSettings(this.settingsData);
+        //this.layerNames = this.settingsData.layers.slice();
 
         globalEvents.emit(BareEvent.scene_awake);
 
@@ -186,8 +187,8 @@ export class Scene implements SceneI
         // OPTIONAL TO OVERRIDE AS ASYNC - TO LOAD SOME MORE ASSETS BEFORE THE LOADING SCREEN DISAPPEARS
     }
 
-    // SEPARATE THIS OUT? TODO
-    private ApplyLayerInfoToSettings(data: SettingsData, isBase: boolean)
+    // SEPARATE THIS OUT? TODO, PUT IN SETTINGS HANDLER PROCESS?
+    private ApplyLayerInfoToSettings(data: SettingsData)
     {
         // SET UP NEW LAYER INFOS
         this.layerInfos = {};

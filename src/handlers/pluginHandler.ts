@@ -373,7 +373,7 @@ export class PluginHandler
             if (!obj.visible || !obj.visibleInEditor)
                 continue;
 
-            var tl = obj.GetLeftTopPosition();
+            var tl = obj.GetTopLeftPosition();
             var objRect = {x: tl.x, y: tl.y, width: obj.width, height: obj.height};
             var p = new Vec2(ev.clientX, ev.clientY);
             var pWorld = plugin.GetCurrentScene().ScreenToWorldPos(p);
