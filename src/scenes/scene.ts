@@ -705,6 +705,7 @@ export class Scene implements SceneI
     {
         this.mouseController?.Update(deltaTime);
         this.hitboxController?.Update();
+        this.OnPreUpdate(deltaTime); // NOT QUITE PRE-UPDATE HUH, BUT HERE JUST FOR EditorControlsHandler ATM, SO IT DRAGS OBJECTS AT POSITION AND AFTER THEY CAN BE SNAPPED TO OTHER POSITION
         this.objectController.Update(deltaTime);
         this.tweenController?.Update(bareEngine.time); // STUPID TIME VAR - TODO
         this.physicsControllerBare?.Update(deltaTime);
@@ -715,9 +716,14 @@ export class Scene implements SceneI
         this.OnUpdate(deltaTime);
     }
 
+    OnPreUpdate(deltaTime: number)
+    {
+        // FOR OVERRIDE
+    }
+
     OnUpdate(deltaTime: number)
     {
-        // FOR OVERRIDE    
+        // FOR OVERRIDE
     }
 
     // CAN BE OVERRIDEN TO INSERT SOME POST PROCESSING https://nightre.github.io/Rapid.js/docs/docs.html?doc=fbo

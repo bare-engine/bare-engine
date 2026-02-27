@@ -227,7 +227,8 @@ export class EditorScene extends Scene
         this.Open(levelPathOrData, saveLevelCallback, settingsHandler);
     }
 
-    OnUpdate(deltaTime: number): void
+    //OnUpdate(deltaTime: number): void
+    OnPreUpdate(deltaTime: number): void
     {
         this.editorControlsHandler?.Update(deltaTime);
     }
