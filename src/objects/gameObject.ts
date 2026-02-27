@@ -837,7 +837,10 @@ export class GameObject
 
     GetTopLeftPosition(): Vec2
     {
-        return new Vec2(this.x - this.pivot.x, this.y - this.pivot.y);
+        return new Vec2(
+            this.x - this.pivot.x * this.totalScaleX,
+            this.y - this.pivot.y * this.totalScaleY
+        );
     }
 
     GetCenterPosition(): Vec2
@@ -846,8 +849,8 @@ export class GameObject
             return new Vec2(0, 0);
 
         var leftTop = this.GetTopLeftPosition();
-        var x = (leftTop.x + this.texture!.width * .5);
-        var y = (leftTop.y + this.texture!.height * .5);
+        var x = (leftTop.x + this.texture!.width * this.totalScaleX * .5);
+        var y = (leftTop.y + this.texture!.height * this.totalScaleY * .5);
 
         return new Vec2(x, y);
     }

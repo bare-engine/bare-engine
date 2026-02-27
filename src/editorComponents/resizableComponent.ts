@@ -24,7 +24,7 @@ export class ResizableComponent extends BaseComponent
   freeResizeThreshold = 10;
   freeStartPos = new Vec2(0, 0);
 
-  // rect at press
+  // rect at press (in world/pixel units)
   startX = 0;
   startY = 0;
   startW = 0;
@@ -36,6 +36,27 @@ export class ResizableComponent extends BaseComponent
   pressOffset = new Vec2(0, 0);
   draggingPivot: boolean;
 
+  /** Returns the current world-space width of the object (scale.x * texture.width) */
+  private get goWidth(): number
+  {
+    return this.go.width;
+  }
+
+  /** Returns the current world-space height of the object (scale.y * texture.height) */
+  private get goHeight(): number
+  {
+    return this.go.height;
+  }
+
+  /** Sets the object's world-space size by adjusting scale */
+  private setGoSize(w: number, h: number): void
+  {
+    const texW = this.go.texture?.width ?? 1;
+    const texH = this.go.texture?.height ?? 1;
+    this.go.scale.x = w / texW;
+    this.go.scale.y = h / texH;
+  }
+
   OnUpdate(): void
   {
     this.hoverEdge = null;
@@ -43,7 +64,6 @@ export class ResizableComponent extends BaseComponent
     if (!this.go.tapHitbox) return;
 
     const mouse = mouseController.world.position;
-    const hb = this.go.tapHitbox.rectangle;
     const hoveredHitbox = hitboxController.GetCurrentHitboxHover();
     const hoveringThis = hoveredHitbox?.parent === this.go;
     const zoom = bare.GetCameraZoom();
@@ -51,12 +71,18 @@ export class ResizableComponent extends BaseComponent
     const fromCenter = keyboardController.IsKeyDown('alt');
     const keepAspect = keyboardController.IsKeyDown('shift');
 
+    // Current world-space rect (top-left = go.position, size = go.width/height)
+    const left   = this.go.x;
+    const top    = this.go.y;
+    const right  = this.go.x + this.goWidth;
+    const bottom = this.go.y + this.goHeight;
+
     // ================= PRESS =================
     if (mouseController.IsMousePressed())
     {
       const hovered = hitboxController.GetCurrentHitboxHover();
       const hoveredGo = hovered?.parent;
-      const edgeCandidate = (hoveredGo === this.go || hovered == null) ? this.getEdge(mouse, hb, zoom) : null;
+      const edgeCandidate = (hoveredGo === this.go || hovered == null) ? this.getEdge(mouse, left, top, right, bottom, zoom) : null;
 
       this.draggingPivot = (hovered && hovered.parent.name == "dot") ? true : false;
 
@@ -70,8 +96,8 @@ export class ResizableComponent extends BaseComponent
 
         this.startX = this.go.x;
         this.startY = this.go.y;
-        this.startW = hb.width;
-        this.startH = hb.height;
+        this.startW = this.goWidth;
+        this.startH = this.goHeight;
 
         this.startCenter.set(
           this.startX + this.startW * 0.5,
@@ -80,26 +106,26 @@ export class ResizableComponent extends BaseComponent
 
         this.startAspect = this.startW / Math.max(1, this.startH);
 
-        const left = this.startX;
-        const right = this.startX + this.startW;
-        const top = this.startY;
-        const bottom = this.startY + this.startH;
+        const sLeft   = this.startX;
+        const sRight  = this.startX + this.startW;
+        const sTop    = this.startY;
+        const sBottom = this.startY + this.startH;
 
         switch (edgeCandidate)
         {
-          case 'left':         this.pressOffset.set(mouse.x - left, 0); break;
-          case 'right':        this.pressOffset.set(mouse.x - right, 0); break;
-          case 'top':          this.pressOffset.set(0, mouse.y - top); break;
-          case 'bottom':       this.pressOffset.set(0, mouse.y - bottom); break;
-          case 'top-left':     this.pressOffset.set(mouse.x - left, mouse.y - top); break;
-          case 'top-right':    this.pressOffset.set(mouse.x - right, mouse.y - top); break;
-          case 'bottom-left':  this.pressOffset.set(mouse.x - left, mouse.y - bottom); break;
-          case 'bottom-right': this.pressOffset.set(mouse.x - right, mouse.y - bottom); break;
+          case 'left':         this.pressOffset.set(mouse.x - sLeft, 0); break;
+          case 'right':        this.pressOffset.set(mouse.x - sRight, 0); break;
+          case 'top':          this.pressOffset.set(0, mouse.y - sTop); break;
+          case 'bottom':       this.pressOffset.set(0, mouse.y - sBottom); break;
+          case 'top-left':     this.pressOffset.set(mouse.x - sLeft, mouse.y - sTop); break;
+          case 'top-right':    this.pressOffset.set(mouse.x - sRight, mouse.y - sTop); break;
+          case 'bottom-left':  this.pressOffset.set(mouse.x - sLeft, mouse.y - sBottom); break;
+          case 'bottom-right': this.pressOffset.set(mouse.x - sRight, mouse.y - sBottom); break;
         }
       }
       else if (hovered == null)
       {
-        if (this.go.x == 0 && this.go.y == 0 && this.go.width == 0 && this.go.height == 0)
+        if (this.go.x == 0 && this.go.y == 0 && this.goWidth == 0 && this.goHeight == 0)
         {
           // FREE RESIZE, ONLY FOR RECT AT 0,0 WITH NO SIZE. SETTING THIS IN HITBOX EDITOR AT INIT WHEN NO HITBOX
           this.freeResize = false;
@@ -149,9 +175,7 @@ export class ResizableComponent extends BaseComponent
 
         this.go.x = x;
         this.go.y = y;
-        this.go.scale.x = w;
-        this.go.scale.y = h;
-        this.go.tapHitbox.rectangle = { x: 0, y: 0, width: w, height: h };
+        this.setGoSize(w, h);
       }
       // --- EDGE / HANDLE RESIZE ---
       else if (this.edge)
@@ -238,9 +262,7 @@ export class ResizableComponent extends BaseComponent
 
         this.go.x = x;
         this.go.y = y;
-        this.go.scale.x = w;
-        this.go.scale.y = h;
-        this.go.tapHitbox.rectangle = { x: 0, y: 0, width: w, height: h };
+        this.setGoSize(w, h);
       }
     }
 
@@ -254,15 +276,20 @@ export class ResizableComponent extends BaseComponent
       this.draggingPivot = false;
     }
 
-    // UPDATE HOVER EDGE
+    // UPDATE HOVER EDGE (recompute after potential resize)
+    const curLeft   = this.go.x;
+    const curTop    = this.go.y;
+    const curRight  = this.go.x + this.goWidth;
+    const curBottom = this.go.y + this.goHeight;
+
     const canCheckHover = hoveringThis || !hoveredHitbox;
     const activeEdge = (this.resizing && this.edge)
       ? this.edge
-      : (canCheckHover ? this.getEdge(mouse, hb, zoom) : null);
+      : (canCheckHover ? this.getEdge(mouse, curLeft, curTop, curRight, curBottom, zoom) : null);
 
     this.hoverEdge = activeEdge;
 
-    if (this.go.scale.x == 0 || this.go.scale.y == 0) return;
+    if (this.goWidth == 0 || this.goHeight == 0) return;
     
     if (this.hoverEdge) {
       this.go.tapHitbox.active = false;
@@ -281,14 +308,12 @@ export class ResizableComponent extends BaseComponent
     if (!this.go.tapHitbox) return;
     if (!this.hoverEdge) return;
     if (this.draggingPivot) return;
-    if (this.go.scale.x == 0 || this.go.scale.y == 0) return;
+    if (this.goWidth == 0 || this.goHeight == 0) return;
 
-    const hb = this.go.tapHitbox.rectangle;
-
-    const left = this.go.x;
-    const right = this.go.x + hb.width;
-    const top = this.go.y;
-    const bottom = this.go.y + hb.height;
+    const left   = this.go.x;
+    const top    = this.go.y;
+    const right  = this.go.x + this.goWidth;
+    const bottom = this.go.y + this.goHeight;
 
     const color = Color.fromHex('#dda112');
     color.a = 210;
@@ -341,33 +366,31 @@ export class ResizableComponent extends BaseComponent
 
   private getEdge(
     mouse: Vec2,
-    hb: { x: number; y: number; width: number; height: number },
+    left: number,
+    top: number,
+    right: number,
+    bottom: number,
     zoom: number
   ): Edge | null
   {
     const half = (this.edgeMargin / zoom) * 0.5;
 
-    const left = this.go.x;
-    const right = this.go.x + hb.width;
-    const top = this.go.y;
-    const bottom = this.go.y + hb.height;
-
-    const onLeft = mouse.x >= left - half && mouse.x <= left + half;
-    const onRight = mouse.x >= right - half && mouse.x <= right + half;
-    const onTop = mouse.y >= top - half && mouse.y <= top + half;
+    const onLeft   = mouse.x >= left   - half && mouse.x <= left   + half;
+    const onRight  = mouse.x >= right  - half && mouse.x <= right  + half;
+    const onTop    = mouse.y >= top    - half && mouse.y <= top    + half;
     const onBottom = mouse.y >= bottom - half && mouse.y <= bottom + half;
 
-    if (onLeft && onTop) return 'top-left';
-    if (onRight && onTop) return 'top-right';
-    if (onLeft && onBottom) return 'bottom-left';
+    if (onLeft && onTop)     return 'top-left';
+    if (onRight && onTop)    return 'top-right';
+    if (onLeft && onBottom)  return 'bottom-left';
     if (onRight && onBottom) return 'bottom-right';
 
-    const insideX = mouse.x >= left - half && mouse.x <= right + half;
-    const insideY = mouse.y >= top - half && mouse.y <= bottom + half;
+    const insideX = mouse.x >= left  - half && mouse.x <= right  + half;
+    const insideY = mouse.y >= top   - half && mouse.y <= bottom + half;
 
-    if (onLeft && insideY) return 'left';
-    if (onRight && insideY) return 'right';
-    if (onTop && insideX) return 'top';
+    if (onLeft   && insideY) return 'left';
+    if (onRight  && insideY) return 'right';
+    if (onTop    && insideX) return 'top';
     if (onBottom && insideX) return 'bottom';
 
     return null;

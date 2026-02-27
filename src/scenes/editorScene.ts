@@ -462,8 +462,8 @@ export class EditorScene extends Scene
             };
 
             gameObject.tapHitbox.type = HitboxType.Rectangle;
-            var w = gameObject.texture!.width * gameObject.totalScaleX;
-            var h = gameObject.texture!.height * gameObject.totalScaleY;
+            var w = gameObject.texture!.width;
+            var h = gameObject.texture!.height;
             gameObject.tapHitbox.rectangle = {x: 0, y: 0, width: w, height: h};
         }
 

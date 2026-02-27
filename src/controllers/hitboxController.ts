@@ -7,7 +7,6 @@ import { HitboxType } from "../types/gamesTypes";
 import { Hitbox } from "../types/hitbox";
 import { Helper } from "../utils/helper";
 import { mouseController } from "./mouseController";
-import { objectController } from "./objectController";
 
 type AnyPress = (go: any, ...args: any[]) => any;
 
@@ -40,7 +39,7 @@ export class HitboxController
 
 	Start(): void
 	{
-        bareEngine.SetCursor('inherit');//
+        bareEngine.SetCursor('inherit');
 
         this.scene.events.on(BareEvent.pointer_down, this.PointerDown.bind(this));
         this.scene.events.on(BareEvent.pointer_up, this.PointerUp.bind(this));
@@ -60,12 +59,7 @@ export class HitboxController
         if (isMobile && !mouseController.IsMouseDown())
             return;
 
-        this.HandleUpdate(objectController.GetLayers());
-
-        if (this.currentHitboxHover)
-        {
-
-        }
+        this.HandleUpdate(this.scene.objectController.GetLayers());
     }
 
     Render()
@@ -73,7 +67,7 @@ export class HitboxController
         if (!window.debug)
             return;
 
-        var objs = objectController.GetAllObjects();
+        var objs = this.scene.objectController.GetAllObjects();
 
         for (var i = objs.length - 1; i >= 0; i--)
         {
@@ -113,17 +107,14 @@ export class HitboxController
 
     HandleUpdate(layers: GameObject[][])
     {
+        const mouse = mouseController.world.position;
+
         if (this.currentHitboxHover)
         {
-            const mouse = mouseController.world.position;
             const isInsideCurrentHitbox = this.IsPointInsideHitbox(this.currentHitboxHover, mouse);
             if (!isInsideCurrentHitbox)
             {
                 this.HandleHitboxLeave(this.currentHitboxHover);
-            }
-            else
-            {
-                //return; // COMMENTED, CAN STILL BE OTHER HITBOXES WITHIN CURRENT HITBOX
             }
         }
 
@@ -145,8 +136,6 @@ export class HitboxController
 
             var closestDistSqr = 100000;
             var curClosestHitbox: Hitbox | null = null;
-                
-            const mouse = mouseController.world.position;
             
             for (var j = objs.length - 1; j >= 0; j--)
             {
@@ -238,36 +227,28 @@ export class HitboxController
         const rect = hitbox.rectangle;
         const parent = hitbox.parent;
 
+        const topLeft = parent.GetTopLeftPosition();
         const totalScaleX = parent.totalScaleX;
         const totalScaleY = parent.totalScaleY;
-        const pivotWorld = new Vec2(
-            parent.pivot.x * parent.totalScaleX,
-            parent.pivot.y * parent.totalScaleY
-        );
-        const topLeftWorld = parent.position
-            .add(new Vec2(rect.x * totalScaleX, rect.y * totalScaleY))
-            .subtract(pivotWorld);
-        const bottomRightWorld = parent.position
-            .add(new Vec2(
-                (rect.x + rect.width) * totalScaleX,
-                (rect.y + rect.height) * totalScaleY
-            ))
-            .subtract(pivotWorld);
 
-        let x1, y1, x2, y2;
+        const x1 = topLeft.x + rect.x * totalScaleX;
+        const y1 = topLeft.y + rect.y * totalScaleY;
+        const w = rect.width * totalScaleX;
+        const h = rect.height * totalScaleY;
 
-        x1 = Math.min(topLeftWorld.x, bottomRightWorld.x);
-        y1 = Math.min(topLeftWorld.y, bottomRightWorld.y);
-        x2 = Math.max(topLeftWorld.x, bottomRightWorld.x);
-        y2 = Math.max(topLeftWorld.y, bottomRightWorld.y);
+        // HANDLE NEGATIVE SCALE (FLIPPED)
+        const minX = Math.min(x1, x1 + w);
+        const minY = Math.min(y1, y1 + h);
+        const maxX = Math.max(x1, x1 + w);
+        const maxY = Math.max(y1, y1 + h);
 
         return {
-            x1,
-            y1,
-            x2,
-            y2,
-            width: x2 - x1,
-            height: y2 - y1
+            x1: minX,
+            y1: minY,
+            x2: maxX,
+            y2: maxY,
+            width: maxX - minX,
+            height: maxY - minY
         };
     }
 
@@ -282,22 +263,15 @@ export class HitboxController
         return new Vec2(rect.x1 + rect.width / 2, rect.y1 + rect.height / 2);
     }
 
-    private DistanceToHitboxCenterSqr(hitbox: Hitbox, point: Vec2): number
-    {
-        const center = this.GetHitboxCenter(hitbox);
-        return Helper.DistanceNoSqr(point, center);
-    }
-
     private IsPointInsideHitbox(hitbox: Hitbox, point: Vec2): boolean
     {
         if (hitbox.type === HitboxType.Circle)
         {
-            const hitboxPosition = this.GetHitboxCircleCenter(hitbox);
-            const distToHitboxSqr = Helper.DistanceNoSqr(point, hitboxPosition);
+            const center = this.GetHitboxCircleCenter(hitbox);
             const radius = this.GetHitboxRadius(hitbox);
-            const radiusSqr = radius * radius;
+            const distSqr = Helper.DistanceNoSqr(point, center);
 
-            return distToHitboxSqr < radiusSqr;
+            return distSqr < radius * radius;
         } 
         else if (hitbox.type === HitboxType.Rectangle)
         {
