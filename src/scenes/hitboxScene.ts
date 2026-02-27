@@ -11,11 +11,11 @@ type HitboxSceneAwakePayload = EditorScenePayload & {
 export class HitboxScene extends EditorScene
 {
     lastObjectName: string = "";
-    settingsHandlerEntity: SettingsHandler;
     lastPayload: HitboxSceneAwakePayload;
 
     constructor()
     {
+        // NOT REALLY USED ANYMORE!
         var hitboxData = {
             "name": "hitboxEditor",
             "entities": 
@@ -33,15 +33,6 @@ export class HitboxScene extends EditorScene
                     }
                 }
             },
-            "layers": [
-                "objects"
-            ],
-            "layersInfo": {
-                "objects": 
-                {
-                    "doSave": true
-                }
-            },
             "saveVars": {
                 "PhysicsObjectBare": ["scale", "pivotBasedOnHitbox"]
             },
@@ -56,23 +47,29 @@ export class HitboxScene extends EditorScene
     {
         this.lastPayload = payload;
 
-        const objectName = (payload)?.name;
-        const settingsHandler = (payload)?.settingsHandler;
+        const objectName:string = (payload)?.name;
+        const targetSettingsHandler:SettingsHandler = (payload)?.settingsHandler;
         if (!objectName)
             throw new Error("HitboxScene.OnAwake requires payload.name");
-        if (!settingsHandler)
+        if (!targetSettingsHandler)
             throw new Error("HitboxScene.OnAwake requires payload.entityData");
 
-        this.lastObjectName = objectName;
-        this.settingsHandlerEntity = settingsHandler;
-        
-        var levelData = await this.CreateHitboxDataFor(objectName);
-        super.OnStart({levelPathOrData: levelData, saveLevelCallback: this.SaveHitboxDataToSettingsData});
+        // WE TAKE OVER THE TARGET ENTITY DATA, ONCE AT INIT
+        // SO THAT THE OBJECTS AND DUMMY DATA CREATED FROM THIS SCENE ARE BASED ON THIS DATA
+        if (this.lastObjectName == "")
+        {
+            this.settingsHandler.Process(targetSettingsHandler.GetRaw());
+            this.lastObjectName = objectName;
+        }
 
-        /*this.events.on(BareEvent.pointer_down, ()=>{
-            trace('pointer_down');
-            sceneController.Remove(this);
-        });*/
+        // DON'T WANT TO SHOW THE UI, WE UNDO THIS BEFORE SAVING THE ENTITY DATA AGAIN, BIT AWKWARD
+        this.settingsHandler.UpdateRaw((raw) => {
+            raw.showUI = false;
+            raw.selectionEnabled = false;
+        });
+
+        var levelData = await this.CreateHitboxDataFor(objectName);
+        await super.OnStart({levelPathOrData: levelData, saveLevelCallback: this.SaveHitboxDataToSettingsData});
     }
 
     async CreateHitboxDataFor(objectName: string): Promise<LevelData>
@@ -81,7 +78,7 @@ export class HitboxScene extends EditorScene
         //    await this.settingsHandler.Process(hitboxData); // NEEDED? TODO
 
         // CONSTRUCT ENTITY FROM INITIAL ENTITY DATA, SO WE GET THE HITBOX DEFINED THERE
-        var entityConstructedFromSettingsData = this.ConstructEntity(objectName, this.settingsHandlerEntity.Get());
+        var entityConstructedFromSettingsData = this.ConstructEntity(objectName, this.settingsHandler.Get());
         delete entityConstructedFromSettingsData.components;
         delete entityConstructedFromSettingsData.editorComponents;
         
@@ -170,7 +167,7 @@ export class HitboxScene extends EditorScene
 
         // GET HITBOX AND PIVOT
         var objs = this.objectController.GetLayer(0);
-        var mainEntity = objs[1].entity; // objs[0] IS currentPreviewEntity, SKIPPING
+        var mainEntity = objs[1].levelEntity; // objs[0] IS currentPreviewEntity, SKIPPING
         var collisionRect = objs[2];
         var pivotObj = objs[3];
         
@@ -198,12 +195,12 @@ export class HitboxScene extends EditorScene
         var resetPivotBasedOnHitbox = (mainEntity.pivotBasedOnHitbox && mainEntity.pivotBasedOnHitbox.x == -1 && mainEntity.pivotBasedOnHitbox.y == -1);
 
         // APPLY NEW VALUES TO THE INITIAL ENTITY SETTING
-        const newRawSettingsData = await this.settingsHandlerEntity.UpdateRaw((draft) => {
+        const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
             draft.entities[mainEntityName] ??= {};
             const entityDraft = draft.entities[mainEntityName];
 
             // PIVOT BASED ON HITBOX
-            if (mainEntity.pivotBasedOnHitbox && !resetPivotBasedOnHitbox && !Helper.ObjectsAreEqual(pivotBasedOnHitboxOrig!, mainEntity.pivotBasedOnHitbox))
+            if (mainEntity.pivotBasedOnHitbox && !resetPivotBasedOnHitbox/* && !Helper.ObjectsAreEqual(pivotBasedOnHitboxOrig!, mainEntity.pivotBasedOnHitbox)*/)
             {
                 entityDraft.pivotBasedOnHitbox = {...mainEntity.pivotBasedOnHitbox};
             }
@@ -255,6 +252,20 @@ export class HitboxScene extends EditorScene
 
     async OnSaveEntityData(rawData: SettingsData): Promise<void>
     {
-        this.settingsHandlerEntity.Process(rawData);
+        //this.settingsHandlerEntity.Process(rawData);
+        this.settingsHandler.Process(rawData);
+
+        this.settingsHandler.UpdateRaw((raw) => {
+            delete raw.showUI;
+            delete raw.selectionEnabled;
+        });
+    }
+
+    async OnPostSaveEntityData(rawData: SettingsData): Promise<void>
+    {
+        await this.settingsHandler.UpdateRaw((raw) => {
+            raw.showUI = false;
+            raw.selectionEnabled = false;
+        });
     }
 }

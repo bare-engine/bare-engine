@@ -9,7 +9,7 @@ import { objectController } from '../controllers/objectController';
 
 export class ResizableRemoveComponent extends BaseComponent
 {
-  Removed(): void
+  OnRemoved(): void
   {
     if (!mouseController.IsRightMouseDown())
       return; // TO PREVENT THIS FROM HAPPENING WHEN CLOSING EDITOR, ONLY WANT TO RECREATE WHEN USER RIGHT CLICKS
@@ -29,6 +29,7 @@ export class ResizableRemoveComponent extends BaseComponent
                             y: 0
                         },
                         editorComponents: {
+                            resizable: {},
                             resizableRemove: {}
                         },
                         alpha: .8
@@ -48,8 +49,7 @@ export class ResizableRemoveComponent extends BaseComponent
       objectController.GetObjectByName(mainObj.name)!.pivotBasedOnHitbox.set(-1, -1);
     }
     
-    var editorScene = sceneController.Get(EditorScene);
-    var gameObject = editorScene.AddGameObject(entityBare, 0);
+    var gameObject = this.scene.AddGameObject(entityBare, 0);
     objectController.MoveWithinLayer(gameObject, 2);
 
     var pivotOjb = objectController.GetObjectByName("dot")!;

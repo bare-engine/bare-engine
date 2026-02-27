@@ -142,9 +142,4 @@ export class PivotComponent extends BaseComponent
             this.go.SetPosition(pivotPosOrig.x, pivotPosOrig.y);
         }
     }
-    
-    Removed()
-    {
-
-    }
 }

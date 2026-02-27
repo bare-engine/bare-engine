@@ -15,7 +15,7 @@ export class PivotRemoveComponent extends BaseComponent
         super(scene);
     }
     
-    Removed()
+    OnRemoved()
     {
         if (!mouseController.IsRightMouseDown())
         return; // TO PREVENT THIS FROM HAPPENING WHEN CLOSING EDITOR, ONLY WANT TO RECREATE WHEN USER RIGHT CLICKS
@@ -61,7 +61,7 @@ export class PivotRemoveComponent extends BaseComponent
             }
         }
         
-        var gameObject = sceneController.Get(EditorScene).AddGameObject(entityBare, 0);
+        var gameObject = this.scene.AddGameObject(entityBare, 0);
         objectController.BringToFront(gameObject);
     }
 }

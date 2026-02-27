@@ -893,6 +893,11 @@ export class Scene implements SceneI
         // FOR OVERRIDE
     }
 
+    async OnPostSaveEntityData(rawData: SettingsData)
+    {
+        // FOR OVERRIDE
+    }
+
     // THIS SHOULD NOT BE HERE, TODO
     async SaveEntityData(newRawData: SettingsData)
     {
@@ -917,6 +922,8 @@ export class Scene implements SceneI
         
           // TELL THE PLUGIN
           window.__GAME_DEBUG_API__.notifyEntityDataChanged(newRawData)
+
+          await this.OnPostSaveEntityData(newRawData);
 
           return { ok: res.ok, saved: res.ok, response: json };
         } catch (error: any) {
