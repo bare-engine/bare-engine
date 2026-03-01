@@ -73,6 +73,8 @@ export class GameObject
 
     public scene: Scene | null = null;
 
+    public customData: Record<string, any> = {}; // KEEP THIS? 
+
     //private cachedChildrenWidth: number = -1;
     //private cachedChildrenHeight: number = -1;
 
@@ -1166,6 +1168,8 @@ export class GameObject
         this.innerTransform.Reset();
         this.renderParentTransform = null;
 
+        this.customData = {};
+        
         this.RemoveMask();
 
         this.SetPivot(0, 0);

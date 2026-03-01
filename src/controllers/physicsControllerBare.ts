@@ -17,6 +17,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
   private height: number = 0;
   
   public activeCollisions: Set<string> = new Set();
+  public OnBeforeCollisionResolve: ((obj1: PhysicsObjectBare, obj2: PhysicsObjectBare) => boolean) | null = null;
 
   constructor(scene: Scene)
   {
@@ -89,9 +90,6 @@ export class PhysicsControllerBare extends PhysicsControllerBase
         const dragMultiplier = Math.pow(1-obj.drag, deltaTime * 60);
         obj.velocity.x *= dragMultiplier;
         obj.velocity.y *= dragMultiplier;
-
-        obj.velocity.x *= 1/obj.weight;
-        obj.velocity.y *= 1/obj.weight;
         
         if (!obj.isStatic)
         {
@@ -282,6 +280,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
             collisionInfo.dy = -collisionInfo.dy;
           }
 
+          if (this.OnBeforeCollisionResolve && !this.OnBeforeCollisionResolve(obj1, obj2)) continue;
           const corr = this.ResolveSolidCollision(obj1, obj2, collisionInfo);
           if (!corr) continue;
 
@@ -569,8 +568,8 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     }
 
     // --- mass
-    const invMass1 = obj1.isStatic ? 0 : 1 / (obj1.weight || 1e-8);
-    const invMass2 = obj2.isStatic ? 0 : 1 / (obj2.weight || 1e-8);
+    const invMass1 = obj1.isStatic ? 0 : 1;
+    const invMass2 = obj2.isStatic ? 0 : 1;
     const invMassSum = invMass1 + invMass2;
     if (invMassSum <= 0) return null;
 

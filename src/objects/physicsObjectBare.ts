@@ -14,12 +14,10 @@ export class PhysicsObjectBare extends GameObject
     canCollide: boolean = false;
     isSolid:boolean = true;
     velocity: Vec2 = new Vec2(0, 0);
-    drag: number = 0;
-    weight: number = 1; // CUSTOM
-    strength: number = 1; // CUSTOM
+    drag: number = .07;
     restitution: number = .8;
     stayInBounds: boolean = true;
-
+    
     static dummyPhysicsObjectBare: PhysicsObjectBare = new PhysicsObjectBare();
     
     constructor(scene: Scene | null = null, x: number = 0, y: number = 0, texturePath: string = "")
@@ -160,9 +158,7 @@ export class PhysicsObjectBare extends GameObject
         this.canCollide = false;
         this.isSolid = true;
         this.isStatic = false;
-        this.weight = 1;
-        this.strength = 1;
-        this.drag = 0;
+        this.drag = .07;
         this.restitution = .8;
 
         if (this.physicsHitbox)
