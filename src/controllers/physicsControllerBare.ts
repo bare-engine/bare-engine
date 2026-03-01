@@ -316,7 +316,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 
             if (object1 && object2)
             {
-              globalEvents.emit(BareEvent.collision_end, object1, object2);
+              events.emit(BareEvent.collision_end, object1, object2);
             }
             
             this.activeCollisions.delete(collisionKey);
@@ -497,13 +497,14 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 
           object1.OnCollisionStart(object2);
           object2.OnCollisionStart(object1);
-          globalEvents.emit(BareEvent.collision_start, object1, object2);
+          events.emit(BareEvent.collision_start, object1, object2);
       }
       
       // Emit ongoing collision
       object1.OnCollisionUpdate(object2);
       object2.OnCollisionUpdate(object1);
-      globalEvents.emit(BareEvent.collision_update, object1, object2);
+      events.emit(BareEvent.collision_update, object1, object2);
+      //bareEngine.SendEvent(BareEvent.collision_update, object1, object2); // A LOT HEAVIER, AND UNNECESSARY?
   }
 
   private CheckCollisionEnd()
@@ -520,7 +521,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
         {
           object1.OnCollisionEnd(object2);
           object2.OnCollisionEnd(object1);
-          globalEvents.emit(BareEvent.collision_end, object1 as PhysicsObjectBare, object2 as PhysicsObjectBare);
+          events.emit(BareEvent.collision_end, object1 as PhysicsObjectBare, object2 as PhysicsObjectBare);
           this.activeCollisions.delete(collisionKey);
         }
       }

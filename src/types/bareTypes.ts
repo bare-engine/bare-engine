@@ -210,6 +210,7 @@ const eventDefs = {
   scene_added: ev<{ scene: Scene; }>(),
   scene_removed: ev<{ scene: Scene; }>(),
   scene_changed: ev<{ scene: Scene; type: 'added' | 'removed' }>(),
+  scene_update: ev<number>(),
 
   // ALL LOCAL TO SCENE
   level_loaded: ev<{ levelStr: string; level: LevelData }>(),

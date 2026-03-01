@@ -5,7 +5,7 @@ import { assetsHandler } from "./handlers/assetsHandler";
 import { BareEvent, Events, GameObjectClass, SceneClass } from "./types/bareTypes";
 import { EventArgs } from "./libraries/mitt";
 import { PoolHandler } from "./handlers/poolHandler";
-import { TextureCache, IGraphicRenderOptions, ICircleRenderOptions, IRenderLineOptions, IRectRenderOptions, ISpriteRenderOptions } from "./exports";
+import { TextureCache, IGraphicRenderOptions, ICircleRenderOptions, IRenderLineOptions, IRectRenderOptions, ISpriteRenderOptions, Color } from "./exports";
 
 export class BareEngine
 {
@@ -53,6 +53,8 @@ export class BareEngine
         this.ResizeCanvas();
 
         window.bareEngine = this;
+        
+        //rapid.backgroundColor = Color.White;
         
         globalEvents.emit(BareEvent.game_awake);
 

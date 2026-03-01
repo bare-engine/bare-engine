@@ -1,4 +1,4 @@
-import { Vec2, Color } from "../libraries/rapid-render";
+import { Vec2, Color, Texture } from "../libraries/rapid-render";
 import { MakePath, Scene } from "../main";
 import { Entity, SettingsData } from "../types/bareTypes";
 import { HitboxType, Rectangle, Rectangle2Vec } from "../types/gamesTypes";
@@ -25,6 +25,17 @@ export class PhysicsObjectBare extends GameObject
     constructor(scene: Scene | null = null, x: number = 0, y: number = 0, texturePath: string = "")
     {
         super(scene, x, y, texturePath);
+
+        if (this.texture)
+            this.physicsHitbox.rectangle = {x: 0, y: 0, width: this.texture!.width, height: this.texture!.height};
+    }
+
+    override SetTexture(texture:Texture): GameObject
+    {
+        if (this.physicsHitbox)
+            this.physicsHitbox.rectangle = {x: 0, y: 0, width: texture!.width, height: texture!.height};
+
+        return super.SetTexture(texture);
     }
 
     override ApplyEntityToGameObject(entity: Entity, addComponents: boolean)
@@ -157,7 +168,10 @@ export class PhysicsObjectBare extends GameObject
         if (this.physicsHitbox)
         {
             this.physicsHitbox.type = HitboxType.Rectangle;
-            this.physicsHitbox.rectangle = {x: 0, y: 0, width: 0, height: 0};
+            this.physicsHitbox.rectangle.x = 0;
+            this.physicsHitbox.rectangle.y = 0;
+            this.physicsHitbox.rectangle.width = 0;
+            this.physicsHitbox.rectangle.height = 0;
             this.physicsHitbox.parent = this;
             this.physicsHitbox.active = true;
         }

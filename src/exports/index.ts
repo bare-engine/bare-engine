@@ -15,6 +15,7 @@ export type { SceneI } from "../types/bareTypes";
 export { PluginHandler as BarePlugin } from "../handlers/pluginHandler";
 export { plugin } from "../handlers/pluginHandler";
 export { LevelHandler } from "../handlers/levelHandler";
+export { levelHandler } from "../handlers/levelHandler";
 export { Button } from "../objects/button";
 
 // Controllers
@@ -29,6 +30,9 @@ export { ComponentController } from "../controllers/componentController";
 export { SceneController } from "../controllers/sceneController";
 export { ParticleController } from "../controllers/particleController";
 
+export { physicsControllerBare } from "../controllers/physicsControllerBare";
+export { physicsControllerSopiro } from "../controllers/physicsControllerSopiro";
+
 // Controllers instances
 export { keyboardController } from "../controllers/keyboardController";
 export { hitboxController } from "../controllers/hitboxController";
@@ -37,6 +41,7 @@ export { tweenController } from "../controllers/tweenController";
 export { componentController } from "../controllers/componentController";
 export { sceneController } from "../controllers/sceneController";
 export { particleController } from "../controllers/particleController";
+export { objectController } from "../controllers/objectController";
 
 import { PhysicsControllerBare } from "../controllers/physicsControllerBare";
 import { PhysicsControllerSopiro } from "../controllers/physicsControllerSopiro";
@@ -45,6 +50,7 @@ import { ParticleController } from "../controllers/particleController";
 import { TweenController } from "../controllers/tweenController";
 import { SceneController } from "../controllers/sceneController";
 import { HitboxController } from "../controllers/hitboxController";
+
 
 //import { BarePlugin } from "./handlers/plugin";
 
@@ -88,6 +94,7 @@ export { OutlineShader } from "../shaders/outlineShader";
 
 export {EditorScene} from "../scenes/editorScene";
 export {EditorUIScene} from "../scenes/editorUIScene";
+export { uiScene } from "../scenes/uiScene";
 
 // Types and constants
 export {

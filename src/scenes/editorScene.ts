@@ -57,9 +57,6 @@ export class EditorScene extends Scene
 
         this.RegisterEditorComponents();
 
-        if (__DEV__)
-            globalThis.plugin?.AddDebugAction("Toggle Level Editor", () => this.Toggle(this.settingsHandler));
-
         this.editorControlsHandler.scene = this;
         this.editorUIHandler.scene = this;
 
@@ -67,6 +64,9 @@ export class EditorScene extends Scene
 
         // OPEN
         const { levelPathOrData, saveLevelCallback, settingsHandler } = payload ?? {};
+
+        if (__DEV__)
+            globalThis.plugin?.AddDebugAction("Toggle Level Editor", () => this.Toggle(settingsHandler));
 
         return this.Open(
             levelPathOrData ?? '',
@@ -164,14 +164,14 @@ export class EditorScene extends Scene
             this.editorUIHandler.Show();
         }
 
-        globalEvents.emit(BareEvent.editor_opened, {name: this.settingsData.name || 'levelEditor'});// TODO
+        bareEngine.SendEvent(BareEvent.editor_opened, {name: this.settingsData.name || 'levelEditor'});// TODO
     }
 
     OnClear(full?: boolean, isLevel:boolean = false): void
     {
         this.editorControlsHandler.Clear(isLevel);
 
-        globalEvents.emit(BareEvent.editor_closed, {name: this.settingsData.name || 'levelEditor'});
+        bareEngine.SendEvent(BareEvent.editor_closed, {name: this.settingsData.name || 'levelEditor'});
 
         // DISABLE THE LEVEL CACHE, SO LEVELS GETS RELOADED
         // DON'T NECESSARY WANT SAVEDATA FOR EACH LEVEL - TODO
@@ -195,7 +195,7 @@ export class EditorScene extends Scene
         this.editorControlsHandler.Close();
         this.editorUIHandler.Close();
 
-        globalEvents.emit(BareEvent.editor_closed, {name: this.settingsData.name || 'levelEditor'});
+        bareEngine.SendEvent(BareEvent.editor_closed, {name: this.settingsData.name || 'levelEditor'});
 
         // DISABLE THE LEVEL CACHE, SO LEVELS GETS RELOADED
         // DON'T NECESSARY WANT SAVEDATA FOR EACH LEVEL - TODO

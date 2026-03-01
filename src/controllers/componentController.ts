@@ -432,9 +432,9 @@ export class ComponentController
                 if (!component.OnCollisionStart) return;
 
                 if (component.go == initiatingObject)
-                    component.OnCollisionStart(initiatingObject, collidingObject);
-                else if (component.go == collidingObject)
                     component.OnCollisionStart(collidingObject, initiatingObject);
+                else if (component.go == collidingObject)
+                    component.OnCollisionStart(initiatingObject, collidingObject);
             })
         }
     }

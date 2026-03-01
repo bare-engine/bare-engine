@@ -85,27 +85,26 @@ export class SceneController
             return this.Get(scene as SceneClass<T>);
         }
 
-        var newScene: T;
+        var sceneInstance: T;
 
         if (typeof scene === "function")
         {
-            newScene = new scene();
-            this.currentScenes.push(newScene);
+            sceneInstance = new scene();
         }
         else
-            this.currentScenes.push(scene);
+            sceneInstance = (scene as T);
 
-        if (newScene.sceneOptions.solo)
+        this.currentScenes.push(sceneInstance);
+
+        if (sceneInstance.sceneOptions.solo)
             this.DisableAllScenes();
 
-        await newScene.Awake(payload); // WILL ENABLE THE SCENE AGAIN TOO
+        await sceneInstance.Awake(payload); // WILL ENABLE THE SCENE AGAIN TOO
 
-        //globalEvents.emit(BareEvent.scene_added, { scene: newScene });
-        //globalEvents.emit(BareEvent.scene_changed, { scene: newScene, type: "added" });
-        bareEngine.SendEvent(BareEvent.scene_added, { scene: newScene });
-        bareEngine.SendEvent(BareEvent.scene_changed, { scene: newScene, type: "added" });
+        bareEngine.SendEvent(BareEvent.scene_added, { scene: sceneInstance });
+        bareEngine.SendEvent(BareEvent.scene_changed, { scene: sceneInstance, type: "added" });
 
-        return newScene;
+        return sceneInstance;
     }
 
     Remove<T extends Scene>(scene: Scene | SceneClass<T>, i = -1): void

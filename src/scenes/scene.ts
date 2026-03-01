@@ -132,8 +132,6 @@ export class Scene implements SceneI
     {
         this.enabled = true;
         this.paused = false;
-        
-        rapid.backgroundColor = Color.White;
 
         await this.settingsHandler.Process(this.sceneOptions.entityData);//this.settingsData
 
@@ -625,6 +623,11 @@ export class Scene implements SceneI
         {
             // ADDING TO LAYER
             var layer = parent;
+
+            // IF LAYER IS A STRING (EG objects), CHECK IF IT EXISTS, ELSE DEFAULT TO 0
+            if (typeof layer === "string" && (!this.layerNames || !this.layerNames.includes(layer)))
+                layer = 0; 
+
             this.objectController.Add(gameObject, layer);
         }
 
@@ -713,6 +716,7 @@ export class Scene implements SceneI
         this.componentController?.Update(deltaTime);
         this.particleController?.Update(deltaTime);
 
+        events.emit(BareEvent.scene_update, deltaTime);
         this.OnUpdate(deltaTime);
     }
 

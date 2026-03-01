@@ -1,17 +1,17 @@
-import { Scene, globalEvents, MakePath, pipes } from "../main";
+import { hitboxController } from "../controllers/hitboxController";
+import { keyboardController } from "../controllers/keyboardController";
+import { mouseController } from "../controllers/mouseController";
+import { objectController } from "../controllers/objectController";
+import { PhysicsObjectBare } from "../exports/barePhysics";
 import { Color, Vec2 } from "../libraries/rapid-render";
+import { MakePath } from "../main";
 import { GameObject } from "../objects/gameObject";
-import { Helper } from "../utils/helper";
+import { EditorScene } from "../scenes/editorScene";
+import { OutlineShader } from "../shaders/outlineShader";
 import { BareEvent, BareEventPayload, Entity } from "../types/bareTypes";
 import { Rectangle } from "../types/gamesTypes";
-import { OutlineShader } from "../shaders/outlineShader";
-import { keyboardController } from "../controllers/keyboardController";
-import { hitboxController } from "../controllers/hitboxController";
-import { mouseController } from "../controllers/mouseController";
+import { Helper } from "../utils/helper";
 import { cameraHandler } from "./cameraHandler";
-import { PhysicsObjectBare } from "../exports/barePhysics";
-import { EditorScene } from "../scenes/editorScene";
-import { objectController } from "../controllers/objectController";
 
 /*
     BUILD CONTROLS INGAME

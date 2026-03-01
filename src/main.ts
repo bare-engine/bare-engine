@@ -3,7 +3,7 @@ import { Rapid, Color, Texture, GLShader, BaseTexture, RenderTexture } from './l
 import { supportsWebGL } from './libraries/rapid-render/webgl/utils';
 import { ObjectController } from "./controllers/objectController";
 import { Helper } from "./utils/helper";
-import mitt from './libraries/mitt';
+import mitt, { Emitter } from './libraries/mitt';
 import matt from './libraries/matt';
 import { Scene } from './scenes/scene';
 import { Pipes, BareEvent, Events, SceneClass } from './types/bareTypes';
@@ -58,6 +58,7 @@ declare global
     var destroyTextFunc:Function | null;
 
     var bare: Scene;
+    var events: Emitter<Events>;
     
     var whitePixelTexture:Texture;
 

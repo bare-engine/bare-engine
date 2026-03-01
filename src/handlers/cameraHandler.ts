@@ -1,6 +1,6 @@
 import { BareEngine } from "../exports";
 import { Vec2 } from "../libraries/rapid-render";
-import { globalEvents, pipes, Scene } from "../main";
+import { Scene } from "../main";
 import { BareEvent, type Dimensions } from "../types/bareTypes";
 import { CameraScaleMode, Rectangle } from "../types/gamesTypes";
 import { Helper } from "../utils/helper";

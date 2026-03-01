@@ -1,7 +1,7 @@
 import { BareEvent } from '../types/bareTypes';
 import Easing from "../libraries/tweenJS/Easing";
 import Tween, { TweenWithPromise } from "../libraries/tweenJS/Tween";
-import { globalEvents, Scene } from "../main";
+import { Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { BareEngine } from '../bareEngine';
 

@@ -778,7 +778,7 @@ export class GameObject
                 return this;
             }
                 
-            x = x * this.width;
+            x = x * this.texture.width;
         }
         if (y > 0 && y <= 1)
         {
@@ -788,7 +788,7 @@ export class GameObject
                 return this;
             }
                 
-            y = y * this.height;
+            y = y * this.texture.height;
         }
 
         this.pivot.x = x;
@@ -853,6 +853,26 @@ export class GameObject
         var y = (leftTop.y + this.texture!.height * this.totalScaleY * .5);
 
         return new Vec2(x, y);
+    }
+
+    GetLeftPosition(): Vec2
+    {
+        return new Vec2(this.x - this.texture!.width * this.totalScaleX, this.y);
+    }
+
+    GetRightPosition(): Vec2
+    {
+        return new Vec2(this.x + this.texture!.width * this.totalScaleX, this.y);
+    }
+
+    GetTopPosition(): Vec2
+    {
+        return new Vec2(this.x, this.y - this.texture!.height * this.totalScaleY);
+    }
+
+    GetBottomPosition(): Vec2
+    {
+        return new Vec2(this.x, this.y + this.texture!.height * this.totalScaleY);
     }
 
     /*applyWorldMatrix(m: typeof rapid.matrixStack)

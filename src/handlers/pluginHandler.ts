@@ -356,7 +356,8 @@ export class PluginHandler
         }
 
         var data = this.movingObjData;
-        data.obj?.SetPosition(mouseX + data.offset.x, mouseY + data.offset.y);
+        var worldPos = this.GetCurrentScene().ScreenToWorldPos(new Vec2(mouseX, mouseY));
+        data.obj?.SetPosition(worldPos.x + data.offset.x, worldPos.y + data.offset.y);
     }
 
     CheckClickGameObject(ev: PointerEvent, outline: boolean = true): GameObject | null

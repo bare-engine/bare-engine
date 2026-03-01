@@ -44,10 +44,10 @@ export class ResizableRemoveComponent extends BaseComponent
       entityBare.scale.x = hitboxOrig.width;
       entityBare.scale.y = hitboxOrig.height;
     }
-    else
-    {
-      objectController.GetObjectByName(mainObj.name)!.pivotBasedOnHitbox.set(-1, -1);
-    }
+
+    // CLEAR pivotBasedOnHitbox
+    objectController.GetObjectByName(mainObj.name)!.pivotBasedOnHitbox.set(-1, -1);
+    objectController.GetObjectByName(mainObj.name)!.levelEntity.pivotBasedOnHitbox = {x: -1, y: -1};
     
     var gameObject = this.scene.AddGameObject(entityBare, 0);
     objectController.MoveWithinLayer(gameObject, 2);

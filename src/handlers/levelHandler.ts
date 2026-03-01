@@ -176,12 +176,12 @@ export class LevelHandler
 
     async SaveLevel()
     {
-        globalEvents.emit(BareEvent.level_preSave, {levelStr: SaveData.currentLevelStr});
+        events.emit(BareEvent.level_preSave, {levelStr: SaveData.currentLevelStr});
 
         const level = (this.currentLevel as LevelData);
         this.SerializeLevel(level);
 
-        globalEvents.emit(BareEvent.level_postSave, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
+        events.emit(BareEvent.level_postSave, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
         
         return level;
     }
