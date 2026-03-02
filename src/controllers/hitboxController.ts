@@ -343,7 +343,7 @@ export class HitboxController
         this.active = true;
     }
 
-    Clear()
+    Reset()
     {
         this.ClearExclusiveLayers();
         this.ResetCurrentHover();

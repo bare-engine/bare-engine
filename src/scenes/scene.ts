@@ -128,6 +128,7 @@ export class Scene implements SceneI
     {
         this.enabled = true;
         this.paused = false;
+        this.started = false;
 
         await this.settingsHandler.Process(this.sceneOptions.entityData);//this.settingsData
 
@@ -159,6 +160,8 @@ export class Scene implements SceneI
     // START IS CALLED ON INITIALIZATION AND RESTART
     async Start(payload?: any): Promise<void>
     {
+        this.started = false;
+        
         var classes = BareEngine.controllerNames;
         for (let i = 0; i < classes.length; i++)
         {

@@ -191,7 +191,7 @@ export class MouseController
             this.mouseFramesDown++;
     }
 
-    Clear()
+    Reset()
     {
         this.world.position.x = -1000;
         this.world.position.y = -1000;
