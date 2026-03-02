@@ -86,7 +86,6 @@ export class SceneController
         }
 
         var sceneInstance: T;
-
         if (typeof scene === "function")
         {
             sceneInstance = new scene();
@@ -94,7 +93,17 @@ export class SceneController
         else
             sceneInstance = (scene as T);
 
-        this.currentScenes.push(sceneInstance);
+        // MAKE SURE UI SCENES ALWAYS STAY ON TOP, INSERT BELOW
+        var iInsert = this.currentScenes.length;
+        for (var i = 0; i < this.currentScenes.length; i++)
+        {
+            if (this.currentScenes[i].sceneOptions.UI)
+            {
+                iInsert = i;
+                break;
+            }
+        }
+        this.currentScenes.splice(iInsert, 0, sceneInstance);
 
         if (sceneInstance.sceneOptions.solo)
             this.DisableAllScenes();

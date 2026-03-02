@@ -14,10 +14,10 @@ export class PhysicsObjectBare extends GameObject
     canCollide: boolean = false;
     isSolid:boolean = true;
     velocity: Vec2 = new Vec2(0, 0);
-    drag: number = .07;
+    drag: number = .15;
     restitution: number = .8;
     stayInBounds: boolean = true;
-    
+
     static dummyPhysicsObjectBare: PhysicsObjectBare = new PhysicsObjectBare();
     
     constructor(scene: Scene | null = null, x: number = 0, y: number = 0, texturePath: string = "")

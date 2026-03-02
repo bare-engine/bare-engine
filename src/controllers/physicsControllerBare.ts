@@ -6,6 +6,7 @@ import { PhysicsControllerBase } from "./physicsControllerBase";
 import { GameObject } from "../objects/gameObject";
 import { BareEvent } from "../types/bareTypes";
 import { BareEngine } from "../bareEngine";
+import { PoolHandler } from "../exports";
 
 export class PhysicsControllerBare extends PhysicsControllerBase
 {
@@ -24,7 +25,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     super(scene);
 
     this.setDimensions(0, 0, bare.width, bare.height);
-    scene.RegisterGameObjectPool(PhysicsObjectBare, 10);
+    bareEngine.RegisterGameObjectPool(PhysicsObjectBare, 10);
   }
   
   Add(object: GameObject): void

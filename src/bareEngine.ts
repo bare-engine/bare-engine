@@ -19,7 +19,7 @@ export class BareEngine
     private RunMainLoopId: number = -1;
     private RunMainLoopBound: () => void;
 
-    public dummyGameObject: GameObject = new GameObject(); // JUST USED FOR DEFAULT VALUES AND DUMMY CONSTRUCTION
+    public dummyGameObject: GameObject; // JUST USED FOR DEFAULT VALUES AND DUMMY CONSTRUCTION
 
     get levelEditorOpen(): boolean { return window.gameMode == GameMode.Editor; }
     
@@ -42,6 +42,9 @@ export class BareEngine
     get renderRect(): (options: IRectRenderOptions) => void { return rapid.renderRect.bind(rapid); }
     get renderSprite(): (options: ISpriteRenderOptions) => void { return rapid.renderSprite.bind(rapid); }
 
+    static gameObjectPoolSize: int = 50;
+    gameObjectPools: Map<string, PoolHandler<GameObject>> = new Map();
+
     constructor(sceneClass: SceneClass)
     {
         this.Start(sceneClass);
@@ -54,11 +57,15 @@ export class BareEngine
 
         window.bareEngine = this;
         
+        bareEngine.RegisterGameObjectPool(GameObject, BareEngine.gameObjectPoolSize);
+        
         //rapid.backgroundColor = Color.White;
         
         globalEvents.emit(BareEvent.game_awake);
 
-        await sceneController.Goto(sceneClass);
+        var scene = await sceneController.Goto(sceneClass);
+
+        this.dummyGameObject = new GameObject(scene); // TOO LATE IF USER WANTS TO USE IT, BUT FINE FOR MY CURRENT USAGE
 
         window.addEventListener('resize', this.ResizeCanvas.bind(this));
 
@@ -293,6 +300,34 @@ export class BareEngine
         }
     }
     
+
+    // HOW USEFUL IS THIS POOLING REALLY? TODO
+    // NO CONTROL OVER CACHE LOCALITY IN JS, MAYBE FASTER INITIALIZATION FOR MANY OBJECTS
+    // REUSE OF OBJECTS IS KINDA NICE
+    RegisterGameObjectPool(cls: GameObjectClass, defaultPoolSize: number = 10): void
+    {
+        const name = cls.name.startsWith("_") ? cls.name.substring(1) : cls.name;
+
+        if (this.gameObjectPools.has(name))
+        {
+            // SET DIFFERENT defaultPoolSize?
+            return;
+        }
+
+        this.gameObjectPools.set(name, new PoolHandler(() => new cls(this), defaultPoolSize));// NOT ON SCENE - TODO
+    }
+
+    GetObjectFromPool(objectName: string): GameObject
+    {
+        var pool = this.gameObjectPools.get(objectName);
+        if (!pool)
+        {
+            throw new Error(`No pool found for ${objectName}`);
+            //this.RegisterGameObjectPool(objectName, () => new GameObject(), 20);
+        }
+
+        return pool.Grab();
+    }
 
 
     

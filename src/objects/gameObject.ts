@@ -80,7 +80,7 @@ export class GameObject
 
     //levelEditorAlpha: number = 1; // BIT HACKY VAR TO FADE OUT OBJECTS IN EDITOR BUT NOT ADJUST ACTUALY ALPHA VALUES (HAVE TO STAY IN INTACT FOR SAVING)
     
-    constructor(scene: Scene | null = null, x:number = 0, y:number = 0, texturePath: string = "")
+    constructor(scene: Scene, x:number = 0, y:number = 0, texturePath: string = "")
     {
         this.scene = scene;
 
@@ -205,7 +205,7 @@ export class GameObject
     
     static FromTexture(texture: Texture): GameObject
     {
-        var obj = new GameObject();
+        var obj = bareEngine.GetObjectFromPool("GameObject");
         obj.SetTexture(texture);
         return obj;
     }
@@ -1169,7 +1169,7 @@ export class GameObject
         this.renderParentTransform = null;
 
         this.customData = {};
-        
+
         this.RemoveMask();
 
         this.SetPivot(0, 0);

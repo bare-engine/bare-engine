@@ -123,7 +123,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
         if (doesSupportWebGL)
         {
             if (options.gameObjectPoolSize !== undefined)
-                Scene.gameObjectPoolSize = options.gameObjectPoolSize;
+                BareEngine.gameObjectPoolSize = options.gameObjectPoolSize;
 
             // START RAPID
             let rapid = new Rapid({

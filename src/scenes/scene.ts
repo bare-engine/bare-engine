@@ -36,8 +36,6 @@ export class Scene implements SceneI
 {
     //private pipes = matt<Pipes>();
     //private pipes = matt<Pipes>();
-    static gameObjectPoolSize: int = 50;
-    static gameObjectPools: Map<string, PoolHandler<GameObject>> = new Map();
     static registeredClasses: Record<string, any> = {};
      
     static rootPath: string = "assets";
@@ -123,8 +121,6 @@ export class Scene implements SceneI
         this.AddClass(ObjectController);
         this.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT
 
-        this.RegisterGameObjectPool(GameObject, Scene.gameObjectPoolSize);
-        
         BareEngine.SetControllerReferencesOnScene(this);
     }
 
@@ -523,18 +519,6 @@ export class Scene implements SceneI
         return {entity: entityConstructed, gameObject: bareEngine.dummyGameObject};
     }
 
-    GetObjectFromPool(objectName: string): GameObject
-    {
-        var pool = Scene.gameObjectPools.get(objectName);
-        if (!pool)
-        {
-            throw new Error(`No pool found for ${objectName}`);
-            //this.RegisterGameObjectPool(objectName, () => new GameObject(), 20);
-        }
-
-        return pool.Grab();
-    }
-
     // INPUT COULD BE: ENTITY, ENTITY NAME, GAMEOBJECT, CLASS TO INSTANTIATE OR TEXTURE
     AddGameObject(input?: Entity | string | GameObject | GameObjectClass | Texture, parent: int | string | GameObject = "objects"): GameObject
     {
@@ -548,7 +532,7 @@ export class Scene implements SceneI
         if (!input)
         {
             // DEFAULT GAMEOBJECT
-            gameObject = this.GetObjectFromPool("GameObject");
+            gameObject = bareEngine.GetObjectFromPool("GameObject");
             gameObject.pooled = true;
             gameObject.name = "pooledGameObject";
         }
@@ -556,7 +540,7 @@ export class Scene implements SceneI
         if (typeof input === "function")
         {
             // GameObjectClass CASE, INSTANTIATE FROM POOL IF IT EXISTS
-            const pool = Scene.gameObjectPools.get(input.name);
+            const pool = bareEngine.gameObjectPools.get(input.name);
             if (pool)
                 gameObject = pool.Grab();
             else
@@ -577,7 +561,7 @@ export class Scene implements SceneI
         if (input instanceof Texture)
         {
             // TEXTURE
-            gameObject = this.GetObjectFromPool("GameObject");
+            gameObject = bareEngine.GetObjectFromPool("GameObject");
             gameObject.SetTexture(input);
             gameObject.pooled = true;
             gameObject.name = "pooledGameObjectFromTexture";
@@ -602,7 +586,7 @@ export class Scene implements SceneI
                 entity = this.ConstructEntity(input);
             }
 
-            gameObject = this.GetObjectFromPool(entity.extendClass!);
+            gameObject = bareEngine.GetObjectFromPool(entity.extendClass!);
             gameObject.Init(MakePath(entity.imagePath!, entity.name));
             this.ApplyEntityToGameObject(entity, gameObject);
         }
@@ -698,7 +682,7 @@ export class Scene implements SceneI
         if (wasPooled)
         {
             const className = this.GetContructorName(gameObject);
-            const pool = Scene.gameObjectPools.get(className);
+            const pool = bareEngine.gameObjectPools.get(className);
             if (pool)
                 pool.Release(gameObject);
         }
@@ -965,22 +949,6 @@ export class Scene implements SceneI
         return this.componentController?.GetAllComponentsFrom(obj);
     }
 
-    // HOW USEFUL IS THIS POOLING REALLY? TODO
-    // NO CONTROL OVER CACHE LOCALITY IN JS, MAYBE FASTER INITIALIZATION FOR MANY OBJECTS
-    // REUSE OF OBJECTS IS KINDA NICE
-    RegisterGameObjectPool(cls: GameObjectClass, defaultPoolSize: number = 10): void
-    {
-        const name = cls.name.startsWith("_") ? cls.name.substring(1) : cls.name;
-
-        if (Scene.gameObjectPools.has(name))
-        {
-            // SET DIFFERENT defaultPoolSize?
-            return;
-        }
-
-        Scene.gameObjectPools.set(name, new PoolHandler(() => new cls(this), defaultPoolSize));// NOT ON SCENE - TODO
-    }
-
     // A CATCH-ALL METHOD TO REGISTER CLASSES
     // CAN BE CONTROLLER/GAMEOBJECT/COMPONENT/PHYSICS/ETC
     // DOESN'T ALWAYS DO SOMETHING, BUT JUST A HOAX TO LET THE DEV REFFERENCE THE CLASS
@@ -1009,7 +977,7 @@ export class Scene implements SceneI
         // GAMEOBJECT
         if (_class.prototype instanceof GameObject)
         {
-            this.RegisterGameObjectPool(_class, 1);
+            bareEngine.RegisterGameObjectPool(_class, 1);
 
             Scene.registeredClasses[className] = "taken";
             return;
