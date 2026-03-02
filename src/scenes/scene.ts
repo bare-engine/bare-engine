@@ -161,7 +161,7 @@ export class Scene implements SceneI
     async Start(payload?: any): Promise<void>
     {
         this.started = false;
-        
+
         var classes = BareEngine.controllerNames;
         for (let i = 0; i < classes.length; i++)
         {
@@ -1044,7 +1044,7 @@ export class Scene implements SceneI
         var classes = BareEngine.controllerNames;
         for (let i = 0; i < classes.length; i++)
         {
-            this[classes[i]].Clear?.();
+            this[classes[i]].Clear?.(!isLevel);
         }
 
         if (!isLevel)

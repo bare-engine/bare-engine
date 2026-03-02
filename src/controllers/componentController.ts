@@ -333,15 +333,45 @@ export class ComponentController
             this.componentsByGameObject.delete(object.uniqueID);
     }
 
-    RemoveAllComponents()
+    RemoveAllComponents(includingPersistent: boolean = true)
     {
-        this.CallMethodOnAllComponents('OnRemoved');
+        if (includingPersistent)
+        {
+            this.CallMethodOnAllComponents('OnRemoved');
+            this.componentsByGameObject.clear()
+            this.componentsByType.clear()
+            this.queuedForStart = []
+            return;
+        }
 
-        // Clear all component references
-        this.componentsByGameObject.clear()
-        this.componentsByType.clear()
-        
-        this.queuedForStart = []
+        for (const [uniqueID, components] of this.componentsByGameObject.entries())
+        {
+            if (components.length === 0) continue;
+
+            const go = components[0].go;
+            if (go.persistent) continue;
+
+            for (const component of components)
+            {
+                if (component.OnRemoved)
+                    component.OnRemoved();
+
+                const typeComponents = this.componentsByType.get(component.constructor as Ctor<Component<any>>);
+                if (typeComponents)
+                {
+                    const typeIndex = typeComponents.indexOf(component);
+                    if (typeIndex > -1)
+                        typeComponents.splice(typeIndex, 1);
+
+                    if (typeComponents.length === 0)
+                        this.componentsByType.delete(component.constructor as Ctor<Component<any>>);
+                }
+            }
+
+            this.componentsByGameObject.delete(uniqueID);
+        }
+
+        this.queuedForStart = this.queuedForStart.filter(c => c.go.persistent);
     }
 
     EnableComponent<T extends BaseComponent>(obj: GameObject, componentType: Ctor<T>)
@@ -525,9 +555,9 @@ export class ComponentController
         }
     }
 
-    Clear()
+    Clear(includingPersistent: boolean = true)
     {
-        this.RemoveAllComponents();
+        this.RemoveAllComponents(includingPersistent);
     }
 }
 

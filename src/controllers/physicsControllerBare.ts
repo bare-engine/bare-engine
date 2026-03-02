@@ -637,9 +637,19 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 		return null;
 	}
 
-  Clear()
+  Clear(includingPersistent: boolean = true)
   {
-    this.objects.length = 0;
+    if (includingPersistent)
+    {
+      this.objects.length = 0;
+      return;
+    }
+
+    for (let i = this.objects.length - 1; i >= 0; i--)
+    {
+      if (!this.objects[i].persistent)
+        this.objects.splice(i, 1);
+    }
   }
 }
 
