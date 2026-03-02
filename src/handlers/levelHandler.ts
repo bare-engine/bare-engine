@@ -232,6 +232,11 @@ export class LevelHandler
 
                 var components = this.scene.GetAllComponentsFrom(obj);
                 
+                // THESE COMPONENTS MIGHT ALREADY BE INHERITED BY GAMEOBJECT ENTITY!
+                // SHOULD CHECK FOR THIS AND NOT SAVE COMPONENT IN THAT CASE. SHOULD DIFF IT
+                // EG: SHADOWS ARE NOW BEING SAVED IN ENTITY COMPONENTS
+                // TODO
+
                 if (gameMode == GameMode.Game)
                 {
                     // INGAME, SERIALIZE COMPONENTS, SET STORED EDITOR-COMPONENTS
@@ -270,7 +275,7 @@ export class LevelHandler
 
             if (saveVars[constructorName])
             {
-                varsToSave = saveVars[constructorName];
+                varsToSave = saveVars[constructorName]; // MERGE THIS WITH defaultEntityData.saveVars!["GameObject"]? TODO
             }
             else
             {
@@ -378,13 +383,16 @@ export class LevelHandler
         var componentData: any = {};
         var constructorVarNames = Helper.GetConstructorParamNames(component.constructor);
         
-        // Loop through each constructor parameter name
+        // GET VALUE FROM EACH KEY OF CONSTRUCTOR PARAMS
         for (let i = 0; i < constructorVarNames.length; i++)
         {
             const paramName = constructorVarNames[i];
             const paramValue = component[paramName as keyof typeof component];
-            if (paramName === "scene" || paramValue instanceof Scene)
+
+            // SKIP SCENE
+            if (paramName == "scene" || paramValue instanceof Scene)
                 continue;
+
             componentData[paramName] = paramValue;
         }
         

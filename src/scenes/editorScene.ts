@@ -50,17 +50,13 @@ export class EditorScene extends Scene
         this.SetupFileDropZone();
     }
 
-    OnStart(payload?: EditorSceneAwakePayload): void | Promise<void>
+    async OnStart(payload?: EditorSceneAwakePayload): Promise<void>
     {
+        this.RegisterEditorComponents();
+        cameraHandler.SetScaleMode(CameraScaleMode.Contain);
+
         this.editorControlsHandler = new EditorControlsHandler(this);
         this.editorUIHandler = new EditorUIHandler(this);
-
-        this.RegisterEditorComponents();
-
-        this.editorControlsHandler.scene = this;
-        this.editorUIHandler.scene = this;
-
-        cameraHandler.SetScaleMode(CameraScaleMode.Contain);
 
         // OPEN
         const { levelPathOrData, saveLevelCallback, settingsHandler } = payload ?? {};
@@ -68,7 +64,7 @@ export class EditorScene extends Scene
         if (__DEV__)
             globalThis.plugin?.AddDebugAction("Toggle Level Editor", () => this.Toggle(settingsHandler));
 
-        return this.Open(
+        return await this.Open(
             levelPathOrData ?? '',
             saveLevelCallback ?? this.SaveLevel,
             settingsHandler ?? this.settingsHandler
@@ -122,6 +118,11 @@ export class EditorScene extends Scene
         // ALSO HAPPENS WHEN ADDED, TODO
         sceneController.DisableAllScenes();
         this.enabled = true;
+        
+        // CLEAR LEVEL CACHE SO IT'S NOT USED FOR LEVEL LOAD
+        // INSTEAD, THE LEVEL FROM DISK GETS LOADED
+        SaveData.levelCache.clear();
+        SaveDataHandler.Save();
         
         window.gameMode = GameMode.Editor;
         await this.LoadLevel(levelName);
