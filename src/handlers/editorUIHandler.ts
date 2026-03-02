@@ -277,7 +277,7 @@ export class EditorUIHandler {
             
             // Update the layer name
             const layerNameSpan = layerElement.querySelector('.layer-name') as HTMLElement;
-            layerNameSpan.textContent = layerName;
+            layerNameSpan.textContent = layerName.charAt(0).toUpperCase() + layerName.slice(1); // UPPERCASE FIRST LETTER
 
             // SELECT
             layerElement.onpointerdown = (e) => {

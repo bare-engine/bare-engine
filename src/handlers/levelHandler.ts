@@ -86,8 +86,9 @@ export class LevelHandler
         }
 
         this.scene.Clear(false, true); 
-        this.scene.doRender = false;
+        
         await this.scene.OnBeforeLoadLevel();
+        this.scene.doRender = false;
 
         var level = await this.LoadLevelOnly(levelInput || SaveData.currentLevelStr); // IF NO LEVEL SUPPLIED, RELOAD CURRENT LEVEL
 

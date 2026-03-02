@@ -345,8 +345,8 @@ export class HitboxController
 
     Clear()
     {
-        bareEngine.SetCursor('inherit');
-        this.currentHitboxHover = null;
+        this.ClearExclusiveLayers();
+        this.ResetCurrentHover();
         this.currentHitboxDown = null;
     }
 

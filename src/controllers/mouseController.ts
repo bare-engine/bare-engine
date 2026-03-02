@@ -190,6 +190,25 @@ export class MouseController
         if (this.mouseIsDown)
             this.mouseFramesDown++;
     }
+
+    Clear()
+    {
+        this.world.position.x = -1000;
+        this.world.position.y = -1000;
+
+        this.mouseSpeed = 0;
+        this.mouseSpeedDelayed = 0;
+        this.mouseDirection = 0;
+        this.mouseDirectionVec2.x = 0;
+        this.mouseDirectionVec2.y = 0;
+        this.mouseDirectionVec2Delayed.x = 0;
+        this.mouseDirectionVec2Delayed.y = 0;
+
+        this.mouseFramesDown = 0;
+        this.mouseIsDown = false;
+        this.middleMouseIsDown = false;
+        this.rightMouseIsDown = false;
+    }
 }
 
 export var mouseController:MouseController;

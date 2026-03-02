@@ -46,7 +46,14 @@ export class EditorUIScene extends Scene
             return;
         }
 
+        for (var scene of sceneController.GetAllScenes())
+        {
+            // HARDCODED THESE FOR NOW
+            scene.hitboxController?.Clear();
+            scene.mouseController?.Clear();
+        }
         sceneController.DisableAllScenes();
+
         sceneController.Add(EditorScene);
     }
 }
