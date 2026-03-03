@@ -317,7 +317,7 @@ export class BareEngine
         this.gameObjectPools.set(name, new PoolHandler(() => new cls(this), defaultPoolSize));// NOT ON SCENE - TODO
     }
 
-    GetObjectFromPool(objectName: string): GameObject
+    GetObjectFromPool(objectName: string, scene: Scene): GameObject
     {
         var pool = this.gameObjectPools.get(objectName);
         if (!pool)
@@ -326,7 +326,10 @@ export class BareEngine
             //this.RegisterGameObjectPool(objectName, () => new GameObject(), 20);
         }
 
-        return pool.Grab();
+        var obj = pool.Grab();
+        obj.scene = scene;
+        
+        return obj;
     }
 
 

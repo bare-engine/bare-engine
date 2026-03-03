@@ -120,14 +120,6 @@ export class PhysicsObjectBare extends GameObject
             }
         }
     }
-
-    override Render(inheritedColor?: Color): void
-    {
-        if (!this.visible)
-            return;
-
-        super.Render(inheritedColor);
-    }
     
     SetVelocity(velocity: Vec2): PhysicsObjectBare
     {

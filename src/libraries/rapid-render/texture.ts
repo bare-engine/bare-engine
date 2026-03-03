@@ -32,6 +32,7 @@ class TextureCache {
     async textureFromUrl(url: string, antialias: boolean = this.antialias, wrapMode: TextureWrapMode = TextureWrapMode.CLAMP) {
         var image = await this.loadImage(url);
         var base = BaseTexture.fromImageSource(image, antialias, wrapMode);
+        base.sourceUrl = url;
         return new Texture(base);
     }
 
@@ -120,6 +121,7 @@ class BaseTexture {
     width: number
     height: number
     wrapMode: TextureWrapMode
+    sourceUrl?: string
     constructor(texture: WebGLTexture, width: number, height: number, wrapMode: TextureWrapMode = TextureWrapMode.CLAMP) {
         this.texture = texture
         this.width = width

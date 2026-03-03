@@ -227,6 +227,11 @@ export class TweenController
         }
     }
 
+    GetTweensFrom(obj: any)
+    {
+        return this.tweens.filter(t => t.object == obj);
+    }
+
     Update(time: number = 0)
     {
         var i = 0;
@@ -272,7 +277,6 @@ export class TweenController
     Clear()
     {
         this.RemoveTweensFrom(this);
-
         this.tweens = [];
     }
 }

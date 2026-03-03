@@ -535,7 +535,7 @@ export class Scene implements SceneI
         if (!input)
         {
             // DEFAULT GAMEOBJECT
-            gameObject = bareEngine.GetObjectFromPool("GameObject");
+            gameObject = bareEngine.GetObjectFromPool("GameObject", this);
             gameObject.pooled = true;
             gameObject.name = "pooledGameObject";
         }
@@ -564,7 +564,7 @@ export class Scene implements SceneI
         if (input instanceof Texture)
         {
             // TEXTURE
-            gameObject = bareEngine.GetObjectFromPool("GameObject");
+            gameObject = bareEngine.GetObjectFromPool("GameObject", this);
             gameObject.SetTexture(input);
             gameObject.pooled = true;
             gameObject.name = "pooledGameObjectFromTexture";
@@ -589,7 +589,7 @@ export class Scene implements SceneI
                 entity = this.ConstructEntity(input);
             }
 
-            gameObject = bareEngine.GetObjectFromPool(entity.extendClass!);
+            gameObject = bareEngine.GetObjectFromPool(entity.extendClass!, this);
             gameObject.Init(MakePath(entity.imagePath!, entity.name));
             this.ApplyEntityToGameObject(entity, gameObject);
         }
@@ -697,7 +697,7 @@ export class Scene implements SceneI
         this.hitboxController?.Update();
         this.OnPreUpdate(deltaTime); // NOT QUITE PRE-UPDATE HUH, BUT HERE JUST FOR EditorControlsHandler ATM, SO IT DRAGS OBJECTS AT POSITION AND AFTER THEY CAN BE SNAPPED TO OTHER POSITION
         this.objectController.Update(deltaTime);
-        this.tweenController?.Update(bareEngine.time); // STUPID TIME VAR - TODO
+        this.tweenController?.Update(bareEngine.time);
         this.physicsControllerBare?.Update(deltaTime);
         this.physicsControllerSopiro?.Update(deltaTime);
         this.componentController?.Update(deltaTime);
@@ -949,7 +949,7 @@ export class Scene implements SceneI
 
     GetAllComponentsFrom(obj:GameObject):any[]
     {
-        return this.componentController?.GetAllComponentsFrom(obj);
+        return this.componentController?.GetComponentsFrom(obj);
     }
 
     // A CATCH-ALL METHOD TO REGISTER CLASSES

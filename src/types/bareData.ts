@@ -30,7 +30,8 @@ export const defaultEntityData: SettingsData = {
     }
   },
   saveVars: {
-    GameObject: ["name", "position"]
+    GameObject: ["name", "position"],
+    PhysicsObjectBare: ["name", "position", "scale"]
   },
   settings: {
     gridEnabled: false,

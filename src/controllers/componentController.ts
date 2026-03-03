@@ -49,7 +49,7 @@ export class ComponentController
         this.scene.events.on(BareEvent.collision_update, this.OnCollisionUpdate.bind(this));
         this.scene.events.on(BareEvent.collision_end, this.OnCollisionEnd.bind(this));
 
-        this.scene.events.on(BareEvent.game_objectRemoved, this.RemoveComponentsForObject.bind(this));
+        this.scene.events.on(BareEvent.game_objectRemoved, this.RemoveComponentsFrom.bind(this));
 
         this.scene.events.on(BareEvent.level_preSave, this.OnPreSaveLevel.bind(this));
     }
@@ -212,7 +212,7 @@ export class ComponentController
         return this.componentsByType.get(componentType) as unknown as ComponentType[]
     }
 
-    GetAllComponentsFrom(object: GameObject): Component<any>[]
+    GetComponentsFrom(object: GameObject): Component<any>[]
     {
         var comps = this.componentsByGameObject.get(object.uniqueID);
         if (!comps)
@@ -295,7 +295,7 @@ export class ComponentController
         return true;
     }
 
-    RemoveComponentsForObject(object: GameObject, ignoring: any[] = [])
+    RemoveComponentsFrom(object: GameObject, ignoring: any[] = [])
     {
         // Direct O(1) lookup by uniqueID instead of iterating all components
         const components = this.componentsByGameObject.get(object.uniqueID);
@@ -545,7 +545,7 @@ export class ComponentController
     }
 
     CallMethodOnComponentsOfObject<T extends keyof Component<any>>(methodName: T, object: GameObject, ...args: any[]): void {
-        var allCompsObject = this.GetAllComponentsFrom(object);
+        var allCompsObject = this.GetComponentsFrom(object);
 
         for (const component of allCompsObject) {
             const method = component[methodName];

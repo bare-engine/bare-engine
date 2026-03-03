@@ -93,9 +93,9 @@ export class EditorUIHandler {
         sidebarContent.innerHTML = '';
 
         // Process each category
-        data.categories?.forEach((categoryGroup, index) => {
-            Object.keys(categoryGroup).forEach(categoryName => {
-                const categoryData = categoryGroup[categoryName];
+        if (data.categories)
+        for (const [categoryName, categoryData] of Object.entries(data.categories)) {
+            {
                 if (!categoryData || !categoryData.entries || categoryData.entries.length === 0) return;
 
                 // Create category container
@@ -110,17 +110,47 @@ export class EditorUIHandler {
                 const categoryIcon = document.createElement('div');
                 categoryIcon.className = 'entity-image';
                 
-                // Get category image path
-                const categoryImagePath = this.GetCategoryImagePath(categoryData.image);
-                if (categoryImagePath) {
-                    const img = document.createElement('img');
-                    img.src = categoryImagePath;
-                    img.style.width = '100%';
-                    img.style.height = '100%';
-                    img.style.objectFit = 'contain';
-                    categoryIcon.appendChild(img);
+                // Get category image from loaded texture or fallback to path
+                const texture = assetsHandler.HasTexture(categoryData.image)
+                    ? assetsHandler.GetTexture(categoryData.image)
+                    : null;
+                if (texture?.base?.sourceUrl) {
+                    const base = texture.base;
+                    categoryIcon.style.backgroundImage = `url(${base.sourceUrl})`;
+                    if (texture.frame) {
+                        const frame = texture.frame;
+                        const img = new Image();
+                        img.src = base.sourceUrl;
+                        const drawFrame = () => {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = frame.w;
+                            canvas.height = frame.h;
+                            const ctx = canvas.getContext('2d')!;
+                            ctx.drawImage(img, frame.x, frame.y, frame.w, frame.h, 0, 0, frame.w, frame.h);
+                            categoryIcon.style.backgroundImage = `url(${canvas.toDataURL()})`;
+                            categoryIcon.style.backgroundSize = 'contain';
+                            categoryIcon.style.backgroundRepeat = 'no-repeat';
+                            categoryIcon.style.backgroundPosition = 'center';
+                        };
+                        if (img.complete) drawFrame();
+                        else img.onload = drawFrame;
+                    } else {
+                        categoryIcon.style.backgroundSize = 'contain';
+                        categoryIcon.style.backgroundRepeat = 'no-repeat';
+                        categoryIcon.style.backgroundPosition = 'center';
+                    }
                 } else {
-                    categoryIcon.textContent = '📦'; // Fallback icon
+                    const categoryImagePath = this.GetCategoryImagePath(categoryData.image);
+                    if (categoryImagePath) {
+                        const img = document.createElement('img');
+                        img.src = categoryImagePath;
+                        img.style.width = '100%';
+                        img.style.height = '100%';
+                        img.style.objectFit = 'contain';
+                        categoryIcon.appendChild(img);
+                    } else {
+                        categoryIcon.textContent = '📦'; // Fallback icon
+                    }
                 }
                 
                 const categoryTitle = document.createElement('span');
@@ -154,22 +184,55 @@ export class EditorUIHandler {
                                 e.stopPropagation();
                             };
                             
-                            // Get entity image path
-                            const entityImagePath = this.GetEntityImagePath(entity);
-                            if (entityImagePath) {
-                                const img = document.createElement('img');
-                                img.src = entityImagePath;
-                                img.id = entityId;
-                                img.style.width = '100%';
-                                img.style.height = '100%';
-                                img.style.objectFit = 'contain';
-                                img.style.borderRadius = '3px';
-                                childEntity.appendChild(img);
+                            // Get entity image from loaded texture or fallback to path
+                            const texKey = MakePath(entity.imagePath!, entity.name);
+                            const entityTex = assetsHandler.HasTexture(texKey)
+                                ? assetsHandler.GetTexture(texKey)
+                                : null;
+                            if (entityTex?.base?.sourceUrl) {
+                                const base = entityTex.base;
+                                childEntity.id = entityId;
+                                childEntity.style.backgroundImage = `url(${base.sourceUrl})`;
+                                childEntity.style.borderRadius = '3px';
+                                if (entityTex.frame) {
+                                    const frame = entityTex.frame;
+                                    const img = new Image();
+                                    img.src = base.sourceUrl;
+                                    const drawFrame = () => {
+                                        const canvas = document.createElement('canvas');
+                                        canvas.width = frame.w;
+                                        canvas.height = frame.h;
+                                        const ctx = canvas.getContext('2d')!;
+                                        ctx.drawImage(img, frame.x, frame.y, frame.w, frame.h, 0, 0, frame.w, frame.h);
+                                        childEntity.style.backgroundImage = `url(${canvas.toDataURL()})`;
+                                        childEntity.style.backgroundSize = 'contain';
+                                        childEntity.style.backgroundRepeat = 'no-repeat';
+                                        childEntity.style.backgroundPosition = 'center';
+                                    };
+                                    if (img.complete) drawFrame();
+                                    else img.onload = drawFrame;
+                                } else {
+                                    childEntity.style.backgroundSize = 'contain';
+                                    childEntity.style.backgroundRepeat = 'no-repeat';
+                                    childEntity.style.backgroundPosition = 'center';
+                                }
                             } else {
-                                childEntity.textContent = '📦'; // Fallback icon
-                                childEntity.style.display = 'flex';
-                                childEntity.style.alignItems = 'center';
-                                childEntity.style.justifyContent = 'center';
+                                const entityImagePath = this.GetEntityImagePath(entity);
+                                if (entityImagePath) {
+                                    const img = document.createElement('img');
+                                    img.src = entityImagePath;
+                                    img.id = entityId;
+                                    img.style.width = '100%';
+                                    img.style.height = '100%';
+                                    img.style.objectFit = 'contain';
+                                    img.style.borderRadius = '3px';
+                                    childEntity.appendChild(img);
+                                } else {
+                                    childEntity.textContent = '📦'; // Fallback icon
+                                    childEntity.style.display = 'flex';
+                                    childEntity.style.alignItems = 'center';
+                                    childEntity.style.justifyContent = 'center';
+                                }
                             }
 
                             childrenContainer.appendChild(childEntity);
@@ -240,8 +303,8 @@ export class EditorUIHandler {
                 categoryElement.appendChild(categoryHeader);
                 categoryElement.appendChild(childrenContainer);
                 sidebarContent.appendChild(categoryElement);
-            });
-        });
+            }
+        }
 
         // IF ONLY 1 CATEGORY, EXPAND IT
         if (sidebarContent.children.length === 1)

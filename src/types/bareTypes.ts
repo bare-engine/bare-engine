@@ -104,13 +104,12 @@ export interface LevelData
 
 interface CategoryData
 {
-  image: string;
-  entries: Array<string> | string;
 }
 
 interface Category
 {
-  [key: string]: CategoryData;
+  image: string;
+  entries: Array<string> | string;
 }
 
 interface AnimationDataInfo
@@ -123,7 +122,7 @@ interface AnimationDataInfo
 export interface SettingsData
 {
   name?: string;
-  categories?: Array<Category>;
+  categories?: Record<string, Category>;
   entityBases?: Record<string, Partial<Entity>>; // MADE PARTIAL TO SUPPORT IT HAVING NO NAME (YET)
   entities?: Record<string, Partial<Entity>>; // SAME ^
   tilesheets?: Array<Entity>;
@@ -268,7 +267,6 @@ export type Events = BareEventPayload & Record<string, any>;
 export const Events = undefined as unknown as Events;
 //
 
-// TRIM - TODO
 export interface Pipes {
   hitboxController_Update: (deltaTime: number) => void;
   physicsController_Update: (deltaTime: number) => void;

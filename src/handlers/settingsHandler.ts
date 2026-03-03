@@ -26,6 +26,31 @@ export class SettingsHandler
     {
         var settings = this.clone(raw);
 
+        // PROCES CATEGORY ENTRIES, IF PATH IS PREFIXED, REMOVE AND ADD UNDER ENTITIES DATA
+        if (settings.categories)
+        for (const [key, category] of Object.entries(settings.categories))
+        {
+            if (category.entries instanceof Array)
+            {
+                for (var i = 0; i < category.entries.length; i++)
+                {
+                    var entry = category.entries[i];
+                
+                    if (entry.includes("/"))
+                    {
+                        var entryName = entry.split("/").pop()!;
+                        var entryPath = entry.split("/").slice(0, -1).join("/");
+
+                        // REDEFINE CATEGORY ENTRY TO JUST IT'S NAME
+                        (category.entries as string[])[i] = entryName;
+
+                        // STORE ENTRY NAME IN ENTITIES DATA, TOGETHER WITH PATH WE JUST FOUND
+                        settings.entities[entryName] = { ...settings.entities[entryName], imagePath: entryPath };
+                    }
+                }
+            }
+        }
+
         // SET DEFAULTS - WILL FILL IN ANY VALUE IN defaultEntityData THAT'S NOT PRESENT
         for (const key of Object.keys(defaultEntityData) as (keyof SettingsData)[])
         {
@@ -104,12 +129,8 @@ export class SettingsHandler
         // PROCESS EACH CATEGORY
         if (settings.categories)
         {
-            for (let i = 0; i < settings.categories.length; i++)
+            for (const [categoryName, categoryData] of Object.entries(settings.categories))
             {
-                const categoryGroup = settings.categories[i];
-                for (const categoryName of Object.keys(categoryGroup))
-                {
-                    const categoryData = categoryGroup[categoryName];
                     if (!categoryData || !categoryData.entries || categoryData.entries.length === 0) return settings;
 
                     // PARSE STRING ENTRIES, EG: "roadTexture_%" 
@@ -174,7 +195,7 @@ export class SettingsHandler
                     }
                 }
             }
-        }
+
 
         // PROCESS ANIMATIONS - ADD THEM AND LOAD THEIR TEXTURES IF THEY'RE NOT IN ALREADY
         if (settings.animations)

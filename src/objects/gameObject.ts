@@ -25,6 +25,8 @@ export class GameObject
 {
     static gameObjectCounter = -1; // ONE BACK TO NOT COUNT THE DUMMY GAMEOBJECT INSTANCED IN BAREGAME
  
+    scene: Scene;
+
     name:string;
     pluginName:string;
     customName: string = "";
@@ -35,45 +37,42 @@ export class GameObject
     persistent: boolean = false;
     save: boolean = false;
     tags:Array<string> = [];
-
-    addedToLevel:boolean = false;
-    pooled:boolean = false;
-
     texture: Texture | null;
-    onDestroy:Function | null = null;
+    color:Color = new Color(255, 255, 255, 255);
+    shader: GLShader | undefined;
+    uniforms: Uniform | undefined;
+    shaders: any[] = [];
+    private mask: GameObject | null = null;
+    private maskType: MaskType = MaskType.Include;
 
     transform: Transform = new Transform();
     innerTransform: Transform = new Transform();
-    visibleInEditor:boolean = true;
-    color:Color = new Color(255, 255, 255, 255);
+
     children: Array<GameObject> = [];
     parent: GameObject | null = null;
 
-    shader: GLShader | undefined;
-    uniforms: Uniform | undefined;
+    addedToLevel:boolean = false;
+    pooled:boolean = false;
+    revertPivotOnSave: boolean = false;
 
     tapHitbox: Hitbox | null = null; // COULD MAKE THIS ANY, TO UNREF HITBOX - TODO
     hitboxColor:Color = new Color(255,255,255,80);
 
-    revertPivotOnSave: boolean = false;
-
-    shaders: any[] = [];
-    
     startPosition = new Vec2();
-    
+
     texturePromise: Promise<Texture> | null = null;
 
-    // CAN I GET RID OF THESE TWO?! TODO
-    levelEntity: Entity | null = null; // USED IN COMBINATION WITH ENTITY, TO ALWAYS VARS SAME IN levelEntity, AND ONLY LOOK FOR CHANGES FROM ENTITY AND SAVE THOSE
-    entity: Entity | null = null;
-
-    private mask: GameObject | null = null;
-    private maskType: MaskType = MaskType.Include;
     private renderParentTransform: Float32Array | null = null;
 
-    public scene: Scene | null = null;
+    // CAN I GET RID OF THESE TWO? TODO
+    levelEntity: Entity | null = null; // USED IN COMBINATION WITH ENTITY, TO COMPARE VARS SAME IN levelEntity, AND ONLY LOOK FOR CHANGES FROM ENTITY AND SAVE THOSE
+    entity: Entity | null = null;
 
-    public customData: Record<string, any> = {}; // KEEP THIS? 
+    visibleInEditor:boolean = true;
+
+    customData: Record<string, any> = {};
+
+    //onDestroy:Function | null = null;
 
     //private cachedChildrenWidth: number = -1;
     //private cachedChildrenHeight: number = -1;
@@ -201,13 +200,6 @@ export class GameObject
     {
         this.startPosition.x = x;
         this.startPosition.y = y;
-    }
-    
-    static FromTexture(texture: Texture): GameObject
-    {
-        var obj = bareEngine.GetObjectFromPool("GameObject");
-        obj.SetTexture(texture);
-        return obj;
     }
 
     async Init(texturePath: string): Promise<void> 
@@ -1141,8 +1133,8 @@ export class GameObject
 
     ResetValues()
     {
-        this.onDestroy?.bind(this);
-        this.onDestroy = null;
+        //this.onDestroy?.bind(this);
+        //this.onDestroy = null;
 
         this.name = "";
         this.pluginName = "";
@@ -1187,6 +1179,11 @@ export class GameObject
 
         this.shader = undefined;
         this.uniforms = undefined;
+    }
+    
+    Remove()
+    {
+        this.scene.RemoveGameObject(this);
     }
 
 	Destroy()

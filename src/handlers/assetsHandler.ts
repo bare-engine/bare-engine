@@ -89,6 +89,7 @@ class AssetsHandler
     AddTexturesFromAtlas(atlas: Atlas, atlasImg: HTMLImageElement):void
     {
         var atlasBaseTex = rapid.textures.addImageFromSource(atlasImg);
+        atlasBaseTex.base!.sourceUrl = atlasImg.src;
 
         for (var name in atlas.frames)
         {

@@ -1,7 +1,8 @@
-import { BareEngine } from "../bareEngine";
-import { Scene, globalEvents } from "../main";
+import { GameObject, tweenController } from "../exports";
 import { EventArgs } from "../libraries/mitt";
-import { AwakePayload, BareEvent, Events, SceneClass, SceneOptions } from "../types/bareTypes";
+import { Scene, globalEvents } from "../main";
+import { UIScene } from "../scenes/uiScene";
+import { AwakePayload, BareEvent, Events, SceneClass } from "../types/bareTypes";
 
 export class SceneController
 {
@@ -196,6 +197,43 @@ export class SceneController
             const targetScene = this.currentScenes[index];
             this.currentScenes.splice(index, 1);
             this.currentScenes.unshift(targetScene);
+        }
+    }
+
+    MoveGameObjectToScene(gameObject: GameObject, scene: UIScene)
+    {
+        if (gameObject.scene != scene)
+        {
+            // MOVE BETWEEN objectControllers
+            gameObject.scene.objectController.Remove(gameObject);
+            scene.objectController.Add(gameObject);
+
+            // MOVE BETWEEN tweenControllers
+            var tweens = gameObject.scene.tweenController.GetTweensFrom(gameObject);
+            gameObject.scene.tweenController.RemoveTweensFrom(gameObject);
+            for (var tween of tweens)
+            {
+                scene.tweenController.Add(tween);
+            }
+
+            // MOVE BETWEEN componentControllers
+            var components = gameObject.scene.componentController.GetComponentsFrom(gameObject);
+            gameObject.scene.componentController.RemoveComponentsFrom(gameObject);
+            for (var component of components)
+            {
+                scene.componentController.AddComponent(gameObject, component);
+            }
+
+            // DOESN'T WORK ATM FOR PHYSICS OBJECTS, WOULD ALSO NEED TO MOVE
+
+            // CONVERT POSITION BETWEEN SCENES, SO IT STAYS THE SAME
+            const screenPos = gameObject.scene.WorldToScreen(gameObject.x, gameObject.y);
+            const newWorldPos = scene.ScreenToWorld(screenPos.x, screenPos.y);
+            gameObject.x = newWorldPos.x;
+            gameObject.y = newWorldPos.y;
+
+            // REDEFINE THE SCENE
+            gameObject.scene = scene;
         }
     }
 
