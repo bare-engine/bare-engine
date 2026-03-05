@@ -76,6 +76,7 @@ export { TweenTo } from "../controllers/tweenController";
 
 // Components
 export { AnimationComponent } from "../components/animationComponent";
+export { ParticleComponent } from "../components/particleComponent";
 export { TextObject } from "../objects/textObject";
 
 // Utils
