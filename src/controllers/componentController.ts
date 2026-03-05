@@ -2,6 +2,7 @@ import { globalEvents, GameMode, pipes, Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { Component, Entity, Ctor, BareEvent } from '../types/bareTypes';
 import { BareEngine } from "../bareEngine";
+import { Helper } from "../exports";
 // REFERENCING A CLASS EXTENDING BASECOMPONENT WILL AUTOMATICALLY ALSO INCLUDE COMPONENTCONTROLLER
 
 export abstract class BaseComponent<T extends GameObject = GameObject> implements Component<T>
@@ -112,7 +113,10 @@ export class ComponentController
                 const ComponentClass = bareEngine.componentClasses[className];
 
                 if (!ComponentClass) // THIS IS NEEDED FOR RELEASE BUILD, SOME P COMPONENT GETS ADDED THAT'S NOT THERE IN GAME, TODO
+                {
+                    console.error('Component class not found: ' + className + '. Add it with bare.AddClass(' + Helper.CapitalizeFirstLetter(componentName) + 'Component);');
                     continue;
+                }
 
                 // INSTANCIATE AND ADD COMPONENT - VALUES BECOME ARGUMENTS
                 const componentValues = components[componentName];
