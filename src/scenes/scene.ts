@@ -456,6 +456,7 @@ export class Scene implements SceneI
     private specialMap: Record<string, (obj: GameObject, value: any) => void> =
     {
         pivot: (o, v) => o.SetPivot(v.x, v.y), // SETPIVOT DOES SOME EXTRA WORK FOR PERCENTAGES, SO CUSTOM MAPPING
+        texture: (o, v) => o.InitTexture(v), // SETPIVOT DOES SOME EXTRA WORK FOR PERCENTAGES, SO CUSTOM MAPPING
     };
 
     ApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)

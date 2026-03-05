@@ -145,12 +145,12 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 				this.activeCollisions.set(key, { bodyA, bodyB });
 				bodyA.OnCollisionStart(bodyB);
 				bodyB.OnCollisionStart(bodyA);
-				events.emit(BareEvent.collision_start, bodyA, bodyB);
+				events.emit(BareEvent.collision_start, bodyA, bodyB); 
 			}
 
 			bodyA.OnCollisionUpdate(bodyB);
 			bodyB.OnCollisionUpdate(bodyA);
-			events.emit(BareEvent.collision_update, bodyA, bodyB);
+			events.emit(BareEvent.collision_update, bodyA, bodyB); // NOT SENDING TO globalEvents, PROBABLY NEVER NEEDED? AND COULD COST MORE
 		}
 
 		for (const [key, pair] of this.activeCollisions)

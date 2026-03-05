@@ -33,13 +33,12 @@ export interface Entity
   rotation?: number;
   pivot?: Position;
   pivotBasedOnHitbox?: any; //Position | String;
+  texture?: string;
   scale?: Position;
   alpha?: number;
   hitbox?: any; //Rectangle2Vec | String;
   tapHitbox?: any; //Rectangle2Vec | String;
   hitboxType?: string;
-  canCollide?: boolean
-  isStatic?: boolean
   tags?: Array<string>;
   components?: Record<string, Record<string, any>>;
   editorComponents?: Record<string, Record<string, any>>;
@@ -54,14 +53,16 @@ export interface Entity
   interactableInEditor?:boolean;
 
   // PHYSICS
+  collide?: boolean;
+  sensor?: boolean;
   static?: boolean;
+  stayInBounds?: boolean;
+
   physicsRect?: Dimensions;
   physicsRadius?: number;
   mass?: number;
   restitution?: number;
   polygonVertices?: number[];
-
-  stayInBounds?: boolean;
 }
 
 /*
@@ -75,8 +76,8 @@ export const EntityTypeInfo: Record<string, string> = {
   pivot: "Position",
   scale: "Position",
   hitbox: "any",
-  canCollide: "boolean",
-  isStatic: "boolean",
+  collide: "boolean",
+  static: "boolean",
   tags: "string[]",
   components: "object",
   editorComponents: "object",
@@ -175,7 +176,6 @@ export interface LayerInfo {
   layerI: int;
   name: string;
   isUI?: boolean;
-  hasPhysics?: boolean;
   doSave?: boolean;
   pointerCollisionType?:CollisionHandlingType;
   showInEditor?: boolean;

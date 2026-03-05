@@ -185,10 +185,9 @@ export class EditorUIHandler {
                             };
                             
                             // Get entity image from loaded texture or fallback to path
-                            const texKey = MakePath(entity.imagePath!, entity.name);
-                            const entityTex = assetsHandler.HasTexture(texKey)
-                                ? assetsHandler.GetTexture(texKey)
-                                : null;
+                            const texKey = MakePath(entity.imagePath!, entity.texture || entity.name);
+                            const entityTex = assetsHandler.HasTexture(texKey) ? assetsHandler.GetTexture(texKey) : null;
+
                             if (entityTex?.base?.sourceUrl) {
                                 const base = entityTex.base;
                                 childEntity.id = entityId;

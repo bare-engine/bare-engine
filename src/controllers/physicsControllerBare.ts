@@ -28,13 +28,15 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     bareEngine.RegisterGameObjectPool(PhysicsObjectBare, 10);
   }
   
-  Add(object: GameObject): void
+  // GETS CALLED BY EXTENDED CLASS (PhysicsControllerBase), ON BareEvent.game_objectAdded
+  override Add(object: GameObject): void
   {
     if (object instanceof PhysicsObjectBare)
       this.objects.push(object);
   }
 
-  Remove(object: PhysicsObjectBare): void
+  // GETS CALLED BY EXTENDED CLASS (PhysicsControllerBase), ON BareEvent.game_objectRemoved
+  override Remove(object: PhysicsObjectBare): void
   {
       if (object instanceof PhysicsObjectBare)
       {
@@ -76,7 +78,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     {
       if (!obj.physicsHitbox.rectangle || obj.physicsHitbox.rectangle.width == 0 || obj.physicsHitbox.rectangle.height == 0)
       {
-        if (!obj.isStatic)
+        if (!obj.static)
         {
           obj.x += obj.velocity.x * deltaTime;
           obj.y += obj.velocity.y * deltaTime;
@@ -92,7 +94,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
         obj.velocity.x *= dragMultiplier;
         obj.velocity.y *= dragMultiplier;
         
-        if (!obj.isStatic)
+        if (!obj.static)
         {
           obj.x += obj.velocity.x * deltaTime;
           obj.y += obj.velocity.y * deltaTime;
@@ -118,7 +120,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 
   private handleBoundaryCollisions(obj: PhysicsObjectBare): void
   {
-  if (obj.isStatic) return;
+  if (obj.static) return;
   if (!obj.stayInBounds) return;
 
   const boundsLeft = this.x ?? 0;
@@ -193,8 +195,8 @@ export class PhysicsControllerBare extends PhysicsControllerBase
         const obj1 = this.objects[i];
         const obj2 = this.objects[j];
 
-        if (obj1.isStatic && obj2.isStatic) continue;
-        if (!obj1.canCollide || !obj2.canCollide) continue;
+        if (obj1.static && obj2.static) continue;
+        if (!obj1.collide || !obj2.collide) continue;
         if (!obj1.physicsHitbox.active || !obj2.physicsHitbox.active) continue;
         if (obj1.velocity.isZero() && obj2.velocity.isZero()) continue;
 
@@ -257,9 +259,9 @@ export class PhysicsControllerBare extends PhysicsControllerBase
               this.HandleCollision(obj1, obj2);
           }
 
-          // Only physical collision response if BOTH solid
-          if (!obj1.isSolid || !obj2.isSolid) {
-              continue; // sensors end here
+          // Skip physical response for sensors or non-solid objects
+          if (obj1.sensor || obj2.sensor) {
+              continue;
           }
 
           // Separate objects to prevent sticking
@@ -569,8 +571,8 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     }
 
     // --- mass
-    const invMass1 = obj1.isStatic ? 0 : 1;
-    const invMass2 = obj2.isStatic ? 0 : 1;
+    const invMass1 = obj1.static ? 0 : 1;
+    const invMass2 = obj2.static ? 0 : 1;
     const invMassSum = invMass1 + invMass2;
     if (invMassSum <= 0) return null;
 

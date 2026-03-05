@@ -10,9 +10,9 @@ export class PhysicsObjectBare extends GameObject
     public isPhysicsObject = true;
     
     physicsHitbox: Hitbox = new Hitbox(this, {x1 : 0, y1 : 0, x2 : 0, y2 : 0});
-    isStatic: boolean = false;
-    canCollide: boolean = false;
-    isSolid:boolean = true;
+    static: boolean = false;
+    collide: boolean = false;
+    sensor:boolean = false;
     velocity: Vec2 = new Vec2(0, 0);
     drag: number = .15;
     restitution: number = .8;
@@ -113,10 +113,10 @@ export class PhysicsObjectBare extends GameObject
             }
 
             // CAN COLLIDE
-            if (entity.canCollide != false)
+            if (entity.collide != false)
             {
-                this.canCollide = true;
-                entity.canCollide = true; // SETTING CANCOLLIDE ON ENTITY TOO, SO IT DOESN'T GET SAVED, SINCE DEFAULT IS FALSE
+                this.collide = true;
+                entity.collide = true; // SETTING collide ON ENTITY TOO, SO IT DOESN'T GET SAVED, SINCE DEFAULT IS FALSE
             }
         }
     }
@@ -147,9 +147,9 @@ export class PhysicsObjectBare extends GameObject
     {
         super.ResetValues();
 
-        this.canCollide = false;
-        this.isSolid = true;
-        this.isStatic = false;
+        this.collide = false;
+        this.sensor = false;
+        this.static = false;
         this.drag = .07;
         this.restitution = .8;
 

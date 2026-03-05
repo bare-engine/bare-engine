@@ -42,6 +42,8 @@ export class PhysicsControllerBase
 	{
 		if ((gameObject as any).isPhysicsObject)
 		{
+			// SHOULD WE ONLY ADD OBJECTS WITH hasPhysics ENABLED IN LAYER? TODO
+			// FOR NOW: IF IT HAS A HITBOX, ITS PHYSICS OBJECT, IT GETS ADDED
 			this.Add(gameObject);
 		}
 	}
