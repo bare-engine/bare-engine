@@ -213,6 +213,22 @@ export class ObjectController
         return null;
     }
 
+    GetObjectByCustomName(customName: string): GameObject | null
+    {
+        for (let i = 0; i < this.layers.length; i++)
+        {
+            for (let j = 0; j < this.layers[i].length; j++)
+            {
+                if (this.layers[i][j].customName === customName)  
+                {
+                    return this.layers[i][j];
+                }
+            }
+        }
+        
+        return null;
+    }
+
     BringToFront(obj: GameObject): boolean
     {
         for (let i = 0; i < this.layers.length; i++)

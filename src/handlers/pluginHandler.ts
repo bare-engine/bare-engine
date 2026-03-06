@@ -24,6 +24,14 @@ declare global {
 }
 
 window.__GAME_DEBUG_API__ = {// called by the panel (via injector) to select in-game
+  // called by the game to notify the panel
+  selectedObjectInPlugin(uid: string, sceneName: string)
+  {
+    var objs = sceneController.GetAllSceneObjects();
+    var objRef = objs.find(o => o.uniqueID === uid);
+    trace('[Bare Plugin]', objRef);
+  },
+
   selectObjectInGame(uid: string)
   {
       const outlineShader = plugin.outlineShader;
