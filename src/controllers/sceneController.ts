@@ -200,6 +200,10 @@ export class SceneController
         }
     }
 
+
+    // DOESN'T WORK ATM FOR PHYSICS OBJECTS, WOULD ALSO NEED TO MOVE
+    // ALSO DOESN'T ALTER SCALE, SO OBJECT CAN CHANGE SIZE WHEN COMING FROM A ZOOMED-IN SCENE FOR EXAMPLE. HAVE TO HANDLY THIS YOURSELF IF NEEDED
+    // EG LIKE: this.go.SetScale(previousScene.cameraHandler.GetZoom());
     MoveGameObjectToScene(gameObject: GameObject, scene: UIScene)
     {
         if (gameObject.scene != scene)
@@ -224,7 +228,6 @@ export class SceneController
                 scene.componentController.AddComponent(gameObject, component);
             }
 
-            // DOESN'T WORK ATM FOR PHYSICS OBJECTS, WOULD ALSO NEED TO MOVE
 
             // CONVERT POSITION BETWEEN SCENES, SO IT STAYS THE SAME
             const screenPos = gameObject.scene.WorldToScreen(gameObject.x, gameObject.y);

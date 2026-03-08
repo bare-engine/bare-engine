@@ -284,13 +284,13 @@ export class GameObject
     }
 
     /** @virtual */
-	Update(deltaTime: number)
+	OnUpdate(deltaTime: number)
     {
-        
+        // FOR OVERRIDE
 	}
 
     /** @virtual */
-    PreRender()
+    OnPreRender()
     {
 
     }
@@ -318,38 +318,45 @@ export class GameObject
         const effectiveColor = inheritedColor ? Helper.MultiplyColors(inheritedColor, this.color) : this.color;
 
         rapid.save();
-        this.renderParentTransform = rapid.matrixStack.getTransform();
+        
+        if (this.mask)
+            this.renderParentTransform = rapid.matrixStack.getTransform();
         
         this.ApplyTransformToMatrixStack(this.transform);
         this.RenderTransformed(effectiveColor);
 
+        rapid.save();
+        rapid.matrixStack.translate(-this.pivot.x, -this.pivot.y);
         // Render children with inherited color
         for (var i = 0; i < this.children.length; i++)
         {
             this.children[i].Render(effectiveColor);
         }
+        rapid.restore();
 
         rapid.restore();
+        
+        this.OnRender();
     }
 
     ApplyTransformToMatrixStack(transform: Transform)
     {
         rapid.matrixStack.translate(transform.position.x, transform.position.y)
-        rapid.matrixStack.scale(transform.scale.x * (transform.flipped ? -1 : 1), transform.scale.y);
         rapid.matrixStack.rotate(transform.rotation * (Math.PI / 180));
+        rapid.matrixStack.scale(transform.scale.x * (transform.flipped ? -1 : 1), transform.scale.y);
     }
 
     public RenderTransformed(inheritedColor?: Color)
     {
-        // OVERRIDE
+        if (!this.texture)
+            return;
 
         rapid.save();
+
         this.ApplyTransformToMatrixStack(this.innerTransform);
 
         if (this.texture)
             this.RenderSprite(inheritedColor);
-        
-        this.OnRender();
 
         rapid.restore();
     }
@@ -378,6 +385,13 @@ export class GameObject
 
             rapid.restore();
         }
+
+        this.OnPostRender();
+    }
+
+    OnPostRender()
+    {
+        // FOR OVERRIDE
     }
 
     RenderSprite(color?: Color)
@@ -399,8 +413,8 @@ export class GameObject
         
         const renderColor = color || this.color;
         rapid.renderSprite({
-            texture: this.texture!, 
-            offset: new Vec2(-this.pivot.x, -this.pivot.y), 
+            texture: this.texture!,
+            offset: new Vec2(-this.pivot.x, -this.pivot.y),
             color: renderColor, 
             shader: this.shader, 
             uniforms: this.uniforms

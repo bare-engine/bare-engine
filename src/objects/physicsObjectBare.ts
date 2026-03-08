@@ -30,7 +30,7 @@ export class PhysicsObjectBare extends GameObject
 
     override SetTexture(texture:Texture): GameObject
     {
-        if (this.physicsHitbox)
+        if (this.physicsHitbox && this.physicsHitbox.rectangle.x == 0 && this.physicsHitbox.rectangle.y == 0 && this.physicsHitbox.rectangle.width == 0 && this.physicsHitbox.rectangle.height == 0)
             this.physicsHitbox.rectangle = {x: 0, y: 0, width: texture!.width, height: texture!.height};
 
         return super.SetTexture(texture);

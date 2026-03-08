@@ -75,8 +75,8 @@ export class HitboxController
             var hitbox = obj.tapHitbox;
 
             // SHOULD NOT BE COMMENTED - TODO - BUT DEBUG VIEW IS BROKEN, TOO BIG
-            //if ((obj as any).isPhysicsObject)
-            //    hitbox = (obj as any).physicsHitbox;
+            if ((obj as any).isPhysicsObject)
+                hitbox = (obj as any).physicsHitbox;
             
             if (!hitbox?.active)
                 continue;

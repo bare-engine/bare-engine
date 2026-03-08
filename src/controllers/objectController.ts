@@ -28,7 +28,7 @@ export class ObjectController
             for (let j = 0; j < this.layers[i].length; j++)
             {
                 const object = this.layers[i][j];
-                object.Update(deltaTime);
+                object.OnUpdate(deltaTime);
             }
         }
     }
@@ -43,7 +43,7 @@ export class ObjectController
             for (let j = 0; j < this.layers[i].length; j++)
             {
                 const object = this.layers[i][j];
-                object.PreRender();
+                object.OnPreRender();
             }
         }
     }
@@ -181,16 +181,49 @@ export class ObjectController
         return this.layers.flat();
     }
 
-    GetObjectById(id: string): GameObject | null
+    GetObjectById(id: string, searchChildren: boolean = true): GameObject | null
     {
+        // LOOK THROUGH ALL LAYER FOR OBJECT - CHEAP
         for (let i = 0; i < this.layers.length; i++)
         {
             for (let j = 0; j < this.layers[i].length; j++)
             {
-                if (this.layers[i][j].uniqueID === id)  
+                if (this.layers[i][j].uniqueID == id)  
                 {
                     return this.layers[i][j];
                 }
+            }
+        }
+
+        // CAN SET searchChildren TO FALSE TO MAKE THIS METHOD CHEAPER
+        if (!searchChildren)
+            return null;
+
+        // FIRST PASS FAILED, START LOOKING THROUGH ALL CHILDREN RECURSIVELY - MORE COSTLY
+        var recurseChildren = (obj: GameObject): GameObject | null =>
+        {
+            for (let i = 0; i < obj.children.length; i++)
+            {
+                var child = obj.children[i];
+
+                if (child.uniqueID == id)
+                    return child;
+
+                var found = recurseChildren(child);
+                if (found)
+                    return found;
+            }
+
+            return null;
+        }
+
+        for (let i = 0; i < this.layers.length; i++)
+        {
+            for (let j = 0; j < this.layers[i].length; j++)
+            {
+                var foundChild = recurseChildren(this.layers[i][j]);
+                if (foundChild)
+                    return foundChild;
             }
         }
         

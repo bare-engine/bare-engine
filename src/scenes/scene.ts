@@ -367,6 +367,15 @@ export class Scene implements SceneI
             }
         }
 
+        // HANDLE NONE CASE, WILL NOT LOOK FOR (ANY) EXTENDED DATA, JUST RETURN WITH GAMEOBJECT extendClass 
+        if (entity.extendData == "NONE")
+        {
+            if (!entity.extendClass)
+                entity.extendClass = "GameObject";
+
+            return final(entity);
+        }
+
         while (entity.extendData)
         {
             // ENTITY BASE DATA THERE, USE THAT AS BASE

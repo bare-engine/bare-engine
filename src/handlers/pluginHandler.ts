@@ -9,6 +9,7 @@ import { BareClasses, ObjectController, Scene, sceneController } from "../export
 import { EditorScene } from "../scenes/editorScene";
 import { objectController } from "../controllers/objectController";
 import { HitboxScene } from "../scenes/hitboxScene";
+import { serialize } from "node:v8";
 
 // THIS PLUGIN CODE DOES NOT GET INCLUDED IN PRODUCTION
 // ALL CALLS SHOULD BE WRAPPED WITH __DEV__
@@ -23,21 +24,15 @@ declare global {
   }
 }
 
-window.__GAME_DEBUG_API__ = {// called by the panel (via injector) to select in-game
-  // called by the game to notify the panel
-  selectedObjectInPlugin(uid: string, sceneName: string)
-  {
-    var objs = sceneController.GetAllSceneObjects();
-    var objRef = objs.find(o => o.uniqueID === uid);
-    trace('[Bare Plugin]', objRef);
-  },
-
-  selectObjectInGame(uid: string)
+window.__GAME_DEBUG_API__ = {
+  selectedObject(uid: string)
   {
       const outlineShader = plugin.outlineShader;
 
       var objs = sceneController.GetAllSceneObjects();
-      let selected: any = objs.find(o => o.uniqueID === uid) ?? null;
+      let selected: any = objs.find(o => o.uniqueID === uid);
+
+      trace('[Bare Plugin]', selected);
 
       // CLEAR OUTLINE SHADERS ON ALL (across all scenes)
       for (const o of objs)
@@ -58,6 +53,25 @@ window.__GAME_DEBUG_API__ = {// called by the panel (via injector) to select in-
       // ADD TO SELECTED
       outlineShader.start(selected, [1.0, 1.0, 1.0, 1.0], 8.0);
       selected.shaders.push(outlineShader);
+
+      return true;
+  },
+
+  unselectedObject(uid: string)
+  {
+      const outlineShader = plugin.outlineShader;
+
+      var objs = sceneController.GetAllSceneObjects();
+      let selected: any = objs.find(o => o.uniqueID === uid) ?? null;
+
+      if (!selected) return false;
+
+      const idx = selected.shaders.indexOf(outlineShader);
+      if (idx !== -1)
+      {
+          outlineShader.stop(selected);
+          selected.shaders.splice(idx, 1);
+      }
 
       return true;
   },
@@ -141,16 +155,27 @@ window.__GAME_DEBUG_API__ = {// called by the panel (via injector) to select in-
     const o = plugin.GetCurrentScene().objectController.GetObjectById(id);
     if (!o) return null;
 
-    return {
-      id: o.uniqueID,
-      name: o.name,
-      x: o.x,
-      y: o.y,
-      scaleX: o.scaleX ?? 1,
-      scaleY: o.scaleY ?? 1,
-      rotation: o.rotation ?? 0,
-      visible: o.visible ?? true,
-    };
+    var serializeGameObject = (o: GameObject) => {
+        var data = {
+            id: o.uniqueID,
+            name: o.name || "noName",
+            x: o.x,
+            y: o.y,
+            scaleX: o.scaleX,
+            scaleY: o.scaleY,
+            rotation: o.rotation,
+            visible: o.visible,
+            children: serializeChildren(o.children),
+        };
+
+        return data;
+    }
+
+    var serializeChildren = (children: GameObject[]) => {
+        return children.map(c => serializeGameObject(c));
+    }
+
+    return serializeGameObject(o);
   },
 
   setObject(id: string, props: any) {
@@ -398,7 +423,7 @@ export class PluginHandler
             if (Helper.IsPointInRectangle(pWorld, objRect))
             {
                 var openObjectsTab = plugin.GetCurrentScene().settingsData.selectionEnabled !== false;
-                window.__GAME_DEBUG_API__.selectObjectInGame(obj.uniqueID, openObjectsTab);
+                window.__GAME_DEBUG_API__.selectObjectInPlugin(obj.uniqueID, openObjectsTab);
 
                 if (outline)
                 {
