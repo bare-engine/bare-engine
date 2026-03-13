@@ -427,7 +427,7 @@ export class Scene implements SceneI
     private specialMap: Record<string, (obj: GameObject, value: any) => void> =
     {
         pivot: (o, v) => o.SetPivot(v.x, v.y), // SETPIVOT DOES SOME EXTRA WORK FOR PERCENTAGES, SO CUSTOM MAPPING
-        texture: (o, v) => v != "NONE" && o.InitTexture(v), // PROCESS CUSTOM TEXTURE NAME
+        texture: (o, v) => {}, // PROCESS CUSTOM TEXTURE NAME - DISABLED, HANDLED BY MakePathForEntity RIGHT IN AddGameObject NOW. NOT GREAT FOR CALLING ApplyEntityVarsToGameObject() SEPARATELY
         color: (o, v) => o.SetColor(v), // PROCESS THE HEX COLOR STRING
         children: (o, v) => {
             for (const childEntity of v)
