@@ -100,12 +100,12 @@ export interface Entity
   propertiesRemoved?: string[];
 
   extendClass?: string;
-  extendData?: string;
+  extendBase?: string;
   imagePath?: string;
   interactableInEditor?:boolean;
   save?:boolean;
 
-  extendDataLog?: Record<string, any>;
+  extendBaseLog?: Record<string, any>;
 
   // PHYSICS
   collide?: boolean;
@@ -164,7 +164,7 @@ export var entityVars = [
     "propertiesRemoved",
 
     "extendClass",
-    "extendData",
+    "extendBase",
     "imagePath",
     "interactableInEditor",
     "save",

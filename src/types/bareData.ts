@@ -6,7 +6,7 @@ export const defaultEntityData: SettingsData = {
       extendClass: "GameObject"
     },
     ANY_ENTITY: {
-      extendData: "ANY",
+      extendBase: "ANY",
       extendClass: "GameObject"
     },
     NONE: {

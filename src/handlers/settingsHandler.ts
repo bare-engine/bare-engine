@@ -167,9 +167,9 @@ export class SettingsHandler
                 if (entityBaseName == "NONE")
                     continue;
 
-                if (!entityBase.extendData && entityBaseName != "ANY")
+                if (!entityBase.extendBase && entityBaseName != "ANY")
                 {
-                    entityBase.extendData = "ANY";
+                    entityBase.extendBase = "ANY";
                 }
             }
 
@@ -180,9 +180,9 @@ export class SettingsHandler
                     continue;
 
                 var entity = settings.entities[entityName];
-                if (!entity.extendData)
+                if (!entity.extendBase)
                 {
-                    entity.extendData = "ANY_ENTITY";
+                    entity.extendBase = "ANY_ENTITY";
                 }
             }
 
@@ -199,10 +199,10 @@ export class SettingsHandler
 
                 var entityBase = settings.entityBases[entityBaseName];
 
-                // SET DEFAULT extendData - IN PREPARATION FOR CONSTRUCT
-                if (!entityBase.extendData && entityBaseName != "ANY")
+                // SET DEFAULT extendBase - IN PREPARATION FOR CONSTRUCT
+                if (!entityBase.extendBase && entityBaseName != "ANY")
                 {
-                    entityBase.extendData = "ANY";
+                    entityBase.extendBase = "ANY";
                 }
 
                 // CONSTRUCT BASE ENTITY - NOW IT EXTENDS SOMETHING
@@ -420,7 +420,7 @@ export class SettingsHandler
         }
 
         // RECURSIVELY EXTEND DATA
-        var extendedData = entity.extendData;
+        var extendedData = entity.extendBase;
         while (extendedData)
         {
             var entityBase = rawSettingsData.entityBases[extendedData];
@@ -436,7 +436,7 @@ export class SettingsHandler
 
             entity.components = mergeComponents(entityBase.components, entity.components);
 
-            extendedData = entityBase.extendData;
+            extendedData = entityBase.extendBase;
         }
 
         return final(entity);

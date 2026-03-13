@@ -335,11 +335,11 @@ export class Scene implements SceneI
                 }
                 else
                 {
-                    // NO ENTITY IN DATA - MERGE WITH extendData BASE
-                    if (!entityArg.extendData)
-                        entityArg.extendData = "ANY_ENTITY";
+                    // NO ENTITY IN DATA - MERGE WITH extendBase BASE
+                    if (!entityArg.extendBase)
+                        entityArg.extendBase = "ANY_ENTITY";
 
-                    var entityBase = settingsData.entityBases[entityArg.extendData];
+                    var entityBase = settingsData.entityBases[entityArg.extendBase];
 
                     entity = {
                         ...entityBase, // OVERRIDE
@@ -380,8 +380,8 @@ export class Scene implements SceneI
         if (!entity.extendClass)
             entity.extendClass = "GameObject";
 
-        // NO USE FOR THIS ANYMORE, BUT GONNA REPURPOSE IT TO SHOW extendData PATH
-        //delete entityConstructed.extendData;
+        // NO USE FOR THIS ANYMORE, BUT GONNA REPURPOSE IT TO SHOW extendBase PATH
+        //delete entityConstructed.extendBase;
 
         return entity;
     }

@@ -414,7 +414,7 @@ export class LevelHandler
         };
 
         /*var extendsData = true;
-        if (!obj.levelEntity.extendData)
+        if (!obj.levelEntity.extendBase)
         {
             var isBase = (this.scene.settingsData.entityBases[obj.name] != undefined);
             if (isBase)
