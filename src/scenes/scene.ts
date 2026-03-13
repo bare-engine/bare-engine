@@ -84,13 +84,13 @@ export class Scene implements SceneI
     public events = mitt<Events>(); // private todo
     //private pipes = matt<Pipes>();
     
-    constructor(sceneOptions: SceneOptions | SettingsData = {entityData: defaultEntityData})
+    constructor(sceneOptions: SceneOptions | SettingsData = {settingsData: defaultEntityData})
     {
         let options: SceneOptions;
         const isSceneOptions =
             sceneOptions &&
             typeof sceneOptions === "object" &&
-            ("entityData" in sceneOptions || "UI" in sceneOptions || "persistent" in sceneOptions);
+            ("settingsData" in sceneOptions || "UI" in sceneOptions || "persistent" in sceneOptions);
 
         if (isSceneOptions)
         {
@@ -100,11 +100,11 @@ export class Scene implements SceneI
         else
         {
             // IS A SETTINGSDATA DIRECTLY
-            options = { entityData: sceneOptions as SettingsData };
+            options = { settingsData: sceneOptions as SettingsData };
         }
 
-        if (!options.entityData)
-            options.entityData = defaultEntityData;
+        if (!options.settingsData)
+            options.settingsData = defaultEntityData;
         
         this.sceneOptions = options;
 
@@ -124,7 +124,7 @@ export class Scene implements SceneI
         this.paused = false;
         this.started = false;
 
-        await this.settingsHandler.Process(payload?.settingsHandler?.Get() || this.sceneOptions.entityData);//this.settingsData
+        await this.settingsHandler.Process(payload?.settingsHandler?.Get() || this.sceneOptions.settingsData);//this.settingsData
 
         this.ApplyLayerInfoToSettings(this.settingsData);
         //this.layerNames = this.settingsData.layers.slice();

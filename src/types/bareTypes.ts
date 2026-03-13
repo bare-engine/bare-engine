@@ -421,7 +421,7 @@ export interface SceneI
 }
 
 export type SceneOptions = {
-    entityData?: SettingsData;
+    settingsData?: SettingsData;
     persistent?: boolean;
     UI?: boolean;
     solo?: boolean;

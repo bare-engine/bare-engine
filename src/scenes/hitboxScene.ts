@@ -28,7 +28,7 @@ export class HitboxScene extends EditorScene
         if (!objectName)
             throw new Error("HitboxScene.OnAwake requires payload.name");
         if (!targetSettingsHandler)
-            throw new Error("HitboxScene.OnAwake requires payload.entityData");
+            throw new Error("HitboxScene.OnAwake requires payload.settingsData");
 
         // WE TAKE OVER THE TARGET ENTITY DATA, ONCE AT INIT
         // SO THAT THE OBJECTS AND DUMMY DATA CREATED FROM THIS SCENE ARE BASED ON THIS DATA

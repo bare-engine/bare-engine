@@ -39,7 +39,7 @@ export class EditorScene extends Scene
     
     saveLevelCallback: () => Promise<LevelData>;
 
-    constructor(sceneOptions: SceneOptions | SettingsData = {solo: true, persistent: true, entityData: sceneController.GetLevelScene().sceneOptions.entityData})
+    constructor(sceneOptions: SceneOptions | SettingsData = {solo: true, persistent: true, settingsData: sceneController.GetLevelScene().sceneOptions.settingsData})
     {  
         super(sceneOptions);
         
@@ -497,7 +497,7 @@ export class EditorScene extends Scene
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 path: bareEngine.dataPath,
-                entityData: newRawData,
+                settingsData: newRawData,
                 skipReload: true
             })
           });

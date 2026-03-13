@@ -564,7 +564,7 @@ window.__GAME_DEBUG_API__ = {
   notifyEntityDataChanged(newData) {
     //window.postMessage({ __fromGame: true, type: "entityDataChanged" }, "*");
     if (plugin.doNotifyAfterSave)
-      window.postMessage({ __fromGame: true, type: "entityData", data: newData }, "*");
+      window.postMessage({ __fromGame: true, type: "settingsData", data: newData }, "*");
   },
 
   refreshLevelFiles() {
