@@ -504,7 +504,7 @@ export class EditorScene extends Scene
           const json = await res.json().catch(() => null);
         
           // TELL THE PLUGIN
-          window.__GAME_DEBUG_API__.notifyEntityDataChanged(newRawData)
+          //window.__GAME_DEBUG_API__.notifyEntityDataChanged(newRawData)
 
           await this.OnPostSaveEntityData(newRawData);
 

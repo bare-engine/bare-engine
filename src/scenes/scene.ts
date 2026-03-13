@@ -124,7 +124,7 @@ export class Scene implements SceneI
         this.paused = false;
         this.started = false;
 
-        await this.settingsHandler.Process(payload?.settingsHandler?.Get() || this.sceneOptions.settingsData);//this.settingsData
+        await this.settingsHandler.Process(payload?.settingsHandler?.GetRaw() || this.sceneOptions.settingsData);//this.settingsData
 
         this.ApplyLayerInfoToSettings(this.settingsData);
         //this.layerNames = this.settingsData.layers.slice();
@@ -242,11 +242,8 @@ export class Scene implements SceneI
         }
     }
     
-    ConstructEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true }): Entity
+    ConstructEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [] }): Entity
     {
-        if (options.fillPresets === undefined)
-            options.fillPresets = true;
-
         function cloneEntityData<T>(data: T): T
         {
             return JSON.parse(JSON.stringify(data));
@@ -302,8 +299,8 @@ export class Scene implements SceneI
 
                     // FILL PRESETS - LIKE hitbox: "FULL"                     
                     //                     hitbox: {x1: 0, y1: 0, x2: 1, y2: 1}
-                    if (options.fillPresets)
-                        this.FillPresets(entityArg, settingsData);
+                    //if (options.fillPresets)
+                    //    this.FillPresets(entityArg, settingsData); // ALREADY DONE IN SETTINGS CONSTRUCT
                 }
 
                 // entityArg HAS BEEN CONSTRUCTED, NOW MERGE IT WITH (ALREADY CONSTRUCTED) ENTITY FROM DATA
@@ -397,7 +394,7 @@ export class Scene implements SceneI
         //    this.componentController?.ProcessCompentsFromEntity(entity, obj);
     }
 
-    FillPresets(entity: Entity, settingsData: SettingsData = this.settingsData)
+    /*FillPresets(entity: Entity, settingsData: SettingsData = this.settingsData)
     {
         var presets = settingsData.presets;
 
@@ -422,7 +419,7 @@ export class Scene implements SceneI
                 }
             }
         }
-    }
+    }*/
 
     private specialMap: Record<string, (obj: GameObject, value: any) => void> =
     {
@@ -532,11 +529,11 @@ export class Scene implements SceneI
         
         //if (options.skipConstruct)
         {
-            entityConstructed = (typeof nameOrEntity === "string") ? this.settingsHandler.GetRaw().entities[nameOrEntity] : nameOrEntity;
+            //entityConstructed = (typeof nameOrEntity === "string") ? this.settingsHandler.GetRaw().entities[nameOrEntity] : nameOrEntity;
         }
         //else
         {
-            //entityConstructed = this.ConstructEntity(nameOrEntity, settingsData, options);
+            entityConstructed = this.ConstructEntity(nameOrEntity, settingsData, options);
         }
 
         {
@@ -719,6 +716,8 @@ export class Scene implements SceneI
             delete entity.texture; // TEXTURE HAS BEEN HANDLED ABOVE WITH Init()
             this.ApplyEntityToGameObject(entity, gameObject);
         }
+
+
 
         gameObject.scene = this;
 

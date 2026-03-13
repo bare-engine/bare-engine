@@ -12,6 +12,8 @@ type EntitySceneAwakePayload = EditorScenePayload & {
 export class EntityScene extends EditorScene
 {
     objectName: string = "";
+    isBase: boolean = false;
+    
     lastPayload: EntitySceneAwakePayload;
 
     constructor()
@@ -31,16 +33,18 @@ export class EntityScene extends EditorScene
         // SO THAT THE OBJECTS AND DUMMY DATA CREATED FROM THIS SCENE ARE BASED ON THIS DATA
         if (this.objectName == "")
         {
-            this.settingsHandler.Process(targetSettingsHandler.GetRaw());
             this.objectName = objectName;
         }
+
+        this.isBase = isBase;
 
         // DON'T WANT TO SHOW THE UI, WE UNDO THIS BEFORE SAVING THE ENTITY DATA AGAIN, BIT AWKWARD
         this.settingsHandler.UpdateRaw((raw) => {
             raw.showUI = false;
             raw.selectionEnabled = false;
-        });
-
+        }, {fillPresets: false}); // fillPresets FALSE!!! DON'T WANT TO FILL PRESETS SO THEY REMAIN AS STRING IN PLUGIN PANEL
+        // PROBLEM: THE ACTUAL RECT INGAME - TODO
+        
         var levelData = await this.CreateEntityDataFor(objectName, isBase);
         await super.OnStart({levelPathOrData: levelData, saveLevelCallback: this.SaveEntityDataToSettingsData});
     }

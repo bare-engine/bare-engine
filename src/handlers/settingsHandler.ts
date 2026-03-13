@@ -10,6 +10,8 @@ import { Scene } from "../scenes/scene";
 // AND THAT'S EVEN MORE INCONVENIENT, ESPECIALLY WHEN MORE GETS PROCESSED IN THE FUTURE
 // NOW THE ADVANTAGE WITH HAVING THEM BOTH IS THAT I CAN EASILY EDIT+SAVE THE RAW SETTINGS, THEN PROCESS AGAIN TO UPDATE THE PROCESSED SETTINGS
 
+type ConstructEntityOptions = { fillPresets?: boolean };
+
 export class SettingsHandler
 {
     private raw: SettingsData;
@@ -22,7 +24,7 @@ export class SettingsHandler
         this.scene = scene;
     }
 
-    async Process(raw: SettingsData = this.raw): Promise<SettingsData>
+    async Process(raw: SettingsData = this.raw, options:ConstructEntityOptions = {}): Promise<SettingsData>
     {
         var settings = this.clone(raw);
 
@@ -186,10 +188,10 @@ export class SettingsHandler
                 }
             }
 
-            if (globalThis.plugin)
+            /*if (globalThis.plugin)
             {
                 globalThis.plugin.ProcessSettingsData(settings);
-            }
+            }*/
 
             // CONSTRUCT ALL ENTITY BASES
             for (var entityBaseName in settings.entityBases)
@@ -206,7 +208,7 @@ export class SettingsHandler
                 }
 
                 // CONSTRUCT BASE ENTITY - NOW IT EXTENDS SOMETHING
-                this.ConstructEntity(entityBase, settings);
+                this.ConstructEntity(entityBase, settings, options);
 
                 //delete entityBase.name; // DON'T NEED IT ANYMORE
                 
@@ -221,7 +223,7 @@ export class SettingsHandler
             for (var entityName in settings.entities)
             {
                 var entity = settings.entities[entityName];
-                this.ConstructEntity(entity, settings);
+                this.ConstructEntity(entity, settings, options);
             }
         }
 
@@ -265,7 +267,7 @@ export class SettingsHandler
                         var name = split[0];
                         var count = parseInt(split[1], 10);
 
-                        var entity = this.scene.ConstructEntity(name + "%", settings);
+                        var entity = this.scene.ConstructEntity(name + "%", settings, options);
 
                         // TURN ENTRIES INTO ARRAY
                         categoryData.entries = [];
@@ -294,7 +296,7 @@ export class SettingsHandler
                             const imagePath = match[2]; // eg "editorImages"
 
                             var entityBaseName = prefix + "_*";
-                            var entity = this.scene.ConstructEntity(entityBaseName, settings);
+                            var entity = this.scene.ConstructEntity(entityBaseName, settings, options);
                             var files = await Helper.GetFilesInFolder(`${bareEngine.imagePath}/` + imagePath);
 
                             // TURN ENTRIES INTO ARRAY
@@ -353,7 +355,7 @@ export class SettingsHandler
     
     // THIS MUTATES THE entity ITSELF
     // GOING DOWN IT'S constructData RECURSIVELY AND ASSIGNING VALUES
-    ConstructEntity(entity:Entity, rawSettingsData:SettingsData): Entity
+    ConstructEntity(entity:Entity, rawSettingsData:SettingsData, options:ConstructEntityOptions): Entity
     {
         // (MOSTLY THE SAME AS SCENE Construct(), COULD GENERALIZE SOME PARTS)
         var final = (entity:Entity) => {
@@ -363,7 +365,7 @@ export class SettingsHandler
                 for (var i = 0; i < entity.children.length; i++)
                 {
                     var child = entity.children[i];
-                    this.ConstructEntity(child, rawSettingsData);
+                    this.ConstructEntity(child, rawSettingsData, options);
                 }
             }
 
@@ -379,7 +381,8 @@ export class SettingsHandler
 
             // FILL PRESETS - LIKE hitbox: "FULL"                
             //                     hitbox: {x1: 0, y1: 0, x2: 1, y2: 1}
-            this.FillPresets(entity, rawSettingsData);
+            if (options.fillPresets !== false)
+                this.FillPresets(entity, rawSettingsData);
 
             // REMOVE PROPERTIES SPECIFICALLY LISTED TO REMOVE IN ENTITY
             if (entity.propertiesRemoved)
@@ -484,7 +487,7 @@ export class SettingsHandler
         this.raw = raw;
     }
 
-    async UpdateRaw(mutator: (raw: SettingsData) => void | Promise<void>): Promise<SettingsData>
+    async UpdateRaw(mutator: (raw: SettingsData) => void | Promise<void>, options: ConstructEntityOptions = {}): Promise<SettingsData>
     {
         const raw = this.GetRaw();
 
@@ -496,7 +499,7 @@ export class SettingsHandler
         // KINDA ANNOYING THAT THIS MAKES IT ASYNC (ABOVE AWAIT IT OPTIONAL)
         // BUT NEEDED FOR WHEN YOU WOULD WANT TO Get() THE PROCESSED DATA RIGHT AFTER.
         // HAVEN'T HAD A NEED FOR THIS SO FAR, BUT PLAYING IT SAFE FOR NOW
-        await this.Process(raw);
+        await this.Process(raw, options);
     
         return raw;
     }
