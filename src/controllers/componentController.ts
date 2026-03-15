@@ -277,14 +277,17 @@ export class ComponentController
         {
             const typeIndex = typeComponents.indexOf(component);
             if (typeIndex > -1)
+            {
                 typeComponents.splice(typeIndex, 1);
 
-            if (typeComponents.length == 0)
-                this.componentsByType.delete(component.constructor as Ctor<Component<any>>);
+                if (typeComponents.length == 0)
+                    this.componentsByType.delete(component.constructor as Ctor<Component<any>>);
+            }
         }
 
         // SAVE COMPONENT REMOVED FOR GAMEOBJECT
-        var compName = component.constructor.name.replace('Component', '').toLowerCase();
+        var compName = component.constructor.name.replace('Component', '')
+        compName = compName.charAt(0).toLowerCase() + compName.slice(1); // LOWERCASE FIRST LETTER
 
         if (!go.levelEntity)
             go.levelEntity = {name: "", componentsRemoved: []};
@@ -321,10 +324,12 @@ export class ComponentController
             {
                 const typeIndex = typeComponents.indexOf(component);
                 if (typeIndex > -1)
+                {
                     typeComponents.splice(typeIndex, 1);
 
-                if (typeComponents.length == 0)
-                    this.componentsByType.delete(component.constructor as Ctor<Component<any>>);
+                    if (typeComponents.length == 0)
+                        this.componentsByType.delete(component.constructor as Ctor<Component<any>>);
+                }
             }
 
             components.splice(i, 1);

@@ -54,8 +54,8 @@ export class EditorUIScene extends Scene
             scene.hitboxController?.Reset();
             scene.mouseController?.Reset();
         }
-        sceneController.DisableAllScenes();
-
+        
+        //sceneController.DisableAllScenes();
         sceneController.Add(EditorScene);
     }
 }

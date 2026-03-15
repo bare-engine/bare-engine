@@ -82,21 +82,6 @@ export class BareEngine
         
         globalEvents.emit(BareEvent.game_started);
     }
-
-    ResizeCanvas()
-    {
-        var prevWidth = rapid.width;
-        var prevHeight = rapid.height;
-        var newWidth = window.innerWidth;
-        var newHeight = window.innerHeight;
-
-        rapid.resize(newWidth, newHeight);
-
-        globalEvents.emit(BareEvent.game_resize, { prevWidth: prevWidth, prevHeight: prevHeight, newWidth: newWidth, newHeight: newHeight });
-
-        // PERSIST UI LAYOUT
-        sceneController.OnResize(prevWidth, prevHeight, newWidth, newHeight);
-    }
     
     ImplementInitialTextures()
     {
@@ -134,6 +119,21 @@ export class BareEngine
             var nameMinusExt = name.split('.')[0];
             assetsHandler.AddTexture(nameMinusExt, texture);
         }
+    }
+
+    ResizeCanvas()
+    {
+        var prevWidth = rapid.width;
+        var prevHeight = rapid.height;
+        var newWidth = window.innerWidth;
+        var newHeight = window.innerHeight;
+
+        rapid.resize(newWidth, newHeight);
+
+        globalEvents.emit(BareEvent.game_resize, { prevWidth: prevWidth, prevHeight: prevHeight, newWidth: newWidth, newHeight: newHeight });
+
+        // PERSIST UI LAYOUT
+        sceneController.OnResize(prevWidth, prevHeight, newWidth, newHeight);
     }
 
     RunMainLoop()
@@ -328,7 +328,7 @@ export class BareEngine
 
         var obj = pool.Grab();
         obj.scene = scene;
-        
+
         return obj;
     }
 
@@ -336,10 +336,6 @@ export class BareEngine
     
     public static controllerNames: string[] = [];
     
-    // THIS REGISTERS A CONTROLLER
-    // A PROXY IS MADE TO BE ABLE TO REDEFINE THE GLOBAL REFERENCE OF THE CONTROLLER
-    // THIS IS USED BEFORE SCENE FUNCTIONALITY IS CALLED, EG: UPDATE()
-    // THEN, FOR EXAMPLE, CALLING tweenController.TweenTo(), WILL GET THE tweenController INSTANCE FROM THE SCENE
     static RegisterController(controllerClass: new (...args: any[]) => any): void
     {
         var name = (controllerClass as any).name;

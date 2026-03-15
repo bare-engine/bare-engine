@@ -1,33 +1,17 @@
 
-import { Rapid, Color, Texture, GLShader, BaseTexture, RenderTexture } from './libraries/rapid-render';
-import { supportsWebGL } from './libraries/rapid-render/webgl/utils';
-import { ObjectController } from "./controllers/objectController";
-import { Helper } from "./utils/helper";
-import mitt, { Emitter } from './libraries/mitt';
-import matt from './libraries/matt';
-import { Scene } from './scenes/scene';
-import { Pipes, BareEvent, Events, SceneClass } from './types/bareTypes';
 import { BareEngine } from './bareEngine';
-import { sceneController } from './exports';
+import matt from './libraries/matt';
+import mitt, { Emitter } from './libraries/mitt';
+import { BaseTexture, Color, GLShader, Rapid, Texture } from './libraries/rapid-render';
+import { supportsWebGL } from './libraries/rapid-render/webgl/utils';
+import { Scene } from './scenes/scene';
+import { BareEvent, Events, Pipes, SceneClass } from './types/bareTypes';
+import { Helper } from "./utils/helper";
 
 export const globalEvents = mitt<Events>();
 export const pipes = matt<Pipes>();
 
 export { Scene } from './scenes/scene';
-
-export function MakePath(...args: string[]): string
-{
-    // CLEAN THE EMPTY ARGS
-    for (let i = args.length - 1; i >= 0; i--)
-    {
-        if (!args[i])
-        {
-            args.splice(i, 1);
-        }
-    }
-
-    return args.join('/');
-}
 
 export enum GameMode
 {
@@ -311,4 +295,18 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
         // IN CASE INITIAL ASSETS ARE ALREADY LOADED, TRIGGER RIGHT AWAY
         window.initialAssetsReady(window.initialAssets);
     }
+}
+
+export function MakePath(...args: string[]): string
+{
+    // CLEAN THE EMPTY ARGS
+    for (let i = args.length - 1; i >= 0; i--)
+    {
+        if (!args[i])
+        {
+            args.splice(i, 1);
+        }
+    }
+
+    return args.join('/');
 }

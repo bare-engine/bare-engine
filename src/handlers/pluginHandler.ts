@@ -5,7 +5,7 @@ import { Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import {  globalEvents } from "../main";
 import { OutlineShader } from "../shaders/outlineShader";
-import { BareClasses, ObjectController, Scene, sceneController } from "../exports";
+import { BareClasses, levelHandler, ObjectController, Scene, sceneController } from "../exports";
 import { EditorScene } from "../scenes/editorScene";
 import { objectController } from "../controllers/objectController";
 import { HitboxScene } from "../scenes/hitboxScene";
@@ -83,11 +83,16 @@ window.__GAME_DEBUG_API__ = {
   },
 
   gotoLevelView(levelPath: string) {
-    //levelController.LoadLevel(levelPath);
+    sceneController.GetLevelScene().LoadLevel(levelPath);
   },
 
   async gotoLevelEdit(levelPath: string) {
-    sceneController.Goto(EditorScene, {levelInput: levelPath});
+    //sceneController.DisableAllScenes();
+    if (sceneController.Has(EditorScene))
+        sceneController.Remove(EditorScene);
+
+    sceneController.Add(EditorScene, {levelPathOrData: bareEngine.levelPath + "/" + levelPath + ".json"});
+    //sceneController.Goto(EditorScene, {levelInput: levelPath});
   },
 
   async gotoEntity(name: string) {

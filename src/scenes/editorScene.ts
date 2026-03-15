@@ -43,7 +43,7 @@ export class EditorScene extends Scene
     
     saveLevelCallback: () => Promise<LevelData>;
 
-    constructor(sceneOptions: SceneOptions | SettingsData = {persistent: true, entityData: sceneController.GetLevelScene().sceneOptions.entityData})
+    constructor(sceneOptions: SceneOptions | SettingsData = {solo: true, persistent: true, entityData: sceneController.GetLevelScene().sceneOptions.entityData})
     {  
         super(sceneOptions);
         
@@ -78,6 +78,11 @@ export class EditorScene extends Scene
             if (settingsHandler.GetRaw().name == this.settingsHandler.GetRaw().name)
                 if (levelPathOrData.name == this.currentLevel?.name)
                     return; // ALREADY IN TARGET EDITOR AT TARGET LEVEL
+
+        this.settingsHandler = settingsHandler; // SETTING IT HERE, MAYBE NOT THE BEST PLACE, BUT TO MAKE ABOVE CHECK WORK
+        // ALSO SCENE HAS SET AND PROCESSED DEFAULT SETTINGSHANDLER, WHICH IS PRETTY USELESS IN THIS CASE. TODO
+        // COULD SEND ALONG THE PAYLOAD (CONTAINING settingsHandler) TO SCENE CONTRUCTOR, BUT NOT SURE IF THAT WILL PLAY WELL WITH EditorSceneAwakePayload
+        // WILL CREATE MORE CONTRAINTS TO ALIGN WITH CONSTRUCTOR ARG TYPE
 
         var levelName:string | LevelData = '';
         if (levelPathOrData == '')

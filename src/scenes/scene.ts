@@ -64,7 +64,7 @@ export class Scene implements SceneI
     public levelHandler: LevelHandler; 
     public cameraHandler: CameraHandler; 
 
-    public settingsHandler: SettingsHandler = new SettingsHandler(this); // COULD ALSO BE PROXY
+    public settingsHandler: SettingsHandler = new SettingsHandler(this); // COULD ALSO MAKE THIS WORK LIKE CONTROLLERS ABOVE
     get settingsData(): SettingsData { return this.settingsHandler.Get(); }
     
     isPaused: boolean = false;//

@@ -215,17 +215,15 @@ export class GameObject
     async InitTexture(texturePath: string):Promise<Texture>
     {
         const cached = assetsHandler.GetTexture(texturePath);
-        if (cached) {
+        if (cached)
+        {
             this.SetTexture(cached);
             return cached;
         }
 
         this.texturePromise = assetsHandler.GetTexturePromise(texturePath);
         const tex = await this.texturePromise;
-        if (assetsHandler.HasTexture(texturePath)) {
-            this.SetTexture(tex);
-        }
-
+        this.SetTexture(tex);
         this.texturePromise = null;
 
         return tex;
