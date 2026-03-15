@@ -18,6 +18,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
   private height: number = 0;
   
   public activeCollisions: Set<string> = new Set();
+  private currentFrameCollisions: Set<string> = new Set();
   public OnBeforeCollisionResolve: ((obj1: PhysicsObjectBare, obj2: PhysicsObjectBare) => boolean) | null = null;
 
   constructor(scene: Scene)
@@ -111,11 +112,12 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     }
 
     if (this.collisionsEnabled) {
+      this.currentFrameCollisions.clear();
       this.handleObjectCollisions();
     }
 
-    // 
-    //this.CheckCollisionEnd()
+    //
+    this.CheckCollisionEnd()
   }
 
   private handleBoundaryCollisions(obj: PhysicsObjectBare): void
@@ -305,25 +307,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
               obj2.SetVelocityXY(obj2.velocity.x + xAddObj2 * 1, obj2.velocity.y + yAddObj2 * 1);
           }
         }
-        else
-        {
-          // no collision
-          var collisionKey = `${obj1.uniqueID}##${obj2.uniqueID}`;
-          if (this.activeCollisions.has(collisionKey))
-          {
-            // Find the actual objects
-            const [obj1ID, obj2ID] = collisionKey.split('##');
-            const object1 = this.objects.find(obj => obj.uniqueID == obj1ID);
-            const object2 = this.objects.find(obj => obj.uniqueID == obj2ID);
-
-            if (object1 && object2)
-            {
-              events.emit(BareEvent.collision_end, object1, object2);
-            }
-            
-            this.activeCollisions.delete(collisionKey);
-          }
-        }
+        // no collision - CheckCollisionEnd() handles end detection
       }
     }
   }
@@ -491,7 +475,8 @@ export class PhysicsControllerBare extends PhysicsControllerBase
       // Create a unique key for this collision pair
       const collisionKey = `${object1.uniqueID}##${object2.uniqueID}`;
       
-      // Track this frame's collision
+      this.currentFrameCollisions.add(collisionKey);
+
       // If this is a new collision
       if (!this.activeCollisions.has(collisionKey))
       {
@@ -514,18 +499,21 @@ export class PhysicsControllerBare extends PhysicsControllerBase
       // Check for collisions that were active but didn't occur this frame
       for (const collisionKey of this.activeCollisions)
       {
+        if (this.currentFrameCollisions.has(collisionKey)) continue;
+
         // Find the actual objects
         const [obj1ID, obj2ID] = collisionKey.split('##');
         const object1 = this.objects.find(obj => obj.uniqueID == obj1ID);
         const object2 = this.objects.find(obj => obj.uniqueID == obj2ID);
-        
+
         if (object1 && object2)
         {
           object1.OnCollisionEnd(object2);
           object2.OnCollisionEnd(object1);
           events.emit(BareEvent.collision_end, object1 as PhysicsObjectBare, object2 as PhysicsObjectBare);
-          this.activeCollisions.delete(collisionKey);
         }
+
+        this.activeCollisions.delete(collisionKey);
       }
   }
 

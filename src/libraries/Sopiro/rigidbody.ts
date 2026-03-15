@@ -127,6 +127,21 @@ export abstract class RigidBody extends GameObject
         }
     }
 
+    OnCollisionStart(collidingObject: GameObject)
+    {
+        
+    }
+
+    OnCollisionUpdate(collidingObject: GameObject)
+    {
+        
+    }
+
+    OnCollisionEnd(collidingObject: GameObject)
+    {
+        
+    }
+
     abstract get density(): number;
     abstract set density(d: number);
 

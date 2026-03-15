@@ -121,6 +121,21 @@ export class PhysicsObjectBare extends GameObject
         }
     }
     
+    OnCollisionStart(collidingObject: GameObject)
+    {
+        
+    }
+
+    OnCollisionUpdate(collidingObject: GameObject)
+    {
+        
+    }
+
+    OnCollisionEnd(collidingObject: GameObject)
+    {
+        
+    }
+    
     SetVelocity(velocity: Vec2): PhysicsObjectBare
     {
         this.velocity.x = velocity.x;

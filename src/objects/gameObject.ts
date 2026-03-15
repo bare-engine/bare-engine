@@ -1047,21 +1047,6 @@ export class GameObject
         }
     }
 
-    OnCollisionStart(collidingObject: GameObject)
-    {
-        
-    }
-
-    OnCollisionUpdate(collidingObject: GameObject)
-    {
-        
-    }
-
-    OnCollisionEnd(collidingObject: GameObject)
-    {
-        
-    }
-
     AddChild(input?: Entity | string | GameObject | GameObjectClass | Texture): GameObject
     {
         // RESET CACHED VALUES SO THEY GET RECALCULATED
