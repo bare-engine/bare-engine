@@ -276,7 +276,57 @@ window.__GAME_DEBUG_API__ = {
         console.error('Failed to remove level', error);
         return { ok: false, error: error?.message ?? String(error) };
       }
-  }
+  },
+
+  async updateLevelData(levelName: string, changes: { name?: string, width?: number, height?: number, backgroundColor?: string }) {
+    try {
+        var data = await Helper.loadJSON<LevelData>(`${bareEngine.levelPath}/${levelName}.json`);
+
+        if (changes.width !== undefined || changes.height !== undefined) {
+            data.dimensions = data.dimensions ?? { width: 800, height: 600 };
+            if (changes.width !== undefined) data.dimensions.width = changes.width;
+            if (changes.height !== undefined) data.dimensions.height = changes.height;
+        }
+        if (changes.backgroundColor !== undefined) {
+            data.backgroundColor = changes.backgroundColor;
+        }
+
+        var oldPath = `${bareEngine.levelPath}/${levelName}.json`;
+
+        if (changes.name && changes.name !== levelName) {
+            data.name = changes.name;
+            var newPath = `${bareEngine.levelPath}/${changes.name}.json`;
+            await fetch('/api/save-level', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ levelPath: newPath, levelData: data })
+            });
+            await fetch('/api/remove-level', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: oldPath })
+            });
+        } else {
+            await fetch('/api/save-level', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ levelPath: oldPath, levelData: data })
+            });
+
+            //sceneController.GetLevelScene().Restart();
+            //sceneController.Get(EditorScene).Close();
+            sceneController.Remove(EditorScene);
+            sceneController.Add(EditorScene);
+        }
+
+        //window.__GAME_DEBUG_API__.refreshLevelFiles();
+        return { ok: true };
+    } catch (error: any) {
+        console.error('Failed to update level data', error);
+        return { ok: false, error: error?.message ?? String(error) };
+    }
+},
+
 };
 
 export class PluginHandler

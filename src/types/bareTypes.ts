@@ -1,5 +1,4 @@
 import { GameObject } from "../objects/gameObject";
-import type { Vec2 } from "../libraries/rapid-render";
 import { Scene } from "../main";
 
 // Type definitions for level data
@@ -13,11 +12,6 @@ export interface Dimensions
 {
   width: number;
   height: number;
-}
-
-export interface Background
-{
-  color: string;
 }
 
 export type Ctor<T> = new (...args: any[]) => T;
@@ -99,12 +93,8 @@ export interface LevelData
 {
   name: string;
   dimensions: Dimensions;
-  background?: Background;
+  backgroundColor?: string;
   entitiesByLayer: Record<string, Entity[]>;
-}
-
-interface CategoryData
-{
 }
 
 interface Category

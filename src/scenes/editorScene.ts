@@ -155,7 +155,7 @@ export class EditorScene extends Scene
 
         this.editorUIHandler.ProcessCurrentData();
 
-        rapid.backgroundColor = new Color(60, 60, 60, 255);
+        rapid.backgroundColor = Color.fromHex('#3b3b3f');
         
         // SELECT OBJECTS LAYER AS DEFAULT
         var layerElement = document.getElementById('objects') as HTMLElement;
@@ -174,25 +174,6 @@ export class EditorScene extends Scene
     }
 
     OnClear(full?: boolean, isLevel:boolean = false): void
-    {
-        this.editorControlsHandler.Clear(isLevel);
-
-        bareEngine.SendEvent(BareEvent.editor_closed, {name: this.settingsData.name || 'levelEditor'});
-
-        // DISABLE THE LEVEL CACHE, SO LEVELS GETS RELOADED
-        // DON'T NECESSARY WANT SAVEDATA FOR EACH LEVEL - TODO
-        if (!window.isLocalhost) // FOR PRODUCTION, LEVEL IS ONLY SAVED TO CACHE, NOT TO DISK, SO KEEPING CACHE IN THAT CASE
-        {
-            SaveData.levelCache.clear();
-            SaveDataHandler.Save();
-        }
-
-        if (full)
-            window.gameMode = GameMode.Game;
-    }
-
-    // NOT USING ATM?
-    async Close(loadLevelAfter: boolean = true)
     {
         this.opened = false;
 
@@ -213,7 +194,26 @@ export class EditorScene extends Scene
         
         window.gameMode = GameMode.Game; // SETTING IT IN BARE.START() NOW, BUT ALSO KINDA MAKES SENSE HERE
 
-        sceneController.Remove(EditorScene); // this DIDN'T WORK, FIX! TODO
+
+        this.editorControlsHandler.Clear(isLevel);
+
+        bareEngine.SendEvent(BareEvent.editor_closed, {name: this.settingsData.name || 'levelEditor'});
+
+        // DISABLE THE LEVEL CACHE, SO LEVELS GETS RELOADED
+        // DON'T NECESSARY WANT SAVEDATA FOR EACH LEVEL - TODO
+        if (!window.isLocalhost) // FOR PRODUCTION, LEVEL IS ONLY SAVED TO CACHE, NOT TO DISK, SO KEEPING CACHE IN THAT CASE
+        {
+            SaveData.levelCache.clear();
+            SaveDataHandler.Save();
+        }
+
+        if (full)
+            window.gameMode = GameMode.Game;
+    }
+
+    async Close(loadLevelAfter: boolean = true)
+    {
+        sceneController.Remove(EditorScene); // CALLS ONCLEAR
         sceneController.EnableAllScenes();
 
         bareEngine.Restart();
@@ -332,7 +332,7 @@ export class EditorScene extends Scene
             y: 0,
             width: this.currentLevel.dimensions.width,
             height: this.currentLevel.dimensions.height,
-            color: this.currentLevel.background?.color ? Color.fromHex(this.currentLevel.background.color) : Color.fromHex('666666'),
+            color: this.currentLevel.backgroundColor ? Color.fromHex(this.currentLevel.backgroundColor) : Color.fromHex('666666'),
         });
 
         if (!this.settingsData?.settings?.gridEnabled)

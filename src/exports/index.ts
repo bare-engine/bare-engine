@@ -107,7 +107,6 @@ export {
 export type {
   Atlas,
   AtlasFrame,
-  Background,
   Component,
   Dimensions,
   Entity,

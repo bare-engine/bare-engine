@@ -99,9 +99,7 @@ export class HitboxScene extends EditorScene
                 width: texture.width,
                 height: texture.height
             },
-            background: {
-                color: "#3C3C3C"
-            },
+            backgroundColor: "#3C3C3C",
             entitiesByLayer: {
                 "objects": [
                     {

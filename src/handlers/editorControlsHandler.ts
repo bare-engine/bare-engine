@@ -154,7 +154,6 @@ export class EditorControlsHandler {
         else
         {
             var isRightButton = (event.button == 2);
-
             if (isRightButton)
             {
                 var hover = hitboxController.GetCurrentHitboxHover();
@@ -496,6 +495,7 @@ export class EditorControlsHandler {
     {
         this.currentPreviewActive = active;
         this.currentPreviewEntity.visible = active;
+        this.currentPreviewEntity.visibleInEditor = active;
     }
 
     SetCurrentPreviewEntity(entity: Entity | null)
@@ -583,7 +583,7 @@ export class EditorControlsHandler {
         
         if (!mouseController.IsRightMouseDown())
             if (this.currentPreviewActive)
-                this.currentPreviewEntity.visible = !(hitboxController.GetCurrentHitboxHover() && !keyboardController.IsKeyDown("control"));
+                this.currentPreviewEntity.visibleInEditor = !(hitboxController.GetCurrentHitboxHover() && !keyboardController.IsKeyDown("control"));
 
         // Calculate preview position
         const previewX = mouseController.world.position.x;

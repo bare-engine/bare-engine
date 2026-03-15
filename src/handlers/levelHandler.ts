@@ -122,8 +122,8 @@ export class LevelHandler
         this.currentLevel = level;
         //SaveData.currentLevelStr = levelStr;
 
-        if (level.background?.color)
-            rapid.backgroundColor = Color.fromHex(level.background.color);
+        if (level.backgroundColor)
+            rapid.backgroundColor = Color.fromHex(level.backgroundColor);
 
         // LOAD ALL TEXTURES
         await Promise.all(this.CreatePromiseLevelTextures(level));
