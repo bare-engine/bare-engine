@@ -7,7 +7,7 @@ import { GameMode, globalEvents, MakePath, pipes, Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { EditorUIScene } from "../scenes/editorUIScene";
 import { defaultEntityData } from "../types/bareData";
-import { BareEvent, Component, Entity, LevelData, SaveData } from '../types/bareTypes';
+import { BareEvent, Component, Entity, LevelData, SaveData, SettingsData } from '../types/bareTypes';
 import { Helper } from "../utils/helper";
 import { assetsHandler } from "./assetsHandler";
 
@@ -100,6 +100,14 @@ export class LevelHandler
         return level;
     }
 
+    async LoadSettingsData(settingsDataName: string): Promise<void>
+    {
+        var settingsData = await Helper.loadJSON<SettingsData>(`${bareEngine.dataPath}/${settingsDataName}.json`);
+        
+        this.scene.settingsHandler.SetRaw(settingsData);
+        await this.scene.settingsHandler.Process();
+    }
+
     async LoadLevelOnly(levelInput: string | LevelData): Promise<LevelData>
     {
         var level: LevelData;
@@ -109,6 +117,7 @@ export class LevelHandler
         {
             // LEVEL NAME
             level = await this.LoadLevelData(levelInput);
+            level.name = levelInput; // SETTING THE NAME HERE, SO WE CAN USE IT WHEN SAVING
             levelStr = levelInput;
             SaveData.currentLevelStr = levelStr;
         }
@@ -118,6 +127,19 @@ export class LevelHandler
             level = levelInput;
             levelStr = level.name; // DON'T REALLY WANT TO USE THIS LEVEL PROPERTY? NOT SAME AS ACTUAL NAME OF FILE
         }
+
+        // SOME LEVELS HAVE settingsData SET, SO WE LOAD THAT FIRST HERE
+        // TO THEN LOAD THE LEVEL THAT WILL USE THAT settingsData
+        // EG: map.json HAS settingsData: "mapData"
+        // THIS IS NOW ONLY USED WHEN SELECTING A LEVEL FROM THE PLUGIN AND LOADING IT
+        // FOR INGAME USE, YOU MORE LIKELY SUPPLY THE settingsData DIRECTLY INSTEAD OF LOADING IT
+        // EG:
+        // await sceneController.Add(EditorScene, {
+        //     levelPathOrData: "assets/data/levels/map.json",
+        //     settingsHandler: game.mapDataStore,
+        // });
+        if (level.settingsData && level.settingsData != this.scene.settingsData.name)
+            await this.LoadSettingsData(level.settingsData);
 
         this.currentLevel = level;
         //SaveData.currentLevelStr = levelStr;
@@ -179,7 +201,7 @@ export class LevelHandler
     {
         events.emit(BareEvent.level_preSave, {levelStr: SaveData.currentLevelStr});
 
-        const level = (this.currentLevel as LevelData);
+        const level = this.currentLevel;
         this.SerializeLevel(level);
 
         events.emit(BareEvent.level_postSave, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});

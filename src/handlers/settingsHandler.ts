@@ -284,7 +284,7 @@ export class SettingsHandler
         // 
         // KINDA ANNOYING THAT THIS MAKES IT ASYNC (ABOVE AWAIT IT OPTIONAL)
         // BUT NEEDED FOR WHEN YOU WOULD WANT TO Get() THE PROCESSED DATA RIGHT AFTER.
-        // HAVEN'T HAD A NEED FOR THIS SO FAR BUT PLAYING IT SAFE FOR NOW
+        // HAVEN'T HAD A NEED FOR THIS SO FAR, BUT PLAYING IT SAFE FOR NOW
         await this.Process(raw);
     
         return raw;

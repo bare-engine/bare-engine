@@ -82,8 +82,8 @@ export class SceneController
     {
         if (this.Has(scene as SceneClass<T>))
         {
-            console.warn("SceneController: Scene already added: " + (scene as SceneClass<T>).name);
-            return this.Get(scene as SceneClass<T>);
+            console.warn("SceneController: Scene already added: " + (scene as SceneClass<T>).name + ". It will be replaced");
+            this.Remove(scene as SceneClass<T>);
         }
 
         var sceneInstance: T;
@@ -124,6 +124,9 @@ export class SceneController
                 ? this.currentScenes.findIndex(current => current instanceof scene)
                 : this.currentScenes.indexOf(scene))
             : i;
+
+        if (targetIndex === -1)
+            return;
 
         const targetScene = this.currentScenes[targetIndex];
 
@@ -264,6 +267,10 @@ export class SceneController
 
     GetLevelScene(): Scene | null
     {
+        var tryEnabled = this.currentScenes.find(current => current.isLevel && current.enabled);
+        if (tryEnabled)
+            return tryEnabled;
+
         return this.currentScenes.find(current => current.isLevel);
     }
 

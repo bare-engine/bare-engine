@@ -84,56 +84,68 @@ export class EditorScene extends Scene
         // COULD SEND ALONG THE PAYLOAD (CONTAINING settingsHandler) TO SCENE CONTRUCTOR, BUT NOT SURE IF THAT WILL PLAY WELL WITH EditorSceneAwakePayload
         // WILL CREATE MORE CONTRAINTS TO ALIGN WITH CONSTRUCTOR ARG TYPE
 
-        var levelName:string | LevelData = '';
+        window.gameMode = GameMode.Editor;
+        
+        this.backgroundColorOrig = rapid.backgroundColor;
+        
+        var levelNameOrData:string | LevelData = '';
         if (levelPathOrData == '')
         {
-            levelName = SaveData.currentLevelStr;
-            levelPathOrData = `${bareEngine.levelPath}/${levelName}.json`;
+            levelNameOrData = SaveData.currentLevelStr;
+            levelPathOrData = `${bareEngine.levelPath}/${levelNameOrData}.json`;
         }
         
         if (typeof levelPathOrData == 'string')
         {
-            levelName = levelPathOrData.split('/').pop()!.split('.')[0];
+            levelNameOrData = levelPathOrData.split('/').pop()!.split('.')[0];
             this.currentLevelPath = levelPathOrData;
         }
         else
         {
-            levelName = levelPathOrData;//
+            levelNameOrData = levelPathOrData;//
         }
-
-        this.saveLevelCallback = saveLevelCallback.bind(this);
-
-        const el = document.getElementById("editor-content");
-        const hasEditorContent = (el.children.length > 0);
-
-        if (!hasEditorContent)
-        {
-            await this.editorUIHandler.LoadEditorPage();
-            this.editorUIHandler.SetupEditorControls();
-        }
-
-        this.editorUIHandler.PopulateWithData(this.settingsData);
-        this.editorUIHandler.SyncSettingsUI();
-
-        this.editorControlsHandler.OpenEditor();
-        this.editorUIHandler.OpenEditor();
-        
-        this.backgroundColorOrig = rapid.backgroundColor;
-
-        // ALSO HAPPENS WHEN ADDED, TODO
-        sceneController.DisableAllScenes();
-        this.enabled = true;
         
         // CLEAR LEVEL CACHE SO IT'S NOT USED FOR LEVEL LOAD
         // INSTEAD, THE LEVEL FROM DISK GETS LOADED
         SaveData.levelCache.clear();
         SaveDataHandler.Save();
         
-        window.gameMode = GameMode.Editor;
-        await this.LoadLevel(levelName);
+        await this.LoadLevel(levelNameOrData);
+
+        this.saveLevelCallback = saveLevelCallback.bind(this);
+
+        const el = document.getElementById("editor-content");
+        const hasEditorContent = (el.children.length > 0);
+        if (!hasEditorContent)
+        {
+            // WILL ONLY HAPPEN ON FIRST LOAD
+            await this.editorUIHandler.LoadEditorPage();
+        }
+
+        this.editorUIHandler.SetupEditorControls();
+        this.editorUIHandler.PopulateWithData(this.settingsData);
+        this.editorUIHandler.SyncSettingsUI();
+        this.editorUIHandler.OpenEditor();
+
+        this.editorUIHandler.ProcessCurrentData();
+
+        // SELECT OBJECTS LAYER AS DEFAULT
+        var layerElement = document.getElementById('objects') as HTMLElement;
+        this.editorUIHandler.SelectLayerItem(layerElement);
+
+        if (this.settingsData.showUI === false)
+        {
+            this.editorUIHandler.Hide();
+        }
+        else
+        {
+            this.editorUIHandler.Show();
+        }
+        this.editorControlsHandler.OpenEditor();
 
         this.opened = true;
 
+        // HANDLE CAMERA POSITION
         if (this.settingsData.showUI !== false)
         {
             // POSIION CAMERA SO THAT LEVEL SITS A BIT RIGHT, NEXT TO OBJECTS UI
@@ -153,59 +165,25 @@ export class EditorScene extends Scene
 
         cameraHandler.DisableBounds();
 
-        this.editorUIHandler.ProcessCurrentData();
-
         rapid.backgroundColor = Color.fromHex('#3b3b3f');
-        
-        // SELECT OBJECTS LAYER AS DEFAULT
-        var layerElement = document.getElementById('objects') as HTMLElement;
-        this.editorUIHandler.SelectLayerItem(layerElement);
-
-        if (this.settingsData.showUI === false)
-        {
-            this.editorUIHandler.Hide();
-        }
-        else
-        {
-            this.editorUIHandler.Show();
-        }
 
         bareEngine.SendEvent(BareEvent.editor_opened, {name: this.settingsData.name || 'levelEditor'});// TODO
     }
 
     OnClear(full?: boolean, isLevel:boolean = false): void
     {
-        this.opened = false;
-
         rapid.backgroundColor = this.backgroundColorOrig;
         
-        this.editorControlsHandler.Close();
-        this.editorUIHandler.Close();
-
-        bareEngine.SendEvent(BareEvent.editor_closed, {name: this.settingsData.name || 'levelEditor'});
-
-        // DISABLE THE LEVEL CACHE, SO LEVELS GETS RELOADED
-        // DON'T NECESSARY WANT SAVEDATA FOR EACH LEVEL - TODO
-        if (!window.isLocalhost) // FOR PRODUCTION, LEVEL IS ONLY SAVED TO CACHE, NOT TO DISK, SO KEEPING CACHE IN THAT CASE
-        {
-            SaveData.levelCache.clear();
-            SaveDataHandler.Save();
-        }
-        
-        window.gameMode = GameMode.Game; // SETTING IT IN BARE.START() NOW, BUT ALSO KINDA MAKES SENSE HERE
-
-
+        this.editorUIHandler.Clear();
         this.editorControlsHandler.Clear(isLevel);
 
-        bareEngine.SendEvent(BareEvent.editor_closed, {name: this.settingsData.name || 'levelEditor'});
-
         // DISABLE THE LEVEL CACHE, SO LEVELS GETS RELOADED
         // DON'T NECESSARY WANT SAVEDATA FOR EACH LEVEL - TODO
-        if (!window.isLocalhost) // FOR PRODUCTION, LEVEL IS ONLY SAVED TO CACHE, NOT TO DISK, SO KEEPING CACHE IN THAT CASE
+        /*if (!window.isLocalhost) // FOR PRODUCTION, LEVEL IS ONLY SAVED TO CACHE, NOT TO DISK, SO KEEPING CACHE IN THAT CASE
         {
             SaveData.levelCache.clear();
             SaveDataHandler.Save();
-        }
+        }*/
 
         if (full)
             window.gameMode = GameMode.Game;
@@ -213,6 +191,12 @@ export class EditorScene extends Scene
 
     async Close(loadLevelAfter: boolean = true)
     {
+        // DON'T WANT THESE IN OnClear(), SINCE THAT'S CALLED IN LOADLEVEL AT INIT
+        this.opened = false;
+        window.gameMode = GameMode.Game; // SETTING IT IN BARE.START() NOW, BUT ALSO KINDA MAKES SENSE HERE
+
+        bareEngine.SendEvent(BareEvent.editor_closed, {name: this.settingsData.name || 'levelEditor'});
+
         sceneController.Remove(EditorScene); // CALLS ONCLEAR
         sceneController.EnableAllScenes();
 
@@ -394,7 +378,7 @@ export class EditorScene extends Scene
     // DIFFERENT FROM LEVELCONTROLLER WHERE WE SAVE TO LOCALSTORAGE
     async SaveLevel(): Promise<LevelData>
     {
-        var level = (this.currentLevel as LevelData);
+        var level = this.currentLevel;
         var levelPath = this.currentLevelPath;
     
         levelHandler.SerializeLevel(level);

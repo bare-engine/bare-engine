@@ -690,16 +690,17 @@ export class EditorControlsHandler {
         this.currentPreviewEntity.alpha = 0;
     }
     
-    // NOT USING
     Close()
     {
-        hitboxController.ClearExclusiveLayers();
+        //hitboxController.ClearExclusiveLayers();
 
-        this.Clear();
+        //this.Clear();
     }
     
     Clear(isLevel: boolean = false)
     {
+        hitboxController.ClearExclusiveLayers();
+
         if (!isLevel)
             objectController.Remove(this.currentPreviewEntity);
     }

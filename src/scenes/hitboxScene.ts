@@ -158,11 +158,6 @@ export class HitboxScene extends EditorScene
 
     async SaveHitboxDataToSettingsData(): Promise<LevelData>
     {
-        var level = this.currentLevel;
-    
-        // SERIALIZE, DATA IS EASIER TO FETCH? NO NEED, TODO
-        levelHandler.SerializeLevel(level);
-
         // GET HITBOX AND PIVOT
         var objs = this.objectController.GetLayer(0);
         var mainEntity = objs[1].levelEntity; // objs[0] IS currentPreviewEntity, SKIPPING
@@ -244,6 +239,10 @@ export class HitboxScene extends EditorScene
         // SAVE TO FILE
         await this.SaveEntityData(newRawSettingsData);
         //await window.__GAME_DEBUG_API__.setEntityData(newRawSettingsData);
+
+        // SERIALIZE, TODO, NOT REALLY NEEDED, JUST FOR THE RETURN
+        var level = this.currentLevel;
+        levelHandler.SerializeLevel(level);
 
         return level;
     }

@@ -3,6 +3,7 @@ import { IParticleOptions, ParticleShape, ITransformOptions, ParticleAttribute, 
 import { Color, Vec2 } from "./math";
 import { Texture } from "./texture";
 import { isPlainObject } from "./utils";
+import { GameObject } from "../../exports";
 
 // Define constants for magic numbers
 const DEFAULT_EMIT_RATE = 10;
@@ -183,6 +184,7 @@ export class ParticleEmitter {
     private emitTimeCounter: number = 0;
     localSpace: boolean = DEFAULT_LOCAL_SPACE;
     position: Vec2 = Vec2.ZERO;
+    gameObject: GameObject; // ADDED, TO CHECK FOR PERSISTENCE
 
     /**
      * Creates a new particle emitter

@@ -19,16 +19,12 @@ export abstract class BaseComponent<T extends GameObject = GameObject> implement
     Added(go: T): void
     {
         this.go = go;
-        this.OnAdd?.();
+        this.OnAdded?.();
     }
 
-    OnAdd?(): void;
+    OnAdded?(): void;
     OnEnable?(): void;
     OnDisable?(): void;
-
-    OnStart?(): void;
-    OnUpdate?(deltaTime: number): void;
-    OnRemoved?(): void;
 }
 
 export class ComponentController
@@ -152,7 +148,7 @@ export class ComponentController
 
     private OnPreSaveLevel(): void
     {
-        this.CallMethodOnAllComponents('PreSaveLevel');
+        this.CallMethodOnAllComponents('OnPreSaveLevel');
     }
 
     AddComponent<T extends GameObject, C extends Component<T>>(go: T, componentClass: Ctor<C>): C;
@@ -527,17 +523,17 @@ export class ComponentController
 
     PreRender()
     {
-        this.CallMethodOnAllComponents('PreRender');
+        this.CallMethodOnAllComponents('OnPreRender');
     }
 
     Render()
     {
-        this.CallMethodOnAllComponents('Render');
+        this.CallMethodOnAllComponents('OnRender');
     }
 
     PostRender()
     {
-        this.CallMethodOnAllComponents('PostRender');
+        this.CallMethodOnAllComponents('OnPostRender');
     }
 
     // NOTE: methodName NEEDS TO MATCH WITH COMPONENT'S ONE

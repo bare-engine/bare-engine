@@ -200,7 +200,12 @@ export class PhysicsControllerBare extends PhysicsControllerBase
         if (obj1.static && obj2.static) continue;
         if (!obj1.collide || !obj2.collide) continue;
         if (!obj1.physicsHitbox.active || !obj2.physicsHitbox.active) continue;
-        if (obj1.velocity.isZero() && obj2.velocity.isZero()) continue;
+        if (obj1.velocity.isZero() && obj2.velocity.isZero()) {
+          // Still track active collisions so CheckCollisionEnd doesn't fire prematurely
+          const key = `${obj1.uniqueID}##${obj2.uniqueID}`;
+          if (this.activeCollisions.has(key)) this.currentFrameCollisions.add(key);
+          continue;
+        }
 
         let collision = false;
         let collisionInfo: {dx: number, dy: number, distance: number, angle: number} | null = null;

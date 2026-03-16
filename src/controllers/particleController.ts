@@ -119,7 +119,12 @@ export class ParticleController
 
     Clear()
     {
-        this.emitters.length = 0;
+        for (var i = this.emitters.length - 1; i >= 0; i--)
+        {
+            var go = this.emitters[i].emitter.gameObject;
+            if (!go || !go.persistent)
+                this.Remove(this.emitters[i].emitter);
+        }
     }
 }
 

@@ -12,8 +12,11 @@ import { objectController } from '../controllers/objectController';
 */
 
 export class EditorUIHandler {
+    static lastLoadedSettingsData:SettingsData;
+
     private flashShader:FlashShader;
 
+    private abortController: AbortController = new AbortController();
     private isMinimized: boolean = false;
     private lastMinimize: number = 0;
     public scene: EditorScene;
@@ -73,10 +76,14 @@ export class EditorUIHandler {
 
     PopulateWithData(data: SettingsData): void
     {
-        if (this.data == data)
+        this.data = data;
+        
+        if (EditorUIHandler.lastLoadedSettingsData)
+        if (data.name == EditorUIHandler.lastLoadedSettingsData.name)
             return;
 
-        this.data = data;
+        EditorUIHandler.lastLoadedSettingsData = data;
+
         this.PopulateSidebar(data);
         this.PopulateLayers(data);
         this.SyncSettingsUI();
@@ -524,6 +531,9 @@ export class EditorUIHandler {
     }
 
     SetupEditorControls(): Promise<void> {
+        this.abortController = new AbortController();
+        const signal = this.abortController.signal;
+
         // EDITOR BUTTON
         const editorButton = document.getElementById('close-editor-btn') as HTMLButtonElement;
         editorButton.addEventListener('click', (event: MouseEvent) => {
@@ -535,7 +545,7 @@ export class EditorUIHandler {
             }
             else
                 this.scene.Restart(); // THERE IS NO LEVEL, JUST RESTART. THIS HAPPENS FOR HITBOX EDITOR
-        });
+        }, { signal });
 
         // MINIMIZE BUTTON HOVER
         const sidebar = document.getElementById('left-sidebar')!;
@@ -546,7 +556,7 @@ export class EditorUIHandler {
                 return;
             this.lastMinimize = new Date().getTime();
             this.isMinimized = !this.isMinimized;
-            
+
             if (this.isMinimized) {
                 document.getElementById('entity-settings-sidebar')!.style.display = 'none';
                 document.getElementById('layers-sidebar')!.style.display = 'none';
@@ -556,11 +566,11 @@ export class EditorUIHandler {
             } else {
                 document.getElementById('entity-settings-sidebar')!.style.display = 'block';
                 document.getElementById('layers-sidebar')!.style.display = 'block';
-                
+
                 sidebar.classList.remove('minimized');
                 minimizeBtn.innerHTML = '🔻';
             }
-        });
+        }, { signal });
 
         var me = this;
 
@@ -580,8 +590,8 @@ export class EditorUIHandler {
         const guardInput = (el: HTMLElement) => {
             const stop = (ev: Event) => ev.stopPropagation();
             ['pointerdown', 'pointerup', 'pointermove', 'click', 'dblclick', 'mousedown', 'mouseup', 'wheel'].forEach(evt =>
-                el.addEventListener(evt, stop, { passive: false }));
-            el.addEventListener('keydown', stop);
+                el.addEventListener(evt, stop, { passive: false, signal }));
+            el.addEventListener('keydown', stop, { signal });
         };
         guardInput(this.gridSizeInputEl);
 
@@ -590,33 +600,33 @@ export class EditorUIHandler {
             // Set modal grid size to current editorScene value
             me.SyncSettingsUI();
             me.gridModalEl!.style.display = 'block';
-        });
+        }, { signal });
 
         // Close modal when X is clicked
         closeBtn.addEventListener('click', function(): void {
             me.gridModalEl!.style.display = 'none';
-        });
+        }, { signal });
 
         // Close modal when clicking outside of it
         window.addEventListener('click', function(event: MouseEvent): void {
             if (event.target === me.gridModalEl) {
                 me.gridModalEl!.style.display = 'none';
             }
-        });
+        }, { signal });
         // Keep modal interactions local so they don't bubble into game handlers
-        this.gridModalEl.addEventListener('pointerdown', ev => ev.stopPropagation());
-        this.gridModalEl.addEventListener('wheel', ev => ev.stopPropagation(), { passive: false });
+        this.gridModalEl.addEventListener('pointerdown', ev => ev.stopPropagation(), { signal });
+        this.gridModalEl.addEventListener('wheel', ev => ev.stopPropagation(), { passive: false, signal });
 
         // Toggle switch functionality
         this.gridToggleEl!.addEventListener('click', () => {
             me.ToggleGrid();
-        });
+        }, { signal });
 
         // Prevent modal from closing when clicking inside modal content
         const modalContent = document.querySelector('.modal-content') as HTMLElement;
         modalContent.addEventListener('click', function(event: MouseEvent): void {
             event.stopPropagation();
-        });
+        }, { signal });
 
         // Update editorScene.gridSize when grid size input changes
         const handleGridSizeChange = async (value: string) => {
@@ -635,17 +645,17 @@ export class EditorUIHandler {
 
         this.gridSizeInputEl!.addEventListener('input', function(this: HTMLInputElement): void {
             handleGridSizeChange(this.value);
-        });
+        }, { signal });
 
         this.gridSizeInputEl!.addEventListener('keydown', (ev: KeyboardEvent) => {
             if (ev.key === 'Enter')
                 handleGridSizeChange(this.gridSizeInputEl!.value);
-        });
+        }, { signal });
 
         // Also update on blur event to handle when user leaves the input
         this.gridSizeInputEl!.addEventListener('blur', function(this: HTMLInputElement): void {
             handleGridSizeChange(this.value);
-        });
+        }, { signal });
     }
 
     async ToggleGrid()
@@ -724,8 +734,10 @@ export class EditorUIHandler {
         overlay.style.display = 'block';
     }
 
-    Close(): void
+    Clear(): void
     {
+        this.abortController.abort();
+
         const editorOverlay = document.getElementById('editor-overlay') as HTMLElement;
         
         if (!editorOverlay) {

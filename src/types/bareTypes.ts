@@ -92,6 +92,7 @@ export type Entity = {
 export interface LevelData
 {
   name: string;
+  settingsData?: string;
   dimensions: Dimensions;
   backgroundColor?: string;
   entitiesByLayer: Record<string, Entity[]>;
@@ -275,8 +276,8 @@ export interface Component<T extends GameObject = GameObject>
     enabled?: boolean;
     go: T; 
 
-    // CLEAN UP, ON...
     Added?(go: T): void
+    OnAdded?(): void;
     OnStart?: () => void
     OnRemoved?: () => void
     OnEnable?: () => void
@@ -284,11 +285,11 @@ export interface Component<T extends GameObject = GameObject>
     OnCollisionStart?: (initiatingObject: GameObject, collidingObject: GameObject) => void
     OnCollisionUpdate?: (initiatingObject: GameObject, collidingObject: GameObject) => void
     OnCollisionEnd?: (initiatingObject: GameObject, collidingObject: GameObject) => void
-    PreRender?: () => void
-    Render?: () => void
-    PostRender?: () => void
+    OnPreRender?: () => void
+    OnRender?: () => void
+    OnPostRender?: () => void
     OnUpdate?: (dt: number) => void
-    PreSaveLevel?: () => void // IN CASE RELATED OBJECT IS PERSISTENT
+    OnPreSaveLevel?: () => void // IN CASE RELATED OBJECT IS PERSISTENT
     OnLevelChanged?: () => void // IN CASE RELATED OBJECT IS PERSISTENT
 }
 

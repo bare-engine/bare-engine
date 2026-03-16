@@ -101,42 +101,42 @@ export class KeyboardController
 
     public IsUpDown(): boolean
     {
-        return this.IsKeyDown("w") || this.IsKeyDown("z") || this.IsKeyDown("arrowup");
+        return this.IsKeyDown("w") || this.IsKeyDown("z") || this.IsKeyDown("arrowUp");
     }
 
     public IsUpPressed(): boolean
     {
-        return this.IsKeyPressed("w") || this.IsKeyPressed("z") || this.IsKeyPressed("arrowup");
+        return this.IsKeyPressed("w") || this.IsKeyPressed("z") || this.IsKeyPressed("arrowUp");
     }
 
     public IsDownDown(): boolean
     {
-        return this.IsKeyDown("s") || this.IsKeyDown("arrowdown");
+        return this.IsKeyDown("s") || this.IsKeyDown("arrowDown");
     }
 
     public IsDownPressed(): boolean
     {
-        return this.IsKeyPressed("s") || this.IsKeyPressed("arrowdown");
+        return this.IsKeyPressed("s") || this.IsKeyPressed("arrowDown");
     }
 
     public IsLeftDown(): boolean
     {
-        return this.IsKeyDown("a") || this.IsKeyDown("q") || this.IsKeyDown("arrowleft");
+        return this.IsKeyDown("a") || this.IsKeyDown("q") || this.IsKeyDown("arrowLeft");
     }
 
     public IsLeftPressed(): boolean
     {
-        return this.IsKeyPressed("a") || this.IsKeyPressed("q") || this.IsKeyPressed("arrowleft");
+        return this.IsKeyPressed("a") || this.IsKeyPressed("q") || this.IsKeyPressed("arrowLeft");
     }
 
     public IsRightDown(): boolean
     {
-        return this.IsKeyDown("d") || this.IsKeyDown("arrowright");
+        return this.IsKeyDown("d") || this.IsKeyDown("arrowRight");
     }
 
     public IsRightPressed(): boolean
     {
-        return this.IsKeyPressed("d") || this.IsKeyPressed("arrowright");
+        return this.IsKeyPressed("d") || this.IsKeyPressed("arrowRight");
     }
 
     public GetKeysDown(): string[]

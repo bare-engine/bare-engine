@@ -4,9 +4,7 @@ import { Scene } from "../main";
 export class ParticleComponent extends BaseComponent
 {
     public emitter: ParticleEmitter;
-
     private positionData: any;
-    private localSpace: boolean;
 
     constructor(scene: Scene,
         position: any,
@@ -23,7 +21,6 @@ export class ParticleComponent extends BaseComponent
         super(scene);
 
         this.positionData = position;
-        this.localSpace = localSpace;
 
         var tex = assetsHandler.GetTexture(texture);
 
@@ -70,6 +67,8 @@ export class ParticleComponent extends BaseComponent
     Added(go: GameObject): void
     {
         super.Added(go);
+
+        this.emitter.gameObject = go;
 
         this.emitter.position.set(go.x + this.positionData.x, go.y + this.positionData.y);
         particleController.Add(this.emitter);

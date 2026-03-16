@@ -88,9 +88,7 @@ window.__GAME_DEBUG_API__ = {
 
   async gotoLevelEdit(levelPath: string) {
     //sceneController.DisableAllScenes();
-    if (sceneController.Has(EditorScene))
-        sceneController.Remove(EditorScene);
-
+    
     sceneController.Add(EditorScene, {levelPathOrData: bareEngine.levelPath + "/" + levelPath + ".json"});
     //sceneController.Goto(EditorScene, {levelInput: levelPath});
   },
@@ -122,6 +120,7 @@ window.__GAME_DEBUG_API__ = {
     var sceneStrings = scenes.map(s => s.constructor.name);
 
     // DON'T SHOW EditorUIScene WHEN THERE'S NO LEVEL
+    // ACTUALLY, DON'T HAVE A EditorUIScene WHEN THERE'S NO LEVEL - TODO
     for (var i = 0; i < sceneStrings.length; i++)
     {
         if (sceneStrings[i] == "EditorUIScene")
@@ -132,6 +131,8 @@ window.__GAME_DEBUG_API__ = {
         }
     }
 
+    sceneStrings = sceneStrings.reverse(); // 
+    
     return sceneStrings;
   },
 
@@ -280,7 +281,12 @@ window.__GAME_DEBUG_API__ = {
 
   async updateLevelData(levelName: string, changes: { name?: string, width?: number, height?: number, backgroundColor?: string }) {
     try {
-        var data = await Helper.loadJSON<LevelData>(`${bareEngine.levelPath}/${levelName}.json`);
+        // TODO: USE SERIALIZED LEVEL DATA HERE INSTEAD, DON'T NEED TO LOAD
+        //var data = await Helper.loadJSON<LevelData>(`${bareEngine.levelPath}/${levelName}.json`);
+
+        var levelHandler = sceneController.GetLevelScene().levelHandler;
+        var data = levelHandler.currentLevel;
+        levelHandler.SerializeLevel(data);
 
         if (changes.width !== undefined || changes.height !== undefined) {
             data.dimensions = data.dimensions ?? { width: 800, height: 600 };
@@ -294,6 +300,7 @@ window.__GAME_DEBUG_API__ = {
         var oldPath = `${bareEngine.levelPath}/${levelName}.json`;
 
         if (changes.name && changes.name !== levelName) {
+            // CHANGED NAME - FILE WILL GET REMOVED+ADDED
             data.name = changes.name;
             var newPath = `${bareEngine.levelPath}/${changes.name}.json`;
             await fetch('/api/save-level', {
@@ -307,6 +314,7 @@ window.__GAME_DEBUG_API__ = {
                 body: JSON.stringify({ path: oldPath })
             });
         } else {
+            // WIDTH/HEIGHT/BACKGROUND COLOR CHANGED - JUST UPDATE FILE
             await fetch('/api/save-level', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -316,7 +324,7 @@ window.__GAME_DEBUG_API__ = {
             //sceneController.GetLevelScene().Restart();
             //sceneController.Get(EditorScene).Close();
             sceneController.Remove(EditorScene);
-            sceneController.Add(EditorScene);
+            sceneController.Add(EditorScene, {levelPathOrData: data});
         }
 
         //window.__GAME_DEBUG_API__.refreshLevelFiles();
