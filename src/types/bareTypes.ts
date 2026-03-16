@@ -225,8 +225,8 @@ const eventDefs = {
 
   // MOVE TO EDITOR, PROBABLY MAKE EVENTS STRINGS
   editor_layerSelected: ev<{ layerName: string }>(),
-  editor_opened: ev<{ name: string }>(),
-  editor_closed: ev<{ name: string }>(),
+  editor_opened: ev<{ settingsDataName: string, levelName: string }>(),
+  editor_closed: ev<{ settingsDataName: string, levelName: string }>(),
   level_savedToDisk: ev<{ levelStr: string; level: LevelData }>(),//
 } as const;
 

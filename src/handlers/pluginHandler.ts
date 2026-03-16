@@ -132,7 +132,7 @@ window.__GAME_DEBUG_API__ = {
     }
 
     sceneStrings = sceneStrings.reverse(); // 
-    
+
     return sceneStrings;
   },
 
@@ -278,63 +278,79 @@ window.__GAME_DEBUG_API__ = {
         return { ok: false, error: error?.message ?? String(error) };
       }
   },
+        
+    async updateLevelData(changes: { name?: string, width?: number, height?: number, backgroundColor?: string }) {
+        try {
+            var levelHandler = sceneController.GetLevelScene().levelHandler;
+            var data = levelHandler.currentLevel;
+            levelHandler.SerializeLevel(data);
 
-  async updateLevelData(levelName: string, changes: { name?: string, width?: number, height?: number, backgroundColor?: string }) {
-    try {
-        // TODO: USE SERIALIZED LEVEL DATA HERE INSTEAD, DON'T NEED TO LOAD
-        //var data = await Helper.loadJSON<LevelData>(`${bareEngine.levelPath}/${levelName}.json`);
+            if (changes.width !== undefined || changes.height !== undefined) {
+                data.dimensions = data.dimensions ?? { width: 800, height: 600 };
+                if (changes.width !== undefined) data.dimensions.width = changes.width;
+                if (changes.height !== undefined) data.dimensions.height = changes.height;
+            }
+            if (changes.backgroundColor !== undefined) {
+                data.backgroundColor = changes.backgroundColor;
+            }
 
-        var levelHandler = sceneController.GetLevelScene().levelHandler;
-        var data = levelHandler.currentLevel;
-        levelHandler.SerializeLevel(data);
-
-        if (changes.width !== undefined || changes.height !== undefined) {
-            data.dimensions = data.dimensions ?? { width: 800, height: 600 };
-            if (changes.width !== undefined) data.dimensions.width = changes.width;
-            if (changes.height !== undefined) data.dimensions.height = changes.height;
-        }
-        if (changes.backgroundColor !== undefined) {
-            data.backgroundColor = changes.backgroundColor;
-        }
-
-        var oldPath = `${bareEngine.levelPath}/${levelName}.json`;
-
-        if (changes.name && changes.name !== levelName) {
-            // CHANGED NAME - FILE WILL GET REMOVED+ADDED
-            data.name = changes.name;
-            var newPath = `${bareEngine.levelPath}/${changes.name}.json`;
-            await fetch('/api/save-level', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ levelPath: newPath, levelData: data })
-            });
-            await fetch('/api/remove-level', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ path: oldPath })
-            });
-        } else {
-            // WIDTH/HEIGHT/BACKGROUND COLOR CHANGED - JUST UPDATE FILE
-            await fetch('/api/save-level', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ levelPath: oldPath, levelData: data })
-            });
-
-            //sceneController.GetLevelScene().Restart();
-            //sceneController.Get(EditorScene).Close();
-            sceneController.Remove(EditorScene);
             sceneController.Add(EditorScene, {levelPathOrData: data});
+            return { ok: true };
+        } catch (error: any) {
+            console.error('Failed to update level data', error);
+            return { ok: false, error: error?.message ?? String(error) };
         }
+    },
 
-        //window.__GAME_DEBUG_API__.refreshLevelFiles();
-        return { ok: true };
-    } catch (error: any) {
-        console.error('Failed to update level data', error);
-        return { ok: false, error: error?.message ?? String(error) };
-    }
-},
+    async saveLevelData(levelName: string, changes: { name?: string, width?: number, height?: number, backgroundColor?: string }) {
+        try {
+            var levelHandler = sceneController.GetLevelScene().levelHandler;
+            var data = levelHandler.currentLevel;
+            levelHandler.SerializeLevel(data);
 
+            if (changes.width !== undefined || changes.height !== undefined) {
+                data.dimensions = data.dimensions ?? { width: 800, height: 600 };
+                if (changes.width !== undefined) data.dimensions.width = changes.width;
+                if (changes.height !== undefined) data.dimensions.height = changes.height;
+            }
+            if (changes.backgroundColor !== undefined) {
+                data.backgroundColor = changes.backgroundColor;
+            }
+
+            var oldPath = `${bareEngine.levelPath}/${levelName}.json`;
+
+            if (changes.name && changes.name !== levelName) {
+                data.name = changes.name;
+                var newPath = `${bareEngine.levelPath}/${changes.name}.json`;
+                await fetch('/api/save-level', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ levelPath: newPath, levelData: data })
+                });
+                await fetch('/api/remove-level', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: oldPath })
+                });
+                window.__GAME_DEBUG_API__.refreshLevelFiles();
+            } else {
+                await fetch('/api/save-level', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ levelPath: oldPath, levelData: data })
+                });
+            }
+
+            return { ok: true };
+        } catch (error: any) {
+            console.error('Failed to save level data', error);
+            return { ok: false, error: error?.message ?? String(error) };
+        }
+    },
+
+    selectLevel(levelName: string) {
+        window.postMessage({ __fromGame: true, type: "selectLevel", levelName: levelName }, "*");
+    },
 };
 
 export class PluginHandler
@@ -373,6 +389,10 @@ export class PluginHandler
                 if (scene)
                     this.SetCurrentScene(scene.constructor.name);
             }
+        });
+
+        globalEvents.persistent.on(BareEvent.editor_opened, ({ settingsDataName, levelName }) => {
+            window.__GAME_DEBUG_API__.selectLevel(levelName);
         });
 
         // RESTART

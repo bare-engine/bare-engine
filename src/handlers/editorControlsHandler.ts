@@ -12,6 +12,7 @@ import { BareEvent, BareEventPayload, Entity } from "../types/bareTypes";
 import { Rectangle } from "../types/gamesTypes";
 import { Helper } from "../utils/helper";
 import { cameraHandler } from "./cameraHandler";
+import { levelHandler } from "./levelHandler";
 
 /*
     BUILD CONTROLS INGAME
@@ -31,13 +32,20 @@ export class EditorControlsHandler {
     private selectionRect: Rectangle = { x: 0, y: 0, width: 0, height: 0 };
 
     selectedObjects: GameObject[] = [];
-    copiedObjects: GameObject[] = [];
+    copiedObjects: Entity[] = [];
 
     private outlineShader = new OutlineShader();
+    static copiedObjectCached: Entity[] = [];
     
     constructor(editorScene: any) {
         this.scene = editorScene;
         this.draggingLevelEntity = null;
+
+        if (EditorControlsHandler.copiedObjectCached.length > 0)
+        {
+            this.copiedObjects = EditorControlsHandler.copiedObjectCached;
+            EditorControlsHandler.copiedObjectCached = [];
+        }
 
         // Keyboard controls
         if (window.isLocalhost)
@@ -78,18 +86,22 @@ export class EditorControlsHandler {
         {
             hitboxController.ClearExclusiveLayers();
         }
+        if (allKeys[0] == 'control' && allKeys[1] == 'a')
+        {
+            this.SelectGameObjects(objectController.GetAllObjects());
+        }
         if (allKeys[0] == 'control' && allKeys[1] == 'c')
         {
-            this.copiedObjects = this.selectedObjects.slice();
+            this.copiedObjects = this.selectedObjects.map(obj => levelHandler.SerializeObject(obj));
         }
         if (allKeys[0] == 'control' && allKeys[1] == 'v')
         {
             var topLeftCopiedObjects = new Vec2(Number.MAX_VALUE, Number.MAX_VALUE);
-            this.copiedObjects.forEach(obj => {
-                if (obj.x - obj.pivot.x < topLeftCopiedObjects.x)
-                    topLeftCopiedObjects.x = obj.x - obj.pivot.x;
-                if (obj.y - obj.pivot.y < topLeftCopiedObjects.y)
-                    topLeftCopiedObjects.y = obj.y - obj.pivot.y;
+            this.copiedObjects.forEach(entity => {
+                if (entity.position.x < topLeftCopiedObjects.x)
+                    topLeftCopiedObjects.x = entity.position.x;
+                if (entity.position.y < topLeftCopiedObjects.y)
+                    topLeftCopiedObjects.y = entity.position.y;
             });
 
             var offset = mouseController.world.position.subtract(topLeftCopiedObjects);
@@ -97,9 +109,8 @@ export class EditorControlsHandler {
             
             var objsCreated: GameObject[] = [];
             const layer = this.GetSelectedLayer();
-            this.copiedObjects.forEach(obj => {
-                var entity = this.scene.ConstructEntity(obj.name);
-                var objCreated = this.scene.AddGameObjectAtPosition(obj.x + offset.x, obj.y + offset.y, entity, layer);
+            this.copiedObjects.forEach(entity => {
+                var objCreated = this.scene.AddGameObjectAtPosition(entity.position.x + offset.x, entity.position.y + offset.y, entity, layer);
                 objsCreated.push(objCreated);
             });
 
@@ -690,15 +701,11 @@ export class EditorControlsHandler {
         this.currentPreviewEntity.alpha = 0;
     }
     
-    Close()
-    {
-        //hitboxController.ClearExclusiveLayers();
-
-        //this.Clear();
-    }
-    
     Clear(isLevel: boolean = false)
     {
+        // BIT OF A HACK TO PERSIST COPIED OBJECTS - SINCE WE CREATE A NEW INSTANCE OF THIS OBJECT WHEN EDITOR IS OPENED AGAIN
+        EditorControlsHandler.copiedObjectCached = this.copiedObjects;
+        
         hitboxController.ClearExclusiveLayers();
 
         if (!isLevel)

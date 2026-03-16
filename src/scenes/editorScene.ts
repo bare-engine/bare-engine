@@ -167,7 +167,7 @@ export class EditorScene extends Scene
 
         rapid.backgroundColor = Color.fromHex('#3b3b3f');
 
-        bareEngine.SendEvent(BareEvent.editor_opened, {name: this.settingsData.name || 'levelEditor'});// TODO
+        bareEngine.SendEvent(BareEvent.editor_opened, {settingsDataName: this.settingsData.name || 'levelEditor', levelName: SaveData.currentLevelStr});
     }
 
     OnClear(full?: boolean, isLevel:boolean = false): void
@@ -195,7 +195,7 @@ export class EditorScene extends Scene
         this.opened = false;
         window.gameMode = GameMode.Game; // SETTING IT IN BARE.START() NOW, BUT ALSO KINDA MAKES SENSE HERE
 
-        bareEngine.SendEvent(BareEvent.editor_closed, {name: this.settingsData.name || 'levelEditor'});
+        bareEngine.SendEvent(BareEvent.editor_closed, {settingsDataName: this.settingsData.name || 'levelEditor', levelName: SaveData.currentLevelStr});
 
         sceneController.Remove(EditorScene); // CALLS ONCLEAR
         sceneController.EnableAllScenes();

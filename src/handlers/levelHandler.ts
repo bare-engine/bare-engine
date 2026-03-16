@@ -117,7 +117,7 @@ export class LevelHandler
         {
             // LEVEL NAME
             level = await this.LoadLevelData(levelInput);
-            level.name = levelInput; // SETTING THE NAME HERE, SO WE CAN USE IT WHEN SAVING
+            level.name = levelInput; // SETTING THE NAME HERE, SO WE CAN USE IT LATER WHEN SAVING
             levelStr = levelInput;
             SaveData.currentLevelStr = levelStr;
         }
@@ -230,59 +230,65 @@ export class LevelHandler
                 if (obj.name == "")
                     trace("NO NAME");
 
-                // IF HAS PIVOT HAS BEEN SET IN CODE, BUT WANT TO KEEP SAVING AT ORIGINAL POSITION, THIS REVERTS THE PIVOT
-                if (obj.revertPivotOnSave)
-                {
-                    obj.x -= obj.pivotX;
-                    obj.y -= obj.pivotY;
-                }
-                
-                var retObj:Entity = {
-                    name: obj.name,
-                    position: obj.position.clone()
-                };
-
-                // POSITION HAS BEEN STORED, CAN APPLY PIVOT AGAIN
-                if (obj.revertPivotOnSave)
-                {
-                    obj.x += obj.pivotX;
-                    obj.y += obj.pivotY;
-                }
-
-                var objDiff = this.GetChangedValues(obj);
-                if (Object.keys(objDiff).length > 0)
-                    Object.assign(retObj, objDiff);
-
-                var components = this.scene.GetAllComponentsFrom(obj);
-                
-                // THESE COMPONENTS MIGHT ALREADY BE INHERITED BY GAMEOBJECT ENTITY!
-                // SHOULD CHECK FOR THIS AND NOT SAVE COMPONENT IN THAT CASE. SHOULD DIFF IT
-                // EG: SHADOWS ARE NOW BEING SAVED IN ENTITY COMPONENTS
-                // TODO
-
-                if (gameMode == GameMode.Game)
-                {
-                    // INGAME, SERIALIZE COMPONENTS, SET STORED EDITOR-COMPONENTS
-                    if (components && components.length > 0)
-                        retObj.components = this.SerializeComponents(components);
-
-                    if (obj.levelEntity?.editorComponents)
-                        retObj.editorComponents = obj.levelEntity?.editorComponents;
-                }
-                else
-                if (gameMode == GameMode.Editor)
-                {
-                    // IN EDITOR, SERIALIZE EDITOR-COMPONENTS, SET STORED COMPONENTS
-                    if (components && components.length > 0)
-                        retObj.editorComponents = this.SerializeComponents(components);
-                    
-                    if (obj.levelEntity?.components)
-                        retObj.components = obj.levelEntity?.components;
-                }
-
-                return retObj;
+                var entity = this.SerializeObject(obj);
+                return entity;
             });
         }
+    }
+
+    SerializeObject(obj: GameObject): Entity
+    {
+        // IF HAS PIVOT HAS BEEN SET IN CODE, BUT WANT TO KEEP SAVING AT ORIGINAL POSITION, THIS REVERTS THE PIVOT
+        if (obj.revertPivotOnSave)
+        {
+            obj.x -= obj.pivotX;
+            obj.y -= obj.pivotY;
+        }
+        
+        var entity:Entity = {
+            name: obj.name,
+            position: obj.position.clone()
+        };
+
+        // POSITION HAS BEEN STORED, CAN APPLY PIVOT AGAIN
+        if (obj.revertPivotOnSave)
+        {
+            obj.x += obj.pivotX;
+            obj.y += obj.pivotY;
+        }
+
+        var objDiff = this.GetChangedValues(obj);
+        if (Object.keys(objDiff).length > 0)
+            Object.assign(entity, objDiff);
+
+        var components = this.scene.GetAllComponentsFrom(obj);
+        
+        // THESE COMPONENTS MIGHT ALREADY BE INHERITED BY GAMEOBJECT ENTITY!
+        // SHOULD CHECK FOR THIS AND NOT SAVE COMPONENT IN THAT CASE. SHOULD DIFF IT
+        // EG: SHADOWS ARE NOW BEING SAVED IN ENTITY COMPONENTS
+        // TODO
+
+        if (gameMode == GameMode.Game)
+        {
+            // INGAME, SERIALIZE COMPONENTS, SET STORED EDITOR-COMPONENTS
+            if (components && components.length > 0)
+                entity.components = this.SerializeComponents(components);
+
+            if (obj.levelEntity?.editorComponents)
+                entity.editorComponents = obj.levelEntity?.editorComponents;
+        }
+        else
+        if (gameMode == GameMode.Editor)
+        {
+            // IN EDITOR, SERIALIZE EDITOR-COMPONENTS, SET STORED COMPONENTS
+            if (components && components.length > 0)
+                entity.editorComponents = this.SerializeComponents(components);
+            
+            if (obj.levelEntity?.components)
+                entity.components = obj.levelEntity?.components;
+        }
+
+        return entity;
     }
 
     GetChangedValues(gameObject: GameObject): any
