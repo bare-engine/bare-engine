@@ -177,14 +177,6 @@ export class EditorScene extends Scene
         this.editorUIHandler.Clear();
         this.editorControlsHandler.Clear(isLevel);
 
-        // DISABLE THE LEVEL CACHE, SO LEVELS GETS RELOADED
-        // DON'T NECESSARY WANT SAVEDATA FOR EACH LEVEL - TODO
-        /*if (!window.isLocalhost) // FOR PRODUCTION, LEVEL IS ONLY SAVED TO CACHE, NOT TO DISK, SO KEEPING CACHE IN THAT CASE
-        {
-            SaveData.levelCache.clear();
-            SaveDataHandler.Save();
-        }*/
-
         if (full)
             window.gameMode = GameMode.Game;
     }

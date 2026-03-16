@@ -303,7 +303,7 @@ export class ResizableComponent extends BaseComponent
     }
   }
 
-  PostRender(): void
+  OnPostRender(): void
   {
     if (!this.go.tapHitbox) return;
     if (!this.hoverEdge) return;

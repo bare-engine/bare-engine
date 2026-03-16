@@ -314,7 +314,7 @@ export class BareEngine
             return;
         }
 
-        this.gameObjectPools.set(name, new PoolHandler(() => new cls(this), defaultPoolSize));// NOT ON SCENE - TODO
+        this.gameObjectPools.set(name, new PoolHandler(() => new cls(null), defaultPoolSize));// NOT ON SCENE YET - SCENE PROP WILL GET SET IN GetObjectFromPool()
     }
 
     GetObjectFromPool(objectName: string, scene: Scene): GameObject
