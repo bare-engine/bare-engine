@@ -119,14 +119,16 @@ export class LevelHandler
             level = await this.LoadLevelData(levelInput);
             level.name = levelInput; // SETTING THE NAME HERE, SO WE CAN USE IT LATER WHEN SAVING
             levelStr = levelInput;
-            SaveData.currentLevelStr = levelStr;
+            //SaveData.currentLevelStr = levelStr;
         }
         else
         {
             // LEVEL DATA
             level = levelInput;
-            levelStr = level.name; // DON'T REALLY WANT TO USE THIS LEVEL PROPERTY? NOT SAME AS ACTUAL NAME OF FILE
+            levelStr = level.name; // DON'T REALLY WANT TO USE THIS LEVEL PROPERTY? NOT SAME AS ACTUAL NAME OF FILE - CHANGED IT SO IT IS
         }
+
+        SaveData.currentLevelStr = levelStr;
 
         // SOME LEVELS HAVE settingsData SET, SO WE LOAD THAT FIRST HERE
         // TO THEN LOAD THE LEVEL THAT WILL USE THAT settingsData

@@ -266,6 +266,11 @@ export class PhysicsControllerBare extends PhysicsControllerBase
               this.HandleCollision(obj1, obj2);
           }
 
+          // collide COULD HAVE CHANGED SINCE HandleCollision() SENT OUT EVENTS
+          if (!obj1.collide || !obj2.collide) {
+              continue;
+          }
+
           // Skip physical response for sensors or non-solid objects
           if (obj1.sensor || obj2.sensor) {
               continue;

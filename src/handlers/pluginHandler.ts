@@ -32,7 +32,7 @@ window.__GAME_DEBUG_API__ = {
       var objs = sceneController.GetAllSceneObjects();
       let selected: any = objs.find(o => o.uniqueID === uid);
 
-      trace('[Bare Plugin]', selected);
+      plugin.TraceObject(selected);
 
       // CLEAR OUTLINE SHADERS ON ALL (across all scenes)
       for (const o of objs)
@@ -83,6 +83,7 @@ window.__GAME_DEBUG_API__ = {
   },
 
   gotoLevelView(levelPath: string) {
+    sceneController.Remove(EditorScene); // REMOVES IT IF IT EXISTS
     sceneController.GetLevelScene().LoadLevel(levelPath);
   },
 
@@ -395,6 +396,10 @@ export class PluginHandler
             window.__GAME_DEBUG_API__.selectLevel(levelName);
         });
 
+        /*globalEvents.persistent.on(BareEvent.level_loaded, ({ levelStr }) => {
+            window.__GAME_DEBUG_API__.selectLevel(levelStr);
+        });*/
+
         // RESTART
         this.AddDebugAction("Restart Game", () => bareEngine.Restart(true));
         //this.AddDebugAction("Restart Level", () => sceneController.Get(LevelScene).RestartLevel()); //
@@ -434,6 +439,7 @@ export class PluginHandler
           const obj = this.CheckClickGameObject(ev);
           if (obj)
           {
+              plugin.TraceObject(obj);
               this.SelectObjectInPlugin(obj.uniqueID, true);
 
               var mouseController2 = this.GetCurrentScene().mouseController; // WITHOUT THE 2, DEV WEBPACK CATCHES THIS - TODO
@@ -508,6 +514,8 @@ export class PluginHandler
                 var openObjectsTab = plugin.GetCurrentScene().settingsData.selectionEnabled !== false;
                 window.__GAME_DEBUG_API__.selectObjectInPlugin(obj.uniqueID, openObjectsTab);
 
+                plugin.TraceObject(obj);
+
                 if (outline)
                 {
                     this.outlineShader.start(obj, [1.0, 1.0, 1.0, 1.0], 8.0);
@@ -521,6 +529,11 @@ export class PluginHandler
         }
 
         return foundObj;
+    }
+
+    TraceObject(obj: GameObject)
+    {
+        trace('Bare Engine - Object Selected:', obj.name, obj);
     }
 
     SelectObjectInPlugin(uid: string, openObjectsTab: boolean = false)
