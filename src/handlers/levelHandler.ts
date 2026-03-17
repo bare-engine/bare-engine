@@ -10,6 +10,7 @@ import { defaultEntityData } from "../types/bareData";
 import { BareEvent, Component, Entity, LevelData, SaveData, SettingsData } from '../types/bareTypes';
 import { Helper } from "../utils/helper";
 import { assetsHandler } from "./assetsHandler";
+import { SettingsHandler } from "./settingsHandler";
 
 export class LevelHandler
 {
@@ -104,8 +105,12 @@ export class LevelHandler
     {
         var settingsData = await Helper.loadJSON<SettingsData>(`${bareEngine.dataPath}/${settingsDataName}.json`);
         
-        this.scene.settingsHandler.SetRaw(settingsData);
-        await this.scene.settingsHandler.Process();
+        // 
+        //this.scene.settingsHandler = new SettingsHandler(this.scene);
+        //this.scene.settingsHandler.Process(settingsData);
+
+        //this.scene.settingsHandler.SetRaw(settingsData);
+        await this.scene.settingsHandler.Process(settingsData);
     }
 
     async LoadLevelOnly(levelInput: string | LevelData): Promise<LevelData>
@@ -128,7 +133,10 @@ export class LevelHandler
             levelStr = level.name; // DON'T REALLY WANT TO USE THIS LEVEL PROPERTY? NOT SAME AS ACTUAL NAME OF FILE - CHANGED IT SO IT IS
         }
 
-        SaveData.currentLevelStr = levelStr;
+        // WHEN A LEVEL IS SET AS DATA, WE DON'T SET SaveData.currentLevelStr TO NOT LOAD IT WHEN CLOSING THE EDITOR
+        // HAPPENS FOR A HITBOX OR MAP LEVEL
+        if (!level.isData) 
+            SaveData.currentLevelStr = levelStr;
 
         // SOME LEVELS HAVE settingsData SET, SO WE LOAD THAT FIRST HERE
         // TO THEN LOAD THE LEVEL THAT WILL USE THAT settingsData

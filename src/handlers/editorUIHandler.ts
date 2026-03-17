@@ -78,11 +78,11 @@ export class EditorUIHandler {
     {
         this.data = data;
         
-        if (EditorUIHandler.lastLoadedSettingsData)
+        // COMMENT OUT, SINCE THE return KEEPS childEntity.onpointerdown ON THE PREVIOUS this.scene
+        /*if (EditorUIHandler.lastLoadedSettingsData)
         if (data.name == EditorUIHandler.lastLoadedSettingsData.name)
             return;
-
-        EditorUIHandler.lastLoadedSettingsData = data;
+        EditorUIHandler.lastLoadedSettingsData = data;*/
 
         this.PopulateSidebar(data);
         this.PopulateLayers(data);
@@ -544,7 +544,9 @@ export class EditorUIHandler {
                 this.scene.Close();
             }
             else
+            {
                 this.scene.Restart(); // THERE IS NO LEVEL, JUST RESTART. THIS HAPPENS FOR HITBOX EDITOR
+            }
         }, { signal });
 
         // MINIMIZE BUTTON HOVER

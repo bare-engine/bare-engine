@@ -93,6 +93,7 @@ export interface LevelData
 {
   name: string;
   settingsData?: string;
+  isData?: boolean;
   dimensions: Dimensions;
   backgroundColor?: string;
   entitiesByLayer: Record<string, Entity[]>;
