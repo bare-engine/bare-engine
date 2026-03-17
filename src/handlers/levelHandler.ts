@@ -26,7 +26,8 @@ export class LevelHandler
         this.scene = scene;
 
         if (__DEV__)
-            void LevelHandler.EnsureEditorSceneRegistered();
+            if (!globalThis.plugin) // ONLY SHOW IF NO PLUGIN EXISTS, ELSE USER CAN PRESS BUTTON IN PLUGIN
+                LevelHandler.EnsureEditorSceneRegistered();
     }
 
     get objectsLayer(): GameObject[]

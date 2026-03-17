@@ -1,7 +1,7 @@
 import { SaveDataHandler } from "./SaveDataHandler";
 import { BareEvent, BareEventPayload, LevelData, SaveData, SettingsData } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
-import { Vec2 } from "../libraries/rapid-render";
+import { Color, Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import {  globalEvents } from "../main";
 import { OutlineShader } from "../shaders/outlineShader";
@@ -290,12 +290,14 @@ window.__GAME_DEBUG_API__ = {
                 data.dimensions = data.dimensions ?? { width: 800, height: 600 };
                 if (changes.width !== undefined) data.dimensions.width = changes.width;
                 if (changes.height !== undefined) data.dimensions.height = changes.height;
+                return { ok: true };
             }
             if (changes.backgroundColor !== undefined) {
                 data.backgroundColor = changes.backgroundColor;
+                return { ok: true };
             }
 
-            sceneController.Add(EditorScene, {levelPathOrData: data});
+            //sceneController.Add(EditorScene, {levelPathOrData: data});
             return { ok: true };
         } catch (error: any) {
             console.error('Failed to update level data', error);
@@ -352,6 +354,16 @@ window.__GAME_DEBUG_API__ = {
     selectLevel(levelName: string) {
         window.postMessage({ __fromGame: true, type: "selectLevel", levelName: levelName }, "*");
     },
+
+    clickedOpenEditorInPlugin() {
+        if (SaveData.currentLevelStr === '')
+        {
+            console.warn('[Bare Engine] No level loaded, cannot open editor');
+            return;
+        }
+
+        sceneController.Add(EditorScene);
+    },
 };
 
 export class PluginHandler
@@ -401,7 +413,7 @@ export class PluginHandler
         });*/
 
         // RESTART
-        this.AddDebugAction("Restart Game", () => bareEngine.Restart(true));
+        this.AddDebugAction("Restart Game", () => bareEngine.Restart());
         //this.AddDebugAction("Restart Level", () => sceneController.Get(LevelScene).RestartLevel()); //
         this.AddDebugAction("Clear Save Data", () => SaveDataHandler.Clear());
         this.AddDebugBreak();

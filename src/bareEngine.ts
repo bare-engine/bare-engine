@@ -9,6 +9,8 @@ import { TextureCache, IGraphicRenderOptions, ICircleRenderOptions, IRenderLineO
 
 export class BareEngine
 {
+    private initialSceneClass: SceneClass;
+
     public lastUpdateTimeRef:number;
     public deltaTime: number;
     public gameSpeed: number;
@@ -52,6 +54,8 @@ export class BareEngine
 
     async Start(sceneClass: SceneClass)
     {
+        this.initialSceneClass = sceneClass;
+        
         this.ImplementInitialTextures();
         this.ResizeCanvas();
 
@@ -65,7 +69,7 @@ export class BareEngine
 
         var scene = await sceneController.Goto(sceneClass);
 
-        this.dummyGameObject = new GameObject(scene); // TOO LATE IF USER WANTS TO USE IT, BUT FINE FOR MY CURRENT USAGE
+        this.dummyGameObject = new GameObject(scene); // TOO LATE IF USER WANTS TO USE IT IN sceneClass, BUT FINE FOR MY CURRENT USAGE
 
         window.addEventListener('resize', this.ResizeCanvas.bind(this));
 
@@ -266,22 +270,12 @@ export class BareEngine
         return onEditor;
     }
 
-    Restart(full: boolean = false): void
+    Restart(): void
     {
-        for (var scene of sceneController.currentScenes)
-        {
-            if (!scene.persistent)
-            {
-                scene.Clear(full);
-            }
-        }
-        for (var scene of sceneController.currentScenes)
-        {
-            if (!scene.persistent)
-            {
-                scene.Start();
-            }
-        }
+        globalEvents.clearAll();
+        
+        sceneController.Clear(true);
+        sceneController.Goto(this.initialSceneClass);
     }
 
     SendEvent<K extends keyof Events>(type: K, ...event: EventArgs<Events[K]>): void

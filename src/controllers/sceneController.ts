@@ -19,13 +19,13 @@ export class SceneController
         //events.persistent.on(BareEvent.game_clear, this.Clear.bind(this));
     }
 
-    Clear()
+    Clear(includePersistent: boolean = false): void
     {
         for (var i = this.currentScenes.length - 1; i >= 0; i--)
         {
             const scene = this.currentScenes[i];
         
-            if (scene.persistent)
+            if (scene.persistent && !includePersistent)
                 continue;
 
             this.Remove(scene, i);
