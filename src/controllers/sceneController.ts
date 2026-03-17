@@ -18,19 +18,6 @@ export class SceneController
         //pipes.set("screenController_Render", this.Render.bind(this));
         //events.persistent.on(BareEvent.game_clear, this.Clear.bind(this));
     }
-
-    Clear(includePersistent: boolean = false): void
-    {
-        for (var i = this.currentScenes.length - 1; i >= 0; i--)
-        {
-            const scene = this.currentScenes[i];
-        
-            if (scene.persistent && !includePersistent)
-                continue;
-
-            this.Remove(scene, i);
-        }
-    }
     
     Update(deltaTime: number): void
     {
@@ -144,6 +131,37 @@ export class SceneController
         else
         {
             console.warn("Scene not found");
+        }
+    }
+
+    Restart()
+    {
+        for (var scene of sceneController.currentScenes)
+        {
+            if (!scene.persistent)
+            {
+                scene.Clear();
+            }
+        }
+        for (var scene of sceneController.currentScenes)
+        {
+            if (!scene.persistent)
+            {
+                scene.Start();
+            }
+        }
+    }
+
+    Clear(includePersistent: boolean = false): void
+    {
+        for (var i = this.currentScenes.length - 1; i >= 0; i--)
+        {
+            const scene = this.currentScenes[i];
+        
+            if (scene.persistent && !includePersistent)
+                continue;
+
+            this.Remove(scene, i);
         }
     }
 

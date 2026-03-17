@@ -272,7 +272,7 @@ export class BareEngine
 
     Restart(): void
     {
-        globalEvents.clearAll();
+        globalEvents.emit(BareEvent.game_completeClear);
         
         sceneController.Clear(true);
         sceneController.Goto(this.initialSceneClass);
