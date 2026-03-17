@@ -421,7 +421,7 @@ export class LevelHandler
     SerializeComponent(component: Component): any
     {
         var componentData: any = {};
-        var constructorVarNames = Helper.GetConstructorParamNames(component.constructor);
+        var constructorVarNames = (component as any).__paramNames || Helper.GetConstructorParamNames(component.constructor);
         
         // GET VALUE FROM EACH KEY OF CONSTRUCTOR PARAMS
         for (let i = 0; i < constructorVarNames.length; i++)

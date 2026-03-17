@@ -117,6 +117,7 @@ export class ComponentController
                 // INSTANCIATE AND ADD COMPONENT - VALUES BECOME ARGUMENTS
                 const componentValues = components[componentName];
                 var componentInstance = new ComponentClass(this.scene, ...Object.values(componentValues));
+                componentInstance.__paramNames = Object.keys(componentValues);
                 componentController.AddComponent(obj, componentInstance);
             }
         }
