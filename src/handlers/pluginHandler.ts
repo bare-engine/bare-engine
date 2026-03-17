@@ -496,7 +496,7 @@ export class PluginHandler
 
     CheckClickGameObject(ev: PointerEvent, outline: boolean = true): GameObject | null
     {
-        var objs = sceneController.GetAllSceneObjects();
+        var objs = this.GetCurrentScene().objectController.GetAllObjects();
         var foundObj:GameObject | null = null;
         for (var i in objs)
         {

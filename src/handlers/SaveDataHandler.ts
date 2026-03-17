@@ -159,7 +159,7 @@ globalEvents.persistent.on(BareEvent.game_awake, () => {
 
 globalEvents.persistent.on(BareEvent.game_completeClear, () => {
     SaveDataHandler.Clear();
-    SaveDataHandler.InitDefaults();
+    //SaveDataHandler.InitDefaults();
 });
 
 globalEvents.persistent.on(BareEvent.level_postSave, ({level}) => {

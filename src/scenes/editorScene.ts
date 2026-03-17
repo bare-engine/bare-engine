@@ -476,9 +476,9 @@ export class EditorScene extends Scene
 
         return tilesheetEntity;
     }
-} 
+}
 
-SaveDataHandler.Load();
+//SaveDataHandler.Load();
 
 //export const editorController = new EditorController();
 //globalThis.editorController = editorController;
