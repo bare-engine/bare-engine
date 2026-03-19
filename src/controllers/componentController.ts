@@ -1,8 +1,8 @@
-import { globalEvents, GameMode, pipes, Scene } from "../main";
-import { GameObject } from "../objects/gameObject";
-import { Component, Entity, Ctor, BareEvent } from '../types/bareTypes';
 import { BareEngine } from "../bareEngine";
 import { Helper } from "../exports";
+import { GameMode, Scene } from "../main";
+import { GameObject } from "../objects/gameObject";
+import { BareEvent, Component, Ctor, Entity } from '../types/bareTypes';
 // REFERENCING A CLASS EXTENDING BASECOMPONENT WILL AUTOMATICALLY ALSO INCLUDE COMPONENTCONTROLLER
 
 export abstract class BaseComponent<T extends GameObject = GameObject> implements Component<T>
@@ -154,8 +154,8 @@ export class ComponentController
 
     AddComponent<T extends GameObject, C extends Component<T>>(go: T, componentClass: Ctor<C>): C;
     AddComponent<T extends GameObject, C extends Component<T>>(go: T, componentInstance: C): C;
-
-    AddComponent<T extends GameObject, C extends Component<T>>(go: T, arg: Ctor<C> | C): C {
+    AddComponent<T extends GameObject, C extends Component<T>>(go: T, arg: Ctor<C> | C): C
+    {
         const component: C = (typeof arg === "function") ? new arg(this.scene) : arg;
 
         component.go = go;

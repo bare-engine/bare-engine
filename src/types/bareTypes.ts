@@ -349,4 +349,8 @@ export class AnimationData
     this.framesPerSecond = framesPerSecond;
     this.loop = loop;
   }
+  
+  clone(): AnimationData {
+    return new AnimationData(this.animName, [...this.animFrames], this.framesPerSecond, this.loop);
+  }
 }

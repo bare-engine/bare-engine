@@ -36,7 +36,7 @@ export class PhysicsObjectBare extends GameObject
         return super.SetTexture(texture);
     }
 
-    override ApplyEntityToGameObject(entity: Entity, addComponents: boolean)
+    override OnApplyEntityToGameObject(entity: Entity, addComponents: boolean)
     {
         // SET HITBOX, IF PROVIDED
         if (entity.hitbox)

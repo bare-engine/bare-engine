@@ -1,5 +1,5 @@
 import { sceneController } from "./controllers/sceneController";
-import { globalEvents, GameMode, pipes, Scene } from "./main";
+import { globalEvents, GameMode, Scene } from "./main";
 import { GameObject } from "./objects/gameObject";
 import { assetsHandler } from "./handlers/assetsHandler";
 import { BareEvent, Events, GameObjectClass, SceneClass } from "./types/bareTypes";
@@ -18,7 +18,6 @@ export class BareEngine
     public time: number = 0;
     public count: int = 0;
     
-    private RunMainLoopId: number = -1;
     private RunMainLoopBound: () => void;
 
     public dummyGameObject: GameObject; // JUST USED FOR DEFAULT VALUES AND DUMMY CONSTRUCTION
@@ -81,10 +80,10 @@ export class BareEngine
         document.addEventListener('pointermove', this.PointerMove.bind(this), { passive: false });
 
         this.RunMainLoopBound = this.RunMainLoop.bind(this);
-        this.RunMainLoopId = requestAnimationFrame(this.RunMainLoopBound);
+        requestAnimationFrame(this.RunMainLoopBound);
         this.lastUpdateTimeRef = performance.now();
         
-        globalEvents.emit(BareEvent.game_started);
+        this.SendEvent(BareEvent.game_started);
     }
     
     ImplementInitialTextures()
@@ -156,7 +155,7 @@ export class BareEngine
             this.Render();
         }   
 
-        this.RunMainLoopId = requestAnimationFrame(this.RunMainLoopBound);
+        requestAnimationFrame(this.RunMainLoopBound);
     }
 
     Update(deltaTime:number)

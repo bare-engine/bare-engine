@@ -429,7 +429,7 @@ export class Scene implements SceneI
         obj.entity = entity;
         
         this.ApplyEntityVarsToGameObject(entity, obj);
-        obj.ApplyEntityToGameObject(entity, addComponents);
+        obj.OnApplyEntityToGameObject(entity, addComponents);
 
         if (addComponents)
             this.componentController?.ProcessCompentsFromEntity(entity, obj);
@@ -470,7 +470,7 @@ export class Scene implements SceneI
 
     ApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
     {
-        obj.ApplyEntityVarsToGameObject(entity, obj);
+        obj.OnApplyEntityVarsToGameObject(entity, obj);
 
         // PROCESS POLYGON VERTICES FIRST, SET THE AREA THAT OTHER PHYSICS PROPERTIES NEED
         if (entity.polygonVertices)
@@ -649,11 +649,11 @@ export class Scene implements SceneI
         return gameObject;
     }
 
-    RemoveGameObject(gameObject: GameObject, parent?: int | GameObject)
+    RemoveGameObject(gameObject: GameObject, parent?: int | GameObject, clear:boolean = true)
     {
         if (!gameObject.addedToLevel)
         {
-            // GAMEOBJECT WAS ALREADY REMOVED
+            // GAMEOBJECT WAS ALREADY REMOVED - DOES THIS STOP A CHILD FROM GETTING THROUGH? TODO
             return;
         }
 
@@ -686,19 +686,30 @@ export class Scene implements SceneI
         if (!removed)
             trace("FAILED TO REMOVE GAMEOBJECT");
         
-        // NOTIFY
-        globalEvents.emit(BareEvent.game_objectRemoved, gameObject);
-        this.events.emit(BareEvent.game_objectRemoved, gameObject);
+        if (clear)
+        {
+            // NOTIFY
+            // PUTTING THIS UNDER CLEAR, BIT UGLY, BUT NEEDED FOR NOW SO THAT IF A CHILD REMOVES ITSELF FROM PARENT,
+            // THIS DOESN'T GET CALLED AND IN TURN REMOVE ITS COMPONENTS (ComponentController LISTENS) - TODO?
+            globalEvents.emit(BareEvent.game_objectRemoved, gameObject);
+            this.events.emit(BareEvent.game_objectRemoved, gameObject);
+
+            gameObject.ResetValues();
+
+            if (wasPooled)
+            {
+                const className = this.GetContructorName(gameObject);
+                const pool = bareEngine.gameObjectPools.get(className);
+                if (pool)
+                    pool.Release(gameObject);
+            }
+        }
+        else
+        {
+            gameObject.pooled = wasPooled;
+        }
 
         gameObject.Removed();
-
-        if (wasPooled)
-        {
-            const className = this.GetContructorName(gameObject);
-            const pool = bareEngine.gameObjectPools.get(className);
-            if (pool)
-                pool.Release(gameObject);
-        }
     }
 
     Update(deltaTime: number): void

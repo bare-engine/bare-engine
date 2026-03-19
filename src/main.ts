@@ -1,6 +1,5 @@
 
 import { BareEngine } from './bareEngine';
-import matt from './libraries/matt';
 import mitt, { Emitter } from './libraries/mitt';
 import { BaseTexture, Color, GLShader, Rapid, Texture } from './libraries/rapid-render';
 import { supportsWebGL } from './libraries/rapid-render/webgl/utils';
@@ -9,7 +8,7 @@ import { BareEvent, Events, Pipes, SceneClass } from './types/bareTypes';
 import { Helper } from "./utils/helper";
 
 export const globalEvents = mitt<Events>();
-export const pipes = matt<Pipes>();
+//export const pipes = matt<Pipes>(); // NOT USING ANYMORE - STILL KEEPING PIPES IN ENGINE, JUST NOT REFERENCED. USER CAN STIL USE IT
 
 export { Scene } from './scenes/scene';
 

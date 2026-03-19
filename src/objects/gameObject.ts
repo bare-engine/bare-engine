@@ -145,9 +145,10 @@ export class GameObject
     AddComponent<T extends Component<this>>(componentInstance: T): T;
     AddComponent<T extends Component<this>>(arg: Ctor<T> | T): T
     {
-        var componentController = this.scene.Get("componentController");
+        var componentController = this.scene.Get("componentController"); // NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
+
         if (componentController)
-            return componentController.AddComponent(this, arg);// NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
+            return componentController.AddComponent(this, arg);
         else
         {
             console.error("ComponentController not registered. Call bare.AddClass(ComponentController) at Awake() of your game.");
@@ -158,8 +159,9 @@ export class GameObject
     GetComponent<T extends Component<this>>(componentClass: Ctor<T>): T | null
     {
         var componentController = this.scene.Get("componentController");
+
         if (componentController)
-            return componentController.GetComponent(this, componentClass);// NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
+            return componentController.GetComponent(this, componentClass);
         else
         {
             console.error("ComponentController not registered. Call bare.AddClass(ComponentController) at OnAwake() of your game.");
@@ -172,8 +174,9 @@ export class GameObject
     RemoveComponent<T extends Component<this>>(arg: Ctor<T> | T): boolean
     {
         var componentController = this.scene.Get("componentController");
+
         if (componentController)
-            return componentController.RemoveComponent(this, arg);// NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
+            return componentController.RemoveComponent(this, arg);
         else
         {
             console.error("ComponentController not registered. Call bare.AddClass(ComponentController) at Awake() of your game.");
@@ -181,12 +184,12 @@ export class GameObject
         }
     }
     
-    ApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
+    OnApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
     {
         // FOR OVERRIDE
     }
 
-    ApplyEntityToGameObject(entity: Entity, addComponents: boolean)
+    OnApplyEntityToGameObject(entity: Entity, addComponents: boolean)
     {
         // OVERRIDE
     }
@@ -277,7 +280,6 @@ export class GameObject
 
     Removed()
     {
-        this.ResetValues();
         this.addedToLevel = false;
     }
 
@@ -325,11 +327,13 @@ export class GameObject
 
         rapid.save();
         rapid.matrixStack.translate(-this.pivot.x, -this.pivot.y);
+
         // Render children with inherited color
         for (var i = 0; i < this.children.length; i++)
         {
             this.children[i].Render(effectiveColor);
         }
+        
         rapid.restore();
 
         rapid.restore();
@@ -1055,6 +1059,10 @@ export class GameObject
 
         if (input instanceof GameObject)
         {
+            // REMOVE GameObject FROM ITS PARENT OR SCENE FIRST
+            input.Remove(false); // DON'T WANT TO CLEAR!
+
+            // THEN ADD IT AS CHILD
             var child = input;
             child.parent = this;
             this.children.push(child);
@@ -1063,7 +1071,8 @@ export class GameObject
         }
         else
         {
-            return this.scene.AddGameObject(input, this); // CHILD WILL BE POOLED
+            // NO GameObject SUPPLIED, A NEW one WILL BE CREATED AND ADDED (FROM POOL)
+            return this.scene.AddGameObject(input, this);
         }
     }
 
@@ -1178,9 +1187,16 @@ export class GameObject
         this.uniforms = undefined;
     }
     
-    Remove()
+    Remove(clear:boolean = true)
     {
-        this.scene.RemoveGameObject(this);
+        if (this.parent)
+        {
+            this.parent.RemoveChild(this);
+            this.parent = null;
+            return;
+        }
+
+        this.scene.RemoveGameObject(this, undefined, clear);
     }
 
 	Destroy()

@@ -37,14 +37,14 @@ export class Circle extends RigidBody
         this.area = 0;
     }
     
-    override ApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
+    override OnApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
     {
         if (!entity.physicsRadius)
         {
             entity.physicsRadius = Math.min(this.texture.width, this.texture.height) * .5;
         }
 
-        super.ApplyEntityVarsToGameObject(entity, obj);
+        super.OnApplyEntityVarsToGameObject(entity, obj);
     }
 
     set physicsRadius(radius: number)

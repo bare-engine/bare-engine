@@ -3,14 +3,13 @@ import { BareEngine } from "../bareEngine";
 import { objectController } from "../controllers/objectController";
 import { sceneController } from "../controllers/sceneController";
 import { Color, Texture } from "../libraries/rapid-render";
-import { GameMode, globalEvents, MakePath, pipes, Scene } from "../main";
+import { GameMode, MakePath, Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { EditorUIScene } from "../scenes/editorUIScene";
 import { defaultEntityData } from "../types/bareData";
 import { BareEvent, Component, Entity, LevelData, SaveData, SettingsData } from '../types/bareTypes';
 import { Helper } from "../utils/helper";
 import { assetsHandler } from "./assetsHandler";
-import { SettingsHandler } from "./settingsHandler";
 
 export class LevelHandler
 {

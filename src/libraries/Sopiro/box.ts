@@ -27,14 +27,14 @@ export class Box extends Polygon
         this.phyHeight = 0;
     }
 
-    override ApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
+    override OnApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
     {
         if (!entity.physicsRect)
         {
             entity.physicsRect = {width: this.texture.width, height: this.texture.height};
         }
 
-        super.ApplyEntityVarsToGameObject(entity, obj);
+        super.OnApplyEntityVarsToGameObject(entity, obj);
     }
 
     override set physicsRect(value: { width: number, height: number })

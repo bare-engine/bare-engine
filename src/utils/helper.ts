@@ -56,20 +56,6 @@ export class Helper
         return radians * (180 / Math.PI);
     }
 
-    static Distance = function(pos1:Vec2, pos2:Vec2)
-    {
-        var distancex = pos1.x - pos2.x;
-        var distancey = pos1.y - pos2.y;
-        return Math.sqrt(distancex * distancex + distancey * distancey);
-    }
-
-    static DistanceNoSqr = function(pos1:Vec2, pos2:Vec2)
-    {
-        var distancex = pos1.x - pos2.x;
-        var distancey = pos1.y - pos2.y;
-        return distancex * distancex + distancey * distancey;
-    }
-
     static RandomRange(min: number, max: number): number
     {
         return Math.random() * (max - min) + min;
@@ -255,6 +241,28 @@ export class Helper
     {
         return Math.sqrt(vec2.x*vec2.x + vec2.y*vec2.y);
     }
+
+    static Distance = function(pos1:Vec2, pos2:Vec2)
+    {
+        var distancex = pos1.x - pos2.x;
+        var distancey = pos1.y - pos2.y;
+        return Math.sqrt(distancex * distancex + distancey * distancey);
+    }
+
+    static DistanceNoSqr = function(pos1:Vec2, pos2:Vec2)
+    {
+        var distancex = pos1.x - pos2.x;
+        var distancey = pos1.y - pos2.y;
+        return distancex * distancex + distancey * distancey;
+    }
+
+    // ANGLE IN DEGREES
+    static Direction(p1:{x:number,y:number}, p2:{x:number,y:number})
+    {
+        var dx = p1.x - p2.x;
+        var dy = p1.y - p2.y;
+        return Math.atan2(dy,dx) * 180 / Math.PI;
+    };
 
     static PointTowards(direction:number, distance:number):Vec2
     {
