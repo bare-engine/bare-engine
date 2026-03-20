@@ -32,7 +32,7 @@ export { SceneController } from "../controllers/sceneController";
 export { ParticleController } from "../controllers/particleController";
 
 export { physicsControllerBare } from "../controllers/physicsControllerBare";
-export { physicsControllerSopiro } from "../controllers/physicsControllerSopiro";
+
 
 // Controllers instances
 export { keyboardController } from "../controllers/keyboardController";
@@ -45,7 +45,7 @@ export { particleController } from "../controllers/particleController";
 export { objectController } from "../controllers/objectController";
 
 import { PhysicsControllerBare } from "../controllers/physicsControllerBare";
-import { PhysicsControllerSopiro } from "../controllers/physicsControllerSopiro";
+
 import { ComponentController } from "../controllers/componentController";
 import { ParticleController } from "../controllers/particleController";
 import { TweenController } from "../controllers/tweenController";
@@ -58,7 +58,6 @@ import { HitboxController } from "../controllers/hitboxController";
 import { PhysicsObjectBare } from "./barePhysics";
 
 export const BareClasses = {
-  PhysicsControllerSopiro,
   PhysicsControllerBare,
   PhysicsObjectBare,
   ComponentController,
