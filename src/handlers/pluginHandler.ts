@@ -10,6 +10,7 @@ import { EditorScene } from "../scenes/editorScene";
 import { objectController } from "../controllers/objectController";
 import { HitboxScene } from "../scenes/hitboxScene";
 import { serialize } from "node:v8";
+import { keyboardController } from "../controllers/keyboardController";
 
 // THIS PLUGIN CODE DOES NOT GET INCLUDED IN PRODUCTION
 // ALL CALLS SHOULD BE WRAPPED WITH __DEV__
@@ -77,9 +78,9 @@ window.__GAME_DEBUG_API__ = {
   },
 
   // called by the game to notify the panel
-  selectObjectInPlugin(uid: string, openObjectsTab: boolean = false)
+  selectObjectInPlugin(uid: string, openObjectsTab: boolean = false, parentIds: string[] = [])
   {
-    window.postMessage({ __fromGame: true, type: "selectObject", id: uid, openObjectsTab: openObjectsTab }, "*");
+    window.postMessage({ __fromGame: true, type: "selectObject", id: uid, openObjectsTab: openObjectsTab, parentIds }, "*");
   },
 
   gotoLevelView(levelPath: string) {
@@ -171,14 +172,40 @@ window.__GAME_DEBUG_API__ = {
         var data = {
             id: o.uniqueID,
             name: o.name || "noName",
+            customName: o.customName,
+
             x: o.x,
             y: o.y,
             scaleX: o.scaleX,
             scaleY: o.scaleY,
             rotation: o.rotation,
+
+            innerX: o.innerTransform.position.x,
+            innerY: o.innerTransform.position.y,
+            innerScaleX: o.innerScale.x,
+            innerScaleY: o.innerScale.y,
+            innerRotation: o.innerTransform.rotation,
+
+            pivot: {x: o.pivot.x, y: o.pivot.y},
+            pivotBasedOnHitbox: {x: o.pivotBasedOnHitbox.x, y: o.pivotBasedOnHitbox.y},
+            startPosition: {x: o.startPosition.x, y: o.startPosition.y},
+            flipX: o.flipped,
+            
             visible: o.visible,
+            persistent: o.persistent,
+            save: o.save,
+            tags: JSON.stringify(o.tags),
+            color: o.color.toHex(),
+
+            customData: JSON.stringify(o.customData),
+
             children: serializeChildren(o.children),
         };
+
+        /*
+        tapHitbox: Hitbox | null = null;
+        customData: Record<string, any> = {};
+        */
 
         return data;
     }
@@ -186,21 +213,39 @@ window.__GAME_DEBUG_API__ = {
     return serializeGameObject(o);
   },
 
-  setObject(id: string, props: any) {
-    const o = plugin.GetCurrentScene().objectController.GetObjectById(id);
-    if (!o) return false;
+    setObject(id: string, props: any) {
+        const o = plugin.GetCurrentScene().objectController.GetObjectById(id);
+        if (!o) return false;
 
-    if (props.x !== undefined) o.x = props.x;
-    if (props.y !== undefined) o.y = props.y;
+        if (props.customName !== undefined) o.customName = props.customName;
 
-    if (props.scaleX !== undefined) o.scaleX = props.scaleX;
-    if (props.scaleY !== undefined) o.scaleY = props.scaleY;
+        if (props.x !== undefined) o.x = props.x;
+        if (props.y !== undefined) o.y = props.y;
+        if (props.scaleX !== undefined) o.scaleX = props.scaleX;
+        if (props.scaleY !== undefined) o.scaleY = props.scaleY;
+        if (props.rotation !== undefined) o.rotation = props.rotation;
 
-    if (props.rotation !== undefined) o.rotation = props.rotation;
-    if (props.visible !== undefined) o.visible = props.visible;
+        if (props.innerX !== undefined) o.innerTransform.position.x = props.innerX;
+        if (props.innerY !== undefined) o.innerTransform.position.y = props.innerY;
+        if (props.innerScaleX !== undefined) o.innerScale.x = props.innerScaleX;
+        if (props.innerScaleY !== undefined) o.innerScale.y = props.innerScaleY;
+        if (props.innerRotation !== undefined) o.innerTransform.rotation = props.innerRotation;
 
-    return true;  
-  },
+        if (props.pivot !== undefined) { o.pivot.x = props.pivot.x; o.pivot.y = props.pivot.y; }
+        if (props.pivotBasedOnHitbox !== undefined) { o.pivotBasedOnHitbox.x = props.pivotBasedOnHitbox.x; o.pivotBasedOnHitbox.y = props.pivotBasedOnHitbox.y; }
+        if (props.startPosition !== undefined) { o.startPosition.x = props.startPosition.x; o.startPosition.y = props.startPosition.y; }
+
+        if (props.flipX !== undefined) o.flipped = props.flipX;
+        if (props.visible !== undefined) o.visible = props.visible;
+        if (props.persistent !== undefined) o.persistent = props.persistent;
+        if (props.save !== undefined) o.save = props.save;
+        if (props.tags !== undefined) o.tags = JSON.parse(props.tags);
+        if (props.color !== undefined) Color.fromHex(props.color);
+        if (props.customData !== undefined) o.customData = JSON.parse(props.customData);
+
+        return true;
+    },
+
 
   getEntityData():SettingsData {
     // Return a clone so external tools don't accidentally mutate live data (?) TODO
@@ -449,11 +494,25 @@ export class PluginHandler
 
       if (ev.button === 2)
       {
-          const obj = this.CheckClickGameObject(ev);
+        var isControlDown = keyboardController.IsKeyDown("control");
+          const obj = isControlDown ? this.CheckClickDeepChild(ev) : this.CheckClickGameObject(ev);
           if (obj)
           {
               plugin.TraceObject(obj);
-              this.SelectObjectInPlugin(obj.uniqueID, true);
+
+              var parentIds = [];
+                if (isControlDown)
+                {
+                    var parent = obj.parent;
+                    while (parent)
+                    {
+                        parentIds.push(parent.uniqueID);
+                        parent = parent.parent;
+                    }
+                }
+
+                var openObjectsTab = plugin.GetCurrentScene().settingsData.selectionEnabled !== false;
+                window.__GAME_DEBUG_API__.selectObjectInPlugin(obj.uniqueID, openObjectsTab, parentIds);
 
               var mouseController2 = this.GetCurrentScene().mouseController; // WITHOUT THE 2, DEV WEBPACK CATCHES THIS - TODO
 
@@ -524,9 +583,6 @@ export class PluginHandler
             if (!foundObj)
             if (Helper.IsPointInRectangle(pWorld, objRect))
             {
-                var openObjectsTab = plugin.GetCurrentScene().settingsData.selectionEnabled !== false;
-                window.__GAME_DEBUG_API__.selectObjectInPlugin(obj.uniqueID, openObjectsTab);
-
                 plugin.TraceObject(obj);
 
                 if (outline)
@@ -544,14 +600,63 @@ export class PluginHandler
         return foundObj;
     }
 
+    CheckClickDeepChild(ev: PointerEvent): GameObject | null
+    {
+        var objs = this.GetCurrentScene().objectController.GetAllObjects();
+        var p = new Vec2(ev.clientX, ev.clientY);
+        var pWorld = plugin.GetCurrentScene().ScreenToWorldPos(p);
+
+        for (var i in objs)
+        {
+            var obj = objs[i];
+
+            if (obj.customName == 'ignoreInPlugin')
+                continue;
+
+            if (!obj.visible || !obj.visibleInEditor)
+                continue;
+
+            var found = this.FindDeepestChildAtPoint(obj, pWorld);
+            if (found)
+                return found;
+        }
+
+        return null;
+    }
+
+    private FindDeepestChildAtPoint(obj: GameObject, pWorld: Vec2): GameObject | null
+    {
+        for (var i = obj.children.length - 1; i >= 0; i--)
+        {
+            var child = obj.children[i];
+
+            if (!child.visible || !child.visibleInEditor)
+                continue;
+
+            var found = this.FindDeepestChildAtPoint(child, pWorld);
+            if (found)
+                return found;
+        }
+
+        var tl = obj.parent
+            ? obj.parent.ToGlobal(obj.GetTopLeftPosition())
+            : obj.GetTopLeftPosition();
+        var objRect = { x: tl.x, y: tl.y, width: obj.width, height: obj.height };
+
+        if (Helper.IsPointInRectangle(pWorld, objRect))
+            return obj;
+
+        return null;
+    }
+
     TraceObject(obj: GameObject)
     {
         trace('Bare Engine - Object Selected:', obj.name, obj);
     }
 
-    SelectObjectInPlugin(uid: string, openObjectsTab: boolean = false)
+    SelectObjectInPlugin(uid: string, openObjectsTab: boolean = false, parentIds: string[] = [])
     {
-        window.__GAME_DEBUG_API__.selectObjectInPlugin(uid, openObjectsTab);
+        window.__GAME_DEBUG_API__.selectObjectInPlugin(uid, openObjectsTab, parentIds);
     }
 
     AddDebugAction(label: string, callback: () => void)

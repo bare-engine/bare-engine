@@ -55,8 +55,8 @@ export class GameObject
     pooled:boolean = false;
     revertPivotOnSave: boolean = false;
 
-    tapHitbox: Hitbox | null = null; // COULD MAKE THIS ANY, TO UNREF HITBOX - TODO
-    hitboxColor:Color = new Color(255,255,255,80);
+    tapHitbox: Hitbox | null = null; // PHASE THIS OUT, MAKE INTO COMPONENT? TODO
+    hitboxColor:Color = new Color(255,255,255,80); // ^
 
     startPosition = new Vec2();
 
