@@ -577,7 +577,7 @@ export class Scene implements SceneI
             gameObject = bareEngine.GetObjectFromPool("GameObject", this);
             gameObject.SetTexture(input);
             gameObject.pooled = true;
-            gameObject.name = "pooledGameObjectFromTexture";
+            gameObject.name = input.texturePath || "PooledGameObjectFromTexture";
         }
         else
         {

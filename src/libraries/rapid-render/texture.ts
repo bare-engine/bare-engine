@@ -2,6 +2,7 @@ import Rapid from "./render"
 import { Images, ITextTextureOptions, TextureWrapMode, WebGLContext } from "./interface"
 import { Color } from "./math"
 import { createTexture } from "./webgl/utils"
+import { Helper } from "../../exports"
 
 /**
  * texture manager
@@ -191,6 +192,7 @@ class Texture {
      * Image scaling factor
      */
     protected scale: number = 1
+    public texturePath: string = ""; // ADDED
     /**
      * Creates a new `Texture` instance with the specified base texture reference.
      * @param base - The {@link BaseTexture} to be used by the texture.
@@ -430,6 +432,7 @@ class BareText extends Texture {
      */
     constructor(options: ITextTextureOptions) {
         super()
+        this.texturePath = "text";
         this.options = options;
         this.text = options.text || ' '
         this.updateTextImage()

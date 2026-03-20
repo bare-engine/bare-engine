@@ -43,6 +43,7 @@ class AssetsHandler
 
     AddTexture(texturePath: string, texture: Texture): void
     {
+        texture.texturePath = texturePath; // NOT THE BEST PLACE?
         this.textures.set(texturePath, texture);
     }
 
