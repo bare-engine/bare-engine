@@ -146,7 +146,8 @@ window.__GAME_DEBUG_API__ = {
                 .filter(o => o.customName !== 'ignoreInPlugin')
                 .map(o => ({
                     id: o.uniqueID,
-                    name: o.pluginName ? o.pluginName : o.name
+                    name: o.pluginName ? o.pluginName : o.name,
+                    hasChildren: (o.children.length > 0)
                 }))
   },
 
@@ -162,6 +163,10 @@ window.__GAME_DEBUG_API__ = {
     const o = plugin.GetCurrentScene().objectController.GetObjectById(id);
     if (!o) return null;
 
+    var serializeChildren = (children: GameObject[]) => {
+        return children.map(c => serializeGameObject(c));
+    }
+
     var serializeGameObject = (o: GameObject) => {
         var data = {
             id: o.uniqueID,
@@ -176,10 +181,6 @@ window.__GAME_DEBUG_API__ = {
         };
 
         return data;
-    }
-
-    var serializeChildren = (children: GameObject[]) => {
-        return children.map(c => serializeGameObject(c));
     }
 
     return serializeGameObject(o);
