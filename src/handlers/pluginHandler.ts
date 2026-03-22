@@ -196,6 +196,7 @@ window.__GAME_DEBUG_API__ = {
             save: o.save,
             tags: JSON.stringify(o.tags),
             color: o.color.toHex(),
+            alpha: o.alpha,
 
             customData: JSON.stringify(o.customData),
 
@@ -240,7 +241,8 @@ window.__GAME_DEBUG_API__ = {
         if (props.persistent !== undefined) o.persistent = props.persistent;
         if (props.save !== undefined) o.save = props.save;
         if (props.tags !== undefined) o.tags = JSON.parse(props.tags);
-        if (props.color !== undefined) Color.fromHex(props.color);
+        if (props.color !== undefined) o.color = Color.fromHex(props.color);
+        if (props.alpha !== undefined) o.alpha = props.alpha;
         if (props.customData !== undefined) o.customData = JSON.parse(props.customData);
 
         return true;
