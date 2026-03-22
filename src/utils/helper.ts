@@ -332,14 +332,14 @@ export class Helper
         return dir;
     }
 
-    static CapitalizeFirstLetter(val:string)
+    static CapitalizeFirstLetter(str:string)
     {
-        return String(val).charAt(0).toUpperCase() + String(val).slice(1);
+        return str.charAt(0).toUpperCase() + str.slice(1);
     }
 
-    static DecapitalizeFirstLetter(val:string)
+    static DecapitalizeFirstLetter(str:string)
     {
-        return String(val).charAt(0).toLocaleLowerCase() + String(val).slice(1);
+        return str.charAt(0).toLowerCase() + str.slice(1);
     }
     
     static MultiplyColors(color1: Color, color2: Color): Color
@@ -383,10 +383,5 @@ export class Helper
             .split(',')
             .map(param => param.trim().split(/[:=\s]/)[0].trim())
             .filter(name => name.length > 0);
-    }
-    
-    static UpperCaseFirstLetter(str: string): string
-    {
-        return str.charAt(0).toUpperCase() + str.slice(1);
     }
 }

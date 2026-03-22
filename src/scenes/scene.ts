@@ -261,6 +261,15 @@ export class Scene implements SceneI
             if (sopiroPhysicsClasses.includes(entity.extendClass))
                 entity.pivot = { x: .5, y: .5 };
 
+            // REMOVED COMPONENTS SPECIFICALLY LISTED IN ENTITY
+            if (entity.components && entity.componentsRemoved)
+            {
+                for (const componentName of entity.componentsRemoved)
+                {
+                    delete entity.components[componentName];
+                }
+            }
+
             this.FillPresets(entity, settingsData);
 
             return entity

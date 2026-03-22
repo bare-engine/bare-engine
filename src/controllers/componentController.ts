@@ -92,14 +92,14 @@ export class ComponentController
                 }
 
                 // REMOVED COMPONENTS SPECIFICALLY LISTED IN ENTITY
-                if (entity.componentsRemoved)
+                /*if (entity.componentsRemoved)
                 {
                     for (const componentName of entity.componentsRemoved)
                     {
                         //obj.componentsRemoved.push(componentName); // STORE SO IT'S SO IT'S SAVED AGAIN LATER
                         delete components[componentName];
                     }
-                }
+                }*/
             }
 
             // ADD COMPONENTS BASED ON OBJ
@@ -387,11 +387,7 @@ export class ComponentController
         if (component)
         {
             component.enabled = true;
-
-            if (component.OnEnable)
-            {
-                component.OnEnable()
-            }
+            component.OnEnable?.();
         }
     }
 
@@ -401,11 +397,7 @@ export class ComponentController
         if (component)
         {
             component.enabled = false; // OR COULD BE SET IN BASE COMPONENT METHOD
-
-            if (component.OnDisable)
-            {
-                component.OnDisable()
-            }
+            component.OnDisable?.();
         }
     }
 

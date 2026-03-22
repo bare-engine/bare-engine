@@ -212,6 +212,22 @@ window.__GAME_DEBUG_API__ = {
         if (window.gameMode == GameMode.Editor)
         {
             let components = o.scene.ConstructEntity(o.levelEntity).components;
+
+            // HERE I HAVE TO MANUALLY INSTANTIATE A COMPONENT, TO GET THE DEFAULT CONSTRUCTOR VALUES
+            for (var comp in components)
+            {
+                var compRef = bareEngine.componentClasses[Helper.CapitalizeFirstLetter(comp) + "Component"];
+                let componentsBase = o.scene.levelHandler.SerializeComponent(new compRef()); // INSTANTIATING NEW COMPONENT, JUST TO GET DEFAULT CONSTRUCTOR VALUES. NOT THAT GREAT - TODO?
+                
+                for (var key in componentsBase)
+                {
+                    if (!components[comp][key])
+                    {
+                        components[comp][key] = componentsBase[key];
+                    }
+                }
+            }
+
             data.components = components;
         }
 
@@ -259,22 +275,32 @@ window.__GAME_DEBUG_API__ = {
 
         if (props.components !== undefined)
         {
+            // ADDED A COMPONENT
+
             if (window.gameMode == GameMode.Game)
             {
                 for (let compName in props.components)
                 {
-                    var compClass = bareEngine.componentClasses[Helper.UpperCaseFirstLetter(compName) + "Component"];
+                    var compClass = bareEngine.componentClasses[Helper.CapitalizeFirstLetter(compName) + "Component"];
                     var comp = o.scene.componentController.GetComponent(o, compClass);
 
-                    // WE APPLY THE COMPONENTS VALUES FROM THE PLUGIN TO THE ONES INGAME
-                    // BUT ALSO CALL OnRemoved() AND Added() AROUND IT, TO RESET THE COMPONENT AND LET THE NEW VALUES BE REPROCESSED IN Added()/OnAdded()
-                    comp?.OnRemoved();
-                    var compData:Record<string, (string | number | boolean)> = props.components[compName];
-                    for (let compProp in compData)
+                    if (comp)
                     {
-                        comp[compProp] = compData[compProp];
+                        // WE APPLY THE COMPONENTS VALUES FROM THE PLUGIN TO THE ONES INGAME
+                        // BUT ALSO CALL OnRemoved() AND Added() AROUND IT, TO RESET THE COMPONENT AND LET THE NEW VALUES BE REPROCESSED IN Added()/OnAdded()
+                        comp?.OnRemoved();
+                        var compData:Record<string, (string | number | boolean)> = props.components[compName];
+                        for (let compProp in compData)
+                        {
+                            comp[compProp] = compData[compProp];
+                        }
+                        comp.Added(comp.go); // CALLS OnAdded() AS WELL
                     }
-                    comp.Added(comp.go); // CALLS OnAdded() AS WELL
+                    else
+                    {
+                        // JUST CREATED A COMPONENT
+                        o.AddComponent(compClass);
+                    }
 
                     // COULD ALSO NOT GO THAT ROUTE, AND INSTEAD, CALL OnStart(), AFTER SETTING THE COMPONENT VALUES
                     // BUT THE COMPONENT'S CODE SHOULD THEN BE MUCH STRICTER WITH WHAT IT INITS AT OnAdded() and OnStart() TO MAKE THIS WORK - SEEMS ANNOYING
@@ -286,6 +312,7 @@ window.__GAME_DEBUG_API__ = {
                 // THIS FINDS THE EXTENDED COMPONENT VALUES FROM levelEntity (ONES DERIVED FROM entityData (entities+entityBases))
                 // THEN FINDS THE DIFFERENCE BETWEEN THOSE AND THE VALUES FROM THE PLUGIN
                 // SAVES THAT TO THE LEVEL ENTITY COMPONENTS - AS TO NOT SUPPLY ANY DUPLICATE DATA
+                //var entityExtended = {name: o.levelEntity.name, componentsRemoved: o.levelEntity.componentsRemoved}; // ADDING componentsRemoved TO NOT INCLUDE THOSE FROM EXTENDED COMPONENTS, ELSE YOU COULD NEVER REMOVE EXTENDED COMPONENTS
                 var componentsExtended = o.scene.ConstructEntity(o.levelEntity.name).components;
                 var changedComponents:any = {};
                 for (var compName in props.components) {
@@ -302,12 +329,76 @@ window.__GAME_DEBUG_API__ = {
                     }
                 }
                 o.levelEntity.components = changedComponents;
+
+                // IF COMPONENT WAS ADDED THAT WAS EARLIER REMOVED FROM levelEntity (IN componentsRemoved), CLEAR IT
+                // NOW IT GETS EXTENDED AGAIN 
+                if (o.levelEntity.componentsRemoved)
+                {
+                    var compKeys = Object.keys(props.components);
+                    for (var i = o.levelEntity.componentsRemoved.length - 1; i >= 0; i--)
+                    {
+                        var compName = o.levelEntity.componentsRemoved[i];
+                        if (compKeys.includes(compName))
+                        {
+                            o.levelEntity.componentsRemoved.splice(i, 1);
+                            break;
+                        }
+                    }
+                }
+
+                // DON'T WANT TO SEND ALONG ANY EMPTY OBJECTS
+                if (Object.keys(o.levelEntity.components).length == 0)
+                    delete o.levelEntity.components;
+
+                if (o.levelEntity.componentsRemoved && o.levelEntity.componentsRemoved.length == 0)
+                    delete o.levelEntity.componentsRemoved;
             }
         }
 
         return true;
     },
 
+    removeObject(id: string) {
+        const o = plugin.GetCurrentScene().objectController.GetObjectById(id);
+        if (!o) return false;
+
+        o.Remove();
+    },
+
+    removeComponent(id: string, comp: string) {
+        const o = plugin.GetCurrentScene().objectController.GetObjectById(id);
+        if (!o) return false;
+
+        var compRef = bareEngine.componentClasses[Helper.CapitalizeFirstLetter(comp) + "Component"];
+
+        if (window.gameMode == GameMode.Editor)
+        {
+            if (!o.levelEntity.components || !o.levelEntity.components[comp])
+            {
+                // THIS COMPONENT IS NOT IN levelEntity, SO IT HAS TO BE EXTENDED
+                // THAT'S WHY WE ADD IT TO componentsRemoved, SO IT CAN BE TAKEN INTO ACCOUNT IN getObject()
+                if (!o.levelEntity.componentsRemoved)
+                    o.levelEntity.componentsRemoved = [];
+
+                o.levelEntity.componentsRemoved.push(comp);
+                
+                return;
+            }
+
+            delete o.levelEntity.components[comp]; // COMPONENTS ARE JUST ADDED AS DATA IN EDITOR
+        }
+        else
+        if (window.gameMode == GameMode.Game)
+            o.RemoveComponent(compRef);
+    },
+
+    getAllComponentNames():string[] {
+        return Object.keys(bareEngine.componentClasses).map(c =>
+            Helper.DecapitalizeFirstLetter(
+                c.replace(/Component$/, "")
+            )
+        );
+    },
 
   getEntityData():SettingsData {
     // Return a clone so external tools don't accidentally mutate live data (?) TODO
