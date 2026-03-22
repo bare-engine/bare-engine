@@ -399,12 +399,22 @@ export class LevelHandler
         return obj;
     }
 
-    SerializeComponents(components: Component[]): any
+    // EG:
+    // {
+    //     "shadow": {
+    //          "show": true
+    //     },
+    //     "goal": {
+    //         "emoji": "🥚",
+    //         "target": 3
+    //     }
+    // }
+    SerializeComponents(components: Component[]): Record<string, Record<string, (string | number | boolean)>>
     {
         if (!components)
             return null;
 
-        var componentsRec: Record<string, any> = {};
+        var componentsRec: Record<string, Record<string, (string | number | boolean)>> = {};
         for (var i = 0; i < components.length; i++)
         {
             var component = components[i];
@@ -417,16 +427,16 @@ export class LevelHandler
         return componentsRec;
     }
 
-    SerializeComponent(component: Component): any
+    SerializeComponent(component: Component): Record<string, (string | number | boolean)>
     {
-        var componentData: any = {};
+        var componentData: Record<string, (string | number | boolean)> = {};
         var constructorVarNames = (component as any).__paramNames || Helper.GetConstructorParamNames(component.constructor);
         
         // GET VALUE FROM EACH KEY OF CONSTRUCTOR PARAMS
         for (let i = 0; i < constructorVarNames.length; i++)
         {
             const paramName = constructorVarNames[i];
-            const paramValue = component[paramName as keyof typeof component];
+            const paramValue = component[paramName as keyof typeof component] as any; // SHOULD STRING, NUMBER OR BOOLEAN
 
             // SKIP SCENE
             if (paramName == "scene" || paramValue instanceof Scene)

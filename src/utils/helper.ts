@@ -384,4 +384,9 @@ export class Helper
             .map(param => param.trim().split(/[:=\s]/)[0].trim())
             .filter(name => name.length > 0);
     }
+    
+    static UpperCaseFirstLetter(str: string): string
+    {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
 }

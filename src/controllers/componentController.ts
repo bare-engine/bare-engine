@@ -23,6 +23,7 @@ export abstract class BaseComponent<T extends GameObject = GameObject> implement
     }
 
     OnAdded?(): void;
+    OnRemoved?(): void;
     OnEnable?(): void;
     OnDisable?(): void;
 }

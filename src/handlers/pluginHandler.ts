@@ -3,9 +3,9 @@ import { BareEvent, BareEventPayload, LevelData, SaveData, SettingsData } from "
 import { Helper } from "../utils/helper";
 import { Color, Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
-import {  globalEvents } from "../main";
+import {  GameMode, globalEvents } from "../main";
 import { OutlineShader } from "../shaders/outlineShader";
-import { BareClasses, levelHandler, ObjectController, Scene, sceneController } from "../exports";
+import { BareClasses, componentController, levelHandler, ObjectController, Scene, sceneController } from "../exports";
 import { EditorScene } from "../scenes/editorScene";
 import { objectController } from "../controllers/objectController";
 import { HitboxScene } from "../scenes/hitboxScene";
@@ -203,6 +203,18 @@ window.__GAME_DEBUG_API__ = {
             children: serializeChildren(o.children),
         };
 
+        if (window.gameMode == GameMode.Game)
+        {
+            let components = o.scene.levelHandler.SerializeComponents(o.scene.componentController.GetComponentsFrom(o));
+            data.components = components;
+        }
+        else
+        if (window.gameMode == GameMode.Editor)
+        {
+            let components = o.scene.ConstructEntity(o.levelEntity).components;
+            data.components = components;
+        }
+
         /*
         tapHitbox: Hitbox | null = null;
         customData: Record<string, any> = {};
@@ -244,6 +256,54 @@ window.__GAME_DEBUG_API__ = {
         if (props.color !== undefined) o.color = Color.fromHex(props.color);
         if (props.alpha !== undefined) o.alpha = props.alpha;
         if (props.customData !== undefined) o.customData = JSON.parse(props.customData);
+
+        if (props.components !== undefined)
+        {
+            if (window.gameMode == GameMode.Game)
+            {
+                for (let compName in props.components)
+                {
+                    var compClass = bareEngine.componentClasses[Helper.UpperCaseFirstLetter(compName) + "Component"];
+                    var comp = o.scene.componentController.GetComponent(o, compClass);
+
+                    // WE APPLY THE COMPONENTS VALUES FROM THE PLUGIN TO THE ONES INGAME
+                    // BUT ALSO CALL OnRemoved() AND Added() AROUND IT, TO RESET THE COMPONENT AND LET THE NEW VALUES BE REPROCESSED IN Added()/OnAdded()
+                    comp?.OnRemoved();
+                    var compData:Record<string, (string | number | boolean)> = props.components[compName];
+                    for (let compProp in compData)
+                    {
+                        comp[compProp] = compData[compProp];
+                    }
+                    comp.Added(comp.go); // CALLS OnAdded() AS WELL
+
+                    // COULD ALSO NOT GO THAT ROUTE, AND INSTEAD, CALL OnStart(), AFTER SETTING THE COMPONENT VALUES
+                    // BUT THE COMPONENT'S CODE SHOULD THEN BE MUCH STRICTER WITH WHAT IT INITS AT OnAdded() and OnStart() TO MAKE THIS WORK - SEEMS ANNOYING
+                }
+            }
+            else
+            if (window.gameMode == GameMode.Editor)
+            {
+                // THIS FINDS THE EXTENDED COMPONENT VALUES FROM levelEntity (ONES DERIVED FROM entityData (entities+entityBases))
+                // THEN FINDS THE DIFFERENCE BETWEEN THOSE AND THE VALUES FROM THE PLUGIN
+                // SAVES THAT TO THE LEVEL ENTITY COMPONENTS - AS TO NOT SUPPLY ANY DUPLICATE DATA
+                var componentsExtended = o.scene.ConstructEntity(o.levelEntity.name).components;
+                var changedComponents:any = {};
+                for (var compName in props.components) {
+                    if (componentsExtended[compName]) {
+                        var diff:any = {};
+                        for (var key in props.components[compName]) {
+                            if (props.components[compName][key] !== componentsExtended[compName][key]) {
+                                diff[key] = props.components[compName][key];
+                            }
+                        }
+                        if (Object.keys(diff).length > 0) changedComponents[compName] = diff;
+                    } else {
+                        changedComponents[compName] = props.components[compName];
+                    }
+                }
+                o.levelEntity.components = changedComponents;
+            }
+        }
 
         return true;
     },
@@ -446,7 +506,7 @@ export class PluginHandler
             // IF REMOVED SCENE WAS CURRENT, PICK NEW ONE
             if (type === "removed" && this.currentSceneClassString == scene.constructor.name)
             {
-                const scene = this.GetBestScene();
+                const scene = sceneController.GetMainScene();
                 if (scene)
                     this.SetCurrentScene(scene.constructor.name);
             }
@@ -470,23 +530,6 @@ export class PluginHandler
         this.AddDebugAction("Toggle Debug Visuals", () => window.debug = !window.debug);
         this.AddDebugBreak();
         this.AddDebugBreak();
-    }
-
-    GetBestScene():Scene | null
-    {
-        var levelScene = sceneController.GetLevelScene();
-        if (levelScene)
-            return levelScene;
-
-        var allScenes = sceneController.GetAllScenes();
-        for (var i = 0; i < allScenes.length; i++)
-        {
-            var scene = allScenes[i];
-            if (scene.constructor.name != "EditorUIScene")
-                return scene;
-        }
-
-        return null;
     }
 
     private OnRightClickPointerDown = async (ev: PointerEvent) =>
@@ -713,7 +756,7 @@ export class PluginHandler
         const resolved = this.ResolveSceneByName(sceneClassString);
         if (resolved) return resolved;
 
-        const fallback = this.GetBestScene();
+        const fallback = sceneController.GetMainScene();
         if (!fallback)
             throw new Error("PluginHandler.GetScene: no active scenes to resolve.");
 

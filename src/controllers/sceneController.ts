@@ -292,6 +292,11 @@ export class SceneController
         return this.currentScenes.find(current => current.isLevel);
     }
 
+    GetMainScene(): Scene
+    {
+        return this.GetLevelScene() || this.currentScenes[0];
+    }
+
     DisableAllScenes()
     {
         for (var scene of this.currentScenes)
