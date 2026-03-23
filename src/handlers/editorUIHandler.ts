@@ -550,28 +550,20 @@ export class EditorUIHandler {
         }, { signal });
 
         // MINIMIZE BUTTON HOVER
-        const sidebar = document.getElementById('left-sidebar')!;
         const minimizeBtn = document.getElementById('minimize-btn')! as HTMLButtonElement;
-        minimizeBtn.addEventListener('mouseenter', () => {
+        minimizeBtn.addEventListener('mouseenter', async () => {
             var timeSinceLastMinimize = new Date().getTime() - this.lastMinimize;
             if (timeSinceLastMinimize < 300)
                 return;
+
             this.lastMinimize = new Date().getTime();
-            this.isMinimized = !this.isMinimized;
+            this.SetMinimize(!this.isMinimized);
 
-            if (this.isMinimized) {
-                document.getElementById('entity-settings-sidebar')!.style.display = 'none';
-                document.getElementById('layers-sidebar')!.style.display = 'none';
-
-                sidebar.classList.add('minimized');
-                minimizeBtn.innerHTML = '🔺';
-            } else {
-                document.getElementById('entity-settings-sidebar')!.style.display = 'block';
-                document.getElementById('layers-sidebar')!.style.display = 'block';
-
-                sidebar.classList.remove('minimized');
-                minimizeBtn.innerHTML = '🔻';
-            }
+            // SAVE MINIMIZED
+            const updatedRaw = await this.scene.settingsHandler.UpdateRaw((raw) => {
+                raw.settings.minimized = this.isMinimized;
+            });
+            this.scene.SaveEntityData(updatedRaw);
         }, { signal });
 
         var me = this;
@@ -660,6 +652,30 @@ export class EditorUIHandler {
         }, { signal });
     }
 
+    SetMinimize(minimize: boolean)
+    {
+        this.isMinimized = minimize;
+
+        const sidebar = document.getElementById('left-sidebar')!;
+
+        if (!sidebar)
+            return; // PROBABLY WE'RE AT CLEAR() WITHIN INIT()
+
+        const minimizeBtn = document.getElementById('minimize-btn')! as HTMLButtonElement;
+        
+        if (this.isMinimized) {
+            document.getElementById('layers-sidebar')!.style.display = 'none';
+
+            sidebar.classList.add('minimized');
+            minimizeBtn.innerHTML = '🔺';
+        } else {
+            document.getElementById('layers-sidebar').style.display = 'block';
+
+            sidebar.classList.remove('minimized');
+            minimizeBtn.innerHTML = '🔻';
+        }
+    }
+
     async ToggleGrid()
     {
         this.settings.gridEnabled = !this.settings.gridEnabled;
@@ -667,8 +683,9 @@ export class EditorUIHandler {
 
         // SAVE
         const updatedRaw = await this.scene.settingsHandler.UpdateRaw((raw) => {
-            raw.settings ??= {gridEnabled: false, gridSize: 64};
+            raw.settings ??= {gridEnabled: false, gridSize: 64, minimized: false};
             raw.settings.gridEnabled = this.settings.gridEnabled;
+            raw.settings.minimized = this.settings.minimized;
         });
         this.scene.SaveEntityData(updatedRaw);
     }
@@ -677,16 +694,20 @@ export class EditorUIHandler {
     {
         var gridEnabled = this.settings.gridEnabled;
         var gridSize = this.settings.gridSize;
+        var minimized = this.settings.minimized;
 
         if (this.gridToggleEl)
             this.gridToggleEl.classList.toggle('active', gridEnabled);
 
         if (this.gridSizeInputEl)
             this.gridSizeInputEl.value = gridSize.toString();
+
+        if (minimized)
+            this.SetMinimize(true); // DEFAULT IS INMINIZED AT, GETS SET AT CLOSE
     }
 
     private ToggleEditorPanels(show: boolean): void {
-        const panelSelectors = ['#left-sidebar', '#layers-sidebar', '#entity-settings-sidebar'];
+        const panelSelectors = ['#left-sidebar', '#layers-sidebar'];
         panelSelectors.forEach(selector => {
             const el = document.querySelector(selector) as HTMLElement | null;
             if (!el) return;
@@ -723,6 +744,9 @@ export class EditorUIHandler {
 
         overlay.style.display = 'block';
         this.ToggleEditorPanels(true);
+
+        if (this.isMinimized)
+            this.SetMinimize(true);//
     }
 
     IsShowing(): boolean {
@@ -738,6 +762,8 @@ export class EditorUIHandler {
 
     Clear(): void
     {
+         this.SetMinimize(false);
+
         this.abortController.abort();
 
         const editorOverlay = document.getElementById('editor-overlay') as HTMLElement;

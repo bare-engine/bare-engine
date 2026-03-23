@@ -125,7 +125,7 @@ export interface SettingsData
   saveVars?: Record<string, Array<string>>
   animations?: Record<string, AnimationDataInfo>
   showUI?: boolean,
-  settings?: {gridEnabled: boolean, gridSize: int},
+  settings?: {gridEnabled?: boolean, gridSize?: int, minimized?: boolean},
   selectionEnabled?: boolean,
   processed?: boolean
 } 

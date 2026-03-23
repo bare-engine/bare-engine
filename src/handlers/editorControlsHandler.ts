@@ -86,14 +86,22 @@ export class EditorControlsHandler {
         {
             hitboxController.ClearExclusiveLayers();
         }
+        // SELECT ALL
         if (allKeys[0] == 'control' && allKeys[1] == 'a')
         {
             this.SelectGameObjects(objectController.GetAllObjects());
         }
+        // CUT
+        if (allKeys[0] == 'control' && allKeys[1] == 'x')
+        {
+            // - TODO
+        }
+        // COPY
         if (allKeys[0] == 'control' && allKeys[1] == 'c')
         {
             this.copiedObjects = this.selectedObjects.map(obj => levelHandler.SerializeObject(obj));
         }
+        // PASTE
         if (allKeys[0] == 'control' && allKeys[1] == 'v')
         {
             var topLeftCopiedObjects = new Vec2(Number.MAX_VALUE, Number.MAX_VALUE);

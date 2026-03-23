@@ -332,6 +332,10 @@ window.__GAME_DEBUG_API__ = {
 
                 // IF COMPONENT WAS ADDED THAT WAS EARLIER REMOVED FROM levelEntity (IN componentsRemoved), CLEAR IT
                 // NOW IT GETS EXTENDED AGAIN 
+                // SO THIS IS A BIT OF A SILLY WAY TO REMOVE AN EXTENDED COMPONENT AND RESTORE IT
+                // BETTER WOULD BE A NICE WAY TO SEE WHAT YOU'VE REMOVED OR ADJUSTED AND RESTORE IT WITH A BUTTON
+                // ALA UNITY PREFAB OVERRIDE UI - BUT THAT'S FOR THE FUTURE - TODO
+                // CAN ALSO JUST COLOR EXTENDED COMPONENTS DIFFRENTLY, OR SHOW WHERE THEY COME FROM. ALL TODO
                 if (o.levelEntity.componentsRemoved)
                 {
                     var compKeys = Object.keys(props.components);
