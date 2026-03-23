@@ -30,6 +30,7 @@ export interface Entity
   texture?: string;
   scale?: Position;
   alpha?: number;
+  color?: string;
   hitbox?: any; //Rectangle2Vec | String;
   tapHitbox?: any; //Rectangle2Vec | String;
   hitboxType?: string;

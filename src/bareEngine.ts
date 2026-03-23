@@ -62,6 +62,8 @@ export class BareEngine
         
         bareEngine.RegisterGameObjectPool(GameObject, BareEngine.gameObjectPoolSize);
         
+        assetsHandler.AddTexture("whitePixel", window.whitePixelTexture);
+
         //rapid.backgroundColor = Color.White;
         
         globalEvents.emit(BareEvent.game_awake);

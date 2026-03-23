@@ -475,6 +475,7 @@ export class Scene implements SceneI
     {
         pivot: (o, v) => o.SetPivot(v.x, v.y), // SETPIVOT DOES SOME EXTRA WORK FOR PERCENTAGES, SO CUSTOM MAPPING
         texture: (o, v) => o.InitTexture(v), // SETPIVOT DOES SOME EXTRA WORK FOR PERCENTAGES, SO CUSTOM MAPPING
+        color: (o, v) => o.SetColor(v),
     };
 
     ApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)

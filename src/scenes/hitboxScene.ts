@@ -93,6 +93,8 @@ export class HitboxScene extends EditorScene
                     },
                     {
                         name: "collisionRect",
+                        color: "#000000",
+                        texture: "whitePixel",
                         position: {
                             x: hitbox.x,
                             y: hitbox.y
@@ -105,7 +107,7 @@ export class HitboxScene extends EditorScene
                             resizable: {},
                             resizableRemove: {}
                         },
-                        alpha: .8 // WORKING?
+                        alpha: .4
                     },
                     {
                         name: "dot",
