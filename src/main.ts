@@ -242,7 +242,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
             };
 
             window.hasFocus = true;
-            document.addEventListener('visibilitychange', function() {
+            /*document.addEventListener('visibilitychange', function() {
                 window.hasFocus = !document.hidden;
                 window.onFocusChange(hasFocus);
 
@@ -250,16 +250,27 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
                     bareEngine.lastUpdateTimeRef = performance.now(); // TO PREVENT DELTA TIME FROM SHOOTING UP
 
                 updateFocus();
-            });
+            });*/
 
             // Additional window focus/blur events for better coverage
-            window.addEventListener('focus', function() {
-                window.hasFocus = true; 
+            /*window.addEventListener('focus', function() {
+                window.hasFocus = true;
                 updateFocus();
             });
 
             window.addEventListener('blur', function() {
-                window.hasFocus = false; 
+                window.hasFocus = false;
+                updateFocus();
+            });*/
+
+            // Canvas-level focus/blur for Firefox compatibility
+            rapid.canvas.addEventListener('focus', function() {
+                window.hasFocus = true;
+                updateFocus();
+            });
+
+            rapid.canvas.addEventListener('blur', function() {
+                window.hasFocus = false;
                 updateFocus();
             });
 

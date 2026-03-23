@@ -223,7 +223,8 @@ export class SettingsHandler
                 assetsHandler.AddAnimation(animName, animationFrames, framesPerSecond, loop);
             }
 
-            await Promise.all(promises);
+            if (promises.length > 0)
+                await Promise.all(promises);
         }
 
         settings.processed = true;

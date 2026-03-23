@@ -9,8 +9,8 @@ export type WildcardHandler<Events extends object> = <K extends keyof Events>(
 ) => void;
 
 type Entry =
-  | { fn: (...evt: any[]) => void; once?: boolean; persistent?: boolean; wildcard?: false }
-  | { fn: (type: any, ...evt: any[]) => void; once?: boolean; persistent?: boolean; wildcard: true };
+  | { fn: (...evt: any[]) => void; once?: boolean; persistent?: boolean; wildcard?: false; alias?: string }
+  | { fn: (type: any, ...evt: any[]) => void; once?: boolean; persistent?: boolean; wildcard: true; alias?: string };
 
 type List = Entry[];
 
@@ -18,14 +18,16 @@ export interface Emitter<Events extends object> {
   // raw storage (optional to expose, but keeping parity with mitt style)
   all: Map<keyof Events | "*", List>;
 
-  on<K extends keyof Events>(type: K, handler: Handler<Events[K]>): void;
-  on(type: "*", handler: WildcardHandler<Events>): void;
+  on<K extends keyof Events>(type: K, handler: Handler<Events[K]>, alias?: string): void;
+  on(type: "*", handler: WildcardHandler<Events>, alias?: string): void;
 
-  once<K extends keyof Events>(type: K, handler: Handler<Events[K]>): void;
-  once(type: "*", handler: WildcardHandler<Events>): void;
+  once<K extends keyof Events>(type: K, handler: Handler<Events[K]>, alias?: string): void;
+  once(type: "*", handler: WildcardHandler<Events>, alias?: string): void;
 
   off<K extends keyof Events>(type: K, handler?: Handler<Events[K]>): void;
   off(type: "*", handler?: WildcardHandler<Events>): void;
+
+  offAlias(alias: string): void;
 
   emit<K extends keyof Events>(type: K, ...event: EventArgs<Events[K]>): void;
 
@@ -127,16 +129,24 @@ export default function mitt<Events extends object>(
   const api: any = {
     all,
 
-    on(type: any, handler: any) {
-      add(type, handler);
+    on(type: any, handler: any, alias?: string) {
+      add(type, handler, alias ? { alias } : undefined);
     },
 
-    once(type: any, handler: any) {
-      add(type, handler, { once: true });
+    once(type: any, handler: any, alias?: string) {
+      add(type, handler, alias ? { once: true, alias } : { once: true });
     },
 
     off(type: any, handler?: any) {
       remove(type, handler);
+    },
+
+    offAlias(alias: string) {
+      for (const [type, list] of all!.entries()) {
+        for (let i = list.length - 1; i >= 0; i--) {
+          if (list[i]!.alias === alias) list.splice(i, 1);
+        }
+      }
     },
 
     emit: emit as any,

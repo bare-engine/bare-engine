@@ -15,32 +15,7 @@ export class HitboxScene extends EditorScene
 
     constructor()
     {
-        // NOT REALLY USED ANYMORE!
-        var hitboxData = {
-            "name": "hitboxEditor",
-            "entities": 
-            {
-                "collisionRect":
-                {
-                    "hitbox": {
-                        "x1": 0,
-                        "y1": 0,
-                        "x2": 1,
-                        "y2": 1
-                    },
-                    "editorComponents": {
-                        "resizable": {}
-                    }
-                }
-            },
-            "saveVars": {
-                "PhysicsObjectBare": ["scale", "pivotBasedOnHitbox"]
-            },
-            "showUI": false,
-            "selectionEnabled": false
-        };
-
-        super({solo:true, persistent: true, entityData: hitboxData});
+        super({solo:true, persistent: true});
     }
 
     override async OnStart(payload: HitboxSceneAwakePayload = this.lastPayload): Promise<void>
