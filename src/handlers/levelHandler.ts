@@ -448,7 +448,7 @@ export class LevelHandler
         return componentData;
     }
 
-    Clear(full: boolean = false)
+    Clear()
     {
         this.currentLevel = null;
     }

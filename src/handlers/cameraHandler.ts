@@ -71,11 +71,6 @@ export class CameraHandler {
       this.ResetForStart();
   }
 
-  Clear()
-  {
-      this.ResetForStart();
-  }
-
   OnResize(prevWidth: number, prevHeight: number, newWidth: number, newHeight: number)
   {
     if (this.scene?.UI)
@@ -378,6 +373,11 @@ export class CameraHandler {
     const y = (Math.random() * 2 - 1) * (ampY / scale);
 
     return new Vec2(x, y);
+  }
+
+  Clear()
+  {
+      this.ResetForStart();
   }
 }
 

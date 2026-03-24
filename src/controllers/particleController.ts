@@ -117,12 +117,12 @@ export class ParticleController
         this.Add(emitter, { autoRemove: true, autoOneShot: true });
     }
 
-    Clear()
+    Clear(includingPersistent: boolean = true)
     {
         for (var i = this.emitters.length - 1; i >= 0; i--)
         {
             var go = this.emitters[i].emitter.gameObject;
-            if (!go || !go.persistent)
+            if (!go || !go.persistent || includingPersistent)
                 this.Remove(this.emitters[i].emitter);
         }
     }

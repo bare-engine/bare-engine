@@ -288,7 +288,7 @@ window.__GAME_DEBUG_API__ = {
                     {
                         // WE APPLY THE COMPONENTS VALUES FROM THE PLUGIN TO THE ONES INGAME
                         // BUT ALSO CALL OnRemoved() AND Added() AROUND IT, TO RESET THE COMPONENT AND LET THE NEW VALUES BE REPROCESSED IN Added()/OnAdded()
-                        comp?.OnRemoved();
+                        comp.OnRemoved?.();
                         var compData:Record<string, (string | number | boolean)> = props.components[compName];
                         for (let compProp in compData)
                         {
