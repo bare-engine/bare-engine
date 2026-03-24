@@ -37,12 +37,6 @@ export class Scene implements SceneI
     //private pipes = matt<Pipes>();
     //private pipes = matt<Pipes>();
     static registeredClasses: Record<string, any> = {};
-     
-    static rootPath: string = "assets";
-    static imagePath: string = "images";
-    static dataPath: string = "data";
-    static levelPath: string = "data/levels";
-    static soundPath: string = "sounds";
 
     public started: boolean = false;
     public enabled: boolean = true;
@@ -729,13 +723,24 @@ export class Scene implements SceneI
         this.OnPreUpdate(deltaTime); // NOT QUITE PRE-UPDATE HUH, BUT HERE JUST FOR EditorControlsHandler ATM, SO IT DRAGS OBJECTS AT POSITION AND AFTER THEY CAN BE SNAPPED TO OTHER POSITION
         this.objectController.Update(deltaTime);
         this.tweenController?.Update(bareEngine.time);
-        this.physicsControllerBare?.Update(deltaTime);
-        this.physicsControllerSopiro?.Update(deltaTime);
         this.componentController?.Update(deltaTime);
         this.particleController?.Update(deltaTime);
 
         events.emit(BareEvent.scene_update, deltaTime);
         this.OnUpdate(deltaTime);
+    }
+
+    FixedUpdate(fixedDeltaTime: number): void
+    {
+        this.physicsControllerBare?.FixedUpdate(fixedDeltaTime);
+        this.physicsControllerSopiro?.FixedUpdate(fixedDeltaTime);
+
+        this.OnFixedUpdate(fixedDeltaTime);
+    }
+
+    OnFixedUpdate(fixedDeltaTime: number)
+    {
+        // FOR OVERRIDE
     }
 
     OnPreUpdate(deltaTime: number)

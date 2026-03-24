@@ -78,6 +78,10 @@ export class PhysicsControllerBase
 	{
 	}
 
+	FixedUpdate(fixedDeltaTime: number = 0): void
+	{
+	}
+
 	Update(deltaTime: number = 0): void
 	{
 	}

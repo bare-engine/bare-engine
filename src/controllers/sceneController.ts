@@ -19,6 +19,16 @@ export class SceneController
         //events.persistent.on(BareEvent.game_clear, this.Clear.bind(this));
     }
     
+    FixedUpdate(fixedDeltaTime: number): void
+    {
+        for (var i = this.currentScenes.length - 1; i >= 0; i--)
+        {
+            var scene = this.currentScenes[i];
+            if (scene.started && scene.enabled && !scene.paused)
+                scene.FixedUpdate(fixedDeltaTime);
+        }
+    }
+
     Update(deltaTime: number): void
     {
         // UPDATE FROM TOP TO BOTTOM

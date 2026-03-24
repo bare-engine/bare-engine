@@ -2,7 +2,7 @@ import { sceneController } from "./controllers/sceneController";
 import { globalEvents, GameMode, Scene } from "./main";
 import { GameObject } from "./objects/gameObject";
 import { assetsHandler } from "./handlers/assetsHandler";
-import { BareEvent, Events, GameObjectClass, SceneClass } from "./types/bareTypes";
+import { BareEvent, BareOptions, Events, GameObjectClass, SceneClass } from "./types/bareTypes";
 import { EventArgs } from "./libraries/mitt";
 import { PoolHandler } from "./handlers/poolHandler";
 import { TextureCache, IGraphicRenderOptions, ICircleRenderOptions, IRenderLineOptions, IRectRenderOptions, ISpriteRenderOptions, Color } from "./exports";
@@ -17,6 +17,9 @@ export class BareEngine
 
     public time: number = 0;
     public count: int = 0;
+
+    public fixedTimestep: number = 1 / 60;
+    private accumulator: number = 0;
     
     private RunMainLoopBound: () => void;
 
@@ -27,11 +30,17 @@ export class BareEngine
     public componentClasses: Record<string, any> = {};
 
     private mouseDownOnLeave: boolean = false;
+     
+    rootDir: string = "assets";
+    imageDir: string = "images";
+    dataDir: string = "data";
+    levelDir: string = "data/levels";
+    soundDir: string = "sounds";
 
-    get imagePath(): string { return Scene.rootPath + "/" + Scene.imagePath; }
-    get levelPath(): string { return Scene.rootPath + "/" + Scene.levelPath; }
-    get soundPath(): string { return Scene.rootPath + "/" + Scene.soundPath; }
-    get dataPath(): string { return Scene.rootPath + "/" + Scene.dataPath; }
+    get imagePath(): string { return this.rootDir + "/" + this.imageDir; }
+    get levelPath(): string { return this.rootDir + "/" + this.levelDir; }
+    get soundPath(): string { return this.rootDir + "/" + this.soundDir; }
+    get dataPath(): string { return this.rootDir + "/" + this.dataDir; }
 
     get width(): int { return rapid.width; }
     get height(): int { return rapid.height; }
@@ -46,13 +55,17 @@ export class BareEngine
     static gameObjectPoolSize: int = 50;
     gameObjectPools: Map<string, PoolHandler<GameObject>> = new Map();
 
-    constructor(sceneClass: SceneClass)
+    constructor(sceneClass: SceneClass, options?: BareOptions)
     {
-        this.Start(sceneClass);
+        this.Start(sceneClass, options);
     }
 
-    async Start(sceneClass: SceneClass)
+    // SEPARATE METHOD TO MAKE ASYNC
+    async Start(sceneClass: SceneClass, options?: BareOptions) 
     {
+        if (options?.fixedTimestep)
+            this.fixedTimestep = options.fixedTimestep;
+
         this.initialSceneClass = sceneClass;
         
         // REGISTER THE whitePixelTexture, HANDY FOR MANY THINGS
@@ -68,7 +81,7 @@ export class BareEngine
 
         window.bareEngine = this;
         
-        bareEngine.RegisterGameObjectPool(GameObject, BareEngine.gameObjectPoolSize);
+        bareEngine.RegisterGameObjectPool(GameObject, options?.gameObjectPoolSize);
 
         //rapid.backgroundColor = Color.White;
         
@@ -159,11 +172,28 @@ export class BareEngine
             this.count++;
             //trace("gameSpeed", this.gameSpeed);
 
+            this.accumulator += this.deltaTime;
+
+            // CAPPING ACCUMULATOR - TO PREVENT TOO MANY FIXED UPDATES AFTER LAG
+            if (this.accumulator > this.fixedTimestep * 5)
+                this.accumulator = this.fixedTimestep * 5;
+
+            while (this.accumulator >= this.fixedTimestep)
+            {
+                this.FixedUpdate(this.fixedTimestep);
+                this.accumulator -= this.fixedTimestep;
+            }
+
             this.Update(this.deltaTime);
             this.Render();
         }   
 
         requestAnimationFrame(this.RunMainLoopBound);
+    }
+
+    FixedUpdate(fixedDeltaTime: number)
+    {
+        sceneController.FixedUpdate(fixedDeltaTime);
     }
 
     Update(deltaTime:number)

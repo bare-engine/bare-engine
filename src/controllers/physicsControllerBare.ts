@@ -71,9 +71,10 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     }
   }
 
-  Update(deltaTime: number = 0): void
+  override FixedUpdate(fixedDeltaTime: number = 0): void
   {
-		if (bareEngine.levelEditorOpen) return;
+		if (bareEngine.levelEditorOpen)
+      return;
 
     for (const obj of this.objects)
     {
@@ -81,8 +82,8 @@ export class PhysicsControllerBare extends PhysicsControllerBase
       {
         if (!obj.static)
         {
-          obj.x += obj.velocity.x * deltaTime;
-          obj.y += obj.velocity.y * deltaTime;
+          obj.x += obj.velocity.x * fixedDeltaTime;
+          obj.y += obj.velocity.y * fixedDeltaTime;
         }
 
         continue;
@@ -91,14 +92,14 @@ export class PhysicsControllerBare extends PhysicsControllerBase
       if (this.collisionsEnabled)
         this.handleBoundaryCollisions(obj); // UP HERE SINCE IT MODIFIED VELOCITIES
 
-        const dragMultiplier = Math.pow(1-obj.drag, deltaTime * 60);
+        const dragMultiplier = Math.pow(1-obj.drag, fixedDeltaTime * 60);
         obj.velocity.x *= dragMultiplier;
         obj.velocity.y *= dragMultiplier;
         
         if (!obj.static)
         {
-          obj.x += obj.velocity.x * deltaTime;
-          obj.y += obj.velocity.y * deltaTime;
+          obj.x += obj.velocity.x * fixedDeltaTime;
+          obj.y += obj.velocity.y * fixedDeltaTime;
         }
         
         // Check if object stopped moving

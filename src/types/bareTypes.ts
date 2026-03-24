@@ -1,6 +1,15 @@
 import { GameObject } from "../objects/gameObject";
 import { Scene } from "../main";
 
+export type BareOptions = {
+  antiAlias?: boolean;
+  premultipliedAlpha?: boolean;
+  gameObjectPoolSize?: number;
+  fixedTimestep?: number;
+  imagePath?: string;
+  levelPath?: string;
+};
+
 // Type definitions for level data
 export interface Position
 {

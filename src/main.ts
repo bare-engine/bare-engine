@@ -4,7 +4,7 @@ import mitt, { Emitter } from './libraries/mitt';
 import { BaseTexture, Color, GLShader, Rapid, Texture } from './libraries/rapid-render';
 import { supportsWebGL } from './libraries/rapid-render/webgl/utils';
 import { Scene } from './scenes/scene';
-import { BareEvent, Events, Pipes, SceneClass } from './types/bareTypes';
+import { BareEvent, BareOptions, Events, Pipes, SceneClass } from './types/bareTypes';
 import { Helper } from "./utils/helper";
 
 export const globalEvents = mitt<Events>();
@@ -74,14 +74,6 @@ var canvas = document.createElement("canvas");
 canvas.className = "canvas";
 document.body.appendChild(canvas);
 
-export type BareOptions = {
-  antiAlias?: boolean;
-  premultipliedAlpha?: boolean;
-  gameObjectPoolSize?: number;
-  imagePath?: string;
-  levelPath?: string;
-};
-
 export function StartBare(gameClass: SceneClass, options?: BareOptions): void
 {
     // DEFAULTS + OVERRIDE OPTIONS
@@ -96,10 +88,10 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
     // MAYBE NOT THE BEST SETTING THESE AS STATIC
     // BUT WILL DO FOR NOW TO SET THE VARS BEFORE GAME-CLASS GETS CONSTRUCTED - TODO
     if (options.imagePath)
-        Scene.imagePath = options.imagePath;
+        this.imagePath = options.imagePath;
 
     if (options.levelPath)
-        Scene.levelPath = options.levelPath;
+        this.levelPath = options.levelPath;
 
     window.initialAssetsReady =(assets = [])=>{
         const doesSupportWebGL = supportsWebGL(canvas);
@@ -276,7 +268,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
 
             // START!
             var start = async () => {
-                window.bareEngine = new BareEngine(gameClass);
+                window.bareEngine = new BareEngine(gameClass, options);
             };
 
             var testGetElementById = document.getElementById('editor-overlay');

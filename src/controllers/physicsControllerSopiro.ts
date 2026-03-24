@@ -12,9 +12,6 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 	private world: World;
 	public collisionsEnabled: boolean = true;
 
-	private accumulator = 0;
-	private readonly fixedDt = 1 / 60;
-	private readonly maxSubSteps = 5;
 	private activeCollisions: Map<number, { bodyA: RigidBody; bodyB: RigidBody }> = new Map();
 
 	constructor(scene: Scene)
@@ -58,26 +55,15 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 	{
 	}
 
-    override Update(deltaTime: number): void
+    override FixedUpdate(fixedDeltaTime: number): void
     {
 		if (bareEngine.levelEditorOpen) return;
-        if (deltaTime <= 0) return;
 
-        // Prevent spiral of death after tab-switch or hitch.
-        const clampedDelta = Math.min(deltaTime, 0.25);
-        this.accumulator += clampedDelta;
+        Settings.dt = fixedDeltaTime;
+        Settings.inv_dt = 1 / fixedDeltaTime;
+        this.world.update(fixedDeltaTime);
 
-        let steps = 0;
-        while (this.accumulator >= this.fixedDt && steps < this.maxSubSteps)
-        {
-            Settings.dt = this.fixedDt;
-            Settings.inv_dt = 1 / this.fixedDt;
-            this.world.update(this.fixedDt);
-            this.accumulator -= this.fixedDt;
-            steps++;
-        }
-
-		if (steps > 0 && this.collisionsEnabled)
+		if (this.collisionsEnabled)
 			this.HandleCollisions();
     }
 
@@ -168,7 +154,6 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 	Clear(): void
 	{
 		this.activeCollisions.clear();
-		this.accumulator = 0
 		this.world.reset();
 	}
 }

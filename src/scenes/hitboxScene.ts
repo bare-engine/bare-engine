@@ -49,9 +49,6 @@ export class HitboxScene extends EditorScene
 
     async CreateHitboxDataFor(objectName: string): Promise<LevelData>
     {
-        //if (!hitboxData.processed)
-        //    await this.settingsHandler.Process(hitboxData); // NEEDED? TODO
-
         // CONSTRUCT ENTITY FROM INITIAL ENTITY DATA, SO WE GET THE HITBOX DEFINED THERE
         var entityConstructedFromSettingsData = this.ConstructEntity(objectName, this.settingsHandler.Get());
         delete entityConstructedFromSettingsData.components;
@@ -93,8 +90,8 @@ export class HitboxScene extends EditorScene
                     },
                     {
                         name: "collisionRect",
-                        color: "#000000",
                         texture: "whitePixel",
+                        color: "#000000",
                         position: {
                             x: hitbox.x,
                             y: hitbox.y
@@ -111,7 +108,7 @@ export class HitboxScene extends EditorScene
                     },
                     {
                         name: "dot",
-                        texture: "NONE", // WE'LL DRAW A CIRCLE IN PivotComponent Render()
+                        texture: "NONE", // WE'LL DRAW A CIRCLE IN PivotComponent OnPostRender()
                         position: {
                             x: pivot.x,
                             y: pivot.y
@@ -219,18 +216,14 @@ export class HitboxScene extends EditorScene
             }
         });
 
-        //newRawSettingsData.name = "";
-
         // SAVE TO FILE
         await this.SaveEntityData(newRawSettingsData);
-        //await window.__GAME_DEBUG_API__.setEntityData(newRawSettingsData);
 
         return level;
     }
 
     async OnSaveEntityData(rawData: SettingsData): Promise<void>
     {
-        //this.settingsHandlerEntity.Process(rawData);
         this.settingsHandler.Process(rawData);
 
         this.settingsHandler.UpdateRaw((raw) => {
