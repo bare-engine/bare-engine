@@ -111,6 +111,7 @@ export class HitboxScene extends EditorScene
                     },
                     {
                         name: "dot",
+                        texture: "NONE", // WE'LL DRAW A CIRCLE IN PivotComponent Render()
                         position: {
                             x: pivot.x,
                             y: pivot.y

@@ -445,9 +445,18 @@ export class EditorScene extends Scene
             };
 
             gameObject.tapHitbox.type = HitboxType.Rectangle;
-            var w = gameObject.texture!.width;
-            var h = gameObject.texture!.height;
-            gameObject.tapHitbox.rectangle = {x: 0, y: 0, width: w, height: h};
+
+            if (gameObject.texture)
+            {
+                var w = gameObject.texture!.width;
+                var h = gameObject.texture!.height;
+                gameObject.tapHitbox.rectangle = {x: 0, y: 0, width: w, height: h};
+            }
+            else
+            {
+                // COULD GET HERE IF TEXTURE WAS SET TO "NONE" - EG FOR PIVOT
+                gameObject.tapHitbox.rectangle = {x: 0, y: 0, width: 0, height: 0};
+            }
         }
 
         gameObject.save = true; //

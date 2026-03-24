@@ -24,8 +24,18 @@ export abstract class BaseComponent<T extends GameObject = GameObject> implement
 
     OnAdded?(): void;
     OnRemoved?(): void;
+    OnStart?(): void;
     OnEnable?(): void;
     OnDisable?(): void;
+    OnCollisionStart?(initiatingObject: GameObject, collidingObject: GameObject): void;
+    OnCollisionUpdate?(initiatingObject: GameObject, collidingObject: GameObject): void;
+    OnCollisionEnd?(initiatingObject: GameObject, collidingObject: GameObject): void;
+    OnPreRender?(): void;
+    OnRender?(): void;
+    OnPostRender?(): void;
+    OnUpdate?(dt: number): void;
+    OnPreSaveLevel?(): void;
+    OnLevelChanged?(): void;
 }
 
 export class ComponentController

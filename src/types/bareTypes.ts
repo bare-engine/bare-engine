@@ -280,19 +280,19 @@ export interface Component<T extends GameObject = GameObject>
 
     Added?(go: T): void
     OnAdded?(): void;
-    OnStart?: () => void
-    OnRemoved?: () => void
-    OnEnable?: () => void
-    OnDisable?: () => void
-    OnCollisionStart?: (initiatingObject: GameObject, collidingObject: GameObject) => void
-    OnCollisionUpdate?: (initiatingObject: GameObject, collidingObject: GameObject) => void
-    OnCollisionEnd?: (initiatingObject: GameObject, collidingObject: GameObject) => void
-    OnPreRender?: () => void
-    OnRender?: () => void
-    OnPostRender?: () => void
-    OnUpdate?: (dt: number) => void
-    OnPreSaveLevel?: () => void // IN CASE RELATED OBJECT IS PERSISTENT
-    OnLevelChanged?: () => void // IN CASE RELATED OBJECT IS PERSISTENT
+    OnStart?(): void
+    OnRemoved?(): void
+    OnEnable?(): void
+    OnDisable?(): void
+    OnCollisionStart?(initiatingObject: GameObject, collidingObject: GameObject): void
+    OnCollisionUpdate?(initiatingObject: GameObject, collidingObject: GameObject): void
+    OnCollisionEnd?(initiatingObject: GameObject, collidingObject: GameObject): void
+    OnPreRender?(): void
+    OnRender?(): void
+    OnPostRender?(): void
+    OnUpdate?(dt: number): void
+    OnPreSaveLevel?(): void // IN CASE RELATED OBJECT IS PERSISTENT
+    OnLevelChanged?(): void // IN CASE RELATED OBJECT IS PERSISTENT
 }
 
 export interface BareScreen

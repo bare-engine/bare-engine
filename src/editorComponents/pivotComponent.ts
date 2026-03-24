@@ -8,7 +8,7 @@ import { hitboxController } from "../controllers/hitboxController";
 import { mouseController } from "../controllers/mouseController";
 import { PhysicsObjectBare } from "../exports/barePhysics";
 import { objectController } from "../controllers/objectController";
-import { Scene } from "../exports";
+import { Color, Scene } from "../exports";
 
 export class PivotComponent extends BaseComponent
 {
@@ -26,10 +26,8 @@ export class PivotComponent extends BaseComponent
         this.hitboxName = hitboxName;
     }
 
-    Added(go: GameObject):void
+    OnAdded():void
     {
-        super.Added(go);
-
         this.UpdateHitboxReferences();
     }
 
@@ -37,7 +35,7 @@ export class PivotComponent extends BaseComponent
     {
         const zoom = this.scene.GetCameraZoom();
 
-        this.go.innerScale = 1/zoom;
+        //this.go.innerScale = 1/zoom;
 
         if (!this.hitboxObj.addedToLevel)
         {
@@ -141,5 +139,21 @@ export class PivotComponent extends BaseComponent
         {
             this.go.SetPosition(pivotPosOrig.x, pivotPosOrig.y);
         }
+    }
+
+    OnPostRender()
+    {
+        const zoom = this.scene.GetCameraZoom();
+        var radius = 9 / zoom;
+
+        // *3 UHH?! FIX THOSE HITBOX SHENANIGANS - TODO
+        this.go.tapHitbox.rectangle = {x: -radius, y: -radius, width: radius*3, height: radius*3};
+
+        rapid.renderCircle({
+            offset: this.go.position!,
+            radius: radius,//
+            color: Color.White,
+            segments: 16
+        });
     }
 }

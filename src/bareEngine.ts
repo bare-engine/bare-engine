@@ -55,14 +55,20 @@ export class BareEngine
     {
         this.initialSceneClass = sceneClass;
         
+        // REGISTER THE whitePixelTexture, HANDY FOR MANY THINGS
+        assetsHandler.AddTexture("whitePixel", window.whitePixelTexture);
+        // GETS USED FOR COLLISION RECT ATM
+        // DOWNSIDE IS THAT IT'S NOT PART OF THE ATLAS GENERATED FROM INITIAL TEXTURES (texturePackImages)
+        // SO YOU GET EXTRA DRAW CALL(S)
+        // YOU COULD ADD AN IMAGE IN THE texturePackImages FOLDER NAMED whitePixel AND IT WILL OVERRIDE THIS
+        // BUT IF ANTI-ALIAS IS ON, THAT TEXTURE USES LINEAR FILTERING, SO STRETCHING THAT PIXEL IS NOT GREAT AND GETS KINDA BLURRY
+        
         this.ImplementInitialTextures();
         this.ResizeCanvas();
 
         window.bareEngine = this;
         
         bareEngine.RegisterGameObjectPool(GameObject, BareEngine.gameObjectPoolSize);
-        
-        assetsHandler.AddTexture("whitePixel", window.whitePixelTexture);
 
         //rapid.backgroundColor = Color.White;
         
