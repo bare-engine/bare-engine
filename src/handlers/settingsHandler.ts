@@ -131,70 +131,70 @@ export class SettingsHandler
         {
             for (const [categoryName, categoryData] of Object.entries(settings.categories))
             {
-                    if (!categoryData || !categoryData.entries || categoryData.entries.length === 0) return settings;
+                if (!categoryData || !categoryData.entries || categoryData.entries.length === 0) continue;
 
-                    // PARSE STRING ENTRIES, EG: "roadTexture_%" 
-                    if (typeof categoryData.entries === 'string') 
+                // PARSE STRING ENTRIES, EG: "roadTexture_%" 
+                if (typeof categoryData.entries === 'string') 
+                {
+                    if (categoryData.entries.indexOf('%') != -1)
                     {
-                        if (categoryData.entries.indexOf('%') != -1)
-                        {
-                            var split = categoryData.entries.split('%');
-                            var name = split[0];
-                            var count = parseInt(split[1], 10);
+                        var split = categoryData.entries.split('%');
+                        var name = split[0];
+                        var count = parseInt(split[1], 10);
 
-                            var entity = this.scene.ConstructEntity(name + "%", settings);
+                        var entity = this.scene.ConstructEntity(name + "%", settings);
+
+                        // TURN ENTRIES INTO ARRAY
+                        categoryData.entries = [];
+                        for (var j = 0; j < count; j++)
+                        {
+                            var entryName = name + (j + 1);
+                            categoryData.entries.push(entryName);
+
+                            // ALSO PUSH EACH AS ENTITY SO WE CAN FIND THEM LATER
+                            var entityClone = {...entity};
+                            entityClone.name = entryName;
+                            settings.entities[entityClone.name] = entityClone;
+                        }
+
+                        // REMOVE % ENTRY
+                        //delete categoryGroup[categoryName];
+                    }
+
+                    if (typeof categoryData.entries === 'string')
+                    {
+                        const regex = /(.+)_\[(.+)\]/; // eg "level_[editorImages]"
+                        const match = categoryData.entries.match(regex);
+                        if (match)
+                        {
+                            const prefix = match[1]; // eg "level"
+                            const imagePath = match[2]; // eg "editorImages"
+
+                            var entityName = prefix + "_*";
+                            var entity = this.scene.ConstructEntity(entityName, settings);
+                            var files = await Helper.GetFilesInFolder(`${bareEngine.imagePath}/` + imagePath);
 
                             // TURN ENTRIES INTO ARRAY
                             categoryData.entries = [];
-                            for (var j = 0; j < count; j++)
+                            for (var j = 0; j < files.length; j++)
                             {
-                                var entryName = name + (j + 1);
-                                categoryData.entries.push(entryName);
+                                var fileName = files[j].split('.')[0];
+                                categoryData.entries.push(fileName);
 
                                 // ALSO PUSH EACH AS ENTITY SO WE CAN FIND THEM LATER
                                 var entityClone = {...entity};
-                                entityClone.name = entryName;
-                                settings.entities[entityClone.name] = entityClone;
+                                entityClone.name = fileName;
+                                if (!settings.entities[entityClone.name]) // DON'T OVERWRITE EXISTING ENTRIES
+                                    settings.entities[entityClone.name] = entityClone;
                             }
 
-                            // REMOVE % ENTRY
+                            // REMOVE * ENTRY
                             //delete categoryGroup[categoryName];
-                        }
-
-                        if (typeof categoryData.entries === 'string')
-                        {
-                            const regex = /(.+)_\[(.+)\]/; // eg "level_[editorImages]"
-                            const match = categoryData.entries.match(regex);
-                            if (match)
-                            {
-                                const prefix = match[1]; // eg "level"
-                                const imagePath = match[2]; // eg "editorImages"
-
-                                var entityName = prefix + "_*";
-                                var entity = this.scene.ConstructEntity(entityName, settings);
-                                var files = await Helper.GetFilesInFolder(`${bareEngine.imagePath}/` + imagePath);
-
-                                // TURN ENTRIES INTO ARRAY
-                                categoryData.entries = [];
-                                for (var j = 0; j < files.length; j++)
-                                {
-                                    var fileName = files[j].split('.')[0];
-                                    categoryData.entries.push(fileName);
-
-                                    // ALSO PUSH EACH AS ENTITY SO WE CAN FIND THEM LATER
-                                    var entityClone = {...entity};
-                                    entityClone.name = fileName;
-                                    if (!settings.entities[entityClone.name]) // DON'T OVERWRITE EXISTING ENTRIES
-                                        settings.entities[entityClone.name] = entityClone;
-                                }
-
-                                // REMOVE * ENTRY
-                                //delete categoryGroup[categoryName];
-                            }
                         }
                     }
                 }
             }
+        }
 
 
         // PROCESS ANIMATIONS - ADD THEM AND LOAD THEIR TEXTURES IF THEY'RE NOT IN ALREADY

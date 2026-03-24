@@ -132,10 +132,10 @@ export class GameObject
 
     OffPointers()
     {
-        this.OnPointerDown();
+        /*this.OnPointerDown();
         this.OnPointerUp();
         this.OnPointerEnter();
-        this.OnPointerLeave();
+        this.OnPointerLeave();*/
 
         this.tapHitbox = null;
     }

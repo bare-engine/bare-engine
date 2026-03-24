@@ -1,7 +1,8 @@
 import { GameObject } from "../objects/gameObject";
 import { Scene } from "../main";
 
-export type BareOptions = {
+export type BareOptions = 
+{
   antiAlias?: boolean;
   premultipliedAlpha?: boolean;
   gameObjectPoolSize?: number;
@@ -10,7 +11,6 @@ export type BareOptions = {
   levelPath?: string;
 };
 
-// Type definitions for level data
 export interface Position
 {
   x: number;
@@ -68,36 +68,6 @@ export interface Entity
   restitution?: number;
   polygonVertices?: number[];
 }
-
-/*
-export const EntityTypeInfo: Record<string, string> = {
-  name: "string",
-  extendData: "string",
-  extendClass: "string",
-  imagePath: "string",
-  type: "string",
-  rotation: "number",
-  pivot: "Position",
-  scale: "Position",
-  hitbox: "any",
-  collide: "boolean",
-  static: "boolean",
-  tags: "string[]",
-  components: "object",
-  editorComponents: "object",
-  numberOfTiles: "number",
-  visible: "boolean",
-  customName: "string",
-  componentsRemoved: "string[]",
-  position: "Position",
-  levelID: "string",
-};
-
-export type EntityKeys = keyof typeof EntityTypeInfo;
-
-export type Entity = {
-  [K in EntityKeys]?: any;
-};*/
 
 export interface LevelData
 {
@@ -189,7 +159,7 @@ export enum CollisionHandlingType
   RADIUS
 }
 
-// EVENTS MONSTER - SINCE IT WANT TO EASILY ADD BARE-EVENTS AND LET IT TAKE USER STRINGS
+// EVENTS MONSTER - SINCE IT WANT TO EASILY ADD BARE-EVENTS WITHOUT DUPLICATING CODE
 const ev = <T>() => undefined as T | undefined;
 
 const eventDefs = {
@@ -234,7 +204,7 @@ const eventDefs = {
 
   physics_refreshBody: ev<GameObject>(),
 
-  // MOVE TO EDITOR, PROBABLY MAKE EVENTS STRINGS
+  // MOVE TO EDITOR, PROBABLY MAKE EVENTS STRINGS - TODO?
   editor_layerSelected: ev<{ layerName: string }>(),
   editor_opened: ev<{ settingsDataName: string, levelName: string }>(),
   editor_closed: ev<{ settingsDataName: string, levelName: string }>(),
@@ -250,13 +220,6 @@ export interface BareEventExtensions {}
 const baseBareEvent = createEventMap(eventDefs);
 export const BareEvent = baseBareEvent as typeof baseBareEvent & BareEventExtensions;
 
-// ABOVE BECOMES:
-/*export const BareEvent = {
-  game_firstStart: "game_firstStart",
-  game_started: "game_started",
-  ...
-} as const;*/
-
 type EventPayloads<T> = { [K in keyof T]: T[K] extends undefined ? void : NonNullable<T[K]> };
 
 export interface BareUserEvents {}
@@ -268,6 +231,19 @@ export type Events = BareEventPayload & Record<string, any>;
 // Runtime placeholder so bundlers that don't honor type-only exports won't warn.
 export const Events = undefined as unknown as Events;
 //
+
+// ABOVE BECOMES:
+/*export const BareEvent = {
+  game_restart: "game_restart",
+  key_down: "key_down",
+  ...
+} as const;
+
+export type BareEventPayload = {
+    game_restart: void
+    key_down: { key: string; allKeys: Array<string> }
+    ...
+}*/
 
 export interface Pipes {
   hitboxController_Update: (deltaTime: number) => void;

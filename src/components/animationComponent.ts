@@ -61,7 +61,7 @@ export const AnimationEvent = {
   looped: "looped",
 } as const;
 
-export type AnimationEvents = {
+export type AnimationEventPayload = {
     frame_changed: { frame: number, animation: AnimationData }
     started: { animation: AnimationData }
     completed: { animation: AnimationData }
@@ -75,11 +75,11 @@ export class AnimationComponent extends BaseComponent
     callbacks: Map<string, (anim: AnimationComponent) => void> = new Map();
     singleCallbacks: Map<string, (anim: AnimationComponent) => void> = new Map();
 
-    events: Emitter<AnimationEvents>
+    events: Emitter<AnimationEventPayload>
 
     OnAdded(): void
     {
-        this.events = mitt<AnimationEvents>();
+        this.events = mitt<AnimationEventPayload>();
     }
     
     OnStart(): void

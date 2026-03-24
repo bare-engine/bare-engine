@@ -11,7 +11,7 @@ export { StartBare, GameMode, MakePath, globalEvents } from "./core";
 
 export { BareEvent, Events } from "../types/bareTypes";
 export type { SceneI } from "../types/bareTypes";
-export { AnimationEvent, AnimationEvents } from "../components/animationComponent";
+export { AnimationEvent, AnimationEventPayload as AnimationEvents } from "../components/animationComponent";
 
 export { PluginHandler as BarePlugin } from "../handlers/pluginHandler";
 export { plugin } from "../handlers/pluginHandler";
