@@ -86,7 +86,7 @@ export class LevelHandler
             }
         }
 
-        this.scene.Clear(false, true); 
+        this.scene.Clear(false);
         
         await this.scene.OnBeforeLoadLevel();
         this.scene.doRender = false;

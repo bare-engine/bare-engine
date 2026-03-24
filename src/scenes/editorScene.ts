@@ -170,15 +170,12 @@ export class EditorScene extends Scene
         bareEngine.SendEvent(BareEvent.editor_opened, {settingsDataName: this.settingsData.name || 'levelEditor', levelName: SaveData.currentLevelStr});
     }
 
-    OnClear(full?: boolean, isLevel:boolean = false): void
+    OnClear(): void
     {
         rapid.backgroundColor = this.backgroundColorOrig;
-        
-        this.editorUIHandler.Clear();
-        this.editorControlsHandler.Clear(isLevel);
 
-        if (full)
-            window.gameMode = GameMode.Game;
+        this.editorUIHandler.Clear();
+        this.editorControlsHandler.Clear();
     }
 
     async Close(loadLevelAfter: boolean = true)

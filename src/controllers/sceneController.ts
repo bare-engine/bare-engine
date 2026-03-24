@@ -129,7 +129,8 @@ export class SceneController
 
         if (targetIndex !== -1 && targetScene)
         {
-            targetScene.Clear(true);
+            targetScene.events.clearAll();
+            targetScene.Clear();
             this.currentScenes.splice(targetIndex, 1);
 
             globalEvents.emit(BareEvent.scene_removed, { scene: targetScene });
@@ -150,6 +151,7 @@ export class SceneController
         {
             if (!scene.persistent)
             {
+                scene.events.clear();
                 scene.Clear();
             }
         }

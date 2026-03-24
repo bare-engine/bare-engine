@@ -1071,32 +1071,23 @@ export class Scene implements SceneI
 
     async Restart(full:boolean = false)
     {
+        this.events.clear();
         this.Clear();
         await this.Start();
     }
 
-    Clear(full:boolean = false, isLevel:boolean = false) // -TODO
+    Clear(includingPersistent: boolean = true)
     {
         var classes = BareEngine.controllerNames;
         for (let i = 0; i < classes.length; i++)
         {
-            this[classes[i]].Clear?.(!isLevel);
+            this[classes[i]].Clear?.(includingPersistent);
         }
 
-        if (!isLevel)
-        {
-            if (full)
-                this.events.clearAll();
-            else
-                this.events.clear();
-        }
-        
-        //this.ApplyLayerInfoToSettings(this.currentSettings, true); // ?
-
-        this.OnClear(full, isLevel);
+        this.OnClear();
     }
 
-    OnClear(full:boolean = false, isLevel:boolean = false)
+    OnClear()
     {
         // FOR OVERRIDE
     }

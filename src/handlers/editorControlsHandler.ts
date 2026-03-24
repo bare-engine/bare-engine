@@ -709,14 +709,12 @@ export class EditorControlsHandler {
         this.currentPreviewEntity.alpha = 0;
     }
     
-    Clear(isLevel: boolean = false)
+    Clear()
     {
         // BIT OF A HACK TO PERSIST COPIED OBJECTS - SINCE WE CREATE A NEW INSTANCE OF THIS OBJECT WHEN EDITOR IS OPENED AGAIN
         EditorControlsHandler.copiedObjectCached = this.copiedObjects;
-        
-        hitboxController.ClearExclusiveLayers();
 
-        if (!isLevel)
-            objectController.Remove(this.currentPreviewEntity);
+        hitboxController.ClearExclusiveLayers();
+        objectController.Remove(this.currentPreviewEntity);
     }
 } 
