@@ -279,17 +279,16 @@ export class LevelHandler
             Object.assign(entity, objDiff);
 
         var components = this.scene.GetAllComponentsFrom(obj);
-        
-        // THESE COMPONENTS MIGHT ALREADY BE INHERITED BY GAMEOBJECT ENTITY!
-        // SHOULD CHECK FOR THIS AND NOT SAVE COMPONENT IN THAT CASE. SHOULD DIFF IT
-        // EG: SHADOWS ARE NOW BEING SAVED IN ENTITY COMPONENTS
-        // TODO
+        var baseEntity = obj.levelEntity?.name ? this.scene.ConstructEntity(obj.levelEntity.name) as Record<string, any> : null;
 
         if (gameMode == GameMode.Game)
         {
-            // INGAME, SERIALIZE COMPONENTS, SET STORED EDITOR-COMPONENTS
+            // INGAME, SERIALIZE COMPONENTS, DIFF AGAINST BASE TO NOT SAVE INHERITED ONES
             if (components && components.length > 0)
-                entity.components = this.SerializeComponents(components);
+            {
+                var diffedComponents = this.DiffSerializedComponents(this.SerializeComponents(components), baseEntity?.components);
+                if (diffedComponents) entity.components = diffedComponents;
+            }
 
             if (obj.levelEntity?.editorComponents)
                 entity.editorComponents = obj.levelEntity?.editorComponents;
@@ -297,9 +296,12 @@ export class LevelHandler
         else
         if (gameMode == GameMode.Editor)
         {
-            // IN EDITOR, SERIALIZE EDITOR-COMPONENTS, SET STORED COMPONENTS
+            // IN EDITOR, SERIALIZE EDITOR-COMPONENTS, DIFF AGAINST BASE TO NOT SAVE INHERITED ONES
             if (components && components.length > 0)
-                entity.editorComponents = this.SerializeComponents(components);
+            {
+                var diffedEditorComponents = this.DiffSerializedComponents(this.SerializeComponents(components), baseEntity?.editorComponents);
+                if (diffedEditorComponents) entity.editorComponents = diffedEditorComponents;
+            }
 
             if (obj.levelEntity?.components)
                 entity.components = obj.levelEntity?.components;
@@ -340,32 +342,27 @@ export class LevelHandler
         if (!gameObject.levelEntity)
             gameObject.levelEntity = {name: gameObject.name};
 
-        if (!gameObject.levelEntity)
+        // WE ALWAYS CARE ABOUT THE LEVEL ENTITY VARS, EVEN IF UNCHANGED
+        for (var varName in gameObject.levelEntity)
         {
-            // THIS IS TOO HARD TO IMAGINE ATM, DON'T HAVE A CLEAR USE CASE YET, DO WE SAVE THE TEXTURE PATH TOO? OR JUST THE NAME?
-            //var varsToSave = saveVars[gameObject.constructor.name];
+            if (varName == "name" || varName == "position")
+                continue; // THESE ARE ALREADY IN SAVED BY DEFAULT
             
-            //var defaultValue = (dummyGameObject as Record<string, any>)[varName as keyof GameObject];
+            const key = varName as keyof Entity;
+            const value = gameObject.levelEntity[key];
+
+            if (varName == "extendData" && value == "ANY")
+                continue; // IN BAREGAME CONTRUCTENTIY() WE SET entity.extendData = "ANY"; ONCE, SO IT DOENS'T HAVE TO CHECK CONSECUTIVE TIMES. BUT WE DON'T WANT THAT IN OUR SAVEGAME
+
+            Object.assign(obj, { [key]: value });
         }
-        else
+
+        // FOR OTHER (DERIVED VARS), CHECK IF CHANGED
+        // ONLY IN GAME MODE, levelEntity IS THE SOURCE OF TRUTH (SET VIA setObject IN PLUGIN)
+        // EDITOR COMPONENTS MODIFY THE LIVE OBJECT BUT NOT levelEntity, SO THEIR CHANGES DON'T GET SAVED
+        if (gameMode == GameMode.Game)
         {
-            // WE ALWAYS CARE ABOUT THE LEVEL ENTITY VARS, EVEN IF UNCHANGED
-            for (var varName in gameObject.levelEntity)
-            {
-                if (varName == "name" || varName == "position")
-                    continue; // THESE ARE ALREADY IN SAVED BY DEFAULT
-                
-                const key = varName as keyof Entity;
-                const value = gameObject.levelEntity[key];
-
-                if (varName == "extendData" && value == "ANY")
-                    continue; // IN BAREGAME CONTRUCTENTIY() WE SET entity.extendData = "ANY"; ONCE, SO IT DOENS'T HAVE TO CHECK CONSECUTIVE TIMES. BUT WE DON'T WANT THAT IN OUR SAVEGAME
-
-                Object.assign(obj, { [key]: value });
-            }
-
-            // FOR OTHER (DERIVED VARS), CHECK IF CHANGED
-            const entityData = gameObject.entity as Record<string, any> | null;
+            const entityData = gameObject.entity;
             if (entityData)
             {
                 for (var varName of varsToSave)
@@ -380,7 +377,7 @@ export class LevelHandler
                     {
                         // COMPARE PROPERLY DEPENDING ON TYPE
                         let isChanged = false;
-                        if (typeof currentValue === 'object' && currentValue !== null && 
+                        if (typeof currentValue === 'object' && currentValue !== null &&
                             'x' in currentValue && 'y' in currentValue)
                         {
                             // X/Y VECTOR
@@ -389,7 +386,7 @@ export class LevelHandler
                         else if (Array.isArray(currentValue))
                         {
                             // ARRAY
-                            isChanged = !Array.isArray(origValue) || 
+                            isChanged = !Array.isArray(origValue) ||
                                         currentValue.length !== origValue.length ||
                                         currentValue.some((val, idx) => val !== origValue[idx]);
                         }
@@ -398,7 +395,7 @@ export class LevelHandler
                             // PRIMITIVE
                             isChanged = (currentValue != origValue);
                         }
-                        
+
                         if (isChanged)
                         {
                             Object.assign(obj, {[varName]: currentValue});
@@ -458,6 +455,39 @@ export class LevelHandler
         }
         
         return componentData;
+    }
+
+    // DIFFS SERIALIZED COMPONENTS AGAINST BASE ENTITY COMPONENTS
+    // ONLY KEEPS COMPONENTS/VALUES THAT DIFFER FROM THE BASE DEFINITION
+    // SO INHERITED COMPONENTS (EG editorComponents: { pulse: {} }) DON'T GET SAVED PER-OBJECT IN THE LEVEL FILE
+    DiffSerializedComponents(serialized: Record<string, Record<string, any>>, base?: Record<string, Record<string, any>>): Record<string, Record<string, any>> | null
+    {
+        if (!serialized) return null;
+        if (!base) return serialized;
+
+        var diff: Record<string, Record<string, any>> = {};
+        for (var compName in serialized)
+        {
+            if (!base[compName])
+            {
+                // COMPONENT NOT IN BASE, KEEP IT
+                diff[compName] = serialized[compName];
+            }
+            else
+            {
+                // DIFF VALUES AGAINST BASE
+                var compDiff: Record<string, any> = {};
+                for (var key in serialized[compName])
+                {
+                    if (serialized[compName][key] !== base[compName][key])
+                        compDiff[key] = serialized[compName][key];
+                }
+                if (Object.keys(compDiff).length > 0)
+                    diff[compName] = compDiff;
+            }
+        }
+
+        return Object.keys(diff).length > 0 ? diff : null;
     }
 
     Clear()

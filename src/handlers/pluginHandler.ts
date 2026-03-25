@@ -273,6 +273,50 @@ window.__GAME_DEBUG_API__ = {
         if (props.alpha !== undefined) o.alpha = props.alpha;
         if (props.customData !== undefined) o.customData = JSON.parse(props.customData);
 
+        // IN EDITOR MODE, ALSO WRITE CHANGED PROPS TO levelEntity
+        // THIS IS THE SOURCE OF TRUTH FOR SAVING - EDITOR COMPONENT RUNTIME CHANGES ON THE LIVE OBJECT ARE IGNORED
+        if (window.gameMode == GameMode.Editor)
+        {
+            // GET DUMMY OBJECT WITH ENTITY DEFAULTS APPLIED (ResetValues + entity data)
+            var { gameObject: defaults } = o.scene.GetDummpyDataFromEntity(o.levelEntity.name);
+
+            var isDefault = (currentVal: any, defaultVal: any) => {
+                if (typeof currentVal === 'object' && currentVal !== null) {
+                    if ('x' in currentVal && 'y' in currentVal) return currentVal.x === defaultVal.x && currentVal.y === defaultVal.y;
+                    return JSON.stringify(currentVal) === JSON.stringify(defaultVal);
+                }
+                return currentVal == defaultVal;
+            };
+
+            // [ENTITY KEY, VALUE, DEFAULT FROM DUMMY]
+            var overrides: [string, any, any][] = [];
+            if (props.customName !== undefined) overrides.push(["customName", props.customName, defaults.customName]);
+            if (props.scaleX !== undefined || props.scaleY !== undefined)
+                overrides.push(["scale", { x: props.scaleX ?? o.scaleX, y: props.scaleY ?? o.scaleY }, defaults.scale]);
+            if (props.rotation !== undefined) overrides.push(["rotation", props.rotation, defaults.rotation]);
+            if (props.innerX !== undefined || props.innerY !== undefined)
+                overrides.push(["innerPosition", { x: props.innerX ?? o.innerPosition.x, y: props.innerY ?? o.innerPosition.y }, defaults.innerPosition]);
+            if (props.innerScaleX !== undefined || props.innerScaleY !== undefined)
+                overrides.push(["innerScale", { x: props.innerScaleX ?? o.innerScale.x, y: props.innerScaleY ?? o.innerScale.y }, defaults.innerScale]);
+            if (props.innerRotation !== undefined) overrides.push(["innerRotation", props.innerRotation, defaults.innerRotation]);
+            if (props.pivot !== undefined) overrides.push(["pivot", props.pivot, defaults.pivot]);
+            if (props.pivotBasedOnHitbox !== undefined) overrides.push(["pivotBasedOnHitbox", props.pivotBasedOnHitbox, defaults.pivotBasedOnHitbox]);
+            if (props.startPosition !== undefined) overrides.push(["startPosition", props.startPosition, defaults.startPosition]);
+            if (props.flipX !== undefined) overrides.push(["flipped", props.flipX, defaults.flipped]);
+            if (props.visible !== undefined) overrides.push(["visible", props.visible, defaults.visible]);
+            if (props.tags !== undefined) overrides.push(["tags", JSON.parse(props.tags), defaults.tags]);
+            if (props.color !== undefined) overrides.push(["color", props.color, defaults.color.toHex()]);
+            if (props.alpha !== undefined) overrides.push(["alpha", props.alpha, defaults.alpha]);
+            if (props.customData !== undefined) overrides.push(["customData", JSON.parse(props.customData), defaults.customData]);
+
+            for (var [key, val, def] of overrides) {
+                if (isDefault(val, def))
+                    delete o.levelEntity[key]; // BACK TO DEFAULT, REMOVE OVERRIDE
+                else
+                    o.levelEntity[key] = val;
+            }
+        }
+
         if (props.components !== undefined)
         {
             // ADDED A COMPONENT
