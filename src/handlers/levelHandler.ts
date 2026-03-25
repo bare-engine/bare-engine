@@ -186,22 +186,29 @@ export class LevelHandler
     {
         var promisesAr: Array<Promise<Texture>> = [];
         var texturesFound = new Set<string>();
+
+        var collectTextures = (entity: any) => {
+            var entityConstructed = this.scene.ConstructEntity(entity);
+            var imagePath = entityConstructed.imagePath;
+            var fullPath = MakePath(imagePath, entity.name);
+
+            if (!texturesFound.has(fullPath) && !assetsHandler.HasTexture(fullPath))
+            {
+                promisesAr.push(assetsHandler.GetTexturePromise(fullPath));
+                texturesFound.add(fullPath);
+            }
+
+            // ALSO PRELOAD CHILDREN TEXTURES
+            if (entityConstructed.children)
+            {
+                for (const child of entityConstructed.children)
+                    collectTextures(child);
+            }
+        };
+
         for (var layerName in level.entitiesByLayer) {
             var entities = level.entitiesByLayer[layerName];
-            entities.forEach((entity: any) => {
-                var entityConstructed = this.scene.ConstructEntity(entity);
-                var imagePath = entityConstructed.imagePath;
-                var fullPath = MakePath(imagePath, entity.name);
-
-                if (texturesFound.has(fullPath))
-                    return;
-
-                if (!assetsHandler.HasTexture(fullPath))
-                {
-                    promisesAr.push(assetsHandler.GetTexturePromise(fullPath));
-                    texturesFound.add(fullPath);
-                }
-            });
+            entities.forEach(collectTextures);
         }
 
         return promisesAr;
@@ -293,10 +300,15 @@ export class LevelHandler
             // IN EDITOR, SERIALIZE EDITOR-COMPONENTS, SET STORED COMPONENTS
             if (components && components.length > 0)
                 entity.editorComponents = this.SerializeComponents(components);
-            
+
             if (obj.levelEntity?.components)
                 entity.components = obj.levelEntity?.components;
         }
+
+        // SERIALIZE CHILDREN RECURSIVELY
+        var saveableChildren = obj.children.filter(child => !child.persistent && child.save);
+        if (saveableChildren.length > 0)
+            entity.children = saveableChildren.map(child => this.SerializeObject(child));
 
         return entity;
     }

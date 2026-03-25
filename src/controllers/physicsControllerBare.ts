@@ -32,14 +32,14 @@ export class PhysicsControllerBare extends PhysicsControllerBase
   // GETS CALLED BY EXTENDED CLASS (PhysicsControllerBase), ON BareEvent.game_objectAdded
   override Add(object: GameObject): void
   {
-    if (object instanceof PhysicsObjectBare)
+    if (object instanceof PhysicsObjectBare && !object.parent) // SHOULD BE PhysicsObjectBare AND NOT A CHILD
       this.objects.push(object);
   }
 
   // GETS CALLED BY EXTENDED CLASS (PhysicsControllerBase), ON BareEvent.game_objectRemoved
   override Remove(object: PhysicsObjectBare): void
   {
-      if (object instanceof PhysicsObjectBare)
+      if (object instanceof PhysicsObjectBare && !object.parent)
       {
         const index = this.objects.indexOf(object);
         if (index > -1) {

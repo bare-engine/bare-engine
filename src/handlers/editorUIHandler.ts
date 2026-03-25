@@ -248,7 +248,8 @@ export class EditorUIHandler {
                 else
                 if (typeof categoryData.entries === 'string') 
                 {
-                    const entity = this.scene.GetTilesheetEntity(categoryData.entries);
+                    // COMMENTED OUT TILESHEET CODE FOR NOW - CAN GET BACK TO LATER - TODO
+                    /*const entity = this.scene.GetTilesheetEntity(categoryData.entries);
                     const entityImagePath = this.GetEntityImagePath(entity)!;
 
                     var tilesheetImg = document.createElement('img');
@@ -303,7 +304,7 @@ export class EditorUIHandler {
                             
                             childrenContainer.appendChild(childEntity);
                         }
-                    }
+                    }*/
                 }
                 
                 categoryElement.appendChild(categoryHeader);

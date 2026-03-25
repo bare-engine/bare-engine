@@ -359,6 +359,14 @@ window.__GAME_DEBUG_API__ = {
             }
         }
 
+        if (props.children !== undefined)
+        {
+            for (var i = 0; i < props.children.length; i++)
+            {
+                o.AddChild(props.children[i]);
+            }
+        }
+
         return true;
     },
 

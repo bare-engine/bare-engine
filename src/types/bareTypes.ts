@@ -29,31 +29,29 @@ export type GameObjectClass = { new (...args: any[]): GameObject };
 
 export interface Entity
 {
-  name: string;
-  extendClass?: string;
-  extendData?: string;
-  imagePath?: string;
+  name?: string;
+  texture?: string;
+  position?: Position; // ONLY USED WITHIN LEVEL DATA
   rotation?: number;
   pivot?: Position;
   pivotBasedOnHitbox?: any; //Position | String;
-  texture?: string;
   scale?: Position;
   alpha?: number;
   color?: string;
+  visible?: boolean;
   hitbox?: any; //Rectangle2Vec | String;
   tapHitbox?: any; //Rectangle2Vec | String;
   hitboxType?: string;
+  extendClass?: string;
+  extendData?: string;
+  imagePath?: string;
   tags?: Array<string>;
+  customName?: string;
   components?: Record<string, Record<string, any>>;
   editorComponents?: Record<string, Record<string, any>>;
-  //tileDimensions?: {width: number; height: number};
-  numberOfTiles?: int; //
-  visible?: boolean;
-  customName?: string;
-  componentsRemoved?: string[]; // REMOVE IGNORE?
-  propertiesRemoved?: string[]; // REMOVE IGNORE?
+  componentsRemoved?: string[];
+  propertiesRemoved?: string[];
 
-  position?: Position; // ONLY USED WITHIN LEVEL DATA
   interactableInEditor?:boolean;
 
   // PHYSICS
@@ -67,6 +65,10 @@ export interface Entity
   mass?: number;
   restitution?: number;
   polygonVertices?: number[];
+  children?: Entity[];
+
+  //tileDimensions?: {width: number; height: number};
+  //numberOfTiles?: int; //
 }
 
 export interface LevelData

@@ -245,6 +245,16 @@ export class Scene implements SceneI
     ConstructEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): Entity
     {
         var final = (entity:Entity) => {
+            // CONSTRUCT ALL CHILDREN
+            if (entity.children)
+            {
+                for (var i = 0; i < entity.children.length; i++)
+                {
+                    var child = entity.children[i];
+                    entity.children[i] = this.ConstructEntity(child, settingsData, options);
+                }
+            }
+
             // ANYTHING WITH A HITBOX IS A PHYSICS OBJECT
             if (entity.hitbox && entity.extendClass == "GameObject") 
                 entity.extendClass = "PhysicsObjectBare";
@@ -255,7 +265,7 @@ export class Scene implements SceneI
             if (sopiroPhysicsClasses.includes(entity.extendClass))
                 entity.pivot = { x: .5, y: .5 };
 
-            // REMOVED COMPONENTS SPECIFICALLY LISTED IN ENTITY
+            // REMOVE COMPONENTS SPECIFICALLY LISTED IN ENTITY
             if (entity.components && entity.componentsRemoved)
             {
                 for (const componentName of entity.componentsRemoved)
@@ -326,7 +336,7 @@ export class Scene implements SceneI
                 }
             }
         }
-    
+        
         if (!entity.extendData)
         {
             // ENTITY DATA THERE, USE THAT AS BASE
@@ -470,6 +480,13 @@ export class Scene implements SceneI
         pivot: (o, v) => o.SetPivot(v.x, v.y), // SETPIVOT DOES SOME EXTRA WORK FOR PERCENTAGES, SO CUSTOM MAPPING
         texture: (o, v) => v != "NONE" && o.InitTexture(v), // PROCESS CUSTOM TEXTURE NAME
         color: (o, v) => o.SetColor(v), // PROCESS THE HEX COLOR STRING
+        children: (o, v) => {
+            for (const childEntity of v)
+            {
+                var childObj = this.AddGameObject(childEntity, o);
+                childObj.levelEntity = childEntity;
+            }
+        },
     };
 
     ApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
@@ -546,6 +563,8 @@ export class Scene implements SceneI
 
         // CREATE
         var gameObject: GameObject;
+        var entityChildren: Entity[] | undefined;
+
         if (!input)
         {
             // DEFAULT GAMEOBJECT
@@ -561,7 +580,7 @@ export class Scene implements SceneI
             if (pool)
                 gameObject = pool.Grab();
             else
-                gameObject = new input(); 
+                gameObject = new input();
 
             if (pool)
                 gameObject.pooled = true;
@@ -604,7 +623,7 @@ export class Scene implements SceneI
             }
 
             gameObject = bareEngine.GetObjectFromPool(entity.extendClass!, this);
-            gameObject.Init(MakePath(entity.imagePath!, entity.name));
+            gameObject.Init(MakePath(entity.imagePath!, entity.name || entity.texture || ""));
             this.ApplyEntityToGameObject(entity, gameObject);
         }
 
@@ -627,7 +646,7 @@ export class Scene implements SceneI
 
             // IF LAYER IS A STRING (EG objects), CHECK IF IT EXISTS, ELSE DEFAULT TO 0
             if (typeof layer === "string" && (!this.layerNames || !this.layerNames.includes(layer)))
-                layer = 0; 
+                layer = 0;
 
             this.objectController.Add(gameObject, layer);
         }

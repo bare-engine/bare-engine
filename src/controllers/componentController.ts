@@ -192,10 +192,7 @@ export class ComponentController
         const typeList = this.componentsByType.get(component.constructor as Ctor<Component<any>>) as Component<any>[]
         typeList.push(component)
 
-        if (component.Added)
-        {
-            component.Added(go);
-        }
+        component.Added?.(go);
 
         if (component.OnStart)
         {

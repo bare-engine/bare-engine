@@ -105,12 +105,12 @@ export class SettingsHandler
         }
 
         // ASSIGN ENTITY NAMES BASED ON KEY
-        if (settings.entityBases)
+        /*if (settings.entityBases)
         {
             Object.entries(settings.entityBases).forEach(([key, e]) => {
                 e.name = key;
             });
-        }
+        }*/
         Object.entries(settings.entities).forEach(([key, e]) => {
             e.name = key;
         });

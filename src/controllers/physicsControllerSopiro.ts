@@ -6,6 +6,7 @@ import { Scene } from "../main";
 import * as Util from "../libraries/Sopiro/util";
 import { BareEvent } from "../types/bareTypes";
 import { BareEngine } from "../bareEngine";
+import { GameObject } from "../exports";
 
 export class PhysicsControllerSopiro extends PhysicsControllerBase
 {
@@ -32,14 +33,16 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 		super.Start();
 	}
 
-	Add(object: any): void
+	override Add(object: GameObject): void
 	{
-        this.world.register(object);
+		if (object instanceof RigidBody && !object.parent)
+        	this.world.register(object);
 	}
 
-	Remove(object: any): void
+	override Remove(object: GameObject): void
 	{
-		this.world.unregister(object.id);
+		if (object instanceof RigidBody && !object.parent)
+			this.world.unregister(object.id);
 	}
 
 	RefreshBody(body: RigidBody): void
