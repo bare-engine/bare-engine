@@ -117,7 +117,7 @@ window.__GAME_DEBUG_API__ = {
     plugin.SetCurrentScene(sceneClassString);
   },
 
-  getAllSenes() {
+  getAllScenes() {
     var scenes = sceneController.GetAllScenes();
     var sceneStrings = scenes.map(s => s.constructor.name);
 
@@ -188,7 +188,6 @@ window.__GAME_DEBUG_API__ = {
 
             pivot: {x: o.pivot.x, y: o.pivot.y},
             pivotBasedOnHitbox: {x: o.pivotBasedOnHitbox.x, y: o.pivotBasedOnHitbox.y},
-            startPosition: {x: o.startPosition.x, y: o.startPosition.y},
             flipX: o.flipped,
             
             visible: o.visible,
@@ -244,8 +243,11 @@ window.__GAME_DEBUG_API__ = {
 
     setObject(id: string, props: any) {
         const o = plugin.GetCurrentScene().objectController.GetObjectById(id);
-        if (!o) return false;
 
+        if (!o)
+            return false;
+
+        // APPLY PROPS TO OBJECT
         if (props.customName !== undefined) o.customName = props.customName;
 
         if (props.x !== undefined) o.x = props.x;
@@ -262,8 +264,7 @@ window.__GAME_DEBUG_API__ = {
 
         if (props.pivot !== undefined) { o.pivot.x = props.pivot.x; o.pivot.y = props.pivot.y; }
         if (props.pivotBasedOnHitbox !== undefined) { o.pivotBasedOnHitbox.x = props.pivotBasedOnHitbox.x; o.pivotBasedOnHitbox.y = props.pivotBasedOnHitbox.y; }
-        if (props.startPosition !== undefined) { o.startPosition.x = props.startPosition.x; o.startPosition.y = props.startPosition.y; }
-
+       
         if (props.flipX !== undefined) o.flipped = props.flipX;
         if (props.visible !== undefined) o.visible = props.visible;
         if (props.persistent !== undefined) o.persistent = props.persistent;
@@ -275,52 +276,110 @@ window.__GAME_DEBUG_API__ = {
 
         // IN EDITOR MODE, ALSO WRITE CHANGED PROPS TO levelEntity
         // THIS IS THE SOURCE OF TRUTH FOR SAVING - EDITOR COMPONENT RUNTIME CHANGES ON THE LIVE OBJECT ARE IGNORED
+        // SO AN editorComponent COULD PULSE THE SCALE FOR EXAMPLE
         if (window.gameMode == GameMode.Editor)
         {
-            // GET DUMMY OBJECT WITH ENTITY DEFAULTS APPLIED (ResetValues + entity data)
-            var { gameObject: defaults } = o.scene.GetDummpyDataFromEntity(o.levelEntity.name);
+            // GET DEFAULTS
+            //var defaults = o.entity; // CANNOT USE, SINCE IF A LEVEL ENTITY ALREADY COMES IN WITH CHANGES, THEY WILL BE HERE TOO
+            var defaults = o.scene.ConstructEntity(o.name);
+            var { gameObject: defaultsObj } = o.scene.GetDummpyDataFromEntity(o.levelEntity.name);
+            
+            // DEFINE CUSTOM DEFAULTS FOR X/Y PROPS, THEY NEED TO DIG SOME DEEPER
+            var customDefaults = {};
 
-            var isDefault = (currentVal: any, defaultVal: any) => {
-                if (typeof currentVal === 'object' && currentVal !== null) {
-                    if ('x' in currentVal && 'y' in currentVal) return currentVal.x === defaultVal.x && currentVal.y === defaultVal.y;
-                    return JSON.stringify(currentVal) === JSON.stringify(defaultVal);
+            if (props.x !== undefined)
+                customDefaults["x"] = (defaults.position?.x ?? defaultsObj.position.x);
+            if (props.y !== undefined)
+                customDefaults["y"] = (defaults.position?.y ?? defaultsObj.position.y);
+            if (props.scaleX !== undefined)
+                customDefaults["scaleX"] = (defaults.scale?.x ?? defaultsObj.scale.x);
+            if (props.scaleY !== undefined)
+                customDefaults["scaleY"] = (defaults.scale?.y ?? defaultsObj.scale.y);
+            if (props.innerX !== undefined)
+                customDefaults["innerX"] = (defaults.innerPosition?.x ?? defaultsObj.innerPosition.x);
+            if (props.innerY !== undefined)
+                customDefaults["innerY"] = (defaults.innerPosition?.y ?? defaultsObj.innerPosition.y);
+            if (props.innerScaleX !== undefined)
+                customDefaults["innerScaleX"] = (defaults.innerScale?.x ?? defaultsObj.innerScale.x);
+            if (props.innerScaleY !== undefined)
+                customDefaults["innerScaleY"] = (defaults.innerScale?.y ?? defaultsObj.innerScale.y);
+            
+            // FINALLY, PROCESS THEM
+            for (var key of Object.keys(props))
+            {
+                // FOR EACH SEND PROP...
+
+                var defaultVal = customDefaults[key] ?? (defaults[key] ?? defaultsObj[key]);
+                var currentVal = props[key];
+
+                if (key == "components")
+                {
+                    // COMPONENTS
+
+                    var componentsCurrent:Record<string, Record<string, (string | number | boolean)>> = currentVal;
+                    var componentsDefault:Record<string, Record<string, (string | number | boolean)>> = defaultVal;
+
+                    for (var compPropsName of Object.keys(componentsCurrent))
+                    {
+                        var compProps = componentsCurrent[compPropsName];
+                        for (var key of Object.keys(compProps))
+                        {
+                            if (componentsDefault[compPropsName] == undefined)
+                            {
+                                // VALUE DOESN'T EXIST IN DEFAULT, ADD IT
+                                o.levelEntity[key][compPropsName] = compProps[key];
+                                continue
+                            }
+
+                            if (compProps[key] != componentsDefault[compPropsName][key])
+                            {
+                                // VALUE CHANGED
+
+                                if (!o.levelEntity.components)
+                                    o.levelEntity.components = {};
+
+                                if (!o.levelEntity.components![compPropsName])
+                                    o.levelEntity.components![compPropsName] = {};
+
+                                o.levelEntity.components![compPropsName][key] = compProps[key];
+                            }
+                            else
+                            {
+                                // BACK TO DEFAULT, REMOVE OVERRIDE
+                                if (o.levelEntity.components && o.levelEntity.components[compPropsName])
+                                {
+                                    delete o.levelEntity.components[compPropsName][key];
+
+                                    // KEEP DELETING OBJECTS ONCE THEY BECOME EMPTY
+                                    if (Object.keys(o.levelEntity.components[compPropsName]).length == 0)
+                                    {                                       
+                                        delete o.levelEntity.components[compPropsName];
+
+                                        if (Object.keys(o.levelEntity.components).length == 0)
+                                        {
+                                            delete o.levelEntity.components;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-                return currentVal == defaultVal;
-            };
-
-            // [ENTITY KEY, VALUE, DEFAULT FROM DUMMY]
-            var overrides: [string, any, any][] = [];
-            if (props.customName !== undefined) overrides.push(["customName", props.customName, defaults.customName]);
-            if (props.scaleX !== undefined || props.scaleY !== undefined)
-                overrides.push(["scale", { x: props.scaleX ?? o.scaleX, y: props.scaleY ?? o.scaleY }, defaults.scale]);
-            if (props.rotation !== undefined) overrides.push(["rotation", props.rotation, defaults.rotation]);
-            if (props.innerX !== undefined || props.innerY !== undefined)
-                overrides.push(["innerPosition", { x: props.innerX ?? o.innerPosition.x, y: props.innerY ?? o.innerPosition.y }, defaults.innerPosition]);
-            if (props.innerScaleX !== undefined || props.innerScaleY !== undefined)
-                overrides.push(["innerScale", { x: props.innerScaleX ?? o.innerScale.x, y: props.innerScaleY ?? o.innerScale.y }, defaults.innerScale]);
-            if (props.innerRotation !== undefined) overrides.push(["innerRotation", props.innerRotation, defaults.innerRotation]);
-            if (props.pivot !== undefined) overrides.push(["pivot", props.pivot, defaults.pivot]);
-            if (props.pivotBasedOnHitbox !== undefined) overrides.push(["pivotBasedOnHitbox", props.pivotBasedOnHitbox, defaults.pivotBasedOnHitbox]);
-            if (props.startPosition !== undefined) overrides.push(["startPosition", props.startPosition, defaults.startPosition]);
-            if (props.flipX !== undefined) overrides.push(["flipped", props.flipX, defaults.flipped]);
-            if (props.visible !== undefined) overrides.push(["visible", props.visible, defaults.visible]);
-            if (props.tags !== undefined) overrides.push(["tags", JSON.parse(props.tags), defaults.tags]);
-            if (props.color !== undefined) overrides.push(["color", props.color, defaults.color.toHex()]);
-            if (props.alpha !== undefined) overrides.push(["alpha", props.alpha, defaults.alpha]);
-            if (props.customData !== undefined) overrides.push(["customData", JSON.parse(props.customData), defaults.customData]);
-
-            for (var [key, val, def] of overrides) {
-                if (isDefault(val, def))
-                    delete o.levelEntity[key]; // BACK TO DEFAULT, REMOVE OVERRIDE
                 else
-                    o.levelEntity[key] = val;
+                {
+                    // SINGLE VALUE
+
+                    if (currentVal != defaultVal)
+                        delete o.levelEntity[key]; // BACK TO DEFAULT, REMOVE OVERRIDE
+                    else
+                        o.levelEntity[key] = props[key]; // CHANGED, WANT TO STORE IT
+                }
             }
         }
 
+        // UPDATE OR ADD COMPONENTS
         if (props.components !== undefined)
         {
-            // ADDED A COMPONENT
-
             if (window.gameMode == GameMode.Game)
             {
                 for (let compName in props.components)
@@ -350,59 +409,9 @@ window.__GAME_DEBUG_API__ = {
                     // BUT THE COMPONENT'S CODE SHOULD THEN BE MUCH STRICTER WITH WHAT IT INITS AT OnAdded() and OnStart() TO MAKE THIS WORK - SEEMS ANNOYING
                 }
             }
-            else
-            if (window.gameMode == GameMode.Editor)
-            {
-                // THIS FINDS THE EXTENDED COMPONENT VALUES FROM levelEntity (ONES DERIVED FROM entityData (entities+entityBases))
-                // THEN FINDS THE DIFFERENCE BETWEEN THOSE AND THE VALUES FROM THE PLUGIN
-                // SAVES THAT TO THE LEVEL ENTITY COMPONENTS - AS TO NOT SUPPLY ANY DUPLICATE DATA
-                //var entityExtended = {name: o.levelEntity.name, componentsRemoved: o.levelEntity.componentsRemoved}; // ADDING componentsRemoved TO NOT INCLUDE THOSE FROM EXTENDED COMPONENTS, ELSE YOU COULD NEVER REMOVE EXTENDED COMPONENTS
-                var componentsExtended = o.scene.ConstructEntity(o.levelEntity.name).components;
-                var changedComponents:any = {};
-                for (var compName in props.components) {
-                    if (componentsExtended[compName]) {
-                        var diff:any = {};
-                        for (var key in props.components[compName]) {
-                            if (props.components[compName][key] !== componentsExtended[compName][key]) {
-                                diff[key] = props.components[compName][key];
-                            }
-                        }
-                        if (Object.keys(diff).length > 0) changedComponents[compName] = diff;
-                    } else {
-                        changedComponents[compName] = props.components[compName];
-                    }
-                }
-                o.levelEntity.components = changedComponents;
-
-                // IF COMPONENT WAS ADDED THAT WAS EARLIER REMOVED FROM levelEntity (IN componentsRemoved), CLEAR IT
-                // NOW IT GETS EXTENDED AGAIN 
-                // SO THIS IS A BIT OF A SILLY WAY TO REMOVE AN EXTENDED COMPONENT AND RESTORE IT
-                // BETTER WOULD BE A NICE WAY TO SEE WHAT YOU'VE REMOVED OR ADJUSTED AND RESTORE IT WITH A BUTTON
-                // ALA UNITY PREFAB OVERRIDE UI - BUT THAT'S FOR THE FUTURE - TODO
-                // CAN ALSO JUST COLOR EXTENDED COMPONENTS DIFFRENTLY, OR SHOW WHERE THEY COME FROM. ALL TODO
-                if (o.levelEntity.componentsRemoved)
-                {
-                    var compKeys = Object.keys(props.components);
-                    for (var i = o.levelEntity.componentsRemoved.length - 1; i >= 0; i--)
-                    {
-                        var compName = o.levelEntity.componentsRemoved[i];
-                        if (compKeys.includes(compName))
-                        {
-                            o.levelEntity.componentsRemoved.splice(i, 1);
-                            break;
-                        }
-                    }
-                }
-
-                // DON'T WANT TO SEND ALONG ANY EMPTY OBJECTS
-                if (Object.keys(o.levelEntity.components).length == 0)
-                    delete o.levelEntity.components;
-
-                if (o.levelEntity.componentsRemoved && o.levelEntity.componentsRemoved.length == 0)
-                    delete o.levelEntity.componentsRemoved;
-            }
         }
 
+        // ADD CHILDREN
         if (props.children !== undefined)
         {
             for (var i = 0; i < props.children.length; i++)
@@ -704,7 +713,7 @@ export class PluginHandler
                 }
 
                 var openObjectsTab = plugin.GetCurrentScene().settingsData.selectionEnabled !== false;
-                window.__GAME_DEBUG_API__.selectObjectInPlugin(obj.uniqueID, openObjectsTab, parentIds);
+                this.SelectObjectInPlugin(obj.uniqueID, openObjectsTab, parentIds);
 
               var mouseController2 = this.GetCurrentScene().mouseController; // WITHOUT THE 2, DEV WEBPACK CATCHES THIS - TODO
 

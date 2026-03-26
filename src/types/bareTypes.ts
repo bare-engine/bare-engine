@@ -30,12 +30,17 @@ export type GameObjectClass = { new (...args: any[]): GameObject };
 export interface Entity
 {
   name?: string;
+  customName?: string;
   texture?: string;
   position?: Position; // ONLY USED WITHIN LEVEL DATA
+  scale?: Position;
   rotation?: number;
+  flipped?: boolean;
   pivot?: Position;
   pivotBasedOnHitbox?: any; //Position | String;
-  scale?: Position;
+  innerPosition?: Position;
+  innerScale?: Position;
+  innerRotation?: number;
   alpha?: number;
   color?: string;
   visible?: boolean;
@@ -46,7 +51,7 @@ export interface Entity
   extendData?: string;
   imagePath?: string;
   tags?: Array<string>;
-  customName?: string;
+  customData?: Record<string, (string | number | boolean)>;
   components?: Record<string, Record<string, any>>;
   editorComponents?: Record<string, Record<string, any>>;
   componentsRemoved?: string[];

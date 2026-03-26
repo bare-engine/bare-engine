@@ -47,8 +47,8 @@ export class PhysicsObjectBare extends GameObject
 
             this.WhenTextureLoaded(() => {
                 var rect: Rectangle = {x: 0, y: 0, width: 0, height: 0};
-                var w = this.texture!.width * this.totalScaleX;
-                var h = this.texture!.height * this.totalScaleY;
+                var w = this.texture!.width * 1; //this.totalScaleX;
+                var h = this.texture!.height * 1; //this.totalScaleY;
 
                 // X/Y
                 if (hb.x1 > 0 && hb.x1 <= 1)
@@ -78,7 +78,7 @@ export class PhysicsObjectBare extends GameObject
                 rect.height = (rect.height);
 
                 // APPLY
-                entity.hitbox = rect; // CHANGE IN DATA, SO DOESN'T PROCESS NEXT TIME (?)
+                //entity.hitbox = rect; // CHANGE IN DATA, SO DOESN'T PROCESS NEXT TIME (?)
                 this.physicsHitbox.rectangle = rect;
 
                 if (entity.hitboxType == "circle")
@@ -93,7 +93,7 @@ export class PhysicsObjectBare extends GameObject
             {
                 // THIS SHOULD REALLY ONLY HAPPENS WHEN TEXTURE IS LOADED ABOVE, IF IT ISN'T, THIS BREAKS. 
                 // TODO, CACHE IMAGE SIZES?
-                var hbRect = (entity.hitbox! as Rectangle);
+                var hbRect = (this.physicsHitbox.rectangle!);
 
                 if (entity.pivotBasedOnHitbox)
                 {
