@@ -465,7 +465,7 @@ export class LevelHandler
         return removed;
     }
 
-    SerializeComponents(components: Component[]): Record<string, Record<string, (string | number | boolean)>>
+    SerializeComponents(components: Component[], checkSave: boolean = true): Record<string, Record<string, (string | number | boolean)>>
     {
         if (!components)
             return null;
@@ -475,7 +475,7 @@ export class LevelHandler
         {
             var component = components[i];
 
-            if (component.save === false)
+            if (checkSave && component.save === false)
                 continue;
             
             var componentData = this.SerializeComponent(component);

@@ -204,7 +204,7 @@ window.__GAME_DEBUG_API__ = {
 
         if (window.gameMode == GameMode.Game)
         {
-            let components = o.scene.levelHandler.SerializeComponents(o.scene.componentController.GetComponentsFrom(o));
+            let components = o.scene.levelHandler.SerializeComponents(o.scene.componentController.GetComponentsFrom(o), false);
             data.components = components;
         }
         else
