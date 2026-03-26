@@ -112,6 +112,8 @@ export class EditorScene extends Scene
         
         await this.LoadLevel(levelNameOrData);
 
+        window.gameMode = GameMode.Editor; // JUST SET TO GAME IN OnClear()
+
         this.saveLevelCallback = saveLevelCallback.bind(this);
 
         const el = document.getElementById("editor-content");
@@ -172,6 +174,13 @@ export class EditorScene extends Scene
 
     OnClear(): void
     {
+        if (this.opened) // CHECKING, SINCE THIS ALSO RUNS ON INIT WHEN CALLING LoadLevel()
+        {
+            this.opened = false;
+            window.gameMode = GameMode.Game; // SETTING IT IN BARE.START() NOW, BUT ALSO KINDA MAKES SENSE HERE
+            bareEngine.SendEvent(BareEvent.editor_closed, {settingsDataName: this.settingsData.name || 'levelEditor', levelName: SaveData.currentLevelStr});
+        }
+        
         rapid.backgroundColor = this.backgroundColorOrig;
 
         this.editorUIHandler.Clear();
@@ -180,12 +189,6 @@ export class EditorScene extends Scene
 
     async Close(loadLevelAfter: boolean = true)
     {
-        // DON'T WANT THESE IN OnClear(), SINCE THAT'S CALLED IN LOADLEVEL AT INIT
-        this.opened = false;
-        window.gameMode = GameMode.Game; // SETTING IT IN BARE.START() NOW, BUT ALSO KINDA MAKES SENSE HERE
-
-        bareEngine.SendEvent(BareEvent.editor_closed, {settingsDataName: this.settingsData.name || 'levelEditor', levelName: SaveData.currentLevelStr});
-
         sceneController.Remove(EditorScene); // CALLS ONCLEAR
         sceneController.EnableAllScenes();
 

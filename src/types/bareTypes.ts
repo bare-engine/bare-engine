@@ -269,6 +269,7 @@ export interface Component<T extends GameObject = GameObject>
 {
     enabled?: boolean;
     go: T; 
+    save: boolean; // IF FALSE, DOES NOT SERIALIZE
 
     Added?(go: T): void
     OnAdded?(): void;

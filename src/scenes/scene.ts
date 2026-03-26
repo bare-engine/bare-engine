@@ -1103,10 +1103,10 @@ export class Scene implements SceneI
             this[classes[i]].Clear?.(includingPersistent);
         }
 
-        this.OnClear();
+        this.OnClear(includingPersistent);
     }
 
-    OnClear()
+    OnClear(includingPersistent: boolean = true)
     {
         // FOR OVERRIDE
     }

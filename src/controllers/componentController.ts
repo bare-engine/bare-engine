@@ -10,6 +10,7 @@ export abstract class BaseComponent<T extends GameObject = GameObject> implement
     scene: Scene;
     enabled: boolean = true;
     go!: T;
+    save: boolean = true; // IF FALSE, DOES NOT SERIALIZE
 
     constructor(scene: Scene)
     {

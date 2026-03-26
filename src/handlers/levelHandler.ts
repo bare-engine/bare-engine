@@ -296,8 +296,17 @@ export class LevelHandler
         if (gameMode == GameMode.Game)
         {
             // INGAME, SERIALIZE COMPONENTS, SET STORED EDITOR-COMPONENTS
+
             if (components.length > 0)
-                entity.components = this.DiffComponents(components, origEntity.components);
+            {
+                var diffedComponents = this.DiffComponents(components, origEntity.components);
+                if (diffedComponents)
+                    entity.components = diffedComponents;
+            }
+
+            var removedComponents = this.GetRemovedComponents(components, origEntity.components);
+            if (removedComponents.length > 0)
+                entity.componentsRemoved = removedComponents;
 
             if (obj.levelEntity?.editorComponents)
                 entity.editorComponents = obj.levelEntity?.editorComponents;
@@ -306,8 +315,17 @@ export class LevelHandler
         if (gameMode == GameMode.Editor)
         {
             // IN EDITOR, SERIALIZE EDITOR-COMPONENTS, SET STORED COMPONENTS
+
             if (components.length > 0)
-                entity.editorComponents = this.DiffComponents(components, origEntity.editorComponents);
+            {
+                var diffedComponents = this.DiffComponents(components, origEntity.editorComponents);
+                if (diffedComponents)
+                    entity.editorComponents = diffedComponents;
+            }
+
+            var removedComponents = this.GetRemovedComponents(components, origEntity.editorComponents);//
+            if (removedComponents.length > 0)
+                entity.componentsRemoved = removedComponents;
 
             if (obj.levelEntity?.components)
                 entity.components = obj.levelEntity?.components;
@@ -396,11 +414,14 @@ export class LevelHandler
     //         "target": 3
     //     }
     // }
+
+    
     DiffComponents(components: Component[], origComponents?: Record<string, any>): Record<string, any>
     {
         var serializedCurrentComponents = this.SerializeComponents(components);
         var diff: Record<string, any> = {};
 
+        // ONLY GOING OVER components, IF NOT IN ORIG, ADD AS DIFF
         for (var compName in serializedCurrentComponents)
         {
             var currentComp = serializedCurrentComponents[compName];
@@ -429,6 +450,21 @@ export class LevelHandler
         return null;
     }
 
+    GetRemovedComponents(components: Component[], origComponents?: Record<string, any>): string[]
+    {
+        // ONLY GOING OVER origComponents, IF NOT IN components, ADD AS REMOVED
+        var removed: string[] = [];
+
+        var serializedCurrentComponents = this.SerializeComponents(components);
+        for (var compName in origComponents)
+        {
+            if (!serializedCurrentComponents[compName])
+                removed.push(compName);
+        }
+
+        return removed;
+    }
+
     SerializeComponents(components: Component[]): Record<string, Record<string, (string | number | boolean)>>
     {
         if (!components)
@@ -438,6 +474,10 @@ export class LevelHandler
         for (var i = 0; i < components.length; i++)
         {
             var component = components[i];
+
+            if (component.save === false)
+                continue;
+            
             var componentData = this.SerializeComponent(component);
             var compName = component.constructor.name.replace('Component', '');
             compName = Helper.DecapitalizeFirstLetter(compName);
