@@ -1,6 +1,6 @@
 import { assetsHandler, EditorScene, Helper, LevelData, MakePath, PhysicsObjectBare, SettingsData, SettingsHandler } from "../exports";
 import { levelHandler } from "../handlers/levelHandler";
-import { AwakePayload } from "../types/bareTypes";
+import { AwakePayload, BareEvent, Dimensions } from "../types/bareTypes";
 
 type EditorScenePayload = AwakePayload<EditorScene>;
 type HitboxSceneAwakePayload = EditorScenePayload & {
@@ -56,12 +56,18 @@ export class EntityScene extends EditorScene
         // NEED TO LOAD AND AWAIT TEXTURE, TO USE THE DIMENSIONS FOR THE LEVEL, SO THE CAMERA CAN BE PROPERLY SET UP BASED ON IT LATER
         var texture = await assetsHandler.GetTexturePromise(MakePath(entityConstructedFromSettingsData.imagePath!, objectName));
 
+        this.events.persistent.once(BareEvent.level_loaded, ({ level }) => {
+            const dims: Dimensions = level.dimensions;
+            this.cameraHandler.SetBounds({ x: 0, y: 0, width: texture.width, height: texture.height });
+            this.cameraHandler.CalculateZoomFit();
+        });
+
         // SET UP LEVEL
         return {
             name: objectName,
             dimensions: {
-                width: texture.width,
-                height: texture.height
+                width: 1,
+                height: 1
             },
             backgroundColor: "#3C3C3C",
             isData: true,
@@ -71,6 +77,19 @@ export class EntityScene extends EditorScene
                 ]
             }
         };
+    }
+
+    override async Open(levelPathOrData?: string | LevelData, saveLevelCallback?: () => Promise<LevelData>, settingsHandler?: SettingsHandler): Promise<void>
+    {
+        var ret = await super.Open(levelPathOrData, saveLevelCallback, settingsHandler);
+
+        var obj = this.objectController.GetObjectByName(this.lastObjectName);
+        var bounds = obj.GetBoundsWithChildren();
+        var dims:Dimensions = bounds;
+        var s = Math.max(dims.width / rapid.width, dims.height / rapid.height);
+        this.cameraHandler.zoom = 1/s * .7;
+
+        return ret;
     }
 
     async SaveEntityDataToSettingsData(): Promise<LevelData>

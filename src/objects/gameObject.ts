@@ -3,8 +3,9 @@ import { Hitbox } from '../types/hitbox';
 import { Entity, GameObjectClass } from '../types/bareTypes';
 import { Helper } from '../utils/helper';
 import { MakePath, Scene } from '../main';
-import { Vec2, Texture, Color, GLShader, Uniform, MaskType } from "../libraries/rapid-render";
+import { Vec2, Texture, Color, GLShader, Uniform, MaskType, MatrixStack } from "../libraries/rapid-render";
 import type { Component, Ctor } from "../types/bareTypes";
+import { Rectangle } from "../types/gamesTypes";
 
 export class Transform {
     position = new Vec2();
@@ -695,32 +696,9 @@ export class GameObject
         //if (this.cachedChildrenWidth != -1)
         //    return this.cachedChildrenWidth;
         
-        var computedWidth = 0;
-
-        if (this.texture)
-            computedWidth = this.texture.width * this.totalScaleX;
-
-        if (this.children.length > 0)
-        {
-            var minX = Number.MAX_VALUE;
-            var maxX = Number.MIN_VALUE;
-
-            for (var i = 0; i < this.children.length; i++)
-            {
-                var child = this.children[i];
-                if (!child.visible)
-                    continue;
-                minX = Math.min(minX, child.x);
-                maxX = Math.max(maxX, child.x + child.width/**child.totalScaleX*/);
-            }
-
-            var childrenWidht = (maxX - minX);
-            computedWidth = Math.max(computedWidth, childrenWidht);
-        }
-
         //this.cachedChildrenWidth = computedWidth;
 
-        return computedWidth;
+        return this.GetBoundsWithChildren().width;
     }
 
     get heightIncludingChildren()
@@ -729,32 +707,190 @@ export class GameObject
         //if (this.cachedChildrenHeight != -1)
         //    return this.cachedChildrenHeight;
 
-        var computedHeight = 0;
-
-        if (this.texture)
-            computedHeight = this.texture.height * this.totalScaleY;
-
-        if (this.children.length > 0)
-        {
-            var minY = Number.MAX_VALUE;
-            var maxY = Number.MIN_VALUE;
-
-            for (var i = 0; i < this.children.length; i++)
-            {
-                var child = this.children[i];
-                if (!child.visible)
-                    continue;
-                minY = Math.min(minY, child.y);
-                maxY = Math.max(maxY, child.y + child.height);
-            }
-
-            var childrenHeight = (maxY - minY);
-            computedHeight = Math.max(computedHeight, childrenHeight);
-        }
-
         //this.cachedChildrenHeight = computedHeight;
 
-        return computedHeight;
+        return this.GetBoundsWithChildren().height;
+    }
+
+    GetBounds(global:boolean = true): Rectangle
+    {
+        if (!global || !this.parent)
+        {
+            return {
+                x: this.x - this.pivot.x * this.totalScaleX,
+                y: this.y - this.pivot.y * this.totalScaleY,
+                width: this.texture!.width * this.totalScaleX,
+                height: this.texture!.height * this.totalScaleY
+            };
+        }
+
+        // WALK THE ANCESTOR CHAIN TO GET GLOBAL BOUNDS
+        
+        var m = new MatrixStack();
+        m.pushIdentity();
+
+        var chain: GameObject[] = [];
+        var obj: GameObject | null = this.parent;
+        while (obj)
+        {
+            chain.push(obj);
+            obj = obj.parent;
+        }
+        for (var i = chain.length - 1; i >= 0; i--)
+        {
+            var ancestor = chain[i];
+            m.translate(ancestor.x, ancestor.y);
+            m.rotate(ancestor.rotation * (Math.PI / 180));
+            m.scale(ancestor.scale.x * (ancestor.flipped ? -1 : 1), ancestor.scale.y);
+            m.translate(-ancestor.pivot.x, -ancestor.pivot.y);
+        }
+
+        m.translate(this.x, this.y);
+        m.rotate(this.rotation * (Math.PI / 180));
+        m.scale(this.scale.x * (this.flipped ? -1 : 1), this.scale.y);
+
+        m.pushMat();
+        var inner = this.innerTransform;
+        m.translate(inner.position.x, inner.position.y);
+        m.rotate(inner.rotation * (Math.PI / 180));
+        m.scale(inner.scale.x * (inner.flipped ? -1 : 1), inner.scale.y);
+
+        var px = -this.pivot.x;
+        var py = -this.pivot.y;
+        var w = this.texture!.width + px;
+        var h = this.texture!.height + py;
+
+        var corners = [
+            m.apply(px, py) as number[],
+            m.apply(w, py) as number[],
+            m.apply(w, h) as number[],
+            m.apply(px, h) as number[]
+        ];
+
+        m.popMat();
+
+        var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (var c of corners)
+        {
+            minX = Math.min(minX, c[0]);
+            minY = Math.min(minY, c[1]);
+            maxX = Math.max(maxX, c[0]);
+            maxY = Math.max(maxY, c[1]);
+        }
+
+        return {
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY
+        };
+    }
+
+    GetBoundsWithChildren(global:boolean = true): Rectangle
+    {
+        var minX = Infinity;
+        var minY = Infinity;
+        var maxX = -Infinity;
+        var maxY = -Infinity;
+
+        var m = new MatrixStack();
+        m.pushIdentity();
+
+        if (global)
+        {
+            var chain: GameObject[] = [];
+            var obj: GameObject | null = this.parent;
+            while (obj)
+            {
+                chain.push(obj);
+                obj = obj.parent;
+            }
+            for (var i = chain.length - 1; i >= 0; i--)
+            {
+                var ancestor = chain[i];
+                m.translate(ancestor.x, ancestor.y);
+                m.rotate(ancestor.rotation * (Math.PI / 180));
+                m.scale(ancestor.scale.x * (ancestor.flipped ? -1 : 1), ancestor.scale.y);
+                m.translate(-ancestor.pivot.x, -ancestor.pivot.y);
+            }
+        }
+
+        var updateBounds = (obj: GameObject) => {
+            if (!obj.texture) return;
+
+            var px = -obj.pivot.x;
+            var py = -obj.pivot.y;
+            var w = obj.texture.width + px;
+            var h = obj.texture.height + py;
+
+            var corners = [
+                m.apply(px, py) as number[],
+                m.apply(w, py) as number[],
+                m.apply(w, h) as number[],
+                m.apply(px, h) as number[]
+            ];
+
+            for (var c of corners)
+            {
+                minX = Math.min(minX, c[0]);
+                minY = Math.min(minY, c[1]);
+                maxX = Math.max(maxX, c[0]);
+                maxY = Math.max(maxY, c[1]);
+            }
+        };
+
+        var recurse = (obj: GameObject) => {
+            m.pushMat();
+            m.translate(obj.x, obj.y);
+            m.rotate(obj.rotation * (Math.PI / 180));
+            m.scale(obj.scale.x * (obj.flipped ? -1 : 1), obj.scale.y);
+
+            m.pushMat();
+            var inner = obj.innerTransform;
+            m.translate(inner.position.x, inner.position.y);
+            m.rotate(inner.rotation * (Math.PI / 180));
+            m.scale(inner.scale.x * (inner.flipped ? -1 : 1), inner.scale.y);
+            updateBounds(obj);
+            m.popMat();
+
+            m.translate(-obj.pivot.x, -obj.pivot.y);
+            for (var child of obj.children)
+                recurse(child);
+
+            m.popMat();
+        };
+
+        recurse(this);
+
+        if (minX === Infinity)
+            return { x: 0, y: 0, width: 0, height: 0 };
+
+        return {
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY
+        };
+    }
+    
+    GetCenterPosition(): Vec2
+    {
+        if (!this.texture)
+            return new Vec2(0, 0);
+
+        var leftTop = this.GetTopLeftPosition();
+        var x = (leftTop.x + this.texture!.width * this.totalScaleX * .5);
+        var y = (leftTop.y + this.texture!.height * this.totalScaleY * .5);
+
+        return new Vec2(x, y);
+    }
+
+    GetTopLeftPosition(): Vec2
+    {
+        return new Vec2(
+            this.x - this.pivot.x * this.totalScaleX,
+            this.y - this.pivot.y * this.totalScaleY
+        );
     }
 
     SetPosition(x: number, y: number): GameObject
@@ -865,46 +1001,7 @@ export class GameObject
         return this.SetPivot(.5, .5);
     }
 
-    GetTopLeftPosition(): Vec2
-    {
-        return new Vec2(
-            this.x - this.pivot.x * this.totalScaleX,
-            this.y - this.pivot.y * this.totalScaleY
-        );
-    }
-
-    GetCenterPosition(): Vec2
-    {
-        if (!this.texture)
-            return new Vec2(0, 0);
-
-        var leftTop = this.GetTopLeftPosition();
-        var x = (leftTop.x + this.texture!.width * this.totalScaleX * .5);
-        var y = (leftTop.y + this.texture!.height * this.totalScaleY * .5);
-
-        return new Vec2(x, y);
-    }
-
-    GetLeftPosition(): Vec2
-    {
-        return new Vec2(this.x - this.texture!.width * this.totalScaleX, this.y);
-    }
-
-    GetRightPosition(): Vec2
-    {
-        return new Vec2(this.x + this.texture!.width * this.totalScaleX, this.y);
-    }
-
-    GetTopPosition(): Vec2
-    {
-        return new Vec2(this.x, this.y - this.texture!.height * this.totalScaleY);
-    }
-
-    GetBottomPosition(): Vec2
-    {
-        return new Vec2(this.x, this.y + this.texture!.height * this.totalScaleY);
-    }
-
+    
     /*applyWorldMatrix(m: typeof rapid.matrixStack)
     {
         m.translate(this.position.x, this.position.y);

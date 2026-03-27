@@ -442,10 +442,34 @@ window.__GAME_DEBUG_API__ = {
     },
 
     removeObject(id: string) {
-        const o = plugin.GetCurrentScene().objectController.GetObjectById(id);
-        if (!o) return false;
+        const scene = plugin.GetCurrentScene();
+        const root = scene.objectController.GetObjectById(id);
+        if (!root) return false;
 
-        o.Remove();
+        const removeRecursive = (obj: any) => {
+            // Copy first because Remove() / splice() may mutate the original array
+            const children = [...(obj.children ?? [])];
+
+            for (const child of children) {
+                removeRecursive(child);
+            }
+
+            const parentChildren = obj.parent?.levelEntity?.children;
+            if (Array.isArray(parentChildren) && obj.levelEntity) {
+                const index = parentChildren.indexOf(obj.levelEntity);
+                if (index !== -1) {
+                    parentChildren.splice(index, 1);
+                }
+            }
+
+            if (Array.isArray(obj.levelEntity?.children)) {
+                obj.levelEntity.children.length = 0;
+            }
+        };
+
+        removeRecursive(root);
+        root.Remove();
+        return true;
     },
 
     removeComponent(id: string, comp: string) {
@@ -788,8 +812,7 @@ export class PluginHandler
             if (!obj.visible || !obj.visibleInEditor)
                 continue;
 
-            var tl = obj.GetTopLeftPosition();
-            var objRect = {x: tl.x, y: tl.y, width: obj.width, height: obj.height};
+            var objRect = obj.GetBoundsWithChildren()
             var p = new Vec2(ev.clientX, ev.clientY);
             var pWorld = plugin.GetCurrentScene().ScreenToWorldPos(p);
 
@@ -858,10 +881,7 @@ export class PluginHandler
                 return found;
         }
 
-        var tl = obj.parent
-            ? obj.parent.ToGlobal(obj.GetTopLeftPosition())
-            : obj.GetTopLeftPosition();
-        var objRect = { x: tl.x, y: tl.y, width: obj.width, height: obj.height };
+        var objRect = obj.GetBounds()
 
         if (Helper.IsPointInRectangle(pWorld, objRect))
             return obj;

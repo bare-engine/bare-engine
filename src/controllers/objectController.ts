@@ -200,6 +200,7 @@ export class ObjectController
             return null;
 
         // FIRST PASS FAILED, START LOOKING THROUGH ALL CHILDREN RECURSIVELY - MORE COSTLY
+        // JUST HAVE A SHALLOW LIST OF ALL OBJECTS? TODO
         var recurseChildren = (obj: GameObject): GameObject | null =>
         {
             for (let i = 0; i < obj.children.length; i++)
