@@ -158,7 +158,7 @@ export class PhysicsObjectBare extends GameObject
         this.velocity.y = 0;
     }
 
-    override ResetValues(): void
+    override ResetValues(): PhysicsObjectBare
     {
         super.ResetValues();
 
@@ -181,6 +181,8 @@ export class PhysicsObjectBare extends GameObject
 
         if (this.velocity)
             this.ResetVelocity();
+
+        return this;
     }
 
     static GetDummpyDataFromEntity(scene: Scene, nameOrEntity: string | Entity, options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): {entity: Entity, gameObject: GameObject}

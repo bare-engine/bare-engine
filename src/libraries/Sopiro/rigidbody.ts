@@ -90,7 +90,7 @@ export abstract class RigidBody extends GameObject
         return tex;
     }
 
-    override ResetValues(): void
+    override ResetValues(): RigidBody
     {
         super.ResetValues();
 
@@ -125,6 +125,8 @@ export abstract class RigidBody extends GameObject
             this._invInertia = 0;
             this.sleeping = true;
         }
+
+        return this;
     }
 
     OnCollisionStart(collidingObject: GameObject)

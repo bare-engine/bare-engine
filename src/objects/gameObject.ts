@@ -516,6 +516,26 @@ export class GameObject
         this.scale.y = value;
     }
 
+    get innerX(): number
+    {
+        return this.innerTransform.position.x;
+    }
+
+    set innerX(value: number)
+    {
+        this.innerTransform.position.x = value;
+    }
+
+    get innerY(): number
+    {
+        return this.innerTransform.position.y;
+    }
+
+    set innerY(value: number)
+    {
+        this.innerTransform.position.y = value;
+    }
+
     get innerScale(): Vec2
     {
         return this.innerTransform.scale;
@@ -1137,7 +1157,7 @@ export class GameObject
         return null;
     }
 
-    ResetValues()
+    ResetValues(): GameObject
     {
         //this.onDestroy?.bind(this);
         //this.onDestroy = null;
@@ -1173,6 +1193,8 @@ export class GameObject
         this.SetPivot(0, 0);
         this.RemoveShaders();
         this.RemoveChildren();
+
+        return this;
     }
     
     RemoveShaders()

@@ -244,6 +244,11 @@ export class Scene implements SceneI
     
     ConstructEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): Entity
     {
+        function cloneEntityData<T>(data: T): T
+        {
+            return JSON.parse(JSON.stringify(data));
+        }
+
         var final = (entity:Entity) => {
             // CONSTRUCT ALL CHILDREN
             if (entity.children)
@@ -305,7 +310,7 @@ export class Scene implements SceneI
         if (typeof nameOrEntity === "object")
         {
             // ARG IS ENTITY
-            entity = { ...nameOrEntity }; // CLONING SINCE WE DO entity.extendData = "ANY"; LATER AND DON'T WANT THAT TO APPLY TO ORIGINAL ENTITY, ELSE IT GETS SAVED TOO
+            entity = cloneEntityData(nameOrEntity);
 
             if (entity.extendClass)
                 return final(entity); // ENTITY HAS ALREADY BEEN CONSTRUCTED
@@ -317,7 +322,7 @@ export class Scene implements SceneI
             if (possibleEntity)
             {
                 // ENTITY NAME IS DEFINED IN ENTITIES
-                entity = { ...possibleEntity };
+                entity = cloneEntityData(possibleEntity);
                 foundEntityInEntities = true;
             }
             else
@@ -325,8 +330,8 @@ export class Scene implements SceneI
                 // ENTITY NAME NOT FOUND, SO TAKE THE 'ANY' ENTRY, CLONE IT, AND ASSIGN A NEW NAME
                 if (settingsData.entityBases && settingsData.entityBases["ANY"])
                 {
-                    var entityBase = settingsData.entityBases!["ANY"] as Entity;
-                    entity = { ...entityBase };
+                    var entityBase = cloneEntityData(settingsData.entityBases!["ANY"] as Entity);
+                    entity = entityBase;
                     entity.name = (nameOrEntity as string);
                 }
                 else
@@ -484,7 +489,6 @@ export class Scene implements SceneI
             for (const childEntity of v)
             {
                 var childObj = this.AddGameObject(childEntity, o);
-                childObj.levelEntity = childEntity;
             }
         },
     };

@@ -1,6 +1,8 @@
 import { GameObject } from "../objects/gameObject";
 import { Scene } from "../main";
 
+export type Scalar = (number | string | boolean);
+
 export type BareOptions = 
 {
   antiAlias?: boolean;
@@ -31,32 +33,44 @@ export interface Entity
 {
   name?: string;
   customName?: string;
-  texture?: string;
+  tags?: Array<string>;
+  customData?: Record<string, Scalar>;
+
   position?: Position; // ONLY USED WITHIN LEVEL DATA
+  scaleX?: number;
+  scaleY?: number;
   scale?: Position;
   rotation?: number;
   flipped?: boolean;
   pivot?: Position;
   pivotBasedOnHitbox?: any; //Position | String;
+  innerX?: number;
+  innerY?: number;
   innerPosition?: Position;
+  innerScaleX?: number;
+  innerScaleY?: number;
   innerScale?: Position;
   innerRotation?: number;
-  alpha?: number;
+
+  texture?: string;
   color?: string;
+  alpha?: number;
   visible?: boolean;
+
   hitbox?: any; //Rectangle2Vec | String;
   tapHitbox?: any; //Rectangle2Vec | String;
   hitboxType?: string;
-  extendClass?: string;
-  extendData?: string;
-  imagePath?: string;
-  tags?: Array<string>;
-  customData?: Record<string, (string | number | boolean)>;
+
+  children?: Entity[];
+
   components?: Record<string, Record<string, any>>;
   editorComponents?: Record<string, Record<string, any>>;
   componentsRemoved?: string[];
   propertiesRemoved?: string[];
 
+  extendClass?: string;
+  extendData?: string;
+  imagePath?: string;
   interactableInEditor?:boolean;
 
   // PHYSICS
@@ -70,7 +84,6 @@ export interface Entity
   mass?: number;
   restitution?: number;
   polygonVertices?: number[];
-  children?: Entity[];
 
   //tileDimensions?: {width: number; height: number};
   //numberOfTiles?: int; //

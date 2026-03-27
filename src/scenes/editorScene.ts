@@ -110,7 +110,7 @@ export class EditorScene extends Scene
         SaveData.levelCache.clear();
         SaveDataHandler.Save();
         
-        await this.LoadLevel(levelNameOrData);
+        var level = await this.LoadLevel(levelNameOrData);
 
         window.gameMode = GameMode.Editor; // JUST SET TO GAME IN OnClear()
 
@@ -169,7 +169,7 @@ export class EditorScene extends Scene
 
         rapid.backgroundColor = Color.fromHex('#3b3b3f');
 
-        bareEngine.SendEvent(BareEvent.editor_opened, {settingsDataName: this.settingsData.name || 'levelEditor', levelName: SaveData.currentLevelStr});
+        bareEngine.SendEvent(BareEvent.editor_opened, {settingsDataName: this.settingsData.name || 'levelEditor', levelName: level.isData ? "data" : SaveData.currentLevelStr});
     }
 
     OnClear(): void

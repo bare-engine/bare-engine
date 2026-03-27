@@ -7,7 +7,7 @@ import { GameMode, MakePath, Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { EditorUIScene } from "../scenes/editorUIScene";
 import { defaultEntityData } from "../types/bareData";
-import { BareEvent, Component, Entity, LevelData, SaveData, SettingsData } from '../types/bareTypes';
+import { BareEvent, Component, Entity, LevelData, SaveData, Scalar, SettingsData } from '../types/bareTypes';
 import { Helper } from "../utils/helper";
 import { assetsHandler } from "./assetsHandler";
 
@@ -169,7 +169,11 @@ export class LevelHandler
                 var layer = this.scene.layerNames.indexOf(layerNameLowerCase);
                 var gameObject = this.scene.AddGameObject(levelEntity, layer);
 
-                gameObject.levelEntity = levelEntity;
+                // WHEN IN EDITOR, WE WANT TO USE levelEntity
+                // BUT IT'S KIND OF MESSED UP AND CONSTRUCTED BY ABOVE NOW
+                // SO HERE WE ALIGN IT AGAIN TO THE OBJECT AND ALL ITS CHILDREN
+                this.ApplyLevelEntityToGameObjectAndChildren(gameObject, levelEntity);
+                
                 gameObject.save = true;
             }
         }
@@ -465,12 +469,12 @@ export class LevelHandler
         return removed;
     }
 
-    SerializeComponents(components: Component[], checkSave: boolean = true): Record<string, Record<string, (string | number | boolean)>>
+    SerializeComponents(components: Component[], checkSave: boolean = true): Record<string, Record<string, Scalar>>
     {
         if (!components)
             return null;
 
-        var componentsRec: Record<string, Record<string, (string | number | boolean)>> = {};
+        var componentsRec: Record<string, Record<string, Scalar>> = {};
         for (var i = 0; i < components.length; i++)
         {
             var component = components[i];
@@ -487,9 +491,9 @@ export class LevelHandler
         return componentsRec;
     }
 
-    SerializeComponent(component: Component): Record<string, (string | number | boolean)>
+    SerializeComponent(component: Component): Record<string, Scalar>
     {
-        var componentData: Record<string, (string | number | boolean)> = {};
+        var componentData: Record<string, Scalar> = {};
         var constructorVarNames = (component as any).__paramNames || Helper.GetConstructorParamNames(component.constructor);
         
         // GET VALUE FROM EACH KEY OF CONSTRUCTOR PARAMS
@@ -506,6 +510,16 @@ export class LevelHandler
         }
         
         return componentData;
+    }
+
+    ApplyLevelEntityToGameObjectAndChildren(gameObject: GameObject, levelEntity: Entity)
+    {
+        gameObject.levelEntity = levelEntity;
+
+        for (var i = 0; i < gameObject.children.length; i++)
+        {
+            this.ApplyLevelEntityToGameObjectAndChildren(gameObject.children[i], levelEntity.children[i]);
+        }
     }
 
     Clear()

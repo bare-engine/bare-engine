@@ -1,23 +1,16 @@
-import { SaveDataHandler } from "./SaveDataHandler";
-import { BareEvent, BareEventPayload, LevelData, SaveData, SettingsData } from "../types/bareTypes";
-import { Helper } from "../utils/helper";
-import { Color, Vec2 } from "../libraries/rapid-render";
-import { GameObject } from "../objects/gameObject";
-import {  GameMode, globalEvents } from "../main";
-import { OutlineShader } from "../shaders/outlineShader";
-import { BareClasses, componentController, levelHandler, ObjectController, Scene, sceneController } from "../exports";
-import { EditorScene } from "../scenes/editorScene";
-import { objectController } from "../controllers/objectController";
-import { HitboxScene } from "../scenes/hitboxScene";
-import { serialize } from "node:v8";
 import { keyboardController } from "../controllers/keyboardController";
+import { Scene, sceneController } from "../exports";
+import { Color, Vec2 } from "../libraries/rapid-render";
+import { GameMode, globalEvents } from "../main";
+import { GameObject } from "../objects/gameObject";
+import { EditorScene } from "../scenes/editorScene";
+import { EntityScene } from "../scenes/entityScene";
+import { OutlineShader } from "../shaders/outlineShader";
+import { BareEvent, BareEventPayload, LevelData, SaveData, Scalar, SettingsData } from "../types/bareTypes";
+import { Helper } from "../utils/helper";
+import { SaveDataHandler } from "./SaveDataHandler";
 
 // THIS PLUGIN CODE DOES NOT GET INCLUDED IN PRODUCTION
-// ALL CALLS SHOULD BE WRAPPED WITH __DEV__
-
-// THIS HACK IS NEEDED SO THAT AT INIT, WE DON'T DIRECTLY IMPORT THESE CONTROLLERS LEADING TO THEM NOT FINDING EVENTS
-const getMouseController = () =>
-  (require("../controllers/mouseController") as typeof import("../controllers/mouseController")).mouseController;
 
 declare global {
   interface Window {
@@ -102,7 +95,8 @@ window.__GAME_DEBUG_API__ = {
         return;
     }*/
 
-    sceneController.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
+    await sceneController.Add(EntityScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
+    //sceneController.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
   },
 
   getDebugActions() {
@@ -188,7 +182,7 @@ window.__GAME_DEBUG_API__ = {
 
             pivot: {x: o.pivot.x, y: o.pivot.y},
             pivotBasedOnHitbox: {x: o.pivotBasedOnHitbox.x, y: o.pivotBasedOnHitbox.y},
-            flipX: o.flipped,
+            flipped: o.flipped,
             
             visible: o.visible,
             persistent: o.persistent,
@@ -265,7 +259,7 @@ window.__GAME_DEBUG_API__ = {
         if (props.pivot !== undefined) { o.pivot.x = props.pivot.x; o.pivot.y = props.pivot.y; }
         if (props.pivotBasedOnHitbox !== undefined) { o.pivotBasedOnHitbox.x = props.pivotBasedOnHitbox.x; o.pivotBasedOnHitbox.y = props.pivotBasedOnHitbox.y; }
        
-        if (props.flipX !== undefined) o.flipped = props.flipX;
+        if (props.flipped !== undefined) o.flipped = props.flipped;
         if (props.visible !== undefined) o.visible = props.visible;
         if (props.persistent !== undefined) o.persistent = props.persistent;
         if (props.save !== undefined) o.save = props.save;
@@ -276,14 +270,22 @@ window.__GAME_DEBUG_API__ = {
 
         // IN EDITOR MODE, ALSO WRITE CHANGED PROPS TO levelEntity
         // THIS IS THE SOURCE OF TRUTH FOR SAVING - EDITOR COMPONENT RUNTIME CHANGES ON THE LIVE OBJECT ARE IGNORED
-        // SO AN editorComponent COULD PULSE THE SCALE FOR EXAMPLE
+        // SO AN editorComponent COULD PULSE THE SCALE, FOR EXAMPLE
         if (window.gameMode == GameMode.Editor)
         {
+            // BIT HACKY, BUT WHEN EDITING ENTITY, THIS PASSES
+            // AND WE MAKE SURE WE DON'T LOOK AT THE ENTITY PROPS OF THAT ENITY ITSELF TO GET THE DEFAULT VALUES
+            // BUT INSTEAD, IGNORE THEM, SO WE GET ITS EXTENDED VALUES (OR FROM THE DUMMY OBJECT, IF THEY'RE NOT THERE)
+            var propsToIgnoreInEntity = [];
+            if (o.scene instanceof EntityScene && !o.parent)
+            {
+                propsToIgnoreInEntity = Object.keys(props);
+            }
+
             // GET DEFAULTS
-            //var defaults = o.entity; // CANNOT USE, SINCE IF A LEVEL ENTITY ALREADY COMES IN WITH CHANGES, THEY WILL BE HERE TOO
-            var defaults = o.scene.ConstructEntity(o.name);
-            var { gameObject: defaultsObj } = o.scene.GetDummpyDataFromEntity(o.levelEntity.name);
-            
+            var defaults = o.scene.ConstructEntity(o.name, o.scene.settingsData, {propsToIgnoreInEntity: propsToIgnoreInEntity});
+            var defaultsObj = bareEngine.dummyGameObject.ResetValues(); // FALLBACK FOR MISSING PROPERTIES OF CONSTRUCTED ENTITY ABOVE
+
             // DEFINE CUSTOM DEFAULTS FOR X/Y PROPS, THEY NEED TO DIG SOME DEEPER
             var customDefaults = {};
 
@@ -292,17 +294,17 @@ window.__GAME_DEBUG_API__ = {
             if (props.y !== undefined)
                 customDefaults["y"] = (defaults.position?.y ?? defaultsObj.position.y);
             if (props.scaleX !== undefined)
-                customDefaults["scaleX"] = (defaults.scale?.x ?? defaultsObj.scale.x);
+                customDefaults["scaleX"] = (defaults.scale?.x ?? defaults.scaleX ?? defaultsObj.scale.x);
             if (props.scaleY !== undefined)
-                customDefaults["scaleY"] = (defaults.scale?.y ?? defaultsObj.scale.y);
+                customDefaults["scaleY"] = (defaults.scale?.y ?? defaults.scaleY ?? defaultsObj.scale.y);
             if (props.innerX !== undefined)
-                customDefaults["innerX"] = (defaults.innerPosition?.x ?? defaultsObj.innerPosition.x);
+                customDefaults["innerX"] = (defaults.innerPosition?.x ?? defaults.innerX ?? defaultsObj.innerPosition.x);
             if (props.innerY !== undefined)
-                customDefaults["innerY"] = (defaults.innerPosition?.y ?? defaultsObj.innerPosition.y);
+                customDefaults["innerY"] = (defaults.innerPosition?.y ?? defaults.innerY ?? defaultsObj.innerPosition.y);
             if (props.innerScaleX !== undefined)
-                customDefaults["innerScaleX"] = (defaults.innerScale?.x ?? defaultsObj.innerScale.x);
+                customDefaults["innerScaleX"] = (defaults.innerScale?.x ?? defaults.innerScaleX ?? defaultsObj.innerScale.x);
             if (props.innerScaleY !== undefined)
-                customDefaults["innerScaleY"] = (defaults.innerScale?.y ?? defaultsObj.innerScale.y);
+                customDefaults["innerScaleY"] = (defaults.innerScale?.y ?? defaults.innerScaleY ?? defaultsObj.innerScale.y);
             
             // FINALLY, PROCESS THEM
             for (var key of Object.keys(props))
@@ -316,8 +318,8 @@ window.__GAME_DEBUG_API__ = {
                 {
                     // COMPONENTS
 
-                    var componentsCurrent:Record<string, Record<string, (string | number | boolean)>> = currentVal;
-                    var componentsDefault:Record<string, Record<string, (string | number | boolean)>> = defaultVal;
+                    var componentsCurrent:Record<string, Record<string, Scalar>> = currentVal;
+                    var componentsDefault:Record<string, Record<string, Scalar>> = defaultVal;
 
                     for (var compPropsName of Object.keys(componentsCurrent))
                     {
@@ -366,14 +368,38 @@ window.__GAME_DEBUG_API__ = {
                     }
                 }
                 else
+                if (key == "children")
                 {
-                    // SINGLE VALUE
-
-                    if (currentVal != defaultVal)
-                        delete o.levelEntity[key]; // BACK TO DEFAULT, REMOVE OVERRIDE
-                    else
-                        o.levelEntity[key] = props[key]; // CHANGED, WANT TO STORE IT
                 }
+                else
+                {
+                    if (typeof currentVal === 'object')
+                    {
+                        trace(4444)
+                        //return JSON.stringify(currentVal) === JSON.stringify(defaultVal);
+                    }
+                    //else
+
+                    // SINGLE VALUE
+                    if (currentVal != defaultVal)
+                        o.levelEntity[key] = props[key]; // CHANGED, WANT TO STORE IT
+                    else
+                        delete o.levelEntity[key]; // BACK TO DEFAULT, REMOVE OVERRIDE
+                }
+            }
+        }
+
+        if (props.children !== undefined)
+        {
+            // ADD CHILDREN
+            for (var i = 0; i < props.children.length; i++)
+            {
+                var child = o.AddChild(props.children[i]);
+
+                child.levelEntity = props.children[i];
+                (o.levelEntity.children ??= []).push(child.levelEntity);
+
+                //levelHandler.ApplyLevelEntityToGameObjectAndChildren(o, o.levelEntity);
             }
         }
 
@@ -392,7 +418,7 @@ window.__GAME_DEBUG_API__ = {
                         // WE APPLY THE COMPONENTS VALUES FROM THE PLUGIN TO THE ONES INGAME
                         // BUT ALSO CALL OnRemoved() AND Added() AROUND IT, TO RESET THE COMPONENT AND LET THE NEW VALUES BE REPROCESSED IN Added()/OnAdded()
                         comp.OnRemoved?.();
-                        var compData:Record<string, (string | number | boolean)> = props.components[compName];
+                        var compData:Record<string, Scalar> = props.components[compName];
                         for (let compProp in compData)
                         {
                             comp[compProp] = compData[compProp];
@@ -411,14 +437,7 @@ window.__GAME_DEBUG_API__ = {
             }
         }
 
-        // ADD CHILDREN
-        if (props.children !== undefined)
-        {
-            for (var i = 0; i < props.children.length; i++)
-            {
-                o.AddChild(props.children[i]);
-            }
-        }
+        (o.scene as EditorScene).saveLevelCallback?.();
 
         return true;
     },
@@ -616,7 +635,8 @@ window.__GAME_DEBUG_API__ = {
     },
 
     selectLevel(levelName: string) {
-        window.postMessage({ __fromGame: true, type: "selectLevel", levelName: levelName }, "*");
+        if (levelName != "data")
+            window.postMessage({ __fromGame: true, type: "selectLevel", levelName: levelName }, "*");
     },
 
     clickedOpenEditorInPlugin() {

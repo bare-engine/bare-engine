@@ -30,11 +30,13 @@ export class Circle extends RigidBody
         }
     }
 
-    override ResetValues(): void
+    override ResetValues(): Circle
     {
         super.ResetValues();
         this.radius = 0;
         this.area = 0;
+
+        return this;
     }
     
     override OnApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)

@@ -20,11 +20,13 @@ export class Box extends Polygon
         this.phyHeight = height;
     }
 
-    override ResetValues(): void
+    override ResetValues(): Box
     {
         super.ResetValues();
         this.phyWidth = 0;
         this.phyHeight = 0;
+
+        return this;
     }
 
     override OnApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
