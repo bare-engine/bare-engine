@@ -557,6 +557,81 @@ export class Scene implements SceneI
         return {entity: entityConstructed, gameObject: bareEngine.dummyGameObject};
     }
 
+    GetDummpyDataFromEntity2(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): Entity
+    {
+        var entityConstructed = this.ConstructEntity(nameOrEntity, settingsData, options);
+
+        bareEngine.dummyGameObject.ResetValues();
+        bareEngine.dummyGameObject.InitTexture(MakePath(entityConstructed.imagePath!, entityConstructed.name)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
+        
+        //this.ApplyEntityToGameObject(entityConstructed, bareEngine.dummyGameObject);
+        var entityVars = [
+            "name",
+            "customName",
+            "tags",
+            "customData",
+
+            "position",
+            "scaleX",
+            "scaleY",
+            "scale",
+            "rotation",
+            "flipped",
+            "pivot",
+            "pivotBasedOnHitbox",
+            "innerX",
+            "innerY",
+            "innerPosition",
+            "innerScaleX",
+            "innerScaleY",
+            "innerScale",
+            "innerRotation",
+
+            "texture",
+            "color",
+            "alpha",
+            "visible",
+
+            "hitbox",
+            "tapHitbox",
+            "hitboxType",
+
+            "children",
+
+            "components",
+            "editorComponents",
+            "componentsRemoved",
+            "propertiesRemoved",
+
+            "extendClass",
+            "extendData",
+            "imagePath",
+            "interactableInEditor",
+            "save",
+
+            "collide",
+            "sensor",
+            "static",
+            "stayInBounds",
+
+            "physicsRect",
+            "physicsRadius",
+            "mass",
+            "restitution",
+            "polygonVertices",
+        ];
+
+        for (var entityVar of entityVars)
+        {
+            if (entityConstructed[entityVar] === undefined)
+            {
+                entityConstructed[entityVar] = bareEngine.dummyGameObject[entityVar];
+            }
+        }
+
+        return entityConstructed;
+    }
+
     // INPUT COULD BE: ENTITY, ENTITY NAME, GAMEOBJECT, CLASS TO INSTANTIATE OR TEXTURE
     AddGameObject(input?: Entity | string | GameObject | GameObjectClass | Texture, parent: int | string | GameObject = "objects"): GameObject
     {

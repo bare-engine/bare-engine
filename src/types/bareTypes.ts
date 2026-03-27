@@ -72,6 +72,7 @@ export interface Entity
   extendData?: string;
   imagePath?: string;
   interactableInEditor?:boolean;
+  save?:boolean;
 
   // PHYSICS
   collide?: boolean;

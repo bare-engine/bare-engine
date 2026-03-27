@@ -289,7 +289,7 @@ export class LevelHandler
             obj.y += obj.pivotY;
         }
 
-        var origEntity = this.scene.ConstructEntity(obj.name);
+        var origEntity = this.scene.GetDummpyDataFromEntity2(obj.name);
 
         var objDiff = this.GetChangedSaveValues(obj, origEntity);
         if (Object.keys(objDiff).length > 0)

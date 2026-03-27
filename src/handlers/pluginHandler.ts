@@ -283,35 +283,34 @@ window.__GAME_DEBUG_API__ = {
             }
 
             // GET DEFAULTS
-            var defaults = o.scene.ConstructEntity(o.name, o.scene.settingsData, {propsToIgnoreInEntity: propsToIgnoreInEntity});
-            var defaultsObj = bareEngine.dummyGameObject.ResetValues(); // FALLBACK FOR MISSING PROPERTIES OF CONSTRUCTED ENTITY ABOVE
+            var defaults = o.scene.GetDummpyDataFromEntity2(o.name, o.scene.settingsData, {propsToIgnoreInEntity: propsToIgnoreInEntity});
 
             // DEFINE CUSTOM DEFAULTS FOR X/Y PROPS, THEY NEED TO DIG SOME DEEPER
             var customDefaults = {};
 
             if (props.x !== undefined)
-                customDefaults["x"] = (defaults.position?.x ?? defaultsObj.position.x);
+                customDefaults["x"] = (defaults.position?.x);
             if (props.y !== undefined)
-                customDefaults["y"] = (defaults.position?.y ?? defaultsObj.position.y);
+                customDefaults["y"] = (defaults.position?.y);
             if (props.scaleX !== undefined)
-                customDefaults["scaleX"] = (defaults.scale?.x ?? defaults.scaleX ?? defaultsObj.scale.x);
+                customDefaults["scaleX"] = (defaults.scale?.x ?? defaults.scaleX);
             if (props.scaleY !== undefined)
-                customDefaults["scaleY"] = (defaults.scale?.y ?? defaults.scaleY ?? defaultsObj.scale.y);
+                customDefaults["scaleY"] = (defaults.scale?.y ?? defaults.scaleY);
             if (props.innerX !== undefined)
-                customDefaults["innerX"] = (defaults.innerPosition?.x ?? defaults.innerX ?? defaultsObj.innerPosition.x);
+                customDefaults["innerX"] = (defaults.innerPosition?.x ?? defaults.innerX);
             if (props.innerY !== undefined)
-                customDefaults["innerY"] = (defaults.innerPosition?.y ?? defaults.innerY ?? defaultsObj.innerPosition.y);
+                customDefaults["innerY"] = (defaults.innerPosition?.y ?? defaults.innerY);
             if (props.innerScaleX !== undefined)
-                customDefaults["innerScaleX"] = (defaults.innerScale?.x ?? defaults.innerScaleX ?? defaultsObj.innerScale.x);
+                customDefaults["innerScaleX"] = (defaults.innerScale?.x ?? defaults.innerScaleX);
             if (props.innerScaleY !== undefined)
-                customDefaults["innerScaleY"] = (defaults.innerScale?.y ?? defaults.innerScaleY ?? defaultsObj.innerScale.y);
+                customDefaults["innerScaleY"] = (defaults.innerScale?.y ?? defaults.innerScaleY);
             
             // FINALLY, PROCESS THEM
             for (var key of Object.keys(props))
             {
                 // FOR EACH SEND PROP...
 
-                var defaultVal = customDefaults[key] ?? (defaults[key] ?? defaultsObj[key]);
+                var defaultVal = customDefaults[key] ?? (defaults[key]);
                 var currentVal = props[key];
 
                 if (key == "components")
