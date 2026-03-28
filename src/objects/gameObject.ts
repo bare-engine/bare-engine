@@ -700,6 +700,55 @@ export class GameObject
         return this.GetBoundsWithChildren().height;
     }
 
+    private buildAncestorMatrix(m: MatrixStack)
+    {
+        var chain: GameObject[] = [];
+        var obj: GameObject | null = this.parent;
+        while (obj)
+        {
+            chain.push(obj);
+            obj = obj.parent;
+        }
+        for (var i = chain.length - 1; i >= 0; i--)
+        {
+            var ancestor = chain[i];
+            this.applyTransform(m, ancestor);
+            m.translate(-ancestor.pivot.x, -ancestor.pivot.y);
+        }
+    }
+
+    private applyTransform(m: MatrixStack, t: { position?: { x: number, y: number }, rotation: number, scale: { x: number, y: number }, flipped: boolean })
+    {
+        var tx = t.position!.x;
+        var ty = t.position!.y;
+        m.translate(tx, ty);
+        m.rotate(t.rotation * (Math.PI / 180));
+        m.scale(t.scale.x * (t.flipped ? -1 : 1), t.scale.y);
+    }
+
+    private cornersToRect(corners: number[][]): Rectangle
+    {
+        var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (var c of corners)
+        {
+            minX = Math.min(minX, c[0]);
+            minY = Math.min(minY, c[1]);
+            maxX = Math.max(maxX, c[0]);
+            maxY = Math.max(maxY, c[1]);
+        }
+        return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+    }
+
+    private getCorners(m: MatrixStack, px: number, py: number, w: number, h: number): number[][]
+    {
+        return [
+            m.apply(px, py) as number[],
+            m.apply(w, py) as number[],
+            m.apply(w, h) as number[],
+            m.apply(px, h) as number[]
+        ];
+    }
+
     GetBounds(global:boolean = true): Rectangle
     {
         if (!global || !this.parent)
@@ -712,66 +761,20 @@ export class GameObject
             };
         }
 
-        // WALK THE ANCESTOR CHAIN TO GET GLOBAL BOUNDS
-        
         var m = new MatrixStack();
         m.pushIdentity();
-
-        var chain: GameObject[] = [];
-        var obj: GameObject | null = this.parent;
-        while (obj)
-        {
-            chain.push(obj);
-            obj = obj.parent;
-        }
-        for (var i = chain.length - 1; i >= 0; i--)
-        {
-            var ancestor = chain[i];
-            m.translate(ancestor.x, ancestor.y);
-            m.rotate(ancestor.rotation * (Math.PI / 180));
-            m.scale(ancestor.scale.x * (ancestor.flipped ? -1 : 1), ancestor.scale.y);
-            m.translate(-ancestor.pivot.x, -ancestor.pivot.y);
-        }
-
-        m.translate(this.x, this.y);
-        m.rotate(this.rotation * (Math.PI / 180));
-        m.scale(this.scale.x * (this.flipped ? -1 : 1), this.scale.y);
+        this.buildAncestorMatrix(m);
+        this.applyTransform(m, this);
 
         m.pushMat();
-        var inner = this.innerTransform;
-        m.translate(inner.position.x, inner.position.y);
-        m.rotate(inner.rotation * (Math.PI / 180));
-        m.scale(inner.scale.x * (inner.flipped ? -1 : 1), inner.scale.y);
+        this.applyTransform(m, this.innerTransform);
 
         var px = -this.pivot.x;
         var py = -this.pivot.y;
-        var w = this.texture!.width + px;
-        var h = this.texture!.height + py;
-
-        var corners = [
-            m.apply(px, py) as number[],
-            m.apply(w, py) as number[],
-            m.apply(w, h) as number[],
-            m.apply(px, h) as number[]
-        ];
-
+        var corners = this.getCorners(m, px, py, this.texture!.width + px, this.texture!.height + py);
         m.popMat();
 
-        var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        for (var c of corners)
-        {
-            minX = Math.min(minX, c[0]);
-            minY = Math.min(minY, c[1]);
-            maxX = Math.max(maxX, c[0]);
-            maxY = Math.max(maxY, c[1]);
-        }
-
-        return {
-            x: minX,
-            y: minY,
-            width: maxX - minX,
-            height: maxY - minY
-        };
+        return this.cornersToRect(corners);
     }
 
     GetBoundsWithChildren(global:boolean = true): Rectangle
@@ -785,23 +788,7 @@ export class GameObject
         m.pushIdentity();
 
         if (global)
-        {
-            var chain: GameObject[] = [];
-            var obj: GameObject | null = this.parent;
-            while (obj)
-            {
-                chain.push(obj);
-                obj = obj.parent;
-            }
-            for (var i = chain.length - 1; i >= 0; i--)
-            {
-                var ancestor = chain[i];
-                m.translate(ancestor.x, ancestor.y);
-                m.rotate(ancestor.rotation * (Math.PI / 180));
-                m.scale(ancestor.scale.x * (ancestor.flipped ? -1 : 1), ancestor.scale.y);
-                m.translate(-ancestor.pivot.x, -ancestor.pivot.y);
-            }
-        }
+            this.buildAncestorMatrix(m);
 
         var updateBounds = (obj: GameObject) => {
             var ow = 0, oh = 0;
@@ -819,15 +806,7 @@ export class GameObject
 
             var px = -obj.pivot.x;
             var py = -obj.pivot.y;
-            var w = ow + px;
-            var h = oh + py;
-
-            var corners = [
-                m.apply(px, py) as number[],
-                m.apply(w, py) as number[],
-                m.apply(w, h) as number[],
-                m.apply(px, h) as number[]
-            ];
+            var corners = this.getCorners(m, px, py, ow + px, oh + py);
 
             for (var c of corners)
             {
@@ -840,15 +819,10 @@ export class GameObject
 
         var recurse = (obj: GameObject) => {
             m.pushMat();
-            m.translate(obj.x, obj.y);
-            m.rotate(obj.rotation * (Math.PI / 180));
-            m.scale(obj.scale.x * (obj.flipped ? -1 : 1), obj.scale.y);
+            this.applyTransform(m, obj);
 
             m.pushMat();
-            var inner = obj.innerTransform;
-            m.translate(inner.position.x, inner.position.y);
-            m.rotate(inner.rotation * (Math.PI / 180));
-            m.scale(inner.scale.x * (inner.flipped ? -1 : 1), inner.scale.y);
+            this.applyTransform(m, obj.innerTransform);
             updateBounds(obj);
             m.popMat();
 
@@ -901,7 +875,6 @@ export class GameObject
 
         return this;
     }
-
 
     SetScale(scale: number): GameObject
     {
