@@ -375,16 +375,16 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     angle: number;
   } {
     // Get rectangle 1 bounds
-    const rect1Left = obj1.x + obj1.physicsHitbox.rectangle.x - obj1.pivot.x;
-    const rect1Right = rect1Left + obj1.physicsHitbox.rectangle.width;
-    const rect1Top = obj1.y + obj1.physicsHitbox.rectangle.y - obj1.pivot.y;
-    const rect1Bottom = rect1Top + obj1.physicsHitbox.rectangle.height;
+    const rect1Left = obj1.x - obj1.pivot.x + obj1.physicsHitbox.rectangle.x;
+    const rect1Right = rect1Left + obj1.physicsHitbox.rectangle.width * obj1.totalScaleX;
+    const rect1Top = obj1.y - obj1.pivot.y + obj1.physicsHitbox.rectangle.y;
+    const rect1Bottom = rect1Top + obj1.physicsHitbox.rectangle.height * obj1.totalScaleY;
 
     // Get rectangle 2 bounds
-    const rect2Left = obj2.x + obj2.physicsHitbox.rectangle.x - obj2.pivot.x;
-    const rect2Right = rect2Left + obj2.physicsHitbox.rectangle.width;
-    const rect2Top = obj2.y + obj2.physicsHitbox.rectangle.y - obj2.pivot.y;
-    const rect2Bottom = rect2Top + obj2.physicsHitbox.rectangle.height;
+    const rect2Left = obj2.x - obj2.pivot.x + obj2.physicsHitbox.rectangle.x;
+    const rect2Right = rect2Left + obj2.physicsHitbox.rectangle.width * obj2.totalScaleX;
+    const rect2Top = obj2.y - obj2.pivot.y + obj2.physicsHitbox.rectangle.y;
+    const rect2Bottom = rect2Top + obj2.physicsHitbox.rectangle.height * obj2.totalScaleY;
 
     // Check for AABB collision
     const colliding = rect1Left < rect2Right && 

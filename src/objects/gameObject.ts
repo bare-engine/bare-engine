@@ -660,12 +660,6 @@ export class GameObject
 
     get width(): number
     {
-        if (!this.texture && this.children.length > 0)
-        {
-            // RETURNING WIDTH OF CHILDREN IF THERE'S NO TEXTURE
-            return this.widthIncludingChildren;
-        }
-
         if (!this.texture)
         {
             return 0;
@@ -676,12 +670,6 @@ export class GameObject
 
     get height(): number
     {
-        if (!this.texture && this.children.length > 0)
-        {
-            // RETURNING WIDTH OF CHILDREN IF THERE'S NO TEXTURE
-            return this.heightIncludingChildren;
-        }
-
         if (!this.texture)
         {
             return 0;
@@ -816,12 +804,23 @@ export class GameObject
         }
 
         var updateBounds = (obj: GameObject) => {
-            if (!obj.texture) return;
+            var ow = 0, oh = 0;
+            if (obj.texture)
+            {
+                ow = obj.texture.width;
+                oh = obj.texture.height;
+            }
+            else
+            {
+                ow = obj.width;
+                oh = obj.height;
+            }
+            if (ow === 0 && oh === 0) return;
 
             var px = -obj.pivot.x;
             var py = -obj.pivot.y;
-            var w = obj.texture.width + px;
-            var h = obj.texture.height + py;
+            var w = ow + px;
+            var h = oh + py;
 
             var corners = [
                 m.apply(px, py) as number[],

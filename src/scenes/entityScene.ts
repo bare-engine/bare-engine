@@ -73,7 +73,14 @@ export class EntityScene extends EditorScene
             isData: true,
             entitiesByLayer: {
                 "objects": [
-                    entityFromSettingsData
+                    {
+                        ...entityConstructedFromSettingsData,
+                        /*position: {
+                            x: 0,
+                            y: 0
+                        },*/
+                        interactableInEditor: false,//
+                    }
                 ]
             }
         };
