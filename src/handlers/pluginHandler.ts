@@ -1,5 +1,5 @@
 import { keyboardController } from "../controllers/keyboardController";
-import { Scene, sceneController } from "../exports";
+import { componentController, objectController, Scene, sceneController } from "../exports";
 import { Color, Vec2 } from "../libraries/rapid-render";
 import { GameMode, globalEvents } from "../main";
 import { GameObject } from "../objects/gameObject";
@@ -8,6 +8,7 @@ import { EntityScene } from "../scenes/entityScene";
 import { OutlineShader } from "../shaders/outlineShader";
 import { BareEvent, BareEventPayload, LevelData, SaveData, Scalar, SettingsData } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
+import { getButtons } from "../utils/decorators";
 import { SaveDataHandler } from "./SaveDataHandler";
 
 // THIS PLUGIN CODE DOES NOT GET INCLUDED IN PRODUCTION
@@ -19,6 +20,28 @@ declare global {
 }
 
 window.__GAME_DEBUG_API__ = {
+  clickedComponentButton(uid: string, compName: string, methodName: string)
+  {
+        const scene = plugin.GetCurrentScene();
+
+      var obj = scene.objectController.GetObjectById(uid);
+      if (!obj)
+        {
+            console.error("Object not found");
+            return false;
+        }
+
+      var compClass = bareEngine.componentClasses[Helper.CapitalizeFirstLetter(compName) + "Component"];
+      var comp = scene.componentController.GetComponent(obj, compClass);
+      if (!comp)
+        {
+            console.error("Component not found");
+            return false;
+        }
+
+      comp[methodName]();
+  },
+
   selectedObject(uid: string)
   {
       const outlineShader = plugin.outlineShader;
@@ -198,7 +221,22 @@ window.__GAME_DEBUG_API__ = {
 
         if (window.gameMode == GameMode.Game)
         {
-            let components = o.scene.levelHandler.SerializeComponents(o.scene.componentController.GetComponentsFrom(o), false);
+            let comps = o.scene.componentController.GetComponentsFrom(o);
+            let components = o.scene.levelHandler.SerializeComponents(comps, false);
+
+            for (var c of comps)
+            {
+                var buttons = getButtons(c);
+                if (buttons.length > 0)
+                {
+                    var compName = Helper.DecapitalizeFirstLetter(c.constructor.name.replace("Component", ""));
+                    if (components[compName])
+                    {
+                        (components[compName] as any).__buttons = buttons.map(b => ({ label: b.label, method: b.label }));
+                    }
+                }
+            }
+
             data.components = components;
         }
         else
@@ -210,14 +248,21 @@ window.__GAME_DEBUG_API__ = {
             for (var comp in components)
             {
                 var compRef = bareEngine.componentClasses[Helper.CapitalizeFirstLetter(comp) + "Component"];
-                let componentsBase = o.scene.levelHandler.SerializeComponent(new compRef()); // INSTANTIATING NEW COMPONENT, JUST TO GET DEFAULT CONSTRUCTOR VALUES. NOT THAT GREAT - TODO?
-                
+                var compInstance = new compRef();
+                let componentsBase = o.scene.levelHandler.SerializeComponent(compInstance); // INSTANTIATING NEW COMPONENT, JUST TO GET DEFAULT CONSTRUCTOR VALUES. NOT THAT GREAT - TODO?
+
                 for (var key in componentsBase)
                 {
                     if (!components[comp][key])
                     {
                         components[comp][key] = componentsBase[key];
                     }
+                }
+
+                var buttons = getButtons(compInstance);
+                if (buttons.length > 0)
+                {
+                    (components[comp] as any).__buttons = buttons.map(b => ({ label: b.label, method: b.label }));
                 }
             }
 

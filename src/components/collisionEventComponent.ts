@@ -1,5 +1,6 @@
 import { BaseComponent, GameObject, componentController } from "../exports";
 import { Scene } from "../main";
+import { Button } from "../utils/decorators";
 
 declare var bareEngine: any;
 
@@ -22,12 +23,18 @@ export class CollisionEventComponent extends BaseComponent
     {
         if (other.name == this.object || self.name == this.object)
         {
-            bareEngine.SendEvent(this.event);
+            this.Fire();
+        }
+    }
 
-            if (this.once)
-            {
-                componentController.RemoveComponent(this.go, this);
-            }
+    @Button
+    Fire(): void
+    {
+        bareEngine.SendEvent(this.event);
+
+        if (this.once)
+        {
+            componentController.RemoveComponent(this.go, this);
         }
     }
 }

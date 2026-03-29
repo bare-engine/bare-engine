@@ -7,7 +7,8 @@
     "baseUrl": ".",
     "lib": ["ES2020", "DOM"],
     "types": ["node"],
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "experimentalDecorators": true
   },
   "include": ["src"],
   "exclude": ["node_modules", "**/*.spec.ts"]
