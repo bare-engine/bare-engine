@@ -22,7 +22,7 @@ import { levelHandler } from "./levelHandler";
 export class EditorControlsHandler {
     public currentPreviewEntity: GameObject;
     public currentPreviewActive:boolean = false;
-    private draggingLevelEntity: GameObject | null = null;
+    private draggingObject: GameObject | null = null;
     private dragOffset: Vec2;
     
     public scene: EditorScene;
@@ -39,7 +39,7 @@ export class EditorControlsHandler {
     
     constructor(editorScene: any) {
         this.scene = editorScene;
-        this.draggingLevelEntity = null;
+        this.draggingObject = null;
 
         if (EditorControlsHandler.copiedObjectCached.length > 0)
         {
@@ -151,7 +151,7 @@ export class EditorControlsHandler {
         if (!this.scene.opened)
             return;
 
-        if (this.draggingLevelEntity)
+        if (this.draggingObject)
         {
             return;
         }
@@ -437,7 +437,7 @@ export class EditorControlsHandler {
         if (keyboardController.IsKeyDown("control") && this.currentPreviewActive)
             return;
         
-        this.draggingLevelEntity = obj;
+        this.draggingObject = obj;
         this.dragOffset = mouseController.world.position.subtract(obj.position);
         
         this.actionThisFrame = 'objDrag';
@@ -447,7 +447,7 @@ export class EditorControlsHandler {
     {
         if (keyboardController.IsKeyDown("control") && this.currentPreviewActive)
         {
-            this.draggingLevelEntity = null;
+            this.draggingObject = null;
             return;
         }
 
@@ -474,16 +474,20 @@ export class EditorControlsHandler {
             this.SelectGameObjects([obj], !multiSelect);
         }
         else
-        if (this.draggingLevelEntity)
+        if (this.draggingObject)
         {
             //var draggingLevelEntityIsOutsideScreen = this.draggingLevelEntity.x < 0 || this.draggingLevelEntity.x > this.editorController.currentLevel.dimensions.width || this.draggingLevelEntity.y < 0 || this.draggingLevelEntity.y > this.editorController.currentLevel.dimensions.height;
             /*if (draggingLevelEntityIsOutsideScreen) {
                 hitboxController.Remove(this.draggingLevelEntity.hitbox!);
                 objectController.Remove(this.draggingLevelEntity);
             }*/
+
+            // NEED TO ALIGN levelEntity POSITION FOR GAME EDITOR MODE, SEE LevelHandler.SerializeLevel
+            this.draggingObject.levelEntity.position.x = this.draggingObject.x;
+            this.draggingObject.levelEntity.position.y = this.draggingObject.y;
         }
 
-        this.draggingLevelEntity = null;
+        this.draggingObject = null;
     }
 
     private LayerSelected({ layerName }: BareEventPayload['editor_layerSelected']): void
@@ -550,12 +554,12 @@ export class EditorControlsHandler {
         if (!this.scene.opened)
             return;
 
-        if (this.draggingLevelEntity)
+        if (this.draggingObject)
         {
             var movedX = 0;
             var movedY = 0;
-            var origPosX = this.draggingLevelEntity.x;
-            var origPosY = this.draggingLevelEntity.y;
+            var origPosX = this.draggingObject.x;
+            var origPosY = this.draggingObject.y;
 
             // Calculate the desired position
             const desiredX = mouseController.world.position.x - this.dragOffset.x;
@@ -568,26 +572,26 @@ export class EditorControlsHandler {
                 const gridSize = settings?.gridSize;
                 const snappedX = Math.round(desiredX / gridSize) * gridSize;
                 const snappedY = Math.round(desiredY / gridSize) * gridSize;
-                this.draggingLevelEntity.SetPosition(snappedX, snappedY);
+                this.draggingObject.SetPosition(snappedX, snappedY);
             }
             else
             {
                 // DRAG FREELY
-                this.draggingLevelEntity.SetPosition(desiredX, desiredY);
+                this.draggingObject.SetPosition(desiredX, desiredY);
             }
 
             // Calculate the distance moved
-            movedX = this.draggingLevelEntity.x - origPosX;
-            movedY = this.draggingLevelEntity.y - origPosY;
+            movedX = this.draggingObject.x - origPosX;
+            movedY = this.draggingObject.y - origPosY;
 
-            var draggedEntityIsSelected = this.selectedObjects.includes(this.draggingLevelEntity);
+            var draggedEntityIsSelected = this.selectedObjects.includes(this.draggingObject);
             if (draggedEntityIsSelected)
             {
                 for (var i = 0; i < this.selectedObjects.length; i++)
                 {
                     const obj = this.selectedObjects[i];
 
-                    if (obj == this.draggingLevelEntity)
+                    if (obj == this.draggingObject)
                         continue;
 
                     obj.x += movedX;

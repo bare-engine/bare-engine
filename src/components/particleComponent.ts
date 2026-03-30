@@ -1,5 +1,6 @@
 import { BaseComponent, ParticleEmitter, assetsHandler, IParticleOptions, Vec2, ParticleShape, Color, particleController, GameObject } from "../exports";
 import { Scene } from "../main";
+import { InspectorButton } from "../utils/decorators";
 
 export class ParticleComponent extends BaseComponent
 {
@@ -24,6 +25,7 @@ export class ParticleComponent extends BaseComponent
 
         var tex = assetsHandler.GetTexture(texture);
 
+        // WANT TO SEE THESE IN COMPONENT IN PLUGIN ACTUALLY - TODO
         var options: IParticleOptions = {
             position: new Vec2(position.x, position.y),
             life: life,
@@ -72,6 +74,12 @@ export class ParticleComponent extends BaseComponent
 
         this.emitter.position.set(go.x + this.positionData.x, go.y + this.positionData.y);
         particleController.Add(this.emitter);
+    }
+
+    @InspectorButton
+    Test()
+    {
+        this.emitter.oneShot();
     }
 
     OnUpdate(deltaTime: number): void

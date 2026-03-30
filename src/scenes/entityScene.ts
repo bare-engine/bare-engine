@@ -74,7 +74,7 @@ export class EntityScene extends EditorScene
             entitiesByLayer: {
                 "objects": [
                     {
-                        ...entityConstructedFromSettingsData,
+                        ... this.settingsData.entities[objectName],
                         /*position: {
                             x: 0,
                             y: 0
@@ -107,6 +107,7 @@ export class EntityScene extends EditorScene
 
         var entity = this.objectController.GetObjectByName(this.lastObjectName).levelEntity;
         delete entity.name;
+        delete entity.interactableInEditor;
         
         // APPLY NEW VALUES TO THE INITIAL ENTITY SETTING
         const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {

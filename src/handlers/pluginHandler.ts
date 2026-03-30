@@ -120,6 +120,9 @@ window.__GAME_DEBUG_API__ = {
 
     await sceneController.Add(EntityScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
     //sceneController.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
+    
+    var id = plugin.GetCurrentScene().objectController.GetObjectByName(name).uniqueID;
+    return window.__GAME_DEBUG_API__.getObject(id);
   },
 
   getDebugActions() {
@@ -277,7 +280,8 @@ window.__GAME_DEBUG_API__ = {
         return data;
     }
 
-    return serializeGameObject(o);
+    var s = serializeGameObject(o);
+    return s;
   },
 
     setObject(id: string, props: any) {
@@ -355,7 +359,7 @@ window.__GAME_DEBUG_API__ = {
             {
                 // FOR EACH SEND PROP...
 
-                var defaultVal = customDefaults[key] ?? (defaults[key]);
+                var defaultVal = customDefaults[key] ?? (defaults[key]) ?? {};
                 var currentVal = props[key];
 
                 if (key == "components")
@@ -373,7 +377,7 @@ window.__GAME_DEBUG_API__ = {
                             if (componentsDefault[compPropsName] == undefined)
                             {
                                 // VALUE DOESN'T EXIST IN DEFAULT, ADD IT
-                                o.levelEntity[key][compPropsName] = compProps[key];
+                                o.levelEntity.components[compPropsName][key] = compProps[key];
                                 continue
                             }
 
@@ -514,6 +518,7 @@ window.__GAME_DEBUG_API__ = {
 
         removeRecursive(root);
         root.Remove();
+
         return true;
     },
 

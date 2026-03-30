@@ -151,7 +151,7 @@ export class ObjectController
         const layerI = this.scene.layerNames.indexOf(name);
         if (layerI == -1)
         {
-            console.error(`Layer ${name} does not exist`);
+            //console.error(`Layer ${name} does not exist`);
             return [];
         }
 

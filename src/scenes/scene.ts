@@ -488,7 +488,7 @@ export class Scene implements SceneI
         children: (o, v) => {
             for (const childEntity of v)
             {
-                var childObj = this.AddGameObject(childEntity, o);
+                this.AddGameObject(childEntity, o);
             }
         },
     };
@@ -565,6 +565,7 @@ export class Scene implements SceneI
         bareEngine.dummyGameObject.InitTexture(MakePath(entityConstructed.imagePath!, entityConstructed.name)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
         
         //this.ApplyEntityToGameObject(entityConstructed, bareEngine.dummyGameObject);
+        
         var entityVars = [
             "name",
             "customName",
