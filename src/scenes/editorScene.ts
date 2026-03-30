@@ -430,7 +430,7 @@ export class EditorScene extends Scene
         //gameObject.physicsHitbox.rectangle = {x: 0, y: 0, width: 0, height: 0};
 
         // Hitbox linkage
-        if (gameObject.entity && gameObject.entity.interactableInEditor !== false) // UNDEFINED OR TRUE...
+        if (entity.interactableInEditor !== false) // UNDEFINED OR TRUE...
         {
             gameObject.tapHitbox = new Hitbox(gameObject, 0);
             gameObject.tapHitbox.shouldReleaseOnTop = false;

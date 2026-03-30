@@ -65,10 +65,8 @@ export class GameObject
 
     private renderParentTransform: Float32Array | null = null;
 
-    // CAN I GET RID OF THESE TWO? TODO
-    levelEntity: Entity | null = null; // USED IN COMBINATION WITH ENTITY, TO COMPARE VARS SAME IN levelEntity, AND ONLY LOOK FOR CHANGES FROM ENTITY AND SAVE THOSE
-    entity: Entity | null = null;
-
+    levelEntity: Entity | null = null; 
+    
     visibleInEditor:boolean = true;
 
     customData: Record<string, any> = {};
@@ -241,9 +239,9 @@ export class GameObject
         }
         else
         {
-            if (!this.texture && this.entity) // HORRID, TODO, ALWAYS LOAD TEXURE BEFORE?
+            if (!this.texture && this.levelEntity) // HORRID, TODO, ALWAYS LOAD TEXURE BEFORE?
             {
-                var tex = assetsHandler.GetTexture(MakePath(this.entity.imagePath!, this.entity.name));
+                var tex = assetsHandler.GetTexture(MakePath(this.levelEntity.imagePath!, this.levelEntity.name));
                 if (tex)
                 {
                     this.SetTexture(tex);
@@ -251,7 +249,7 @@ export class GameObject
                 }
                 else
                 {
-                    assetsHandler.GetTexturePromise(MakePath(this.entity.imagePath!, this.entity.name)).then(tex => {
+                    assetsHandler.GetTexturePromise(MakePath(this.levelEntity.imagePath!, this.levelEntity.name)).then(tex => {
                         this.SetTexture(tex);
                         callback();
                     });
@@ -1245,7 +1243,6 @@ export class GameObject
         this.tapHitbox = null;
         this.revertPivotOnSave = false;
 
-        this.entity = null;
         this.levelEntity = null;
         
         this.startPosition.set(0);

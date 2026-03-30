@@ -444,8 +444,6 @@ export class Scene implements SceneI
 
     ApplyEntityToGameObject(entity: Entity, obj: GameObject, addComponents: boolean = true)
     {
-        obj.entity = entity;
-        
         this.ApplyEntityVarsToGameObject(entity, obj);
         obj.OnApplyEntityToGameObject(entity, addComponents);
 
