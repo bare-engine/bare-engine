@@ -17,8 +17,7 @@ import { SettingsHandler } from "../handlers/settingsHandler";
 import { Color, Vec2 } from "../libraries/rapid-render";
 import { GameMode, globalEvents, MakePath, Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
-import { BareEvent, Dimensions, Entity, LevelData, SaveData, SceneOptions, SettingsData } from "../types/bareTypes";
-import { CameraScaleMode, HitboxType } from "../types/gamesTypes";
+import { BareEvent, Size, Entity, LevelData, SaveData, SceneOptions, SettingsData, CameraScaleMode, HitboxType } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
 import { Helper } from "../utils/helper";
 
@@ -151,7 +150,7 @@ export class EditorScene extends Scene
         if (this.settingsData.showUI !== false)
         {
             // POSIION CAMERA SO THAT LEVEL SITS A BIT RIGHT, NEXT TO OBJECTS UI
-            var dims:Dimensions = this.currentLevel.dimensions;
+            var dims:Size = this.currentLevel.dimensions;
             var s = Math.max(dims.width / rapid.width, dims.height / rapid.height);
             cameraHandler.zoom = 1/s * .62; // ZOOM OUT A BIT, TO FIT RIGHT OF ENTITES WINDOW
             cameraHandler.SetPosition(dims.width * .25, dims.height / 2); // AND CAMERA LEFT A BIT FOR SAME REASON
@@ -159,7 +158,7 @@ export class EditorScene extends Scene
         else
         {
             // CENTER CAMERA, BIT ZOOMED OUT
-            var dims:Dimensions = this.currentLevel.dimensions;
+            var dims:Size = this.currentLevel.dimensions;
             var s = Math.max(dims.width / rapid.width, dims.height / rapid.height);
             cameraHandler.zoom = 1/s * .7;
             cameraHandler.SetPosition(dims.width / 2, dims.height / 2);

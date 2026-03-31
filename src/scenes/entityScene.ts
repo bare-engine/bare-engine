@@ -1,6 +1,6 @@
 import { assetsHandler, EditorScene, Helper, LevelData, MakePath, PhysicsObjectBare, SettingsData, SettingsHandler } from "../exports";
 import { levelHandler } from "../handlers/levelHandler";
-import { AwakePayload, BareEvent, Dimensions } from "../types/bareTypes";
+import { AwakePayload, BareEvent, Size } from "../types/bareTypes";
 
 type EditorScenePayload = AwakePayload<EditorScene>;
 type HitboxSceneAwakePayload = EditorScenePayload & {
@@ -57,7 +57,7 @@ export class EntityScene extends EditorScene
         var texture = await assetsHandler.GetTexturePromise(MakePath(entityConstructedFromSettingsData.imagePath!, objectName));
 
         this.events.persistent.once(BareEvent.level_loaded, ({ level }) => {
-            const dims: Dimensions = level.dimensions;
+            const dims: Size = level.dimensions;
             this.cameraHandler.SetBounds({ x: 0, y: 0, width: texture.width, height: texture.height });
             this.cameraHandler.CalculateZoomFit();
         });
@@ -92,7 +92,7 @@ export class EntityScene extends EditorScene
 
         var obj = this.objectController.GetObjectByName(this.lastObjectName);
         var bounds = obj.GetBoundsWithChildren();
-        var dims:Dimensions = bounds;
+        var dims:Size = bounds;
         var s = Math.max(dims.width / rapid.width, dims.height / rapid.height);
         this.cameraHandler.zoom = 1/s * .7;
 

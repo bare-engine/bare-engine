@@ -1,6 +1,6 @@
 import { Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
-import { BareEvent, BareEventPayload, Dimensions, SaveData } from '../types/bareTypes';
+import { BareEvent, BareEventPayload, Size, SaveData } from '../types/bareTypes';
 
 export class PhysicsControllerBase
 {
@@ -58,7 +58,7 @@ export class PhysicsControllerBase
 
 	OnLevelLoaded({ level }: BareEventPayload['level_loaded']): void
 	{
-		var dims:Dimensions = level.dimensions;
+		var dims:Size = level.dimensions;
         this.setDimensions(0, 0, dims.width, dims.height);
 	}
 

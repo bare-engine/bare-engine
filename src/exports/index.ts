@@ -108,7 +108,8 @@ export type {
   Atlas,
   AtlasFrame,
   Component,
-  Dimensions,
+  Size,
+  Rectangle, Rectangle2Vec,
   Entity,
   Pipes,
   FrameRect,
@@ -121,8 +122,8 @@ export type {
   SourceSize,
   SpriteSourceSize,
 } from "../types/bareTypes";
-export { HitboxType, CameraScaleMode } from "../types/gamesTypes";
-export type { Rectangle, Rectangle2Vec } from "../types/gamesTypes";
+
+export { HitboxType, CameraScaleMode } from "../types/bareTypes";
 
 // Libraries
 export { default as Rapid } from "../libraries/rapid-render/render";

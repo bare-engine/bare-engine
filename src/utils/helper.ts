@@ -2,7 +2,7 @@
 
 import { Vec2, Color } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
-import { Rectangle } from '../types/gamesTypes';
+import { Rectangle } from "../types/bareTypes";
 
 export interface Size {
     width: number;

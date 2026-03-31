@@ -1,7 +1,6 @@
 import { Vec2, Color, Texture } from "../libraries/rapid-render";
 import { MakePath, Scene } from "../main";
-import { Entity, SettingsData } from "../types/bareTypes";
-import { HitboxType, Rectangle, Rectangle2Vec } from "../types/gamesTypes";
+import { Entity, HitboxType, Rectangle, Rectangle2Vec, SettingsData } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
 import { GameObject } from "./gameObject";
 

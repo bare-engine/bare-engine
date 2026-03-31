@@ -4,8 +4,7 @@ import { Entity, GameObjectClass } from '../types/bareTypes';
 import { Helper } from '../utils/helper';
 import { MakePath, Scene } from '../main';
 import { Vec2, Texture, Color, GLShader, Uniform, MaskType, MatrixStack } from "../libraries/rapid-render";
-import type { Component, Ctor } from "../types/bareTypes";
-import { Rectangle } from "../types/gamesTypes";
+import type { Component, Ctor, Rectangle } from "../types/bareTypes";
 
 export class Transform {
     position = new Vec2();

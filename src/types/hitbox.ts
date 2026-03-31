@@ -1,6 +1,6 @@
 import { Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject"
-import { HitboxType, Rectangle, Rectangle2Vec } from "./gamesTypes";
+import { HitboxType, Rectangle, Rectangle2Vec } from "./bareTypes";
 
 export class Hitbox
 {

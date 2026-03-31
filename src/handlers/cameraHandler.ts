@@ -1,8 +1,7 @@
 import { BareEngine } from "../exports";
 import { Vec2 } from "../libraries/rapid-render";
 import { Scene } from "../main";
-import { BareEvent, type Dimensions } from "../types/bareTypes";
-import { CameraScaleMode, Rectangle } from "../types/gamesTypes";
+import { BareEvent, CameraScaleMode, Rectangle, type Size } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
 
 export class CameraHandler {
@@ -10,7 +9,7 @@ export class CameraHandler {
   zoom: number = 1;
 
   // "logical area" you want to fit/cover on screen when zoomFit is applied
-  dimensions: Dimensions = { width: 0, height: 0 };
+  dimensions: Size = { width: 0, height: 0 };
 
   // world bounds the camera is allowed to show
   bounds: Rectangle = { x: 0, y: 0, width: 0, height: 0 };
@@ -57,7 +56,7 @@ export class CameraHandler {
     //events.persistent.on(BareEvent.gameStarted, () => this.ResetForStart());
 
     this.scene.events.persistent.on(BareEvent.level_loaded, ({ level }) => {
-      const dims: Dimensions = level.dimensions;
+      const dims: Size = level.dimensions;
       this.SetBounds({ x: 0, y: 0, width: dims.width, height: dims.height });
       //this.SetDimensions(dims.width,  dims.height );
       this.CalculateZoomFit();

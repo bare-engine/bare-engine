@@ -19,11 +19,40 @@ export interface Position
   y: number;
 }
 
-export interface Dimensions
+export interface Size
 {
   width: number;
   height: number;
 }
+
+export interface Rectangle
+{
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+}
+
+export interface Rectangle2Vec
+{
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+}
+
+export enum HitboxType
+{
+  Circle,
+  Rectangle
+}
+
+export enum CameraScaleMode
+{
+  Cover, // WHEN ZOOMED OUT, FITS CONTENT WITHIN SCREEN, LEAVING NO SPACE AROUND (WILL NEVER SEE OUTSIDE CONTENT BOUNDS)
+  Contain // WHEN ZOOMED OUT, FITS CONTENT WITHIN SCREEN, LEAVING SPACE AROUND (LETTERBOX)
+}
+
 
 export type Ctor<T> = new (...args: any[]) => T;
 
@@ -80,7 +109,7 @@ export interface Entity
   static?: boolean;
   stayInBounds?: boolean;
 
-  physicsRect?: Dimensions;
+  physicsRect?: Size;
   physicsRadius?: number;
   mass?: number;
   restitution?: number;
@@ -95,7 +124,7 @@ export interface LevelData
   name: string;
   settingsData?: string;
   isData?: boolean;
-  dimensions: Dimensions;
+  dimensions: Size;
   backgroundColor?: string;
   entitiesByLayer: Record<string, Entity[]>;
 }
