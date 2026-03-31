@@ -485,6 +485,49 @@ export class EditorScene extends Scene
 
         return tilesheetEntity;
     }
+
+    async SaveEntityData(newRawData: SettingsData)
+    {
+        await this.OnSaveEntityData(newRawData);
+
+        // Persist to disk via dev-server endpoint when available (local only)
+        if (!window.isLocalhost) {
+          return { ok: true, saved: false, message: 'Save skipped (not localhost)' };
+        }
+    
+        try {
+            const res = await fetch('/api/save-entity-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                path: bareEngine.dataPath,
+                entityData: newRawData,
+                skipReload: true
+            })
+          });
+          const json = await res.json().catch(() => null);
+        
+          // TELL THE PLUGIN
+          window.__GAME_DEBUG_API__.notifyEntityDataChanged(newRawData)
+
+          await this.OnPostSaveEntityData(newRawData);
+
+          return { ok: res.ok, saved: res.ok, response: json };
+        } catch (error: any) {
+          console.error('Failed to save entity data', error);
+          return { ok: false, error: error?.message ?? String(error) };
+        }
+    }
+
+    async OnSaveEntityData(rawData: SettingsData)
+    {
+        // FOR OVERRIDE
+    }
+
+    async OnPostSaveEntityData(rawData: SettingsData)
+    {
+        // FOR OVERRIDE
+    }
 }
 
 //SaveDataHandler.Load();

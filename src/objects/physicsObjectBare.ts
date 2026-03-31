@@ -97,26 +97,27 @@ export class PhysicsObjectBare extends GameObject
 
                 if (entity.pivotBasedOnHitbox)
                 {
+                    // X
                     if (entity.pivotBasedOnHitbox.x > 0 && entity.pivotBasedOnHitbox.x <= 1)
                         this.pivot.x = (hbRect.x + hbRect.width * entity.pivotBasedOnHitbox.x); // RELATIVE
                     else
                         this.pivot.x = (hbRect.x + entity.pivotBasedOnHitbox.x); // ABSOLUTE (IF YOU'D WANT THIS FOR SOME REASON!)
 
+                    // Y
                     if (entity.pivotBasedOnHitbox.y > 0 && entity.pivotBasedOnHitbox.y <= 1)
                         this.pivot.y = (hbRect.y + hbRect.height * entity.pivotBasedOnHitbox.y); // RELATIVE
                     else
                         this.pivot.y = (hbRect.y + entity.pivotBasedOnHitbox.y); // ABSOLUTE (IF YOU'D WANT THIS FOR SOME REASON!)
-
-                    this.pivot.x = (this.pivot.x);
-                    this.pivot.y = (this.pivot.y);
+                
+                    //if (this.levelEntity)
+                    //    this.levelEntity.pivot = this.pivot.clone();
                 }
             }
 
             // CAN COLLIDE
-            if (entity.collide != false)
+            if (entity.collide)
             {
                 this.collide = true;
-                entity.collide = true; // SETTING collide ON ENTITY TOO, SO IT DOESN'T GET SAVED, SINCE DEFAULT IS FALSE
             }
         }
     }

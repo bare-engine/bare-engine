@@ -559,10 +559,24 @@ export class Scene implements SceneI
     {
         var entityConstructed = this.ConstructEntity(nameOrEntity, settingsData, options);
 
-        bareEngine.dummyGameObject.ResetValues();
-        bareEngine.dummyGameObject.InitTexture(MakePath(entityConstructed.imagePath!, entityConstructed.name)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
-        
-        //this.ApplyEntityToGameObject(entityConstructed, bareEngine.dummyGameObject);
+        var gameObject: GameObject;
+
+        if (entityConstructed.extendClass == "GameObject")
+        {
+            gameObject = bareEngine.dummyGameObject;}
+        else
+        {
+            const pool = bareEngine.gameObjectPools.get(entityConstructed.extendClass);
+            if (pool)
+                gameObject = pool.Grab();
+            else
+                trace("noo");
+        }
+
+        gameObject.ResetValues();
+        gameObject.InitTexture(MakePath(entityConstructed.imagePath!, entityConstructed.name)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
+    
+        this.ApplyEntityToGameObject(entityConstructed, gameObject);
         
         var entityVars = [
             "name",
@@ -624,7 +638,7 @@ export class Scene implements SceneI
         {
             if (entityConstructed[entityVar] === undefined)
             {
-                entityConstructed[entityVar] = bareEngine.dummyGameObject[entityVar];
+                entityConstructed[entityVar] = gameObject[entityVar];
             }
         }
 
@@ -641,7 +655,6 @@ export class Scene implements SceneI
 
         // CREATE
         var gameObject: GameObject;
-        var entityChildren: Entity[] | undefined;
 
         if (!input)
         {
@@ -1010,50 +1023,6 @@ export class Scene implements SceneI
             name = name.substring(1);
 
         return name;
-    }
-
-    async OnSaveEntityData(rawData: SettingsData)
-    {
-        // FOR OVERRIDE
-    }
-
-    async OnPostSaveEntityData(rawData: SettingsData)
-    {
-        // FOR OVERRIDE
-    }
-
-    // THIS SHOULD NOT BE HERE, TODO
-    async SaveEntityData(newRawData: SettingsData)
-    {
-        await this.OnSaveEntityData(newRawData);
-
-        // Persist to disk via dev-server endpoint when available (local only)
-        if (!window.isLocalhost) {
-          return { ok: true, saved: false, message: 'Save skipped (not localhost)' };
-        }
-    
-        try {
-            const res = await fetch('/api/save-entity-data', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                path: bareEngine.dataPath,
-                entityData: newRawData,
-                skipReload: true
-            })
-          });
-          const json = await res.json().catch(() => null);
-        
-          // TELL THE PLUGIN
-          window.__GAME_DEBUG_API__.notifyEntityDataChanged(newRawData)
-
-          await this.OnPostSaveEntityData(newRawData);
-
-          return { ok: res.ok, saved: res.ok, response: json };
-        } catch (error: any) {
-          console.error('Failed to save entity data', error);
-          return { ok: false, error: error?.message ?? String(error) };
-        }
     }
 
     // OVERRIDE THIS TO LOAD SOME MORE TEXTURES DURING LEVEL LOAD

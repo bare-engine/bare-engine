@@ -286,7 +286,7 @@ window.__GAME_DEBUG_API__ = {
 
     setObject(id: string, props: any) {
         const o = plugin.GetCurrentScene().objectController.GetObjectById(id);
-
+        
         if (!o)
             return false;
 
@@ -322,7 +322,7 @@ window.__GAME_DEBUG_API__ = {
         // SO AN editorComponent COULD PULSE THE SCALE, FOR EXAMPLE
         if (window.gameMode == GameMode.Editor)
         {
-            // BIT HACKY, BUT WHEN EDITING ENTITY, THIS PASSES
+            // WHEN EDITING ENTITY, THIS PASSES
             // AND WE MAKE SURE WE DON'T LOOK AT THE ENTITY PROPS OF THAT ENITY ITSELF TO GET THE DEFAULT VALUES
             // BUT INSTEAD, IGNORE THEM, SO WE GET ITS EXTENDED VALUES (OR FROM THE DUMMY OBJECT, IF THEY'RE NOT THERE)
             var propsToIgnoreInEntity = [];
@@ -331,7 +331,7 @@ window.__GAME_DEBUG_API__ = {
                 propsToIgnoreInEntity = Object.keys(props);
             }
 
-            // GET DEFAULTS
+            // GET DEFAULTS - JUST USED TO DETERMINE IF NEW PROP VALUE IS SAME AS DEFAULT - THEN IT WILL DELETE IT
             var defaults = o.scene.GetDummpyDataFromEntity2(o.name, o.scene.settingsData, {propsToIgnoreInEntity: propsToIgnoreInEntity});
 
             // DEFINE CUSTOM DEFAULTS FOR X/Y PROPS, THEY NEED TO DIG SOME DEEPER
@@ -423,16 +423,26 @@ window.__GAME_DEBUG_API__ = {
                 {
                     if (typeof currentVal === 'object')
                     {
-                        trace(4444)
+                        if (currentVal.x != defaultVal.x || currentVal.y != defaultVal.y)
+                        {
+                            // VALUE CHANGED
+                            o.levelEntity[key] = props[key]; // CHANGED, WANT TO STORE IT
+                        }
+                        else
+                        {
+                            // BACK TO DEFAULT, REMOVE OVERRIDE
+                            delete o.levelEntity[key]; // BACK TO DEFAULT, REMOVE OVERRIDE
+                        }
                         //return JSON.stringify(currentVal) === JSON.stringify(defaultVal);
                     }
-                    //else
-
-                    // SINGLE VALUE
-                    if (currentVal != defaultVal)
-                        o.levelEntity[key] = props[key]; // CHANGED, WANT TO STORE IT
                     else
-                        delete o.levelEntity[key]; // BACK TO DEFAULT, REMOVE OVERRIDE
+                    {
+                    // SINGLE VALUE
+                        if (currentVal != defaultVal)
+                            o.levelEntity[key] = props[key]; // CHANGED, WANT TO STORE IT
+                        else
+                            delete o.levelEntity[key]; // BACK TO DEFAULT, REMOVE OVERRIDE
+                    }
                 }
             }
         }
@@ -565,7 +575,7 @@ window.__GAME_DEBUG_API__ = {
   async setEntityData(newData: SettingsData, notifyPlugin: boolean = true)
   {
     plugin.doNotifyAfterSave = false;
-    await plugin.GetCurrentScene().SaveEntityData(newData);
+    await (plugin.GetCurrentScene() as EditorScene).SaveEntityData(newData);
     plugin.doNotifyAfterSave = true;
 
     if (bareEngine.levelEditorOpen)
