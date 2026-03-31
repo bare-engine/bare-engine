@@ -66,6 +66,8 @@ export interface Entity
   customData?: Record<string, Scalar>;
 
   position?: Position; // ONLY USED WITHIN LEVEL DATA
+  x?: number;
+  y?: number;
   scaleX?: number;
   scaleY?: number;
   scale?: Position;

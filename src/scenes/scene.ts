@@ -545,6 +545,7 @@ export class Scene implements SceneI
         }
     }
 
+    // USE ONE BELOW - TODO
     GetDummpyDataFromEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsHandler.Get(), options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): {entity: Entity, gameObject: GameObject}
     {
         var entityConstructed = this.ConstructEntity(nameOrEntity, settingsData, options);

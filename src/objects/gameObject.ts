@@ -579,9 +579,19 @@ export class GameObject
         return this.innerTransform.rotation;
     }
 
+    get innerScaleX(): number
+    {
+        return this.innerScale.x;
+    }
+
     set innerScaleX(value: number)
     {
         this.innerTransform.scale.x = value;
+    }
+
+    get innerScaleY(): number
+    {
+        return this.innerScale.y;
     }
 
     set innerScaleY(value: number)
