@@ -53,7 +53,7 @@ export class GameObject
 
     addedToLevel:boolean = false;
     pooled:boolean = false;
-    revertPivotOnSave: boolean = false;
+    revertPivotOnSave: boolean = false; // TODO
 
     tapHitbox: Hitbox | null = null; // PHASE THIS OUT, MAKE INTO COMPONENT? TODO
     hitboxColor:Color = new Color(255,255,255,80); // ^
@@ -167,6 +167,10 @@ export class GameObject
         }
     }
 
+    get components(): Array<Component<this>> { 
+        return this.scene.Get("componentController").GetComponentsFrom(this); 
+    }
+    
     RemoveComponent<T extends Component<this>>(componentClass: Ctor<T>): boolean;
     RemoveComponent<T extends Component<this>>(componentInstance: T): boolean;
     RemoveComponent<T extends Component<this>>(arg: Ctor<T> | T): boolean

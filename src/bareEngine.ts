@@ -2,7 +2,7 @@ import { sceneController } from "./controllers/sceneController";
 import { globalEvents, GameMode, Scene } from "./main";
 import { GameObject } from "./objects/gameObject";
 import { assetsHandler } from "./handlers/assetsHandler";
-import { BareEvent, BareOptions, Events, GameObjectClass, SceneClass } from "./types/bareTypes";
+import { BareEvent, BareOptions, Entity, Events, GameObjectClass, SceneClass } from "./types/bareTypes";
 import { EventArgs } from "./libraries/mitt";
 import { PoolHandler } from "./handlers/poolHandler";
 import { TextureCache, IGraphicRenderOptions, ICircleRenderOptions, IRenderLineOptions, IRectRenderOptions, ISpriteRenderOptions, Color } from "./exports";
@@ -90,7 +90,7 @@ export class BareEngine
         var scene = await sceneController.Goto(sceneClass);
 
         this.dummyGameObject = new GameObject(scene); // TOO LATE IF USER WANTS TO USE IT IN sceneClass, BUT FINE FOR MY CURRENT USAGE
-
+        
         window.addEventListener('resize', this.ResizeCanvas.bind(this));
 
         document.addEventListener('pointerdown', this.PointerDown.bind(this), { passive: false });

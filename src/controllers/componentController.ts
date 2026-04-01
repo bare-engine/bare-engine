@@ -63,6 +63,7 @@ export class ComponentController
         this.scene.events.on(BareEvent.level_preSave, this.OnPreSaveLevel.bind(this));
     }
 
+    // NOT USING - TODO
     public ProcessCompentsFromEntity(entity:Entity, obj:GameObject)
     {
         // CREATE COMPONENTS
@@ -193,7 +194,7 @@ export class ComponentController
         typeList.push(component)
 
         component.enabled = false;
-        
+
         if (gameMode == GameMode.Game) // SO IN EDITOR, WE DON'T CALL ADDED() OR ONSTART()
         {
             component.enabled = true;

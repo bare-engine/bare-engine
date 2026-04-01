@@ -1,17 +1,16 @@
-import { globalEvents, GameMode, MakePath } from "../main";
-import { Color, FrameBufferObject, ICircleRenderOptions, IGraphicRenderOptions, IRectRenderOptions, IRenderLineOptions, ISpriteRenderOptions, MaskType, RenderTexture, Texture, TextureCache, Vec2 } from "../libraries/rapid-render";
-import { PoolHandler } from "../handlers/poolHandler";
-import { AwakePayload, BareEvent, SceneClass, Entity, GameObjectClass, LayerInfo, LevelData, SaveData, SceneOptions, SettingsData, SceneI, Events, entityVars } from "../types/bareTypes";
-import { GameObject } from "../objects/gameObject";
-import { SettingsHandler as SettingsHandler } from "../handlers/settingsHandler";
-import { defaultEntityData as defaultEntityData } from "../types/bareData";
-import { PhysicsControllerBare, PhysicsObjectBare } from "../exports/barePhysics";
+import { BareEngine } from "../bareEngine";
 import { ObjectController } from "../controllers/objectController";
 import { sceneController } from "../controllers/sceneController";
-import { BareEngine } from "../bareEngine";
-import mitt from "../libraries/mitt";
-import { CameraHandler, ComponentController, HitboxController, LevelHandler, MouseController, ParticleController, TweenController } from "../exports";
+import { CameraHandler, ComponentController, Helper, HitboxController, LevelHandler, MouseController, ParticleController, TweenController } from "../exports";
+import { PhysicsControllerBare, PhysicsObjectBare } from "../exports/barePhysics";
 import { PhysicsControllerSopiro } from "../exports/sopiroPhysics";
+import { SettingsHandler } from "../handlers/settingsHandler";
+import mitt from "../libraries/mitt";
+import { FrameBufferObject, ICircleRenderOptions, IGraphicRenderOptions, IRectRenderOptions, IRenderLineOptions, ISpriteRenderOptions, MaskType, RenderTexture, Texture, TextureCache, Vec2 } from "../libraries/rapid-render";
+import { MakePath, globalEvents } from "../main";
+import { GameObject } from "../objects/gameObject";
+import { defaultEntityData } from "../types/bareData";
+import { AwakePayload, BareEvent, Entity, Events, GameObjectClass, LayerInfo, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
 
 /*Bare.camera.SetPosition(bare.width * .5, bare.height * .5);
 Bare.sound.Play()
@@ -116,6 +115,12 @@ export class Scene implements SceneI
         this.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT
 
         BareEngine.SetControllerReferencesOnScene(this);
+
+        // REALLY DONT WANT THIS! BUT NEEDED FOR NOW BECAUSE OF DUMMPY CONSTRUCTION - TODO
+    }
+
+    private RegisterComponents()
+    {
     }
 
     async Awake(payload?: any): Promise<void>
@@ -447,8 +452,8 @@ export class Scene implements SceneI
         this.ApplyEntityVarsToGameObject(entity, obj);
         obj.OnApplyEntityToGameObject(entity, addComponents);
 
-        if (addComponents)
-            this.componentController?.ProcessCompentsFromEntity(entity, obj);
+        //if (addComponents)
+        //    this.componentController?.ProcessCompentsFromEntity(entity, obj);
     }
 
     FillPresets(entity: Entity, settingsData: SettingsData = this.settingsData)
@@ -489,6 +494,15 @@ export class Scene implements SceneI
                 this.AddGameObject(childEntity, o);
             }
         },
+        components: (o, v) => {
+            for (const component in v)
+            {
+                var ComponentClass = bareEngine.componentClasses[Helper.CapitalizeFirstLetter(component) + "Component"];
+                var componentValues = v[component];
+                var componentInstance = new ComponentClass(o.scene, ...Object.values(componentValues));
+                o.AddComponent(componentInstance);
+            }
+        }
     };
 
     ApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
@@ -564,48 +578,33 @@ export class Scene implements SceneI
 
         if (entityConstructed.extendClass == "GameObject")
         {
-            gameObject = bareEngine.dummyGameObject;}
+            gameObject = bareEngine.dummyGameObject;
+        }
         else
         {
             const pool = bareEngine.gameObjectPools.get(entityConstructed.extendClass);
             if (pool)
                 gameObject = pool.Grab();
             else
-                trace("noo");
+                console.error("noo");
         }
 
+        gameObject.scene = this;
         gameObject.ResetValues();
         gameObject.InitTexture(MakePath(entityConstructed.imagePath!, entityConstructed.name)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
     
-        this.ApplyEntityToGameObject(entityConstructed, gameObject, false);
+        // DON'T WANT COMPONENTS TO BE CREATED AT ApplyEntityToGameObject(). 
+        //delete entityConstructed.components;
 
-        delete entityConstructed.pivot; // HAS PROBABLY BEEN TRANSFORMED, DELETE IT TO TAKE ONE FROM OBJECT
+        // STILL ADDING FALSE TO PREVENT COMPONENTS CREATION IN OVERRIDEN ApplyEntityToGameObject
+        this.ApplyEntityToGameObject(entityConstructed, gameObject);
 
-        var serializeValue = (value) => {
-            if (value instanceof Vec2)
-            {
-                return {x: value.x, y: value.y};
-            }
-            if (value instanceof Color)
-            {
-                return value.toHex();
-            }
+        var entity = this.levelHandler.SerializeObjectFully(gameObject);
 
-            return value;
-        }
-
-        for (var entityVar of entityVars)
-        {
-            if (entityConstructed[entityVar] === undefined)
-            {
-                entityConstructed[entityVar] = serializeValue(gameObject[entityVar]);
-            }
-        }
-
-        return entityConstructed;
+        return entity;
     }
 
-    // INPUT COULD BE: ENTITY, ENTITY NAME, GAMEOBJECT, CLASS TO INSTANTIATE OR TEXTURE
+    // INPUT CAN BE: ENTITY, ENTITY NAME, GAMEOBJECT, CLASS TO INSTANTIATE OR TEXTURE
     AddGameObject(input?: Entity | string | GameObject | GameObjectClass | Texture, parent: int | string | GameObject = "objects"): GameObject
     {
         if (!this.settingsHandler)
@@ -674,7 +673,7 @@ export class Scene implements SceneI
             }
 
             gameObject = bareEngine.GetObjectFromPool(entity.extendClass!, this);
-            gameObject.Init(MakePath(entity.imagePath!, entity.name || entity.texture || ""));
+            gameObject.Init(MakePath(entity.imagePath!, entity.texture || entity.name || ""));
             this.ApplyEntityToGameObject(entity, gameObject);
         }
 

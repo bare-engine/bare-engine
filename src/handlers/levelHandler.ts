@@ -2,6 +2,11 @@
 import { BareEngine } from "../bareEngine";
 import { objectController } from "../controllers/objectController";
 import { sceneController } from "../controllers/sceneController";
+import { PivotComponent } from "../editorComponents/pivotComponent";
+import { PivotRemoveComponent } from "../editorComponents/pivotRemoveComponent";
+import { PositionPivotComponent } from "../editorComponents/positionPivotComponent";
+import { ResizableComponent } from "../editorComponents/resizableComponent";
+import { ResizableRemoveComponent } from "../editorComponents/resizableRemoveComponent";
 import { Color, Texture } from "../libraries/rapid-render";
 import { GameMode, MakePath, Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
@@ -229,6 +234,14 @@ export class LevelHandler
     // THIS JUST REPOPULATES THE entitiesByLayer OF THE LEVEL
     SerializeLevel(level: LevelData)
     {
+        // AAAAH REMOVE THIS - TODO
+        // CURRENTLY NEEDED FOR HACKY DUMMY CREATION
+        this.scene.AddClass(PivotComponent);
+        this.scene.AddClass(PivotRemoveComponent);
+        this.scene.AddClass(ResizableComponent);
+        this.scene.AddClass(ResizableRemoveComponent);
+        this.scene.AddClass(PositionPivotComponent);
+
         var gameLayers = objectController.GetLayers();
         for (var i = 0; i < gameLayers.length; i++)
         {
@@ -247,67 +260,213 @@ export class LevelHandler
                     if (obj.name == "")
                         trace("NO NAME");
 
+                    // IF HAS PIVOT HAS BEEN SET IN CODE, BUT WANT TO KEEP SAVING AT ORIGINAL POSITION, THIS REVERTS THE PIVOT
+                    if (obj.revertPivotOnSave)
+                    {
+                        obj.x -= obj.pivotX;
+                        obj.y -= obj.pivotY;
+                    }
+                    
                     var entity = this.SerializeObject(obj);
+
+                    // POSITION HAS BEEN STORED, CAN APPLY PIVOT AGAIN
+                    if (obj.revertPivotOnSave)
+                    {
+                        obj.x += obj.pivotX;
+                        obj.y += obj.pivotY;
+                    }
                     return entity;
                 });
         }
     }
 
+    SerializeObjectFully(obj: GameObject): Entity
+    {
+        var entity:Entity = {};
+
+        // GET VARS TO SAVE
+        var varsToSave: string[] = [];
+
+        if (window.gameMode == GameMode.Game)
+        {
+            var saveVars = this.scene.settingsData.saveVars;
+            if (saveVars) // WILL ALWAYS BE THERE REALLY
+            {
+                var constructorName = this.scene.GetContructorName(obj);
+
+                if (saveVars[constructorName])
+                {
+                    varsToSave = saveVars[constructorName]; // MERGE THIS WITH defaultEntityData.saveVars!["GameObject"]? TODO
+                }
+                else
+                {
+                    if (constructorName == "GameObject")
+                        varsToSave = defaultEntityData.saveVars!["GameObject"];
+                    else
+                        console.warn("NO VARS TO SAVE FOR " + constructorName);
+                }
+
+                varsToSave = entityVars.slice();
+            }
+        }
+        else
+        if (window.gameMode == GameMode.Editor)
+        {
+            varsToSave = entityVars.slice();
+            //varsToSave.splice(varsToSave.indexOf("position"), 1);
+            varsToSave.splice(varsToSave.indexOf("tapHitbox"), 1);
+            //varsToSave.splice(varsToSave.indexOf("save"), 1);
+        }
+
+        // EDGE CASE, WANT TO ALWAYS SAVE (TOP LEVEL) OBJECT WITHOUT A PARENT, NO NEED TO SUPPLY THE SAVE PROPERTY
+        // CHILDREN DO NEED IT
+        if (!obj.parent)
+            varsToSave.splice(varsToSave.indexOf("save"), 1);
+
+        // 
+        var customSerialize:Record<string, (currentValue) => any> = {};
+    
+        customSerialize["texture"] = (currentValue:Texture) => { return currentValue.texturePath; };
+
+        customSerialize["color"] = (currentValue:Color) => { return currentValue.toHex(); };
+
+        customSerialize["children"] = (currentValue:GameObject[]):Entity[] => { 
+            var children:Entity[] = [];
+            for (var child of currentValue)
+            {
+                if (!child.persistent && child.save)
+                    children.push(this.SerializeObjectFully(child));
+            }
+            return children;
+        };
+
+        customSerialize["components"] = (currentValue:Component[]):Entity[] => { 
+            var comps:Entity[] = [];
+            for (var comp of currentValue)
+            {
+                if (comp.save)
+                    comps.push(this.SerializeComponent(comp));
+            }
+            return comps;
+        };
+
+        for (var varName of varsToSave)
+        {
+            const key = (varName as keyof GameObject);
+            const currentValue = obj[key];
+            
+            var value = currentValue;
+
+            if (customSerialize[varName])
+                value = customSerialize[varName](currentValue);
+
+            entity[varName] = value;
+        }
+
+        return entity;
+    }
+
     SerializeObject(obj: GameObject): Entity
     {
-        // IF HAS PIVOT HAS BEEN SET IN CODE, BUT WANT TO KEEP SAVING AT ORIGINAL POSITION, THIS REVERTS THE PIVOT
-        if (obj.revertPivotOnSave)
-        {
-            obj.x -= obj.pivotX;
-            obj.y -= obj.pivotY;
-        }
-        
         var entity:Entity = {
             name: obj.name,
         };
 
-        // POSITION HAS BEEN STORED, CAN APPLY PIVOT AGAIN
-        if (obj.revertPivotOnSave)
-        {
-            obj.x += obj.pivotX;
-            obj.y += obj.pivotY;
-        }
-
         var origEntity = this.scene.GetDummpyDataFromEntity2(obj.name, this.scene.settingsData); // COULD ALSO GET THIS FROM PROCCESSED ENTITYDATA? IF I CONTRUCT ALL ENTITITES - TODO
-        var objDiff = this.GetChangedValues(obj, origEntity);
-        if (Object.keys(objDiff).length > 0)
-            Object.assign(entity, objDiff); // APPLY DIFF TO entity
+        var fullEntity = this.SerializeObjectFully(obj);
+        var entityDiff = this.GetEntitiesDiff(origEntity, fullEntity, true);
 
-        {
-            var components = this.scene.GetAllComponentsFrom(obj);
-        
-            if (components.length > 0)
-            {
-                var diffedComponents = this.DiffComponents(components, origEntity.components);
-                if (diffedComponents)
-                    entity.components = diffedComponents;
-            }
-
-            var removedComponents = this.GetRemovedComponents(components, origEntity.components);
-            if (removedComponents.length > 0)
-                entity.componentsRemoved = removedComponents;
-
-            if (origEntity.editorComponents && Object.keys(origEntity.editorComponents).length > 0)
-                entity.editorComponents = origEntity.editorComponents;
-
-            // HANDLE EDITOR COMPONENTS - TODO
-            if (window.gameMode == GameMode.Editor)
-            {
-                //entity.editorComponents = serialize...
-            }
-        }
-
-        // SERIALIZE CHILDREN RECURSIVELY
-        /*var saveableChildren = obj.children.filter(child => !child.persistent && child.save);
-        if (saveableChildren.length > 0)
-            entity.children = saveableChildren.map(child => this.SerializeObject(child));*/
+        if (Object.keys(entityDiff).length > 0)
+            Object.assign(entity, entityDiff); // APPLY DIFF TO entity
 
         return entity;
+    }
+
+    GetEntitiesDiff(orig: any, updated: any, includeRemovedValues: boolean = false): any
+    {
+        if (orig === updated)
+            return undefined;
+
+        if (Array.isArray(orig) && Array.isArray(updated))
+            return this.GetArrayDiff(orig, updated, includeRemovedValues);
+
+        if (this.IsPlainObject(orig) && this.IsPlainObject(updated))
+            return this.GetObjectDiff(orig, updated, includeRemovedValues);
+
+        if (this.IsEmpty(updated))
+            return this.IsEmpty(orig) ? undefined : updated;
+
+        return updated;
+    }
+
+    IsEmpty(value: any): boolean
+    {
+        if (Array.isArray(value)) return value.length === 0;
+        if (this.IsPlainObject(value)) return Object.keys(value).length === 0;
+        return value === undefined || value === null;
+    }
+
+    GetArrayDiff(orig: any[], updated: any[], includeRemovedValues: boolean): any
+    {
+        const diff: any[] = [];
+        let hasDiff = false;
+
+        for (let i = 0; i < Math.max(orig.length, updated.length); i++)
+        {
+            let value: any = undefined;
+
+            if (i >= orig.length)
+                value = updated[i];
+            else if (i >= updated.length)
+                value = includeRemovedValues ? { _removed: true } : undefined;
+            else
+                value = this.GetEntitiesDiff(orig[i], updated[i], includeRemovedValues) ?? {};
+
+            diff.push(value);
+
+            if (value !== undefined && !(typeof value === "object" && value && Object.keys(value).length === 0))
+                hasDiff = true;
+        }
+
+        return hasDiff ? diff : undefined;
+    }
+
+    GetObjectDiff(orig: Record<string, any>, updated: Record<string, any>, includeRemovedValues: boolean): any
+    {
+        const diff: Record<string, any> = {};
+
+        for (const key in updated)
+        {
+            if (!(key in orig))
+            {
+                if (!this.IsEmpty(updated[key]))
+                    diff[key] = updated[key];
+                continue;
+            }
+
+            const subDiff = this.GetEntitiesDiff(orig[key], updated[key], includeRemovedValues);
+            if (subDiff !== undefined)
+                diff[key] = subDiff;
+        }
+
+        if (includeRemovedValues)
+        {
+            const removed = Object.keys(orig).filter(key => !(key in updated));
+            if (removed.length > 0)
+            {
+                if (diff.componentRemoved)
+                    diff.componentRemoved.push(...removed);
+                else
+                    diff.componentRemoved = removed;
+            }
+        }
+
+        return Object.keys(diff).length > 0 ? diff : undefined;
+    }
+
+    IsPlainObject(value: any): boolean
+    {
+        return !!value && typeof value === "object" && !Array.isArray(value);
     }
 
     GetChangedValues(gameObject: GameObject, origEntity: Entity): any
