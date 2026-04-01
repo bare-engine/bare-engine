@@ -10,7 +10,7 @@ type HitboxSceneAwakePayload = EditorScenePayload & {
 
 export class EntityScene extends EditorScene
 {
-    lastObjectName: string = "";
+    objectName: string = "";
     lastPayload: HitboxSceneAwakePayload;
 
     constructor()
@@ -27,10 +27,10 @@ export class EntityScene extends EditorScene
         
         // WE TAKE OVER THE TARGET ENTITY DATA, ONCE AT INIT
         // SO THAT THE OBJECTS AND DUMMY DATA CREATED FROM THIS SCENE ARE BASED ON THIS DATA
-        if (this.lastObjectName == "")
+        if (this.objectName == "")
         {
             this.settingsHandler.Process(targetSettingsHandler.GetRaw());
-            this.lastObjectName = objectName;
+            this.objectName = objectName;
         }
 
         // DON'T WANT TO SHOW THE UI, WE UNDO THIS BEFORE SAVING THE ENTITY DATA AGAIN, BIT AWKWARD
@@ -90,7 +90,7 @@ export class EntityScene extends EditorScene
     {
         var ret = await super.Open(levelPathOrData, saveLevelCallback, settingsHandler);
 
-        var obj = this.objectController.GetObjectByName(this.lastObjectName);
+        var obj = this.objectController.GetObjectByName(this.objectName);
         var bounds = obj.GetBoundsWithChildren();
         var dims:Size = bounds;
         var s = Math.max(dims.width / rapid.width, dims.height / rapid.height);
@@ -105,13 +105,14 @@ export class EntityScene extends EditorScene
         var level = this.currentLevel;
         //levelHandler.SerializeLevel(level);
 
-        var entity = this.objectController.GetObjectByName(this.lastObjectName).levelEntity;
+        var obj = this.objectController.GetObjectByName(this.objectName);
+        var entity = levelHandler.SerializeObject(obj);
         delete entity.name;
-        delete entity.interactableInEditor;
+        delete entity.position;
         
         // APPLY NEW VALUES TO THE INITIAL ENTITY SETTING
         const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
-            draft.entities[this.lastObjectName] = entity;
+            draft.entities[this.objectName] = entity;
         });
 
         // SAVE TO FILE

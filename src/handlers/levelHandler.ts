@@ -7,7 +7,7 @@ import { GameMode, MakePath, Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { EditorUIScene } from "../scenes/editorUIScene";
 import { defaultEntityData } from "../types/bareData";
-import { BareEvent, Component, Entity, LevelData, SaveData, Scalar, SettingsData } from '../types/bareTypes';
+import { BareEvent, Component, Entity, entityVars, LevelData, SaveData, Scalar, SettingsData } from '../types/bareTypes';
 import { Helper } from "../utils/helper";
 import { assetsHandler } from "./assetsHandler";
 
@@ -146,13 +146,12 @@ export class LevelHandler
         // EG:
         // await sceneController.Add(EditorScene, {
         //     levelPathOrData: "assets/data/levels/map.json",
-        //     settingsHandler: game.mapDataStore,
+        //     settingsHandler: game.mapSettingsHandler,
         // });
         if (level.settingsData && level.settingsData != this.scene.settingsData.name)
             await this.LoadSettingsData(level.settingsData);
 
         this.currentLevel = level;
-        //SaveData.currentLevelStr = levelStr;
 
         if (level.backgroundColor)
             rapid.backgroundColor = Color.fromHex(level.backgroundColor);
@@ -172,16 +171,13 @@ export class LevelHandler
                 // WHEN IN EDITOR, WE WANT TO USE levelEntity
                 // BUT IT'S KIND OF MESSED UP AND CONSTRUCTED BY ABOVE NOW
                 // SO HERE WE ALIGN IT AGAIN TO THE OBJECT AND ALL ITS CHILDREN
-                this.ApplyLevelEntityToGameObjectAndChildren(gameObject, levelEntity);
+                //this.ApplyLevelEntityToGameObjectAndChildren(gameObject, levelEntity);
                 
                 gameObject.save = true;
             }
         }
 
         trace('Level loaded:', levelStr);
-        
-        //globalEvents.emit(BareEvent.level_loaded, {levelStr: levelStr, level: this.currentLevel});
-        //this.scene.events.emit(BareEvent.level_loaded, {levelStr: levelStr, level: this.currentLevel});
         
         return level;
     }
@@ -251,18 +247,7 @@ export class LevelHandler
                     if (obj.name == "")
                         trace("NO NAME");
 
-                    var entity:Entity;
-                    
-                    if (window.gameMode == GameMode.Game)
-                        entity = this.SerializeObject(obj); // FOR GAME, WE WANT TO SERIALIZE THE OBJECT, NO HASSLE OF ALIGNING IT WITH levelEntity, AND NO editorCompents ANYWAY
-                    else
-                    if (window.gameMode == GameMode.Editor)
-                        entity = obj.levelEntity; // SOURCE OF TRUTH FOR EDITOR. THIS MAKES IT SO THAT THE OBJECT innerScale CAN PULSE FOR EXAMPLE (BY editorComponent) AND IT DOESN'T GET SAVED
-
-                    // NOT SERIALIZING THE OBJECT FOR GameMode.Editor WORKS NOW, 
-                    // BUT IT'S JUST FOR THIS LITTLE EDGE CASE WHERE SOME editorComponent CAN ALTER THE OBJECT'S PROPERTIES
-                    // MAYBE REVERT THIS IF IT'S NOT WORTH THE SPLIT?
-
+                    var entity = this.SerializeObject(obj);
                     return entity;
                 });
         }
@@ -279,7 +264,6 @@ export class LevelHandler
         
         var entity:Entity = {
             name: obj.name,
-            position: obj.position.clone()
         };
 
         // POSITION HAS BEEN STORED, CAN APPLY PIVOT AGAIN
@@ -289,18 +273,14 @@ export class LevelHandler
             obj.y += obj.pivotY;
         }
 
-        var origEntity = this.scene.GetDummpyDataFromEntity2(obj.name);
-
-        var objDiff = this.GetChangedSaveValues(obj, origEntity);
+        var origEntity = this.scene.GetDummpyDataFromEntity2(obj.name, this.scene.settingsData); // COULD ALSO GET THIS FROM PROCCESSED ENTITYDATA? IF I CONTRUCT ALL ENTITITES - TODO
+        var objDiff = this.GetChangedValues(obj, origEntity);
         if (Object.keys(objDiff).length > 0)
             Object.assign(entity, objDiff); // APPLY DIFF TO entity
 
-        var components = this.scene.GetAllComponentsFrom(obj);
-        
-        if (gameMode == GameMode.Game)
         {
-            // INGAME, SERIALIZE COMPONENTS, SET STORED EDITOR-COMPONENTS
-
+            var components = this.scene.GetAllComponentsFrom(obj);
+        
             if (components.length > 0)
             {
                 var diffedComponents = this.DiffComponents(components, origEntity.components);
@@ -312,59 +292,102 @@ export class LevelHandler
             if (removedComponents.length > 0)
                 entity.componentsRemoved = removedComponents;
 
-            if (obj.levelEntity?.editorComponents)
-                entity.editorComponents = obj.levelEntity?.editorComponents;
-        }
-        else
-        if (gameMode == GameMode.Editor)
-        {
-            // IN EDITOR, SERIALIZE EDITOR-COMPONENTS, SET STORED COMPONENTS
+            if (origEntity.editorComponents && Object.keys(origEntity.editorComponents).length > 0)
+                entity.editorComponents = origEntity.editorComponents;
 
-            if (components.length > 0)
+            // HANDLE EDITOR COMPONENTS - TODO
+            if (window.gameMode == GameMode.Editor)
             {
-                var diffedComponents = this.DiffComponents(components, origEntity.editorComponents);
-                if (diffedComponents)
-                    entity.editorComponents = diffedComponents;
+                //entity.editorComponents = serialize...
             }
-
-            var removedComponents = this.GetRemovedComponents(components, origEntity.editorComponents);//
-            if (removedComponents.length > 0)
-                entity.componentsRemoved = removedComponents;
-
-            if (obj.levelEntity?.components)
-                entity.components = obj.levelEntity?.components;
         }
 
         // SERIALIZE CHILDREN RECURSIVELY
-        var saveableChildren = obj.children.filter(child => !child.persistent && child.save);
+        /*var saveableChildren = obj.children.filter(child => !child.persistent && child.save);
         if (saveableChildren.length > 0)
-            entity.children = saveableChildren.map(child => this.SerializeObject(child));
+            entity.children = saveableChildren.map(child => this.SerializeObject(child));*/
 
         return entity;
     }
 
-    GetChangedSaveValues(gameObject: GameObject, origEntity: Entity): any
+    GetChangedValues(gameObject: GameObject, origEntity: Entity): any
     {
         const obj: Record<string, any> = {};
 
         // GET VARS TO SAVE
         var varsToSave: string[] = []
-        var saveVars = this.scene.settingsData.saveVars;
-        if (saveVars) // WILL ALWAYS BE THERE REALLY
-        {
-            var constructorName = this.scene.GetContructorName(gameObject);
+        var specialCompare:Record<string, (currentValue, origValue) => boolean> = {};
+        var specialValue:Record<string, (currentValue) => any> = {};
 
-            if (saveVars[constructorName])
+        if (window.gameMode == GameMode.Game)
+        {
+            var saveVars = this.scene.settingsData.saveVars;
+            if (saveVars) // WILL ALWAYS BE THERE REALLY
             {
-                varsToSave = saveVars[constructorName]; // MERGE THIS WITH defaultEntityData.saveVars!["GameObject"]? TODO
-            }
-            else
-            {
-                if (constructorName == "GameObject")
-                    varsToSave = defaultEntityData.saveVars!["GameObject"];
+                var constructorName = this.scene.GetContructorName(gameObject);
+
+                if (saveVars[constructorName])
+                {
+                    varsToSave = saveVars[constructorName]; // MERGE THIS WITH defaultEntityData.saveVars!["GameObject"]? TODO
+                }
                 else
-                    console.warn("NO VARS TO SAVE FOR " + constructorName);
+                {
+                    if (constructorName == "GameObject")
+                        varsToSave = defaultEntityData.saveVars!["GameObject"];
+                    else
+                        console.warn("NO VARS TO SAVE FOR " + constructorName);
+                }
+
+                varsToSave = entityVars.slice();
             }
+        }
+        else
+        if (window.gameMode == GameMode.Editor)
+        {
+            varsToSave = entityVars.slice();
+            //varsToSave.splice(varsToSave.indexOf("position"), 1);
+            varsToSave.splice(varsToSave.indexOf("tapHitbox"), 1);
+            //varsToSave.splice(varsToSave.indexOf("save"), 1);
+        }
+
+        // EDGE CASE, WANT TO ALWAYS SAVE (TOP LEVEL) OBJECT WITHOUT A PARENT, NO NEED TO SUPPLY THE SAVE PROPERTY
+        // CHILDREN DO NEED IT
+        if (!gameObject.parent)
+            varsToSave.splice(varsToSave.indexOf("save"), 1);
+
+        // SETUP SPECIAL CASES - TO DIG DEEPER FOR PROPER COMPARISONS
+        {
+            specialCompare["texture"] = (currentValue:Texture, origValue:string) => { return currentValue.texturePath != origValue; };
+            specialValue["texture"] = (currentValue:Texture) => { return currentValue.texturePath; };
+
+            specialCompare["color"] = (currentValue:Color, origValue:string) => { 
+                var colorOrig = Color.fromHex(origValue);
+                // NOT INCLUDED a, SINCE ITS SAVED AS ALPHA. ?! TODO
+                return (currentValue.r != colorOrig.r || currentValue.g != colorOrig.g || currentValue.b != colorOrig.b);
+            };
+            specialValue["color"] = (currentValue:Color) => { return currentValue.toHex(); };
+
+            specialCompare["children"] = (currentValue:GameObject[], origValue:string) => { return true };
+            specialValue["children"] = (currentValue:GameObject[]):Entity[] => { 
+                var children:Entity[] = [];
+                for (var child of currentValue)
+                {
+                    if (!child.persistent && child.save)
+                        children.push(this.SerializeObject(child));
+                }
+                return children;
+            };
+
+            /*specialCompare["components"] = (currentValue:Component[], origValue:string) => { return true };
+            specialValue["components"] = (currentValue:Component[]):Entity[] => { 
+                var children:Entity[] = [];
+                for (var comp of currentValue)
+                {
+                    if (comp.save)
+                        children.push(this.SerializeObject(child));
+                }
+                return children;
+            };*/
         }
 
         // COMPARE EACH SAVE VAR WITH ORIGINAL ENTITY AND STORE IF IT IS DIFFERENT
@@ -376,14 +399,40 @@ export class LevelHandler
 
             if (origValue !== undefined && currentValue !== undefined)
             {
+                if (origValue == currentValue)
+                {
+                    continue;
+                }
+
                 // COMPARE PROPERLY DEPENDING ON TYPE
                 let isChanged = false;
 
-                if (typeof currentValue === 'object' && currentValue !== null && 
-                    'x' in currentValue && 'y' in currentValue)
+                if (specialCompare[varName])
+                {
+                    isChanged = specialCompare[varName](currentValue, origValue);
+                    if (isChanged)
+                    {
+                        var value = currentValue;
+
+                        if (specialValue[varName])
+                            value = specialValue[varName](currentValue);
+
+                        if (Array.isArray(value) && value.length == 0)
+                            continue;
+
+                        Object.assign(obj, {[varName]: value});
+                    }
+
+                    continue;
+                }
+
+                if (typeof currentValue === 'object')
                 {
                     // X/Y VECTOR
-                    isChanged = (currentValue.x !== origValue.x || currentValue.y !== origValue.y);
+                    if ('x' in currentValue && 'y' in currentValue)
+                        isChanged = (currentValue.x !== origValue.x || currentValue.y !== origValue.y);
+                    else
+                        isChanged = (JSON.stringify(currentValue) !== JSON.stringify(origValue));
                 }
                 else if (Array.isArray(currentValue))
                 {
@@ -403,6 +452,15 @@ export class LevelHandler
                     Object.assign(obj, {[varName]: currentValue});
                 }
             }
+        }
+
+        // LITTLE HACK TO FIX DUPLICATE SCALING ENTRIES
+        if (obj.scale)
+        {
+            if (obj.scaleX)
+                delete obj.scaleX;
+            if (obj.scaleY)
+                delete obj.scaleY;
         }
 
         return obj;

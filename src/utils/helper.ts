@@ -384,4 +384,18 @@ export class Helper
             .map(param => param.trim().split(/[:=\s]/)[0].trim())
             .filter(name => name.length > 0);
     }
+
+    static GetParentClasses(cls: any): string[]
+    {
+        const classes: string[] = [];
+        let current = Object.getPrototypeOf(cls);
+
+        while (current && current.name)
+        {
+            classes.push(current.name);
+            current = Object.getPrototypeOf(current);
+        }
+
+        return classes;
+    }
 }

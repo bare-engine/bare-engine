@@ -134,9 +134,9 @@ export class ComponentController
             }
         }
 
-        if (gameMode == GameMode.Game)
+        //if (gameMode == GameMode.Game)
             ProcessComponents('components');
-        else
+        //else
         if (gameMode == GameMode.Editor)
             ProcessComponents('editorComponents');
     }
@@ -171,7 +171,6 @@ export class ComponentController
         const component: C = (typeof arg === "function") ? new arg(this.scene) : arg;
 
         component.go = go;
-        component.enabled = true;
 
         // make sure there is a list of components for this gameobject
         if (!this.componentsByGameObject.has(go.uniqueID))
@@ -193,11 +192,18 @@ export class ComponentController
         const typeList = this.componentsByType.get(component.constructor as Ctor<Component<any>>) as Component<any>[]
         typeList.push(component)
 
-        component.Added?.(go);
-
-        if (component.OnStart)
+        component.enabled = false;
+        
+        if (gameMode == GameMode.Game) // SO IN EDITOR, WE DON'T CALL ADDED() OR ONSTART()
         {
-            this.queuedForStart.push(component)
+            component.enabled = true;
+
+            component.Added?.(go);
+
+            if (component.OnStart)
+            {
+                this.queuedForStart.push(component)
+            }
         }
 
         return component;

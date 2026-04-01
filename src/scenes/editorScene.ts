@@ -422,7 +422,7 @@ export class EditorScene extends Scene
 
         //entity = { ...entity, hitbox: entity.hitbox, pivot: entity.pivot, imagePath: entity.imagePath};
 
-        entity.components = {}; // DON'T WANT TO LOAD COMPONENTS IN EDITOR
+        //entity.components = {}; // DON'T WANT TO LOAD COMPONENTS IN EDITOR
 
         var gameObject = super.AddGameObject(entity, layer);
 

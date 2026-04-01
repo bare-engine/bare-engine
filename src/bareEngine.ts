@@ -331,10 +331,6 @@ export class BareEngine
         }
     }
     
-
-    // HOW USEFUL IS THIS POOLING REALLY? TODO
-    // NO CONTROL OVER CACHE LOCALITY IN JS, MAYBE FASTER INITIALIZATION FOR MANY OBJECTS
-    // REUSE OF OBJECTS IS KINDA NICE
     RegisterGameObjectPool(cls: GameObjectClass, defaultPoolSize: number = 10): void
     {
         const name = cls.name.startsWith("_") ? cls.name.substring(1) : cls.name;

@@ -28,24 +28,26 @@ export class SettingsHandler
 
         // PROCES CATEGORY ENTRIES, IF PATH IS PREFIXED, REMOVE AND ADD UNDER ENTITIES DATA
         if (settings.categories)
-        for (const [key, category] of Object.entries(settings.categories))
         {
-            if (category.entries instanceof Array)
+            for (const [key, category] of Object.entries(settings.categories))
             {
-                for (var i = 0; i < category.entries.length; i++)
+                if (category.entries instanceof Array)
                 {
-                    var entry = category.entries[i];
-                
-                    if (entry.includes("/"))
+                    for (var i = 0; i < category.entries.length; i++)
                     {
-                        var entryName = entry.split("/").pop()!;
-                        var entryPath = entry.split("/").slice(0, -1).join("/");
+                        var entry = category.entries[i];
+                    
+                        if (entry.includes("/"))
+                        {
+                            var entryName = entry.split("/").pop()!;
+                            var entryPath = entry.split("/").slice(0, -1).join("/");
 
-                        // REDEFINE CATEGORY ENTRY TO JUST IT'S NAME
-                        (category.entries as string[])[i] = entryName;
+                            // REDEFINE CATEGORY ENTRY TO JUST IT'S NAME
+                            (category.entries as string[])[i] = entryName;
 
-                        // STORE ENTRY NAME IN ENTITIES DATA, TOGETHER WITH PATH WE JUST FOUND
-                        settings.entities[entryName] = { ...settings.entities[entryName], imagePath: entryPath };
+                            // STORE ENTRY NAME IN ENTITIES DATA, TOGETHER WITH PATH WE JUST FOUND
+                            settings.entities[entryName] = { ...settings.entities[entryName], imagePath: entryPath };
+                        }
                     }
                 }
             }
@@ -225,6 +227,46 @@ export class SettingsHandler
 
             if (promises.length > 0)
                 await Promise.all(promises);
+        }
+
+        // PROCESS saveVars - WILL FIND EXTENDED CLASSES FOR EACH AND ADD THEIR SAVE VARS
+        //
+        // EG:
+        // "saveVars": {
+        //      "GameObject": ["name", "position"],
+        //      "PhysicsObjectBare": ["mass"]
+        // },
+        //
+        // BECOMES:
+        // "saveVars": {
+        //      "GameObject": ["name", "position"],
+        //      "PhysicsObjectBare": ["name", "position", "mass"] // <--
+        // }
+        if (settings.saveVars)
+        {
+            for (const [className, saveVars] of Object.entries(settings.saveVars))
+            {
+                if (!Scene.registeredClasses[className])
+                {
+                    console.warn(`Class ${className} is not registered.\nAdd it in scene with: this.AddClass(${className})`);
+                    continue;
+                }
+
+                var cls = Scene.registeredClasses[className];
+                var parentClasses = Helper.GetParentClasses(cls);
+
+                for (var classNameParent of parentClasses)
+                {
+                    if (settings.saveVars[classNameParent])
+                    {
+                        for (var v of settings.saveVars[classNameParent])
+                        {
+                            if (!saveVars.includes(v))
+                                saveVars.push(v);
+                        }
+                    }
+                }
+            }
         }
 
         settings.processed = true;

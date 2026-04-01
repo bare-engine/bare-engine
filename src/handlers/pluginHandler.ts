@@ -188,7 +188,14 @@ window.__GAME_DEBUG_API__ = {
         return children.map(c => serializeGameObject(c));
     }
 
+    /*extendClass?: string;
+    extendData?: string;
+    imagePath?: string;
+    texture?: string;
+    hitbox?: any; //Rectangle2Vec | String;*/
+
     var serializeGameObject = (o: GameObject) => {
+        // VALUES
         var data = {
             id: o.uniqueID,
             name: o.name || "noName",
@@ -222,7 +229,7 @@ window.__GAME_DEBUG_API__ = {
             children: serializeChildren(o.children),
         };
 
-        if (window.gameMode == GameMode.Game)
+        // COMPONENTS
         {
             let comps = o.scene.componentController.GetComponentsFrom(o);
             let components = o.scene.levelHandler.SerializeComponents(comps, false);
@@ -237,35 +244,6 @@ window.__GAME_DEBUG_API__ = {
                     {
                         (components[compName] as any).__buttons = buttons.map(b => ({ label: b.label, method: b.label }));
                     }
-                }
-            }
-
-            data.components = components;
-        }
-        else
-        if (window.gameMode == GameMode.Editor)
-        {
-            let components = o.scene.ConstructEntity(o.levelEntity).components;
-
-            // HERE I HAVE TO MANUALLY INSTANTIATE A COMPONENT, TO GET THE DEFAULT CONSTRUCTOR VALUES
-            for (var comp in components)
-            {
-                var compRef = bareEngine.componentClasses[Helper.CapitalizeFirstLetter(comp) + "Component"];
-                var compInstance = new compRef();
-                let componentsBase = o.scene.levelHandler.SerializeComponent(compInstance); // INSTANTIATING NEW COMPONENT, JUST TO GET DEFAULT CONSTRUCTOR VALUES. NOT THAT GREAT - TODO?
-
-                for (var key in componentsBase)
-                {
-                    if (!components[comp][key])
-                    {
-                        components[comp][key] = componentsBase[key];
-                    }
-                }
-
-                var buttons = getButtons(compInstance);
-                if (buttons.length > 0)
-                {
-                    (components[comp] as any).__buttons = buttons.map(b => ({ label: b.label, method: b.label }));
                 }
             }
 
@@ -317,181 +295,48 @@ window.__GAME_DEBUG_API__ = {
         if (props.alpha !== undefined) o.alpha = props.alpha;
         if (props.customData !== undefined) o.customData = JSON.parse(props.customData);
 
-        // IN EDITOR MODE, ALSO WRITE CHANGED PROPS TO levelEntity
-        // THIS IS THE SOURCE OF TRUTH FOR SAVING - EDITOR COMPONENT RUNTIME CHANGES ON THE LIVE OBJECT ARE IGNORED
-        // SO AN editorComponent COULD PULSE THE SCALE, FOR EXAMPLE
-        if (window.gameMode == GameMode.Editor)
-        {
-            // WHEN EDITING ENTITY, THIS PASSES
-            // AND WE MAKE SURE WE DON'T LOOK AT THE ENTITY PROPS OF THAT ENITY ITSELF TO GET THE DEFAULT VALUES
-            // BUT INSTEAD, IGNORE THEM, SO WE GET ITS EXTENDED VALUES (OR FROM THE DUMMY OBJECT, IF THEY'RE NOT THERE)
-            var propsToIgnoreInEntity = [];
-            if (o.scene instanceof EntityScene && !o.parent)
-            {
-                propsToIgnoreInEntity = Object.keys(props);
-            }
-
-            // GET DEFAULTS - JUST USED TO DETERMINE IF NEW PROP VALUE IS SAME AS DEFAULT - THEN IT WILL DELETE IT
-            var defaults = o.scene.GetDummpyDataFromEntity2(o.name, o.scene.settingsData, {propsToIgnoreInEntity: propsToIgnoreInEntity});
-
-            // DEFINE CUSTOM DEFAULTS FOR X/Y PROPS, THEY NEED TO DIG SOME DEEPER
-            var customDefaults = {};
-
-            if (props.x !== undefined)
-                customDefaults["x"] = (defaults.position?.x);
-            if (props.y !== undefined)
-                customDefaults["y"] = (defaults.position?.y);
-            if (props.scaleX !== undefined)
-                customDefaults["scaleX"] = (defaults.scale?.x ?? defaults.scaleX);
-            if (props.scaleY !== undefined)
-                customDefaults["scaleY"] = (defaults.scale?.y ?? defaults.scaleY);
-            if (props.innerX !== undefined)
-                customDefaults["innerX"] = (defaults.innerPosition?.x ?? defaults.innerX);
-            if (props.innerY !== undefined)
-                customDefaults["innerY"] = (defaults.innerPosition?.y ?? defaults.innerY);
-            if (props.innerScaleX !== undefined)
-                customDefaults["innerScaleX"] = (defaults.innerScale?.x ?? defaults.innerScaleX);
-            if (props.innerScaleY !== undefined)
-                customDefaults["innerScaleY"] = (defaults.innerScale?.y ?? defaults.innerScaleY);
-            
-            // FINALLY, PROCESS THEM
-            for (var key of Object.keys(props))
-            {
-                // FOR EACH SEND PROP...
-
-                var defaultVal = customDefaults[key] ?? (defaults[key]) ?? {};
-                var currentVal = props[key];
-
-                if (key == "components")
-                {
-                    // COMPONENTS
-
-                    var componentsCurrent:Record<string, Record<string, Scalar>> = currentVal;
-                    var componentsDefault:Record<string, Record<string, Scalar>> = defaultVal;
-
-                    for (var compPropsName of Object.keys(componentsCurrent))
-                    {
-                        var compProps = componentsCurrent[compPropsName];
-                        for (var key of Object.keys(compProps))
-                        {
-                            if (componentsDefault[compPropsName] == undefined)
-                            {
-                                // VALUE DOESN'T EXIST IN DEFAULT, ADD IT
-                                o.levelEntity.components[compPropsName][key] = compProps[key];
-                                continue
-                            }
-
-                            if (compProps[key] != componentsDefault[compPropsName][key])
-                            {
-                                // VALUE CHANGED
-
-                                if (!o.levelEntity.components)
-                                    o.levelEntity.components = {};
-
-                                if (!o.levelEntity.components![compPropsName])
-                                    o.levelEntity.components![compPropsName] = {};
-
-                                o.levelEntity.components![compPropsName][key] = compProps[key];
-                            }
-                            else
-                            {
-                                // BACK TO DEFAULT, REMOVE OVERRIDE
-                                if (o.levelEntity.components && o.levelEntity.components[compPropsName])
-                                {
-                                    delete o.levelEntity.components[compPropsName][key];
-
-                                    // KEEP DELETING OBJECTS ONCE THEY BECOME EMPTY
-                                    if (Object.keys(o.levelEntity.components[compPropsName]).length == 0)
-                                    {                                       
-                                        delete o.levelEntity.components[compPropsName];
-
-                                        if (Object.keys(o.levelEntity.components).length == 0)
-                                        {
-                                            delete o.levelEntity.components;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                else
-                if (key == "children")
-                {
-                }
-                else
-                {
-                    if (typeof currentVal === 'object')
-                    {
-                        if (currentVal.x != defaultVal.x || currentVal.y != defaultVal.y)
-                        {
-                            // VALUE CHANGED
-                            o.levelEntity[key] = props[key]; // CHANGED, WANT TO STORE IT
-                        }
-                        else
-                        {
-                            // BACK TO DEFAULT, REMOVE OVERRIDE
-                            delete o.levelEntity[key]; // BACK TO DEFAULT, REMOVE OVERRIDE
-                        }
-                        //return JSON.stringify(currentVal) === JSON.stringify(defaultVal);
-                    }
-                    else
-                    {
-                    // SINGLE VALUE
-                        if (currentVal != defaultVal)
-                            o.levelEntity[key] = props[key]; // CHANGED, WANT TO STORE IT
-                        else
-                            delete o.levelEntity[key]; // BACK TO DEFAULT, REMOVE OVERRIDE
-                    }
-                }
-            }
-        }
-
         if (props.children !== undefined)
         {
             // ADD CHILDREN
             for (var i = 0; i < props.children.length; i++)
             {
-                var child = o.AddChild(props.children[i]);
-
-                child.levelEntity = props.children[i];
-                (o.levelEntity.children ??= []).push(child.levelEntity);
-
-                //levelHandler.ApplyLevelEntityToGameObjectAndChildren(o, o.levelEntity);
+                o.AddChild(props.children[i]);
             }
         }
 
         // UPDATE OR ADD COMPONENTS
         if (props.components !== undefined)
         {
-            if (window.gameMode == GameMode.Game)
+            for (let compName in props.components)
             {
-                for (let compName in props.components)
+                var compClass = bareEngine.componentClasses[Helper.CapitalizeFirstLetter(compName) + "Component"];
+                var comp = o.scene.componentController.GetComponent(o, compClass);
+
+                if (comp)
                 {
-                    var compClass = bareEngine.componentClasses[Helper.CapitalizeFirstLetter(compName) + "Component"];
-                    var comp = o.scene.componentController.GetComponent(o, compClass);
-
-                    if (comp)
-                    {
-                        // WE APPLY THE COMPONENTS VALUES FROM THE PLUGIN TO THE ONES INGAME
-                        // BUT ALSO CALL OnRemoved() AND Added() AROUND IT, TO RESET THE COMPONENT AND LET THE NEW VALUES BE REPROCESSED IN Added()/OnAdded()
+                    // WE APPLY THE COMPONENTS VALUES FROM THE PLUGIN TO THE ONES INGAME
+                    // BUT ALSO CALL OnRemoved() AND Added() AROUND IT, TO RESET THE COMPONENT AND LET THE NEW VALUES BE REPROCESSED IN Added()/OnAdded()
+                   
+                    if (window.gameMode == GameMode.Game)
                         comp.OnRemoved?.();
-                        var compData:Record<string, Scalar> = props.components[compName];
-                        for (let compProp in compData)
-                        {
-                            comp[compProp] = compData[compProp];
-                        }
-                        comp.Added(comp.go); // CALLS OnAdded() AS WELL
-                    }
-                    else
+
+                    var compData:Record<string, Scalar> = props.components[compName];
+                    for (let compProp in compData)
                     {
-                        // JUST CREATED A COMPONENT
-                        o.AddComponent(compClass);
+                        comp[compProp] = compData[compProp];
                     }
 
-                    // COULD ALSO NOT GO THAT ROUTE, AND INSTEAD, CALL OnStart(), AFTER SETTING THE COMPONENT VALUES
-                    // BUT THE COMPONENT'S CODE SHOULD THEN BE MUCH STRICTER WITH WHAT IT INITS AT OnAdded() and OnStart() TO MAKE THIS WORK - SEEMS ANNOYING
+                    if (window.gameMode == GameMode.Game)
+                        comp.Added(comp.go); // CALLS OnAdded() AS WELL
                 }
+                else
+                {
+                    // JUST CREATED A COMPONENT
+                    o.AddComponent(compClass);
+                }
+
+                // COULD ALSO NOT GO THAT ROUTE, AND INSTEAD, CALL OnStart(), AFTER SETTING THE COMPONENT VALUES
+                // BUT THE COMPONENT'S CODE SHOULD THEN BE MUCH STRICTER WITH WHAT IT INITS AT OnAdded() and OnStart() TO MAKE THIS WORK - SEEMS ANNOYING
             }
         }
 

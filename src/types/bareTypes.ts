@@ -121,6 +121,62 @@ export interface Entity
   //numberOfTiles?: int; //
 }
 
+export var entityVars = [
+    "name",
+    "customName",
+    "tags",
+    "customData",
+
+    "position",
+    "scaleX",
+    "scaleY",
+    "scale",
+    "rotation",
+    "flipped",
+    "pivot",
+    "pivotBasedOnHitbox",
+    "innerX",
+    "innerY",
+    "innerPosition",
+    "innerScaleX",
+    "innerScaleY",
+    "innerScale",
+    "innerRotation",
+
+    "texture",
+    "color",
+    "alpha",
+    "visible",
+
+    "hitbox",
+    "tapHitbox",
+    "hitboxType",
+
+    "children",
+
+    "components",
+    "editorComponents",
+    "componentsRemoved",
+    "propertiesRemoved",
+
+    "extendClass",
+    "extendData",
+    "imagePath",
+    "interactableInEditor",
+    "save",
+
+    "collide",
+    "sensor",
+    "static",
+    "stayInBounds",
+
+    "physicsRect",
+    "physicsRadius",
+    "mass",
+    "restitution",
+    "polygonVertices",
+];
+
 export interface LevelData
 {
   name: string;

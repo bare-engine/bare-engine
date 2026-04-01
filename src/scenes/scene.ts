@@ -1,7 +1,7 @@
 import { globalEvents, GameMode, MakePath } from "../main";
 import { Color, FrameBufferObject, ICircleRenderOptions, IGraphicRenderOptions, IRectRenderOptions, IRenderLineOptions, ISpriteRenderOptions, MaskType, RenderTexture, Texture, TextureCache, Vec2 } from "../libraries/rapid-render";
 import { PoolHandler } from "../handlers/poolHandler";
-import { AwakePayload, BareEvent, SceneClass, Entity, GameObjectClass, LayerInfo, LevelData, SaveData, SceneOptions, SettingsData, SceneI, Events } from "../types/bareTypes";
+import { AwakePayload, BareEvent, SceneClass, Entity, GameObjectClass, LayerInfo, LevelData, SaveData, SceneOptions, SettingsData, SceneI, Events, entityVars } from "../types/bareTypes";
 import { GameObject } from "../objects/gameObject";
 import { SettingsHandler as SettingsHandler } from "../handlers/settingsHandler";
 import { defaultEntityData as defaultEntityData } from "../types/bareData";
@@ -577,69 +577,28 @@ export class Scene implements SceneI
         gameObject.ResetValues();
         gameObject.InitTexture(MakePath(entityConstructed.imagePath!, entityConstructed.name)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
     
-        this.ApplyEntityToGameObject(entityConstructed, gameObject);
-        
-        var entityVars = [
-            "name",
-            "customName",
-            "tags",
-            "customData",
+        this.ApplyEntityToGameObject(entityConstructed, gameObject, false);
 
-            "position",
-            "scaleX",
-            "scaleY",
-            "scale",
-            "rotation",
-            "flipped",
-            "pivot",
-            "pivotBasedOnHitbox",
-            "innerX",
-            "innerY",
-            "innerPosition",
-            "innerScaleX",
-            "innerScaleY",
-            "innerScale",
-            "innerRotation",
+        delete entityConstructed.pivot; // HAS PROBABLY BEEN TRANSFORMED, DELETE IT TO TAKE ONE FROM OBJECT
 
-            "texture",
-            "color",
-            "alpha",
-            "visible",
+        var serializeValue = (value) => {
+            if (value instanceof Vec2)
+            {
+                return {x: value.x, y: value.y};
+            }
+            if (value instanceof Color)
+            {
+                return value.toHex();
+            }
 
-            "hitbox",
-            "tapHitbox",
-            "hitboxType",
-
-            "children",
-
-            "components",
-            "editorComponents",
-            "componentsRemoved",
-            "propertiesRemoved",
-
-            "extendClass",
-            "extendData",
-            "imagePath",
-            "interactableInEditor",
-            "save",
-
-            "collide",
-            "sensor",
-            "static",
-            "stayInBounds",
-
-            "physicsRect",
-            "physicsRadius",
-            "mass",
-            "restitution",
-            "polygonVertices",
-        ];
+            return value;
+        }
 
         for (var entityVar of entityVars)
         {
             if (entityConstructed[entityVar] === undefined)
             {
-                entityConstructed[entityVar] = gameObject[entityVar];
+                entityConstructed[entityVar] = serializeValue(gameObject[entityVar]);
             }
         }
 
@@ -1085,7 +1044,7 @@ export class Scene implements SceneI
         {
             bareEngine.RegisterGameObjectPool(_class, 1);
 
-            Scene.registeredClasses[className] = "taken";
+            Scene.registeredClasses[className] = _class;
             return;
         }
 
