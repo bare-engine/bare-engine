@@ -30,7 +30,7 @@ export const defaultEntityData: SettingsData = {
     }
   },
   saveVars: {
-    GameObject: ["name", "position", "children", "components"],
+    GameObject: ["position", "children", "components"],
     PhysicsObjectBare: ["scale"]
   },
   settings: {

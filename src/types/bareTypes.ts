@@ -68,18 +68,18 @@ export interface Entity
   position?: Position; // ONLY USED WITHIN LEVEL DATA
   x?: number;
   y?: number;
-  scaleX?: number;
-  scaleY?: number;
+  //scaleX?: number;
+  //scaleY?: number;
   scale?: Position;
   rotation?: number;
   flipped?: boolean;
   pivot?: Position;
   pivotBasedOnHitbox?: any; //Position | String;
-  innerX?: number;
-  innerY?: number;
+  //innerX?: number;
+  //innerY?: number;
   innerPosition?: Position;
-  innerScaleX?: number;
-  innerScaleY?: number;
+  //innerScaleX?: number;
+  //innerScaleY?: number;
   innerScale?: Position;
   innerRotation?: number;
 
@@ -128,18 +128,18 @@ export var entityVars = [
     "customData",
 
     "position",
-    "scaleX",
-    "scaleY",
+    //"scaleX",
+    //"scaleY",
     "scale",
     "rotation",
     "flipped",
     "pivot",
     "pivotBasedOnHitbox",
-    "innerX",
-    "innerY",
+    //"innerX",
+    //"innerY",
     "innerPosition",
-    "innerScaleX",
-    "innerScaleY",
+    //"innerScaleX",
+    //"innerScaleY",
     "innerScale",
     "innerRotation",
 

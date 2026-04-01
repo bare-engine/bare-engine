@@ -29,6 +29,8 @@ export class LevelHandler
     {
         this.scene = scene;
 
+        defaultEntityData.saveVars.GameObject.push("save");
+
         if (__DEV__)
             if (!globalThis.plugin) // ONLY SHOW IF NO PLUGIN EXISTS, ELSE USER CAN PRESS BUTTON IN PLUGIN
                 LevelHandler.EnsureEditorSceneRegistered();
@@ -306,7 +308,7 @@ export class LevelHandler
                         console.warn("NO VARS TO SAVE FOR " + constructorName);
                 }
 
-                varsToSave = entityVars.slice();
+                varsToSave = varsToSave.slice();
             }
         }
         else
@@ -340,12 +342,16 @@ export class LevelHandler
             return children;
         };
 
-        customSerialize["components"] = (currentValue:Component[]):Entity[] => { 
-            var comps:Entity[] = [];
+        customSerialize["components"] = (currentValue:Component[]):Record<string, any> => {
+            var comps = {}
             for (var comp of currentValue)
             {
                 if (comp.save)
-                    comps.push(this.SerializeComponent(comp));
+                {
+                    var compData = this.SerializeComponent(comp);
+                    var name = Helper.DecapitalizeFirstLetter(comp.constructor.name.replace('Component', ''));
+                    comps[name] = compData;
+                }
             }
             return comps;
         };
@@ -374,24 +380,54 @@ export class LevelHandler
 
         var origEntity = this.scene.GetDummpyDataFromEntity2(obj.name, this.scene.settingsData); // COULD ALSO GET THIS FROM PROCCESSED ENTITYDATA? IF I CONTRUCT ALL ENTITITES - TODO
         var fullEntity = this.SerializeObjectFully(obj);
-        var entityDiff = this.GetEntitiesDiff(origEntity, fullEntity, true);
+        var entityDiff = this.GetEntitiesDiff(origEntity, fullEntity);
 
-        if (Object.keys(entityDiff).length > 0)
+        if (entityDiff)
             Object.assign(entity, entityDiff); // APPLY DIFF TO entity
 
         return entity;
     }
 
-    GetEntitiesDiff(orig: any, updated: any, includeRemovedValues: boolean = false): any
+    GetEntitiesDiff(orig: Entity, updated: Entity): any
+    {
+        var diff = this.GetObjectDiff(orig, updated) ?? {};
+
+        this.AddRemovedComponents(orig, updated, diff);
+
+        return Object.keys(diff).length > 0 ? diff : undefined;
+    }
+
+    AddRemovedComponents(orig: Entity, updated: Entity, diff: any)
+    {
+        if (orig.components)
+        {
+            const updatedComps = updated.components ?? {};
+            const removed = Object.keys(orig.components).filter(key => !(key in updatedComps));
+            if (removed.length > 0)
+                diff.componentsRemoved = removed;
+        }
+
+        if (orig.children && updated.children)
+        {
+            for (let i = 0; i < Math.min(orig.children.length, updated.children.length); i++)
+            {
+                diff.children ??= [];
+                diff.children[i] ??= {};
+                this.AddRemovedComponents(orig.children[i], updated.children[i], diff.children[i]);
+            }
+        }
+    }
+
+    GetGenericDiff(orig: any, updated: any): any
     {
         if (orig === updated)
             return undefined;
 
         if (Array.isArray(orig) && Array.isArray(updated))
-            return this.GetArrayDiff(orig, updated, includeRemovedValues);
+            return this.GetArrayDiff(orig, updated);
 
         if (this.IsPlainObject(orig) && this.IsPlainObject(updated))
-            return this.GetObjectDiff(orig, updated, includeRemovedValues);
+            return this.GetObjectDiff(orig, updated);
 
         if (this.IsEmpty(updated))
             return this.IsEmpty(orig) ? undefined : updated;
@@ -406,7 +442,7 @@ export class LevelHandler
         return value === undefined || value === null;
     }
 
-    GetArrayDiff(orig: any[], updated: any[], includeRemovedValues: boolean): any
+    GetArrayDiff(orig: any[], updated: any[]): any
     {
         const diff: any[] = [];
         let hasDiff = false;
@@ -418,9 +454,9 @@ export class LevelHandler
             if (i >= orig.length)
                 value = updated[i];
             else if (i >= updated.length)
-                value = includeRemovedValues ? { _removed: true } : undefined;
+                continue;
             else
-                value = this.GetEntitiesDiff(orig[i], updated[i], includeRemovedValues) ?? {};
+                value = this.GetGenericDiff(orig[i], updated[i]) ?? {};
 
             diff.push(value);
 
@@ -431,7 +467,7 @@ export class LevelHandler
         return hasDiff ? diff : undefined;
     }
 
-    GetObjectDiff(orig: Record<string, any>, updated: Record<string, any>, includeRemovedValues: boolean): any
+    GetObjectDiff(orig: Record<string, any>, updated: Record<string, any>): any
     {
         const diff: Record<string, any> = {};
 
@@ -444,21 +480,9 @@ export class LevelHandler
                 continue;
             }
 
-            const subDiff = this.GetEntitiesDiff(orig[key], updated[key], includeRemovedValues);
+            const subDiff = this.GetGenericDiff(orig[key], updated[key]);
             if (subDiff !== undefined)
                 diff[key] = subDiff;
-        }
-
-        if (includeRemovedValues)
-        {
-            const removed = Object.keys(orig).filter(key => !(key in updated));
-            if (removed.length > 0)
-            {
-                if (diff.componentRemoved)
-                    diff.componentRemoved.push(...removed);
-                else
-                    diff.componentRemoved = removed;
-            }
         }
 
         return Object.keys(diff).length > 0 ? diff : undefined;
@@ -497,7 +521,7 @@ export class LevelHandler
                         console.warn("NO VARS TO SAVE FOR " + constructorName);
                 }
 
-                varsToSave = entityVars.slice();
+                varsToSave = varsToSave.slice();
             }
         }
         else
@@ -511,7 +535,7 @@ export class LevelHandler
 
         // EDGE CASE, WANT TO ALWAYS SAVE (TOP LEVEL) OBJECT WITHOUT A PARENT, NO NEED TO SUPPLY THE SAVE PROPERTY
         // CHILDREN DO NEED IT
-        if (!gameObject.parent)
+        if (!gameObject.parent && varsToSave.includes("save"))
             varsToSave.splice(varsToSave.indexOf("save"), 1);
 
         // SETUP SPECIAL CASES - TO DIG DEEPER FOR PROPER COMPARISONS
