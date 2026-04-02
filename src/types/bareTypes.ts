@@ -95,7 +95,7 @@ export interface Entity
   children?: Entity[];
 
   components?: Record<string, Record<string, any>>;
-  editorComponents?: Record<string, Record<string, any>>;
+  //editorComponents?: Record<string, Record<string, any>>;
   componentsRemoved?: string[];
   propertiesRemoved?: string[];
 
@@ -155,7 +155,7 @@ export var entityVars = [
     "children",
 
     "components",
-    "editorComponents",
+    //"editorComponents",
     "componentsRemoved",
     "propertiesRemoved",
 

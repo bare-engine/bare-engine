@@ -357,8 +357,7 @@ export class Scene implements SceneI
                 entity = {
                     ...entityBaseMaybe,
                     ...entity,
-                    components: mergeComponents(entityBaseMaybe.components, entity.components),
-                    editorComponents: mergeComponents(entityBaseMaybe.editorComponents, entity.editorComponents)
+                    components: mergeComponents(entityBaseMaybe.components, entity.components)
                 };
 
                 foundEntityInEntities = true;
@@ -430,8 +429,7 @@ export class Scene implements SceneI
                 ...entityBase,
                 ...entity, // TAKES PRECEDENCE OVER BASE
                 extendData: entityBase.extendData, 
-                components: mergeComponents(entityBaseMaybe.components, entity.components),
-                editorComponents: mergeComponents(entityBaseMaybe.editorComponents, entity.editorComponents)
+                components: mergeComponents(entityBaseMaybe.components, entity.components)
             };
         }
         

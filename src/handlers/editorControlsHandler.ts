@@ -526,7 +526,6 @@ export class EditorControlsHandler {
 
         // THIS PREVIEW OBJECT IS JUST VISUAL, DON'T WANT ANY COMPONENTS ON IT
         delete entityCopy.components;
-        delete entityCopy.editorComponents;
 
         this.currentPreviewEntity.Init(MakePath(entityCopy.imagePath!, entityCopy.name));
         this.currentPreviewEntity.alpha = 0.5;

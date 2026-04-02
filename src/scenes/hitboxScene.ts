@@ -52,7 +52,6 @@ export class HitboxScene extends EditorScene
         // CONSTRUCT ENTITY FROM INITIAL ENTITY DATA, SO WE GET THE HITBOX DEFINED THERE
         var entityConstructedFromSettingsData = this.ConstructEntity(objectName, this.settingsHandler.Get());
         delete entityConstructedFromSettingsData.components;
-        delete entityConstructedFromSettingsData.editorComponents;
         
         // NEED TO LOAD AND AWAIT TEXTURE, TO USE THE DIMENSIONS FOR THE LEVEL, SO THE CAMERA CAN BE PROPERLY SET UP BASED ON IT LATER
         var texture = await assetsHandler.GetTexturePromise(MakePath(entityConstructedFromSettingsData.imagePath!, objectName));
@@ -100,7 +99,7 @@ export class HitboxScene extends EditorScene
                             x: hitbox.width,
                             y: hitbox.height
                         },
-                        editorComponents: {
+                        components: {
                             resizable: {},
                             resizableRemove: {}
                         },
@@ -122,7 +121,7 @@ export class HitboxScene extends EditorScene
                             y: .75
                         },
                         imagePath: "",
-                        editorComponents: {
+                        components: {
                             pivot: {objectName: objectName, hitboxName: "collisionRect"},
                             pivotRemove: {}
                         }
