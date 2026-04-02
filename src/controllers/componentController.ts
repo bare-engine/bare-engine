@@ -307,13 +307,6 @@ export class ComponentController
         var compName = component.constructor.name.replace('Component', '')
         compName = compName.charAt(0).toLowerCase() + compName.slice(1); // LOWERCASE FIRST LETTER
 
-        if (!go.levelEntity)
-            go.levelEntity = {name: "", componentsRemoved: []};
-        if (!go.levelEntity.componentsRemoved)
-            go.levelEntity.componentsRemoved = [];
-
-        go.levelEntity.componentsRemoved.push(compName);
-
         if (components.length == 0)
             this.componentsByGameObject.delete(go.uniqueID);
 

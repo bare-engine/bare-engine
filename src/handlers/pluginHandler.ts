@@ -395,28 +395,6 @@ window.__GAME_DEBUG_API__ = {
         const root = scene.objectController.GetObjectById(id);
         if (!root) return false;
 
-        const removeRecursive = (obj: any) => {
-            // Copy first because Remove() / splice() may mutate the original array
-            const children = [...(obj.children ?? [])];
-
-            for (const child of children) {
-                removeRecursive(child);
-            }
-
-            const parentChildren = obj.parent?.levelEntity?.children;
-            if (Array.isArray(parentChildren) && obj.levelEntity) {
-                const index = parentChildren.indexOf(obj.levelEntity);
-                if (index !== -1) {
-                    parentChildren.splice(index, 1);
-                }
-            }
-
-            if (Array.isArray(obj.levelEntity?.children)) {
-                obj.levelEntity.children.length = 0;
-            }
-        };
-
-        removeRecursive(root);
         root.Remove();
 
         return true;
@@ -427,26 +405,7 @@ window.__GAME_DEBUG_API__ = {
         if (!o) return false;
 
         var compRef = bareEngine.componentClasses[Helper.CapitalizeFirstLetter(comp) + "Component"];
-
-        if (bareEngine.gameMode == GameMode.Editor)
-        {
-            if (!o.levelEntity.components || !o.levelEntity.components[comp])
-            {
-                // THIS COMPONENT IS NOT IN levelEntity, SO IT HAS TO BE EXTENDED
-                // THAT'S WHY WE ADD IT TO componentsRemoved, SO IT CAN BE TAKEN INTO ACCOUNT IN getObject()
-                if (!o.levelEntity.componentsRemoved)
-                    o.levelEntity.componentsRemoved = [];
-
-                o.levelEntity.componentsRemoved.push(comp);
-                
-                return;
-            }
-
-            delete o.levelEntity.components[comp]; // COMPONENTS ARE JUST ADDED AS DATA IN EDITOR
-        }
-        else
-        if (bareEngine.gameMode == GameMode.Game)
-            o.RemoveComponent(compRef);
+        o.RemoveComponent(compRef);
     },
 
     getAllComponentNames():string[] {

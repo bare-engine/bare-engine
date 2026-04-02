@@ -461,8 +461,6 @@ export class EditorControlsHandler {
                 hitboxController.ClearExclusiveLayers();
             }
 
-            //const entitySource = obj.levelEntity ?? { name: obj.name };
-            //const entity = this.scene.ConstructEntity(entitySource);
             if (this.scene.settingsData.showUI !== false)
             {
                 const entity = this.scene.ConstructEntity(obj.name);
@@ -480,10 +478,6 @@ export class EditorControlsHandler {
                 hitboxController.Remove(this.draggingLevelEntity.hitbox!);
                 objectController.Remove(this.draggingLevelEntity);
             }*/
-
-            // NEED TO ALIGN levelEntity POSITION FOR GAME EDITOR MODE, SEE LevelHandler.SerializeLevel
-            this.draggingObject.levelEntity.position.x = this.draggingObject.x;
-            this.draggingObject.levelEntity.position.y = this.draggingObject.y;
         }
 
         this.draggingObject = null;
