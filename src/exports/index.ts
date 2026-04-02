@@ -92,6 +92,7 @@ export { PoolHandler } from "../handlers/poolHandler";
 export { SaveDataHandler } from "../handlers/SaveDataHandler";
 export { SettingsHandler as SettingsHandler } from "../handlers/settingsHandler";
 export { FlashShader } from "../shaders/flashShader";
+export { InspectorButton, Run } from "../utils/decorators";
 export { OutlineShader } from "../shaders/outlineShader";
 
 export {EditorScene} from "../scenes/editorScene";

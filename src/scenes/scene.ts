@@ -520,9 +520,25 @@ export class Scene implements SceneI
         // PUT STATIC LAST - FOR SOPIRO PHYSICS, IT NEEDS ALL OTHER RIGIDBODY DATA LIKE MASS FIRST, THEN SET STATIC
         if (entity.static)
         {
-            var val = entity.static;
+            let val = entity.static;
             delete entity.static;
             entity.static = val;
+        }
+
+        // PUT COMPONENTS LAST - SO PROPS LIKE POSITION/SCALE/ROTATION ARE SET AT ADDED() OF COMPONENT
+        if (entity.components)
+        {
+            let val = entity.components;
+            delete entity.components;
+            entity.components = val;
+        }
+
+        // PUT CHILDREN LAST
+        if (entity.children)
+        {
+            let val = entity.children;
+            delete entity.children;
+            entity.children = val;
         }
 
         for (const key in entity) {

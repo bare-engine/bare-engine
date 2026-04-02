@@ -1,4 +1,24 @@
+import { GameMode } from "../main";
+
 const BUTTON_METADATA_KEY = "__editorButtons__";
+const RUN_MODES_KEY = "__runModes__";
+
+/**
+ * Restricts when a component is active based on GameMode.
+ *
+ * @Run(GameMode.Editor)                — component is only added in Editor mode
+ * @Run(GameMode.Game, GameMode.Editor) — component is added in both modes
+ */
+export function Run(...modes: GameMode[])
+{
+    return function (target: any)
+    {
+        target[RUN_MODES_KEY] = modes;
+        return target;
+    };
+}
+
+export { RUN_MODES_KEY };
 
 export interface ButtonEntry
 {

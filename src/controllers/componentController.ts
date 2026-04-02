@@ -3,6 +3,7 @@ import { Helper } from "../exports";
 import { GameMode, Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { BareEvent, Component, Ctor, Entity } from '../types/bareTypes';
+import { RUN_MODES_KEY } from "../utils/decorators";
 // REFERENCING A CLASS EXTENDING BASECOMPONENT WILL AUTOMATICALLY ALSO INCLUDE COMPONENTCONTROLLER
 
 export abstract class BaseComponent<T extends GameObject = GameObject> implements Component<T>
@@ -135,11 +136,7 @@ export class ComponentController
             }
         }
 
-        //if (gameMode == GameMode.Game)
-            ProcessComponents('components');
-        //else
-        if (bareEngine.gameMode == GameMode.Editor)
-            ProcessComponents('editorComponents');
+        ProcessComponents('components');
     }
 
     public AfterLoadedLevel(uids:string[]): void
@@ -167,9 +164,15 @@ export class ComponentController
 
     AddComponent<T extends GameObject, C extends Component<T>>(go: T, componentClass: Ctor<C>): C;
     AddComponent<T extends GameObject, C extends Component<T>>(go: T, componentInstance: C): C;
-    AddComponent<T extends GameObject, C extends Component<T>>(go: T, arg: Ctor<C> | C): C
+    AddComponent<T extends GameObject, C extends Component<T>>(go: T, arg: Ctor<C> | C): C | null
     {
         const component: C = (typeof arg === "function") ? new arg(this.scene) : arg;
+
+        // Check class-level @Run decorator
+        const runModes: number[] | undefined = (component.constructor as any)[RUN_MODES_KEY];
+        trace(runModes)
+        if (runModes && !runModes.includes(bareEngine.gameMode))
+            return null as any;
 
         component.go = go;
 
@@ -195,7 +198,9 @@ export class ComponentController
 
         component.enabled = false;
 
-        if (bareEngine.gameMode == GameMode.Game) // SO IN EDITOR, WE DON'T CALL ADDED() OR ONSTART()
+        const shouldActivate = runModes ? runModes.includes(bareEngine.gameMode) : bareEngine.gameMode == GameMode.Game;
+
+        if (shouldActivate)
         {
             component.enabled = true;
 
