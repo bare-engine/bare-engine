@@ -167,7 +167,7 @@ export class Scene implements SceneI
             this[classes[i]].Start?.();
         }
 
-        //window.gameMode = GameMode.Game;
+        //bareEngine.gameMode = GameMode.Game;
 
         //rapid.backgroundColor = Color.White;
 

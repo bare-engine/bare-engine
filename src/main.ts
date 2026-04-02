@@ -28,8 +28,6 @@ declare global
     var initialAssetsReady:Function;
     var initialAssets:Record<string, any>;
 
-    var gameMode:GameMode;
-
     var debug:boolean;
 
     var whiteShader:GLShader;
@@ -52,8 +50,6 @@ declare global
 
     function wait(seconds: number): Promise<void>;
 }
-
-window.gameMode = GameMode.Game;
 
 window.debug = false;
 

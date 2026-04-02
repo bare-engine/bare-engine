@@ -83,7 +83,7 @@ export class EditorScene extends Scene
         // COULD SEND ALONG THE PAYLOAD (CONTAINING settingsHandler) TO SCENE CONTRUCTOR, BUT NOT SURE IF THAT WILL PLAY WELL WITH EditorSceneAwakePayload
         // WILL CREATE MORE CONTRAINTS TO ALIGN WITH CONSTRUCTOR ARG TYPE
 
-        window.gameMode = GameMode.Editor;
+        bareEngine.gameMode = GameMode.Editor;
         
         this.backgroundColorOrig = rapid.backgroundColor;
         
@@ -111,7 +111,7 @@ export class EditorScene extends Scene
         
         var level = await this.LoadLevel(levelNameOrData);
 
-        window.gameMode = GameMode.Editor; // JUST SET TO GAME IN OnClear()
+        bareEngine.gameMode = GameMode.Editor; // JUST SET TO GAME IN OnClear()
 
         this.saveLevelCallback = saveLevelCallback.bind(this);
 
@@ -176,7 +176,7 @@ export class EditorScene extends Scene
         if (this.opened) // CHECKING, SINCE THIS ALSO RUNS ON INIT WHEN CALLING LoadLevel()
         {
             this.opened = false;
-            window.gameMode = GameMode.Game; // SETTING IT IN BARE.START() NOW, BUT ALSO KINDA MAKES SENSE HERE
+            bareEngine.gameMode = GameMode.Game; // SETTING IT IN BARE.START() NOW, BUT ALSO KINDA MAKES SENSE HERE
             bareEngine.SendEvent(BareEvent.editor_closed, {settingsDataName: this.settingsData.name || 'levelEditor', levelName: SaveData.currentLevelStr});
         }
         
@@ -199,7 +199,7 @@ export class EditorScene extends Scene
 
     async Toggle(settingsHandler: SettingsHandler, levelPathOrData: string | LevelData = '', saveLevelCallback: () => Promise<LevelData> = this.SaveLevel)
     {
-        if (this.settingsHandler == settingsHandler && window.gameMode == GameMode.Editor)
+        if (this.settingsHandler == settingsHandler && bareEngine.gameMode == GameMode.Editor)
         {
             this.Close();
             return;

@@ -362,7 +362,7 @@ window.__GAME_DEBUG_API__ = {
                     // WE APPLY THE COMPONENTS VALUES FROM THE PLUGIN TO THE ONES INGAME
                     // BUT ALSO CALL OnRemoved() AND Added() AROUND IT, TO RESET THE COMPONENT AND LET THE NEW VALUES BE REPROCESSED IN Added()/OnAdded()
                    
-                    if (window.gameMode == GameMode.Game)
+                    if (bareEngine.gameMode == GameMode.Game)
                         comp.OnRemoved?.();
 
                     var compData:Record<string, Scalar> = props.components[compName];
@@ -371,7 +371,7 @@ window.__GAME_DEBUG_API__ = {
                         comp[compProp] = compData[compProp];
                     }
 
-                    if (window.gameMode == GameMode.Game)
+                    if (bareEngine.gameMode == GameMode.Game)
                         comp.Added(comp.go); // CALLS OnAdded() AS WELL
                 }
                 else
@@ -428,7 +428,7 @@ window.__GAME_DEBUG_API__ = {
 
         var compRef = bareEngine.componentClasses[Helper.CapitalizeFirstLetter(comp) + "Component"];
 
-        if (window.gameMode == GameMode.Editor)
+        if (bareEngine.gameMode == GameMode.Editor)
         {
             if (!o.levelEntity.components || !o.levelEntity.components[comp])
             {
@@ -445,7 +445,7 @@ window.__GAME_DEBUG_API__ = {
             delete o.levelEntity.components[comp]; // COMPONENTS ARE JUST ADDED AS DATA IN EDITOR
         }
         else
-        if (window.gameMode == GameMode.Game)
+        if (bareEngine.gameMode == GameMode.Game)
             o.RemoveComponent(compRef);
     },
 

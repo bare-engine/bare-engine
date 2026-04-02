@@ -1,4 +1,3 @@
-console.log("decorators.ts loaded");
 const BUTTON_METADATA_KEY = "__editorButtons__";
 
 export interface ButtonEntry

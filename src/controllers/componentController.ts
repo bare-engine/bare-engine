@@ -138,7 +138,7 @@ export class ComponentController
         //if (gameMode == GameMode.Game)
             ProcessComponents('components');
         //else
-        if (gameMode == GameMode.Editor)
+        if (bareEngine.gameMode == GameMode.Editor)
             ProcessComponents('editorComponents');
     }
 
@@ -195,7 +195,7 @@ export class ComponentController
 
         component.enabled = false;
 
-        if (gameMode == GameMode.Game) // SO IN EDITOR, WE DON'T CALL ADDED() OR ONSTART()
+        if (bareEngine.gameMode == GameMode.Game) // SO IN EDITOR, WE DON'T CALL ADDED() OR ONSTART()
         {
             component.enabled = true;
 

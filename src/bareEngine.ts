@@ -25,7 +25,7 @@ export class BareEngine
 
     public dummyGameObject: GameObject; // JUST USED FOR DEFAULT VALUES AND DUMMY CONSTRUCTION
 
-    get levelEditorOpen(): boolean { return window.gameMode == GameMode.Editor; }
+    get levelEditorOpen(): boolean { return bareEngine.gameMode == GameMode.Editor; }
     
     public componentClasses: Record<string, any> = {};
 
@@ -54,6 +54,8 @@ export class BareEngine
 
     static gameObjectPoolSize: int = 50;
     gameObjectPools: Map<string, PoolHandler<GameObject>> = new Map();
+
+    public gameMode:GameMode = GameMode.Game;
 
     constructor(sceneClass: SceneClass, options?: BareOptions)
     {
