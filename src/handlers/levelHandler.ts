@@ -75,6 +75,14 @@ export class LevelHandler
 
     async LoadLevel(levelInput: string | LevelData = ""):Promise<LevelData>
     {
+        // AAAAH REMOVE THIS - TODO
+        // CURRENTLY NEEDED FOR HACKY DUMMY CREATION
+        this.scene.AddClass(PivotComponent);
+        this.scene.AddClass(PivotRemoveComponent);
+        this.scene.AddClass(ResizableComponent);
+        this.scene.AddClass(ResizableRemoveComponent);
+        this.scene.AddClass(PositionPivotComponent);
+
         // STORE PERSISTENT OBJECTS, TO CALL ONLEVELCHANGED AFTER LOAD
         var persistenObjUIDs:string[] = [];
         var gameLayers = objectController.GetLayers();
@@ -236,14 +244,6 @@ export class LevelHandler
     // THIS JUST REPOPULATES THE entitiesByLayer OF THE LEVEL
     SerializeLevel(level: LevelData)
     {
-        // AAAAH REMOVE THIS - TODO
-        // CURRENTLY NEEDED FOR HACKY DUMMY CREATION
-        this.scene.AddClass(PivotComponent);
-        this.scene.AddClass(PivotRemoveComponent);
-        this.scene.AddClass(ResizableComponent);
-        this.scene.AddClass(ResizableRemoveComponent);
-        this.scene.AddClass(PositionPivotComponent);
-
         var gameLayers = objectController.GetLayers();
         for (var i = 0; i < gameLayers.length; i++)
         {
@@ -282,14 +282,16 @@ export class LevelHandler
         }
     }
 
-    SerializeObjectFully(obj: GameObject): Entity
+    SerializeObjectFully(obj: GameObject, forceAllEntityVars:boolean = false): Entity
     {
-        var entity:Entity = {};
+        var entity:Entity = {
+            //name: obj.name,
+        };
 
         // GET VARS TO SAVE
         var varsToSave: string[] = [];
 
-        if (window.gameMode == GameMode.Game)
+        if (window.gameMode == GameMode.Game && !forceAllEntityVars)
         {
             var saveVars = this.scene.settingsData.saveVars;
             if (saveVars) // WILL ALWAYS BE THERE REALLY
@@ -312,7 +314,7 @@ export class LevelHandler
             }
         }
         else
-        if (window.gameMode == GameMode.Editor)
+        if (window.gameMode == GameMode.Editor || forceAllEntityVars)
         {
             varsToSave = entityVars.slice();
             //varsToSave.splice(varsToSave.indexOf("position"), 1);
@@ -336,7 +338,7 @@ export class LevelHandler
             var children:Entity[] = [];
             for (var child of currentValue)
             {
-                if (!child.persistent && child.save)
+                if ((!child.persistent && child.save) || forceAllEntityVars)
                     children.push(this.SerializeObjectFully(child));
             }
             return children;
@@ -346,7 +348,7 @@ export class LevelHandler
             var comps = {}
             for (var comp of currentValue)
             {
-                if (comp.save)
+                if (comp.save || forceAllEntityVars)
                 {
                     var compData = this.SerializeComponent(comp);
                     var name = Helper.DecapitalizeFirstLetter(comp.constructor.name.replace('Component', ''));
@@ -372,6 +374,10 @@ export class LevelHandler
         return entity;
     }
 
+    // SERIALIZE OBJECT DIFF
+    // THIS IS A VERY INEFFICIENT WAY TO IT, BUT... EASY TO FOLLOW AND AT ONE PLACE
+    // COME BACK LATER TO OPTIMIZE/CACHE - TODO
+    // USED levelEntity BEFORE, BUT KEPT GETTING EDGE CASES ALL OVER
     SerializeObject(obj: GameObject): Entity
     {
         var entity:Entity = {
@@ -380,10 +386,16 @@ export class LevelHandler
 
         var origEntity = this.scene.GetDummpyDataFromEntity2(obj.name, this.scene.settingsData); // COULD ALSO GET THIS FROM PROCCESSED ENTITYDATA? IF I CONTRUCT ALL ENTITITES - TODO
         var fullEntity = this.SerializeObjectFully(obj);
-        var entityDiff = this.GetEntitiesDiff(origEntity, fullEntity);
+        var diffEntity = this.GetEntitiesDiff(origEntity, fullEntity);
 
-        if (entityDiff)
-            Object.assign(entity, entityDiff); // APPLY DIFF TO entity
+        if (diffEntity.position)
+        {
+            diffEntity.position.x = Math.round(diffEntity.position.x);
+            diffEntity.position.y = Math.round(diffEntity.position.y);
+        }
+
+        if (diffEntity)
+            Object.assign(entity, diffEntity); // APPLY DIFF TO entity
 
         return entity;
     }
@@ -433,13 +445,6 @@ export class LevelHandler
             return this.IsEmpty(orig) ? undefined : updated;
 
         return updated;
-    }
-
-    IsEmpty(value: any): boolean
-    {
-        if (Array.isArray(value)) return value.length === 0;
-        if (this.IsPlainObject(value)) return Object.keys(value).length === 0;
-        return value === undefined || value === null;
     }
 
     GetArrayDiff(orig: any[], updated: any[]): any
@@ -493,7 +498,14 @@ export class LevelHandler
         return !!value && typeof value === "object" && !Array.isArray(value);
     }
 
-    GetChangedValues(gameObject: GameObject, origEntity: Entity): any
+    IsEmpty(value: any): boolean
+    {
+        if (Array.isArray(value)) return value.length === 0;
+        if (this.IsPlainObject(value)) return Object.keys(value).length === 0;
+        return value === undefined || value === null;
+    }
+
+    /*GetChangedValues(gameObject: GameObject, origEntity: Entity): any
     {
         const obj: Record<string, any> = {};
 
@@ -561,16 +573,16 @@ export class LevelHandler
                 return children;
             };
 
-            /*specialCompare["components"] = (currentValue:Component[], origValue:string) => { return true };
-            specialValue["components"] = (currentValue:Component[]):Entity[] => { 
-                var children:Entity[] = [];
-                for (var comp of currentValue)
-                {
-                    if (comp.save)
-                        children.push(this.SerializeObject(child));
-                }
-                return children;
-            };*/
+            // specialCompare["components"] = (currentValue:Component[], origValue:string) => { return true };
+            // specialValue["components"] = (currentValue:Component[]):Entity[] => { 
+            //     var children:Entity[] = [];
+            //     for (var comp of currentValue)
+            //     {
+            //         if (comp.save)
+            //             children.push(this.SerializeObject(child));
+            //     }
+            //     return children;
+            // };
         }
 
         // COMPARE EACH SAVE VAR WITH ORIGINAL ENTITY AND STORE IF IT IS DIFFERENT
@@ -647,7 +659,7 @@ export class LevelHandler
         }
 
         return obj;
-    }
+    }*/
 
     // EG:
     // {

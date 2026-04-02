@@ -540,18 +540,17 @@ export class Scene implements SceneI
             }
 
             // detect XY struct
-            const isXY =
-                value &&
-                typeof value === "object" &&
-                "x" in value &&
-                "y" in value;
+            const isXY = value && typeof value === "object" && ("x" in value || "y" in value);
 
-            if (isXY && obj[key] && typeof obj[key] === "object") {
-                if ("x" in obj[key] && "y" in obj[key]) {
+            if (isXY)
+            {
+                if ("x" in value)
                     obj[key].x = value.x;
+
+                if ("y" in value)
                     obj[key].y = value.y;
-                    continue;
-                }
+
+                continue;
             }
 
             // generic direct assignment

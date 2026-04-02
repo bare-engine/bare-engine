@@ -1,5 +1,5 @@
 import { keyboardController } from "../controllers/keyboardController";
-import { componentController, objectController, Scene, sceneController } from "../exports";
+import { componentController, levelHandler, objectController, Scene, sceneController } from "../exports";
 import { Color, Vec2 } from "../libraries/rapid-render";
 import { GameMode, globalEvents } from "../main";
 import { GameObject } from "../objects/gameObject";
@@ -183,6 +183,51 @@ window.__GAME_DEBUG_API__ = {
   getObject(id: string) {
     const o = plugin.GetCurrentScene().objectController.GetObjectById(id);
     if (!o) return null;
+
+    var AddExtraPropsToData = (data: any, o: GameObject) => {
+        data.id = o.uniqueID;
+        data.name = o.name;
+        data.x = o.x;
+        data.y = o.y;
+        data.scaleX = o.scaleX;
+        data.scaleY = o.scaleY;
+        data.innerX = o.innerTransform.position.x;
+        data.innerY = o.innerTransform.position.y;
+        data.innerScaleX = o.innerScale.x;
+        data.innerScaleY = o.innerScale.y;
+        data.persistent = o.persistent;
+
+        // ADD DATA FOR @InspectorButton DECORATOR
+        if (data.components)
+        {
+            for (var compName in data.components)
+            {
+                var fullCompName = Helper.CapitalizeFirstLetter(compName) + 'Component';
+                var compCls = bareEngine.componentClasses[fullCompName];
+                var buttons = getButtons(compCls);
+                if (buttons.length > 0)
+                {
+                    if (data.components[compName])
+                    {
+                        (data.components[compName] as any).__buttons = buttons.map(b => ({ label: b.label, method: b.label }));
+                    }
+                }
+            }
+        }
+
+        if (data.children)
+        {
+            for (var i = 0; i < data.children.length; i++)
+            {
+                AddExtraPropsToData(data.children[i], o.children[i]);
+            }
+        }
+    }
+
+    var data = plugin.GetCurrentScene().levelHandler.SerializeObjectFully(o, true) as any;
+    AddExtraPropsToData(data, o);
+
+    return data;
 
     var serializeChildren = (children: GameObject[]) => {
         return children.map(c => serializeGameObject(c));

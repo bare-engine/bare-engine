@@ -64,13 +64,12 @@ export function InspectorButton(targetOrOptions: any, propertyKey?: string): any
     };
 }
 
-/** Returns all editor buttons registered on the given instance. */
-export function getButtons(instance: object): { label: string; callback: () => void }[]
+/** Returns all editor buttons registered on the component class. */
+export function getButtons(componentClass: any): { label: string; callback: () => void }[]
 {
-    const proto = Object.getPrototypeOf(instance);
-    const entries: ButtonEntry[] = proto[BUTTON_METADATA_KEY] || [];
+    const entries: ButtonEntry[] = componentClass.prototype[BUTTON_METADATA_KEY] || [];
     return entries.map(e => ({
         label: e.label,
-        callback: () => (instance as any)[e.methodKey](),
+        callback: () => componentClass.prototype[e.methodKey](),
     }));
 }
