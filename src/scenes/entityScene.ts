@@ -1,6 +1,6 @@
 import { assetsHandler, EditorScene, Helper, LevelData, MakePath, PhysicsObjectBare, SettingsData, SettingsHandler } from "../exports";
 import { levelHandler } from "../handlers/levelHandler";
-import { AwakePayload, BareEvent, Size } from "../types/bareTypes";
+import { AwakePayload, BareEvent, entityVars, Size } from "../types/bareTypes";
 
 type EditorScenePayload = AwakePayload<EditorScene>;
 type HitboxSceneAwakePayload = EditorScenePayload & {
@@ -106,7 +106,7 @@ export class EntityScene extends EditorScene
         //levelHandler.SerializeLevel(level);
 
         var obj = this.objectController.GetObjectByName(this.objectName);
-        var entity = levelHandler.SerializeObject(obj);
+        var entity = levelHandler.SerializeObject(obj, {propsToIgnoreInEntity: entityVars});
         delete entity.name;
         delete entity.position;
         

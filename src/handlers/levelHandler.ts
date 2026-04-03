@@ -186,8 +186,9 @@ export class LevelHandler
                 // WHEN IN EDITOR, WE WANT TO USE levelEntity
                 // BUT IT'S KIND OF MESSED UP AND CONSTRUCTED BY ABOVE NOW
                 // SO HERE WE ALIGN IT AGAIN TO THE OBJECT AND ALL ITS CHILDREN
-                //this.ApplyLevelEntityToGameObjectAndChildren(gameObject, levelEntity);
+                this.ApplyLevelEntityToGameObjectAndChildren(gameObject, levelEntity);
                 
+                //gameObject.levelEntity = levelEntity;
                 gameObject.save = true;
             }
         }
@@ -365,7 +366,7 @@ export class LevelHandler
             
             var value = currentValue;
 
-            if (customSerialize[varName])
+            if (customSerialize[varName] && currentValue)
                 value = customSerialize[varName](currentValue);
 
             entity[varName] = value;
@@ -375,27 +376,31 @@ export class LevelHandler
     }
 
     // SERIALIZE OBJECT DIFF
-    // THIS IS A VERY INEFFICIENT WAY TO IT, BUT... EASY TO FOLLOW AND AT ONE PLACE
+    // THIS IS A VERY INEFFICIENT WAY TO IT, BUT... EASY TO FOLLOW AND IN ONE PLACE
     // COME BACK LATER TO OPTIMIZE/CACHE - TODO
-    // USED levelEntity BEFORE, BUT KEPT GETTING EDGE CASES ALL OVER
-    SerializeObject(obj: GameObject): Entity
+    // USED levelEntity BEFORE, KEEPING TRACK CHANGES, BUT KEPT GETTING EDGE CASES ALL OVER
+    SerializeObject(obj: GameObject, options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): Entity
     {
         var entity:Entity = {
             name: obj.name,
         };
 
-        var origEntity = this.scene.GetDummpyDataFromEntity2(obj.name, this.scene.settingsData); // COULD ALSO GET THIS FROM PROCCESSED ENTITYDATA? IF I CONTRUCT ALL ENTITITES - TODO
+        var origEntity = this.scene.GetDummpyDataFromEntity2(obj.name, this.scene.settingsData, options); // COULD ALSO GET THIS FROM PROCCESSED ENTITYDATA? IF I CONTRUCT ALL ENTITITES - TODO
         var fullEntity = this.SerializeObjectFully(obj);
         var diffEntity = this.GetEntitiesDiff(origEntity, fullEntity);
 
-        if (diffEntity.position)
-        {
-            diffEntity.position.x = Math.round(diffEntity.position.x);
-            diffEntity.position.y = Math.round(diffEntity.position.y);
-        }
-
         if (diffEntity)
-            Object.assign(entity, diffEntity); // APPLY DIFF TO entity
+        {
+            // ROUND POSITION
+            if (diffEntity.position)
+            {
+                diffEntity.position.x = Math.round(diffEntity.position.x);
+                diffEntity.position.y = Math.round(diffEntity.position.y);
+            }
+
+            // APPLY DIFF TO entity
+            Object.assign(entity, diffEntity);
+        }
 
         return entity;
     }
@@ -480,8 +485,7 @@ export class LevelHandler
         {
             if (!(key in orig))
             {
-                if (!this.IsEmpty(updated[key]))
-                    diff[key] = updated[key];
+                diff[key] = updated[key];
                 continue;
             }
 
