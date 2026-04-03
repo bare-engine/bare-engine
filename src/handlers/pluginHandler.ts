@@ -118,7 +118,10 @@ window.__GAME_DEBUG_API__ = {
         return;
     }*/
 
-    await sceneController.Add(EntityScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
+    name = "ANY";
+    var isBase = true;
+    
+    await sceneController.Add(EntityScene, {name: name, isBase: isBase, settingsHandler: plugin.GetCurrentScene().settingsHandler});
     //sceneController.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
     
     var id = plugin.GetCurrentScene().objectController.GetObjectByName(name).uniqueID;
@@ -200,7 +203,8 @@ window.__GAME_DEBUG_API__ = {
         data.innerScaleY = o.innerScale.y;
         data.persistent = o.persistent;
 
-        data.pivot = o.levelEntity.pivot; //
+        if (o.levelEntity.pivot)
+            data.pivot = o.levelEntity.pivot; //
         data.hitbox = o.levelEntity.hitbox; //
 
         // ADD DATA FOR @InspectorButton DECORATOR
@@ -335,14 +339,12 @@ window.__GAME_DEBUG_API__ = {
         if (props.innerRotation !== undefined) o.innerTransform.rotation = props.innerRotation;
 
         if (props.pivot !== undefined) { 
-            o.pivot.x = props.pivot.x; o.pivot.y = props.pivot.y;
+            o.pivot.x = props.pivot.x;
+            o.pivot.y = props.pivot.y;
             o.levelEntity.pivot = o.pivot; 
         }
         if (props.hitbox !== undefined) { 
-            if (props.hitbox.x !== undefined) o.hitbox.position.x = props.hitbox.x;
-            if (props.hitbox.y !== undefined) o.hitbox.position.y = props.hitbox.y;
-            if (props.hitbox.width !== undefined) o.hitbox.size.x = props.hitbox.width;
-            if (props.hitbox.height !== undefined) o.hitbox.size.y = props.hitbox.height;
+            
         }
 
         if (props.pivotBasedOnHitbox !== undefined) { o.pivotBasedOnHitbox.x = props.pivotBasedOnHitbox.x; o.pivotBasedOnHitbox.y = props.pivotBasedOnHitbox.y; }

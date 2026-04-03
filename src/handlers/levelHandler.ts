@@ -385,7 +385,26 @@ export class LevelHandler
             name: obj.name,
         };
 
-        var origEntity = this.scene.GetDummpyDataFromEntity2(obj.name, this.scene.settingsData, options); // COULD ALSO GET THIS FROM PROCCESSED ENTITYDATA? IF I CONTRUCT ALL ENTITITES - TODO
+        var extendsData = true;
+        if (!obj.levelEntity.extendData)
+        {
+            var isBase = (this.scene.settingsData.entityBases[obj.name] != undefined);
+            if (isBase)
+                extendsData = false
+        }
+
+        if (!extendsData)
+        {
+            var anyEntity = this.scene.ConstructEntity({/*extendData: "NONE"*/});
+            anyEntity.name = "placeHolder";
+            anyEntity.imagePath = "";
+            var origEntity = this.scene.GetDummpyDataFromEntity2(anyEntity);
+        }
+        else
+        {
+            var origEntity = this.scene.GetDummpyDataFromEntity2(obj.name, this.scene.settingsData, options); // COULD ALSO GET THIS FROM PROCCESSED ENTITYDATA? IF I CONTRUCT ALL ENTITITES - TODO
+        }
+
         var fullEntity = this.SerializeObjectFully(obj);
         var diffEntity = this.GetEntitiesDiff(origEntity, fullEntity);
 

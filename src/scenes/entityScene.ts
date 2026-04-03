@@ -1,28 +1,30 @@
 import { assetsHandler, EditorScene, Helper, LevelData, MakePath, PhysicsObjectBare, SettingsData, SettingsHandler } from "../exports";
 import { levelHandler } from "../handlers/levelHandler";
-import { AwakePayload, BareEvent, entityVars, Size } from "../types/bareTypes";
+import { AwakePayload, BareEvent, Entity, entityVars, Size } from "../types/bareTypes";
 
 type EditorScenePayload = AwakePayload<EditorScene>;
-type HitboxSceneAwakePayload = EditorScenePayload & {
+type EntitySceneAwakePayload = EditorScenePayload & {
     name: string;
+    isBase: boolean;
     settingsHandler: SettingsHandler;
 };
 
 export class EntityScene extends EditorScene
 {
     objectName: string = "";
-    lastPayload: HitboxSceneAwakePayload;
+    lastPayload: EntitySceneAwakePayload;
 
     constructor()
     {
         super({solo:true, persistent: true});
     }
 
-    override async OnStart(payload: HitboxSceneAwakePayload = this.lastPayload): Promise<void>
+    override async OnStart(payload: EntitySceneAwakePayload = this.lastPayload): Promise<void>
     {
         this.lastPayload = payload;
 
         const objectName:string = (payload)?.name;
+        const isBase:boolean = (payload)?.isBase;
         const targetSettingsHandler:SettingsHandler = (payload)?.settingsHandler;
         
         // WE TAKE OVER THE TARGET ENTITY DATA, ONCE AT INIT
@@ -39,16 +41,29 @@ export class EntityScene extends EditorScene
             raw.selectionEnabled = false;
         });
 
-        var levelData = await this.CreateEntityDataFor(objectName);
+        var levelData = await this.CreateEntityDataFor(objectName, isBase);
         await super.OnStart({levelPathOrData: levelData, saveLevelCallback: this.SaveEntityDataToSettingsData});
     }
 
-    async CreateEntityDataFor(objectName: string): Promise<LevelData>
+    async CreateEntityDataFor(objectName: string, isBase: boolean): Promise<LevelData>
     {
         // CONSTRUCT ENTITY FROM INITIAL ENTITY DATA, SO WE GET THE ENTITY DEFINED THERE
         var entityConstructedFromSettingsData = this.ConstructEntity(objectName);
         
-        var entityFromSettingsData = this.settingsData.entities[objectName];
+        var entityFromSettingsData:Entity;
+
+        if (isBase)
+        {
+            entityFromSettingsData = this.settingsData.entityBases[objectName];
+
+            entityFromSettingsData.name = objectName;
+            entityFromSettingsData.texture = "placeHolder";
+            entityFromSettingsData.imagePath = "";
+        }
+        else
+        {
+            entityFromSettingsData = this.settingsData.entities[objectName];
+        }
 
         //delete entityConstructedFromSettingsData.components;
         //delete entityConstructedFromSettingsData.editorComponents;
