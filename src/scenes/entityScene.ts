@@ -53,15 +53,6 @@ export class EntityScene extends EditorScene
         //delete entityConstructedFromSettingsData.components;
         //delete entityConstructedFromSettingsData.editorComponents;
         
-        // NEED TO LOAD AND AWAIT TEXTURE, TO USE THE DIMENSIONS FOR THE LEVEL, SO THE CAMERA CAN BE PROPERLY SET UP BASED ON IT LATER
-        var texture = await assetsHandler.GetTexturePromise(MakePath(entityConstructedFromSettingsData.imagePath!, objectName));
-
-        this.events.persistent.once(BareEvent.level_loaded, ({ level }) => {
-            const dims: Size = level.dimensions;
-            this.cameraHandler.SetBounds({ x: 0, y: 0, width: texture.width, height: texture.height });
-            this.cameraHandler.CalculateZoomFit();
-        });
-
         // SET UP LEVEL
         return {
             name: objectName,
@@ -74,7 +65,7 @@ export class EntityScene extends EditorScene
             entitiesByLayer: {
                 "objects": [
                     {
-                        ... this.settingsData.entities[objectName],
+                        ... entityFromSettingsData,
                         /*position: {
                             x: 0,
                             y: 0
@@ -90,10 +81,10 @@ export class EntityScene extends EditorScene
     {
         var ret = await super.Open(levelPathOrData, saveLevelCallback, settingsHandler);
 
+        // SET CAMERA ZOOM, BASED ON OBJECT BOUNDS
         var obj = this.objectController.GetObjectByName(this.objectName);
         var bounds = obj.GetBoundsWithChildren();
-        var dims:Size = bounds;
-        var s = Math.max(dims.width / rapid.width, dims.height / rapid.height);
+        var s = Math.max(bounds.width / rapid.width, bounds.height / rapid.height);
         this.cameraHandler.zoom = 1/s * .7;
 
         return ret;

@@ -1,6 +1,6 @@
 import { Entity, LayerInfo, SettingsData, BareEvent, SaveData } from '../types/bareTypes';
 import { assetsHandler } from "./assetsHandler";
-import { MakePath } from "../main";
+import { MakePath, MakePathForEntity } from "../main";
 import { FlashShader } from "../shaders/flashShader";
 import { TweenTo } from "../controllers/tweenController";
 import { EditorScene } from '../scenes/editorScene';
@@ -192,7 +192,7 @@ export class EditorUIHandler {
                             };
                             
                             // Get entity image from loaded texture or fallback to path
-                            const texKey = MakePath(entity.imagePath!, entity.texture || entity.name);
+                            const texKey = MakePathForEntity(entity);
                             const entityTex = assetsHandler.HasTexture(texKey) ? assetsHandler.GetTexture(texKey) : null;
 
                             if (entityTex?.base?.sourceUrl) {
@@ -522,13 +522,13 @@ export class EditorUIHandler {
         const entity = this.scene.ConstructEntity(imageId);
 
         if (entity)
-            return assetsHandler.GetFullImagePath(MakePath(entity.imagePath!, entity.name));
+            return assetsHandler.GetFullImagePath(MakePathForEntity(entity));
         
         return null;
     }
 
     private GetEntityImagePath(entity: Entity): string | null {
-        return assetsHandler.GetFullImagePath(MakePath(entity.imagePath!, entity.name));
+        return assetsHandler.GetFullImagePath(MakePathForEntity(entity));
     }
 
     SetupEditorControls(): Promise<void> {

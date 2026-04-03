@@ -4,7 +4,7 @@ import mitt, { Emitter } from './libraries/mitt';
 import { BaseTexture, Color, GLShader, Rapid, Texture } from './libraries/rapid-render';
 import { supportsWebGL } from './libraries/rapid-render/webgl/utils';
 import { Scene } from './scenes/scene';
-import { BareEvent, BareOptions, Events, Pipes, SceneClass } from './types/bareTypes';
+import { BareEvent, BareOptions, Entity, Events, Pipes, SceneClass } from './types/bareTypes';
 import { Helper } from "./utils/helper";
 
 export const globalEvents = mitt<Events>();
@@ -80,14 +80,6 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
         imagePath: '',
         levelPath: ''
     }, ...options };
-
-    // MAYBE NOT THE BEST SETTING THESE AS STATIC
-    // BUT WILL DO FOR NOW TO SET THE VARS BEFORE GAME-CLASS GETS CONSTRUCTED - TODO
-    if (options.imagePath)
-        this.imagePath = options.imagePath;
-
-    if (options.levelPath)
-        this.levelPath = options.levelPath;
 
     window.initialAssetsReady =(assets = [])=>{
         const doesSupportWebGL = supportsWebGL(canvas);
@@ -307,4 +299,9 @@ export function MakePath(...args: string[]): string
     }
 
     return args.join('/');
+}
+
+export function MakePathForEntity(entity: Entity): string
+{
+    return MakePath(entity.imagePath!, (entity.texture || entity.name || ""));
 }

@@ -7,7 +7,7 @@ import { PhysicsControllerSopiro } from "../exports/sopiroPhysics";
 import { SettingsHandler } from "../handlers/settingsHandler";
 import mitt from "../libraries/mitt";
 import { FrameBufferObject, ICircleRenderOptions, IGraphicRenderOptions, IRectRenderOptions, IRenderLineOptions, ISpriteRenderOptions, MaskType, RenderTexture, Texture, TextureCache, Vec2 } from "../libraries/rapid-render";
-import { MakePath, globalEvents } from "../main";
+import { MakePath, MakePathForEntity, globalEvents } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { defaultEntityData } from "../types/bareData";
 import { AwakePayload, BareEvent, Entity, Events, GameObjectClass, LayerInfo, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
@@ -111,6 +111,7 @@ export class Scene implements SceneI
         this.UI = options.UI ?? false;
         this.persistent = options.persistent ?? false;
 
+        this.AddClass(GameObject);
         this.AddClass(ObjectController);
         this.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT
 
@@ -604,7 +605,7 @@ export class Scene implements SceneI
 
         gameObject.scene = this;
         gameObject.ResetValues();
-        gameObject.InitTexture(MakePath(entityConstructed.imagePath!, entityConstructed.name)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
+        gameObject.InitTexture(MakePathForEntity(entityConstructed)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
     
         // DON'T WANT COMPONENTS TO BE CREATED AT ApplyEntityToGameObject(). 
         //delete entityConstructed.components;
@@ -686,7 +687,7 @@ export class Scene implements SceneI
             }
 
             gameObject = bareEngine.GetObjectFromPool(entity.extendClass!, this);
-            gameObject.Init(MakePath(entity.imagePath!, entity.texture || entity.name || ""));
+            gameObject.Init(MakePathForEntity(entity));
             this.ApplyEntityToGameObject(entity, gameObject);
         }
 
@@ -1043,16 +1044,11 @@ export class Scene implements SceneI
         var classNameFirstLowercase = className.charAt(0).toLowerCase() + className.slice(1);
         if (globalThis[classNameFirstLowercase])
         {
-            /*if (globalThis[classNameFirstLowercase].Init)
-            {
-                globalThis[classNameFirstLowercase].Init(); // USED FOR PhysicsControllerBase, TO RE-SET PIPES, NEED FOR DEMO
-            }*/
-
             return;
         }
 
         // GAMEOBJECT
-        if (_class.prototype instanceof GameObject)
+        if (_class.prototype instanceof GameObject || _class === GameObject)
         {
             bareEngine.RegisterGameObjectPool(_class, 1);
 

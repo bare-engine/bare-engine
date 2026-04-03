@@ -8,7 +8,7 @@ import { PositionPivotComponent } from "../editorComponents/positionPivotCompone
 import { ResizableComponent } from "../editorComponents/resizableComponent";
 import { ResizableRemoveComponent } from "../editorComponents/resizableRemoveComponent";
 import { Color, Texture } from "../libraries/rapid-render";
-import { GameMode, MakePath, Scene } from "../main";
+import { GameMode, MakePath, MakePathForEntity, Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { EditorUIScene } from "../scenes/editorUIScene";
 import { defaultEntityData } from "../types/bareData";
@@ -116,18 +116,6 @@ export class LevelHandler
         return level;
     }
 
-    async LoadSettingsData(settingsDataName: string): Promise<void>
-    {
-        var settingsData = await Helper.loadJSON<SettingsData>(`${bareEngine.dataPath}/${settingsDataName}.json`);
-        
-        // 
-        //this.scene.settingsHandler = new SettingsHandler(this.scene);
-        //this.scene.settingsHandler.Process(settingsData);
-
-        //this.scene.settingsHandler.SetRaw(settingsData);
-        await this.scene.settingsHandler.Process(settingsData);
-    }
-
     async LoadLevelOnly(levelInput: string | LevelData): Promise<LevelData>
     {
         var level: LevelData;
@@ -198,6 +186,18 @@ export class LevelHandler
         return level;
     }
 
+    async LoadSettingsData(settingsDataName: string): Promise<void>
+    {
+        var settingsData = await Helper.loadJSON<SettingsData>(`${bareEngine.dataPath}/${settingsDataName}.json`);
+        
+        // 
+        //this.scene.settingsHandler = new SettingsHandler(this.scene);
+        //this.scene.settingsHandler.Process(settingsData);
+
+        //this.scene.settingsHandler.SetRaw(settingsData);
+        await this.scene.settingsHandler.Process(settingsData);
+    }
+
     CreatePromiseLevelTextures(level: LevelData)
     {
         var promisesAr: Array<Promise<Texture>> = [];
@@ -206,7 +206,7 @@ export class LevelHandler
         var collectTextures = (entity: any) => {
             var entityConstructed = this.scene.ConstructEntity(entity);
             var imagePath = entityConstructed.imagePath;
-            var fullPath = MakePath(imagePath, entity.name);
+            var fullPath = MakePathForEntity(entityConstructed);
 
             if (!texturesFound.has(fullPath) && !assetsHandler.HasTexture(fullPath))
             {

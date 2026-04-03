@@ -4,7 +4,7 @@ import { mouseController } from "../controllers/mouseController";
 import { objectController } from "../controllers/objectController";
 import { PhysicsObjectBare } from "../exports/barePhysics";
 import { Color, Vec2 } from "../libraries/rapid-render";
-import { MakePath } from "../main";
+import { MakePath, MakePathForEntity } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { EditorScene } from "../scenes/editorScene";
 import { OutlineShader } from "../shaders/outlineShader";
@@ -527,7 +527,7 @@ export class EditorControlsHandler {
         // THIS PREVIEW OBJECT IS JUST VISUAL, DON'T WANT ANY COMPONENTS ON IT
         delete entityCopy.components;
 
-        this.currentPreviewEntity.Init(MakePath(entityCopy.imagePath!, entityCopy.name));
+        this.currentPreviewEntity.Init(MakePathForEntity(entityCopy));
         this.currentPreviewEntity.alpha = 0.5;
 
         this.SetCurrentPreviewActive(true);

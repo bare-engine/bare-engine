@@ -1,5 +1,5 @@
 import { Vec2, Color, Texture } from "../libraries/rapid-render";
-import { MakePath, Scene } from "../main";
+import { MakePath, MakePathForEntity, Scene } from "../main";
 import { Entity, HitboxType, Rectangle, Rectangle2Vec, SettingsData } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
 import { GameObject } from "./gameObject";
@@ -84,34 +84,34 @@ export class PhysicsObjectBare extends GameObject
                 {
                     this.physicsHitbox.type = HitboxType.Circle;
                     this.physicsHitbox.radius = Math.max(rect.width, rect.height) / 2;
-                }
-            });
+                }   
 
-            // pivotBasedOnHitbox
-            if (entity.pivot == undefined)
-            {
-                // THIS SHOULD REALLY ONLY HAPPENS WHEN TEXTURE IS LOADED ABOVE, IF IT ISN'T, THIS BREAKS. 
-                // TODO, CACHE IMAGE SIZES?
-                var hbRect = (this.physicsHitbox.rectangle!);
-
-                if (entity.pivotBasedOnHitbox)
+                // pivotBasedOnHitbox
+                if (entity.pivot == undefined)
                 {
-                    // X
-                    if (entity.pivotBasedOnHitbox.x > 0 && entity.pivotBasedOnHitbox.x <= 1)
-                        this.pivot.x = (hbRect.x + hbRect.width * entity.pivotBasedOnHitbox.x); // RELATIVE
-                    else
-                        this.pivot.x = (hbRect.x + entity.pivotBasedOnHitbox.x); // ABSOLUTE (IF YOU'D WANT THIS FOR SOME REASON!)
+                    // THIS SHOULD REALLY ONLY HAPPENS WHEN TEXTURE IS LOADED ABOVE, IF IT ISN'T, THIS BREAKS. 
+                    // TODO, CACHE IMAGE SIZES?
+                    var hbRect = (this.physicsHitbox.rectangle!);
 
-                    // Y
-                    if (entity.pivotBasedOnHitbox.y > 0 && entity.pivotBasedOnHitbox.y <= 1)
-                        this.pivot.y = (hbRect.y + hbRect.height * entity.pivotBasedOnHitbox.y); // RELATIVE
-                    else
-                        this.pivot.y = (hbRect.y + entity.pivotBasedOnHitbox.y); // ABSOLUTE (IF YOU'D WANT THIS FOR SOME REASON!)
-                
-                    //if (this.levelEntity)
-                    //    this.levelEntity.pivot = this.pivot.clone();
-                }
-            }
+                    if (entity.pivotBasedOnHitbox)
+                    {
+                        // X
+                        if (entity.pivotBasedOnHitbox.x > 0 && entity.pivotBasedOnHitbox.x <= 1)
+                            this.pivot.x = (hbRect.x + hbRect.width * entity.pivotBasedOnHitbox.x); // RELATIVE
+                        else
+                            this.pivot.x = (hbRect.x + entity.pivotBasedOnHitbox.x); // ABSOLUTE (IF YOU'D WANT THIS FOR SOME REASON!)
+
+                        // Y
+                        if (entity.pivotBasedOnHitbox.y > 0 && entity.pivotBasedOnHitbox.y <= 1)
+                            this.pivot.y = (hbRect.y + hbRect.height * entity.pivotBasedOnHitbox.y); // RELATIVE
+                        else
+                            this.pivot.y = (hbRect.y + entity.pivotBasedOnHitbox.y); // ABSOLUTE (IF YOU'D WANT THIS FOR SOME REASON!)
+                    
+                        //if (this.levelEntity)
+                        //    this.levelEntity.pivot = this.pivot.clone();
+                    }
+                }   
+            });
 
             // CAN COLLIDE
             if (entity.collide)
@@ -189,7 +189,7 @@ export class PhysicsObjectBare extends GameObject
     {
         var entityConstructed = scene.ConstructEntity(nameOrEntity, scene.settingsHandler.Get(), options);
         PhysicsObjectBare.dummyPhysicsObjectBare.ResetValues();
-        PhysicsObjectBare.dummyPhysicsObjectBare.InitTexture(MakePath(entityConstructed.imagePath!, entityConstructed.name)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
+        PhysicsObjectBare.dummyPhysicsObjectBare.InitTexture(MakePathForEntity(entityConstructed)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
         scene.ApplyEntityToGameObject(entityConstructed, PhysicsObjectBare.dummyPhysicsObjectBare);
 
         return {entity: entityConstructed, gameObject: PhysicsObjectBare.dummyPhysicsObjectBare};

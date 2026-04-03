@@ -1,3 +1,4 @@
+import { MakePathForEntity } from "src/main";
 import { assetsHandler, EditorScene, Helper, LevelData, MakePath, PhysicsObjectBare, SettingsData, SettingsHandler } from "../exports";
 import { levelHandler } from "../handlers/levelHandler";
 import { AwakePayload } from "../types/bareTypes";
@@ -58,7 +59,7 @@ export class HitboxScene extends EditorScene
 
         // CONSTRUCT ENTITY FROM HITBODATA AND APPLY TO DUMMY GAMEOBJECT, SO WE CAN GET THE RESULTING PIVOT
         var obj = new PhysicsObjectBare();
-        obj.InitTexture(MakePath(entityConstructedFromSettingsData.imagePath!, entityConstructedFromSettingsData.name));
+        obj.InitTexture(MakePathForEntity(entityConstructedFromSettingsData));
         this.ApplyEntityToGameObject(entityConstructedFromSettingsData, obj);
         var pivot = obj.pivot;
         var hitbox = (obj as any).physicsHitbox ? (obj as any).physicsHitbox?.rectangle : {x: 0, y: 0, width: 0, height: 0};

@@ -2,7 +2,7 @@ import { assetsHandler } from "../handlers/assetsHandler";
 import { Hitbox } from '../types/hitbox';
 import { Entity, GameObjectClass } from '../types/bareTypes';
 import { Helper } from '../utils/helper';
-import { MakePath, Scene } from '../main';
+import { MakePath, MakePathForEntity, Scene } from '../main';
 import { Vec2, Texture, Color, GLShader, Uniform, MaskType, MatrixStack } from "../libraries/rapid-render";
 import type { Component, Ctor, Rectangle } from "../types/bareTypes";
 
@@ -245,7 +245,7 @@ export class GameObject
         {
             if (!this.texture && this.levelEntity) // HORRID, TODO, ALWAYS LOAD TEXURE BEFORE?
             {
-                var tex = assetsHandler.GetTexture(MakePath(this.levelEntity.imagePath!, this.levelEntity.name));
+                var tex = assetsHandler.GetTexture(MakePathForEntity(this.levelEntity));
                 if (tex)
                 {
                     this.SetTexture(tex);
@@ -253,7 +253,7 @@ export class GameObject
                 }
                 else
                 {
-                    assetsHandler.GetTexturePromise(MakePath(this.levelEntity.imagePath!, this.levelEntity.name)).then(tex => {
+                    assetsHandler.GetTexturePromise(MakePathForEntity(this.levelEntity)).then(tex => {
                         this.SetTexture(tex);
                         callback();
                     });
