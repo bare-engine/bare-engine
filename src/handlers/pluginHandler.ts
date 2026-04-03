@@ -118,8 +118,8 @@ window.__GAME_DEBUG_API__ = {
         return;
     }*/
 
-    name = "ANY";
-    var isBase = true;
+    //name = "ANY";
+    var isBase = false;
     
     await sceneController.Add(EntityScene, {name: name, isBase: isBase, settingsHandler: plugin.GetCurrentScene().settingsHandler});
     //sceneController.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
@@ -185,8 +185,15 @@ window.__GAME_DEBUG_API__ = {
 
   getObject(id: string) {
     var scene = plugin.GetCurrentScene();
-    const o = plugin.GetCurrentScene().objectController.GetObjectById(id);
-    if (!o) return null;
+    const o = scene.objectController.GetObjectById(id);
+
+    if (!o)
+        return null;
+
+    if (scene instanceof EntityScene)
+    {
+        return o.levelEntity;
+    }
 
     //var constructedEntity = scene.ConstructEntity(o.levelEntity);
 
