@@ -924,21 +924,23 @@ export class GameObject
         {
             if (!this.texture)
             {
-                console.error("CANNOT SET PERCENTAGE ON A GAMEOBJECT WITHOUT A TEXTURE. LOAD IT FIRST");
-                return this;
+                x = x * this.width;
+                //console.error("CANNOT SET PERCENTAGE ON A GAMEOBJECT WITHOUT A TEXTURE. LOAD IT FIRST");
+                //return this;
             }
-                
-            x = x * this.texture.width;
+            else
+                x = x * this.texture.width;
         }
         if (y > 0 && y <= 1)
         {
             if (!this.texture)
             {
-                console.error("CANNOT SET PERCENTAGE ON A GAMEOBJECT WITHOUT A TEXTURE. LOAD IT FIRST");
-                return this;
+                y = y * this.height;
+                //console.error("CANNOT SET PERCENTAGE ON A GAMEOBJECT WITHOUT A TEXTURE. LOAD IT FIRST");
+                //return this;
             }
-                
-            y = y * this.texture.height;
+            else
+                y = y * this.texture.height;
         }
 
         this.pivot.x = x;
