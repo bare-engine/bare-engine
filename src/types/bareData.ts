@@ -4,6 +4,13 @@ export const defaultEntityData: SettingsData = {
   entityBases: {
     ANY: {
       extendClass: "GameObject"
+    },
+    ANY_ENTITY: {
+      extendData: "ANY",
+      extendClass: "GameObject"
+    },
+    NONE: {
+      extendClass: "GameObject"
     }
   },
   entities: {},

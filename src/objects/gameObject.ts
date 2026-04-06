@@ -64,8 +64,8 @@ export class GameObject
 
     private renderParentTransform: Float32Array | null = null;
 
-    // NOT USING THIS AT MANY PLACES ANYMORE, REMOVE - TODO
-    levelEntity: Entity | null = null; 
+    // NOT USING THIS AT MANY PLACES ANYMORE, REMOVE? - TODO
+    entity: Entity | null = null; 
     
     visibleInEditor:boolean = true;
 
@@ -243,9 +243,9 @@ export class GameObject
         }
         else
         {
-            if (!this.texture && this.levelEntity) // HORRID, TODO, ALWAYS LOAD TEXURE BEFORE?
+            if (!this.texture && this.entity) // HORRID, TODO, ALWAYS LOAD TEXURE BEFORE?
             {
-                var tex = assetsHandler.GetTexture(MakePathForEntity(this.levelEntity));
+                var tex = assetsHandler.GetTexture(MakePathForEntity(this.entity));
                 if (tex)
                 {
                     this.SetTexture(tex);
@@ -253,7 +253,7 @@ export class GameObject
                 }
                 else
                 {
-                    assetsHandler.GetTexturePromise(MakePathForEntity(this.levelEntity)).then(tex => {
+                    assetsHandler.GetTexturePromise(MakePathForEntity(this.entity)).then(tex => {
                         this.SetTexture(tex);
                         callback();
                     });
@@ -1259,7 +1259,7 @@ export class GameObject
         this.tapHitbox = null;
         this.revertPivotOnSave = false;
 
-        this.levelEntity = null;
+        this.entity = null;
         
         this.startPosition.set(0);
         this.pivotBasedOnHitbox.set(0);

@@ -142,7 +142,7 @@ export class HitboxScene extends EditorScene
         var objs = this.objectController.GetLayer(0).slice();
         objs.splice(objs.findIndex(o => o.name === "currentPreviewEntity"), 1);
 
-        var mainEntity = objs[0].levelEntity;
+        var mainEntity = objs[0].entity;
         var collisionRect = objs[1];
         var pivotObj = objs[2];
         

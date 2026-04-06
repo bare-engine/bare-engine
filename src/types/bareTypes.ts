@@ -285,7 +285,7 @@ const eventDefs = {
   game_completeClear: undefined,
   game_resize: ev<{ prevWidth: number; prevHeight: number; newWidth: number; newHeight: number }>(),
 
-  scene_awake: undefined,
+  scene_awake: ev<{ scene: Scene; }>(),
   scene_added: ev<{ scene: Scene; }>(),
   scene_removed: ev<{ scene: Scene; }>(),
   scene_changed: ev<{ scene: Scene; type: 'added' | 'removed' }>(),

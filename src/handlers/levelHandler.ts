@@ -7,7 +7,7 @@ import { PivotRemoveComponent } from "../editorComponents/pivotRemoveComponent";
 import { PositionPivotComponent } from "../editorComponents/positionPivotComponent";
 import { ResizableComponent } from "../editorComponents/resizableComponent";
 import { ResizableRemoveComponent } from "../editorComponents/resizableRemoveComponent";
-import { Color, Texture } from "../libraries/rapid-render";
+import { Color, Texture, Vec2 } from "../libraries/rapid-render";
 import { GameMode, MakePath, MakePathForEntity, Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { EditorUIScene } from "../scenes/editorUIScene";
@@ -173,8 +173,8 @@ export class LevelHandler
 
                 // WHEN IN EDITOR, WE WANT TO USE levelEntity
                 // BUT IT'S KIND OF MESSED UP AND CONSTRUCTED BY ABOVE NOW
-                // SO HERE WE ALIGN IT AGAIN TO THE OBJECT AND ALL ITS CHILDREN
-                this.ApplyLevelEntityToGameObjectAndChildren(gameObject, levelEntity);
+                // SO HERE WE ALIGN IT AGAIN TO ITS CHILDREN
+                this.AssignLevelEntityToChildren(gameObject, levelEntity);
                 
                 //gameObject.levelEntity = levelEntity;
                 gameObject.save = true;
@@ -369,6 +369,9 @@ export class LevelHandler
             if (customSerialize[varName] && currentValue)
                 value = customSerialize[varName](currentValue);
 
+            if (value instanceof Vec2)
+                value = { x: value.x, y: value.y };
+
             entity[varName] = value;
         }
 
@@ -385,7 +388,7 @@ export class LevelHandler
             name: obj.name,
         };
 
-        var extendsData = true;
+        /*var extendsData = true;
         if (!obj.levelEntity.extendData)
         {
             var isBase = (this.scene.settingsData.entityBases[obj.name] != undefined);
@@ -395,7 +398,7 @@ export class LevelHandler
 
         if (!extendsData)
         {
-            var anyEntity = this.scene.ConstructEntity({/*extendData: "NONE"*/});
+            var anyEntity = this.scene.ConstructEntity({});
             anyEntity.name = "placeHolder";
             anyEntity.imagePath = "";
             var origEntity = this.scene.GetDummpyDataFromEntity2(anyEntity);
@@ -403,8 +406,10 @@ export class LevelHandler
         else
         {
             var origEntity = this.scene.GetDummpyDataFromEntity2(obj.name, this.scene.settingsData, options); // COULD ALSO GET THIS FROM PROCCESSED ENTITYDATA? IF I CONTRUCT ALL ENTITITES - TODO
-        }
+        }*/
 
+        var origEntity = this.scene.GetDummpyDataFromEntity2(obj.name, this.scene.settingsData, options); // COULD ALSO GET THIS FROM PROCCESSED ENTITYDATA? IF I CONTRUCT ALL ENTITITES - TODO
+        
         var fullEntity = this.SerializeObjectFully(obj);
         var diffEntity = this.GetEntitiesDiff(origEntity, fullEntity);
 
@@ -788,13 +793,12 @@ export class LevelHandler
         return componentData;
     }
 
-    ApplyLevelEntityToGameObjectAndChildren(gameObject: GameObject, levelEntity: Entity)
+    AssignLevelEntityToChildren(gameObject: GameObject, levelEntity: Entity)
     {
-        gameObject.levelEntity = levelEntity;
-
         for (var i = 0; i < gameObject.children.length; i++)
         {
-            this.ApplyLevelEntityToGameObjectAndChildren(gameObject.children[i], levelEntity.children[i]);
+            gameObject.children[i].entity = levelEntity.children[i];
+            this.AssignLevelEntityToChildren(gameObject.children[i], levelEntity.children[i]);
         }
     }
 

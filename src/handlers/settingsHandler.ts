@@ -1,7 +1,7 @@
 import { Texture } from "../libraries/rapid-render/texture";
 import { assetsHandler } from "./assetsHandler";
 import { defaultEntityData } from "../types/bareData";
-import { SettingsData } from "../types/bareTypes";
+import { Entity, SettingsData } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
 import { Scene } from "../scenes/scene";
 
@@ -25,33 +25,6 @@ export class SettingsHandler
     async Process(raw: SettingsData = this.raw): Promise<SettingsData>
     {
         var settings = this.clone(raw);
-
-        // PROCES CATEGORY ENTRIES, IF PATH IS PREFIXED, REMOVE AND ADD UNDER ENTITIES DATA
-        if (settings.categories)
-        {
-            for (const [key, category] of Object.entries(settings.categories))
-            {
-                if (category.entries instanceof Array)
-                {
-                    for (var i = 0; i < category.entries.length; i++)
-                    {
-                        var entry = category.entries[i];
-                    
-                        if (entry.includes("/"))
-                        {
-                            var entryName = entry.split("/").pop()!;
-                            var entryPath = entry.split("/").slice(0, -1).join("/");
-
-                            // REDEFINE CATEGORY ENTRY TO JUST IT'S NAME
-                            (category.entries as string[])[i] = entryName;
-
-                            // STORE ENTRY NAME IN ENTITIES DATA, TOGETHER WITH PATH WE JUST FOUND
-                            settings.entities[entryName] = { ...settings.entities[entryName], imagePath: entryPath };
-                        }
-                    }
-                }
-            }
-        }
 
         // SET DEFAULTS - WILL FILL IN ANY VALUE IN defaultEntityData THAT'S NOT PRESENT
         for (const key of Object.keys(defaultEntityData) as (keyof SettingsData)[])
@@ -107,97 +80,9 @@ export class SettingsHandler
         }
 
         // ASSIGN ENTITY NAMES BASED ON KEY
-        /*if (settings.entityBases)
-        {
-            Object.entries(settings.entityBases).forEach(([key, e]) => {
-                e.name = key;
-            });
-        }*/
         Object.entries(settings.entities).forEach(([key, e]) => {
             e.name = key;
         });
-
-        if (!settings.entityBases)
-        {
-            settings.entityBases = {ANY: {name: "ANY"}};
-        }
-
-        // SET DEFAULT EXTEND CLASS FOR 'ANY' CASE - COULD STILL BE extendData DOESN'T EXTEND A CLASS SO SHOULD REALLY RECURSE, TODO?
-        if (!settings.entityBases.ANY.extendClass)
-        {
-            settings.entityBases.ANY.extendClass = "GameObject";
-        }
-
-        // PROCESS EACH CATEGORY
-        if (settings.categories)
-        {
-            for (const [categoryName, categoryData] of Object.entries(settings.categories))
-            {
-                if (!categoryData || !categoryData.entries || categoryData.entries.length === 0) continue;
-
-                // PARSE STRING ENTRIES, EG: "roadTexture_%" 
-                if (typeof categoryData.entries === 'string') 
-                {
-                    if (categoryData.entries.indexOf('%') != -1)
-                    {
-                        var split = categoryData.entries.split('%');
-                        var name = split[0];
-                        var count = parseInt(split[1], 10);
-
-                        var entity = this.scene.ConstructEntity(name + "%", settings);
-
-                        // TURN ENTRIES INTO ARRAY
-                        categoryData.entries = [];
-                        for (var j = 0; j < count; j++)
-                        {
-                            var entryName = name + (j + 1);
-                            categoryData.entries.push(entryName);
-
-                            // ALSO PUSH EACH AS ENTITY SO WE CAN FIND THEM LATER
-                            var entityClone = {...entity};
-                            entityClone.name = entryName;
-                            settings.entities[entityClone.name] = entityClone;
-                        }
-
-                        // REMOVE % ENTRY
-                        //delete categoryGroup[categoryName];
-                    }
-
-                    if (typeof categoryData.entries === 'string')
-                    {
-                        const regex = /(.+)_\[(.+)\]/; // eg "level_[editorImages]"
-                        const match = categoryData.entries.match(regex);
-                        if (match)
-                        {
-                            const prefix = match[1]; // eg "level"
-                            const imagePath = match[2]; // eg "editorImages"
-
-                            var entityName = prefix + "_*";
-                            var entity = this.scene.ConstructEntity(entityName, settings);
-                            var files = await Helper.GetFilesInFolder(`${bareEngine.imagePath}/` + imagePath);
-
-                            // TURN ENTRIES INTO ARRAY
-                            categoryData.entries = [];
-                            for (var j = 0; j < files.length; j++)
-                            {
-                                var fileName = files[j].split('.')[0];
-                                categoryData.entries.push(fileName);
-
-                                // ALSO PUSH EACH AS ENTITY SO WE CAN FIND THEM LATER
-                                var entityClone = {...entity};
-                                entityClone.name = fileName;
-                                if (!settings.entities[entityClone.name]) // DON'T OVERWRITE EXISTING ENTRIES
-                                    settings.entities[entityClone.name] = entityClone;
-                            }
-
-                            // REMOVE * ENTRY
-                            //delete categoryGroup[categoryName];
-                        }
-                    }
-                }
-            }
-        }
-
 
         // PROCESS ANIMATIONS - ADD THEM AND LOAD THEIR TEXTURES IF THEY'RE NOT IN ALREADY
         if (settings.animations)
@@ -269,6 +154,141 @@ export class SettingsHandler
             }
         }
 
+        // ENTITIES - CONSTRUCT THEM ALL, FOR FASTER LOOKUP LATER
+        // CAN BECOME HEAVY, WILL NOT ALWAYS BE NECESSARY - CAN ADD FLAG
+        if (settings.entities)
+        {
+            for (var entityBaseName in settings.entityBases)
+            {
+                if (entityBaseName == "NONE")
+                    continue;
+
+                var entityBase = settings.entityBases[entityBaseName];
+
+                if (entityBaseName == "ANY")
+                {
+                    this.FillPresets(entityBase, settings);
+                    continue;
+                }
+
+                // SET DEFAULT extendData - IN PREPARATION FOR CONSTRUCT
+                if (!entityBase.extendData)
+                {
+                    entityBase.extendData = "ANY";
+                }
+
+                // CONSTRUCT BASE ENTITY - SINCE IT EXTENDS SOMETHING
+                this.ConstructEntity(entityBase, settings);
+                
+                // SET DEFAULT extendClass - HAS NOT BEEN SET BY CONSTRUCT
+                if (!entityBase.extendClass)
+                {
+                    entityBase.extendClass = "GameObject";
+                }
+            }
+
+            // CONSTRUCT ALL ENTITIES
+            for (var entityName in settings.entities)
+            {
+                var entity = settings.entities[entityName];
+                this.ConstructEntity(entity, settings);
+            }
+        }
+
+        if (settings.categories)
+        {
+            // PROCES CATEGORY ENTRIES, IF PATH IS PREFIXED, REMOVE AND ADD UNDER ENTITIES DATA
+            for (const [key, category] of Object.entries(settings.categories))
+            {
+                if (category.entries instanceof Array)
+                {
+                    for (var i = 0; i < category.entries.length; i++)
+                    {
+                        var entry = category.entries[i];
+                    
+                        if (entry.includes("/"))
+                        {
+                            var entryName = entry.split("/").pop()!;
+                            var entryPath = entry.split("/").slice(0, -1).join("/");
+
+                            // REDEFINE CATEGORY ENTRY TO JUST IT'S NAME
+                            (category.entries as string[])[i] = entryName;
+
+                            // STORE ENTRY NAME IN ENTITIES DATA, TOGETHER WITH PATH WE JUST FOUND
+                            settings.entities[entryName] = { ...settings.entities[entryName], imagePath: entryPath };
+                        }
+                    }
+                }
+            }
+
+            // PROCESS EACH CATEGORY - HAS TO HAPPEN AFTER ENTITIES ARE CONSTRUCTED, BECAUSE this.scene.ConstructEntity()
+            for (const [categoryName, categoryData] of Object.entries(settings.categories))
+            {
+                if (!categoryData || !categoryData.entries || categoryData.entries.length === 0) continue;
+
+                // PARSE STRING ENTRIES, EG: "roadTexture_%" 
+                if (typeof categoryData.entries === 'string') 
+                {
+                    if (categoryData.entries.indexOf('%') != -1)
+                    {
+                        var split = categoryData.entries.split('%');
+                        var name = split[0];
+                        var count = parseInt(split[1], 10);
+
+                        var entity = this.scene.ConstructEntity(name + "%", settings);
+
+                        // TURN ENTRIES INTO ARRAY
+                        categoryData.entries = [];
+                        for (var j = 0; j < count; j++)
+                        {
+                            var entryName = name + (j + 1);
+                            categoryData.entries.push(entryName);
+
+                            // ALSO PUSH EACH AS ENTITY SO WE CAN FIND THEM LATER
+                            var entityClone = {...entity};
+                            entityClone.name = entryName;
+                            settings.entities[entityClone.name] = entityClone;
+                        }
+
+                        // REMOVE % ENTRY
+                        //delete categoryGroup[categoryName];
+                    }
+
+                    if (typeof categoryData.entries === 'string')
+                    {
+                        const regex = /(.+)_\[(.+)\]/; // eg "level_[editorImages]"
+                        const match = categoryData.entries.match(regex);
+                        if (match)
+                        {
+                            const prefix = match[1]; // eg "level"
+                            const imagePath = match[2]; // eg "editorImages"
+
+                            var entityBaseName = prefix + "_*";
+                            var entity = this.scene.ConstructEntity(entityBaseName, settings);
+                            var files = await Helper.GetFilesInFolder(`${bareEngine.imagePath}/` + imagePath);
+
+                            // TURN ENTRIES INTO ARRAY
+                            categoryData.entries = [];
+                            for (var j = 0; j < files.length; j++)
+                            {
+                                var fileName = files[j].split('.')[0];
+                                categoryData.entries.push(fileName);
+
+                                // ALSO PUSH EACH AS ENTITY SO WE CAN FIND THEM LATER
+                                var entityClone = {...entity};
+                                entityClone.name = fileName;
+                                if (!settings.entities[entityClone.name]) // DON'T OVERWRITE EXISTING ENTRIES
+                                    settings.entities[entityClone.name] = entityClone;
+                            }
+
+                            // REMOVE * ENTRY
+                            //delete categoryGroup[categoryName];
+                        }
+                    }
+                }
+            }
+        }
+
         settings.processed = true;
 
         // STORE REFERENCES
@@ -297,6 +317,138 @@ export class SettingsHandler
                 
                 // WILL ALSO OVERRIDE PREVIOUSLY SET ANIMATION IN JSON FROM _INITIAL FOLDER
                 assetsHandler.AddAnimation(animName, animationFrames, framesPerSecond, loop);
+            }
+        }
+    }
+    
+    // THIS MUTATES THE entity ITSELF
+    // GOING DOWN IT'S constructData RECURSIVELY AND ASSIGNING VALUES
+    ConstructEntity(entity:Entity, rawSettingsData:SettingsData): Entity
+    {
+        var final = (entity:Entity) => {
+            // CONSTRUCT ALL CHILDREN
+            if (entity.children)
+            {
+                for (var i = 0; i < entity.children.length; i++)
+                {
+                    var child = entity.children[i];
+                    this.ConstructEntity(child, rawSettingsData);
+                }
+            }
+
+            // ANYTHING WITH A HITBOX IS A PHYSICS OBJECT
+            if (entity.hitbox && entity.extendClass == "GameObject") 
+                entity.extendClass = "PhysicsObjectBare";
+
+            // BIT OF A HACK TO MAKE SURE SOPIRO RIGIDBODIES HAVE A CENTER PIVOT
+            // PUT HERE TO LET THE EDITOR PREVIEW ALSO INHERIT IT
+            var sopiroPhysicsClasses = ["Circle", "Box", "Polygon"];
+            if (sopiroPhysicsClasses.includes(entity.extendClass))
+                entity.pivot = { x: .5, y: .5 };
+
+            // REMOVE COMPONENTS SPECIFICALLY LISTED IN ENTITY
+            if (entity.components && entity.componentsRemoved)
+            {
+                for (const componentName of entity.componentsRemoved)
+                {
+                    delete entity.components[componentName];
+                }
+            }
+
+            // FILL PRESETS - LIKE hitbox: "FULL"                
+            //                     hitbox: {x1: 0, y1: 0, x2: 1, y2: 1}
+            this.FillPresets(entity, rawSettingsData);
+
+            return entity
+        }
+
+        function mergeComponents(comp1: any, comp2: any):Record<string, Record<string, any>>
+        {
+            const merged = { ...comp1 };
+            
+            if (comp2) {
+                for (const [key, value] of Object.entries(comp2)) {
+                    if (merged[key] && typeof value === 'object' && !Array.isArray(value)) {
+                        merged[key] = { ...merged[key], ...value };
+                    } else {
+                        merged[key] = value;
+                    }
+                }
+            }
+            
+            return merged;
+        }
+
+        // IF EXTEND DATA NOT SET, DEFAULT TO ANY BASE
+        if (!entity.extendData)
+        {
+            entity.extendData = "ANY_ENTITY";
+        }
+
+        // FILL INFO ABOUT WHAT ENTITY PROPERTIES ARE EXTENDED BY WHY WHICH DATA - TODO
+        //this.entityExtendInfo[entity.name] = {};
+
+        var extendedData = entity.extendData;
+
+        while (extendedData)
+        {
+            var entityBase = rawSettingsData.entityBases[extendedData];
+
+            // INSERT MEMBERS FROM ENTITY BASE WE DIDN'T DEFINE ALREADY IN ENTITY
+            for (const key of Object.keys(entityBase))
+            {
+                if (!(key in entity))
+                    entity[key] = entityBase[key];
+            }
+
+            entity.extendData = entityBase.extendData;
+            entity.components = mergeComponents(entityBase.components, entity.components);
+
+            extendedData = entityBase.extendData;
+            
+            /*entity = { 
+                ...entityBase,
+                ...entity, // TAKES PRECEDENCE OVER BASE
+                extendData: entityBase.extendData, 
+                components: mergeComponents(entityBaseMaybe.components, entity.components)
+            };*/
+        }
+        
+        // REMOVE PROPERTIES SPECIFICALLY LISTED TO REMOVE IN ENTITY
+        if (entity.propertiesRemoved)
+        {
+            for (const propertyName of entity.propertiesRemoved)
+            {
+                delete entity[propertyName];
+            }
+        }
+
+        return final(entity);
+    }
+
+    FillPresets(entity: Entity, rawSettingsData: SettingsData)
+    {
+        var presets = rawSettingsData.presets;
+
+        if (!presets)
+            return;
+
+        for (const key in entity)
+        {
+            var propName = key as keyof Entity;
+            var value = entity[propName];
+
+            // IF ENTITY VALUE IS DEFINED AS PRESET AND PRESET HOLD ENTITY PROPERTY NAME
+            if (typeof value === "string")
+            {
+                const preset = presets[value];
+                const presetValue = preset?.[propName];
+
+                if (presetValue !== undefined)
+                {
+                    // OVERWRITE ENTITY VALUE WITH VALUE FROM PRESET
+                    (entity as Record<string, any>)[propName] = presetValue;
+                }
             }
         }
     }

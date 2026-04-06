@@ -6,11 +6,11 @@ import { PhysicsControllerBare, PhysicsObjectBare } from "../exports/barePhysics
 import { PhysicsControllerSopiro } from "../exports/sopiroPhysics";
 import { SettingsHandler } from "../handlers/settingsHandler";
 import mitt from "../libraries/mitt";
-import { FrameBufferObject, ICircleRenderOptions, IGraphicRenderOptions, IRectRenderOptions, IRenderLineOptions, ISpriteRenderOptions, MaskType, RenderTexture, Texture, TextureCache, Vec2 } from "../libraries/rapid-render";
+import { Color, FrameBufferObject, ICircleRenderOptions, IGraphicRenderOptions, IRectRenderOptions, IRenderLineOptions, ISpriteRenderOptions, MaskType, RenderTexture, Texture, TextureCache, Vec2 } from "../libraries/rapid-render";
 import { MakePath, MakePathForEntity, globalEvents } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { defaultEntityData } from "../types/bareData";
-import { AwakePayload, BareEvent, Entity, Events, GameObjectClass, LayerInfo, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
+import { AwakePayload, BareEvent, Entity, entityVars, Events, GameObjectClass, LayerInfo, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
 
 /*Bare.camera.SetPosition(bare.width * .5, bare.height * .5);
 Bare.sound.Play()
@@ -116,12 +116,6 @@ export class Scene implements SceneI
         this.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT
 
         BareEngine.SetControllerReferencesOnScene(this);
-
-        // REALLY DONT WANT THIS! BUT NEEDED FOR NOW BECAUSE OF DUMMPY CONSTRUCTION - TODO
-    }
-
-    private RegisterComponents()
-    {
     }
 
     async Awake(payload?: any): Promise<void>
@@ -135,8 +129,6 @@ export class Scene implements SceneI
         this.ApplyLayerInfoToSettings(this.settingsData);
         //this.layerNames = this.settingsData.layers.slice();
 
-        globalEvents.emit(BareEvent.scene_awake);
-
         var classes = BareEngine.controllerNames;
         for (let i = 0; i < classes.length; i++)
         {
@@ -146,6 +138,8 @@ export class Scene implements SceneI
         await this.OnAwake(payload);
 
         this.settingsHandler.ReprocessAnimations(); // NEEDED SINCE AN ATLAS WITH ANIMATIONS CAN BE LOADED IN AT AWAKE() ABOVE
+
+        globalEvents.emit(BareEvent.scene_awake, { scene: this });
 
         await this.Start(payload);
 
@@ -255,43 +249,6 @@ export class Scene implements SceneI
             return JSON.parse(JSON.stringify(data));
         }
 
-        var final = (entity:Entity) => {
-            // CONSTRUCT ALL CHILDREN
-            if (entity.children)
-            {
-                for (var i = 0; i < entity.children.length; i++)
-                {
-                    var child = entity.children[i];
-                    entity.children[i] = this.ConstructEntity(child, settingsData, options);
-                }
-            }
-
-            // ANYTHING WITH A HITBOX IS A PHYSICS OBJECT
-            if (entity.hitbox && entity.extendClass == "GameObject") 
-                entity.extendClass = "PhysicsObjectBare";
-
-            // BIT OF A HACK TO MAKE SURE SOPIRO RIGIDBODIES HAVE A CENTER PIVOT
-            // PUT HERE TO LET THE EDITOR PREVIEW ALSO INHERIT IT
-            var sopiroPhysicsClasses = ["Circle", "Box", "Polygon"];
-            if (sopiroPhysicsClasses.includes(entity.extendClass))
-                entity.pivot = { x: .5, y: .5 };
-
-            // REMOVE COMPONENTS SPECIFICALLY LISTED IN ENTITY
-            if (entity.components && entity.componentsRemoved)
-            {
-                for (const componentName of entity.componentsRemoved)
-                {
-                    delete entity.components[componentName];
-                }
-            }
-
-            this.FillPresets(entity, settingsData);
-
-            return entity
-        }
-
-        options.propsToIgnoreInEntity ||= [];
-
         function mergeComponents(comp1: any, comp2: any):Record<string, Record<string, any>>
         {
             const merged = { ...comp1 };
@@ -309,147 +266,129 @@ export class Scene implements SceneI
             return merged;
         }
 
-        var foundEntityInEntities = false;
-
         var entity:Entity;
         
-        if (typeof nameOrEntity === "object")
+        // PROCESS THE ARGUMENT TO GET THE ENTITY TO WORK ON
         {
-            // ARG IS ENTITY
-            entity = cloneEntityData(nameOrEntity);
-
-            if (entity.extendClass)
-                return final(entity); // ENTITY HAS ALREADY BEEN CONSTRUCTED
-        }
-        else
-        {
-            // ARG IS NAME
-            var possibleEntity = settingsData.entities[nameOrEntity] as Entity;
-            if (possibleEntity)
+            if (typeof nameOrEntity === "object")
             {
-                // ENTITY NAME IS DEFINED IN ENTITIES
-                entity = cloneEntityData(possibleEntity);
-                foundEntityInEntities = true;
+                // CONSTRUCT - GENERALIZE THIS? SHOULD BE SAME FOR BASE
+                {
+                    // ARG IS ENTITY
+                    var entityArg = nameOrEntity;
+
+                    // CONSTRUCT ALL CHILDREN
+                    if (entityArg.children)
+                    {
+                        for (var i = 0; i < entityArg.children.length; i++)
+                        {
+                            var child = entityArg.children[i];
+                            entityArg.children[i] = this.ConstructEntity(child, settingsData, options);
+                        }
+                    }
+
+                    // ANYTHING WITH A HITBOX IS A PHYSICS OBJECT
+                    if (entityArg.hitbox && entityArg.extendClass == "GameObject") 
+                        entityArg.extendClass = "PhysicsObjectBare";
+                    
+                    // BIT OF A HACK TO MAKE SURE SOPIRO RIGIDBODIES HAVE A CENTER PIVOT
+                    // PUT HERE TO LET THE EDITOR PREVIEW ALSO INHERIT IT
+                    var sopiroPhysicsClasses = ["Circle", "Box", "Polygon"];
+                    if (sopiroPhysicsClasses.includes(entityArg.extendClass))
+                        entityArg.pivot = { x: .5, y: .5 };
+
+                    // FILL PRESETS - LIKE hitbox: "FULL"                     
+                    //                     hitbox: {x1: 0, y1: 0, x2: 1, y2: 1}
+                    this.FillPresets(entityArg, settingsData);
+                }
+
+                // entityArg HAS BEEN CONSTRUCTED, NOW MERGE IT WITH (ALREADY CONSTRUCTED) ENTITY FROM DATA
+                var possibleEntity = settingsData.entities[entityArg.name] as Entity;
+                if (possibleEntity)
+                {
+                    // ENTITY WAS FOUND IN ENTITIES ARRAY IN DATA, DELETE SPECIFIED IGNORED PROPS FROM IT
+                    // USING IT ATM TO FIND THE PROPS SET ON THE BASE
+                    for (var prop of options.propsToIgnoreInEntity)
+                    {
+                        delete entityArg[prop as keyof Entity];
+                    }
+                    
+                    // MERGE WITH ENTITY IN DATA
+                    entity = {
+                        ...possibleEntity, // OVERRIDE
+                        ...entityArg, // START
+                        components: mergeComponents(possibleEntity.components, entityArg.components),
+                    };
+                    entity = cloneEntityData(entity);
+
+                    // REMOVE COMPONENTS SPECIFICALLY LISTED IN ENTITY
+                    if (entity.components && entity.componentsRemoved)
+                    {
+                        for (const componentName of entity.componentsRemoved)
+                        {
+                            delete entity.components[componentName];
+                        }
+                    }
+                }
+                else
+                {
+                    // NO ENTITY IN DATA - MERGE WITH extendData BASE
+                    if (!entityArg.extendData)
+                        entityArg.extendData = "ANY_ENTITY";
+
+                    var entityBase = settingsData.entityBases[entityArg.extendData];
+
+                    entity = {
+                        ...entityBase, // OVERRIDE
+                        ...entityArg, // START
+                        components: mergeComponents(entityBase.components, entityArg.components),
+                    };
+                    entity = cloneEntityData(entity);
+
+                    // REMOVE COMPONENTS SPECIFICALLY LISTED IN ENTITY
+                    if (entity.components && entity.componentsRemoved)
+                    {
+                        for (const componentName of entity.componentsRemoved)
+                        {
+                            delete entity.components[componentName];
+                        }
+                    }
+                }
             }
             else
             {
-                // ENTITY NAME NOT FOUND, SO TAKE THE 'ANY' ENTRY, CLONE IT, AND ASSIGN A NEW NAME
-                if (settingsData.entityBases && settingsData.entityBases["ANY"])
+                // ARG IS NAME
+                var possibleEntity = settingsData.entities[nameOrEntity] as Entity;
+                if (possibleEntity)
                 {
-                    var entityBase = cloneEntityData(settingsData.entityBases!["ANY"] as Entity);
+                    // ENTITY NAME IS DEFINED IN ENTITIES
+                    entity = cloneEntityData(possibleEntity);
+                }
+                else
+                {
+                    // ENTITY NAME NOT FOUND, SO TAKE THE 'ANY' ENTRY AND ASSIGN A NEW NAME
+                    var entityBase = cloneEntityData(settingsData.entityBases!["ANY_ENTITY"] as Entity);
                     entity = entityBase;
-                    entity.name = (nameOrEntity as string);
-                }
-                else
-                {
-                    // NO 'ANY' BASE, JUST USE THE NAME
-                    entity = { name: (nameOrEntity as string) };
+                    entity.name = nameOrEntity;
                 }
             }
         }
-        
-        if (!entity.extendData)
-        {
-            // ENTITY DATA THERE, USE THAT AS BASE
-            var entityBaseMaybe = settingsData.entities[entity!.name!];
-            if (entityBaseMaybe)
-            {
-                // ENTITY NAME IS DEFINED IN ENTITIES, MERGE THAT DATA WITH CURRENT (LEVEL DATA)
-                entity = {
-                    ...entityBaseMaybe,
-                    ...entity,
-                    components: mergeComponents(entityBaseMaybe.components, entity.components)
-                };
 
-                foundEntityInEntities = true;
-            }
-        }
+        if (!entity.extendClass)
+            entity.extendClass = "GameObject";
 
-        // ENTITY WAS FOUND IN ENTITIES ARRAY IN DATA, DELETE SPECIFIED IGNORED PROPS FROM IT
-        // USING IT ATM TO FIND THE PROPS SET ON THE BASE
-        if (foundEntityInEntities)
-        {
-            for (var prop of options.propsToIgnoreInEntity)
-            {
-                delete entity[prop as keyof Entity];
-            }
-        }
+        // NO USE FOR THIS ANYMORE, BUT GONNA REPURPOSE IT TO SHOW extendData PATH
+        //delete entityConstructed.extendData;
 
-        // IF EXTEND DATA NOT SET, DEFAULT TO ANY BASE
-        if (!entity.extendData)
-        {
-            if (settingsData.entityBases && settingsData.entityBases["ANY"])
-            {
-                entity.extendData = "ANY";
-            }
-            else
-            {
-                // NOT ANY BASE DATA TO TAKE FROM, JUST EXTEND GAMEOBJECT CLASS
-                entity.extendClass = "GameObject";
-                return final(entity); // EXIT OUT
-            }
-        }
-
-        // HANDLE NONE CASE, WILL NOT LOOK FOR (ANY) EXTENDED DATA, JUST RETURN WITH GAMEOBJECT extendClass 
-        if (entity.extendData == "NONE")
-        {
-            if (!entity.extendClass)
-                entity.extendClass = "GameObject";
-
-            return final(entity);
-        }
-
-        while (entity.extendData)
-        {
-            // ENTITY BASE DATA THERE, USE THAT AS BASE
-            var entityBaseMaybe = settingsData.entityBases![entity!.extendData];
-            if (!entityBaseMaybe)
-            {
-                entityBaseMaybe = this.ConstructEntity(entity.extendData);
-            }
-
-            var entityBase = entityBaseMaybe as Entity;
-        
-            // IF EXTEND DATA NOT SET, DEFAULT TO ANY
-            if (!entityBase.extendData && !entityBase.extendClass)
-            {
-                if (settingsData.entityBases && settingsData.entityBases["ANY"])
-                {
-                    entityBase.extendData = "ANY";
-                }
-                else
-                {
-                    // NOT ANY BASE DATA TO TAKE FROM, JUST EXTEND GAMEOBJECT CLASS
-                    entity.extendClass = "GameObject";
-                    return final(entity); // EXIT OUT
-                }
-            }
-
-            // INSERT MEMBERS FROM ENTITY BASE WE DIDN'T DEFINE ALREADY IN ENTITY
-            entity = { 
-                ...entityBase,
-                ...entity, // TAKES PRECEDENCE OVER BASE
-                extendData: entityBase.extendData, 
-                components: mergeComponents(entityBaseMaybe.components, entity.components)
-            };
-        }
-        
-        // REMOVE PROPERTIES SPECIFICALLY LISTED TO REMOVE IN ENTITY
-        if (entity.propertiesRemoved)
-        {
-            for (const propertyName of entity.propertiesRemoved)
-            {
-                delete (entity as Record<string, any>)[propertyName];
-            }
-        }
-
-        return final(entity);
+        return entity;
     }
 
     ApplyEntityToGameObject(entity: Entity, obj: GameObject, addComponents: boolean = true)
     {
         this.ApplyEntityVarsToGameObject(entity, obj);
         obj.OnApplyEntityToGameObject(entity, addComponents);
+
+        obj.entity = entity;
 
         //if (addComponents)
         //    this.componentController?.ProcessCompentsFromEntity(entity, obj);
@@ -582,6 +521,83 @@ export class Scene implements SceneI
         this.ApplyEntityToGameObject(entityConstructed, bareEngine.dummyGameObject);
 
         return {entity: entityConstructed, gameObject: bareEngine.dummyGameObject};
+    }
+
+    GetEntityWithDefaultValues(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): Entity
+    {
+        var entityConstructed = this.ConstructEntity(nameOrEntity, settingsData, options);
+
+        {
+            var gameObject: GameObject;
+
+            if (entityConstructed.extendClass == "GameObject")
+            {
+                gameObject = bareEngine.dummyGameObject;
+            }
+            else
+            {
+                const pool = bareEngine.gameObjectPools.get(entityConstructed.extendClass);
+                if (pool)
+                    gameObject = pool.Grab();
+                else
+                    console.error("noo");
+            }
+
+            gameObject.scene = this;
+            gameObject.ResetValues();
+        }
+
+        // 
+        var customSerialize:Record<string, (currentValue) => any> = {};
+    
+        customSerialize["texture"] = (currentValue:Texture) => { return currentValue.texturePath; };
+
+        customSerialize["color"] = (currentValue:Color) => { return currentValue.toHex(); };
+
+        customSerialize["children"] = (currentValue:Entity[]):Entity[] => { 
+            var children:Entity[] = [];
+            for (var child of currentValue)
+            {
+                children.push(this.GetEntityWithDefaultValues(child));
+            }
+            return children;
+        };
+
+        /*customSerialize["components"] = (currentValue:Record<string, any>[]):Record<string, any> => {
+            var comps = {}
+            for (var comp of currentValue)
+            {
+                var compData = this.SerializeComponent(comp);
+                var name = Helper.DecapitalizeFirstLetter(comp.constructor.name.replace('Component', ''));
+                comps[name] = compData;
+            }
+            return comps;
+        };*/
+
+        // TAKE OUT VARS WE ALREADY HAVE
+        var entityVarsCopy = entityVars.slice();
+        for (var propName in entityConstructed)
+        {
+            entityVarsCopy.splice(entityVarsCopy.indexOf(propName), 1);
+        }
+
+        for (var varName of entityVarsCopy)
+        {
+            const key = (varName as keyof GameObject);
+            const currentValue = gameObject[key];
+            
+            var value = currentValue;
+
+            if (value instanceof Vec2)
+                value = { x: value.x, y: value.y };
+            else
+            if (customSerialize[varName] && currentValue)
+                value = customSerialize[varName](currentValue);
+
+            entityConstructed[varName] = value;
+        }
+
+        return entityConstructed;
     }
 
     GetDummpyDataFromEntity2(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): Entity

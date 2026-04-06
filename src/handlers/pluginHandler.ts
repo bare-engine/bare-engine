@@ -190,11 +190,6 @@ window.__GAME_DEBUG_API__ = {
     if (!o)
         return null;
 
-    if (scene instanceof EntityScene)
-    {
-        return o.levelEntity;
-    }
-
     //var constructedEntity = scene.ConstructEntity(o.levelEntity);
 
     var AddExtraPropsToData = (data: any, o: GameObject) => {
@@ -209,10 +204,6 @@ window.__GAME_DEBUG_API__ = {
         data.innerScaleX = o.innerScale.x;
         data.innerScaleY = o.innerScale.y;
         data.persistent = o.persistent;
-
-        if (o.levelEntity.pivot)
-            data.pivot = o.levelEntity.pivot; //
-        data.hitbox = o.levelEntity.hitbox; //
 
         // ADD DATA FOR @InspectorButton DECORATOR
         if (data.components)
@@ -241,9 +232,16 @@ window.__GAME_DEBUG_API__ = {
         }
     }
 
+    if (scene instanceof EntityScene)
+    {
+        var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(o.entity);
+        AddExtraPropsToData(levelEntityWithDefaultValues, o);
+        return levelEntityWithDefaultValues;
+    }
+
     var data = plugin.GetCurrentScene().levelHandler.SerializeObjectFully(o, true) as any;
     AddExtraPropsToData(data, o);
-
+    
     return data;
 
     var serializeChildren = (children: GameObject[]) => {
@@ -348,7 +346,7 @@ window.__GAME_DEBUG_API__ = {
         if (props.pivot !== undefined) { 
             o.pivot.x = props.pivot.x;
             o.pivot.y = props.pivot.y;
-            o.levelEntity.pivot = o.pivot; 
+            o.entity.pivot = o.pivot; 
         }
         if (props.hitbox !== undefined) { 
             
@@ -409,6 +407,8 @@ window.__GAME_DEBUG_API__ = {
                 // BUT THE COMPONENT'S CODE SHOULD THEN BE MUCH STRICTER WITH WHAT IT INITS AT OnAdded() and OnStart() TO MAKE THIS WORK - SEEMS ANNOYING
             }
         }
+
+        // ALIGN ALL THE VARS WITH THE LEVEL ENTITY, FOR GETOBJECT()... todo
 
         (o.scene as EditorScene).saveLevelCallback?.();
 
@@ -647,6 +647,11 @@ export class PluginHandler
 
         globalEvents.persistent.on(BareEvent.editor_opened, ({ settingsDataName, levelName }) => {
             window.__GAME_DEBUG_API__.selectLevel(levelName);
+        });
+
+        globalEvents.persistent.on(BareEvent.scene_awake, ({ scene }) => {
+            // REFRESHES THE ENTITIES
+            window.postMessage({ __fromGame: true, type: "entityDataChanged" }, "*");
         });
 
         /*globalEvents.persistent.on(BareEvent.level_loaded, ({ levelStr }) => {
