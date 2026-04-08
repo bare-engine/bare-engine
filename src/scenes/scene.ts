@@ -275,7 +275,7 @@ export class Scene implements SceneI
                 // CONSTRUCT - GENERALIZE THIS? SHOULD BE SAME FOR BASE
                 {
                     // ARG IS ENTITY
-                    var entityArg = nameOrEntity;
+                    var entityArg = cloneEntityData(nameOrEntity);
 
                     // CONSTRUCT ALL CHILDREN
                     if (entityArg.children)
@@ -319,7 +319,6 @@ export class Scene implements SceneI
                         ...entityArg, // START
                         components: mergeComponents(possibleEntity.components, entityArg.components),
                     };
-                    entity = cloneEntityData(entity);
 
                     // REMOVE COMPONENTS SPECIFICALLY LISTED IN ENTITY
                     if (entity.components && entity.componentsRemoved)
@@ -698,7 +697,7 @@ export class Scene implements SceneI
             }
             else
             {
-                // ENTITY OR ENTITY NAME - CONSTRUCT IT
+                // ENTITY OR ENTITY NAME - CONSTRUCT IT - TO GET ALL DATA TO APPLY TO GAMEOBJECT BELOW
                 entity = this.ConstructEntity(input);
             }
 

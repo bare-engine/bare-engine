@@ -8,7 +8,7 @@ import { PositionPivotComponent } from "../editorComponents/positionPivotCompone
 import { ResizableComponent } from "../editorComponents/resizableComponent";
 import { ResizableRemoveComponent } from "../editorComponents/resizableRemoveComponent";
 import { Color, Texture, Vec2 } from "../libraries/rapid-render";
-import { GameMode, MakePath, MakePathForEntity, Scene } from "../main";
+import { GameMode, MakePathForEntity, Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { EditorUIScene } from "../scenes/editorUIScene";
 import { defaultEntityData } from "../types/bareData";
@@ -176,7 +176,7 @@ export class LevelHandler
                 // SO HERE WE ALIGN IT AGAIN TO ITS CHILDREN
                 this.AssignLevelEntityToChildren(gameObject, levelEntity);
                 
-                //gameObject.levelEntity = levelEntity;
+                gameObject.levelEntity = levelEntity;
                 gameObject.save = true;
             }
         }
@@ -301,7 +301,7 @@ export class LevelHandler
 
                 if (saveVars[constructorName])
                 {
-                    varsToSave = saveVars[constructorName]; // MERGE THIS WITH defaultEntityData.saveVars!["GameObject"]? TODO
+                    varsToSave = saveVars[constructorName];
                 }
                 else
                 {
@@ -310,8 +310,23 @@ export class LevelHandler
                     else
                         console.warn("NO VARS TO SAVE FOR " + constructorName);
                 }
+            }
 
-                varsToSave = varsToSave.slice();
+            varsToSave = varsToSave.slice();
+
+            // CHECK levelEntity TO SEE IF THERE ARE ADDITIONAL VARS TO SAVE
+            // EG: IF A LEVEL ENTITY WITH ALPHA 0.5 IS DEFINED IN A LEVEL,
+            // WE WANT TO SAVE THAT, EVEN THOUGH IT MIGHT NOT BE SET IN saveVars
+            if (obj.levelEntity)
+            {
+                for (var varName in obj.levelEntity)
+                {
+                    if (varName == "name")
+                        continue;
+
+                    if (!varsToSave.includes(varName))
+                        varsToSave.push(varName);
+                }
             }
         }
         else
