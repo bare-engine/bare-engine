@@ -105,6 +105,8 @@ export interface Entity
   interactableInEditor?:boolean;
   save?:boolean;
 
+  extendDataLog?: Record<string, any>;
+
   // PHYSICS
   collide?: boolean;
   sensor?: boolean;

@@ -160,27 +160,57 @@ export class SettingsHandler
         {
             for (var entityBaseName in settings.entityBases)
             {
+                var entityBase = settings.entityBases[entityBaseName];
+                entityBase.name = entityBaseName; // FOR CONSTRUCT
+
+                // ENTITY BASE - IF EXTEND DATA NOT SET, DEFAULT TO ANY BASE
+                if (entityBaseName == "NONE")
+                    continue;
+
+                if (!entityBase.extendData && entityBaseName != "ANY")
+                {
+                    entityBase.extendData = "ANY";
+                }
+            }
+
+            for (var entityName in settings.entities)
+            {
+                // ENTITY - IF EXTEND DATA NOT SET, DEFAULT TO ANY_ENTITY BASE
+                if (entityName == "NONE")
+                    continue;
+
+                var entity = settings.entities[entityName];
+                if (!entity.extendData)
+                {
+                    entity.extendData = "ANY_ENTITY";
+                }
+            }
+
+            if (globalThis.plugin)
+            {
+                globalThis.plugin.ProcessSettingsData(settings);
+            }
+
+            // CONSTRUCT ALL ENTITY BASES
+            for (var entityBaseName in settings.entityBases)
+            {
                 if (entityBaseName == "NONE")
                     continue;
 
                 var entityBase = settings.entityBases[entityBaseName];
 
-                if (entityBaseName == "ANY")
-                {
-                    this.FillPresets(entityBase, settings);
-                    continue;
-                }
-
                 // SET DEFAULT extendData - IN PREPARATION FOR CONSTRUCT
-                if (!entityBase.extendData)
+                if (!entityBase.extendData && entityBaseName != "ANY")
                 {
                     entityBase.extendData = "ANY";
                 }
 
-                // CONSTRUCT BASE ENTITY - SINCE IT EXTENDS SOMETHING
+                // CONSTRUCT BASE ENTITY - NOW IT EXTENDS SOMETHING
                 this.ConstructEntity(entityBase, settings);
+
+                //delete entityBase.name; // DON'T NEED IT ANYMORE
                 
-                // SET DEFAULT extendClass - HAS NOT BEEN SET BY CONSTRUCT
+                // SET DEFAULT extendClass - IF NOT BEEN SET BY CONSTRUCT
                 if (!entityBase.extendClass)
                 {
                     entityBase.extendClass = "GameObject";
@@ -325,6 +355,7 @@ export class SettingsHandler
     // GOING DOWN IT'S constructData RECURSIVELY AND ASSIGNING VALUES
     ConstructEntity(entity:Entity, rawSettingsData:SettingsData): Entity
     {
+        // (MOSTLY THE SAME AS SCENE Construct(), COULD GENERALIZE SOME PARTS)
         var final = (entity:Entity) => {
             // CONSTRUCT ALL CHILDREN
             if (entity.children)
@@ -346,6 +377,19 @@ export class SettingsHandler
             if (sopiroPhysicsClasses.includes(entity.extendClass))
                 entity.pivot = { x: .5, y: .5 };
 
+            // FILL PRESETS - LIKE hitbox: "FULL"                
+            //                     hitbox: {x1: 0, y1: 0, x2: 1, y2: 1}
+            this.FillPresets(entity, rawSettingsData);
+
+            // REMOVE PROPERTIES SPECIFICALLY LISTED TO REMOVE IN ENTITY
+            if (entity.propertiesRemoved)
+            {
+                for (const propertyName of entity.propertiesRemoved)
+                {
+                    delete entity[propertyName];
+                }
+            }
+
             // REMOVE COMPONENTS SPECIFICALLY LISTED IN ENTITY
             if (entity.components && entity.componentsRemoved)
             {
@@ -354,10 +398,6 @@ export class SettingsHandler
                     delete entity.components[componentName];
                 }
             }
-
-            // FILL PRESETS - LIKE hitbox: "FULL"                
-            //                     hitbox: {x1: 0, y1: 0, x2: 1, y2: 1}
-            this.FillPresets(entity, rawSettingsData);
 
             return entity
         }
@@ -379,17 +419,8 @@ export class SettingsHandler
             return merged;
         }
 
-        // IF EXTEND DATA NOT SET, DEFAULT TO ANY BASE
-        if (!entity.extendData)
-        {
-            entity.extendData = "ANY_ENTITY";
-        }
-
-        // FILL INFO ABOUT WHAT ENTITY PROPERTIES ARE EXTENDED BY WHY WHICH DATA - TODO
-        //this.entityExtendInfo[entity.name] = {};
-
+        // RECURSIVELY EXTEND DATA
         var extendedData = entity.extendData;
-
         while (extendedData)
         {
             var entityBase = rawSettingsData.entityBases[extendedData];
@@ -398,29 +429,14 @@ export class SettingsHandler
             for (const key of Object.keys(entityBase))
             {
                 if (!(key in entity))
+                {
                     entity[key] = entityBase[key];
+                }
             }
 
-            entity.extendData = entityBase.extendData;
             entity.components = mergeComponents(entityBase.components, entity.components);
 
             extendedData = entityBase.extendData;
-            
-            /*entity = { 
-                ...entityBase,
-                ...entity, // TAKES PRECEDENCE OVER BASE
-                extendData: entityBase.extendData, 
-                components: mergeComponents(entityBaseMaybe.components, entity.components)
-            };*/
-        }
-        
-        // REMOVE PROPERTIES SPECIFICALLY LISTED TO REMOVE IN ENTITY
-        if (entity.propertiesRemoved)
-        {
-            for (const propertyName of entity.propertiesRemoved)
-            {
-                delete entity[propertyName];
-            }
         }
 
         return final(entity);

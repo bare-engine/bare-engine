@@ -6,7 +6,7 @@ import { GameObject } from "../objects/gameObject";
 import { EditorScene } from "../scenes/editorScene";
 import { EntityScene } from "../scenes/entityScene";
 import { OutlineShader } from "../shaders/outlineShader";
-import { BareEvent, BareEventPayload, LevelData, SaveData, Scalar, SettingsData } from "../types/bareTypes";
+import { BareEvent, BareEventPayload, Entity, LevelData, SaveData, Scalar, SettingsData } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
 import { getButtons } from "../utils/decorators";
 import { SaveDataHandler } from "./SaveDataHandler";
@@ -896,6 +896,67 @@ export class PluginHandler
 
         console.warn(`PluginHandler.GetScene: could not resolve '${sceneClassString}', falling back to '${fallback.constructor?.name ?? "unknown"}'.`);
         return fallback;
+    }
+
+    // FILL entity.extendDataLog WITH DATA ABOUT WHAT PROPERTIES IT EXTENDS
+    ProcessSettingsData(settings: SettingsData):void
+    {
+        // STORE ENTITES BASED ON HOW MANY TIMES THEY EXTEND DATA - COULD BE ARRAY? NEVER ANY GAP?
+        var entitiesByExtendCount:Record<int, {entity: Entity, extendEntities: Array<Entity>}[]> = {};
+
+        var entitiesCombined = {...settings.entityBases, ...settings.entities};
+        for (var entityName in entitiesCombined)
+        {
+            let entity = entitiesCombined[entityName];
+            let extendCount = 0;
+
+            let extendEntities = [];
+            let extendData = entity.extendData;
+            while (extendData)
+            {
+                extendCount++;
+                extendEntities.push(settings.entityBases[extendData]);
+                extendData = settings.entityBases[extendData]?.extendData;
+            }
+
+            entitiesByExtendCount[extendCount] ??= [];
+            entitiesByExtendCount[extendCount].push({entity, extendEntities});
+        }
+
+        // FILL extendDataLog OF ENTITIES 
+        // STARTING FROM THE LEAST EXTENDED, TO MOST. THIS ALLOWS US TO REUSE THE LOG WE PROCESSED BEFORE
+        for (var extendCount in entitiesByExtendCount)
+        {
+            var entityInfoAr = entitiesByExtendCount[extendCount];
+
+            for (var entityInfo of entityInfoAr)
+            {
+                let entity = entityInfo.entity;
+                let extendEntities = entityInfo.extendEntities;
+
+                // FILL INFO ABOUT WHAT ENTITY PROPERTIES ARE EXTENDED BY WHY WHICH DATA
+                let propsInThisEntity = Object.keys(entity);
+                propsInThisEntity.splice(propsInThisEntity.indexOf("name"), 1);
+                entity.extendDataLog = {};
+                entity.extendDataLog[entity.name] = propsInThisEntity;
+
+                var extendOrder = [entity.name];
+                entity.extendDataLog["__extendOrder__"] = extendOrder;
+
+                for (var extendEntity of extendEntities)
+                {
+                    entity.extendDataLog[extendEntity.name] = [];
+                    for (var extendedEntityName of extendEntity.extendDataLog["__extendOrder__"])
+                    {
+                        var propsExtended = extendEntity.extendDataLog[extendedEntityName];
+                        var propsExtendedFiltered = propsExtended.filter(p => !propsInThisEntity.includes(p));
+                        entity.extendDataLog[extendEntity.name] = propsExtendedFiltered;
+                    }
+
+                    extendOrder.push(extendEntity.name);
+                }
+            }
+        }
     }
 }
 
