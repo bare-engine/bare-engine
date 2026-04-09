@@ -123,6 +123,8 @@ export interface Entity
   //numberOfTiles?: int; //
 }
 
+export type ConstructEntityOptions = { propsToIgnoreInEntity?: string[], fillPresets?: boolean };
+
 export var entityVars = [
     "name",
     "customName",

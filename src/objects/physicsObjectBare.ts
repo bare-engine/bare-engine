@@ -1,6 +1,6 @@
 import { Vec2, Color, Texture } from "../libraries/rapid-render";
 import { MakePath, MakePathForEntity, Scene } from "../main";
-import { Entity, HitboxType, Rectangle, Rectangle2Vec, SettingsData } from "../types/bareTypes";
+import { ConstructEntityOptions, Entity, HitboxType, Rectangle, Rectangle2Vec, SettingsData } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
 import { GameObject } from "./gameObject";
 
@@ -185,7 +185,7 @@ export class PhysicsObjectBare extends GameObject
         return this;
     }
 
-    static GetDummpyDataFromEntity(scene: Scene, nameOrEntity: string | Entity, options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): {entity: Entity, gameObject: GameObject}
+    static GetDummpyDataFromEntity(scene: Scene, nameOrEntity: string | Entity, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true }): {entity: Entity, gameObject: GameObject}
     {
         var entityConstructed = scene.ConstructEntity(nameOrEntity, scene.settingsHandler.Get(), options);
         PhysicsObjectBare.dummyPhysicsObjectBare.ResetValues();

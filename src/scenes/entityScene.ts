@@ -55,15 +55,17 @@ export class EntityScene extends EditorScene
         if (isBase)
         {
             entityFromSettingsData = this.settingsData.entityBases[objectName];
-
-            entityFromSettingsData.name = objectName;
-            entityFromSettingsData.texture = "placeHolder";
-            entityFromSettingsData.imagePath = "";
         }
         else
         {
             entityFromSettingsData = this.settingsData.entities[objectName];
         }
+
+        entityFromSettingsData = {...entityFromSettingsData};
+        
+        entityFromSettingsData.name = objectName;
+        entityFromSettingsData.texture = "placeHolder";
+        entityFromSettingsData.imagePath = "";
 
         //delete entityConstructedFromSettingsData.components;
         //delete entityConstructedFromSettingsData.editorComponents;
@@ -112,7 +114,7 @@ export class EntityScene extends EditorScene
         //levelHandler.SerializeLevel(level);
 
         var obj = this.objectController.GetObjectByName(this.objectName);
-        var entity = levelHandler.SerializeObject(obj, {propsToIgnoreInEntity: entityVars});
+        var entity = levelHandler.SerializeObject(obj, {propsToIgnoreInEntity: entityVars, fillPresets: true});
         delete entity.name;
         delete entity.position;
         

@@ -118,8 +118,48 @@ window.__GAME_DEBUG_API__ = {
         return;
     }*/
     
-    await sceneController.Add(EntityScene, {name: name, isBase: isBase, settingsHandler: plugin.GetCurrentScene().settingsHandler});
+    var scene = await sceneController.Add(EntityScene, {name: name, isBase: isBase, settingsHandler: plugin.GetCurrentScene().settingsHandler});
     //sceneController.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
+    
+    var entity:Entity;
+    var raw = scene.settingsHandler.GetRaw();
+    if (isBase)
+        entity = raw.entityBases[name];
+    else
+        entity = raw.entities[name];
+
+    // MMMM
+    entity = {...entity};
+    if (!entity.extendData)
+    {
+        if (isBase)
+            entity.extendData = "ANY";
+        else
+            entity.extendData = "ANY_ENTITY";
+    }
+    if (!entity.extendClass)
+    {
+        entity.extendClass = "GameObject";
+    }
+
+    //return entity;
+    var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(entity, scene.settingsData, { fillPresets: false });
+    //AddExtraPropsToData(levelEntityWithDefaultValues, o);
+
+    var processedEntity:Entity = (isBase ? scene.settingsData.entityBases[name] : scene.settingsData.entities[name]);
+
+    levelEntityWithDefaultValues.name = name;
+
+    // SINCE THIS DIDN'T WORK FROM GetEntityWithDefaultValues...
+    {
+        var log = processedEntity.extendDataLog;
+        levelEntityWithDefaultValues.extendDataLog = log;
+
+        // SET DEFAULT VALUE
+        levelEntityWithDefaultValues.extendData = processedEntity.extendData;
+    }
+
+    return levelEntityWithDefaultValues;
     
     var id = plugin.GetCurrentScene().objectController.GetObjectByName(name).uniqueID;
     return window.__GAME_DEBUG_API__.getObject(id);
@@ -222,6 +262,46 @@ window.__GAME_DEBUG_API__ = {
 
         if (data.children)
         {
+
+    var AddExtraPropsToData = (data: any, o: GameObject) => {
+        data.id = o.uniqueID;
+        data.name = o.name;
+        data.x = o.x;
+        data.y = o.y;
+        data.scaleX = o.scaleX;
+        data.scaleY = o.scaleY;
+        data.innerX = o.innerTransform.position.x;
+        data.innerY = o.innerTransform.position.y;
+        data.innerScaleX = o.innerScale.x;
+        data.innerScaleY = o.innerScale.y;
+        data.persistent = o.persistent;
+
+        // ADD DATA FOR @InspectorButton DECORATOR
+        if (data.components)
+        {
+            for (var compName in data.components)
+            {
+                var fullCompName = Helper.CapitalizeFirstLetter(compName) + 'Component';
+                var compCls = bareEngine.componentClasses[fullCompName];
+                var buttons = getButtons(compCls);
+                if (buttons.length > 0)
+                {
+                    if (data.components[compName])
+                    {
+                        (data.components[compName] as any).__buttons = buttons.map(b => ({ label: b.label, method: b.label }));
+                    }
+                }
+            }
+        }
+
+        if (data.children)
+        {
+            for (var i = 0; i < data.children.length; i++)
+            {
+                AddExtraPropsToData(data.children[i], o.children[i]);
+            }
+        }
+    }
             for (var i = 0; i < data.children.length; i++)
             {
                 AddExtraPropsToData(data.children[i], o.children[i]);

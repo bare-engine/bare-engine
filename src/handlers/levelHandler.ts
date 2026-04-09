@@ -12,7 +12,7 @@ import { GameMode, MakePathForEntity, Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { EditorUIScene } from "../scenes/editorUIScene";
 import { defaultEntityData } from "../types/bareData";
-import { BareEvent, BareEventPayload, Component, Entity, entityVars, LevelData, SaveData, Scalar, SettingsData } from '../types/bareTypes';
+import { BareEvent, BareEventPayload, Component, ConstructEntityOptions, Entity, entityVars, LevelData, SaveData, Scalar, SettingsData } from '../types/bareTypes';
 import { Helper } from "../utils/helper";
 import { assetsHandler } from "./assetsHandler";
 
@@ -407,7 +407,7 @@ export class LevelHandler
     // THIS IS A VERY INEFFICIENT WAY TO IT, BUT... EASY TO FOLLOW AND IN ONE PLACE
     // COME BACK LATER TO OPTIMIZE/CACHE - TODO
     // USED levelEntity BEFORE, KEEPING TRACK CHANGES, BUT KEPT GETTING EDGE CASES ALL OVER
-    SerializeObject(obj: GameObject, options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): Entity
+    SerializeObject(obj: GameObject, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true }): Entity
     {
         var entity:Entity = {
             name: obj.name,

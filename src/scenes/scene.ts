@@ -10,7 +10,7 @@ import { Color, FrameBufferObject, ICircleRenderOptions, IGraphicRenderOptions, 
 import { MakePath, MakePathForEntity, globalEvents } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { defaultEntityData } from "../types/bareData";
-import { AwakePayload, BareEvent, Entity, entityVars, Events, GameObjectClass, LayerInfo, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
+import { AwakePayload, BareEvent, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LayerInfo, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
 
 /*Bare.camera.SetPosition(bare.width * .5, bare.height * .5);
 Bare.sound.Play()
@@ -124,7 +124,7 @@ export class Scene implements SceneI
         this.paused = false;
         this.started = false;
 
-        await this.settingsHandler.Process(this.sceneOptions.entityData);//this.settingsData
+        await this.settingsHandler.Process(payload?.settingsHandler?.Get() || this.sceneOptions.entityData);//this.settingsData
 
         this.ApplyLayerInfoToSettings(this.settingsData);
         //this.layerNames = this.settingsData.layers.slice();
@@ -242,8 +242,11 @@ export class Scene implements SceneI
         }
     }
     
-    ConstructEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): Entity
+    ConstructEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true }): Entity
     {
+        if (options.fillPresets === undefined)
+            options.fillPresets = true;
+
         function cloneEntityData<T>(data: T): T
         {
             return JSON.parse(JSON.stringify(data));
@@ -299,7 +302,8 @@ export class Scene implements SceneI
 
                     // FILL PRESETS - LIKE hitbox: "FULL"                     
                     //                     hitbox: {x1: 0, y1: 0, x2: 1, y2: 1}
-                    this.FillPresets(entityArg, settingsData);
+                    if (options.fillPresets)
+                        this.FillPresets(entityArg, settingsData);
                 }
 
                 // entityArg HAS BEEN CONSTRUCTED, NOW MERGE IT WITH (ALREADY CONSTRUCTED) ENTITY FROM DATA
@@ -512,7 +516,7 @@ export class Scene implements SceneI
     }
 
     // USE ONE BELOW - TODO
-    GetDummpyDataFromEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsHandler.Get(), options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): {entity: Entity, gameObject: GameObject}
+    GetDummpyDataFromEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsHandler.Get(), options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true }): {entity: Entity, gameObject: GameObject}
     {
         var entityConstructed = this.ConstructEntity(nameOrEntity, settingsData, options);
         bareEngine.dummyGameObject.ResetValues();
@@ -522,9 +526,18 @@ export class Scene implements SceneI
         return {entity: entityConstructed, gameObject: bareEngine.dummyGameObject};
     }
 
-    GetEntityWithDefaultValues(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): Entity
+    GetEntityWithDefaultValues(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true }): Entity
     {
-        var entityConstructed = this.ConstructEntity(nameOrEntity, settingsData, options);
+        var entityConstructed:Entity;
+        
+        //if (options.skipConstruct)
+        {
+            entityConstructed = (typeof nameOrEntity === "string") ? this.settingsHandler.GetRaw().entities[nameOrEntity] : nameOrEntity;
+        }
+        //else
+        {
+            //entityConstructed = this.ConstructEntity(nameOrEntity, settingsData, options);
+        }
 
         {
             var gameObject: GameObject;
@@ -599,7 +612,7 @@ export class Scene implements SceneI
         return entityConstructed;
     }
 
-    GetDummpyDataFromEntity2(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: { propsToIgnoreInEntity?: string[] } = { propsToIgnoreInEntity: [] }): Entity
+    GetDummpyDataFromEntity2(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true }): Entity
     {
         var entityConstructed = this.ConstructEntity(nameOrEntity, settingsData, options);
 
