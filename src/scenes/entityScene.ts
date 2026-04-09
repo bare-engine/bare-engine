@@ -63,9 +63,12 @@ export class EntityScene extends EditorScene
 
         entityFromSettingsData = {...entityFromSettingsData};
         
-        entityFromSettingsData.name = objectName;
-        entityFromSettingsData.texture = "placeHolder";
-        entityFromSettingsData.imagePath = "";
+        if (isBase)
+        {
+            entityFromSettingsData.name = objectName;
+            entityFromSettingsData.texture = "placeHolder";
+            entityFromSettingsData.imagePath = "";
+        }
 
         //delete entityConstructedFromSettingsData.components;
         //delete entityConstructedFromSettingsData.editorComponents;
