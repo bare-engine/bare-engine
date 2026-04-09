@@ -111,15 +111,12 @@ window.__GAME_DEBUG_API__ = {
     //sceneController.Goto(EditorScene, {levelInput: levelPath});
   },
 
-  async gotoEntity(name: string) {
+  async gotoEntity(name: string, isBase: boolean = false) {
     /*const levelController = getLevelController();
     if (levelController && levelController.currentLevel && levelController.currentLevel.name == name)
     {
         return;
     }*/
-
-    //name = "ANY";
-    var isBase = false;
     
     await sceneController.Add(EntityScene, {name: name, isBase: isBase, settingsHandler: plugin.GetCurrentScene().settingsHandler});
     //sceneController.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
@@ -443,7 +440,29 @@ window.__GAME_DEBUG_API__ = {
 
   getEntityData():SettingsData {
     // Return a clone so external tools don't accidentally mutate live data (?) TODO
-    return plugin.GetCurrentScene().settingsHandler.SnapshotCurrent();
+    var settingsData = plugin.GetCurrentScene().settingsHandler.SnapshotCurrent();
+
+    // ADD DEFAULTS - SAME AS defaultEntityData - REBUILD TO ADD IN FRONT
+    settingsData.entityBases ??= {};
+
+    const {
+        ANY,
+        ANY_ENTITY,
+        ...rest
+    } = settingsData.entityBases;
+
+    settingsData.entityBases = {
+        ANY: ANY ?? {
+            extendClass: "GameObject"
+        },
+        ANY_ENTITY: ANY_ENTITY ?? {
+            extendData: "ANY",
+            extendClass: "GameObject"
+        },
+        ...rest
+    };
+
+    return settingsData;
   },
 
   async setEntityData(newData: SettingsData, notifyPlugin: boolean = true)
