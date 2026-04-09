@@ -12,7 +12,7 @@ import { GameMode, MakePathForEntity, Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { EditorUIScene } from "../scenes/editorUIScene";
 import { defaultEntityData } from "../types/bareData";
-import { BareEvent, Component, Entity, entityVars, LevelData, SaveData, Scalar, SettingsData } from '../types/bareTypes';
+import { BareEvent, BareEventPayload, Component, Entity, entityVars, LevelData, SaveData, Scalar, SettingsData } from '../types/bareTypes';
 import { Helper } from "../utils/helper";
 import { assetsHandler } from "./assetsHandler";
 
@@ -34,6 +34,16 @@ export class LevelHandler
         if (__DEV__)
             if (!globalThis.plugin) // ONLY SHOW IF NO PLUGIN EXISTS, ELSE USER CAN PRESS BUTTON IN PLUGIN
                 LevelHandler.EnsureEditorSceneRegistered();
+		
+        this.scene.events.on(BareEvent.game_objectAdded, this.OnGameObjectAdded.bind(this));
+    }
+
+    OnGameObjectAdded({ gameObject, layer }: BareEventPayload['game_objectAdded']): void
+    {
+        if (!gameObject.parent)
+        {
+            gameObject.save = true;
+        }
     }
 
     get objectsLayer(): GameObject[]
