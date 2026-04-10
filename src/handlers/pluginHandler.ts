@@ -1,5 +1,5 @@
 import { keyboardController } from "../controllers/keyboardController";
-import { componentController, levelHandler, objectController, Scene, sceneController } from "../exports";
+import { componentController, defaultEntityData, levelHandler, objectController, Scene, sceneController } from "../exports";
 import { Color, Vec2 } from "../libraries/rapid-render";
 import { GameMode, globalEvents } from "../main";
 import { GameObject } from "../objects/gameObject";
@@ -111,60 +111,6 @@ window.__GAME_DEBUG_API__ = {
     //sceneController.Goto(EditorScene, {levelInput: levelPath});
   },
 
-  async gotoEntity(name: string, isBase: boolean = false) {
-    /*const levelController = getLevelController();
-    if (levelController && levelController.currentLevel && levelController.currentLevel.name == name)
-    {
-        return;
-    }*/
-    
-    var scene = await sceneController.Add(EntityScene, {name: name, isBase: isBase, settingsHandler: plugin.GetCurrentScene().settingsHandler});
-    //sceneController.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
-    
-    var entity:Entity;
-    var raw = scene.settingsHandler.GetRaw();
-    if (isBase)
-        entity = raw.entityBases[name];
-    else
-        entity = raw.entities[name];
-
-    // MMMM
-    entity = {...entity};
-    if (!entity.extendData)
-    {
-        if (isBase)
-            entity.extendData = "ANY";
-        else
-            entity.extendData = "ANY_ENTITY";
-    }
-    if (!entity.extendClass)
-    {
-        entity.extendClass = "GameObject";
-    }
-
-    //return entity;
-    var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(entity, scene.settingsData, { fillPresets: false });
-    //AddExtraPropsToData(levelEntityWithDefaultValues, o);
-
-    var processedEntity:Entity = (isBase ? scene.settingsData.entityBases[name] : scene.settingsData.entities[name]);
-
-    levelEntityWithDefaultValues.name = name;
-
-    // SINCE THIS DIDN'T WORK FROM GetEntityWithDefaultValues...
-    {
-        var log = processedEntity.extendDataLog;
-        levelEntityWithDefaultValues.extendDataLog = log;
-
-        // SET DEFAULT VALUE
-        levelEntityWithDefaultValues.extendData = processedEntity.extendData;
-    }
-
-    return levelEntityWithDefaultValues;
-    
-    var id = plugin.GetCurrentScene().objectController.GetObjectByName(name).uniqueID;
-    return window.__GAME_DEBUG_API__.getObject(id);
-  },
-
   getDebugActions() {
     return plugin.debugActions;
   },
@@ -219,6 +165,46 @@ window.__GAME_DEBUG_API__ = {
   async GetLevelData(levelStr: string): Promise<LevelData> {
      return await Helper.loadJSON<LevelData>(`${bareEngine.levelPath}/${levelStr}.json`);
   },
+  
+  async gotoEntity(name: string, isBase: boolean = false) {
+    /*const levelController = getLevelController();
+    if (levelController && levelController.currentLevel && levelController.currentLevel.name == name)
+    {
+        return;
+    }*/
+    
+    var scene = await sceneController.Add(EntityScene, {name: name, isBase: isBase, settingsHandler: plugin.GetCurrentScene().settingsHandler});
+    //sceneController.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
+    
+    var entity:Entity;
+    var raw = scene.settingsHandler.GetRaw();
+    if (isBase)
+        entity = raw.entityBases[name];
+    else
+        entity = raw.entities[name];
+
+    // MMMM
+    entity = {...entity};
+    if (!entity.extendData)
+    {
+        if (isBase)
+            entity.extendData = "ANY";
+        else
+            entity.extendData = "ANY_ENTITY";
+    }
+    if (!entity.extendClass)
+    {
+        entity.extendClass = "GameObject";
+    }
+
+    plugin.BuildExtendDataLog(entity, name, raw);
+
+    // BUILD THE ENTITY TO PASS TO PLUGIN RIGHT AWAY
+    var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(entity, raw, { fillPresets: false });
+    levelEntityWithDefaultValues.name = name;
+
+    return levelEntityWithDefaultValues;
+  },
 
   getObject(id: string) {
     var scene = plugin.GetCurrentScene();
@@ -262,46 +248,6 @@ window.__GAME_DEBUG_API__ = {
 
         if (data.children)
         {
-
-    var AddExtraPropsToData = (data: any, o: GameObject) => {
-        data.id = o.uniqueID;
-        data.name = o.name;
-        data.x = o.x;
-        data.y = o.y;
-        data.scaleX = o.scaleX;
-        data.scaleY = o.scaleY;
-        data.innerX = o.innerTransform.position.x;
-        data.innerY = o.innerTransform.position.y;
-        data.innerScaleX = o.innerScale.x;
-        data.innerScaleY = o.innerScale.y;
-        data.persistent = o.persistent;
-
-        // ADD DATA FOR @InspectorButton DECORATOR
-        if (data.components)
-        {
-            for (var compName in data.components)
-            {
-                var fullCompName = Helper.CapitalizeFirstLetter(compName) + 'Component';
-                var compCls = bareEngine.componentClasses[fullCompName];
-                var buttons = getButtons(compCls);
-                if (buttons.length > 0)
-                {
-                    if (data.components[compName])
-                    {
-                        (data.components[compName] as any).__buttons = buttons.map(b => ({ label: b.label, method: b.label }));
-                    }
-                }
-            }
-        }
-
-        if (data.children)
-        {
-            for (var i = 0; i < data.children.length; i++)
-            {
-                AddExtraPropsToData(data.children[i], o.children[i]);
-            }
-        }
-    }
             for (var i = 0; i < data.children.length; i++)
             {
                 AddExtraPropsToData(data.children[i], o.children[i]);
@@ -399,7 +345,40 @@ window.__GAME_DEBUG_API__ = {
     return s;
   },
 
-    setObject(id: string, props: any) {
+    setObject(id: string, props: any)
+    {
+        var scene = plugin.GetCurrentScene();
+        if (scene instanceof EntityScene)
+        {
+            let entityScene = scene as EntityScene;
+            
+            var f = async () => {
+                var rawSettingsData = entityScene.settingsHandler.GetRaw();
+
+                if (entityScene.isBase)
+                {
+                    rawSettingsData.entityBases.ANY ??= {...defaultEntityData.entityBases.ANY};
+                    rawSettingsData.entityBases.ANY_ENTITY ??= {...defaultEntityData.entityBases.ANY_ENTITY};
+                }
+
+                var entity:Entity;
+                if (entityScene.isBase)
+                    entity = rawSettingsData.entityBases[entityScene.objectName];
+                else
+                    entity = rawSettingsData.entities[entityScene.objectName];
+
+                Object.assign(entity, props);
+                
+                await entityScene.settingsHandler.Process(rawSettingsData);
+
+                // SAVE TO FILE
+                await entityScene.SaveEntityData(rawSettingsData);
+            }
+            f();
+
+            return;
+        }
+
         const o = plugin.GetCurrentScene().objectController.GetObjectById(id);
         
         if (!o)
@@ -519,8 +498,7 @@ window.__GAME_DEBUG_API__ = {
     },
 
   getEntityData():SettingsData {
-    // Return a clone so external tools don't accidentally mutate live data (?) TODO
-    var settingsData = plugin.GetCurrentScene().settingsHandler.SnapshotCurrent();
+    var settingsData = plugin.GetCurrentScene().settingsHandler.GetRaw();
 
     // ADD DEFAULTS - SAME AS defaultEntityData - REBUILD TO ADD IN FRONT
     settingsData.entityBases ??= {};
@@ -997,6 +975,7 @@ export class PluginHandler
         return fallback;
     }
 
+    // FOR ALL ENTITIES IN SETTINGS,
     // FILL entity.extendDataLog WITH DATA ABOUT WHAT PROPERTIES IT EXTENDS
     ProcessSettingsData(settings: SettingsData):void
     {
@@ -1055,6 +1034,45 @@ export class PluginHandler
                     extendOrder.push(extendEntity.name);
                 }
             }
+        }
+    }
+
+    // FOR SINGLE ENTITY IN SETTINGS,
+    // FILL entity.extendDataLog WITH DATA ABOUT WHAT PROPERTIES IT EXTENDS
+    // MUTATES THE ENTITY ITSELF: ADDS extendDataLog
+    BuildExtendDataLog(entity: Entity, entityName: string, settings: SettingsData): void
+    {
+        // GET EXTENDED ENTITES
+        let extendData = entity.extendData;
+
+        var extendOrder = [entityName];
+        entity.extendDataLog = {};
+        entity.extendDataLog["__extendOrder__"] = extendOrder;
+
+        while (extendData)
+        {
+            extendOrder.push(extendData);
+            extendData = settings.entityBases[extendData]?.extendData || defaultEntityData.entityBases[extendData]?.extendData;
+        }
+
+        // FILL INFO ABOUT WHAT ENTITY PROPERTIES ARE EXTENDED BY WHY WHICH DATA
+        let propsInThisEntity = Object.keys(entity);
+        propsInThisEntity.splice(propsInThisEntity.indexOf("name"), 1);
+        entity.extendDataLog[entityName] = propsInThisEntity;
+
+        var propsFound = propsInThisEntity.slice();
+
+        for (var i = 1; i < extendOrder.length; i++) // START AT 1, ALREADY HANDLED 0 (SELF) ABOVE
+        {
+            // LOG EXTENDED PROPERTIES - SHOULD NOT HAVE BEEN FOUND BEFORE
+            var extendEntityName = extendOrder[i];
+            var extendEntity = settings.entityBases[extendEntityName];
+            var propsExtended = Object.keys(extendEntity);
+            var propsExtendedFiltered = propsExtended.filter(p => !propsFound.includes(p));
+
+            entity.extendDataLog[extendEntityName] = propsExtendedFiltered;
+
+            propsFound.push(...propsExtendedFiltered);
         }
     }
 }

@@ -12,6 +12,8 @@ type EntitySceneAwakePayload = EditorScenePayload & {
 export class EntityScene extends EditorScene
 {
     objectName: string = "";
+    isBase: boolean = false;
+    
     lastPayload: EntitySceneAwakePayload;
 
     constructor()
@@ -34,6 +36,8 @@ export class EntityScene extends EditorScene
             this.settingsHandler.Process(targetSettingsHandler.GetRaw());
             this.objectName = objectName;
         }
+
+        this.isBase = isBase;
 
         // DON'T WANT TO SHOW THE UI, WE UNDO THIS BEFORE SAVING THE ENTITY DATA AGAIN, BIT AWKWARD
         this.settingsHandler.UpdateRaw((raw) => {

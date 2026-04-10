@@ -532,11 +532,11 @@ export class Scene implements SceneI
         
         //if (options.skipConstruct)
         {
-            entityConstructed = (typeof nameOrEntity === "string") ? this.settingsHandler.GetRaw().entities[nameOrEntity] : nameOrEntity;
+            //entityConstructed = (typeof nameOrEntity === "string") ? this.settingsHandler.GetRaw().entities[nameOrEntity] : nameOrEntity;
         }
         //else
         {
-            //entityConstructed = this.ConstructEntity(nameOrEntity, settingsData, options);
+            entityConstructed = this.ConstructEntity(nameOrEntity, settingsData, options);
         }
 
         {

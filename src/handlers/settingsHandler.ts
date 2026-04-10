@@ -186,10 +186,10 @@ export class SettingsHandler
                 }
             }
 
-            if (globalThis.plugin)
+            /*if (globalThis.plugin)
             {
                 globalThis.plugin.ProcessSettingsData(settings);
-            }
+            }*/
 
             // CONSTRUCT ALL ENTITY BASES
             for (var entityBaseName in settings.entityBases)
