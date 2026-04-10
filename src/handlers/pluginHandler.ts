@@ -185,7 +185,7 @@ window.__GAME_DEBUG_API__ = {
 
     // MMMM
     entity = {...entity};
-    if (!entity.extendData)
+    /*if (!entity.extendData)
     {
         if (isBase)
             entity.extendData = "ANY";
@@ -195,12 +195,12 @@ window.__GAME_DEBUG_API__ = {
     if (!entity.extendClass)
     {
         entity.extendClass = "GameObject";
-    }
+    }*/
 
     plugin.BuildExtendDataLog(entity, name, raw);
 
     // BUILD THE ENTITY TO PASS TO PLUGIN RIGHT AWAY
-    var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(entity, raw, { fillPresets: false });
+    var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(entity, scene.settingsData);
     levelEntityWithDefaultValues.name = name;
 
     return levelEntityWithDefaultValues;
