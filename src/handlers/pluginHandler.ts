@@ -186,12 +186,12 @@ window.__GAME_DEBUG_API__ = {
 
     // MMMM
     entity = {...entity};
-    /*if (!entity.extendData)
+    /*if (!entity.extendBase)
     {
         if (isBase)
-            entity.extendData = "ANY";
+            entity.extendBase = "ANY";
         else
-            entity.extendData = "ANY_ENTITY";
+            entity.extendBase = "ANY_ENTITY";
     }
     if (!entity.extendClass)
     {
@@ -977,7 +977,7 @@ export class PluginHandler
     }
 
     // FOR ALL ENTITIES IN SETTINGS,
-    // FILL entity.extendDataLog WITH DATA ABOUT WHAT PROPERTIES IT EXTENDS
+    // FILL entity.extendBaseLog WITH DATA ABOUT WHAT PROPERTIES IT EXTENDS
     ProcessSettingsData(settings: SettingsData):void
     {
         // STORE ENTITES BASED ON HOW MANY TIMES THEY EXTEND DATA - COULD BE ARRAY? NEVER ANY GAP?
@@ -1039,27 +1039,27 @@ export class PluginHandler
     }
 
     // FOR SINGLE ENTITY IN SETTINGS,
-    // FILL entity.extendDataLog WITH DATA ABOUT WHAT PROPERTIES IT EXTENDS
-    // MUTATES THE ENTITY ITSELF: ADDS extendDataLog
+    // FILL entity.extendBaseLog WITH DATA ABOUT WHAT PROPERTIES IT EXTENDS
+    // MUTATES THE ENTITY ITSELF: ADDS extendBaseLog
     BuildExtendDataLog(entity: Entity, entityName: string, settings: SettingsData): void
     {
         // GET EXTENDED ENTITES
-        let extendData = entity.extendData;
+        let extendBase = entity.extendBase;
 
         var extendOrder = [entityName];
-        entity.extendDataLog = {};
-        entity.extendDataLog["__extendOrder__"] = extendOrder;
+        entity.extendBaseLog = {};
+        entity.extendBaseLog["__extendOrder__"] = extendOrder;
 
-        while (extendData)
+        while (extendBase)
         {
-            extendOrder.push(extendData);
-            extendData = settings.entityBases[extendData]?.extendData || defaultEntityData.entityBases[extendData]?.extendData;
+            extendOrder.push(extendBase);
+            extendBase = settings.entityBases[extendBase]?.extendBase || defaultEntityData.entityBases[extendBase]?.extendBase;
         }
 
         // FILL INFO ABOUT WHAT ENTITY PROPERTIES ARE EXTENDED BY WHY WHICH DATA
         let propsInThisEntity = Object.keys(entity);
         propsInThisEntity.splice(propsInThisEntity.indexOf("name"), 1);
-        entity.extendDataLog[entityName] = propsInThisEntity;
+        entity.extendBaseLog[entityName] = propsInThisEntity;
 
         var propsFound = propsInThisEntity.slice();
 
@@ -1071,7 +1071,7 @@ export class PluginHandler
             var propsExtended = Object.keys(extendEntity);
             var propsExtendedFiltered = propsExtended.filter(p => !propsFound.includes(p));
 
-            entity.extendDataLog[extendEntityName] = propsExtendedFiltered;
+            entity.extendBaseLog[extendEntityName] = propsExtendedFiltered;
 
             propsFound.push(...propsExtendedFiltered);
         }
