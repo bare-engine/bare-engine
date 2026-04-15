@@ -1,12 +1,12 @@
 import { SettingsData } from "./bareTypes";
 
 export const defaultEntityData: SettingsData = {
-  entityBases: {
+  baseEntities: {
     ANY: {
       extendClass: "GameObject"
     },
     ANY_ENTITY: {
-      extendBase: "ANY",
+      baseEntity: "ANY",
       extendClass: "GameObject"
     },
     NONE: {

@@ -180,18 +180,18 @@ window.__GAME_DEBUG_API__ = {
     var entity:Entity;
     var raw = scene.settingsHandler.GetRaw();
     if (isBase)
-        entity = raw.entityBases[name];
+        entity = raw.baseEntities[name];
     else
         entity = raw.entities[name];
 
     // MMMM
     entity = {...entity};
-    /*if (!entity.extendBase)
+    /*if (!entity.baseEntity)
     {
         if (isBase)
-            entity.extendBase = "ANY";
+            entity.baseEntity = "ANY";
         else
-            entity.extendBase = "ANY_ENTITY";
+            entity.baseEntity = "ANY_ENTITY";
     }
     if (!entity.extendClass)
     {
@@ -273,7 +273,7 @@ window.__GAME_DEBUG_API__ = {
     }
 
     /*extendClass?: string;
-    extendBase?: string;
+    baseEntity?: string;
     imagePath?: string;
     texture?: string;
     hitbox?: any; //Rectangle2Vec | String;*/
@@ -358,13 +358,13 @@ window.__GAME_DEBUG_API__ = {
 
                 if (entityScene.isBase)
                 {
-                    rawSettingsData.entityBases.ANY ??= {...defaultEntityData.entityBases.ANY};
-                    rawSettingsData.entityBases.ANY_ENTITY ??= {...defaultEntityData.entityBases.ANY_ENTITY};
+                    rawSettingsData.baseEntities.ANY ??= {...defaultEntityData.baseEntities.ANY};
+                    rawSettingsData.baseEntities.ANY_ENTITY ??= {...defaultEntityData.baseEntities.ANY_ENTITY};
                 }
 
                 var entity:Entity;
                 if (entityScene.isBase)
-                    entity = rawSettingsData.entityBases[entityScene.objectName];
+                    entity = rawSettingsData.baseEntities[entityScene.objectName];
                 else
                     entity = rawSettingsData.entities[entityScene.objectName];
 
@@ -502,20 +502,20 @@ window.__GAME_DEBUG_API__ = {
     var settingsData = plugin.GetCurrentScene().settingsHandler.GetRaw();
 
     // ADD DEFAULTS - SAME AS defaultEntityData - REBUILD TO ADD IN FRONT
-    settingsData.entityBases ??= {};
+    settingsData.baseEntities ??= {};
 
     const {
         ANY,
         ANY_ENTITY,
         ...rest
-    } = settingsData.entityBases;
+    } = settingsData.baseEntities;
 
-    settingsData.entityBases = {
+    settingsData.baseEntities = {
         ANY: ANY ?? {
             extendClass: "GameObject"
         },
         ANY_ENTITY: ANY_ENTITY ?? {
-            extendBase: "ANY",
+            baseEntity: "ANY",
             extendClass: "GameObject"
         },
         ...rest
@@ -977,32 +977,32 @@ export class PluginHandler
     }
 
     // FOR ALL ENTITIES IN SETTINGS,
-    // FILL entity.extendBaseLog WITH DATA ABOUT WHAT PROPERTIES IT EXTENDS
+    // FILL entity.baseEntityLog WITH DATA ABOUT WHAT PROPERTIES IT EXTENDS
     ProcessSettingsData(settings: SettingsData):void
     {
         // STORE ENTITES BASED ON HOW MANY TIMES THEY EXTEND DATA - COULD BE ARRAY? NEVER ANY GAP?
         var entitiesByExtendCount:Record<int, {entity: Entity, extendEntities: Array<Entity>}[]> = {};
 
-        var entitiesCombined = {...settings.entityBases, ...settings.entities};
+        var entitiesCombined = {...settings.baseEntities, ...settings.entities};
         for (var entityName in entitiesCombined)
         {
             let entity = entitiesCombined[entityName];
             let extendCount = 0;
 
             let extendEntities = [];
-            let extendBase = entity.extendBase;
-            while (extendBase)
+            let baseEntity = entity.baseEntity;
+            while (baseEntity)
             {
                 extendCount++;
-                extendEntities.push(settings.entityBases[extendBase]);
-                extendBase = settings.entityBases[extendBase]?.extendBase;
+                extendEntities.push(settings.baseEntities[baseEntity]);
+                baseEntity = settings.baseEntities[baseEntity]?.baseEntity;
             }
 
             entitiesByExtendCount[extendCount] ??= [];
             entitiesByExtendCount[extendCount].push({entity, extendEntities});
         }
 
-        // FILL extendBaseLog OF ENTITIES 
+        // FILL baseEntityLog OF ENTITIES 
         // STARTING FROM THE LEAST EXTENDED, TO MOST. THIS ALLOWS US TO REUSE THE LOG WE PROCESSED BEFORE
         for (var extendCount in entitiesByExtendCount)
         {
@@ -1016,20 +1016,20 @@ export class PluginHandler
                 // FILL INFO ABOUT WHAT ENTITY PROPERTIES ARE EXTENDED BY WHY WHICH DATA
                 let propsInThisEntity = Object.keys(entity);
                 propsInThisEntity.splice(propsInThisEntity.indexOf("name"), 1);
-                entity.extendBaseLog = {};
-                entity.extendBaseLog[entity.name] = propsInThisEntity;
+                entity.baseEntityLog = {};
+                entity.baseEntityLog[entity.name] = propsInThisEntity;
 
                 var extendOrder = [entity.name];
-                entity.extendBaseLog["__extendOrder__"] = extendOrder;
+                entity.baseEntityLog["__extendOrder__"] = extendOrder;
 
                 for (var extendEntity of extendEntities)
                 {
-                    entity.extendBaseLog[extendEntity.name] = [];
-                    for (var extendedEntityName of extendEntity.extendBaseLog["__extendOrder__"])
+                    entity.baseEntityLog[extendEntity.name] = [];
+                    for (var extendedEntityName of extendEntity.baseEntityLog["__extendOrder__"])
                     {
-                        var propsExtended = extendEntity.extendBaseLog[extendedEntityName];
+                        var propsExtended = extendEntity.baseEntityLog[extendedEntityName];
                         var propsExtendedFiltered = propsExtended.filter(p => !propsInThisEntity.includes(p));
-                        entity.extendBaseLog[extendEntity.name] = propsExtendedFiltered;
+                        entity.baseEntityLog[extendEntity.name] = propsExtendedFiltered;
                     }
 
                     extendOrder.push(extendEntity.name);
@@ -1039,27 +1039,27 @@ export class PluginHandler
     }
 
     // FOR SINGLE ENTITY IN SETTINGS,
-    // FILL entity.extendBaseLog WITH DATA ABOUT WHAT PROPERTIES IT EXTENDS
-    // MUTATES THE ENTITY ITSELF: ADDS extendBaseLog
+    // FILL entity.baseEntityLog WITH DATA ABOUT WHAT PROPERTIES IT EXTENDS
+    // MUTATES THE ENTITY ITSELF: ADDS baseEntityLog
     BuildExtendDataLog(entity: Entity, entityName: string, settings: SettingsData): void
     {
-        // GET EXTENDED ENTITES
-        let extendBase = entity.extendBase;
+        // GET BASE ENTITIES ALL THE WAY DOWN, PUSH IN extendOrder
+        let baseEntity = entity.baseEntity;
 
         var extendOrder = [entityName];
-        entity.extendBaseLog = {};
-        entity.extendBaseLog["__extendOrder__"] = extendOrder;
+        entity.baseEntityLog = {};
+        entity.baseEntityLog["__extendOrder__"] = extendOrder;
 
-        while (extendBase)
+        while (baseEntity)
         {
-            extendOrder.push(extendBase);
-            extendBase = settings.entityBases[extendBase]?.extendBase || defaultEntityData.entityBases[extendBase]?.extendBase;
+            extendOrder.push(baseEntity);
+            baseEntity = settings.baseEntities[baseEntity]?.baseEntity || defaultEntityData.baseEntities[baseEntity]?.baseEntity;
         }
 
-        // FILL INFO ABOUT WHAT ENTITY PROPERTIES ARE EXTENDED BY WHY WHICH DATA
+        // FILL INFO ABOUT WHAT ENTITY PROPERTIES ARE EXTENDED BY WHY WHICH DATA - USING extendOrder
         let propsInThisEntity = Object.keys(entity);
         propsInThisEntity.splice(propsInThisEntity.indexOf("name"), 1);
-        entity.extendBaseLog[entityName] = propsInThisEntity;
+        entity.baseEntityLog[entityName] = propsInThisEntity;
 
         var propsFound = propsInThisEntity.slice();
 
@@ -1067,11 +1067,11 @@ export class PluginHandler
         {
             // LOG EXTENDED PROPERTIES - SHOULD NOT HAVE BEEN FOUND BEFORE
             var extendEntityName = extendOrder[i];
-            var extendEntity = settings.entityBases[extendEntityName];
+            var extendEntity = settings.baseEntities[extendEntityName];
             var propsExtended = Object.keys(extendEntity);
             var propsExtendedFiltered = propsExtended.filter(p => !propsFound.includes(p));
 
-            entity.extendBaseLog[extendEntityName] = propsExtendedFiltered;
+            entity.baseEntityLog[extendEntityName] = propsExtendedFiltered;
 
             propsFound.push(...propsExtendedFiltered);
         }

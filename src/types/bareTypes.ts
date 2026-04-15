@@ -100,12 +100,12 @@ export interface Entity
   propertiesRemoved?: string[];
 
   extendClass?: string;
-  extendBase?: string;
+  baseEntity?: string;
   imagePath?: string;
   interactableInEditor?:boolean;
   save?:boolean;
 
-  extendBaseLog?: Record<string, any>;
+  baseEntityLog?: Record<string, any>;
 
   // PHYSICS
   collide?: boolean;
@@ -164,7 +164,7 @@ export var entityVars = [
     "propertiesRemoved",
 
     "extendClass",
-    "extendBase",
+    "baseEntity",
     "imagePath",
     "interactableInEditor",
     "save",
@@ -208,7 +208,7 @@ export interface SettingsData
 {
   name?: string;
   categories?: Record<string, Category>;
-  entityBases?: Record<string, Partial<Entity>>; // MADE PARTIAL TO SUPPORT IT HAVING NO NAME (YET)
+  baseEntities?: Record<string, Partial<Entity>>; // MADE PARTIAL TO SUPPORT IT HAVING NO NAME (YET)
   entities?: Record<string, Partial<Entity>>; // SAME ^
   tilesheets?: Array<Entity>;
   layers?: Array<string>;

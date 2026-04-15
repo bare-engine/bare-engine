@@ -160,18 +160,18 @@ export class SettingsHandler
         // CAN BECOME HEAVY, WILL NOT ALWAYS BE NECESSARY - CAN ADD FLAG
         if (settings.entities)
         {
-            for (var entityBaseName in settings.entityBases)
+            for (var entityBaseName in settings.baseEntities)
             {
-                var entityBase = settings.entityBases[entityBaseName];
+                var entityBase = settings.baseEntities[entityBaseName];
                 entityBase.name = entityBaseName; // FOR CONSTRUCT
 
                 // ENTITY BASE - IF EXTEND DATA NOT SET, DEFAULT TO ANY BASE
                 if (entityBaseName == "NONE")
                     continue;
 
-                if (!entityBase.extendBase && entityBaseName != "ANY")
+                if (!entityBase.baseEntity && entityBaseName != "ANY")
                 {
-                    entityBase.extendBase = "ANY";
+                    entityBase.baseEntity = "ANY";
                 }
             }
 
@@ -182,9 +182,9 @@ export class SettingsHandler
                     continue;
 
                 var entity = settings.entities[entityName];
-                if (!entity.extendBase)
+                if (!entity.baseEntity)
                 {
-                    entity.extendBase = "ANY_ENTITY";
+                    entity.baseEntity = "ANY_ENTITY";
                 }
             }
 
@@ -194,17 +194,17 @@ export class SettingsHandler
             }*/
 
             // CONSTRUCT ALL ENTITY BASES
-            for (var entityBaseName in settings.entityBases)
+            for (var entityBaseName in settings.baseEntities)
             {
                 if (entityBaseName == "NONE")
                     continue;
 
-                var entityBase = settings.entityBases[entityBaseName];
+                var entityBase = settings.baseEntities[entityBaseName];
 
-                // SET DEFAULT extendBase - IN PREPARATION FOR CONSTRUCT
-                if (!entityBase.extendBase && entityBaseName != "ANY")
+                // SET DEFAULT baseEntity - IN PREPARATION FOR CONSTRUCT
+                if (!entityBase.baseEntity && entityBaseName != "ANY")
                 {
-                    entityBase.extendBase = "ANY";
+                    entityBase.baseEntity = "ANY";
                 }
 
                 // CONSTRUCT BASE ENTITY - NOW IT EXTENDS SOMETHING
@@ -423,10 +423,10 @@ export class SettingsHandler
         }
 
         // RECURSIVELY EXTEND DATA
-        var extendedData = entity.extendBase;
+        var extendedData = entity.baseEntity;
         while (extendedData)
         {
-            var entityBase = rawSettingsData.entityBases[extendedData];
+            var entityBase = rawSettingsData.baseEntities[extendedData];
 
             // INSERT MEMBERS FROM ENTITY BASE WE DIDN'T DEFINE ALREADY IN ENTITY
             for (const key of Object.keys(entityBase))
@@ -439,7 +439,7 @@ export class SettingsHandler
 
             entity.components = mergeComponents(entityBase.components, entity.components);
 
-            extendedData = entityBase.extendBase;
+            extendedData = entityBase.baseEntity;
         }
 
         return final(entity);

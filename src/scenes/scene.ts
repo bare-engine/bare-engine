@@ -332,11 +332,11 @@ export class Scene implements SceneI
                 }
                 else
                 {
-                    // NO ENTITY IN DATA - MERGE WITH extendBase BASE
-                    if (!entityArg.extendBase)
-                        entityArg.extendBase = "ANY_ENTITY";
+                    // NO ENTITY IN DATA - MERGE WITH baseEntity BASE
+                    if (!entityArg.baseEntity)
+                        entityArg.baseEntity = "ANY_ENTITY";
 
-                    var entityBase = settingsData.entityBases[entityArg.extendBase];
+                    var entityBase = settingsData.baseEntities[entityArg.baseEntity];
 
                     entity = {
                         ...entityBase, // OVERRIDE
@@ -367,7 +367,7 @@ export class Scene implements SceneI
                 else
                 {
                     // ENTITY NAME NOT FOUND, SO TAKE THE 'ANY' ENTRY AND ASSIGN A NEW NAME
-                    var entityBase = cloneEntityData(settingsData.entityBases!["ANY_ENTITY"] as Entity);
+                    var entityBase = cloneEntityData(settingsData.baseEntities!["ANY_ENTITY"] as Entity);
                     entity = entityBase;
                     entity.name = nameOrEntity;
                 }
@@ -377,8 +377,8 @@ export class Scene implements SceneI
         if (!entity.extendClass)
             entity.extendClass = "GameObject";
 
-        // NO USE FOR THIS ANYMORE, BUT GONNA REPURPOSE IT TO SHOW extendBase PATH
-        //delete entityConstructed.extendBase;
+        // NO USE FOR THIS ANYMORE, BUT GONNA REPURPOSE IT TO SHOW baseEntity PATH
+        //delete entityConstructed.baseEntity;
 
         return entity;
     }

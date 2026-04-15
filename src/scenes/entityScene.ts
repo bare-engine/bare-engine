@@ -58,7 +58,7 @@ export class EntityScene extends EditorScene
 
         if (isBase)
         {
-            entityFromSettingsData = this.settingsData.entityBases[objectName];
+            entityFromSettingsData = this.settingsData.baseEntities[objectName];
         }
         else
         {
