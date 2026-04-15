@@ -49,7 +49,7 @@ export class SettingsHandler
             if (typeof rawValue === 'object' && typeof defaultValue === 'object' && defaultValue)
             {
                 // Objects: deep merge
-                const merged = { ...defaultValue };
+                const merged = this.clone(defaultValue);
                 for (const [k, v] of Object.entries(rawValue))
                 {
                     const defaultObj = defaultValue[k];
@@ -423,10 +423,10 @@ export class SettingsHandler
         }
 
         // RECURSIVELY EXTEND DATA
-        var extendedData = entity.baseEntity;
-        while (extendedData)
+        var baseEntity = entity.baseEntity;
+        while (baseEntity)
         {
-            var entityBase = rawSettingsData.baseEntities[extendedData];
+            var entityBase = rawSettingsData.baseEntities[baseEntity];
 
             // INSERT MEMBERS FROM ENTITY BASE WE DIDN'T DEFINE ALREADY IN ENTITY
             for (const key of Object.keys(entityBase))
@@ -439,7 +439,7 @@ export class SettingsHandler
 
             entity.components = mergeComponents(entityBase.components, entity.components);
 
-            extendedData = entityBase.baseEntity;
+            baseEntity = entityBase.baseEntity;
         }
 
         return final(entity);

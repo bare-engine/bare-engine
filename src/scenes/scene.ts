@@ -332,26 +332,40 @@ export class Scene implements SceneI
                 }
                 else
                 {
-                    // NO ENTITY IN DATA - MERGE WITH baseEntity BASE
-                    if (!entityArg.baseEntity)
-                        entityArg.baseEntity = "ANY_ENTITY";
-
-                    var entityBase = settingsData.baseEntities[entityArg.baseEntity];
-
-                    entity = {
-                        ...entityBase, // OVERRIDE
-                        ...entityArg, // START
-                        components: mergeComponents(entityBase.components, entityArg.components),
-                    };
-                    entity = cloneEntityData(entity);
-
-                    // REMOVE COMPONENTS SPECIFICALLY LISTED IN ENTITY
-                    if (entity.components && entity.componentsRemoved)
+                    if (entityArg.name != "ANY") // ANY IS ONLY ENTITY THAT DOES NOT NEED A BASE ENTITY
                     {
-                        for (const componentName of entity.componentsRemoved)
+                        // NO ENTITY IN DATA - MERGE WITH baseEntity BASE
+                        if (!entityArg.baseEntity)
+                            if (!entityArg.name)
+                                entityArg.baseEntity = "ANY"; // NO NAME, PROBABLY A BASE ENTITY?
+                            else
+                                if (settingsData.baseEntities[entityArg.name])
+                                    entityArg.baseEntity = "ANY";
+                                else
+                                    entityArg.baseEntity = "ANY_ENTITY";
+
+                        var entityBase = settingsData.baseEntities[entityArg.baseEntity];
+
+                        entity = {
+                            ...entityBase, // OVERRIDE
+                            ...entityArg, // START
+                            components: mergeComponents(entityBase.components, entityArg.components),
+                        };
+
+                        entity = cloneEntityData(entity);
+
+                        // REMOVE COMPONENTS SPECIFICALLY LISTED IN ENTITY
+                        if (entity.components && entity.componentsRemoved)
                         {
-                            delete entity.components[componentName];
+                            for (const componentName of entity.componentsRemoved)
+                            {
+                                delete entity.components[componentName];
+                            }
                         }
+                    }
+                    else
+                    {
+                        entity = cloneEntityData(entityArg);
                     }
                 }
             }

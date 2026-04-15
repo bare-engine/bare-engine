@@ -184,24 +184,17 @@ window.__GAME_DEBUG_API__ = {
     else
         entity = raw.entities[name];
 
-    // MMMM
-    entity = {...entity};
-    /*if (!entity.baseEntity)
-    {
-        if (isBase)
-            entity.baseEntity = "ANY";
-        else
-            entity.baseEntity = "ANY_ENTITY";
-    }
-    if (!entity.extendClass)
-    {
-        entity.extendClass = "GameObject";
-    }*/
+    var processed = scene.settingsHandler.Get();
+    var processedEntity:Entity;
+    if (isBase)
+        processedEntity = processed.baseEntities[name];
+    else
+        processedEntity = processed.entities[name];
 
-    plugin.BuildExtendDataLog(entity, name, raw);
+    var entityWithLog = plugin.BuildExtendDataLog(entity, name, processedEntity, raw, processed);
 
     // BUILD THE ENTITY TO PASS TO PLUGIN RIGHT AWAY
-    var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(entity, scene.settingsData);
+    var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(entityWithLog, scene.settingsData);
     levelEntityWithDefaultValues.name = name;
 
     return levelEntityWithDefaultValues;
@@ -254,13 +247,6 @@ window.__GAME_DEBUG_API__ = {
                 AddExtraPropsToData(data.children[i], o.children[i]);
             }
         }
-    }
-
-    if (scene instanceof EntityScene)
-    {
-        var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(o.entity);
-        AddExtraPropsToData(levelEntityWithDefaultValues, o);
-        return levelEntityWithDefaultValues;
     }
 
     var data = plugin.GetCurrentScene().levelHandler.SerializeObjectFully(o, true) as any;
@@ -346,7 +332,7 @@ window.__GAME_DEBUG_API__ = {
     return s;
   },
 
-    setObject(id: string, props: any)
+    setObject(id: string, props: Record<string, any>)
     {
         var scene = plugin.GetCurrentScene();
         if (scene instanceof EntityScene)
@@ -356,24 +342,97 @@ window.__GAME_DEBUG_API__ = {
             var f = async () => {
                 var rawSettingsData = entityScene.settingsHandler.GetRaw();
 
-                if (entityScene.isBase)
+                // MAKE SURE ANY OR ANY_ENTITY EXISTS, IF WE'RE GONNA WRITE TO IT
+                //if (entityScene.isBase)
                 {
-                    rawSettingsData.baseEntities.ANY ??= {...defaultEntityData.baseEntities.ANY};
-                    rawSettingsData.baseEntities.ANY_ENTITY ??= {...defaultEntityData.baseEntities.ANY_ENTITY};
+                    //if (entityScene.objectName == "ANY")
+                        rawSettingsData.baseEntities.ANY ??= {...defaultEntityData.baseEntities.ANY};
+                    
+                    //if (entityScene.objectName == "ANY_ENTITY")
+                        rawSettingsData.baseEntities.ANY_ENTITY ??= {...defaultEntityData.baseEntities.ANY_ENTITY};
                 }
 
+                var entityCopy = Object.assign({}, entity);
+
+                // WRITE ENTITY PROPS TO RAW 
                 var entity:Entity;
                 if (entityScene.isBase)
                     entity = rawSettingsData.baseEntities[entityScene.objectName];
                 else
                     entity = rawSettingsData.entities[entityScene.objectName];
-
-                Object.assign(entity, props);
                 
+                Object.assign(entity, props);
+
+                // GET ENTITY WITH DEFAULT VALUES
+                for (var key in props)
+                {
+                    delete entityCopy[key];
+                }
+                var entityWithDefaultValues = scene.GetEntityWithDefaultValues(entityCopy, scene.settingsData) as any;
+                entityWithDefaultValues.x = entityWithDefaultValues.position.x;
+                entityWithDefaultValues.y = entityWithDefaultValues.position.y;
+                entityWithDefaultValues.scaleX = entityWithDefaultValues.scale.x;
+                entityWithDefaultValues.scaleY = entityWithDefaultValues.scale.y;
+                entityWithDefaultValues.innerX = entityWithDefaultValues.innerPosition.x;
+                entityWithDefaultValues.innerY = entityWithDefaultValues.innerPosition.y;
+                entityWithDefaultValues.innerScaleX = entityWithDefaultValues.innerScale.x;
+                entityWithDefaultValues.innerScaleY = entityWithDefaultValues.innerScale.y;
+
+                // DELETE ANY PROPS FROM ENTITY THAT HAVE SAME VALUE AS DEFAULT, THEY'RE NOT NEEDED
+                // EG: YOU SET scaleX TO 2, THEN BACK TO 1, IT WILL REMOVE THE scaleX PROPERTY
+                for (var key in props)
+                {
+                    var val = props[key];
+                    var defaultVal = entityWithDefaultValues[key];
+                    if (val == defaultVal)
+                        delete entity[key];
+                }
+
+                // UNDO DEFAULT ADDITIONS TO ANY AND ANY_ENTITY AGAIN, DON'T WANT TO SAVE THEM
+                // THIS IS ALSO ADDED AT getEntityData
+                //if (entityScene.objectName == "ANY" || entityScene.objectName == "ANY_ENTITY")
+                //if (entityScene.isBase)
+                {
+                    var propKeys = Object.keys(props);
+
+                    //if (entityScene.objectName == "ANY")
+                    {
+                        var anyKeys = Object.keys(defaultEntityData.baseEntities.ANY);
+                        for (var key of anyKeys)
+                        {
+                            if (rawSettingsData.baseEntities.ANY[key] == defaultEntityData.baseEntities.ANY[key]) // IF SAME AS DEFAULT
+                            if (entityScene.objectName != "ANY" || !propKeys.includes(key))
+                                delete rawSettingsData.baseEntities.ANY[key];
+                        }
+
+                        if (Object.keys(rawSettingsData.baseEntities.ANY).length == 0)
+                            delete rawSettingsData.baseEntities.ANY;
+                    }
+
+                    //if (entityScene.objectName == "ANY_ENTITY")
+                    {
+                        var anyEntityKeys = Object.keys(defaultEntityData.baseEntities.ANY_ENTITY);
+                        for (var key of anyEntityKeys)
+                        {
+                            if (rawSettingsData.baseEntities.ANY_ENTITY[key] == defaultEntityData.baseEntities.ANY_ENTITY[key])
+                            if (entityScene.objectName != "ANY_ENTITY" || !propKeys.includes(key))
+                                delete rawSettingsData.baseEntities.ANY_ENTITY[key];
+                        }
+
+                        if (Object.keys(rawSettingsData.baseEntities.ANY_ENTITY).length == 0)
+                            delete rawSettingsData.baseEntities.ANY_ENTITY;
+                    }
+                }
+                
+                // SINCE WE JUST MODIFIED THE RAW ENTITY, WE RE-PROCESS THE settingsData AGAIN, SO IT'S UP TO DATE 
                 await entityScene.settingsHandler.Process(rawSettingsData);
 
                 // SAVE TO FILE
                 await entityScene.SaveEntityData(rawSettingsData);
+
+                // ADD DEFAULTS TO RAW SETTINGS AGAIN, SO PROPS CAN BE ADDED TO IT
+                rawSettingsData.baseEntities.ANY ??= {...defaultEntityData.baseEntities.ANY};
+                rawSettingsData.baseEntities.ANY_ENTITY ??= {...defaultEntityData.baseEntities.ANY_ENTITY};
             }
             f();
 
@@ -511,17 +570,54 @@ window.__GAME_DEBUG_API__ = {
     } = settingsData.baseEntities;
 
     settingsData.baseEntities = {
-        ANY: ANY ?? {
-            extendClass: "GameObject"
-        },
-        ANY_ENTITY: ANY_ENTITY ?? {
-            baseEntity: "ANY",
-            extendClass: "GameObject"
-        },
+        ANY: ANY ?? defaultEntityData.baseEntities.ANY,
+        ANY_ENTITY: ANY_ENTITY ?? defaultEntityData.baseEntities.ANY_ENTITY,
         ...rest
     };
 
     return settingsData;
+  },
+
+  // FUCKED
+  async addNewEntity(name: string, isBase: boolean = true, newRawData: SettingsData)
+  {
+    /*var scene = plugin.GetCurrentScene();
+
+    var newRawData = scene.settingsHandler.GetRaw();
+
+    if (isBase)
+    {
+        newRawData.baseEntities[name] = defaultEntityData.baseEntities[name];
+    }
+    else
+    {
+        newRawData.entities[name] = defaultEntityData.entities[name];
+    }*/
+
+    try {
+        const res = await fetch('/api/save-entity-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            path: bareEngine.dataPath,
+            settingsData: newRawData,
+            skipReload: true
+        })
+        });
+        const json = await res.json().catch(() => null);
+    
+        // TELL THE PLUGIN
+        //window.__GAME_DEBUG_API__.notifyEntityDataChanged(newRawData)
+
+        await this.OnPostSaveEntityData(newRawData);
+
+        return { ok: res.ok, saved: res.ok, response: json };
+    } catch (error: any) {
+        console.error('Failed to save entity data', error);
+        //return { ok: false, error: error?.message ?? String(error) };
+    }
+
+    //window.__GAME_DEBUG_API__.gotoEntity(name, isBase);
   },
 
   async setEntityData(newData: SettingsData, notifyPlugin: boolean = true)
@@ -1038,28 +1134,30 @@ export class PluginHandler
         }
     }
 
-    // FOR SINGLE ENTITY IN SETTINGS,
-    // FILL entity.baseEntityLog WITH DATA ABOUT WHAT PROPERTIES IT EXTENDS
-    // MUTATES THE ENTITY ITSELF: ADDS baseEntityLog
-    BuildExtendDataLog(entity: Entity, entityName: string, settings: SettingsData): void
+    // RETURNS A NEW ENTITY WITH baseEntityLog ADDED TOT IT
+    // HOLDS DATA ABOUT WHAT PROPERTIES IT EXTENDS
+    // SENDING ALONG PROCESSED ARGS, SO baseEntity IS ALWAYS SET
+    BuildExtendDataLog(entity: Entity, entityName: string, processedEntity: Entity, settingsDataRaw: SettingsData, settingsDataProcessed: SettingsData): Entity
     {
+        var newEntity = {...entity}; // SHALLOW COPY, MORE IS NOT NEEDED, SINCE WE ONLY ADD baseEntityLog TO IT
+
         // GET BASE ENTITIES ALL THE WAY DOWN, PUSH IN extendOrder
-        let baseEntity = entity.baseEntity;
+        let baseEntity = processedEntity.baseEntity;
 
         var extendOrder = [entityName];
-        entity.baseEntityLog = {};
-        entity.baseEntityLog["__extendOrder__"] = extendOrder;
+        newEntity.baseEntityLog = {};
+        newEntity.baseEntityLog["__extendOrder__"] = extendOrder;
 
         while (baseEntity)
         {
             extendOrder.push(baseEntity);
-            baseEntity = settings.baseEntities[baseEntity]?.baseEntity || defaultEntityData.baseEntities[baseEntity]?.baseEntity;
+            baseEntity = settingsDataProcessed.baseEntities[baseEntity]?.baseEntity;
         }
 
         // FILL INFO ABOUT WHAT ENTITY PROPERTIES ARE EXTENDED BY WHY WHICH DATA - USING extendOrder
-        let propsInThisEntity = Object.keys(entity);
+        let propsInThisEntity = Object.keys(newEntity);
         propsInThisEntity.splice(propsInThisEntity.indexOf("name"), 1);
-        entity.baseEntityLog[entityName] = propsInThisEntity;
+        newEntity.baseEntityLog[entityName] = propsInThisEntity;
 
         var propsFound = propsInThisEntity.slice();
 
@@ -1067,14 +1165,16 @@ export class PluginHandler
         {
             // LOG EXTENDED PROPERTIES - SHOULD NOT HAVE BEEN FOUND BEFORE
             var extendEntityName = extendOrder[i];
-            var extendEntity = settings.baseEntities[extendEntityName];
+            var extendEntity = settingsDataRaw.baseEntities[extendEntityName];
             var propsExtended = Object.keys(extendEntity);
             var propsExtendedFiltered = propsExtended.filter(p => !propsFound.includes(p));
 
-            entity.baseEntityLog[extendEntityName] = propsExtendedFiltered;
+            newEntity.baseEntityLog[extendEntityName] = propsExtendedFiltered;
 
             propsFound.push(...propsExtendedFiltered);
         }
+
+        return newEntity;
     }
 }
 
