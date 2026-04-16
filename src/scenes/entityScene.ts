@@ -1,6 +1,6 @@
-import { assetsHandler, EditorScene, Helper, LevelData, MakePath, PhysicsObjectBare, SettingsData, SettingsHandler } from "../exports";
+import { assetsHandler, Color, EditorScene, LevelData, RenderTexture, SettingsData, SettingsHandler, TextObject, Vec2 } from "../exports";
 import { levelHandler } from "../handlers/levelHandler";
-import { AwakePayload, BareEvent, Entity, entityVars, Size } from "../types/bareTypes";
+import { AwakePayload, Entity, entityVars } from "../types/bareTypes";
 
 type EditorScenePayload = AwakePayload<EditorScene>;
 type EntitySceneAwakePayload = EditorScenePayload & {
@@ -23,6 +23,59 @@ export class EntityScene extends EditorScene
 
     override async OnStart(payload: EntitySceneAwakePayload = this.lastPayload): Promise<void>
     {
+        if (!assetsHandler.HasTexture("placeHolder"))
+        {
+            var rt = new RenderTexture(512, 512, true, Color.fromHex("b3b3b3"));
+            var text = new TextObject(this, {text: "  Place       Holder", fontSize: 52, color: "white"});
+            text.CenterPivot();
+            text.x = rt.width / 2;
+            text.y = rt.height / 2;
+            this.RenderTo(text, rt);
+
+            const fbo = rt.fbo;
+
+            rapid.drawToFBO(fbo, () => {
+                rapid.renderLine({
+                    points: [
+                        new Vec2(0, 0),
+                        new Vec2(rt.width / 2, rt.height / 2),
+                    ],
+                    width: 5,
+                    roundCap: false,
+                    color: Color.White,
+                });
+                rapid.renderLine({
+                    points: [
+                        new Vec2(rt.width, 0),
+                        new Vec2(rt.width / 2, rt.height / 2),
+                    ],
+                    width: 5,
+                    roundCap: false,
+                    color: Color.White,
+                });
+                rapid.renderLine({
+                    points: [
+                        new Vec2(0, rt.height),
+                        new Vec2(rt.width / 2, rt.height / 2),
+                    ],
+                    width: 5,
+                    roundCap: false,
+                    color: Color.White,
+                });
+                rapid.renderLine({
+                    points: [
+                        new Vec2(rt.width, rt.height),
+                        new Vec2(rt.width / 2, rt.height / 2),
+                    ],
+                    width: 5,
+                    roundCap: false,
+                    color: Color.White,
+                });
+            });
+            
+            assetsHandler.AddTexture("placeHolder", rt);
+        }
+
         this.lastPayload = payload;
 
         const objectName:string = (payload)?.name;
@@ -116,6 +169,8 @@ export class EntityScene extends EditorScene
 
     async SaveEntityDataToSettingsData(): Promise<LevelData>
     {
+        return;
+
         // SERIALIZE, TODO, NOT REALLY NEEDED, JUST FOR THE RETURN
         var level = this.currentLevel;
         //levelHandler.SerializeLevel(level);

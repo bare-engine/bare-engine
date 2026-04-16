@@ -609,8 +609,6 @@ window.__GAME_DEBUG_API__ = {
         // TELL THE PLUGIN
         //window.__GAME_DEBUG_API__.notifyEntityDataChanged(newRawData)
 
-        await this.OnPostSaveEntityData(newRawData);
-
         return { ok: res.ok, saved: res.ok, response: json };
     } catch (error: any) {
         console.error('Failed to save entity data', error);
@@ -644,6 +642,10 @@ window.__GAME_DEBUG_API__ = {
 
   refreshLevelFiles() {
     window.postMessage({ __fromGame: true, type: "refreshLevelFiles" }, "*");
+  },
+
+  gameStartedNotify() {
+    window.postMessage({ __fromGame: true, type: "gameStartedNotify" }, "*");
   },
 
   refreshScenes() {
@@ -800,6 +802,7 @@ export class PluginHandler
             // RIGHT CLICK FOR PLUGIN SELECT
             document.addEventListener('pointerdown', this.OnRightClickPointerDown, false);
             
+            window.__GAME_DEBUG_API__.gameStartedNotify();
             window.__GAME_DEBUG_API__.refreshLevelFiles();
         });
 
@@ -1139,7 +1142,7 @@ export class PluginHandler
     // SENDING ALONG PROCESSED ARGS, SO baseEntity IS ALWAYS SET
     BuildExtendDataLog(entity: Entity, entityName: string, processedEntity: Entity, settingsDataRaw: SettingsData, settingsDataProcessed: SettingsData): Entity
     {
-        var newEntity = {...entity}; // SHALLOW COPY, MORE IS NOT NEEDED, SINCE WE ONLY ADD baseEntityLog TO IT
+        var newEntity = {...processedEntity}; // SHALLOW COPY, MORE IS NOT NEEDED, SINCE WE ONLY ADD baseEntityLog TO IT
 
         // GET BASE ENTITIES ALL THE WAY DOWN, PUSH IN extendOrder
         let baseEntity = processedEntity.baseEntity;
@@ -1155,7 +1158,7 @@ export class PluginHandler
         }
 
         // FILL INFO ABOUT WHAT ENTITY PROPERTIES ARE EXTENDED BY WHY WHICH DATA - USING extendOrder
-        let propsInThisEntity = Object.keys(newEntity);
+        let propsInThisEntity = Object.keys(entity); // USING entity, NOT newEntity SINCE THAT CONTAINS ALL PROPS ALREADY
         propsInThisEntity.splice(propsInThisEntity.indexOf("name"), 1);
         newEntity.baseEntityLog[entityName] = propsInThisEntity;
 
