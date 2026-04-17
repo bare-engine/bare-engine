@@ -244,6 +244,11 @@ export class Scene implements SceneI
     
     ConstructEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [] }): Entity
     {
+        if (options.fillPresets === undefined)
+            options.fillPresets = true;
+        if (options.propsToIgnoreInEntity === undefined)
+            options.propsToIgnoreInEntity = [];
+
         function cloneEntityData<T>(data: T): T
         {
             return JSON.parse(JSON.stringify(data));
@@ -252,7 +257,7 @@ export class Scene implements SceneI
         function mergeComponents(comp1: any, comp2: any):Record<string, Record<string, any>>
         {
             const merged = { ...comp1 };
-            
+            //
             if (comp2) {
                 for (const [key, value] of Object.entries(comp2)) {
                     if (merged[key] && typeof value === 'object' && !Array.isArray(value)) {
@@ -296,11 +301,6 @@ export class Scene implements SceneI
                     var sopiroPhysicsClasses = ["Circle", "Box", "Polygon"];
                     if (sopiroPhysicsClasses.includes(entityArg.extendClass))
                         entityArg.pivot = { x: .5, y: .5 };
-
-                    // FILL PRESETS - LIKE hitbox: "FULL"                     
-                    //                     hitbox: {x1: 0, y1: 0, x2: 1, y2: 1}
-                    //if (options.fillPresets)
-                    //    this.FillPresets(entityArg, settingsData); // ALREADY DONE IN SETTINGS CONSTRUCT
                 }
 
                 // entityArg HAS BEEN CONSTRUCTED, NOW MERGE IT WITH (ALREADY CONSTRUCTED) ENTITY FROM DATA
@@ -368,6 +368,11 @@ export class Scene implements SceneI
                         entity = cloneEntityData(entityArg);
                     }
                 }
+
+                // FILL PRESETS - LIKE hitbox: "FULL"                     
+                //                     hitbox: {x1: 0, y1: 0, x2: 1, y2: 1}
+                if (options.fillPresets)
+                    this.FillPresets(entity, settingsData); // ALREADY DONE IN SETTINGS CONSTRUCT
             }
             else
             {
@@ -408,7 +413,7 @@ export class Scene implements SceneI
         //    this.componentController?.ProcessCompentsFromEntity(entity, obj);
     }
 
-    /*FillPresets(entity: Entity, settingsData: SettingsData = this.settingsData)
+    FillPresets(entity: Entity, settingsData: SettingsData = this.settingsData)
     {
         var presets = settingsData.presets;
 
@@ -433,7 +438,7 @@ export class Scene implements SceneI
                 }
             }
         }
-    }*/
+    }
 
     private specialMap: Record<string, (obj: GameObject, value: any) => void> =
     {
@@ -460,6 +465,9 @@ export class Scene implements SceneI
     ApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
     {
         obj.OnApplyEntityVarsToGameObject(entity, obj);
+        
+        if (!obj.texture)//
+            obj.InitTexture(MakePathForEntity(entity));
 
         // PROCESS POLYGON VERTICES FIRST, SET THE AREA THAT OTHER PHYSICS PROPERTIES NEED
         if (entity.polygonVertices)
@@ -657,7 +665,7 @@ export class Scene implements SceneI
         return entity;
     }
 
-    // INPUT CAN BE: ENTITY, ENTITY NAME, GAMEOBJECT, CLASS TO INSTANTIATE OR TEXTURE
+    // INPUT CAN BE: ENTITY / ENTITY NAME / GAMEOBJECT / CLASS TO INSTANTIATE / TEXTURE
     AddGameObject(input?: Entity | string | GameObject | GameObjectClass | Texture, parent: int | string | GameObject = "objects"): GameObject
     {
         if (!this.settingsHandler)
@@ -666,99 +674,99 @@ export class Scene implements SceneI
         }
 
         // CREATE
-        var gameObject: GameObject;
-
-        if (!input)
         {
-            // DEFAULT GAMEOBJECT
-            gameObject = bareEngine.GetObjectFromPool("GameObject", this);
-            gameObject.pooled = true;
-            gameObject.name = "pooledGameObject";
-        }
-        else
-        if (typeof input === "function")
-        {
-            // GameObjectClass CASE, INSTANTIATE FROM POOL IF IT EXISTS
-            const pool = bareEngine.gameObjectPools.get(input.name);
-            if (pool)
-                gameObject = pool.Grab();
-            else
-                gameObject = new input();
+            var gameObject: GameObject;
 
-            if (pool)
+            if (!input)
+            {
+                // DEFAULT GAMEOBJECT
+                gameObject = bareEngine.GetObjectFromPool("GameObject", this);
                 gameObject.pooled = true;
-
-            gameObject.name = (pool ? "pooledGameObjectExtend" : "gameObjectExtend");
-        }
-        else
-        if (input instanceof GameObject)
-        {
-            // GameObject INSTANCE ALREADY PROVIDED
-            gameObject = input;
-        }
-        else
-        if (input instanceof Texture)
-        {
-            // TEXTURE
-            gameObject = bareEngine.GetObjectFromPool("GameObject", this);
-            gameObject.SetTexture(input);
-            gameObject.pooled = true;
-            gameObject.name = input.texturePath || "PooledGameObjectFromTexture";
-        }
-        else
-        {
-            var entity: Entity;
-
-            if (typeof input === "string" && input.startsWith("/"))
+                gameObject.name = "pooledGameObject";
+            }
+            else
+            if (typeof input === "function")
             {
-                // PATH STRING - SET UP A BASIC ENTITY
-                var path = input;
-                var split = path.split("/");
-                var imagePath = split.slice(0, split.length - 1).join("/");
-                var name = split[split.length - 1];
+                // GameObjectClass CASE, INSTANTIATE FROM POOL IF IT EXISTS
+                const pool = bareEngine.gameObjectPools.get(input.name);
+                if (pool)
+                    gameObject = pool.Grab();
+                else
+                    gameObject = new input();
 
-                entity = {imagePath: imagePath, name:name, extendClass: "GameObject"};
+                if (pool)
+                    gameObject.pooled = true;
+
+                gameObject.name = (pool ? "pooledGameObjectExtend" : "gameObjectExtend");
+            }
+            else
+            if (input instanceof GameObject)
+            {
+                // GameObject INSTANCE ALREADY PROVIDED
+                gameObject = input;
+            }
+            else
+            if (input instanceof Texture)
+            {
+                // TEXTURE
+                gameObject = bareEngine.GetObjectFromPool("GameObject", this);
+                gameObject.SetTexture(input);
+                gameObject.pooled = true;
+                gameObject.name = input.texturePath || "PooledGameObjectFromTexture";
             }
             else
             {
-                // ENTITY OR ENTITY NAME - CONSTRUCT IT - TO GET ALL DATA TO APPLY TO GAMEOBJECT BELOW
-                entity = this.ConstructEntity(input);
+                var entity: Entity;
+
+                if (typeof input === "string" && input.startsWith("/"))
+                {
+                    // PATH STRING - SET UP A BASIC ENTITY
+                    var path = input;
+                    var split = path.split("/");
+                    var imagePath = split.slice(0, split.length - 1).join("/");
+                    var name = split[split.length - 1];
+
+                    entity = {imagePath: imagePath, name:name, extendClass: "GameObject"};
+                }
+                else
+                {
+                    // ENTITY OR ENTITY NAME - CONSTRUCT IT - TO GET ALL DATA TO APPLY TO GAMEOBJECT BELOW
+                    entity = this.ConstructEntity(input);
+                }
+
+                gameObject = bareEngine.GetObjectFromPool(entity.extendClass!, this);
+                gameObject.Init(MakePathForEntity(entity));
+                //if (entity.texture != "NONE")
+                //    delete entity.texture; // TEXTURE HAS BEEN HANDLED ABOVE WITH Init()
+                this.ApplyEntityToGameObject(entity, gameObject);
             }
 
-            gameObject = bareEngine.GetObjectFromPool(entity.extendClass!, this);
-            gameObject.Init(MakePathForEntity(entity));
-            delete entity.texture; // TEXTURE HAS BEEN HANDLED ABOVE WITH Init()
-            this.ApplyEntityToGameObject(entity, gameObject);
+            gameObject.scene = this;
         }
-
-
-
-        gameObject.scene = this;
 
         // ADD
-        //if (gameObject.name == "")
-            //trace("added gameobject with no name");
-
-        if (parent instanceof GameObject)
         {
-            // ADDING TO PARENT
-            var child = gameObject;
-            parent.AddChild(child);
+            if (parent instanceof GameObject)
+            {
+                // ADDING TO PARENT
+                var child = gameObject;
+                parent.AddChild(child);
+            }
+            else
+            {
+                // ADDING TO LAYER
+                var layer = parent;
+
+                // IF LAYER IS A STRING (EG objects), CHECK IF IT EXISTS, ELSE DEFAULT TO 0
+                if (typeof layer === "string" && (!this.layerNames || !this.layerNames.includes(layer)))
+                    layer = 0;
+
+                this.objectController.Add(gameObject, layer);
+            }
+
+            gameObject.OnAwake();
+            gameObject.Added();
         }
-        else
-        {
-            // ADDING TO LAYER
-            var layer = parent;
-
-            // IF LAYER IS A STRING (EG objects), CHECK IF IT EXISTS, ELSE DEFAULT TO 0
-            if (typeof layer === "string" && (!this.layerNames || !this.layerNames.includes(layer)))
-                layer = 0;
-
-            this.objectController.Add(gameObject, layer);
-        }
-
-        gameObject.OnAwake();
-        gameObject.Added();
 
         // NOTIFY
         globalEvents.emit(BareEvent.game_objectAdded, { gameObject: gameObject, layer: parent });

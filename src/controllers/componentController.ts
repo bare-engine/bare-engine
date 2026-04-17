@@ -170,7 +170,7 @@ export class ComponentController
 
         // Check class-level @Run decorator
         const runModes: number[] | undefined = (component.constructor as any)[RUN_MODES_KEY];
-        trace(runModes)
+        
         if (runModes && !runModes.includes(bareEngine.gameMode))
             return null as any;
 

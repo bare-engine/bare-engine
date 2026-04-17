@@ -8,8 +8,9 @@ import { hitboxController } from "../controllers/hitboxController";
 import { mouseController } from "../controllers/mouseController";
 import { PhysicsObjectBare } from "../exports/barePhysics";
 import { objectController } from "../controllers/objectController";
-import { Color, Scene } from "../exports";
+import { Color, GameMode, Run, Scene } from "../exports";
 
+@Run(GameMode.Editor)
 export class PivotComponent extends BaseComponent
 {
     objName:string;
@@ -33,6 +34,9 @@ export class PivotComponent extends BaseComponent
 
     OnUpdate(deltaTime: number): void 
     {
+        if (!this.hitboxObj)
+            return;
+
         const zoom = this.scene.GetCameraZoom();
 
         //this.go.innerScale = 1/zoom;
@@ -69,17 +73,20 @@ export class PivotComponent extends BaseComponent
             var snapToPosition = (x:number = -1, y:number = -1) => 
             {
                 // HERE WE REMOVE THE PIVOT PROPERTY, SO IT'S NOT AFFECTED BY THE (PARENT) PIVOT SET IN DATA, ONLY CODE
-                // SO THAT pivotBasedOnHitbox HAS AN EFFECT FOR SURE (ELSE PIVOT OVERRIDES IT)
-                let entity:Entity = { name: this.objName, hitbox: hitbox, propertiesRemoved: ["pivot"] };
+                // SO THAT pivotBasedOnHitbox HAS AN EFFECT (ELSE PIVOT OVERRIDES IT)
+                //let entity:Entity = { name: this.objName, hitbox: hitbox, propertiesRemoved: ["pivot"] };
+                var entity = objectController.GetObjectByName(this.objName)!.entity!;
+                entity = { ...entity, hitbox: hitbox, propertiesRemoved: ["pivot"] };
 
                 if (x != -1 && y != -1)
                 {
                     entity.pivotBasedOnHitbox = {x: x, y: y};
                 }
 
-                var origEntity = this.scene.ConstructEntity(entity, this.scene.settingsHandler.Get());
-                var obj = new PhysicsObjectBare()
-                this.scene.ApplyEntityToGameObject(origEntity, obj);
+                //delete entity.components;//
+
+                var obj = new PhysicsObjectBare(this.scene);
+                this.scene.ApplyEntityToGameObject(entity, obj);
                 var pivotPosOrig = obj.pivot;
                 
                 if (pivotPosOrig)
@@ -116,8 +123,10 @@ export class PivotComponent extends BaseComponent
 
     UpdateHitboxReferences()
     {
-        this.hitboxObj = objectController.GetObjectByName(this.hitboxName)!;
-        this.hitboxComp = componentController.GetComponent(this.hitboxObj, ResizableComponent)!;
+        this.hitboxObj = objectController.GetObjectByName(this.hitboxName);
+
+        if (this.hitboxObj)
+            this.hitboxComp = componentController.GetComponent(this.hitboxObj, ResizableComponent)!;
     }
 
     UpdatePivotOnHitbox()
@@ -131,7 +140,9 @@ export class PivotComponent extends BaseComponent
         
         // CONSTRUCT THE ENTITY FOR GIVEN OBJECT WITH NEW HITBOX, 
         // SO WE CAN GET THE PIVOT THAT COULD BE SET BY DATA OR CODE (BY OVERRIDING ApplyEntityToGameObject())
-        let entity = { name: this.objName, hitbox: hitbox };
+        //let entity = { name: this.objName, hitbox: hitbox };
+        var entity = objectController.GetObjectByName(this.objName)!.entity!;
+        entity = { ...entity, hitbox: hitbox };
         var obj = PhysicsObjectBare.GetDummpyDataFromEntity(this.scene, entity).gameObject;
         var pivotPosOrig = obj.pivot;
         

@@ -58,7 +58,7 @@ export class HitboxScene extends EditorScene
         var texture = await assetsHandler.GetTexturePromise(MakePath(entityConstructedFromSettingsData.imagePath!, objectName));
 
         // CONSTRUCT ENTITY FROM HITBODATA AND APPLY TO DUMMY GAMEOBJECT, SO WE CAN GET THE RESULTING PIVOT
-        var obj = new PhysicsObjectBare();
+        var obj = new PhysicsObjectBare(this);
         obj.InitTexture(MakePathForEntity(entityConstructedFromSettingsData));
         this.ApplyEntityToGameObject(entityConstructedFromSettingsData, obj);
         var pivot = obj.pivot;

@@ -45,6 +45,9 @@ export class PhysicsObjectBare extends GameObject
             this.physicsHitbox.rectangle = {x: 0, y: 0, width: 0, height: 0};
 
             this.WhenTextureLoaded(() => {
+                if (!this.texture) // NO, TODO - SHOULD NOT GET HERE, BUT NEEDED FOR COLLISION RECT IN ENTITY TO SHOW UP FOR SOME REASON
+                    return; // RELATED TO WhenTextureLoaded() IN GameObject AND if (texturePath == "NONE") return; IN InitTexture()
+
                 var rect: Rectangle = {x: 0, y: 0, width: 0, height: 0};
                 var w = this.texture!.width * 1; //this.totalScaleX;
                 var h = this.texture!.height * 1; //this.totalScaleY;
@@ -188,6 +191,7 @@ export class PhysicsObjectBare extends GameObject
     static GetDummpyDataFromEntity(scene: Scene, nameOrEntity: string | Entity, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true }): {entity: Entity, gameObject: GameObject}
     {
         var entityConstructed = scene.ConstructEntity(nameOrEntity, scene.settingsHandler.Get(), options);
+        PhysicsObjectBare.dummyPhysicsObjectBare.scene = scene;
         PhysicsObjectBare.dummyPhysicsObjectBare.ResetValues();
         PhysicsObjectBare.dummyPhysicsObjectBare.InitTexture(MakePathForEntity(entityConstructed)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
         scene.ApplyEntityToGameObject(entityConstructed, PhysicsObjectBare.dummyPhysicsObjectBare);

@@ -194,9 +194,9 @@ window.__GAME_DEBUG_API__ = {
     var entityWithLog = plugin.BuildExtendDataLog(entity, name, processedEntity, raw, processed);
 
     // BUILD THE ENTITY TO PASS TO PLUGIN RIGHT AWAY
-    var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(entityWithLog, scene.settingsData);
+    var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(entityWithLog, scene.settingsData, {fillPresets: false});
     levelEntityWithDefaultValues.name = name;
-
+    
     return levelEntityWithDefaultValues;
   },
 
@@ -332,7 +332,7 @@ window.__GAME_DEBUG_API__ = {
     return s;
   },
 
-    setObject(id: string, props: Record<string, any>)
+    setObject(id: string, props: Record<string, any>, save:boolean = false)
     {
         var scene = plugin.GetCurrentScene();
         if (scene instanceof EntityScene)
@@ -357,7 +357,7 @@ window.__GAME_DEBUG_API__ = {
                 // WRITE ENTITY PROPS TO RAW 
                 var entity:Entity;
                 if (entityScene.isBase)
-                    entity = rawSettingsData.baseEntities[entityScene.objectName];
+                    entity = rawSettingsData.baseEntities[entityScene.objectName]; // USE id?
                 else
                     entity = rawSettingsData.entities[entityScene.objectName];
                 
@@ -427,8 +427,11 @@ window.__GAME_DEBUG_API__ = {
                 // SINCE WE JUST MODIFIED THE RAW ENTITY, WE RE-PROCESS THE settingsData AGAIN, SO IT'S UP TO DATE 
                 await entityScene.settingsHandler.Process(rawSettingsData);
 
+                window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase);
+
                 // SAVE TO FILE
-                await entityScene.SaveEntityData(rawSettingsData);
+                if (save)
+                    await entityScene.SaveEntityData(rawSettingsData);
 
                 // ADD DEFAULTS TO RAW SETTINGS AGAIN, SO PROPS CAN BE ADDED TO IT
                 rawSettingsData.baseEntities.ANY ??= {...defaultEntityData.baseEntities.ANY};
@@ -1168,7 +1171,7 @@ export class PluginHandler
         {
             // LOG EXTENDED PROPERTIES - SHOULD NOT HAVE BEEN FOUND BEFORE
             var extendEntityName = extendOrder[i];
-            var extendEntity = settingsDataRaw.baseEntities[extendEntityName];
+            var extendEntity = settingsDataRaw.baseEntities[extendEntityName] || defaultEntityData.baseEntities[extendEntityName];
             var propsExtended = Object.keys(extendEntity);
             var propsExtendedFiltered = propsExtended.filter(p => !propsFound.includes(p));
 

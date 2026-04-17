@@ -1,13 +1,16 @@
-import { BaseComponent } from '../controllers/componentController'
+import { BaseComponent } from '../controllers/componentController';
 import { hitboxController } from '../controllers/hitboxController';
 import { keyboardController } from '../controllers/keyboardController';
 import { mouseController } from '../controllers/mouseController';
+import { Run } from '../exports';
 import { Color, Vec2 } from '../libraries/rapid-render';
+import { GameMode } from '../main';
 
 type Edge =
   | 'left' | 'right' | 'top' | 'bottom'
   | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
+@Run(GameMode.Editor)
 export class ResizableComponent extends BaseComponent
 {
   minSize = 0;

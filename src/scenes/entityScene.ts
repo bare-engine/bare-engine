@@ -1,6 +1,7 @@
-import { assetsHandler, Color, EditorScene, LevelData, RenderTexture, SettingsData, SettingsHandler, TextObject, Vec2 } from "../exports";
+import { assetsHandler, cameraHandler, Color, EditorScene, LevelData, PhysicsObjectBare, RenderTexture, SettingsData, SettingsHandler, TextObject, Vec2 } from "../exports";
 import { levelHandler } from "../handlers/levelHandler";
-import { AwakePayload, Entity, entityVars } from "../types/bareTypes";
+import { MakePathForEntity } from "../main";
+import { AwakePayload, Entity, entityVars, Rectangle, Size } from "../types/bareTypes";
 
 type EditorScenePayload = AwakePayload<EditorScene>;
 type EntitySceneAwakePayload = EditorScenePayload & {
@@ -104,9 +105,6 @@ export class EntityScene extends EditorScene
 
     async CreateEntityDataFor(objectName: string, isBase: boolean): Promise<LevelData>
     {
-        // CONSTRUCT ENTITY FROM INITIAL ENTITY DATA, SO WE GET THE ENTITY DEFINED THERE
-        var entityConstructedFromSettingsData = this.ConstructEntity(objectName);
-        
         var entityFromSettingsData:Entity;
 
         if (isBase)
@@ -126,9 +124,6 @@ export class EntityScene extends EditorScene
             entityFromSettingsData.texture = "placeHolder";
             entityFromSettingsData.imagePath = "";
         }
-
-        //delete entityConstructedFromSettingsData.components;
-        //delete entityConstructedFromSettingsData.editorComponents;
         
         // SET UP LEVEL
         return {
@@ -158,12 +153,63 @@ export class EntityScene extends EditorScene
     {
         var ret = await super.Open(levelPathOrData, saveLevelCallback, settingsHandler);
 
-        // SET CAMERA ZOOM, BASED ON OBJECT BOUNDS
         var obj = this.objectController.GetObjectByName(this.objectName);
+        obj.x += obj.pivot.x;
+        obj.y += obj.pivot.y;
+
+        // COLLISION RECT
+        if (obj instanceof PhysicsObjectBare)
+        {
+            var hitbox = obj.physicsHitbox.rectangle;
+            var collisionRectEntity:Entity = {
+                name: "collisionRect",
+                position: {
+                    x: hitbox.x,
+                    y: hitbox.y
+                },
+                scale: {
+                    x: hitbox.width,
+                    y: hitbox.height
+                },
+                components: {
+                    resizableRemove: {}
+                },
+                alpha: .4
+            };
+            this.AddGameObject(collisionRectEntity);
+        }
+                   
+        // PIVOT
+        var pivot = obj.pivot;
+        var pivotEntity:Entity = {
+            name: "dot",
+            texture: "NONE", // WE'LL DRAW A CIRCLE IN PivotComponent OnPostRender()
+            position: {
+                x: pivot.x,
+                y: pivot.y
+            },
+            pivot: {
+                x: .5,
+                y: .5
+            },
+            scale: {
+                x: .75,
+                y: .75
+            },
+            imagePath: "",
+            components: {
+                pivot: {objectName: this.objectName, hitboxName: "collisionRect"},
+                pivotRemove: {}
+            }
+        }
+        this.AddGameObject(pivotEntity);
+
+        // SET CAMERA ZOOM, BASED ON OBJECT BOUNDS
         var bounds = obj.GetBoundsWithChildren();
         var s = Math.max(bounds.width / rapid.width, bounds.height / rapid.height);
         this.cameraHandler.zoom = 1/s * .7;
-
+        cameraHandler.SetPosition(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+        
         return ret;
     }
 

@@ -1,12 +1,12 @@
-import { BaseComponent, componentController } from '../controllers/componentController'
-import { PivotComponent } from './pivotComponent';
+import { BaseComponent, componentController } from '../controllers/componentController';
+import { mouseController } from '../controllers/mouseController';
+import { objectController } from '../controllers/objectController';
+import { GameMode, PhysicsObjectBare, Run } from '../exports';
 import { GameObject } from '../objects/gameObject';
 import { Helper } from '../utils/helper';
-import { mouseController } from '../controllers/mouseController';
-import { PhysicsObjectBare, sceneController } from '../exports';
-import { EditorScene } from '../scenes/editorScene';
-import { objectController } from '../controllers/objectController';
+import { PivotComponent } from './pivotComponent';
 
+@Run(GameMode.Editor)
 export class ResizableRemoveComponent extends BaseComponent
 {
   OnRemoved(): void

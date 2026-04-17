@@ -9,8 +9,7 @@ export class KeyboardController
 
     constructor()
     {
-        this.setupEventListeners();
-        
+        globalEvents.once(BareEvent.game_awake, this.setupEventListeners.bind(this));
         globalEvents.persistent.on(BareEvent.game_update, this.Update.bind(this));
     }
 

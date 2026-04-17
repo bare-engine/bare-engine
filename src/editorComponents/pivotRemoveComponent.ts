@@ -1,13 +1,14 @@
-import { Helper } from "../utils/helper";
 import { BaseComponent } from "../controllers/componentController";
-import { GameObject } from "../objects/gameObject";
 import { mouseController } from "../controllers/mouseController";
-import { sceneController } from "../controllers/sceneController";
-import { EditorScene } from "../scenes/editorScene";
-import { PhysicsObjectBare } from "../exports/barePhysics";
 import { objectController } from "../controllers/objectController";
+import { Run } from "../exports";
+import { PhysicsObjectBare } from "../exports/barePhysics";
+import { GameMode } from "../main";
+import { GameObject } from "../objects/gameObject";
 import { Scene } from "../scenes/scene";
+import { Helper } from "../utils/helper";
 
+@Run(GameMode.Editor)
 export class PivotRemoveComponent extends BaseComponent
 {
     constructor(scene: Scene)
