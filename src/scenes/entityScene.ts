@@ -215,10 +215,42 @@ export class EntityScene extends EditorScene
 
     async SaveEntityDataToSettingsData(): Promise<LevelData>
     {
+        var obj = this.objectController.GetObjectByName(this.objectName);
+        var origPivot = obj.pivot;
+        var currentPivot = this.objectController.GetObjectByName("dot")!.position;
+
+        var madeChangeToEntity = false;
+
+        var entity = {...obj.entity};
+        if (!currentPivot.equals(origPivot))
+        {
+            entity.pivot = currentPivot;
+            madeChangeToEntity = true;
+        }
+
+        if (madeChangeToEntity)
+        {
+            // APPLY NEW VALUES TO THE RAW ENTITY SETTING
+            const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
+                if (this.isBase)
+                    draft.baseEntities[this.objectName] = entity;
+                else
+                    draft.entities[this.objectName] = entity;
+            });
+
+            // RELOAD THE ENTITY PANEL IN PLUGIN
+            window.__GAME_DEBUG_API__.gotoEntity(this.objectName, this.isBase);
+
+            // SAVE TO FILE
+            await this.SaveEntityData(newRawSettingsData);
+        }
+        
+        return this.currentLevel;
+
         return;
 
         // SERIALIZE, TODO, NOT REALLY NEEDED, JUST FOR THE RETURN
-        var level = this.currentLevel;
+        /*var level = this.currentLevel;
         //levelHandler.SerializeLevel(level);
 
         var obj = this.objectController.GetObjectByName(this.objectName);
@@ -234,7 +266,7 @@ export class EntityScene extends EditorScene
         // SAVE TO FILE
         await this.SaveEntityData(newRawSettingsData);
 
-        return level;
+        return level;*/
     }
 
     async OnSaveEntityData(rawData: SettingsData): Promise<void>
