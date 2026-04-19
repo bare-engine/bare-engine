@@ -223,6 +223,7 @@ export class EntityScene extends EditorScene
 
     async SaveEntityDataToSettingsData(): Promise<LevelData>
     {
+        return;
         var obj = this.objectController.GetObjectByName(this.objectName);
         
         var entityFromSettingsData:Entity;
