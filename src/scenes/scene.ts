@@ -628,10 +628,13 @@ export class Scene implements SceneI
             entityConstructed[varName] = value;
         }
 
+        if (!entityConstructed.hitbox)
+            entityConstructed.hitbox = { x1: 0, y1: 0, x2: 0, y2: 0 };
+
         return entityConstructed;
     }
 
-    GetDummpyDataFromEntity2(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true }): Entity
+    GetEntityWithDefaultValues2(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true }): Entity
     {
         var entityConstructed = this.ConstructEntity(nameOrEntity, settingsData, options);
 

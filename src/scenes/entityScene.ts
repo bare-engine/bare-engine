@@ -149,13 +149,21 @@ export class EntityScene extends EditorScene
         };
     }
 
+    override OnUpdate(deltaTime: number): void
+    {
+        var pivotObj = this.objectController.GetObjectByName("dot");
+        var mainObj = this.objectController.GetObjectByName(this.objectName);
+        var tl = mainObj.GetTopLeftPosition();
+        pivotObj.SetPosition(tl.x + mainObj.pivot.x * mainObj.totalScaleX, tl.y + mainObj.pivot.y * mainObj.totalScaleY);
+    }
+
     override async Open(levelPathOrData?: string | LevelData, saveLevelCallback?: () => Promise<LevelData>, settingsHandler?: SettingsHandler): Promise<void>
     {
         var ret = await super.Open(levelPathOrData, saveLevelCallback, settingsHandler);
 
         var obj = this.objectController.GetObjectByName(this.objectName);
-        obj.x += obj.pivot.x;
-        obj.y += obj.pivot.y;
+        //obj.x += obj.pivot.x;
+        //obj.y += obj.pivot.y;
 
         // COLLISION RECT
         if (obj instanceof PhysicsObjectBare)
@@ -164,8 +172,8 @@ export class EntityScene extends EditorScene
             var collisionRectEntity:Entity = {
                 name: "collisionRect",
                 position: {
-                    x: hitbox.x,
-                    y: hitbox.y
+                    x: hitbox.x - obj.pivot.x,
+                    y: hitbox.y - obj.pivot.y
                 },
                 scale: {
                     x: hitbox.width,
@@ -185,8 +193,8 @@ export class EntityScene extends EditorScene
             name: "dot",
             texture: "NONE", // WE'LL DRAW A CIRCLE IN PivotComponent OnPostRender()
             position: {
-                x: pivot.x,
-                y: pivot.y
+                x: pivot.x - obj.pivot.x,
+                y: pivot.y - obj.pivot.y
             },
             pivot: {
                 x: .5,
@@ -216,6 +224,98 @@ export class EntityScene extends EditorScene
     async SaveEntityDataToSettingsData(): Promise<LevelData>
     {
         var obj = this.objectController.GetObjectByName(this.objectName);
+        
+        var entityFromSettingsData:Entity;
+        if (this.isBase)
+        {
+            entityFromSettingsData = this.settingsHandler.GetRaw().baseEntities[this.objectName];
+        }
+        else
+        {
+            entityFromSettingsData = this.settingsHandler.GetRaw().entities[this.objectName];
+        }
+
+        //var diff = levelHandler.GetChangedValues(obj, entityFromSettingsData);
+
+        var entityFromSettingsDataModified = {...entityFromSettingsData};
+
+        // SUPPLY PLACEHOLDER TEXTURE FOR BASE AGAIN, SO PIVOT CAN BE SET ON IT
+        if (this.isBase)
+        {
+            entityFromSettingsDataModified.texture = "placeHolder";
+            entityFromSettingsDataModified.imagePath = "";
+        }
+
+        var fullEntity = levelHandler.SerializeObjectFully(obj);
+        var origEntity = this.GetEntityWithDefaultValues2(entityFromSettingsDataModified);
+
+        // UNDO THE TEXTURE/PATH FOR BASE 
+        if (this.isBase)
+        {
+            if (entityFromSettingsData.texture)
+                origEntity.texture = entityFromSettingsData.texture;
+            else
+                origEntity.texture = undefined;
+            
+            if (entityFromSettingsData.imagePath)
+                origEntity.imagePath = entityFromSettingsData.imagePath;
+            else
+                origEntity.imagePath = undefined;
+        }
+
+        var diffEntity = levelHandler.GetEntitiesDiff(origEntity, fullEntity);
+
+        delete diffEntity.name;
+
+        // DON'T SAVE PLACEHOLDER TEXTURE FOR BASE
+        if (this.isBase)
+            delete diffEntity.texture;
+
+        // LITTLE HACK TO FIX DUPLICATE SCALING ENTRIES
+        delete diffEntity.scale;
+        delete diffEntity.innerPosition;
+        delete diffEntity.innerScale;
+
+        const deepMerge = (base: any, override: any): any => {
+            const result = {...base};
+            for (const key in override) {
+                if (override[key] !== null && typeof override[key] === 'object' && !Array.isArray(override[key]) && key in base) {
+                    result[key] = deepMerge(base[key], override[key]);
+                } else {
+                    result[key] = override[key];
+                }
+            }
+            return result;
+        };
+        var combinedEntity = deepMerge(entityFromSettingsData, diffEntity);
+
+        // TAKE OFF PROPS FROM combinedEntity IF THEY ARE DEFAULT VALUE
+        var entityFromSettingsDataDiffPropsRemoved = {...entityFromSettingsDataModified};
+        for (var prop in combinedEntity)
+        {
+            delete entityFromSettingsDataDiffPropsRemoved[prop];
+        }
+        var defaultEntity = this.GetEntityWithDefaultValues2(entityFromSettingsDataDiffPropsRemoved);
+        for (var prop in combinedEntity)
+        {
+            var value = combinedEntity[prop];
+            if (defaultEntity[prop] === value)
+                delete combinedEntity[prop];
+        }
+
+        // APPLY NEW VALUES TO THE RAW ENTITY SETTING
+        const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
+            if (this.isBase)
+                draft.baseEntities[this.objectName] = combinedEntity;
+            else
+                draft.entities[this.objectName] = combinedEntity;
+        });
+
+        // SAVE TO FILE
+        await this.SaveEntityData(newRawSettingsData);
+
+        return this.currentLevel;
+
         var origPivot = obj.pivot;
         var currentPivot = this.objectController.GetObjectByName("dot")!.position;
 

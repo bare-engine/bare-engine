@@ -132,18 +132,18 @@ export var entityVars = [
     "customData",
 
     "position",
-    //"scaleX",
-    //"scaleY",
+    "scaleX",
+    "scaleY",
     "scale",
     "rotation",
     "flipped",
     "pivot",
     "pivotBasedOnHitbox",
-    //"innerX",
-    //"innerY",
+    "innerX",
+    "innerY",
     "innerPosition",
-    //"innerScaleX",
-    //"innerScaleY",
+    "innerScaleX",
+    "innerScaleY",
     "innerScale",
     "innerRotation",
 
@@ -159,7 +159,6 @@ export var entityVars = [
     "children",
 
     "components",
-    //"editorComponents",
     "componentsRemoved",
     "propertiesRemoved",
 

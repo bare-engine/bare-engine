@@ -7,6 +7,7 @@ import { PivotRemoveComponent } from "../editorComponents/pivotRemoveComponent";
 import { PositionPivotComponent } from "../editorComponents/positionPivotComponent";
 import { ResizableComponent } from "../editorComponents/resizableComponent";
 import { ResizableRemoveComponent } from "../editorComponents/resizableRemoveComponent";
+import { Hitbox } from "../exports";
 import { Color, Texture, Vec2 } from "../libraries/rapid-render";
 import { GameMode, MakePathForEntity, Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
@@ -356,6 +357,20 @@ export class LevelHandler
         // 
         var customSerialize:Record<string, (currentValue) => any> = {};
     
+        customSerialize["pivot"] = (pivot:Vec2) => {
+            if (obj.entity?.pivot)
+                return obj.entity.pivot;
+            else
+                return pivot;
+        };
+
+        customSerialize["hitbox"] = (physicsHitbox:Hitbox) => {
+            if (obj.entity?.hitbox)
+                return obj.entity.hitbox;
+            else
+                return {x: physicsHitbox.rectangle.x, y: physicsHitbox.rectangle.y, width: physicsHitbox.rectangle.width, height: physicsHitbox.rectangle.height};
+        };
+
         customSerialize["texture"] = (currentValue:Texture) => { return currentValue.texturePath; };
 
         customSerialize["color"] = (currentValue:Color) => { return currentValue.toHex(); };
@@ -433,7 +448,7 @@ export class LevelHandler
             var origEntity = this.scene.GetDummpyDataFromEntity2(obj.name, this.scene.settingsData, options); // COULD ALSO GET THIS FROM PROCCESSED ENTITYDATA? IF I CONTRUCT ALL ENTITITES - TODO
         }*/
 
-        var origEntity = this.scene.GetDummpyDataFromEntity2(obj.name, this.scene.settingsData, options); // COULD ALSO GET THIS FROM PROCCESSED ENTITYDATA? IF I CONTRUCT ALL ENTITITES - TODO
+        var origEntity = this.scene.GetEntityWithDefaultValues2(obj.name, this.scene.settingsData, options); // COULD ALSO GET THIS FROM PROCCESSED ENTITYDATA? IF I CONTRUCT ALL ENTITITES - TODO
         
         var fullEntity = this.SerializeObjectFully(obj);
         var diffEntity = this.GetEntitiesDiff(origEntity, fullEntity);
@@ -558,7 +573,7 @@ export class LevelHandler
         return value === undefined || value === null;
     }
 
-    /*GetChangedValues(gameObject: GameObject, origEntity: Entity): any
+    GetChangedValues(gameObject: GameObject, origEntity: Entity): any
     {
         const obj: Record<string, any> = {};
 
@@ -712,7 +727,7 @@ export class LevelHandler
         }
 
         return obj;
-    }*/
+    }
 
     // EG:
     // {

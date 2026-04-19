@@ -332,9 +332,11 @@ window.__GAME_DEBUG_API__ = {
     return s;
   },
 
-    setObject(id: string, props: Record<string, any>, save:boolean = false)
+    async setObject(id: string, props: Record<string, any>, save:boolean = false)
     {
         var scene = plugin.GetCurrentScene();
+
+        if (0)
         if (scene instanceof EntityScene)
         {
             let entityScene = scene as EntityScene;
@@ -427,11 +429,13 @@ window.__GAME_DEBUG_API__ = {
                 // SINCE WE JUST MODIFIED THE RAW ENTITY, WE RE-PROCESS THE settingsData AGAIN, SO IT'S UP TO DATE 
                 await entityScene.settingsHandler.Process(rawSettingsData);
 
-                window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase);
-
                 // SAVE TO FILE
                 if (save)
+                {
+                    trace(444)
+                    window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase);
                     await entityScene.SaveEntityData(rawSettingsData);
+                }
 
                 // ADD DEFAULTS TO RAW SETTINGS AGAIN, SO PROPS CAN BE ADDED TO IT
                 rawSettingsData.baseEntities.ANY ??= {...defaultEntityData.baseEntities.ANY};
@@ -442,7 +446,13 @@ window.__GAME_DEBUG_API__ = {
             return;
         }
 
-        const o = plugin.GetCurrentScene().objectController.GetObjectById(id);
+        var o:GameObject;
+        
+        var idIsInt = !isNaN(parseInt(id));
+        if (idIsInt)
+            o = plugin.GetCurrentScene().objectController.GetObjectById(id); // OBJECT - EG id = 0
+        else
+            o = plugin.GetCurrentScene().objectController.GetObjectByName(id); // ENTITY - EG id = "player"
         
         if (!o)
             return false;
@@ -463,9 +473,19 @@ window.__GAME_DEBUG_API__ = {
         if (props.innerRotation !== undefined) o.innerTransform.rotation = props.innerRotation;
 
         if (props.pivot !== undefined) { 
-            o.pivot.x = props.pivot.x;
-            o.pivot.y = props.pivot.y;
-            o.entity.pivot = o.pivot; 
+            if ((props.pivot.x >= 0 && props.pivot.x < 1) || (props.pivot.y >= 0 && props.pivot.y < 1))
+            {
+                scene.ApplyEntityToGameObject(props as Entity, o, false);
+            }
+            o.entity.pivot = props.pivot; //
+        }
+        if (props.hitbox !== undefined) { 
+            if ((props.hitbox.x >= 0 && props.hitbox.x < 1) || (props.hitbox.y >= 0 && props.hitbox.y < 1) ||
+                (props.hitbox.width >= 0 && props.hitbox.width < 1) || (props.hitbox.height >= 0 && props.hitbox.height < 1))
+            {
+                scene.ApplyEntityToGameObject(props as Entity, o, false);
+            }
+            o.entity.hitbox = props.hitbox; //
         }
         if (props.hitbox !== undefined) { 
             
@@ -529,7 +549,75 @@ window.__GAME_DEBUG_API__ = {
 
         // ALIGN ALL THE VARS WITH THE LEVEL ENTITY, FOR GETOBJECT()... todo
 
-        (o.scene as EditorScene).saveLevelCallback?.();
+        if (scene instanceof EntityScene)
+        {
+            let entityScene = scene as EntityScene;
+            
+            var rawSettingsData = entityScene.settingsHandler.GetRaw();
+
+            // MAKE SURE ANY OR ANY_ENTITY EXISTS, IF WE'RE GONNA WRITE TO IT
+            //if (entityScene.isBase)
+            {
+                //if (entityScene.objectName == "ANY")
+                    rawSettingsData.baseEntities.ANY ??= {...defaultEntityData.baseEntities.ANY};
+                
+                //if (entityScene.objectName == "ANY_ENTITY")
+                    rawSettingsData.baseEntities.ANY_ENTITY ??= {...defaultEntityData.baseEntities.ANY_ENTITY};
+            }
+            
+            // UNDO DEFAULT ADDITIONS TO ANY AND ANY_ENTITY AGAIN, DON'T WANT TO SAVE THEM
+            // THIS IS ALSO ADDED AT getEntityData
+            //if (entityScene.objectName == "ANY" || entityScene.objectName == "ANY_ENTITY")
+            //if (entityScene.isBase)
+            {
+                var propKeys = Object.keys(props);
+
+                //if (entityScene.objectName == "ANY")
+                {
+                    var anyKeys = Object.keys(defaultEntityData.baseEntities.ANY);
+                    for (var key of anyKeys)
+                    {
+                        if (rawSettingsData.baseEntities.ANY[key] == defaultEntityData.baseEntities.ANY[key]) // IF SAME AS DEFAULT
+                        if (entityScene.objectName != "ANY" || !propKeys.includes(key))
+                            delete rawSettingsData.baseEntities.ANY[key];
+                    }
+
+                    if (Object.keys(rawSettingsData.baseEntities.ANY).length == 0)
+                        delete rawSettingsData.baseEntities.ANY;
+                }
+
+                //if (entityScene.objectName == "ANY_ENTITY")
+                {
+                    var anyEntityKeys = Object.keys(defaultEntityData.baseEntities.ANY_ENTITY);
+                    for (var key of anyEntityKeys)
+                    {
+                        if (rawSettingsData.baseEntities.ANY_ENTITY[key] == defaultEntityData.baseEntities.ANY_ENTITY[key])
+                        if (entityScene.objectName != "ANY_ENTITY" || !propKeys.includes(key))
+                            delete rawSettingsData.baseEntities.ANY_ENTITY[key];
+                    }
+
+                    if (Object.keys(rawSettingsData.baseEntities.ANY_ENTITY).length == 0)
+                        delete rawSettingsData.baseEntities.ANY_ENTITY;
+                }
+            }
+
+            // SHOULD STILL APPLY PROPS TO rawSettingsData - TODO
+            // SO YOU CAN EDIT BASE ENTITY, AND IT'S FOUND IN ENTITY SCENE SAVE
+            
+            if (save)
+            {
+                await (o.scene as EditorScene).saveLevelCallback?.();
+                await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase);
+            }
+
+            // ADD DEFAULTS TO RAW SETTINGS AGAIN, SO PROPS CAN BE ADDED TO IT
+            rawSettingsData.baseEntities.ANY ??= {...defaultEntityData.baseEntities.ANY};
+            rawSettingsData.baseEntities.ANY_ENTITY ??= {...defaultEntityData.baseEntities.ANY_ENTITY};
+        }
+        else
+        {
+            (o.scene as EditorScene).saveLevelCallback?.();
+        }
 
         return true;
     },
