@@ -368,11 +368,6 @@ export class Scene implements SceneI
                         entity = cloneEntityData(entityArg);
                     }
                 }
-
-                // FILL PRESETS - LIKE hitbox: "FULL"                     
-                //                     hitbox: {x1: 0, y1: 0, x2: 1, y2: 1}
-                if (options.fillPresets)
-                    this.FillPresets(entity, settingsData); // ALREADY DONE IN SETTINGS CONSTRUCT
             }
             else
             {
@@ -385,13 +380,18 @@ export class Scene implements SceneI
                 }
                 else
                 {
-                    // ENTITY NAME NOT FOUND, SO TAKE THE 'ANY' ENTRY AND ASSIGN A NEW NAME
+                    // ENTITY NAME NOT FOUND, SO TAKE THE 'ANY_ENTITY' ENTRY AND ASSIGN A NEW NAME
                     var entityBase = cloneEntityData(settingsData.baseEntities!["ANY_ENTITY"] as Entity);
                     entity = entityBase;
                     entity.name = nameOrEntity;
                 }
             }
         }
+
+        // FILL PRESETS - LIKE hitbox: "FULL"                     
+        //                     hitbox: {x1: 0, y1: 0, x2: 1, y2: 1}
+        if (options.fillPresets)
+            this.FillPresets(entity, settingsData); // ALREADY DONE IN SETTINGS CONSTRUCT
 
         if (!entity.extendClass)
             entity.extendClass = "GameObject";

@@ -21,8 +21,7 @@ export class Button extends GameObject
 
         this.marge = options.marge || 10;
         this.text = new BareText({text: options.text, fontSize: 22, fontFamily: 'monospace', color: '#fff'});
-        this.SetTexture(this.text);
-
+        
         scene.hitboxController.AssignButton(this, options);
     }
 

@@ -10,7 +10,7 @@ export class PhysicsObjectBare extends GameObject
     
     physicsHitbox: Hitbox = new Hitbox(this, {x1 : 0, y1 : 0, x2 : 0, y2 : 0});
     static: boolean = false;
-    collide: boolean = false;
+    collide: boolean = true;
     sensor:boolean = false;
     velocity: Vec2 = new Vec2(0, 0);
     drag: number = .15;
@@ -165,7 +165,7 @@ export class PhysicsObjectBare extends GameObject
     {
         super.ResetValues();
 
-        this.collide = false;
+        this.collide = true;
         this.sensor = false;
         this.static = false;
         this.drag = .07;
