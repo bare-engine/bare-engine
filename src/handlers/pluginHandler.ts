@@ -1,5 +1,5 @@
 import { keyboardController } from "../controllers/keyboardController";
-import { componentController, defaultEntityData, levelHandler, objectController, Scene, sceneController } from "../exports";
+import { CameraHandler, cameraHandler, componentController, defaultEntityData, LevelHandler, levelHandler, MouseController, objectController, Scene, sceneController } from "../exports";
 import { Color, Vec2 } from "../libraries/rapid-render";
 import { GameMode, globalEvents } from "../main";
 import { GameObject } from "../objects/gameObject";
@@ -888,8 +888,7 @@ export class PluginHandler
     {
         globalEvents.persistent.once(BareEvent.game_started, () => {
             this.outlineShader = new OutlineShader()
-            //this.AddClass(BareClasses.EditorController)
-
+            
             // RIGHT CLICK FOR PLUGIN SELECT
             document.addEventListener('pointerdown', this.OnRightClickPointerDown, false);
             

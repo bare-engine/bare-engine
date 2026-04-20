@@ -766,6 +766,9 @@ export class GameObject
 
     GetBounds(global:boolean = true): Rectangle
     {
+        if (!this.texture)
+            return this.GetBoundsWithChildren(global);
+
         if (!global || !this.parent)
         {
             return {
