@@ -207,8 +207,8 @@ export interface SettingsData
 {
   name?: string;
   categories?: Record<string, Category>;
-  baseEntities?: Record<string, Partial<Entity>>; // MADE PARTIAL TO SUPPORT IT HAVING NO NAME (YET)
-  entities?: Record<string, Partial<Entity>>; // SAME ^
+  baseEntities?: Record<string, Entity>;
+  entities?: Record<string, Entity>;
   tilesheets?: Array<Entity>;
   layers?: Array<string>;
   layersInfo?: Record<string, any>;

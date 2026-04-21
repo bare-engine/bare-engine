@@ -1017,113 +1017,33 @@ export class GameObject
         return out;
     }*/
 
-    // COULD CACHE SOME TRANSFORMS? TODO, CLEANUP WITH TRANSFORM
-    // TODO: FIX, DOESNT WORK FOR HITBOX
-    ToGlobal(localPoint: Vec2 = new Vec2()): Vec2
+    // Builds the matrix representing this object's "child space" —
+    // the coordinate space where SetPosition(x, y) on direct children operates.
+    // Matches exactly the transform chain used by GetBounds/GetBoundsWithChildren.
+    private buildChildSpaceMatrix(): MatrixStack
     {
-        let p = new Vec2(localPoint.x, localPoint.y);
-        let obj: GameObject | null = this;
-
-        while (obj)
-        {
-            // INNER TRANSFORM
-            p.x *= obj.innerScale.x;
-            p.y *= obj.innerScale.y;
-            p.x *= obj.flipped ? -1 : 1;
-
-            if (obj.innerTransform.rotation !== 0)
-            {
-                const r = obj.innerTransform.rotation * Math.PI / 180;
-                const cos = Math.cos(r), sin = Math.sin(r);
-                const x = p.x, y = p.y;
-                p.x = x * cos - y * sin;
-                p.y = x * sin + y * cos;
-            }
-
-            p.x += obj.innerTransform.position.x;
-            p.y += obj.innerTransform.position.y;
-
-            // OUTER TRANSFORM
-            p.x -= obj.pivot.x;
-            p.y -= obj.pivot.y;
-
-            p.x *= obj.scale.x;
-            p.y *= obj.scale.y;
-
-            if (obj.transform.rotation !== 0)
-            {
-                const r = obj.transform.rotation * Math.PI / 180;
-                const cos = Math.cos(r), sin = Math.sin(r);
-                const x = p.x, y = p.y;
-                p.x = x * cos - y * sin;
-                p.y = x * sin + y * cos;
-            }
-
-            p.x += obj.x;
-            p.y += obj.y;
-
-            obj = obj.parent;
-        }
-
-        return p;
+        const m = new MatrixStack();
+        m.pushIdentity();
+        this.buildAncestorMatrix(m);
+        this.applyTransform(m, this.transform);
+        m.translate(-this.pivot.x, -this.pivot.y);
+        return m;
     }
 
+    // Convert a point from this object's child space to world space.
+    ToGlobal(localPoint: Vec2 = new Vec2()): Vec2
+    {
+        const m = this.buildChildSpaceMatrix();
+        return m.apply(localPoint) as Vec2;
+    }
+
+    // Convert a world point to this object's child space
+    // (the space where child.SetPosition(x, y) operates).
     ToLocal(globalPoint: Vec2): Vec2
     {
-        let p = new Vec2(globalPoint.x, globalPoint.y);
-
-        // collect all parents to apply reverse
-        const chain: GameObject[] = [];
-        let obj: GameObject | null = this;
-        while (obj) {
-            chain.push(obj);
-            obj = obj.parent;
-        }
-
-        for (let i = chain.length - 1; i >= 0; i--)
-        {
-            const o = chain[i];
-
-            // OUTER TRANSFORM (reverse)
-            p.x -= o.x;
-            p.y -= o.y;
-
-            if (o.transform.rotation !== 0)
-            {
-                const r = -o.transform.rotation * Math.PI / 180;
-                const cos = Math.cos(r), sin = Math.sin(r);
-                const x = p.x, y = p.y;
-                p.x = x * cos - y * sin;
-                p.y = x * sin + y * cos;
-            }
-
-            p.x /= o.scale.x;
-            p.y /= o.scale.y;
-
-            p.x += o.pivot.x;
-            p.y += o.pivot.y;
-
-            // INNER TRANSFORM (reverse)
-            p.x -= o.innerTransform.position.x;
-            p.y -= o.innerTransform.position.y;
-
-            if (o.innerTransform.rotation !== 0)
-            {
-                const r = -o.innerTransform.rotation * Math.PI / 180;
-                const cos = Math.cos(r), sin = Math.sin(r);
-                const x = p.x, y = p.y;
-                p.x = x * cos - y * sin;
-                p.y = x * sin + y * cos;
-            }
-
-            if (o.flipped)
-                p.x *= -1;
-
-            p.x /= o.innerScale.x;
-            p.y /= o.innerScale.y;
-        }
-
-        return p;
+        const m = this.buildChildSpaceMatrix();
+        m.setTransform(m.getInverse());
+        return m.apply(globalPoint) as Vec2;
     }
 
     BringToFront()

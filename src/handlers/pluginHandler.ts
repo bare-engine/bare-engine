@@ -951,30 +951,30 @@ export class PluginHandler
               plugin.TraceObject(obj);
 
               var parentIds = [];
-                if (isControlDown)
-                {
-                    var parent = obj.parent;
-                    while (parent)
-                    {
-                        parentIds.push(parent.uniqueID);
-                        parent = parent.parent;
-                    }
-                }
+              if (isControlDown)
+              {
+                  var parent = obj.parent;
+                  while (parent)
+                  {
+                      parentIds.push(parent.uniqueID);
+                      parent = parent.parent;
+                  }
+              }  
+              var openObjectsTab = obj.scene.settingsData.selectionEnabled !== false;
+              this.SelectObjectInPlugin(obj.uniqueID, openObjectsTab, parentIds);
 
-                var openObjectsTab = plugin.GetCurrentScene().settingsData.selectionEnabled !== false;
-                this.SelectObjectInPlugin(obj.uniqueID, openObjectsTab, parentIds);
-
-              var mouseController2 = this.GetCurrentScene().mouseController; // WITHOUT THE 2, DEV WEBPACK CATCHES THIS - TODO
+              var mouseWorldAtClick = obj.scene.ScreenToWorldPos(new Vec2(ev.clientX, ev.clientY));
+              var mouseLocalAtClick = obj.parent ? obj.parent.ToLocal(mouseWorldAtClick) : mouseWorldAtClick;
 
               this.movingObjData = {
                   obj,
-                  offset: obj.position.subtract(mouseController2.world.position),
+                  offset: obj.position.subtract(mouseLocalAtClick),
                   hasMovedAwayEnough: false
               };
 
               const pointerMoveBound = this.PointerMove.bind(this);
-              globalEvents.on(BareEvent.pointer_move, pointerMoveBound);
-              globalEvents.once(BareEvent.pointer_up, () => globalEvents.off(BareEvent.pointer_move, pointerMoveBound));
+              obj.scene.events.on(BareEvent.pointer_move, pointerMoveBound);
+              obj.scene.events.once(BareEvent.pointer_up, () => obj.scene.events.off(BareEvent.pointer_move, pointerMoveBound));
           }
       }
 
@@ -984,10 +984,15 @@ export class PluginHandler
     
     private PointerMove({ mouseX, mouseY, event }: BareEventPayload['pointer_move']): void
     {
+        var data = this.movingObjData;
+
+        //mouseX = data.obj.scene.mouseController.screen.position.x;
+        //mouseY = data.obj.scene.mouseController.screen.position.y;
+
         if (!this.movingObjData.hasMovedAwayEnough)
         {
-            var mouseController2 = this.GetCurrentScene().mouseController;
-            var dist = Helper.Distance(mouseController2.screen.position, mouseController2.screen.positionOnDown);
+            var mouseScreen = data.obj.scene.mouseController.screen;
+            var dist = Helper.Distance(mouseScreen.position, mouseScreen.positionOnDown);
             if (dist > 10)
             {
                 this.movingObjData.hasMovedAwayEnough = true;
@@ -998,51 +1003,61 @@ export class PluginHandler
                 return;
             }
         }
+        trace(data.offset)
+        var worldPos = data.obj.scene.ScreenToWorldPos(new Vec2(mouseX, mouseY));
+        var ref = data.obj.parent ? data.obj.parent.ToLocal(worldPos) : worldPos;
+        data.obj.SetPosition(ref.x + data.offset.x, ref.y + data.offset.y);
 
-        var data = this.movingObjData;
-        var worldPos = this.GetCurrentScene().ScreenToWorldPos(new Vec2(mouseX, mouseY));
-        data.obj?.SetPosition(worldPos.x + data.offset.x, worldPos.y + data.offset.y);
+        //var worldPos = data.obj.scene.ScreenToWorldPos(new Vec2(mouseX, mouseY));
+        //data.obj.SetPosition(worldPos.x + data.offset.x, worldPos.y + data.offset.y);
     }
 
     CheckClickGameObject(ev: PointerEvent, outline: boolean = true): GameObject | null
     {
-        var objs = this.GetCurrentScene().objectController.GetAllObjects();
+        //var objs = this.GetCurrentScene().objectController.GetAllObjects();
         var foundObj:GameObject | null = null;
-        for (var i in objs)
+        var scenes = sceneController.GetAllScenes();
+        for (var i = scenes.length - 1; i >= 0; i--)
         {
-            var obj = objs[i];
-
-            if (obj.customName == 'ignoreInPlugin')
-                continue;
-
-            if (!obj.visible || !obj.visibleInEditor)
-                continue;
-
-            var objRect = obj.GetBoundsWithChildren()
-            var p = new Vec2(ev.clientX, ev.clientY);
-            var pWorld = plugin.GetCurrentScene().ScreenToWorldPos(p);
-
-            if (outline)
-            if (obj.shaders.indexOf(this.outlineShader) != -1)
+            var scene = scenes[i];
+            var objs = scene.objectController.GetAllObjects();
+            
+            for (var j in objs)
             {
-                this.outlineShader.stop(obj);
-                obj.shaders.splice(obj.shaders.indexOf(this.outlineShader), 1);
-            }
+                var obj = objs[j];
 
-            if (!foundObj)
-            if (Helper.IsPointInRectangle(pWorld, objRect))
-            {
-                plugin.TraceObject(obj);
+                if (obj.customName == 'ignoreInPlugin')
+                    continue;
+
+                if (!obj.visible || !obj.visibleInEditor)
+                    continue;
+
+                var objRect = obj.GetBoundsWithChildren()
+                var p = new Vec2(ev.clientX, ev.clientY);
+                var pWorld = scene.ScreenToWorldPos(p);
 
                 if (outline)
+                if (obj.shaders.indexOf(this.outlineShader) != -1)
                 {
-                    this.outlineShader.start(obj, [1.0, 1.0, 1.0, 1.0], 8.0);
-                    obj.shaders.push(this.outlineShader);
+                    this.outlineShader.stop(obj);
+                    obj.shaders.splice(obj.shaders.indexOf(this.outlineShader), 1);
                 }
 
-                foundObj = obj;
+                if (!foundObj)
+                if (Helper.IsPointInRectangle(pWorld, objRect))
+                {
+                    plugin.TraceObject(obj);
 
-                //break;
+                    if (outline)
+                    {
+                        this.outlineShader.start(obj, [1.0, 1.0, 1.0, 1.0], 8.0);
+                        obj.shaders.push(this.outlineShader);
+                    }
+
+                    foundObj = obj;
+
+                    //break;
+                }
             }
         }
 
@@ -1051,23 +1066,31 @@ export class PluginHandler
 
     CheckClickDeepChild(ev: PointerEvent): GameObject | null
     {
-        var objs = this.GetCurrentScene().objectController.GetAllObjects();
-        var p = new Vec2(ev.clientX, ev.clientY);
-        var pWorld = plugin.GetCurrentScene().ScreenToWorldPos(p);
+        //var objs = this.GetCurrentScene().objectController.GetAllObjects();
 
-        for (var i in objs)
+        var scenes = sceneController.GetAllScenes();
+        for (var i = scenes.length - 1; i >= 0; i--)
         {
-            var obj = objs[i];
+            var scene = scenes[i];
+            var objs = scene.objectController.GetAllObjects();
+        
+            var p = new Vec2(ev.clientX, ev.clientY);
+            var pWorld = scene.ScreenToWorldPos(p);
 
-            if (obj.customName == 'ignoreInPlugin')
-                continue;
+            for (var j in objs)
+            {
+                var obj = objs[j];
 
-            if (!obj.visible || !obj.visibleInEditor)
-                continue;
+                if (obj.customName == 'ignoreInPlugin')
+                    continue;
 
-            var found = this.FindDeepestChildAtPoint(obj, pWorld);
-            if (found)
-                return found;
+                if (!obj.visible || !obj.visibleInEditor)
+                    continue;
+
+                var found = this.FindDeepestChildAtPoint(obj, pWorld);
+                if (found)
+                    return found;
+            }
         }
 
         return null;
