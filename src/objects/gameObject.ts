@@ -78,7 +78,7 @@ export class GameObject
 
     //levelEditorAlpha: number = 1; // BIT HACKY VAR TO FADE OUT OBJECTS IN EDITOR BUT NOT ADJUST ACTUALY ALPHA VALUES (HAVE TO STAY IN INTACT FOR SAVING)
     
-    constructor(scene: Scene, x:number = 0, y:number = 0, texturePath: string = "")
+    constructor(scene: Scene, texturePath: string = "", x:number = 0, y:number = 0)
     {
         this.scene = scene;
 

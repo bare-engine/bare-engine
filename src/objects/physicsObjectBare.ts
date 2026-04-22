@@ -19,9 +19,9 @@ export class PhysicsObjectBare extends GameObject
 
     static dummyPhysicsObjectBare: PhysicsObjectBare = new PhysicsObjectBare();
     
-    constructor(scene: Scene | null = null, x: number = 0, y: number = 0, texturePath: string = "")
+    constructor(scene: Scene | null = null, texturePath: string = "", x: number = 0, y: number = 0)
     {
-        super(scene, x, y, texturePath);
+        super(scene, texturePath, x, y);
 
         if (this.texture)
             this.physicsHitbox.rectangle = {x: 0, y: 0, width: this.texture!.width, height: this.texture!.height};
