@@ -92,13 +92,9 @@ export class AnimationComponent extends BaseComponent
         }
     }
 
-    Play(animationName: string = "", animationNameOrSingleCallback: string | (() => void) = ""): void
+    // PLAY DESIRED ANIMATION - WILL STREAM IN FRAMES IF NECESSARY, AWAIT THE METHOD TO WAIT FOR THIS
+    async Play(animationName: string = "", animationNameOrSingleCallback: string | (() => void) = ""): Promise<void>
     {
-        this.enabled = true;
-
-        //if (animationName == "")
-        //    return;
-
         var fullAnimationName = this.go.name + (animationName == "" ? "" : "_" + animationName);
 
         if (!assetsHandler.GetAnimation(fullAnimationName))
@@ -107,13 +103,35 @@ export class AnimationComponent extends BaseComponent
             return;
         }
 
-        this.currentAnimation = assetsHandler.GetAnimation(fullAnimationName)!.clone(); // CLONING IT, SO THAT WE MODIFY OUR OWN COPY
-        this.currentAnimation.currentFrame = 0;
-        this.currentAnimation.currentFrameTime = 0;
+        this.enabled = true;
+
+        var animation = assetsHandler.GetAnimation(fullAnimationName);
+        
+        // LOAD TEXTURES
+        if  (!animation.texturesLoaded)
+        {
+            var texturesToLoad: string[] = [];
+            for (var i = 0; i < animation.animFrames.length; i++)
+            {
+                if (!assetsHandler.HasTexture(animation.animFrames[i]))
+                    texturesToLoad.push(animation.animFrames[i]);
+            }
+            if (texturesToLoad.length > 0)
+            {
+                var texturePromises = [];
+                for (var i = 0; i < texturesToLoad.length; i++)
+                {
+                    texturePromises.push(assetsHandler.GetTexturePromise(texturesToLoad[i]));
+                }
+                await Promise.all(texturePromises);
+
+                animation.texturesLoaded = true; // SO WE ONLY DO IT ONCE
+            }
+        }
+
+        this.currentAnimation = animation.clone(); // CLONING IT, SO THAT WE MODIFY OUR OWN COPY
 
         this.SetTextureToFrame(0);
-
-        this.events.emit(AnimationEvent.started, { animation: this.currentAnimation });
 
         if (animationNameOrSingleCallback)
         {
@@ -122,6 +140,8 @@ export class AnimationComponent extends BaseComponent
             else
                 this.singleCallbacks.set(fullAnimationName, animationNameOrSingleCallback);
         }
+
+        this.events.emit(AnimationEvent.started, { animation: this.currentAnimation });
     }
 
     Pause(): void

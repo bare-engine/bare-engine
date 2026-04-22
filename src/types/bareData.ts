@@ -1,6 +1,6 @@
 import { SettingsData } from "./bareTypes";
 
-export const defaultEntityData: SettingsData = {
+export const defaultSettingsData: SettingsData = {
   baseEntities: {
     ANY: {
       extendClass: "GameObject"
@@ -43,5 +43,6 @@ export const defaultEntityData: SettingsData = {
   settings: {
     gridEnabled: false,
     gridSize: 64
-  }
+  },
+  defaultAnimationFramesPerSecond: 8
 };

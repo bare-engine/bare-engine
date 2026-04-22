@@ -118,7 +118,7 @@ class AssetsHandler
         }
     }
 
-    AddAnimation(animName: string, animFrames: string[], framesPerSecond: number = 8, loop: boolean = true)
+    AddAnimation(animName: string, animFrames: string[] = [], framesPerSecond: number = 8, loop: boolean = true)
     {
         var animationData = new AnimationData(animName, animFrames, framesPerSecond, loop);
         this.animationData.set(animName, animationData);

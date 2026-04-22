@@ -163,10 +163,11 @@ export class ComponentController
     }
 
     AddComponent<T extends GameObject, C extends Component<T>>(go: T, componentClass: Ctor<C>): C;
+    AddComponent<T extends GameObject, C extends Component<T>>(go: T, componentClass: Ctor<C>, ...args: any[]): C;
     AddComponent<T extends GameObject, C extends Component<T>>(go: T, componentInstance: C): C;
-    AddComponent<T extends GameObject, C extends Component<T>>(go: T, arg: Ctor<C> | C): C | null
+    AddComponent<T extends GameObject, C extends Component<T>>(go: T, arg: Ctor<C> | C, ...args: any[]): C | null
     {
-        const component: C = (typeof arg === "function") ? new arg(this.scene) : arg;
+        const component: C = (typeof arg === "function") ? new arg(go.scene, ...args) : arg;
 
         // Check class-level @Run decorator
         const runModes: number[] | undefined = (component.constructor as any)[RUN_MODES_KEY];

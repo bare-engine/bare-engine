@@ -248,7 +248,7 @@ export class EntityScene extends EditorScene
         }
 
         var fullEntity = levelHandler.SerializeObjectFully(obj);
-        var origEntity = this.GetEntityWithDefaultValues2(entityFromSettingsDataModified);
+        var origEntity = this.GetAppliedEntityWithDefaultValues(entityFromSettingsDataModified);
 
         // UNDO THE TEXTURE/PATH FOR BASE 
         if (this.isBase)
@@ -296,7 +296,7 @@ export class EntityScene extends EditorScene
         {
             delete entityFromSettingsDataDiffPropsRemoved[prop];
         }
-        var defaultEntity = this.GetEntityWithDefaultValues2(entityFromSettingsDataDiffPropsRemoved);
+        var defaultEntity = this.GetAppliedEntityWithDefaultValues(entityFromSettingsDataDiffPropsRemoved);
         for (var prop in combinedEntity)
         {
             var value = combinedEntity[prop];

@@ -201,6 +201,7 @@ interface AnimationDataInfo
   frames?: Array<string>;
   framesPerSecond?: number;
   loop?: boolean;
+  imagePath?: string;
 }
 
 export interface SettingsData
@@ -218,6 +219,7 @@ export interface SettingsData
   showUI?: boolean,
   settings?: {gridEnabled?: boolean, gridSize?: int, minimized?: boolean},
   selectionEnabled?: boolean,
+  defaultAnimationFramesPerSecond?: number,
   processed?: boolean
 } 
 
@@ -440,6 +442,8 @@ export class AnimationData
   currentFrame:int = 0;
   currentFrameTime:number = 0;
 
+  texturesLoaded: boolean = false;
+
   constructor(animName: string, animFrames: string[], framesPerSecond: number, loop: boolean)
   {
     this.animName = animName;
@@ -448,7 +452,7 @@ export class AnimationData
     this.loop = loop;
   }
   
-  clone(): AnimationData {
-    return new AnimationData(this.animName, [...this.animFrames], this.framesPerSecond, this.loop);
+  clone(): AnimationData {                  // NOT CLONING THE FRAMES, ASSUMED TO STAY UNTOUCHED
+    return new AnimationData(this.animName, this.animFrames, this.framesPerSecond, this.loop);
   }
 }

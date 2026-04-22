@@ -9,7 +9,7 @@ import mitt from "../libraries/mitt";
 import { Color, FrameBufferObject, ICircleRenderOptions, IGraphicRenderOptions, IRectRenderOptions, IRenderLineOptions, ISpriteRenderOptions, MaskType, RenderTexture, Texture, TextureCache, Vec2 } from "../libraries/rapid-render";
 import { MakePath, MakePathForEntity, globalEvents } from "../main";
 import { GameObject } from "../objects/gameObject";
-import { defaultEntityData } from "../types/bareData";
+import { defaultSettingsData } from "../types/bareData";
 import { AwakePayload, BareEvent, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LayerInfo, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
 
 /*Bare.camera.SetPosition(bare.width * .5, bare.height * .5);
@@ -84,7 +84,7 @@ export class Scene implements SceneI
     public events = mitt<Events>(); // private todo
     //private pipes = matt<Pipes>();
     
-    constructor(sceneOptions: SceneOptions | SettingsData = {settingsData: defaultEntityData})
+    constructor(sceneOptions: SceneOptions | SettingsData = {settingsData: defaultSettingsData})
     {
         let options: SceneOptions;
         const isSceneOptions =
@@ -104,7 +104,7 @@ export class Scene implements SceneI
         }
 
         if (!options.settingsData)
-            options.settingsData = defaultEntityData;
+            options.settingsData = defaultSettingsData;
         
         this.sceneOptions = options;
 
@@ -137,7 +137,7 @@ export class Scene implements SceneI
 
         await this.OnAwake(payload);
 
-        this.settingsHandler.ReprocessAnimations(); // NEEDED SINCE AN ATLAS WITH ANIMATIONS CAN BE LOADED IN AT AWAKE() ABOVE
+        this.settingsHandler.ProcessAnimations(); // NEEDED SINCE AN ATLAS WITH ANIMATIONS CAN BE LOADED IN AT AWAKE() ABOVE
 
         globalEvents.emit(BareEvent.scene_awake, { scene: this });
 
@@ -634,7 +634,7 @@ export class Scene implements SceneI
         return entityConstructed;
     }
 
-    GetEntityWithDefaultValues2(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true }): Entity
+    GetAppliedEntityWithDefaultValues(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true }): Entity
     {
         var entityConstructed = this.ConstructEntity(nameOrEntity, settingsData, options);
 
@@ -655,13 +655,14 @@ export class Scene implements SceneI
 
         gameObject.scene = this;
         gameObject.ResetValues();
+
         gameObject.InitTexture(MakePathForEntity(entityConstructed)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
     
         // DON'T WANT COMPONENTS TO BE CREATED AT ApplyEntityToGameObject(). 
         //delete entityConstructed.components;
 
         // STILL ADDING FALSE TO PREVENT COMPONENTS CREATION IN OVERRIDEN ApplyEntityToGameObject
-        this.ApplyEntityToGameObject(entityConstructed, gameObject);
+        this.ApplyEntityToGameObject(entityConstructed, gameObject, false);
 
         var entity = this.levelHandler.SerializeObjectFully(gameObject);
 

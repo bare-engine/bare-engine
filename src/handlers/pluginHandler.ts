@@ -159,8 +159,9 @@ window.__GAME_DEBUG_API__ = {
                 }))
   },
 
-  GetLevelFiles() {
-    return Helper.GetFilesInFolder(`${bareEngine.levelPath}/`, true);
+  async GetLevelFiles() {
+    var l = await Helper.GetFilesInFolder(`${bareEngine.levelPath}/`, false);
+    return l;
   },
 
   async GetLevelData(levelStr: string): Promise<LevelData> {
@@ -756,7 +757,7 @@ window.__GAME_DEBUG_API__ = {
           })
         });
         const json = await res.json().catch(() => null);
-        return { ok: res.ok, saved: res.ok, response: json };
+        return { ok: res.ok, saved: res.ok, response: json, level: levelData };
       } catch (error: any) {
         console.error('Failed to create level', error);
         return { ok: false, error: error?.message ?? String(error) };
@@ -863,10 +864,18 @@ window.__GAME_DEBUG_API__ = {
             window.postMessage({ __fromGame: true, type: "selectLevel", levelName: levelName }, "*");
     },
 
-    clickedOpenEditorInPlugin() {
+    async clickedOpenEditorInPlugin() {
         if (SaveData.currentLevelStr === '')
         {
             console.warn('[Bare Engine] No level loaded, cannot open editor');
+            var levels = await window.__GAME_DEBUG_API__.GetLevelFiles();
+            if (levels.length == 0)
+            {
+                console.warn('[Bare Engine] No levels found, creating one called "level"');
+                var res = await window.__GAME_DEBUG_API__.createLevel('level');
+                var level = res.level;
+                //sceneController.Add(EditorScene, {levelPathOrData: level}); // OVERWRITES THE SETTINGSDATA WITH DEFAULT, NO GOOD
+            }
             return;
         }
 

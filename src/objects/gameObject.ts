@@ -141,17 +141,18 @@ export class GameObject
 
     // CAN SUPPY A CLASS OR INSTANCE OF COMPONENT
     AddComponent<T extends Component<this>>(componentClass: Ctor<T>): T;
+    AddComponent<T extends Component<this>>(componentClass: Ctor<T>, ...args: any[]): T;
     AddComponent<T extends Component<this>>(componentInstance: T): T;
-    AddComponent<T extends Component<this>>(arg: Ctor<T> | T): T
+    AddComponent<T extends Component<this>>(arg: Ctor<T> | T, ...args: any[]): T
     {
         var componentController = this.scene.Get("componentController"); // NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
 
         if (componentController)
-            return componentController.AddComponent(this, arg);
+            return componentController.AddComponent(this, arg, ...args);
         else
         {
             console.error("ComponentController not registered. Call bare.AddClass(ComponentController) at Awake() of your game.");
-            return (typeof arg === "function" ? new arg() : arg);
+            return (typeof arg === "function" ? new arg(this.scene, ...args) : arg);
         }
     }
 
@@ -269,6 +270,9 @@ export class GameObject
 
     SetTexture(texture:Texture): GameObject
     {
+        if (!texture)
+            console.error("SetTexture has supplied an invalid texture: " + texture);
+
         this.texture = texture;
 
         return this;

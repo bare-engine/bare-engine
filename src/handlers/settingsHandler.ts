@@ -1,6 +1,6 @@
 import { Texture } from "../libraries/rapid-render/texture";
 import { assetsHandler } from "./assetsHandler";
-import { defaultEntityData } from "../types/bareData";
+import { defaultSettingsData } from "../types/bareData";
 import { Entity, SettingsData } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
 import { Scene } from "../scenes/scene";
@@ -29,10 +29,10 @@ export class SettingsHandler
         var settings = this.clone(raw);
 
         // SET DEFAULTS - WILL FILL IN ANY VALUE IN defaultEntityData THAT'S NOT PRESENT
-        for (const key of Object.keys(defaultEntityData) as (keyof SettingsData)[])
+        for (const key of Object.keys(defaultSettingsData) as (keyof SettingsData)[])
         {
             const rawValue = settings[key];
-            const defaultValue = (defaultEntityData as any)[key];
+            const defaultValue = (defaultSettingsData as any)[key];
 
             if (Array.isArray(rawValue) && Array.isArray(defaultValue))
             {
@@ -86,35 +86,7 @@ export class SettingsHandler
             e.name = key;
         });
 
-        // PROCESS ANIMATIONS - ADD THEM AND LOAD THEIR TEXTURES IF THEY'RE NOT IN ALREADY
-        if (settings.animations)
-        {
-            var promises: Promise<Texture>[] = [];
-
-            for (const [animName, animDataInfo] of Object.entries(settings.animations))
-            {
-                var existingAnimation = assetsHandler.GetAnimation(animName);
-
-                // TAKE PROVIDED VALUES OR FALLBACK TO DEFAULTS
-                var animationFrames = animDataInfo.frames as string[] ?? existingAnimation?.animFrames ?? []; // FALLBACK TO ANIMATION FRAMES SET BEFORE IN JSON
-                var framesPerSecond = animDataInfo.framesPerSecond ?? 8;
-                var loop = animDataInfo.loop ?? true;
-
-                // TRY TO LOAD SEPARATE IMAGES, DISABLED SINCE THEY WILL LIKELY NOT BE THERE BUT IN ATLAS THAT STILL HAS TO LOAD IN
-                /*for (var i = 0; i < animationFrames.length; i++)
-                {
-                    var frame = animationFrames[i];
-                    var promiseTexture = assetsHandler.GetTexturePromise(frame);
-                    promises.push(promiseTexture);
-                }*/
-                
-                // WILL ALSO OVERRIDE PREVIOUSLY SET ANIMATION IN JSON FROM _INITIAL FOLDER
-                assetsHandler.AddAnimation(animName, animationFrames, framesPerSecond, loop);
-            }
-
-            if (promises.length > 0)
-                await Promise.all(promises);
-        }
+        this.ProcessAnimations(settings);
 
         // PROCESS saveVars - WILL FIND EXTENDED CLASSES FOR EACH AND ADD THEIR SAVE VARS
         //
@@ -281,9 +253,6 @@ export class SettingsHandler
                             entityClone.name = entryName;
                             settings.entities[entityClone.name] = entityClone;
                         }
-
-                        // REMOVE % ENTRY
-                        //delete categoryGroup[categoryName];
                     }
 
                     if (typeof categoryData.entries === 'string')
@@ -312,9 +281,6 @@ export class SettingsHandler
                                 if (!settings.entities[entityClone.name]) // DON'T OVERWRITE EXISTING ENTRIES
                                     settings.entities[entityClone.name] = entityClone;
                             }
-
-                            // REMOVE * ENTRY
-                            //delete categoryGroup[categoryName];
                         }
                     }
                 }
@@ -330,12 +296,40 @@ export class SettingsHandler
         return settings;
     }
 
-    // HACK TO REPROCESS ANIMATIONS
-    ReprocessAnimations()
+    ProcessAnimations(settings = this.raw)
     {
-        var settings = this.raw;
+        // FIND IF # IS PRESENT, ADD THE INBETWEEN FRAMES
+        // EG: "player_walk1#3" -> ["player_walk1", "player_walk2", "player_walk3"]
+        // ALSO, ADD imagePath BEFORE EVERY FRAME NAME
+        var processFrames = function(imagePath: string, frames: string[]): string[] | null
+        {
+            if (!frames)
+                return null;
 
-        // REPROCESS ANIMATIONS - ADD THEM AND LOAD THEIR TEXTURES IF THEY'RE NOT IN ALREADY
+            if (imagePath)
+                imagePath += "/";
+
+            const newFrames: string[] = [];
+            for (const frame of frames)
+            {
+                const match = frame.match(/^(.+?)(\d+)#(\d+)$/);
+                if (match)
+                {
+                    const base = imagePath + match[1];
+                    const start = parseInt(match[2]);
+                    const end = parseInt(match[3]);
+                    for (let i = start; i <= end; i++)
+                        newFrames.push(base + i);
+                }
+                else
+                {
+                    newFrames.push(imagePath + frame);
+                }
+            }
+            return newFrames;
+        }
+
+        // ADD THEM AND LOAD THEIR TEXTURES IF THEY'RE NOT IN ALREADY
         if (settings.animations)
         {
             for (const [animName, animDataInfo] of Object.entries(settings.animations))
@@ -343,11 +337,11 @@ export class SettingsHandler
                 var existingAnimation = assetsHandler.GetAnimation(animName);
 
                 // TAKE PROVIDED VALUES OR FALLBACK TO DEFAULTS
-                var animationFrames = animDataInfo.frames as string[] ?? existingAnimation?.animFrames ?? []; // FALLBACK TO ANIMATION FRAMES SET BEFORE IN JSON
-                var framesPerSecond = animDataInfo.framesPerSecond ?? 8;
-                var loop = animDataInfo.loop ?? true;
+                var animationFrames = processFrames(animDataInfo.imagePath ?? "", animDataInfo.frames) ?? existingAnimation?.animFrames; // FALLBACK TO ANIMATION FRAMES SET BEFORE IN JSON
+                var framesPerSecond = (animDataInfo.framesPerSecond ?? defaultSettingsData.defaultAnimationFramesPerSecond);
+                var loop = animDataInfo.loop;
                 
-                // WILL ALSO OVERRIDE PREVIOUSLY SET ANIMATION IN JSON FROM _INITIAL FOLDER
+                // WILL ALSO OVERRIDE PREVIOUSLY SET ANIMATION IN JSON FROM 'initial' FOLDER
                 assetsHandler.AddAnimation(animName, animationFrames, framesPerSecond, loop);
             }
         }

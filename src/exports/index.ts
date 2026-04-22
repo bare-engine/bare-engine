@@ -84,7 +84,7 @@ export { TextObject } from "../objects/textObject";
 export { assetsHandler } from "../handlers/assetsHandler";
 export { cameraHandler } from "../handlers/cameraHandler";
 export { CameraHandler } from "../handlers/cameraHandler";
-export { defaultEntityData } from "../types/bareData";
+export { defaultSettingsData as defaultEntityData } from "../types/bareData";
 export { FileDropHandler } from "../handlers/fileDropHandler";
 export { Helper } from "../utils/helper";
 export { Hitbox } from "../types/hitbox";

@@ -12,7 +12,7 @@ import { Color, Texture, Vec2 } from "../libraries/rapid-render";
 import { GameMode, MakePathForEntity, Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
 import { EditorUIScene } from "../scenes/editorUIScene";
-import { defaultEntityData } from "../types/bareData";
+import { defaultSettingsData } from "../types/bareData";
 import { BareEvent, BareEventPayload, Component, ConstructEntityOptions, Entity, entityVars, LevelData, SaveData, Scalar, SettingsData } from '../types/bareTypes';
 import { Helper } from "../utils/helper";
 import { assetsHandler } from "./assetsHandler";
@@ -30,7 +30,7 @@ export class LevelHandler
     {
         this.scene = scene;
 
-        defaultEntityData.saveVars.GameObject.push("save");
+        defaultSettingsData.saveVars.GameObject.push("save");
 
         if (__DEV__)
             if (!globalThis.plugin) // ONLY SHOW IF NO PLUGIN EXISTS, ELSE USER CAN PRESS BUTTON IN PLUGIN
@@ -317,7 +317,7 @@ export class LevelHandler
                 else
                 {
                     if (constructorName == "GameObject")
-                        varsToSave = defaultEntityData.saveVars!["GameObject"];
+                        varsToSave = defaultSettingsData.saveVars!["GameObject"];
                     else
                         console.warn("NO VARS TO SAVE FOR " + constructorName);
                 }
@@ -448,7 +448,7 @@ export class LevelHandler
             var origEntity = this.scene.GetDummpyDataFromEntity2(obj.name, this.scene.settingsData, options); // COULD ALSO GET THIS FROM PROCCESSED ENTITYDATA? IF I CONTRUCT ALL ENTITITES - TODO
         }*/
 
-        var origEntity = this.scene.GetEntityWithDefaultValues2(obj.name, this.scene.settingsData, options); // COULD ALSO GET THIS FROM PROCCESSED ENTITYDATA? IF I CONTRUCT ALL ENTITITES - TODO
+        var origEntity = this.scene.GetAppliedEntityWithDefaultValues(obj.name, this.scene.settingsData, options); // COULD ALSO GET THIS FROM PROCCESSED ENTITYDATA? IF I CONTRUCT ALL ENTITITES - TODO
         
         var fullEntity = this.SerializeObjectFully(obj);
         var diffEntity = this.GetEntitiesDiff(origEntity, fullEntity);
@@ -596,7 +596,7 @@ export class LevelHandler
                 else
                 {
                     if (constructorName == "GameObject")
-                        varsToSave = defaultEntityData.saveVars!["GameObject"];
+                        varsToSave = defaultSettingsData.saveVars!["GameObject"];
                     else
                         console.warn("NO VARS TO SAVE FOR " + constructorName);
                 }
