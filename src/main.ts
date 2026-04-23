@@ -25,6 +25,8 @@ declare global
 
     var bareEngine:BareEngine;
 
+    var textureNotFoundString:string;
+
     var initialAssetsReady:Function;
     var initialAssets:Record<string, any>;
 
@@ -42,6 +44,7 @@ declare global
     var events: Emitter<Events>;
     
     var whitePixelTexture:Texture;
+    var redPixelTexture:Texture;
 
     var hasFocus:boolean;
     var onFocusChange: (hasFocus: boolean) => void;
@@ -149,6 +152,10 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
             const baseTexture = new BaseTexture(glTexture, 1, 1);
             window.whitePixelTexture = new Texture(baseTexture);
             //window.whitePixelTexture = new RenderTexture(1, 1, false, Color.White);
+
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 0, 0, 255]));
+            var baseTexture2 = new BaseTexture(glTexture, 1, 1);
+            window.redPixelTexture = new Texture(baseTexture2);
 
             // PREVENT TEXT SELECTION AND IOS MAGNIFIER
             var style = (rapid.canvas.style as any);

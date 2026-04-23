@@ -225,7 +225,7 @@ export class AnimationComponent extends BaseComponent
     
     OnRemoved(): void
     {
-        this.events.clearAll(); // NOT REALLY NEEDED?
+        this.events?.clearAll(); // NOT REALLY NEEDED?
     }
 }
 

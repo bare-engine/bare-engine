@@ -454,7 +454,12 @@ export class Scene implements SceneI
         components: (o, v) => {
             for (const component in v)
             {
-                var ComponentClass = bareEngine.componentClasses[Helper.CapitalizeFirstLetter(component) + "Component"];
+                const className = Helper.CapitalizeFirstLetter(component) + "Component";
+                var ComponentClass = bareEngine.componentClasses[className];
+                if (!ComponentClass)
+                {
+                    console.error('Component class not found: ' + className + '. Add it with bare.AddClass(' + Helper.CapitalizeFirstLetter(component) + 'Component);');
+                }
                 var componentValues = v[component];
                 var componentInstance = new ComponentClass(o.scene, ...Object.values(componentValues));
                 o.AddComponent(componentInstance);

@@ -101,13 +101,13 @@ window.__GAME_DEBUG_API__ = {
 
   gotoLevelView(levelPath: string) {
     sceneController.Remove(EditorScene); // REMOVES IT IF IT EXISTS
-    sceneController.GetLevelScene().LoadLevel(levelPath);
+    sceneController.GetMainScene().LoadLevel(levelPath);
   },
 
   async gotoLevelEdit(levelPath: string) {
     //sceneController.DisableAllScenes();
     
-    sceneController.Add(EditorScene, {levelPathOrData: bareEngine.levelPath + "/" + levelPath + ".json"});
+    sceneController.Add(EditorScene, {levelPathOrData: bareEngine.levelPath + "/" + levelPath + ".json", settingsHandler: sceneController.GetMainScene().settingsHandler});
     //sceneController.Goto(EditorScene, {levelInput: levelPath});
   },
 
@@ -1012,7 +1012,7 @@ export class PluginHandler
                 return;
             }
         }
-        trace(data.offset)
+        
         var worldPos = data.obj.scene.ScreenToWorldPos(new Vec2(mouseX, mouseY));
         var ref = data.obj.parent ? data.obj.parent.ToLocal(worldPos) : worldPos;
         data.obj.SetPosition(ref.x + data.offset.x, ref.y + data.offset.y);

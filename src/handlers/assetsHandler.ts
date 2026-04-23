@@ -33,7 +33,7 @@ class AssetsHandler
             return tex;
         }).catch(() => {
             this.loading.delete(texturePath);
-            return window.whitePixelTexture; // JUST TO RETURN SOMETHING, TODO? MAYBE SHOULD BE A TEXTURE WITH RED CROSS
+            return window.redPixelTexture; // JUST TO RETURN SOMETHING, TODO? MAYBE SHOULD BE A TEXTURE WITH RED CROSS
         });
 
         this.loading.set(texturePath, texturePromise);

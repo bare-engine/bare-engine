@@ -5,6 +5,7 @@ import { FlashShader } from "../shaders/flashShader";
 import { TweenTo } from "../controllers/tweenController";
 import { EditorScene } from '../scenes/editorScene';
 import { objectController } from '../controllers/objectController';
+import { Color, RenderTexture } from '../exports';
 
 /*
     BUILD SETUP/CONTROLS UI
@@ -224,7 +225,7 @@ export class EditorUIHandler {
                                 }
                             } else {
                                 const entityImagePath = this.GetEntityImagePath(entity);
-                                if (entityImagePath) {
+                                if (entityImagePath && entityImagePath !== 'assets/images/whitePixel.webp') {
                                     const img = document.createElement('img');
                                     img.src = entityImagePath;
                                     img.id = entityId;
@@ -234,10 +235,24 @@ export class EditorUIHandler {
                                     img.style.borderRadius = '3px';
                                     childEntity.appendChild(img);
                                 } else {
-                                    childEntity.textContent = '📦'; // Fallback icon
-                                    childEntity.style.display = 'flex';
-                                    childEntity.style.alignItems = 'center';
-                                    childEntity.style.justifyContent = 'center';
+                                    if (!window.textureNotFoundString)
+                                    {
+                                        var rt = new RenderTexture(128, 128, true, Color.fromHex("#fc0000")); // Fallback tex
+                                        const pixels = rt.GetPixels();
+                                        const canvas = document.createElement('canvas');
+                                        canvas.width = 128;
+                                        canvas.height = 128;
+                                        const ctx = canvas.getContext('2d')!;
+                                        const imageData = new ImageData(new Uint8ClampedArray(pixels), 128, 128);
+                                        ctx.putImageData(imageData, 0, 0);
+                                        var img = canvas.toDataURL();
+                                        window.textureNotFoundString = img;
+                                    }
+
+                                    childEntity.style.backgroundImage = `url(${window.textureNotFoundString})`;
+                                    childEntity.style.backgroundSize = 'contain';
+                                    childEntity.style.backgroundRepeat = 'no-repeat';
+                                    childEntity.style.backgroundPosition = 'center';
                                 }
                             }
 
@@ -562,6 +577,7 @@ export class EditorUIHandler {
 
             // SAVE MINIMIZED
             const updatedRaw = await this.scene.settingsHandler.UpdateRaw((raw) => {
+                raw.settings ??= {};
                 raw.settings.minimized = this.isMinimized;
             });
             this.scene.SaveEntityData(updatedRaw);

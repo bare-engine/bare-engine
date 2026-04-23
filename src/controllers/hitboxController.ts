@@ -73,7 +73,7 @@ export class HitboxController
             var obj = objs[i];
             var hitbox = obj.tapHitbox;
 
-            // SHOULD NOT BE COMMENTED - TODO - BUT DEBUG VIEW IS BROKEN, TOO BIG
+            // physicsHitbox SHOULD NOT REALLY BE HANDLED HERE - TODO
             if ((obj as any).isPhysicsObject)
                 hitbox = (obj as any).physicsHitbox;
             

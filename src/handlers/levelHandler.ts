@@ -216,7 +216,6 @@ export class LevelHandler
 
         var collectTextures = (entity: any) => {
             var entityConstructed = this.scene.ConstructEntity(entity);
-            var imagePath = entityConstructed.imagePath;
             var fullPath = MakePathForEntity(entityConstructed);
 
             if (!texturesFound.has(fullPath) && !assetsHandler.HasTexture(fullPath))

@@ -56,7 +56,7 @@ export class GameObject
     revertPivotOnSave: boolean = false; // TODO
 
     tapHitbox: Hitbox | null = null; // PHASE THIS OUT, MAKE INTO COMPONENT? TODO
-    hitboxColor:Color = new Color(255,255,255,80); // ^
+    hitboxColor:Color = Color.fromHex('#f700ff57'); // ^
 
     startPosition = new Vec2();
 
@@ -70,6 +70,8 @@ export class GameObject
     visibleInEditor:boolean = true;
 
     customData: Record<string, any> = {};
+
+    OnTextureLoadedCallbacks: Function[] = [];
 
     //onDestroy:Function | null = null;
 
@@ -239,35 +241,6 @@ export class GameObject
         return tex;
     }
 
-    WhenTextureLoaded(callback: () => void)
-    {
-        if (this.texturePromise != null)
-        {
-            this.texturePromise.then(() => callback());
-        }
-        else
-        {
-            if (!this.texture && this.entity) // HORRID, TODO, ALWAYS LOAD TEXURE BEFORE?
-            {
-                var tex = assetsHandler.GetTexture(MakePathForEntity(this.entity));
-                if (tex)
-                {
-                    this.SetTexture(tex);
-                    callback();
-                }
-                else
-                {
-                    assetsHandler.GetTexturePromise(MakePathForEntity(this.entity)).then(tex => {
-                        this.SetTexture(tex);
-                        callback();
-                    });
-                }
-            }
-            else 
-                callback();
-        }
-    }
-
     SetTexture(texture:Texture): GameObject
     {
         if (!texture)
@@ -275,7 +248,29 @@ export class GameObject
 
         this.texture = texture;
 
+        if (this.texture != window.redPixelTexture) // redPixelTexture MEANS IT'S NOT FOUND
+        {
+            for (var i = 0; i < this.OnTextureLoadedCallbacks.length; i++)
+            {
+                this.OnTextureLoadedCallbacks[i]();
+            }
+            this.OnTextureLoadedCallbacks = [];
+        }
+
         return this;
+    }
+
+    WhenTextureLoaded(callback: () => void)
+    {
+        if (this.texture && this.texture != window.redPixelTexture)
+        {
+            // TEXTURE IS ALREADY THERE
+            callback();
+            return;
+        }
+
+        // QUEUE CALLBACK FOR WHEN TEXTURE HAS LOADED
+        this.OnTextureLoadedCallbacks.push(callback);
     }
 
     OnAwake()
@@ -923,10 +918,10 @@ export class GameObject
     // CAN PASS IN PERCENTAGES TOO, TEXTURE HAS TO BE LOADED
     SetPivot(x: number, y: number): GameObject
     {
-        if (this.texturePromise)
+        if (!this.texture)
         {
-            this.texturePromise.then(() => this.SetPivot(x, y));
-            return this; // NOT DOING AWAIT SINCE THEN EVERY SETPIVOT WOULD NEED TO BE AWAITED, ANNOYING. THOUGH THIS SEEMS HACKY TOO, TODO
+            this.WhenTextureLoaded(() => this.SetPivot(x, y));
+            return this;
         }
         
         // OPTION TO PASS IN A PERCENTAGE
@@ -1197,6 +1192,8 @@ export class GameObject
         this.transform.Reset();
         this.innerTransform.Reset();
         this.renderParentTransform = null;
+
+        this.OnTextureLoadedCallbacks = [];
 
         this.customData = {};
 

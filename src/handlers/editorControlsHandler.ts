@@ -535,6 +535,7 @@ export class EditorControlsHandler {
         this.currentPreviewEntity.WhenTextureLoaded(() => {
             // WILL END UP SETTING THE PIVOT CORRECTLY
             this.scene.ApplyEntityToGameObject(entityCopy, this.currentPreviewEntity);
+            this.SetCurrentPreviewActive(true); // COULD HAVE BEEN SET TO VISIBLE FALSE ABOVE
         });
     }
 
