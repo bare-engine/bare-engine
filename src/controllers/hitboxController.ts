@@ -88,7 +88,8 @@ export class HitboxController
                 rapid.renderCircle({
                     offset: new Vec2(center.x, center.y),
                     radius: radius,
-                    segments: 32
+                    segments: 32,
+                    color: obj.hitboxColor
                 });
             }
             else if (hitbox.type == HitboxType.Rectangle)

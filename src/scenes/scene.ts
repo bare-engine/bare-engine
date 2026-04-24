@@ -916,12 +916,12 @@ export class Scene implements SceneI
         this.componentController?.PreRender();
         this.objectController.PreRender();
 
-        this.hitboxController?.Render();
         this.componentController?.Render();
         this.objectController.Render();
         this.physicsControllerBare?.Render();
         this.physicsControllerSopiro?.Render();
         this.particleController?.Render();
+        this.hitboxController?.Render();
 
         this.OnRender();
 
