@@ -156,6 +156,16 @@ export class PhysicsObjectBare extends GameObject
         return this;
     }
 
+    IsBlocked(direction: BlockedState): boolean
+    {
+        return (this.blocked & direction) !== 0;
+    }
+
+    IsGrounded(): boolean
+    {
+        return this.IsBlocked(BlockedState.Down);
+    }
+
     ResetVelocity(): void
     {
         this.velocity.x = 0;
@@ -171,6 +181,7 @@ export class PhysicsObjectBare extends GameObject
         this.static = false;
         this.drag = .07;
         this.restitution = .8;
+        this.blocked = BlockedState.None;
 
         if (this.physicsHitbox)
         {

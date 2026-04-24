@@ -3,7 +3,7 @@ import { globalEvents, Scene } from "../main";
 import { Vec2 } from "../libraries/rapid-render";
 import { PhysicsControllerBase } from "./physicsControllerBase";
 import { GameObject } from "../objects/gameObject";
-import { BareEvent } from "../types/bareTypes";
+import { BareEvent, BlockedState } from "../types/bareTypes";
 import { BareEngine } from "../bareEngine";
 import { HitboxType, PoolHandler } from "../exports";
 
@@ -77,6 +77,8 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 
     for (const obj of this.objects)
     {
+      obj.blocked = BlockedState.None;
+
       if (!obj.physicsHitbox.rectangle || obj.physicsHitbox.rectangle.width == 0 || obj.physicsHitbox.rectangle.height == 0)
       {
         if (!obj.static)
@@ -178,24 +180,28 @@ export class PhysicsControllerBare extends PhysicsControllerBase
   // Left wall
   if (left < boundsLeft) {
     shiftX((boundsLeft - left) + eps);
+    this.addBlockedState(obj, BlockedState.Left);
     if (obj.velocity.x < 0) obj.velocity.x = -obj.velocity.x * e;
   }
 
   // Right wall
   if (right > boundsRight) {
     shiftX((boundsRight - right) - eps);
+    this.addBlockedState(obj, BlockedState.Right);
     if (obj.velocity.x > 0) obj.velocity.x = -obj.velocity.x * e;
   }
 
   // Top wall
   if (top < boundsTop) {
     shiftY((boundsTop - top) + eps);
+    this.addBlockedState(obj, BlockedState.Up);
     if (obj.velocity.y < 0) obj.velocity.y = -obj.velocity.y * e;
   }
 
   // Bottom wall
   if (bottom > boundsBottom) {
     shiftY((boundsBottom - bottom) - eps);
+    this.addBlockedState(obj, BlockedState.Down);
     if (obj.velocity.y > 0) obj.velocity.y = -obj.velocity.y * e;
   }
 }
@@ -213,12 +219,6 @@ export class PhysicsControllerBare extends PhysicsControllerBase
         if (obj1.static && obj2.static) continue;
         if (!obj1.collide || !obj2.collide) continue;
         if (!obj1.physicsHitbox.active || !obj2.physicsHitbox.active) continue;
-        if (obj1.velocity.isZero() && obj2.velocity.isZero()) {
-          // Still track active collisions so CheckCollisionEnd doesn't fire prematurely
-          const key = `${obj1.uniqueID}##${obj2.uniqueID}`;
-          if (this.activeCollisions.has(key)) this.currentFrameCollisions.add(key);
-          continue;
-        }
 
         let collision = false;
         let collisionInfo: {dx: number, dy: number, distance: number, angle: number} | null = null;
@@ -311,6 +311,8 @@ export class PhysicsControllerBare extends PhysicsControllerBase
           if (this.OnBeforeCollisionResolve && !this.OnBeforeCollisionResolve(obj1, obj2)) continue;
           const corr = this.ResolveSolidCollision(obj1, obj2, collisionInfo);
           if (!corr) continue;
+
+          this.applyBlockedStatesFromNormal(obj1, obj2, corr.nx, corr.ny);
 
           const { xAddObj1, yAddObj1, xAddObj2, yAddObj2 } = corr;
 
@@ -534,11 +536,62 @@ export class PhysicsControllerBare extends PhysicsControllerBase
       }
   }
 
+  private addBlockedState(obj: PhysicsObjectBare, state: BlockedState): void
+  {
+    obj.blocked |= state;
+  }
+
+  private applyBlockedStatesFromNormal(obj1: PhysicsObjectBare, obj2: PhysicsObjectBare, nx: number, ny: number): void
+  {
+    const eps = 1e-6;
+
+    if (nx > eps) {
+      this.addBlockedState(obj1, BlockedState.Right);
+      this.addBlockedState(obj2, BlockedState.Left);
+    } else if (nx < -eps) {
+      this.addBlockedState(obj1, BlockedState.Left);
+      this.addBlockedState(obj2, BlockedState.Right);
+    }
+
+    if (ny > eps) {
+      this.addBlockedState(obj1, BlockedState.Down);
+      this.addBlockedState(obj2, BlockedState.Up);
+    } else if (ny < -eps) {
+      this.addBlockedState(obj1, BlockedState.Up);
+      this.addBlockedState(obj2, BlockedState.Down);
+    }
+  }
+
+  private getCollisionNormal(
+    obj1: PhysicsObjectBare,
+    obj2: PhysicsObjectBare,
+    collisionInfo: { dx: number; dy: number; distance: number; angle: number }
+  ): { nx: number; ny: number }
+  {
+    const rectRect =
+      obj1.physicsHitbox.type === HitboxType.Rectangle &&
+      obj2.physicsHitbox.type === HitboxType.Rectangle;
+
+    const len = Math.hypot(collisionInfo.dx, collisionInfo.dy) || 1e-8;
+
+    if (rectRect) {
+      return {
+        nx: -collisionInfo.dx / len,
+        ny: -collisionInfo.dy / len
+      };
+    }
+
+    return {
+      nx: collisionInfo.dx / len,
+      ny: collisionInfo.dy / len
+    };
+  }
+
   private ResolveSolidCollision(
     obj1: PhysicsObjectBare,
     obj2: PhysicsObjectBare,
     collisionInfo: { dx: number; dy: number; distance: number; angle: number }
-  ): { xAddObj1: number; yAddObj1: number; xAddObj2: number; yAddObj2: number } | null
+  ): { xAddObj1: number; yAddObj1: number; xAddObj2: number; yAddObj2: number; nx: number; ny: number } | null
   {
     let xAddObj1 = 0, yAddObj1 = 0;
     let xAddObj2 = 0, yAddObj2 = 0;
@@ -557,23 +610,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     if (penetration <= 0) return null;
 
     // --- choose normal
-    let nx = 0, ny = 0;
-
-    const rectRect =
-      obj1.physicsHitbox.type === HitboxType.Rectangle &&
-      obj2.physicsHitbox.type === HitboxType.Rectangle;
-
-    if (rectRect) {
-      // Use MTV direction from your rect-rect solver (axis-aligned)
-      const len = Math.hypot(collisionInfo.dx, collisionInfo.dy) || 1e-8;
-      nx = -collisionInfo.dx / len;
-      ny = -collisionInfo.dy / len;
-    } else {
-      // For circle/circle and circle/rect
-      const len = Math.hypot(collisionInfo.dx, collisionInfo.dy) || 1e-8;
-      nx = collisionInfo.dx / len;
-      ny = collisionInfo.dy / len;
-    }
+    const { nx, ny } = this.getCollisionNormal(obj1, obj2, collisionInfo);
 
     // --- mass
     const invMass1 = obj1.static ? 0 : 1;
@@ -615,7 +652,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
       }
     }
 
-    return { xAddObj1, yAddObj1, xAddObj2, yAddObj2 };
+    return { xAddObj1, yAddObj1, xAddObj2, yAddObj2, nx, ny };
   }
 
 	GetObjectAtPoint(position: Vec2, ignoredObject?: PhysicsObjectBare): PhysicsObjectBare | null
