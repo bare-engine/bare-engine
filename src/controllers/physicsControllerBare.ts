@@ -209,124 +209,141 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 
   public handleObjectCollisions(emitEvents: boolean = true): void
   {
-    for (let i = 0; i < this.objects.length; i++)
+    const maxIterations = 8;
+
+    for (let iteration = 0; iteration < maxIterations; iteration++)
     {
-      for (let j = i + 1; j < this.objects.length; j++)
+      let resolvedAny = false;
+
+      for (let i = 0; i < this.objects.length; i++)
       {
-        const obj1 = this.objects[i];
-        const obj2 = this.objects[j];
-
-        if (obj1.static && obj2.static) continue;
-        if (!obj1.collide || !obj2.collide) continue;
-        if (!obj1.physicsHitbox.active || !obj2.physicsHitbox.active) continue;
-
-        let collision = false;
-        let collisionInfo: {dx: number, dy: number, distance: number, angle: number} | null = null;
-
-        // Rectangle-Rectangle collision
-        if (obj1.physicsHitbox.type === HitboxType.Rectangle && obj2.physicsHitbox.type === HitboxType.Rectangle) {
-          const result = this.checkRectRectCollision(obj1, obj2);
-          if (result.collision) {
-            collision = true;
-            collisionInfo = {
-              dx: result.dx,
-              dy: result.dy,
-              distance: result.distance,
-              angle: result.angle
-            };
-          }
-        }
-
-        // Circle-Circle collision
-        if (obj1.physicsHitbox.type === HitboxType.Circle && obj2.physicsHitbox.type === HitboxType.Circle) {
-          const dx = obj2.x - obj1.x;
-          const dy = obj2.y - obj1.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-
-          if (distance < obj1.physicsHitbox.radius + obj2.physicsHitbox.radius) {
-            collision = true;
-            collisionInfo = {
-              dx,
-              dy,
-              distance,
-              angle: Math.atan2(dy, dx)
-            };
-          }
-        }
-        // Circle-Rectangle collision
-        else if (
-          (obj1.physicsHitbox.type === HitboxType.Circle && obj2.physicsHitbox.type === HitboxType.Rectangle) ||
-          (obj1.physicsHitbox.type === HitboxType.Rectangle && obj2.physicsHitbox.type === HitboxType.Circle)
-        ) {
-          const circle = obj1.physicsHitbox.type === HitboxType.Circle ? obj1 : obj2;
-          const rectObj = obj1.physicsHitbox.type === HitboxType.Rectangle ? obj1 : obj2;
-
-          const result = this.checkCircleRectCollision(circle, rectObj);
-          if (result.collision) {
-            collision = true;
-            collisionInfo = {
-              dx: result.dx,
-              dy: result.dy,
-              distance: result.distance,
-              angle: result.angle
-            };
-          }
-        }
-
-        if (collision && collisionInfo)
+        for (let j = i + 1; j < this.objects.length; j++)
         {
-          if (emitEvents) {
-              this.HandleCollision(obj1, obj2);
+          const obj1 = this.objects[i];
+          const obj2 = this.objects[j];
+
+          if (obj1.static && obj2.static) continue;
+          if (!obj1.collide || !obj2.collide) continue;
+          if (!obj1.physicsHitbox.active || !obj2.physicsHitbox.active) continue;
+
+          let collision = false;
+          let collisionInfo: {dx: number, dy: number, distance: number, angle: number} | null = null;
+
+          // Rectangle-Rectangle collision
+          if (obj1.physicsHitbox.type === HitboxType.Rectangle && obj2.physicsHitbox.type === HitboxType.Rectangle) {
+            const result = this.checkRectRectCollision(obj1, obj2);
+            if (result.collision) {
+              collision = true;
+              collisionInfo = {
+                dx: result.dx,
+                dy: result.dy,
+                distance: result.distance,
+                angle: result.angle
+              };
+            }
           }
 
-          // collide COULD HAVE CHANGED SINCE HandleCollision() SENT OUT EVENTS
-          if (!obj1.collide || !obj2.collide) {
-              continue;
-          }
-
-          // Skip physical response for sensors or non-solid objects
-          if (obj1.sensor || obj2.sensor) {
-              continue;
-          }
-
-          // Separate objects to prevent sticking
-          /*let overlap = 0;
+          // Circle-Circle collision
           if (obj1.physicsHitbox.type === HitboxType.Circle && obj2.physicsHitbox.type === HitboxType.Circle) {
-            overlap = (obj1.physicsHitbox.radius + obj2.physicsHitbox.radius - collisionInfo.distance) / 2;
-          } else if (obj1.physicsHitbox.type === HitboxType.Rectangle && obj2.physicsHitbox.type === HitboxType.Rectangle) {
-            // For rectangle-rectangle, use the collision distance directly (it's already the overlap amount)
-            overlap = collisionInfo.distance / 2;
-          } else {
-            // For circle-rectangle, use penetration depth
-            overlap = collisionInfo.distance / 2;
-          }*/
-          
-          // Make collisionInfo.dx/dy always point from obj1 -> obj2
-          if (obj1.physicsHitbox.type === HitboxType.Circle && obj2.physicsHitbox.type === HitboxType.Rectangle) {
-            // checkCircleRectCollision returns rect->circle, but we need circle->rect here
-            collisionInfo.dx = -collisionInfo.dx;
-            collisionInfo.dy = -collisionInfo.dy;
+            const dx = obj2.x - obj1.x;
+            const dy = obj2.y - obj1.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < obj1.physicsHitbox.radius + obj2.physicsHitbox.radius) {
+              collision = true;
+              collisionInfo = {
+                dx,
+                dy,
+                distance,
+                angle: Math.atan2(dy, dx)
+              };
+            }
+          }
+          // Circle-Rectangle collision
+          else if (
+            (obj1.physicsHitbox.type === HitboxType.Circle && obj2.physicsHitbox.type === HitboxType.Rectangle) ||
+            (obj1.physicsHitbox.type === HitboxType.Rectangle && obj2.physicsHitbox.type === HitboxType.Circle)
+          ) {
+            const circle = obj1.physicsHitbox.type === HitboxType.Circle ? obj1 : obj2;
+            const rectObj = obj1.physicsHitbox.type === HitboxType.Rectangle ? obj1 : obj2;
+
+            const result = this.checkCircleRectCollision(circle, rectObj);
+            if (result.collision) {
+              collision = true;
+              collisionInfo = {
+                dx: result.dx,
+                dy: result.dy,
+                distance: result.distance,
+                angle: result.angle
+              };
+            }
           }
 
-          if (this.OnBeforeCollisionResolve && !this.OnBeforeCollisionResolve(obj1, obj2)) continue;
-          const corr = this.ResolveSolidCollision(obj1, obj2, collisionInfo);
-          if (!corr) continue;
+          if (collision && collisionInfo)
+          {
+            this.HandleCollision(obj1, obj2, emitEvents);
 
-          this.applyBlockedStatesFromNormal(obj1, obj2, corr.nx, corr.ny);
+            // collide COULD HAVE CHANGED SINCE HandleCollision() SENT OUT EVENTS
+            if (!obj1.collide || !obj2.collide) {
+                continue;
+            }
 
-          const { xAddObj1, yAddObj1, xAddObj2, yAddObj2 } = corr;
+            // Skip physical response for sensors or non-solid objects
+            if (obj1.sensor || obj2.sensor) {
+                continue;
+            }
 
-          if (xAddObj1 !== 0 || yAddObj1 !== 0) {
-            obj1.x += xAddObj1;
-            obj1.y += yAddObj1;
+            // Separate objects to prevent sticking
+            /*let overlap = 0;
+            if (obj1.physicsHitbox.type === HitboxType.Circle && obj2.physicsHitbox.type === HitboxType.Circle) {
+              overlap = (obj1.physicsHitbox.radius + obj2.physicsHitbox.radius - collisionInfo.distance) / 2;
+            } else if (obj1.physicsHitbox.type === HitboxType.Rectangle && obj2.physicsHitbox.type === HitboxType.Rectangle) {
+              // For rectangle-rectangle, use the collision distance directly (it's already the overlap amount)
+              overlap = collisionInfo.distance / 2;
+            } else {
+              // For circle-rectangle, use penetration depth
+              overlap = collisionInfo.distance / 2;
+            }*/
+            
+            // Make collisionInfo.dx/dy always point from obj1 -> obj2
+            if (obj1.physicsHitbox.type === HitboxType.Circle && obj2.physicsHitbox.type === HitboxType.Rectangle) {
+              // checkCircleRectCollision returns rect->circle, but we need circle->rect here
+              collisionInfo.dx = -collisionInfo.dx;
+              collisionInfo.dy = -collisionInfo.dy;
+            }
+
+            if (this.OnBeforeCollisionResolve && !this.OnBeforeCollisionResolve(obj1, obj2)) continue;
+            const corr = this.ResolveSolidCollision(obj1, obj2, collisionInfo);
+            if (!corr) continue;
+
+            this.applyBlockedStatesFromNormal(obj1, obj2, corr.nx, corr.ny);
+
+            const { xAddObj1, yAddObj1, xAddObj2, yAddObj2 } = corr;
+
+            if (xAddObj1 !== 0 || yAddObj1 !== 0) {
+              obj1.x += xAddObj1;
+              obj1.y += yAddObj1;
+              resolvedAny = true;
+            }
+
+            if (xAddObj2 !== 0 || yAddObj2 !== 0) {
+              obj2.x += xAddObj2;
+              obj2.y += yAddObj2;
+              resolvedAny = true;
+            }
           }
-
-          if (xAddObj2 !== 0 || yAddObj2 !== 0) {
-            obj2.x += xAddObj2;
-            obj2.y += yAddObj2;
-          }
+          // no collision - CheckCollisionEnd() handles end detection
         }
-        // no collision - CheckCollisionEnd() handles end detection
+      }
+
+      if (!resolvedAny) {
+        break;
+      }
+
+      for (const obj of this.objects) {
+        if (!obj.physicsHitbox.active) continue;
+        if (!obj.physicsHitbox.rectangle || obj.physicsHitbox.rectangle.width == 0 || obj.physicsHitbox.rectangle.height == 0) continue;
+        this.handleBoundaryCollisions(obj);
       }
     }
   }
@@ -345,6 +362,12 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     const rectTop = obj.y + obj.physicsHitbox.rectangle.y - obj.pivot.y;
     const rectBottom = rectTop + obj.physicsHitbox.rectangle.height;
 
+    const insideRect =
+      circle.x >= rectLeft &&
+      circle.x <= rectRight &&
+      circle.y >= rectTop &&
+      circle.y <= rectBottom;
+
     // Find closest point on rectangle to circle center
     const closestX = Math.max(rectLeft, Math.min(circle.x, rectRight));
     const closestY = Math.max(rectTop, Math.min(circle.y, rectBottom));
@@ -353,6 +376,53 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     const dx = circle.x - closestX;
     const dy = circle.y - closestY;
     const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (insideRect) {
+      const distLeft = circle.x - rectLeft;
+      const distRight = rectRight - circle.x;
+      const distTop = circle.y - rectTop;
+      const distBottom = rectBottom - circle.y;
+
+      const minDist = Math.min(distLeft, distRight, distTop, distBottom);
+
+      if (minDist === distLeft) {
+        return {
+          collision: true,
+          dx: -1,
+          dy: 0,
+          distance: circle.physicsHitbox.radius + distLeft,
+          angle: Math.PI
+        };
+      }
+
+      if (minDist === distRight) {
+        return {
+          collision: true,
+          dx: 1,
+          dy: 0,
+          distance: circle.physicsHitbox.radius + distRight,
+          angle: 0
+        };
+      }
+
+      if (minDist === distTop) {
+        return {
+          collision: true,
+          dx: 0,
+          dy: -1,
+          distance: circle.physicsHitbox.radius + distTop,
+          angle: -Math.PI / 2
+        };
+      }
+
+      return {
+        collision: true,
+        dx: 0,
+        dy: 1,
+        distance: circle.physicsHitbox.radius + distBottom,
+        angle: Math.PI / 2
+      };
+    }
 
     if (distance < circle.physicsHitbox.radius) {
       return {
@@ -485,31 +555,39 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     return this.checkRectRectCollision(obj1, obj2);
   }
 
-  HandleCollision(object1: PhysicsObjectBare, object2: PhysicsObjectBare)
+  HandleCollision(object1: PhysicsObjectBare, object2: PhysicsObjectBare, emitEvents: boolean = true)
   {
-      if (!object1.texture || !object2.texture) {
-          return;
-      }
-      
       // Create a unique key for this collision pair
       const collisionKey = `${object1.uniqueID}##${object2.uniqueID}`;
+      const alreadyTrackedThisFrame = this.currentFrameCollisions.has(collisionKey);
       
       this.currentFrameCollisions.add(collisionKey);
+      
+      const isNewCollision = !this.activeCollisions.has(collisionKey);
 
-      // If this is a new collision
-      if (!this.activeCollisions.has(collisionKey))
+      if (isNewCollision)
       {
           this.activeCollisions.add(collisionKey);
+      }
 
+      if (!emitEvents || !object1.texture || !object2.texture) {
+          return;
+      }
+
+      // If this is a new collision
+      if (isNewCollision)
+      {
           object1.OnCollisionStart(object2);
           object2.OnCollisionStart(object1);
           events.emit(BareEvent.collision_start, object1, object2);
       }
       
-      // Emit ongoing collision
-      object1.OnCollisionUpdate(object2);
-      object2.OnCollisionUpdate(object1);
-      events.emit(BareEvent.collision_update, object1, object2);
+      if (!alreadyTrackedThisFrame) {
+        // Emit ongoing collision once per frame, even if the solver needs multiple passes.
+        object1.OnCollisionUpdate(object2);
+        object2.OnCollisionUpdate(object1);
+        events.emit(BareEvent.collision_update, object1, object2);
+      }
       //bareEngine.SendEvent(BareEvent.collision_update, object1, object2); // A LOT HEAVIER, AND UNNECESSARY?
   }
 
@@ -572,7 +650,33 @@ export class PhysicsControllerBare extends PhysicsControllerBase
       obj1.physicsHitbox.type === HitboxType.Rectangle &&
       obj2.physicsHitbox.type === HitboxType.Rectangle;
 
-    const len = Math.hypot(collisionInfo.dx, collisionInfo.dy) || 1e-8;
+    const len = Math.hypot(collisionInfo.dx, collisionInfo.dy);
+
+    if (len <= 1e-8) {
+      const centerDx = obj2.x - obj1.x;
+      const centerDy = obj2.y - obj1.y;
+      const centerLen = Math.hypot(centerDx, centerDy);
+
+      if (centerLen > 1e-8) {
+        return {
+          nx: centerDx / centerLen,
+          ny: centerDy / centerLen
+        };
+      }
+
+      const relVelX = obj2.velocity.x - obj1.velocity.x;
+      const relVelY = obj2.velocity.y - obj1.velocity.y;
+      const relVelLen = Math.hypot(relVelX, relVelY);
+
+      if (relVelLen > 1e-8) {
+        return {
+          nx: relVelX / relVelLen,
+          ny: relVelY / relVelLen
+        };
+      }
+
+      return { nx: 1, ny: 0 };
+    }
 
     if (rectRect) {
       return {
@@ -620,9 +724,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 
     // --- positional correction along MTV normal
     {
-      const slop = 0.01;
-      const percent = 0.8;
-      const corr = Math.max(penetration - slop, 0) * percent / invMassSum;
+      const corr = (penetration + 1e-6) / invMassSum;
 
       xAddObj1 -= corr * nx * invMass1;
       yAddObj1 -= corr * ny * invMass1;
