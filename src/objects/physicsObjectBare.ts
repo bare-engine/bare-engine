@@ -1,6 +1,6 @@
 import { Vec2, Color, Texture } from "../libraries/rapid-render";
 import { MakePath, MakePathForEntity, Scene } from "../main";
-import { ConstructEntityOptions, Entity, HitboxType, Rectangle, Rectangle2Vec, SettingsData } from "../types/bareTypes";
+import { BlockedState, ConstructEntityOptions, Entity, HitboxType, Rectangle, Rectangle2Vec, SettingsData } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
 import { GameObject } from "./gameObject";
 
@@ -13,9 +13,10 @@ export class PhysicsObjectBare extends GameObject
     collide: boolean = true;
     sensor:boolean = false;
     velocity: Vec2 = new Vec2(0, 0);
-    drag: number = .15;
-    restitution: number = .8;
+    drag: number = 0//.15;
+    restitution: number = 0//.8;
     stayInBounds: boolean = true;
+    blocked:BlockedState = BlockedState.None;
 
     static dummyPhysicsObjectBare: PhysicsObjectBare = new PhysicsObjectBare();
     

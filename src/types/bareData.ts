@@ -44,5 +44,6 @@ export const defaultSettingsData: SettingsData = {
     gridEnabled: false,
     gridSize: 64
   },
-  defaultAnimationFramesPerSecond: 8
+  defaultAnimationFramesPerSecond: 8,
+  gravity: 0
 };

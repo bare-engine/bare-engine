@@ -88,27 +88,40 @@ export class PhysicsControllerBare extends PhysicsControllerBase
         continue;
       }
 
-      if (this.collisionsEnabled)
-        this.handleBoundaryCollisions(obj); // UP HERE SINCE IT MODIFIED VELOCITIES
+      if (this.collisionsEnabled) {
+        this.handleBoundaryCollisions(obj); // Clean up objects that started the frame outside bounds.
+      }
 
+      if (!obj.static)
+      {
+        obj.velocity.y += obj.scene.settingsData.gravity * fixedDeltaTime;
+      }
+
+      if (obj.drag > 0)
+      {
         const dragMultiplier = Math.pow(1-obj.drag, fixedDeltaTime * 60);
         obj.velocity.x *= dragMultiplier;
         obj.velocity.y *= dragMultiplier;
-        
-        if (!obj.static)
-        {
-          obj.x += obj.velocity.x * fixedDeltaTime;
-          obj.y += obj.velocity.y * fixedDeltaTime;
-        }
-        
-        // Check if object stopped moving
-        let hadCollision = false;
-        for (const key of this.activeCollisions) {
-            if (key.startsWith(obj.uniqueID + "##") || key.endsWith("##" + obj.uniqueID)) {
-                hadCollision = true;
-                break;
-            }
-        }
+      }
+
+      if (!obj.static)
+      {
+        obj.x += obj.velocity.x * fixedDeltaTime;
+        obj.y += obj.velocity.y * fixedDeltaTime;
+      }
+
+      if (this.collisionsEnabled) {
+        // Resolve boundary impacts after integration so the final velocity matches contact state.
+        this.handleBoundaryCollisions(obj);
+      }
+      // Check if object stopped moving
+      /*let hadCollision = false;
+      for (const key of this.activeCollisions) {
+          if (key.startsWith(obj.uniqueID + "##") || key.endsWith("##" + obj.uniqueID)) {
+              hadCollision = true;
+              break;
+          }
+      }*/
     }
 
     if (this.collisionsEnabled) {
@@ -304,17 +317,11 @@ export class PhysicsControllerBare extends PhysicsControllerBase
           if (xAddObj1 !== 0 || yAddObj1 !== 0) {
             obj1.x += xAddObj1;
             obj1.y += yAddObj1;
-
-            if (obj1.velocity.isPrettyMuchZero())
-              obj1.SetVelocityXY(obj1.velocity.x + xAddObj1 * 1, obj1.velocity.y + yAddObj1 * 1);
           }
 
           if (xAddObj2 !== 0 || yAddObj2 !== 0) {
             obj2.x += xAddObj2;
             obj2.y += yAddObj2;
-
-            if (obj2.velocity.isPrettyMuchZero())
-              obj2.SetVelocityXY(obj2.velocity.x + xAddObj2 * 1, obj2.velocity.y + yAddObj2 * 1);
           }
         }
         // no collision - CheckCollisionEnd() handles end detection

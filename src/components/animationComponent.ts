@@ -100,6 +100,11 @@ export class AnimationComponent extends BaseComponent
         if (!assetsHandler.GetAnimation(fullAnimationName))
         {
             console.error(`Animation ${fullAnimationName} does not exist`);
+            /*if (assetsHandler.HasTexture(fullAnimationName) || await assetsHandler.GetTexturePromise(fullAnimationName))
+            {
+                this.go.SetTexture(assetsHandler.GetTexture(fullAnimationName));
+                this.enabled = false;
+            }*/
             return;
         }
 

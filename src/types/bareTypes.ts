@@ -1,5 +1,5 @@
-import { GameObject } from "../objects/gameObject";
 import { Scene } from "../main";
+import { GameObject } from "../objects/gameObject";
 
 export type Scalar = (number | string | boolean);
 
@@ -220,6 +220,7 @@ export interface SettingsData
   settings?: {gridEnabled?: boolean, gridSize?: int, minimized?: boolean},
   selectionEnabled?: boolean,
   defaultAnimationFramesPerSecond?: number,
+  gravity?: number,
   processed?: boolean
 } 
 
@@ -456,3 +457,6 @@ export class AnimationData
     return new AnimationData(this.animName, this.animFrames, this.framesPerSecond, this.loop);
   }
 }
+
+export enum BlockedState
+{None, Up, Down, Left, Right}
