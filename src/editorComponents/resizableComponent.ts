@@ -2,13 +2,34 @@ import { BaseComponent } from '../controllers/componentController';
 import { hitboxController } from '../controllers/hitboxController';
 import { keyboardController } from '../controllers/keyboardController';
 import { mouseController } from '../controllers/mouseController';
-import { Run } from '../exports';
+import { EditorScene, Run } from '../exports';
 import { Color, Vec2 } from '../libraries/rapid-render';
 import { GameMode } from '../main';
 
 type Edge =
   | 'left' | 'right' | 'top' | 'bottom'
   | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+
+type HorizontalEdge = 'left' | 'right';
+type VerticalEdge = 'top' | 'bottom';
+
+type HorizontalResize = {
+  side: HorizontalEdge;
+  size: number;
+};
+
+type VerticalResize = {
+  side: VerticalEdge;
+  size: number;
+};
+
+type ResizeRect = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  edge: Edge;
+};
 
 @Run(GameMode.Editor)
 export class ResizableComponent extends BaseComponent
@@ -19,6 +40,7 @@ export class ResizableComponent extends BaseComponent
   edgeMargin = 20;
 
   edge: Edge | null = null;
+  dragStartEdge: Edge | null = null;
   hoverEdge: Edge | null = null;
 
   // free-drag resize (no hover)
@@ -37,7 +59,8 @@ export class ResizableComponent extends BaseComponent
   startAspect = 1;
 
   pressOffset = new Vec2(0, 0);
-  draggingPivot: boolean;
+  draggingPivot = false;
+  previewEntityHiddenForResizeHover = false;
 
   /** Returns the current world-space width of the object (scale.x * texture.width) */
   private get goWidth(): number
@@ -91,6 +114,7 @@ export class ResizableComponent extends BaseComponent
 
       if (edgeCandidate)
       {
+        this.dragStartEdge = edgeCandidate;
         this.edge = edgeCandidate;
 
         this.resizing = true;
@@ -134,6 +158,7 @@ export class ResizableComponent extends BaseComponent
           this.freeResize = false;
           this.freeResizePending = true;
           this.resizing = false;
+          this.dragStartEdge = null;
           this.edge = null;
 
           this.freeStartPos = mouseController.world.positionOnDown.clone();
@@ -183,98 +208,36 @@ export class ResizableComponent extends BaseComponent
       // --- EDGE / HANDLE RESIZE ---
       else if (this.edge)
       {
-        const edge = this.edge;
+        const dragStartEdge = this.dragStartEdge ?? this.edge;
 
         const handleX = mouse.x - this.pressOffset.x;
         const handleY = mouse.y - this.pressOffset.y;
 
-        let x = this.startX;
-        let y = this.startY;
-        let w = this.startW;
-        let h = this.startH;
-
-        if (edge === 'left' || edge === 'right')
-        {
-          let dx = handleX - (edge === 'left' ? this.startX : this.startX + this.startW);
-          if (fromCenter) dx *= 2;
-
-          w = Math.max(this.minSize, this.startW + (edge === 'left' ? -dx : dx));
-          if (keepAspect) h = w / this.startAspect;
-
-          if (fromCenter)
-          {
-            x = this.startCenter.x - w * 0.5;
-            y = this.startCenter.y - h * 0.5;
-          }
-          else if (edge === 'left')
-          {
-            x = this.startX + (this.startW - w);
-          }
-        }
-
-        if (edge === 'top' || edge === 'bottom')
-        {
-          let dy = handleY - (edge === 'top' ? this.startY : this.startY + this.startH);
-          if (fromCenter) dy *= 2;
-
-          h = Math.max(this.minSize, this.startH + (edge === 'top' ? -dy : dy));
-          if (keepAspect) w = h * this.startAspect;
-
-          if (fromCenter)
-          {
-            x = this.startCenter.x - w * 0.5;
-            y = this.startCenter.y - h * 0.5;
-          }
-          else if (edge === 'top')
-          {
-            y = this.startY + (this.startH - h);
-          }
-        }
-
-        if (edge.includes('-'))
-        {
-          let dx = handleX - (edge.includes('left') ? this.startX : this.startX + this.startW);
-          let dy = handleY - (edge.includes('top') ? this.startY : this.startY + this.startH);
-
-          if (fromCenter)
-          {
-            dx *= 2;
-            dy *= 2;
-          }
-
-          w = Math.max(this.minSize, this.startW + (edge.includes('left') ? -dx : dx));
-          h = Math.max(this.minSize, this.startH + (edge.includes('top') ? -dy : dy));
-
-          if (keepAspect)
-          {
-            if (w / h > this.startAspect) h = w / this.startAspect;
-            else w = h * this.startAspect;
-          }
-
-          if (fromCenter)
-          {
-            x = this.startCenter.x - w * 0.5;
-            y = this.startCenter.y - h * 0.5;
-          }
-          else
-          {
-            if (edge.includes('left')) x = this.startX + (this.startW - w);
-            if (edge.includes('top'))  y = this.startY + (this.startH - h);
-          }
-        }
-
-        this.go.x = x;
-        this.go.y = y;
-        this.setGoSize(w, h);
+        const resize = this.getResizeRect(dragStartEdge, handleX, handleY, fromCenter, keepAspect);
+        this.edge = resize.edge;
+        this.go.x = resize.x;
+        this.go.y = resize.y;
+        this.setGoSize(resize.w, resize.h);
       }
     }
 
     // ================= RELEASE =================
     if (!mouseController.IsMouseDown())
     {
+      if (this.resizing)
+      {
+        var small = 10;
+        var isSmall = (this.goWidth < small && this.goHeight < small);
+        if (isSmall)
+        {
+          this.go.Remove();
+          return;
+        }
+      }
       this.resizing = false;
       this.freeResize = false;
       this.freeResizePending = false;
+      this.dragStartEdge = null;
       this.edge = null;
       this.draggingPivot = false;
     }
@@ -294,15 +257,29 @@ export class ResizableComponent extends BaseComponent
 
     if (this.goWidth == 0 || this.goHeight == 0) return;
     
+    const previewEntity = (this.scene as EditorScene).editorControlsHandler.currentPreviewEntity;
+
     if (this.hoverEdge) {
       this.go.tapHitbox.active = false;
       bareEngine.SetCursor(this.getCursorForEdge(this.hoverEdge));
+
+      if (!this.previewEntityHiddenForResizeHover)
+      {
+        (this.scene as EditorScene).editorControlsHandler.SetActive(false);
+        this.previewEntityHiddenForResizeHover = true;
+      }
     } else {
       this.go.tapHitbox.active = true;
 
       const hovered = hitboxController.GetCurrentHitboxHover();
       if (hovered == null)
         bareEngine.SetCursor('inherit');
+
+      if (this.previewEntityHiddenForResizeHover)
+      {
+        (this.scene as EditorScene).editorControlsHandler.SetActive(true);
+        this.previewEntityHiddenForResizeHover = false;
+      }
     }
   }
 
@@ -365,6 +342,206 @@ export class ResizableComponent extends BaseComponent
         draw(new Vec2(right, bottom), new Vec2(right, bottom - cornerLength), true);
         break;
     }
+  }
+
+  private getResizeRect(
+    dragStartEdge: Edge,
+    handleX: number,
+    handleY: number,
+    fromCenter: boolean,
+    keepAspect: boolean
+  ): ResizeRect
+  {
+    if (dragStartEdge === 'left' || dragStartEdge === 'right')
+    {
+      return this.getHorizontalResizeRect(dragStartEdge, handleX, fromCenter, keepAspect);
+    }
+
+    if (dragStartEdge === 'top' || dragStartEdge === 'bottom')
+    {
+      return this.getVerticalResizeRect(dragStartEdge, handleY, fromCenter, keepAspect);
+    }
+
+    return this.getCornerResizeRect(dragStartEdge, handleX, handleY, fromCenter, keepAspect);
+  }
+
+  private getHorizontalResizeRect(
+    dragStartEdge: HorizontalEdge,
+    handleX: number,
+    fromCenter: boolean,
+    keepAspect: boolean
+  ): ResizeRect
+  {
+    const aspect = this.startAspect || 1;
+    const anchorX = dragStartEdge === 'left' ? this.startX + this.startW : this.startX;
+    const horizontal = fromCenter
+      ? this.getHorizontalResizeFromCenter(handleX, dragStartEdge)
+      : this.getHorizontalResizeFromAnchor(handleX, anchorX, dragStartEdge);
+
+    const w = horizontal.size;
+    const h = keepAspect ? w / aspect : this.startH;
+    const x = fromCenter
+      ? this.startCenter.x - w * 0.5
+      : (horizontal.side === 'left' ? anchorX - w : anchorX);
+    const y = fromCenter
+      ? this.startCenter.y - h * 0.5
+      : this.startY;
+
+    return { x, y, w, h, edge: horizontal.side };
+  }
+
+  private getVerticalResizeRect(
+    dragStartEdge: VerticalEdge,
+    handleY: number,
+    fromCenter: boolean,
+    keepAspect: boolean
+  ): ResizeRect
+  {
+    const anchorY = dragStartEdge === 'top' ? this.startY + this.startH : this.startY;
+    const vertical = fromCenter
+      ? this.getVerticalResizeFromCenter(handleY, dragStartEdge)
+      : this.getVerticalResizeFromAnchor(handleY, anchorY, dragStartEdge);
+
+    const h = vertical.size;
+    const w = keepAspect ? h * (this.startAspect || 1) : this.startW;
+    const x = fromCenter
+      ? this.startCenter.x - w * 0.5
+      : this.startX;
+    const y = fromCenter
+      ? this.startCenter.y - h * 0.5
+      : (vertical.side === 'top' ? anchorY - h : anchorY);
+
+    return { x, y, w, h, edge: vertical.side };
+  }
+
+  private getCornerResizeRect(
+    dragStartEdge: Edge,
+    handleX: number,
+    handleY: number,
+    fromCenter: boolean,
+    keepAspect: boolean
+  ): ResizeRect
+  {
+    const startHorizontal = this.getHorizontalSideFromEdge(dragStartEdge)!;
+    const startVertical = this.getVerticalSideFromEdge(dragStartEdge)!;
+    const anchorX = startHorizontal === 'left' ? this.startX + this.startW : this.startX;
+    const anchorY = startVertical === 'top' ? this.startY + this.startH : this.startY;
+
+    const horizontal = fromCenter
+      ? this.getHorizontalResizeFromCenter(handleX, startHorizontal)
+      : this.getHorizontalResizeFromAnchor(handleX, anchorX, startHorizontal);
+    const vertical = fromCenter
+      ? this.getVerticalResizeFromCenter(handleY, startVertical)
+      : this.getVerticalResizeFromAnchor(handleY, anchorY, startVertical);
+
+    let w = horizontal.size;
+    let h = vertical.size;
+
+    if (keepAspect)
+    {
+      ({ w, h } = this.applyAspectRatio(w, h));
+    }
+
+    const x = fromCenter
+      ? this.startCenter.x - w * 0.5
+      : (horizontal.side === 'left' ? anchorX - w : anchorX);
+    const y = fromCenter
+      ? this.startCenter.y - h * 0.5
+      : (vertical.side === 'top' ? anchorY - h : anchorY);
+
+    return {
+      x,
+      y,
+      w,
+      h,
+      edge: this.getCornerEdge(horizontal.side, vertical.side),
+    };
+  }
+
+  private getHorizontalResizeFromAnchor(
+    handleX: number,
+    anchorX: number,
+    fallback: HorizontalEdge
+  ): HorizontalResize
+  {
+    return {
+      side: this.getHorizontalSide(handleX, anchorX, fallback),
+      size: Math.max(this.minSize, Math.abs(handleX - anchorX)),
+    };
+  }
+
+  private getHorizontalResizeFromCenter(handleX: number, fallback: HorizontalEdge): HorizontalResize
+  {
+    return {
+      side: this.getHorizontalSide(handleX, this.startCenter.x, fallback),
+      size: Math.max(this.minSize * 0.5, Math.abs(handleX - this.startCenter.x)) * 2,
+    };
+  }
+
+  private getVerticalResizeFromAnchor(
+    handleY: number,
+    anchorY: number,
+    fallback: VerticalEdge
+  ): VerticalResize
+  {
+    return {
+      side: this.getVerticalSide(handleY, anchorY, fallback),
+      size: Math.max(this.minSize, Math.abs(handleY - anchorY)),
+    };
+  }
+
+  private getVerticalResizeFromCenter(handleY: number, fallback: VerticalEdge): VerticalResize
+  {
+    return {
+      side: this.getVerticalSide(handleY, this.startCenter.y, fallback),
+      size: Math.max(this.minSize * 0.5, Math.abs(handleY - this.startCenter.y)) * 2,
+    };
+  }
+
+  private applyAspectRatio(w: number, h: number): { w: number; h: number }
+  {
+    const aspect = this.startAspect || 1;
+
+    if (w === 0 && h === 0)
+    {
+      return { w: 0, h: 0 };
+    }
+
+    if (h === 0 || w / h > aspect) h = w / aspect;
+    else w = h * aspect;
+
+    return { w, h };
+  }
+
+  private getHorizontalSide(value: number, anchor: number, fallback: HorizontalEdge): HorizontalEdge
+  {
+    if (Math.abs(value - anchor) < 0.000001) return fallback;
+    return value < anchor ? 'left' : 'right';
+  }
+
+  private getVerticalSide(value: number, anchor: number, fallback: VerticalEdge): VerticalEdge
+  {
+    if (Math.abs(value - anchor) < 0.000001) return fallback;
+    return value < anchor ? 'top' : 'bottom';
+  }
+
+  private getHorizontalSideFromEdge(edge: Edge): HorizontalEdge | null
+  {
+    if (edge === 'left' || edge.endsWith('left')) return 'left';
+    if (edge === 'right' || edge.endsWith('right')) return 'right';
+    return null;
+  }
+
+  private getVerticalSideFromEdge(edge: Edge): VerticalEdge | null
+  {
+    if (edge === 'top' || edge.startsWith('top')) return 'top';
+    if (edge === 'bottom' || edge.startsWith('bottom')) return 'bottom';
+    return null;
+  }
+
+  private getCornerEdge(horizontal: HorizontalEdge, vertical: VerticalEdge): Edge
+  {
+    return `${vertical}-${horizontal}` as Edge;
   }
 
   private getEdge(

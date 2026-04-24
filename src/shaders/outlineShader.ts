@@ -116,7 +116,7 @@ export class OutlineShader
     gameObject.shader = this.outlineShader;
     gameObject.uniforms = this.outlineUniform;
     // Pad the quad just enough to fit the outline; UVs are clamped in-shader to avoid atlas bleeding.
-    const padding = Math.ceil(outlineWidth + 2.0);
+    const padding = (outlineWidth + 2.0) / scale;
     this.outlineShader.setPadding(padding);
 }
 
@@ -149,6 +149,7 @@ export class OutlineShader
         this.outlineUniform.setUniform('uRegionMin', regionMin);
         this.outlineUniform.setUniform('uRegionMax', regionMax);
         this.outlineUniform.setUniform('uOutlineWidth', baseWidth / scale);
+        this.outlineShader.setPadding((baseWidth + 2.0) / scale);
     }
 
     public isActiveFor(gameObject: any): boolean {

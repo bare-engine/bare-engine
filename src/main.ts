@@ -153,8 +153,15 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
             window.whitePixelTexture = new Texture(baseTexture);
             //window.whitePixelTexture = new RenderTexture(1, 1, false, Color.White);
 
+            const glTexture2: WebGLTexture | null = gl.createTexture();
+            if (!glTexture2) { throw new Error("Failed to create texture"); }
+            gl.bindTexture(gl.TEXTURE_2D, glTexture2);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 0, 0, 255]));
-            var baseTexture2 = new BaseTexture(glTexture, 1, 1);
+            const baseTexture2 = new BaseTexture(glTexture2, 1, 1);
             window.redPixelTexture = new Texture(baseTexture2);
 
             // PREVENT TEXT SELECTION AND IOS MAGNIFIER

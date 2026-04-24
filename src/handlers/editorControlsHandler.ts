@@ -19,6 +19,7 @@ import { levelHandler } from "./levelHandler";
 */
 
 export class EditorControlsHandler {
+    private active: boolean = true;
     public currentPreviewEntity: GameObject;
     public currentPreviewActive:boolean = false;
     private draggingObject: GameObject | null = null;
@@ -74,6 +75,14 @@ export class EditorControlsHandler {
         this.scene.events.on(BareEvent.key_pressed, this.KeyPressed.bind(this));
         this.scene.events.on(BareEvent.key_released, this.KeyReleased.bind(this));
         this.scene.events.on(BareEvent.editor_layerSelected, this.LayerSelected.bind(this));
+    }
+
+    SetActive(active: boolean)
+    {
+        this.active = active;
+
+        if (this.currentPreviewEntity.visible) // WORKS BUT WEIRD... TODO
+            this.currentPreviewEntity.visibleInEditor = active;
     }
 
     KeyPressed({ key, allKeys }: BareEventPayload['key_pressed'])
@@ -148,6 +157,9 @@ export class EditorControlsHandler {
             return;
 
         if (!this.scene.opened)
+            return;
+
+        if (!this.active)
             return;
 
         if (this.draggingObject)
@@ -237,6 +249,9 @@ export class EditorControlsHandler {
         if (!this.scene.opened)
             return;
 
+        if (!this.active)
+            return;
+
         if (mouseController.IsMiddleMouseDown()) {
             var deltaMovedMiddleMouse = mouseController.screen.position.subtract(mouseController.screen.positionPrev);
             var zoom = cameraHandler.GetZoom();
@@ -268,6 +283,9 @@ export class EditorControlsHandler {
     private PointerUp({ mouseX, mouseY, event, isLeftButton }: BareEventPayload['pointer_up']): void
     {
         if (!this.scene.opened)
+            return;
+
+        if (!this.active)
             return;
 
         if (this.actionThisFrame == 'selectionRect')
@@ -546,6 +564,8 @@ export class EditorControlsHandler {
     Update(_deltaTime?: number) {
         if (!this.scene.opened)
             return;
+        if (!this.active)
+            return;
 
         if (this.draggingObject)
         {
@@ -631,6 +651,9 @@ export class EditorControlsHandler {
             return a.y - b.y;
         });*/
         
+        for (const obj of this.selectedObjects)
+            this.outlineShader.update(obj);
+
         //trace(this.actionThisFrame);
     }
 
