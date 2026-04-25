@@ -1232,6 +1232,6 @@ export class GameObject
 
 	Destroy()
 	{
-
+        // todo
 	}
 }

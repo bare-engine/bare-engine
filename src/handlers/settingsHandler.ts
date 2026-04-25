@@ -1,4 +1,3 @@
-import { Texture } from "../libraries/rapid-render/texture";
 import { assetsHandler } from "./assetsHandler";
 import { defaultSettingsData } from "../types/bareData";
 import { Entity, SettingsData } from "../types/bareTypes";
@@ -28,7 +27,7 @@ export class SettingsHandler
     {
         var settings = this.clone(raw);
 
-        // SET DEFAULTS - WILL FILL IN ANY VALUE IN defaultEntityData THAT'S NOT PRESENT
+        // SET DEFAULTS - WILL FILL IN ANY VALUE IN settings WITH VALUES FROM defaultEntityData THAT'S NOT PRESENT
         for (const key of Object.keys(defaultSettingsData) as (keyof SettingsData)[])
         {
             const rawValue = settings[key];
@@ -88,6 +87,7 @@ export class SettingsHandler
 
         this.ProcessAnimations(settings);
 
+        // CATEGORIES FIRST, SINCE ENTITIES CAN BE CREATED - THEY WILL LATER GET A NAME ASSIGEND TO THEM
         if (settings.categories)
         {
             // PROCES CATEGORY ENTRIES, IF PATH IS PREFIXED, REMOVE AND ADD UNDER ENTITIES DATA

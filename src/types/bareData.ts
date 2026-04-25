@@ -34,6 +34,12 @@ export const defaultSettingsData: SettingsData = {
         x2: 1,
         y2: 1
       }
+    },
+    CENTER: {
+      pivot: {
+        x: 0.5,
+        y: 0.5
+      }
     }
   },
   saveVars: {

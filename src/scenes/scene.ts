@@ -113,7 +113,7 @@ export class Scene implements SceneI
 
         this.AddClass(GameObject);
         this.AddClass(ObjectController);
-        this.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT
+        this.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT, NOT ALWAYS NEEDED
 
         BareEngine.SetControllerReferencesOnScene(this);
     }
@@ -194,6 +194,9 @@ export class Scene implements SceneI
                 layerI: j,
                 ...storedInfo
             } as LayerInfo;
+            
+            if (layerInfo.doSave === undefined)
+                layerInfo.doSave = true;
 
             if (layerInfo.showInEditor === undefined)
                 layerInfo.showInEditor = true;
@@ -202,7 +205,7 @@ export class Scene implements SceneI
 
             // only persist data that belongs in settingsdata
             const { showInEditor } = layerInfo;
-            data.layersInfo[layerName] = { ...storedInfo, ...(showInEditor === undefined ? {} : { showInEditor }) };
+            data.layersInfo[layerName] = { ...storedInfo, ...(showInEditor === undefined ? {} : { showInEditor }), ...(layerInfo.doSave === undefined ? {} : { doSave: layerInfo.doSave }) };
         }
         this.layerNames = data.layers.slice();
 

@@ -652,6 +652,9 @@ window.__GAME_DEBUG_API__ = {
   getEntityData():SettingsData {
     var settingsData = plugin.GetCurrentScene().settingsHandler.GetRaw();
 
+    return settingsData; // ADDED TO MAKE DEFAULT GAME NOT HAVE BELOW
+    // SHOULD HAVE IT AGAIN WHEN I START WORK ON PLUGIN ENTITIES
+
     // ADD DEFAULTS - SAME AS defaultEntityData - REBUILD TO ADD IN FRONT
     settingsData.baseEntities ??= {};
 

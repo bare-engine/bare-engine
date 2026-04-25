@@ -58,6 +58,7 @@ export type Ctor<T> = new (...args: any[]) => T;
 
 export type GameObjectClass = { new (...args: any[]): GameObject };
 
+// SOME TYPE ARE CHANGED TO 'any', SO THEY CAN HAVE A PRESET STRING AS WELL, EG: "pivot": "CENTER"
 export interface Entity
 {
   name?: string;
@@ -73,7 +74,7 @@ export interface Entity
   scale?: Position;
   rotation?: number;
   flipped?: boolean;
-  pivot?: Position;
+  pivot?: any; //Position | String;
   pivotBasedOnHitbox?: any; //Position | String;
   //innerX?: number;
   //innerY?: number;
@@ -114,7 +115,7 @@ export interface Entity
   stayInBounds?: boolean;
 
   physicsRect?: Size;
-  physicsRadius?: number;
+  physicsRadius?: number; // ALSO GETS USED BY physicsObjectBare. TODO: GIVE BETTER NAME
   mass?: number;
   restitution?: number;
   polygonVertices?: number[];

@@ -87,7 +87,7 @@ export class PhysicsObjectBare extends GameObject
                 if (entity.hitboxType == "circle")
                 {
                     this.physicsHitbox.type = HitboxType.Circle;
-                    this.physicsHitbox.radius = Math.max(rect.width, rect.height) / 2;
+                    this.physicsHitbox.radius = (entity.physicsRadius || Math.max(rect.width, rect.height) / 2);
                 }   
 
                 // pivotBasedOnHitbox
