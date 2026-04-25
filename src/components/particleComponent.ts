@@ -64,6 +64,15 @@ export class ParticleComponent extends BaseComponent
         };
 
         this.emitter = new ParticleEmitter(options);
+
+        if (!tex)
+        {
+            (async () =>
+            {
+                tex = await assetsHandler.GetTexturePromise(texture);
+                this.emitter.SetTexture(tex);
+            })();
+        }
     }
 
     Added(go: GameObject): void
@@ -77,7 +86,7 @@ export class ParticleComponent extends BaseComponent
     }
 
     @InspectorButton
-    Test()
+    Fire()
     {
         this.emitter.oneShot();
     }

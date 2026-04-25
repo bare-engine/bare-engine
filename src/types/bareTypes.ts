@@ -5,6 +5,8 @@ export type Scalar = (number | string | boolean);
 
 export type BareOptions = 
 {
+  width?: number;
+  height?: number;
   antiAlias?: boolean;
   premultipliedAlpha?: boolean;
   gameObjectPoolSize?: number;

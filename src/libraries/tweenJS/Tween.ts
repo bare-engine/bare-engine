@@ -391,6 +391,10 @@ export class Tween<T extends UnknownProps = any> {
 	}
 
 	repeat(times = 0): this {
+		if (times < 0) {
+			times = Infinity
+		}
+
 		this._initialRepeat = times
 		this._repeat = times
 		return this

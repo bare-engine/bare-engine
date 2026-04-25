@@ -79,7 +79,7 @@ export class BareEngine
         // BUT IF ANTI-ALIAS IS ON, THAT TEXTURE USES LINEAR FILTERING, SO STRETCHING THAT PIXEL IS NOT GREAT AND GETS KINDA BLURRY
         
         this.ImplementInitialTextures();
-        this.ResizeCanvas();
+        this.ResizeCanvas(options?.width, options?.height);
 
         window.bareEngine = this;
         
@@ -93,7 +93,8 @@ export class BareEngine
 
         this.dummyGameObject = new GameObject(scene); // TOO LATE IF USER WANTS TO USE IT IN sceneClass, BUT FINE FOR MY CURRENT USAGE
         
-        window.addEventListener('resize', this.ResizeCanvas.bind(this));
+        if (!(options?.width && options?.height))
+            window.addEventListener('resize', this.ResizeCanvas.bind(this));
 
         document.addEventListener('pointerdown', this.PointerDown.bind(this), { passive: false });
         document.addEventListener('pointerup', this.PointerUp.bind(this), { passive: false });
@@ -147,12 +148,24 @@ export class BareEngine
         }
     }
 
-    ResizeCanvas()
+    ResizeCanvas(width?: number, height?: number)
     {
         var prevWidth = rapid.width;
         var prevHeight = rapid.height;
-        var newWidth = window.innerWidth;
-        var newHeight = window.innerHeight;
+
+        var newWidth:number;
+        var newHeight:number;
+        
+        if (width == undefined && height == undefined)
+        {
+            newWidth = window.innerWidth;
+            newHeight = window.innerHeight;
+        }
+        else
+        {
+            newWidth = width;
+            newHeight = height;
+        }
 
         rapid.resize(newWidth, newHeight);
 

@@ -199,6 +199,10 @@ export class ParticleEmitter {
         this.position = options.position || Vec2.ZERO;
     }
 
+    SetTexture(texture: Texture) {
+        this.options.texture = texture
+    }
+
     /**
      * Creates a new emitter with the same options.
      * Particles/state are not copied.

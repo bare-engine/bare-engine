@@ -158,7 +158,7 @@ export class GameObject
         }
     }
 
-    GetComponent<T extends Component<this>>(componentClass: Ctor<T>): T | null
+    GetComponent<T extends Component<any>>(componentClass: Ctor<T>): T | null
     {
         var componentController = this.scene.Get("componentController");
 

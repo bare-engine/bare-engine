@@ -14,7 +14,7 @@ export class TextObject extends GameObject
         this.textTexture = new BareText(options);
         this.SetTexture(this.textTexture);
 
-        this.SetNameBasedOnText(options.text);
+        this.SetNameBasedOnText(options.text || "");
     }
 
     SetNameBasedOnText(text: string)
