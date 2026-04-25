@@ -29,9 +29,9 @@ export abstract class BaseComponent<T extends GameObject = GameObject> implement
     OnStart?(): void;
     OnEnable?(): void;
     OnDisable?(): void;
-    OnCollisionStart?(initiatingObject: GameObject, collidingObject: GameObject): void;
-    OnCollisionUpdate?(initiatingObject: GameObject, collidingObject: GameObject): void;
-    OnCollisionEnd?(initiatingObject: GameObject, collidingObject: GameObject): void;
+    OnCollisionStart?(collidingObject: GameObject): void;
+    OnCollisionUpdate?(collidingObject: GameObject): void;
+    OnCollisionEnd?(collidingObject: GameObject): void;
     OnPreRender?(): void;
     OnRender?(): void;
     OnPostRender?(): void;
@@ -475,9 +475,9 @@ export class ComponentController
                 if (!component.OnCollisionStart) return;
 
                 if (component.go == initiatingObject)
-                    component.OnCollisionStart(collidingObject, initiatingObject);
+                    component.OnCollisionStart(collidingObject);
                 else if (component.go == collidingObject)
-                    component.OnCollisionStart(initiatingObject, collidingObject);
+                    component.OnCollisionStart(initiatingObject);
             })
         }
     }
@@ -491,9 +491,9 @@ export class ComponentController
                 if (!component.OnCollisionUpdate) return;
 
                 if (component.go == initiatingObject)
-                    component.OnCollisionUpdate(initiatingObject, collidingObject);
+                    component.OnCollisionUpdate(collidingObject);
                 else if (component.go == collidingObject)
-                    component.OnCollisionUpdate(collidingObject, initiatingObject);
+                    component.OnCollisionUpdate(initiatingObject);
             })
         }
     }
@@ -507,9 +507,9 @@ export class ComponentController
                 if (!component.OnCollisionEnd) return;
 
                 if (component.go == initiatingObject)
-                    component.OnCollisionEnd(initiatingObject, collidingObject);
+                    component.OnCollisionEnd(collidingObject);
                 else if (component.go == collidingObject)
-                    component.OnCollisionEnd(collidingObject, initiatingObject);
+                    component.OnCollisionEnd(initiatingObject);
             })
         }
     }

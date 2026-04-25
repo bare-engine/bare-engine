@@ -81,6 +81,8 @@ export class TweenController
             'onStop'
         ]);
 
+        const normalizedProps = this.NormalizeTweenProps(props);
+
         if (overwrite) 
         {
             for (let i = this.tweens.length - 1; i >= 0; i--) 
@@ -92,7 +94,7 @@ export class TweenController
                     if (existingTween.getProgress() < 1) // existingTween NOT ALREADY COMPLETED? COULD BE WE ARE IN THE ONCOMPLETE OF IT
                     {
                         // Check for property overlap, excluding config properties
-                        const hasOverlap = Object.keys(props).some(propName => 
+                        const hasOverlap = Object.keys(normalizedProps).some(propName => 
                             propName != 'delay' &&
                             !configProps.has(propName) && 
                             propName in existingTween.valuesEnd
@@ -109,7 +111,7 @@ export class TweenController
 
         // Create new tween
         const tween = new Tween(object)
-            .to(props, seconds * 1000)
+            .to(normalizedProps, seconds * 1000)
             .easing(props.ease || Easing.Quadratic.Out);
         
         // Apply TweenJS-style configuration
@@ -170,6 +172,42 @@ export class TweenController
         this.Add(tween).start();
 
         return (tween as TweenWithPromise);
+    }
+
+    private NormalizeTweenProps(props: any): any
+    {
+        const normalizedProps: any = {};
+
+        for (const key in props)
+        {
+            const path = key.split(/[$.]/);
+            let target = normalizedProps;
+
+            for (let i = 0; i < path.length - 1; i++)
+            {
+                const pathPart = path[i];
+                target[pathPart] ??= {};
+                target = target[pathPart];
+            }
+
+            target[path[path.length - 1]] = this.NormalizeTweenValue(props[key]);
+        }
+
+        return normalizedProps;
+    }
+
+    private NormalizeTweenValue(value: any): any
+    {
+        if (typeof value === 'string' && (value.startsWith('+=') || value.startsWith('-=')))
+            return value[0] + value.slice(2);
+
+        if (Array.isArray(value))
+            return value.map(item => this.NormalizeTweenValue(item));
+
+        if (value && typeof value === 'object')
+            return this.NormalizeTweenProps(value);
+
+        return value;
     }
 
     AddTween(object:any):Tween
@@ -282,6 +320,9 @@ export class TweenController
 }
 
 // SHORTHAND TWEENTO
+// EG: TweenTo(this.go, 1, { alpha: 0, "innerPosition.y": "-=" + 100 })
+// EG: TweenTo(this.go, 1, { alpha: 0, innerPosition$y: "-=" + 100 })
+// EG: await TweenTo(this.go, 1, { scale: 0 }).promise
 export function TweenTo(object: any, seconds: number, props: any, overwrite: boolean = true, scene: Scene | null = null): TweenWithPromise
 {
     // IT NEVER ACTUALLY GETS HERE, controllerProxyTransformer TRANSFORMS IT INTO scene.tweenController.TweenTo

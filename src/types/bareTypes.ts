@@ -385,9 +385,9 @@ export interface Component<T extends GameObject = GameObject>
     OnRemoved?(): void
     OnEnable?(): void
     OnDisable?(): void
-    OnCollisionStart?(initiatingObject: GameObject, collidingObject: GameObject): void
-    OnCollisionUpdate?(initiatingObject: GameObject, collidingObject: GameObject): void
-    OnCollisionEnd?(initiatingObject: GameObject, collidingObject: GameObject): void
+    OnCollisionStart?(collidingObject: GameObject): void
+    OnCollisionUpdate?(collidingObject: GameObject): void
+    OnCollisionEnd?(collidingObject: GameObject): void
     OnPreRender?(): void
     OnRender?(): void
     OnPostRender?(): void

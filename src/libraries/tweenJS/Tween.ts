@@ -528,20 +528,7 @@ export class Tween<T extends UnknownProps = any> {
 				}
 
 				// Reassign starting values, restart by making startTime = now
-				for (property in this._valuesStartRepeat) {
-					if (!this._yoyo && typeof this._valuesEnd[property] === 'string') {
-						this._valuesStartRepeat[property] =
-							// eslint-disable-next-line
-							// @ts-ignore FIXME?
-							this._valuesStartRepeat[property] + parseFloat(this._valuesEnd[property])
-					}
-
-					if (this._yoyo) {
-						this._swapEndStartRepeatValues(property)
-					}
-
-					this._valuesStart[property] = this._valuesStartRepeat[property]
-				}
+				this._updateStartRepeatValues(this._valuesStart, this._valuesEnd, this._valuesStartRepeat)
 
 				if (this._yoyo) {
 					this._reversed = !this._reversed
@@ -626,17 +613,51 @@ export class Tween<T extends UnknownProps = any> {
 		return parseFloat(end)
 	}
 
-	private _swapEndStartRepeatValues(property: string): void {
-		const tmp = this._valuesStartRepeat[property]
-		const endValue = this._valuesEnd[property]
+	private _updateStartRepeatValues(
+		valuesStart: UnknownProps,
+		valuesEnd: UnknownProps,
+		valuesStartRepeat: UnknownProps,
+	): void {
+		for (const property in valuesStartRepeat) {
+			const endValue = valuesEnd[property]
+
+			if (
+				endValue &&
+				typeof endValue === 'object' &&
+				valuesStartRepeat[property] &&
+				typeof valuesStartRepeat[property] === 'object'
+			) {
+				this._updateStartRepeatValues(valuesStart[property], endValue, valuesStartRepeat[property])
+				continue
+			}
+
+			if (!this._yoyo && typeof endValue === 'string') {
+				valuesStartRepeat[property] = valuesStartRepeat[property] + parseFloat(endValue)
+			}
+
+			if (this._yoyo) {
+				this._swapEndStartRepeatValues(property, valuesStartRepeat, valuesEnd)
+			}
+
+			valuesStart[property] = valuesStartRepeat[property]
+		}
+	}
+
+	private _swapEndStartRepeatValues(
+		property: string,
+		valuesStartRepeat: UnknownProps = this._valuesStartRepeat,
+		valuesEnd: UnknownProps = this._valuesEnd,
+	): void {
+		const tmp = valuesStartRepeat[property]
+		const endValue = valuesEnd[property]
 
 		if (typeof endValue === 'string') {
-			this._valuesStartRepeat[property] = this._valuesStartRepeat[property] + parseFloat(endValue)
+			valuesStartRepeat[property] = valuesStartRepeat[property] + parseFloat(endValue)
 		} else {
-			this._valuesStartRepeat[property] = this._valuesEnd[property]
+			valuesStartRepeat[property] = valuesEnd[property]
 		}
 
-		this._valuesEnd[property] = tmp
+		valuesEnd[property] = tmp
 	}
 }
 

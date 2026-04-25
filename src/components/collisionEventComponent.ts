@@ -19,13 +19,9 @@ export class CollisionEventComponent extends BaseComponent
         this.removeObject = removeObject;
     }
 
-    OnCollisionStart(other: GameObject, self: GameObject): void
+    OnCollisionStart(other: GameObject): void
     {
-        if (other.name == this.object || self.name == this.object)
-        {
-            var collidingObject = (other.name == this.object) ? other : self;
-            this.Fire(collidingObject);
-        }
+        this.Fire(other);
     }
 
     @InspectorButton
