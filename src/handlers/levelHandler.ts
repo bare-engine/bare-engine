@@ -427,28 +427,7 @@ export class LevelHandler
             name: obj.name,
         };
 
-        /*var extendsData = true;
-        if (!obj.levelEntity.baseEntity)
-        {
-            var isBase = (this.scene.settingsData.baseEntities[obj.name] != undefined);
-            if (isBase)
-                extendsData = false
-        }
-
-        if (!extendsData)
-        {
-            var anyEntity = this.scene.ConstructEntity({});
-            anyEntity.name = "placeHolder";
-            anyEntity.imagePath = "";
-            var origEntity = this.scene.GetDummpyDataFromEntity2(anyEntity);
-        }
-        else
-        {
-            var origEntity = this.scene.GetDummpyDataFromEntity2(obj.name, this.scene.settingsData, options); // COULD ALSO GET THIS FROM PROCCESSED ENTITYDATA? IF I CONTRUCT ALL ENTITITES - TODO
-        }*/
-
-        var origEntity = this.scene.GetAppliedEntityWithDefaultValues(obj.name, this.scene.settingsData, options); // COULD ALSO GET THIS FROM PROCCESSED ENTITYDATA? IF I CONTRUCT ALL ENTITITES - TODO
-        
+        var origEntity = this.scene.GetAppliedEntityWithDefaultValues(obj.name, this.scene.settingsData, options);
         var fullEntity = this.SerializeObjectFully(obj);
         var diffEntity = this.GetEntitiesDiff(origEntity, fullEntity);
 
@@ -457,8 +436,10 @@ export class LevelHandler
             // ROUND POSITION
             if (diffEntity.position)
             {
-                diffEntity.position.x = Math.round(diffEntity.position.x);
-                diffEntity.position.y = Math.round(diffEntity.position.y);
+                if (diffEntity.position.x)
+                    diffEntity.position.x = Math.round(diffEntity.position.x);
+                if (diffEntity.position.y)
+                    diffEntity.position.y = Math.round(diffEntity.position.y);
             }
 
             // APPLY DIFF TO entity

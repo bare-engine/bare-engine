@@ -190,9 +190,9 @@ export interface LevelData
   entitiesByLayer: Record<string, Entity[]>;
 }
 
-interface Category
+export interface Category
 {
-  image: string;
+  image?: string;
   entries: Array<string> | string;
 }
 

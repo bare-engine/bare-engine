@@ -179,8 +179,8 @@ export class PhysicsObjectBare extends GameObject
         this.collide = true;
         this.sensor = false;
         this.static = false;
-        this.drag = .07;
-        this.restitution = .8;
+        this.drag = 0//.07;
+        this.restitution = 0//.8;
         this.blocked = BlockedState.None;
 
         if (this.physicsHitbox)

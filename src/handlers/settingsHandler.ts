@@ -88,6 +88,92 @@ export class SettingsHandler
 
         this.ProcessAnimations(settings);
 
+        if (settings.categories)
+        {
+            // PROCES CATEGORY ENTRIES, IF PATH IS PREFIXED, REMOVE AND ADD UNDER ENTITIES DATA
+            for (const [key, category] of Object.entries(settings.categories))
+            {
+                if (category.entries instanceof Array)
+                {
+                    for (var i = 0; i < category.entries.length; i++)
+                    {
+                        var entry = category.entries[i];
+                    
+                        if (entry.includes("/"))
+                        {
+                            var entryName = entry.split("/").pop()!;
+                            var entryPath = entry.split("/").slice(0, -1).join("/");
+
+                            // REDEFINE CATEGORY ENTRY TO JUST IT'S NAME
+                            (category.entries as string[])[i] = entryName;
+
+                            // STORE ENTRY NAME IN ENTITIES DATA, TOGETHER WITH PATH WE JUST FOUND
+                            settings.entities[entryName] = { name: entryName, ...settings.entities[entryName], imagePath: entryPath };
+                        }
+                    }
+                }
+            }
+
+            // PROCESS EACH CATEGORY - HAS TO HAPPEN AFTER ENTITIES ARE CONSTRUCTED, BECAUSE this.scene.ConstructEntity()
+            for (const [categoryName, categoryData] of Object.entries(settings.categories))
+            {
+                if (!categoryData || !categoryData.entries || categoryData.entries.length === 0) continue;
+
+                // PARSE STRING ENTRIES, EG: "roadTexture_%" 
+                if (typeof categoryData.entries === 'string') 
+                {
+                    if (categoryData.entries.indexOf('%') != -1)
+                    {
+                        var split = categoryData.entries.split('%');
+                        var name = split[0];
+                        var count = parseInt(split[1], 10);
+
+                        var entity = this.scene.ConstructEntity(name + "%", settings, options);
+
+                        // TURN ENTRIES INTO ARRAY
+                        categoryData.entries = [];
+                        for (var j = 0; j < count; j++)
+                        {
+                            var entryName = name + (j + 1);
+                            categoryData.entries.push(entryName);
+
+                            // ALSO PUSH EACH AS ENTITY SO WE CAN FIND THEM LATER
+                            var entityClone = {...entity};
+                            settings.entities[entityClone.name] = entityClone;
+                        }
+                    }
+
+                    if (typeof categoryData.entries === 'string')
+                    {
+                        const regex = /(.+)_\[(.+)\]/; // eg "level_[editorImages]"
+                        const match = categoryData.entries.match(regex);
+                        if (match)
+                        {
+                            const prefix = match[1]; // eg "level"
+                            const imagePath = match[2]; // eg "editorImages"
+
+                            var entityBaseName = prefix + "_*";
+                            var entity = this.scene.ConstructEntity(entityBaseName, settings, options);
+                            var files = await Helper.GetFilesInFolder(`${bareEngine.imagePath}/` + imagePath);
+
+                            // TURN ENTRIES INTO ARRAY
+                            categoryData.entries = [];
+                            for (var j = 0; j < files.length; j++)
+                            {
+                                var fileName = files[j].split('.')[0];
+                                categoryData.entries.push(fileName);
+
+                                // ALSO PUSH EACH AS ENTITY SO WE CAN FIND THEM LATER
+                                var entityClone = {...entity};
+                                if (!settings.entities[entityClone.name]) // DON'T OVERWRITE EXISTING ENTRIES
+                                    settings.entities[entityClone.name] = entityClone;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // PROCESS saveVars - WILL FIND EXTENDED CLASSES FOR EACH AND ADD THEIR SAVE VARS
         //
         // EG:
@@ -199,94 +285,6 @@ export class SettingsHandler
             }
         }
 
-        if (settings.categories)
-        {
-            // PROCES CATEGORY ENTRIES, IF PATH IS PREFIXED, REMOVE AND ADD UNDER ENTITIES DATA
-            for (const [key, category] of Object.entries(settings.categories))
-            {
-                if (category.entries instanceof Array)
-                {
-                    for (var i = 0; i < category.entries.length; i++)
-                    {
-                        var entry = category.entries[i];
-                    
-                        if (entry.includes("/"))
-                        {
-                            var entryName = entry.split("/").pop()!;
-                            var entryPath = entry.split("/").slice(0, -1).join("/");
-
-                            // REDEFINE CATEGORY ENTRY TO JUST IT'S NAME
-                            (category.entries as string[])[i] = entryName;
-
-                            // STORE ENTRY NAME IN ENTITIES DATA, TOGETHER WITH PATH WE JUST FOUND
-                            settings.entities[entryName] = { ...settings.entities[entryName], imagePath: entryPath };
-                        }
-                    }
-                }
-            }
-
-            // PROCESS EACH CATEGORY - HAS TO HAPPEN AFTER ENTITIES ARE CONSTRUCTED, BECAUSE this.scene.ConstructEntity()
-            for (const [categoryName, categoryData] of Object.entries(settings.categories))
-            {
-                if (!categoryData || !categoryData.entries || categoryData.entries.length === 0) continue;
-
-                // PARSE STRING ENTRIES, EG: "roadTexture_%" 
-                if (typeof categoryData.entries === 'string') 
-                {
-                    if (categoryData.entries.indexOf('%') != -1)
-                    {
-                        var split = categoryData.entries.split('%');
-                        var name = split[0];
-                        var count = parseInt(split[1], 10);
-
-                        var entity = this.scene.ConstructEntity(name + "%", settings, options);
-
-                        // TURN ENTRIES INTO ARRAY
-                        categoryData.entries = [];
-                        for (var j = 0; j < count; j++)
-                        {
-                            var entryName = name + (j + 1);
-                            categoryData.entries.push(entryName);
-
-                            // ALSO PUSH EACH AS ENTITY SO WE CAN FIND THEM LATER
-                            var entityClone = {...entity};
-                            entityClone.name = entryName;
-                            settings.entities[entityClone.name] = entityClone;
-                        }
-                    }
-
-                    if (typeof categoryData.entries === 'string')
-                    {
-                        const regex = /(.+)_\[(.+)\]/; // eg "level_[editorImages]"
-                        const match = categoryData.entries.match(regex);
-                        if (match)
-                        {
-                            const prefix = match[1]; // eg "level"
-                            const imagePath = match[2]; // eg "editorImages"
-
-                            var entityBaseName = prefix + "_*";
-                            var entity = this.scene.ConstructEntity(entityBaseName, settings, options);
-                            var files = await Helper.GetFilesInFolder(`${bareEngine.imagePath}/` + imagePath);
-
-                            // TURN ENTRIES INTO ARRAY
-                            categoryData.entries = [];
-                            for (var j = 0; j < files.length; j++)
-                            {
-                                var fileName = files[j].split('.')[0];
-                                categoryData.entries.push(fileName);
-
-                                // ALSO PUSH EACH AS ENTITY SO WE CAN FIND THEM LATER
-                                var entityClone = {...entity};
-                                entityClone.name = fileName;
-                                if (!settings.entities[entityClone.name]) // DON'T OVERWRITE EXISTING ENTRIES
-                                    settings.entities[entityClone.name] = entityClone;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
         settings.processed = true;
 
         // STORE REFERENCES
@@ -298,9 +296,10 @@ export class SettingsHandler
 
     ProcessAnimations(settings = this.raw)
     {
-        // FIND IF # IS PRESENT, ADD THE INBETWEEN FRAMES
-        // EG: "player_walk1#3" -> ["player_walk1", "player_walk2", "player_walk3"]
-        // ALSO, ADD imagePath BEFORE EVERY FRAME NAME
+        // FIND IF # OR + ARE PRESENT, ADDS THE FRAMES
+        // EG: "player_walk1#3"       -> ["player_walk1", "player_walk2", "player_walk3"]
+        // EG: "player_walk1#2+4+6#8" -> ["player_walk1", "player_walk2", "player_walk4", "player_walk6", "player_walk7", "player_walk8"]
+        // ALSO, ADDS imagePath BEFORE EVERY FRAME NAME
         var processFrames = function(imagePath: string, frames: string[]): string[] | null
         {
             if (!frames)
@@ -312,14 +311,26 @@ export class SettingsHandler
             const newFrames: string[] = [];
             for (const frame of frames)
             {
-                const match = frame.match(/^(.+?)(\d+)#(\d+)$/);
+                const match = frame.includes('#') ? frame.match(/^(.+?)(\d+.*)$/) : null;
                 if (match)
                 {
                     const base = imagePath + match[1];
-                    const start = parseInt(match[2]);
-                    const end = parseInt(match[3]);
-                    for (let i = start; i <= end; i++)
-                        newFrames.push(base + i);
+                    const segments = match[2].split('+');
+                    for (const segment of segments)
+                    {
+                        const rangeMatch = segment.match(/^(\d+)#(\d+)$/);
+                        if (rangeMatch)
+                        {
+                            const start = parseInt(rangeMatch[1]);
+                            const end = parseInt(rangeMatch[2]);
+                            for (let i = start; i <= end; i++)
+                                newFrames.push(base + i);
+                        }
+                        else
+                        {
+                            newFrames.push(base + segment);
+                        }
+                    }
                 }
                 else
                 {

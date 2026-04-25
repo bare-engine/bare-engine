@@ -284,7 +284,7 @@ export class TweenController
 // SHORTHAND TWEENTO
 export function TweenTo(object: any, seconds: number, props: any, overwrite: boolean = true, scene: Scene | null = null): TweenWithPromise
 {
-    TweenController; // MAKES SURE IT'S REFERENCED
+    // IT NEVER ACTUALLY GETS HERE, controllerProxyTransformer TRANSFORMS IT INTO scene.tweenController.TweenTo
     return scene['tweenController'].TweenTo(object, seconds, props, overwrite);
 }
 

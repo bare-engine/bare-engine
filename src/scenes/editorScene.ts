@@ -306,38 +306,6 @@ export class EditorScene extends Scene
             height: this.currentLevel.dimensions.height,
             color: this.currentLevel.backgroundColor ? Color.fromHex(this.currentLevel.backgroundColor) : Color.fromHex('666666'),
         });
-
-        if (!this.settingsData?.settings?.gridEnabled)
-            return;
-        
-        // DRAW GRID
-        var gridSize = this.settingsData.settings.gridSize;
-        var gridLineWidth = 2;
-        var gridColor = new Color(0, 50, 50, 155);
-        for (var i = 0; i < this.currentLevel.dimensions.width; i += gridSize)
-        {
-            rapid.renderLine({
-                points: [
-                    new Vec2(i, 0),
-                    new Vec2(i, this.currentLevel.dimensions.height),
-                ],
-                width: gridLineWidth,
-                roundCap: false,
-                color: gridColor,
-            });
-        }
-        for (var i = 0; i < this.currentLevel.dimensions.height; i += gridSize)
-        {
-            rapid.renderLine({
-                points: [
-                    new Vec2(0, i),
-                    new Vec2(this.currentLevel.dimensions.width, i),
-                ],
-                width: gridLineWidth,
-                roundCap: false,
-                color: gridColor,
-            });
-        }
     }
 
     OnPostRender()
@@ -349,6 +317,38 @@ export class EditorScene extends Scene
             return;
 
         this.editorControlsHandler.PostRender();
+
+        if (!this.settingsData?.settings?.gridEnabled)
+            return;
+        
+        // DRAW GRID
+        var gridSize = this.settingsData.settings.gridSize;
+        var gridLineWidth = 2;
+        var gridColor = new Color(0, 50, 50, 80);
+        for (var i = 0; i <= this.currentLevel.dimensions.width; i += gridSize)
+        {
+            rapid.renderLine({
+                points: [
+                    new Vec2(i, 0),
+                    new Vec2(i, this.currentLevel.dimensions.height),
+                ],
+                width: gridLineWidth,
+                roundCap: false,
+                color: gridColor,
+            });
+        }
+        for (var i = 0; i <= this.currentLevel.dimensions.height; i += gridSize)
+        {
+            rapid.renderLine({
+                points: [
+                    new Vec2(0, i),
+                    new Vec2(this.currentLevel.dimensions.width, i),
+                ],
+                width: gridLineWidth,
+                roundCap: false,
+                color: gridColor,
+            });
+        }
     }
 
     /*Clear()

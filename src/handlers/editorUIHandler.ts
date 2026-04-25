@@ -1,4 +1,4 @@
-import { Entity, LayerInfo, SettingsData, BareEvent, SaveData } from '../types/bareTypes';
+import { Entity, LayerInfo, SettingsData, BareEvent, SaveData, Category } from '../types/bareTypes';
 import { assetsHandler } from "./assetsHandler";
 import { MakePath, MakePathForEntity } from "../main";
 import { FlashShader } from "../shaders/flashShader";
@@ -100,54 +100,71 @@ export class EditorUIHandler {
         // Clear existing content
         sidebarContent.innerHTML = '';
 
-        // Process each category
-        if (data.categories)
-        for (const [categoryName, categoryData] of Object.entries(data.categories)) {
+        var categoriesFinal: Record<string, Category>  = {};
+        var allEntityNames = Object.keys(data.entities);
+
+        for (const [categoryName, categoryData] of Object.entries(data.categories))
+        {
+            categoriesFinal[categoryName] = categoryData;
+
+            for (const entityName of categoryData.entries)
             {
-                if (!categoryData || !categoryData.entries || categoryData.entries.length === 0) return;
+                var i = allEntityNames.indexOf(entityName);
+                if (i != -1)
+                    allEntityNames.splice(i, 1);
+            }
+        }
+        categoriesFinal["Uncategorized"] = {entries: allEntityNames};
 
-                // Create category container
-                const categoryElement = document.createElement('div');
-                categoryElement.className = 'entity-item';
-                categoryElement.onclick = () => this.ToggleEntity(categoryElement);
+        // Process each category
+        for (const [categoryName, categoryData] of Object.entries(categoriesFinal))
+        {
+            if (!categoryData || !categoryData.entries || categoryData.entries.length === 0) return;
 
-                // Create category header
-                const categoryHeader = document.createElement('div');
-                categoryHeader.className = 'entity-header';
-                
-                const categoryIcon = document.createElement('div');
-                categoryIcon.className = 'entity-image';
-                
-                // Get category image from loaded texture or fallback to path
-                const texture = assetsHandler.HasTexture(categoryData.image)
-                    ? assetsHandler.GetTexture(categoryData.image)
-                    : null;
-                if (texture?.base?.sourceUrl) {
-                    const base = texture.base;
-                    categoryIcon.style.backgroundImage = `url(${base.sourceUrl})`;
-                    if (texture.frame) {
-                        const frame = texture.frame;
-                        const img = new Image();
-                        img.src = base.sourceUrl;
-                        const drawFrame = () => {
-                            const canvas = document.createElement('canvas');
-                            canvas.width = frame.w;
-                            canvas.height = frame.h;
-                            const ctx = canvas.getContext('2d')!;
-                            ctx.drawImage(img, frame.x, frame.y, frame.w, frame.h, 0, 0, frame.w, frame.h);
-                            categoryIcon.style.backgroundImage = `url(${canvas.toDataURL()})`;
-                            categoryIcon.style.backgroundSize = 'contain';
-                            categoryIcon.style.backgroundRepeat = 'no-repeat';
-                            categoryIcon.style.backgroundPosition = 'center';
-                        };
-                        if (img.complete) drawFrame();
-                        else img.onload = drawFrame;
-                    } else {
+            // Create category container
+            const categoryElement = document.createElement('div');
+            categoryElement.className = 'entity-item';
+            categoryElement.onclick = () => this.ToggleEntity(categoryElement);
+
+            // Create category header
+            const categoryHeader = document.createElement('div');
+            categoryHeader.className = 'entity-header';
+            
+            const categoryIcon = document.createElement('div');
+            categoryIcon.className = 'entity-image';
+            
+            // Get category image from loaded texture or fallback to path
+            const texture = assetsHandler.HasTexture(categoryData.image)
+                ? assetsHandler.GetTexture(categoryData.image)
+                : null;
+            if (texture?.base?.sourceUrl) {
+                const base = texture.base;
+                categoryIcon.style.backgroundImage = `url(${base.sourceUrl})`;
+                if (texture.frame) {
+                    const frame = texture.frame;
+                    const img = new Image();
+                    img.src = base.sourceUrl;
+                    const drawFrame = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = frame.w;
+                        canvas.height = frame.h;
+                        const ctx = canvas.getContext('2d')!;
+                        ctx.drawImage(img, frame.x, frame.y, frame.w, frame.h, 0, 0, frame.w, frame.h);
+                        categoryIcon.style.backgroundImage = `url(${canvas.toDataURL()})`;
                         categoryIcon.style.backgroundSize = 'contain';
                         categoryIcon.style.backgroundRepeat = 'no-repeat';
                         categoryIcon.style.backgroundPosition = 'center';
-                    }
+                    };
+                    if (img.complete) drawFrame();
+                    else img.onload = drawFrame;
                 } else {
+                    categoryIcon.style.backgroundSize = 'contain';
+                    categoryIcon.style.backgroundRepeat = 'no-repeat';
+                    categoryIcon.style.backgroundPosition = 'center';
+                }
+            } else {
+                if (categoryData.image)
+                {
                     const categoryImagePath = this.GetCategoryImagePath(categoryData.image);
                     if (categoryImagePath) {
                         const img = document.createElement('img');
@@ -160,172 +177,181 @@ export class EditorUIHandler {
                         categoryIcon.textContent = '📦'; // Fallback icon
                     }
                 }
-                
-                const categoryTitle = document.createElement('span');
-                categoryTitle.textContent = categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
-                
-                const expandArrow = document.createElement('span');
-                expandArrow.className = 'expand-arrow';
-                expandArrow.textContent = '▶';
-
-                categoryHeader.appendChild(categoryIcon);
-                categoryHeader.appendChild(categoryTitle);
-                categoryHeader.appendChild(expandArrow);
-                
-                // Create children container
-                const childrenContainer = document.createElement('div');
-                childrenContainer.className = 'entity-children';
-
-                // Add entities for this category
-                if (Array.isArray(categoryData.entries)) 
-                {
-                    categoryData.entries.forEach(entityId => {
-                        const entity = this.scene.ConstructEntity(entityId);
-                        if (entity) {
-                            const childEntity = document.createElement('div');
-                            childEntity.className = 'child-entity';
-                            childEntity.onpointerdown = (e) => {
-                                this.scene.SelectEntity(entity, childEntity);
-                                this.scene.editorControlsHandler.SetCurrentPreviewEntity(entity);
-                            };
-                            childEntity.onclick = (e) => {
-                                e.stopPropagation();
-                            };
-                            
-                            // Get entity image from loaded texture or fallback to path
-                            const texKey = MakePathForEntity(entity);
-                            const entityTex = assetsHandler.HasTexture(texKey) ? assetsHandler.GetTexture(texKey) : null;
-
-                            if (entityTex?.base?.sourceUrl) {
-                                const base = entityTex.base;
-                                childEntity.id = entityId;
-                                childEntity.style.backgroundImage = `url(${base.sourceUrl})`;
-                                childEntity.style.borderRadius = '3px';
-                                if (entityTex.frame) {
-                                    const frame = entityTex.frame;
-                                    const img = new Image();
-                                    img.src = base.sourceUrl;
-                                    const drawFrame = () => {
-                                        const canvas = document.createElement('canvas');
-                                        canvas.width = frame.w;
-                                        canvas.height = frame.h;
-                                        const ctx = canvas.getContext('2d')!;
-                                        ctx.drawImage(img, frame.x, frame.y, frame.w, frame.h, 0, 0, frame.w, frame.h);
-                                        childEntity.style.backgroundImage = `url(${canvas.toDataURL()})`;
-                                        childEntity.style.backgroundSize = 'contain';
-                                        childEntity.style.backgroundRepeat = 'no-repeat';
-                                        childEntity.style.backgroundPosition = 'center';
-                                    };
-                                    if (img.complete) drawFrame();
-                                    else img.onload = drawFrame;
-                                } else {
-                                    childEntity.style.backgroundSize = 'contain';
-                                    childEntity.style.backgroundRepeat = 'no-repeat';
-                                    childEntity.style.backgroundPosition = 'center';
-                                }
-                            } else {
-                                const entityImagePath = this.GetEntityImagePath(entity);
-                                if (entityImagePath && entityImagePath !== 'assets/images/whitePixel.webp') {
-                                    const img = document.createElement('img');
-                                    img.src = entityImagePath;
-                                    img.id = entityId;
-                                    img.style.width = '100%';
-                                    img.style.height = '100%';
-                                    img.style.objectFit = 'contain';
-                                    img.style.borderRadius = '3px';
-                                    childEntity.appendChild(img);
-                                } else {
-                                    if (!window.textureNotFoundString)
-                                    {
-                                        var rt = new RenderTexture(128, 128, true, Color.fromHex("#fc0000")); // Fallback tex
-                                        const pixels = rt.GetPixels();
-                                        const canvas = document.createElement('canvas');
-                                        canvas.width = 128;
-                                        canvas.height = 128;
-                                        const ctx = canvas.getContext('2d')!;
-                                        const imageData = new ImageData(new Uint8ClampedArray(pixels), 128, 128);
-                                        ctx.putImageData(imageData, 0, 0);
-                                        var img = canvas.toDataURL();
-                                        window.textureNotFoundString = img;
-                                    }
-
-                                    childEntity.style.backgroundImage = `url(${window.textureNotFoundString})`;
-                                    childEntity.style.backgroundSize = 'contain';
-                                    childEntity.style.backgroundRepeat = 'no-repeat';
-                                    childEntity.style.backgroundPosition = 'center';
-                                }
-                            }
-
-                            childrenContainer.appendChild(childEntity);
-                        }
-                    });
-                }
                 else
-                if (typeof categoryData.entries === 'string') 
                 {
-                    // COMMENTED OUT TILESHEET CODE FOR NOW - CAN GET BACK TO LATER - TODO
-                    /*const entity = this.scene.GetTilesheetEntity(categoryData.entries);
-                    const entityImagePath = this.GetEntityImagePath(entity)!;
-
-                    var tilesheetImg = document.createElement('img');
-                    tilesheetImg.src = entityImagePath;
-
-                    tilesheetImg.onload = () => {
-                        var numberOfTiles = entity.numberOfTiles!;
-
-                        var tilesheetWidth = tilesheetImg.naturalWidth;
-                        var tilesheetHeight = tilesheetImg.naturalHeight;
-                        const totalArea = tilesheetWidth * tilesheetHeight;
-                        const areaPerTile = totalArea / numberOfTiles;
-                        var tileSize = Math.sqrt(areaPerTile);
-                        
-                        const tilesPerRow = tilesheetWidth / tileSize;
-
-                        const parentWidth = 40;
-                        const parentHeight = 40;
-                        const scaleX = parentWidth / tileSize;
-                        const scaleY = parentHeight / tileSize;
-                        const scale = Math.min(scaleX, scaleY);
-
-                        for (var i = 0; i < numberOfTiles; i++)
-                        {
-                            // Calculate tile position in grid
-                            const tileX = i % tilesPerRow;
-                            const tileY = Math.floor(i / tilesPerRow);
-                            
-                            // Calculate pixel positions
-                            const pixelX = tileX * tileSize;
-                            const pixelY = tileY * tileSize;
-                            
-                            const childEntity = document.createElement('div');
-                            childEntity.className = 'child-entity';
-                            childEntity.onpointerdown = (e) => {
-                                this.scene.SelectEntity(entity, childEntity);
-                            };
-                            childEntity.onclick = (e) => {
-                                e.stopPropagation();
-                            };
-                            
-                            const img = document.createElement('img');
-                            img.src = entityImagePath;
-                            img.style.width = `${tileSize}px`;
-                            img.style.height = `${tileSize}px`;
-                            img.style.objectFit = 'none';
-                            img.style.objectPosition = `-${pixelX}px -${pixelY}px`;
-                            img.style.transform = `scale(${scale})`;
-                            img.style.transformOrigin = 'top left';
-                            img.style.borderRadius = '3px';
-                            childEntity.appendChild(img);
-                            
-                            childrenContainer.appendChild(childEntity);
-                        }
-                    }*/
+                    categoryIcon.style.display = 'none';
                 }
-                
-                categoryElement.appendChild(categoryHeader);
-                categoryElement.appendChild(childrenContainer);
-                sidebarContent.appendChild(categoryElement);
             }
+            
+            const categoryTitle = document.createElement('span');
+            categoryTitle.textContent = categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
+
+            if (categoryIcon.style.display == 'none')
+            {
+                categoryTitle.style.padding = '10px';
+            }
+            
+            const expandArrow = document.createElement('span');
+            expandArrow.className = 'expand-arrow';
+            expandArrow.textContent = '▶';
+
+            categoryHeader.appendChild(categoryIcon);
+            categoryHeader.appendChild(categoryTitle);
+            categoryHeader.appendChild(expandArrow);
+            
+            // Create children container
+            const childrenContainer = document.createElement('div');
+            childrenContainer.className = 'entity-children';
+
+            // Add entities for this category
+            if (Array.isArray(categoryData.entries)) 
+            {
+                categoryData.entries.forEach(entityId => {
+                    const entity = this.scene.ConstructEntity(entityId);
+                    if (entity) {
+                        const childEntity = document.createElement('div');
+                        childEntity.className = 'child-entity';
+                        childEntity.onpointerdown = (e) => {
+                            this.scene.SelectEntity(entity, childEntity);
+                            this.scene.editorControlsHandler.SetCurrentPreviewEntity(entity);
+                        };
+                        childEntity.onclick = (e) => {
+                            e.stopPropagation();
+                        };
+                        
+                        // Get entity image from loaded texture or fallback to path
+                        const texKey = MakePathForEntity(entity);
+                        const entityTex = assetsHandler.HasTexture(texKey) ? assetsHandler.GetTexture(texKey) : null;
+
+                        if (entityTex?.base?.sourceUrl) {
+                            const base = entityTex.base;
+                            childEntity.id = entityId;
+                            childEntity.style.backgroundImage = `url(${base.sourceUrl})`;
+                            childEntity.style.borderRadius = '3px';
+                            if (entityTex.frame) {
+                                const frame = entityTex.frame;
+                                const img = new Image();
+                                img.src = base.sourceUrl;
+                                const drawFrame = () => {
+                                    const canvas = document.createElement('canvas');
+                                    canvas.width = frame.w;
+                                    canvas.height = frame.h;
+                                    const ctx = canvas.getContext('2d')!;
+                                    ctx.drawImage(img, frame.x, frame.y, frame.w, frame.h, 0, 0, frame.w, frame.h);
+                                    childEntity.style.backgroundImage = `url(${canvas.toDataURL()})`;
+                                    childEntity.style.backgroundSize = 'contain';
+                                    childEntity.style.backgroundRepeat = 'no-repeat';
+                                    childEntity.style.backgroundPosition = 'center';
+                                };
+                                if (img.complete) drawFrame();
+                                else img.onload = drawFrame;
+                            } else {
+                                childEntity.style.backgroundSize = 'contain';
+                                childEntity.style.backgroundRepeat = 'no-repeat';
+                                childEntity.style.backgroundPosition = 'center';
+                            }
+                        } else {
+                            const entityImagePath = this.GetEntityImagePath(entity);
+                            if (entityImagePath && entityImagePath !== 'assets/images/whitePixel.webp') {
+                                const img = document.createElement('img');
+                                img.src = entityImagePath;
+                                img.id = entityId;
+                                img.style.width = '100%';
+                                img.style.height = '100%';
+                                img.style.objectFit = 'contain';
+                                img.style.borderRadius = '3px';
+                                childEntity.appendChild(img);
+                            } else {
+                                if (!window.textureNotFoundString)
+                                {
+                                    var rt = new RenderTexture(128, 128, true, Color.fromHex("#fc0000")); // Fallback tex
+                                    const pixels = rt.GetPixels();
+                                    const canvas = document.createElement('canvas');
+                                    canvas.width = 128;
+                                    canvas.height = 128;
+                                    const ctx = canvas.getContext('2d')!;
+                                    const imageData = new ImageData(new Uint8ClampedArray(pixels), 128, 128);
+                                    ctx.putImageData(imageData, 0, 0);
+                                    var img = canvas.toDataURL();
+                                    window.textureNotFoundString = img;
+                                }
+
+                                childEntity.style.backgroundImage = `url(${window.textureNotFoundString})`;
+                                childEntity.style.backgroundSize = 'contain';
+                                childEntity.style.backgroundRepeat = 'no-repeat';
+                                childEntity.style.backgroundPosition = 'center';
+                            }
+                        }
+
+                        childrenContainer.appendChild(childEntity);
+                    }
+                });
+            }
+            else
+            if (typeof categoryData.entries === 'string') 
+            {
+                // COMMENTED OUT TILESHEET CODE FOR NOW - CAN GET BACK TO LATER - TODO
+                /*const entity = this.scene.GetTilesheetEntity(categoryData.entries);
+                const entityImagePath = this.GetEntityImagePath(entity)!;
+
+                var tilesheetImg = document.createElement('img');
+                tilesheetImg.src = entityImagePath;
+
+                tilesheetImg.onload = () => {
+                    var numberOfTiles = entity.numberOfTiles!;
+
+                    var tilesheetWidth = tilesheetImg.naturalWidth;
+                    var tilesheetHeight = tilesheetImg.naturalHeight;
+                    const totalArea = tilesheetWidth * tilesheetHeight;
+                    const areaPerTile = totalArea / numberOfTiles;
+                    var tileSize = Math.sqrt(areaPerTile);
+                    
+                    const tilesPerRow = tilesheetWidth / tileSize;
+
+                    const parentWidth = 40;
+                    const parentHeight = 40;
+                    const scaleX = parentWidth / tileSize;
+                    const scaleY = parentHeight / tileSize;
+                    const scale = Math.min(scaleX, scaleY);
+
+                    for (var i = 0; i < numberOfTiles; i++)
+                    {
+                        // Calculate tile position in grid
+                        const tileX = i % tilesPerRow;
+                        const tileY = Math.floor(i / tilesPerRow);
+                        
+                        // Calculate pixel positions
+                        const pixelX = tileX * tileSize;
+                        const pixelY = tileY * tileSize;
+                        
+                        const childEntity = document.createElement('div');
+                        childEntity.className = 'child-entity';
+                        childEntity.onpointerdown = (e) => {
+                            this.scene.SelectEntity(entity, childEntity);
+                        };
+                        childEntity.onclick = (e) => {
+                            e.stopPropagation();
+                        };
+                        
+                        const img = document.createElement('img');
+                        img.src = entityImagePath;
+                        img.style.width = `${tileSize}px`;
+                        img.style.height = `${tileSize}px`;
+                        img.style.objectFit = 'none';
+                        img.style.objectPosition = `-${pixelX}px -${pixelY}px`;
+                        img.style.transform = `scale(${scale})`;
+                        img.style.transformOrigin = 'top left';
+                        img.style.borderRadius = '3px';
+                        childEntity.appendChild(img);
+                        
+                        childrenContainer.appendChild(childEntity);
+                    }
+                }*/
+            }
+            
+            categoryElement.appendChild(categoryHeader);
+            categoryElement.appendChild(childrenContainer);
+            sidebarContent.appendChild(categoryElement);
         }
 
         // IF ONLY 1 CATEGORY, EXPAND IT
@@ -648,6 +674,7 @@ export class EditorUIHandler {
                 me.SyncSettingsUI();
 
                 const updatedRaw = await this.scene.settingsHandler.UpdateRaw((raw) => {
+                    raw.settings ??= {gridEnabled: false, gridSize: 64, minimized: false};//
                     raw.settings.gridSize = newGridSize;
                 });
                 this.scene.SaveEntityData(updatedRaw);

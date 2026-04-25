@@ -1,11 +1,11 @@
-import { PhysicsObjectBare } from "../objects/physicsObjectBare";
-import { globalEvents, Scene } from "../main";
-import { Vec2 } from "../libraries/rapid-render";
-import { PhysicsControllerBase } from "./physicsControllerBase";
-import { GameObject } from "../objects/gameObject";
-import { BareEvent, BlockedState } from "../types/bareTypes";
 import { BareEngine } from "../bareEngine";
-import { HitboxType, PoolHandler } from "../exports";
+import { HitboxType } from "../exports";
+import { Vec2 } from "../libraries/rapid-render";
+import { Scene } from "../main";
+import { GameObject } from "../objects/gameObject";
+import { PhysicsObjectBare } from "../objects/physicsObjectBare";
+import { BareEvent, BlockedState } from "../types/bareTypes";
+import { PhysicsControllerBase } from "./physicsControllerBase";
 
 export class PhysicsControllerBare extends PhysicsControllerBase
 {
