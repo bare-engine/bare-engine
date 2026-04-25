@@ -94,7 +94,7 @@ export class BareEngine
         this.dummyGameObject = new GameObject(scene); // TOO LATE IF USER WANTS TO USE IT IN sceneClass, BUT FINE FOR MY CURRENT USAGE
         
         if (!(options?.width && options?.height))
-            window.addEventListener('resize', this.ResizeCanvas.bind(this));
+            window.addEventListener('resize', ()=>this.ResizeCanvas());
 
         document.addEventListener('pointerdown', this.PointerDown.bind(this), { passive: false });
         document.addEventListener('pointerup', this.PointerUp.bind(this), { passive: false });

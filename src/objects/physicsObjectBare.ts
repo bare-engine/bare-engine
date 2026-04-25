@@ -1,6 +1,6 @@
-import { Vec2, Color, Texture } from "../libraries/rapid-render";
-import { MakePath, MakePathForEntity, Scene } from "../main";
-import { BlockedState, ConstructEntityOptions, Entity, HitboxType, Rectangle, Rectangle2Vec, SettingsData } from "../types/bareTypes";
+import { Texture, Vec2 } from "../libraries/rapid-render";
+import { MakePathForEntity, Scene } from "../main";
+import { BlockedState, ConstructEntityOptions, Entity, HitboxType, Rectangle, Rectangle2Vec } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
 import { GameObject } from "./gameObject";
 
@@ -122,6 +122,15 @@ export class PhysicsObjectBare extends GameObject
             {
                 this.collide = true;
             }
+        }
+
+        // APPLY CIRCLE HITBOX TYPE EVEN WITHOUT AN EXPLICIT HITBOX
+        if (entity.hitboxType == "circle" && !entity.hitbox)
+        {
+            this.WhenTextureLoaded(() => {
+                this.physicsHitbox.type = HitboxType.Circle;
+                this.physicsHitbox.radius = (entity.physicsRadius || Math.max(this.physicsHitbox.rectangle.width, this.physicsHitbox.rectangle.height) / 2);
+            });
         }
     }
     

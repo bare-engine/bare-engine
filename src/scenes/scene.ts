@@ -296,7 +296,7 @@ export class Scene implements SceneI
                     }
 
                     // ANYTHING WITH A HITBOX IS A PHYSICS OBJECT
-                    if (entityArg.hitbox && entityArg.extendClass == "GameObject") 
+                    if ((entityArg.hitbox || entityArg.physicsRadius) && entityArg.extendClass == "GameObject") 
                         entityArg.extendClass = "PhysicsObjectBare";
                     
                     // BIT OF A HACK TO MAKE SURE SOPIRO RIGIDBODIES HAVE A CENTER PIVOT
@@ -1252,6 +1252,13 @@ export class Scene implements SceneI
         {
             (this as any)[propertyName] = new Ctor(scene);
         }
+    }
+
+    async Sleep(seconds: number): Promise<void>
+    {
+        this.paused = true;
+        await wait(seconds);
+        this.paused = false;
     }
 
     get currentLevel(): LevelData
