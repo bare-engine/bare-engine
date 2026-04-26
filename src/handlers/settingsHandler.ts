@@ -119,27 +119,22 @@ export class SettingsHandler
             {
                 if (!categoryData || !categoryData.entries || categoryData.entries.length === 0) continue;
 
-                // PARSE STRING ENTRIES, EG: "roadTexture_%" 
+                // PARSE STRING ENTRIES, EG: "roadTexture_1#12" 
                 if (typeof categoryData.entries === 'string') 
                 {
-                    if (categoryData.entries.indexOf('%') != -1)
+                    if (typeof categoryData.entries === 'string' && categoryData.entries.indexOf('#') != -1)
                     {
-                        var split = categoryData.entries.split('%');
-                        var name = split[0];
-                        var count = parseInt(split[1], 10);
+                        const entityBaseName = this.GetNumberedNameBaseName(categoryData.entries);
+                        const entity = this.scene.ConstructEntity(entityBaseName, settings, options);
+                        const entryNames = this.ProcessNumberedNames([categoryData.entries]) ?? [];
 
-                        var entity = this.scene.ConstructEntity(name + "%", settings, options);
-
-                        // TURN ENTRIES INTO ARRAY
-                        categoryData.entries = [];
-                        for (var j = 0; j < count; j++)
+                        categoryData.entries = entryNames;
+                        for (const entryName of entryNames)
                         {
-                            var entryName = name + (j + 1);
-                            categoryData.entries.push(entryName);
-
                             // ALSO PUSH EACH AS ENTITY SO WE CAN FIND THEM LATER
-                            var entityClone = {...entity};
-                            settings.entities[entityClone.name] = entityClone;
+                            const entityClone = {...entity, name: entryName};
+                            if (!settings.entities[entryName]) // DON'T OVERWRITE EXISTING ENTRIES
+                                settings.entities[entryName] = entityClone;
                         }
                     }
 
@@ -296,50 +291,6 @@ export class SettingsHandler
 
     ProcessAnimations(settings = this.raw)
     {
-        // FIND IF # OR + ARE PRESENT, ADDS THE FRAMES
-        // EG: "player_walk1#3"       -> ["player_walk1", "player_walk2", "player_walk3"]
-        // EG: "player_walk1#2+4+6#8" -> ["player_walk1", "player_walk2", "player_walk4", "player_walk6", "player_walk7", "player_walk8"]
-        // ALSO, ADDS imagePath BEFORE EVERY FRAME NAME
-        var processFrames = function(imagePath: string, frames: string[]): string[] | null
-        {
-            if (!frames)
-                return null;
-
-            if (imagePath)
-                imagePath += "/";
-
-            const newFrames: string[] = [];
-            for (const frame of frames)
-            {
-                const match = frame.includes('#') ? frame.match(/^(.+?)(\d+.*)$/) : null;
-                if (match)
-                {
-                    const base = imagePath + match[1];
-                    const segments = match[2].split('+');
-                    for (const segment of segments)
-                    {
-                        const rangeMatch = segment.match(/^(\d+)#(\d+)$/);
-                        if (rangeMatch)
-                        {
-                            const start = parseInt(rangeMatch[1]);
-                            const end = parseInt(rangeMatch[2]);
-                            for (let i = start; i <= end; i++)
-                                newFrames.push(base + i);
-                        }
-                        else
-                        {
-                            newFrames.push(base + segment);
-                        }
-                    }
-                }
-                else
-                {
-                    newFrames.push(imagePath + frame);
-                }
-            }
-            return newFrames;
-        }
-
         // ADD THEM AND LOAD THEIR TEXTURES IF THEY'RE NOT IN ALREADY
         if (settings.animations)
         {
@@ -348,7 +299,7 @@ export class SettingsHandler
                 var existingAnimation = assetsHandler.GetAnimation(animName);
 
                 // TAKE PROVIDED VALUES OR FALLBACK TO DEFAULTS
-                var animationFrames = processFrames(animDataInfo.imagePath ?? "", animDataInfo.frames) ?? existingAnimation?.animFrames; // FALLBACK TO ANIMATION FRAMES SET BEFORE IN JSON
+                var animationFrames = this.ProcessNumberedNames(animDataInfo.frames, animDataInfo.imagePath ?? "") ?? existingAnimation?.animFrames; // FALLBACK TO ANIMATION FRAMES SET BEFORE IN JSON
                 var framesPerSecond = (animDataInfo.framesPerSecond ?? defaultSettingsData.defaultAnimationFramesPerSecond);
                 var loop = animDataInfo.loop;
                 
@@ -356,6 +307,56 @@ export class SettingsHandler
                 assetsHandler.AddAnimation(animName, animationFrames, framesPerSecond, loop);
             }
         }
+    }
+
+    // FIND IF # OR + ARE PRESENT, ADDS THE NUMBERED NAMES
+    // EG: "player_walk1#3"       -> ["player_walk1", "player_walk2", "player_walk3"]
+    // EG: "player_walk1#2+4+6#8" -> ["player_walk1", "player_walk2", "player_walk4", "player_walk6", "player_walk7", "player_walk8"]
+    // ALSO, WHEN imagePath IS SET, ADDS IT BEFORE EVERY NAME
+    private ProcessNumberedNames(names?: string[], imagePath: string = ""): string[] | null
+    {
+        if (!names)
+            return null;
+
+        if (imagePath)
+            imagePath += "/";
+
+        const processedNames: string[] = [];
+        for (const name of names)
+        {
+            const match = name.includes('#') ? name.match(/^(.+?)(\d+.*)$/) : null;
+            if (match)
+            {
+                const base = imagePath + match[1];
+                const segments = match[2].split('+');
+                for (const segment of segments)
+                {
+                    const rangeMatch = segment.match(/^(\d+)#(\d+)$/);
+                    if (rangeMatch)
+                    {
+                        const start = parseInt(rangeMatch[1]);
+                        const end = parseInt(rangeMatch[2]);
+                        for (let i = start; i <= end; i++)
+                            processedNames.push(base + i);
+                    }
+                    else
+                    {
+                        processedNames.push(base + segment);
+                    }
+                }
+            }
+            else
+            {
+                processedNames.push(imagePath + name);
+            }
+        }
+        return processedNames;
+    }
+
+    private GetNumberedNameBaseName(name: string): string
+    {
+        const match = name.includes('#') ? name.match(/^(.+?)(\d+.*)$/) : null;
+        return match ? match[1] + "#" : name;
     }
     
     // THIS MUTATES THE entity ITSELF
@@ -471,10 +472,9 @@ export class SettingsHandler
             if (typeof value === "string")
             {
                 const preset = presets[value];
-                const presetValue = preset?.[propName];
-
                 if (preset !== undefined)
                 {
+                    const presetValue = preset?.[propName];
                     if (presetValue)
                     {
                         // REPLACING SPECIFIC PROP OF ENTITY VALUE WITH VALUE FROM PRESET
