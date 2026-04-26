@@ -450,7 +450,7 @@ export class SettingsHandler
         return final(entity);
     }
 
-    FillPresets(entity: Entity, rawSettingsData: SettingsData)
+    FillPresets(entity: Record<string, any>, rawSettingsData: SettingsData)
     {
         var presets = rawSettingsData.presets;
 
@@ -462,16 +462,29 @@ export class SettingsHandler
             var propName = key as keyof Entity;
             var value = entity[propName];
 
-            // IF ENTITY VALUE IS DEFINED AS PRESET AND PRESET HOLD ENTITY PROPERTY NAME
+            if (typeof value === "object" && value !== null)
+            {
+                // IF VALUE IS OBJECT, RECURSE
+                this.FillPresets(value, rawSettingsData);
+            }
+            else
             if (typeof value === "string")
             {
                 const preset = presets[value];
                 const presetValue = preset?.[propName];
 
-                if (presetValue !== undefined)
+                if (preset !== undefined)
                 {
-                    // OVERWRITE ENTITY VALUE WITH VALUE FROM PRESET
-                    (entity as Record<string, any>)[propName] = presetValue;
+                    if (presetValue)
+                    {
+                        // REPLACING SPECIFIC PROP OF ENTITY VALUE WITH VALUE FROM PRESET
+                        entity[propName] = presetValue;
+                    }
+                    else
+                    {
+                        // PRESET DIDN'T DEFINE WHAT PROPERY IT WAS MEANT TO REPLACE, REPLACE ANY PROP WITH THIS PRESET
+                        entity[propName] = preset;
+                    }
                 }
             }
         }

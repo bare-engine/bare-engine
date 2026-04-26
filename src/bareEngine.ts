@@ -1,11 +1,11 @@
 import { sceneController } from "./controllers/sceneController";
-import { globalEvents, GameMode, Scene } from "./main";
-import { GameObject } from "./objects/gameObject";
+import { ICircleRenderOptions, IGraphicRenderOptions, IRectRenderOptions, IRenderLineOptions, ISpriteRenderOptions, TextureCache } from "./exports";
 import { assetsHandler } from "./handlers/assetsHandler";
-import { BareEvent, BareOptions, Entity, Events, GameObjectClass, SceneClass } from "./types/bareTypes";
-import { EventArgs } from "./libraries/mitt";
 import { PoolHandler } from "./handlers/poolHandler";
-import { TextureCache, IGraphicRenderOptions, ICircleRenderOptions, IRenderLineOptions, IRectRenderOptions, ISpriteRenderOptions, Color } from "./exports";
+import { EventArgs } from "./libraries/mitt";
+import { GameMode, globalEvents, Scene } from "./main";
+import { GameObject } from "./objects/gameObject";
+import { BareEvent, BareOptions, Events, GameObjectClass, SceneClass } from "./types/bareTypes";
 
 export class BareEngine
 {

@@ -396,7 +396,7 @@ export class Scene implements SceneI
         // FILL PRESETS - LIKE hitbox: "FULL"                     
         //                     hitbox: {x1: 0, y1: 0, x2: 1, y2: 1}
         if (options.fillPresets)
-            this.FillPresets(entity, settingsData); // ALREADY DONE IN SETTINGS CONSTRUCT
+            this.settingsHandler.FillPresets(entity, settingsData); // ALREADY DONE IN SETTINGS CONSTRUCT - BUT COULD HAVE NEW PROPS IN ENTITY
 
         if (!entity.extendClass)
             entity.extendClass = "GameObject";
@@ -416,33 +416,6 @@ export class Scene implements SceneI
 
         //if (addComponents)
         //    this.componentController?.ProcessCompentsFromEntity(entity, obj);
-    }
-
-    FillPresets(entity: Entity, settingsData: SettingsData = this.settingsData)
-    {
-        var presets = settingsData.presets;
-
-        if (!presets)
-            return;
-
-        for (const key in entity)
-        {
-            var propName = key as keyof Entity;
-            var value = entity[propName];
-
-            // IF ENTITY VALUE IS DEFINED AS PRESET AND PRESET HOLD ENTITY PROPERTY NAME
-            if (typeof value === "string")
-            {
-                const preset = presets[value];
-                const presetValue = preset?.[propName];
-
-                if (presetValue !== undefined)
-                {
-                    // OVERWRITE ENTITY VALUE WITH VALUE FROM PRESET
-                    (entity as Record<string, any>)[propName] = presetValue;
-                }
-            }
-        }
     }
 
     private specialMap: Record<string, (obj: GameObject, value: any) => void> =

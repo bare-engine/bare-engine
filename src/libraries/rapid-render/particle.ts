@@ -1,9 +1,8 @@
-import Rapid from "./render";
-import { IParticleOptions, ParticleShape, ITransformOptions, ParticleAttribute, ParticleAttributeTypes, ParticleAttributeData } from "./interface";
+import { GameObject } from "../../exports";
+import { IParticleOptions, ITransformOptions, ParticleAttribute, ParticleAttributeData, ParticleAttributeTypes, ParticleShape } from "./interface";
 import { Color, Vec2 } from "./math";
 import { Texture } from "./texture";
 import { isPlainObject } from "./utils";
-import { GameObject } from "../../exports";
 
 // Define constants for magic numbers
 const DEFAULT_EMIT_RATE = 10;

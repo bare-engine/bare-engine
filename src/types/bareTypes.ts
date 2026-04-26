@@ -97,7 +97,7 @@ export interface Entity
 
   children?: Entity[];
 
-  components?: Record<string, Record<string, any>>;
+  components?: Record<string, Record<string, any> | string>;
   //editorComponents?: Record<string, Record<string, any>>;
   componentsRemoved?: string[];
   propertiesRemoved?: string[];
@@ -216,7 +216,7 @@ export interface SettingsData
   tilesheets?: Array<Entity>;
   layers?: Array<string>;
   layersInfo?: Record<string, any>;
-  presets?: Record<string, Partial<Entity>>;
+  presets?: Record<string, any>;
   saveVars?: Record<string, Array<string>>
   animations?: Record<string, AnimationDataInfo>
   showUI?: boolean,
