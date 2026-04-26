@@ -71,6 +71,9 @@ export const BareClasses = {
 };
 
 export { PhysicsObjectBare } from "../objects/physicsObjectBare";
+export { PhysicsControllerBare } from "../controllers/physicsControllerBare";
+export * from "./sopiroPhysics";
+export * from "./sound";
 
 export { TweenTo } from "../controllers/tweenController";
 
@@ -98,6 +101,7 @@ export { OutlineShader } from "../shaders/outlineShader";
 export {EditorScene} from "../scenes/editorScene";
 export {EditorUIScene} from "../scenes/editorUIScene";
 export { uiScene } from "../scenes/uiScene";
+export * from "./editor";
 
 // Types and constants
 export {

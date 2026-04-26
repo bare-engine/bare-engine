@@ -12,7 +12,7 @@
     "README.md"
   ],
   "main": "src/exports/index.ts",
-  "types": "index.d.ts",
+  "types": "typeDefs/index.d.ts",
   "sideEffects": [
     "./src/main.ts"
   ],
@@ -20,55 +20,6 @@
     ".": {
       "types": "./typeDefs/index.d.ts",
       "default": "./src/exports/index.ts"
-    },
-    "./core": {
-      "types": "./typeDefs/core.d.ts",
-      "default": "./src/exports/core.ts"
-    },
-    "./sound": {
-      "types": "./typeDefs/sound.d.ts",
-      "default": "./src/exports/sound.ts"
-    },
-    "./barePhysics": {
-      "types": "./typeDefs/barePhysics.d.ts",
-      "default": "./src/exports/barePhysics.ts"
-    },
-    "./physics": {
-      "types": "./typeDefs/physics.d.ts",
-      "default": "./src/exports/physics.ts"
-    },
-    "./sopiroPhysics": {
-      "types": "./typeDefs/sopiroPhysics.d.ts",
-      "default": "./src/exports/sopiroPhysics.ts"
-    },
-    "./editor": {
-      "types": "./typeDefs/editor.d.ts",
-      "default": "./src/exports/editor.ts"
-    }
-  },
-  "typesVersions": {
-    "*": {
-      "editor": [
-        "typeDefs/editor.d.ts"
-      ],
-      "sound": [
-        "typeDefs/sound.d.ts"
-      ],
-      "barePhysics": [
-        "typeDefs/barePhysics.d.ts"
-      ],
-      "physics": [
-        "typeDefs/physics.d.ts"
-      ],
-      "sopiroPhysics": [
-        "typeDefs/sopiroPhysics.d.ts"
-      ],
-      "core": [
-        "typeDefs/core.d.ts"
-      ],
-      "*": [
-        "typeDefs/index.d.ts"
-      ]
     }
   },
   "devDependencies": {
