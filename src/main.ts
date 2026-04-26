@@ -52,6 +52,7 @@ declare global
     function trace(message: any, ...optionalParams: any[]): void;
 
     function wait(seconds: number): Promise<void>;
+    function cancelWaits(): void;
 }
 
 window.debug = false;
@@ -67,7 +68,18 @@ window.isLocalhost = ['localhost'].some(domain => window.location.href.includes(
 //window.isLocalhost = __DEV__;
 window.isMobile = Helper.MobileAndTabletCheck();
     
-window.wait = (seconds: number): Promise<void> => new Promise(resolve => setTimeout(resolve, seconds * 1000));
+let _waitGen = 0;
+window.wait = (seconds: number): Promise<void> => {
+    const gen = _waitGen;
+    return new Promise(resolve => {
+        setTimeout(() => {
+            if (_waitGen == gen)
+                resolve(); 
+            // ELSE... WE DON'T RESOLVE AND TIME OUT WILL STAY SUSPENDED UNTIL GC CLEANS IT UP
+        }, seconds * 1000);
+    });
+};
+window.cancelWaits = (): void => { _waitGen++; };
 
 var canvas = document.createElement("canvas");
 canvas.className = "canvas";

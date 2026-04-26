@@ -1150,6 +1150,11 @@ export class Scene implements SceneI
 
     Clear(includingPersistent: boolean = true)
     {
+        // THIS CANCELS ALL AWAITS, PREVENTING SOME NASTY PROBLEMS
+        // THOUGHT IT MEANS YOU CANNOT RESOLVE AN AWAIT wait() AFTER A RESTART
+        // BUT THAT'S PROBABLY FINE
+        window.cancelWaits();
+
         var classes = BareEngine.controllerNames;
         for (let i = 0; i < classes.length; i++)
         {
