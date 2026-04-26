@@ -42,6 +42,7 @@ export class Scene implements SceneI
     public paused: boolean = false;
     public persistent: boolean = false;
     public UI: boolean = false;
+    public resize: boolean = false;
 
     public isLevel: boolean = false;
 
@@ -109,6 +110,7 @@ export class Scene implements SceneI
         this.sceneOptions = options;
 
         this.UI = options.UI ?? false;
+        this.resize = options.resize ?? false;
         this.persistent = options.persistent ?? false;
 
         this.AddClass(GameObject);
@@ -912,7 +914,8 @@ export class Scene implements SceneI
     {
         rapid.save();
 
-        this.cameraHandler?.SetTransform();
+        if (!this.UI)
+            this.cameraHandler?.SetTransform();
 
         this.OnPreRender();
 
@@ -1140,7 +1143,7 @@ export class Scene implements SceneI
 
     Resize(prevWidth: number, prevHeight: number, newWidth: number, newHeight: number)
     {
-        if (this.UI)
+        if (this.resize)
         {
             // RESIZE UI
             var objs = this.objectController.GetAllObjects();

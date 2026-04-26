@@ -429,6 +429,7 @@ export type SceneOptions = {
     settingsData?: SettingsData;
     persistent?: boolean;
     UI?: boolean;
+    resize?: boolean;
     solo?: boolean;
 }
 

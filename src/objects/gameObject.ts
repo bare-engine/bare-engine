@@ -250,11 +250,13 @@ export class GameObject
 
         if (this.texture != window.redPixelTexture) // redPixelTexture MEANS IT'S NOT FOUND
         {
-            for (var i = 0; i < this.OnTextureLoadedCallbacks.length; i++)
-            {
-                this.OnTextureLoadedCallbacks[i]();
-            }
+            var onTextureLoadedCallbacksCached = this.OnTextureLoadedCallbacks;
             this.OnTextureLoadedCallbacks = [];
+            
+            for (var i = 0; i < onTextureLoadedCallbacksCached.length; i++)
+            {
+                onTextureLoadedCallbacksCached[i]();
+            }
         }
 
         return this;
@@ -915,13 +917,15 @@ export class GameObject
         return this;
     }
 
-    // CAN PASS IN PERCENTAGES TOO, TEXTURE HAS TO BE LOADED
+    // CAN PASS IN PERCENTAGES TOO
     SetPivot(x: number, y: number): GameObject
     {
         if (!this.texture)
         {
-            this.WhenTextureLoaded(() => this.SetPivot(x, y));
-            return this;
+            var xArg = x;
+            var yArg = y;
+            this.WhenTextureLoaded(() => this.SetPivot(xArg, yArg));
+            // STILL CONTINUING,... TO SET PIVOT BEFOREHAND, SINCE MIGHT NEVER GET TEXTURE LOADED, EG FOR UI ELEMENTS
         }
         
         // OPTION TO PASS IN A PERCENTAGE
