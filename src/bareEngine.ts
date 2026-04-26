@@ -19,6 +19,7 @@ export class BareEngine
     public count: int = 0;
 
     public fixedTimestep: number = 1 / 60;
+    public maxDeltaTime: number = 1 / 15; // CAPS FRAME DELTA AFTER LAG OR TAB REFOCUS
     private accumulator: number = 0;
     
     private RunMainLoopBound: () => void;
@@ -180,7 +181,7 @@ export class BareEngine
         if (window.isLocalhost || hasFocus)
         {
             const currentTime = performance.now();
-            this.deltaTime = (currentTime - this.lastUpdateTimeRef) / 1000;
+            this.deltaTime = Math.min((currentTime - this.lastUpdateTimeRef) / 1000, this.maxDeltaTime);
             this.lastUpdateTimeRef = currentTime;
             this.time = currentTime;
             this.gameSpeed = 1 / (this.deltaTime / .0166666);

@@ -53,32 +53,22 @@ export class PhysicsObjectBare extends GameObject
                 var w = this.texture!.width * 1; //this.totalScaleX;
                 var h = this.texture!.height * 1; //this.totalScaleY;
 
-                // X/Y
-                if (hb.x1 > 0 && hb.x1 <= 1)
-                    rect.x = hb.x1 * w; // RELATIVE
-                else
-                    rect.x = hb.x1; // ABSOLUTE
+                var allArePercentages = (hb.x1 >= 0 && hb.x1 <= 1 && hb.y1 >= 0 && hb.y1 <= 1 && hb.x2 >= 0 && hb.x2 <= 1 && hb.y2 >= 0 && hb.y2 <= 1);
 
-                if (hb.y1 > 0 && hb.y1 <= 1)
-                    rect.y = hb.y1 * h; // RELATIVE
+                if (allArePercentages)
+                {
+                    rect.x = hb.x1 * w;
+                    rect.y = hb.y1 * h;
+                    rect.width = (hb.x2 * w) - rect.x;
+                    rect.height = (hb.y2 * h) - rect.y; 
+                }
                 else
-                    rect.y = hb.y1; // ABSOLUTE
-
-                // WIDTH/HEIGHT
-                if (hb.x2 > 0 && hb.x2 <= 1)
-                    rect.width = (hb.x2 * w) - rect.x; // RELATIVE
-                else
-                    rect.width = (hb.x2) - rect.x; // ABSOLUTE
-
-                if (hb.y2 > 0 && hb.y2 <= 1)
-                    rect.height = (hb.y2 * h) - rect.y; // RELATIVE
-                else
-                    rect.height = (hb.y2) - rect.y; // ABSOLUTE
-
-                rect.x = (rect.x);
-                rect.y = (rect.y);
-                rect.width = (rect.width);
-                rect.height = (rect.height);
+                {
+                    rect.x = hb.x1;
+                    rect.y = hb.y1;
+                    rect.width = (hb.x2) - rect.x;
+                    rect.height = (hb.y2) - rect.y;
+                }
 
                 // APPLY
                 //entity.hitbox = rect; // CHANGE IN DATA, SO DOESN'T PROCESS NEXT TIME (?)

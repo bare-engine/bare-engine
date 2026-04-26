@@ -320,8 +320,9 @@ export class TweenController
 }
 
 // SHORTHAND TWEENTO
+// EG: TweenTo(this.go, 1, { alpha: 0, innerPosition: {y: "-=" + 100 }})
+// EG: TweenTo(this.go, 1, { alpha: 0, innerPosition$y: "+=" + 100 })
 // EG: TweenTo(this.go, 1, { alpha: 0, "innerPosition.y": "-=" + 100 })
-// EG: TweenTo(this.go, 1, { alpha: 0, innerPosition$y: "-=" + 100 })
 // EG: await TweenTo(this.go, 1, { scale: 0 }).promise
 export function TweenTo(object: any, seconds: number, props: any, overwrite: boolean = true, scene: Scene | null = null): TweenWithPromise
 {
