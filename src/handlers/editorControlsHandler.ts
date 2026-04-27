@@ -149,6 +149,7 @@ export class EditorControlsHandler {
         {
             const layer = this.GetSelectedLayer();
             hitboxController.SetExclusiveLayer(layer);
+            hitboxController.ResetCurrentHover(); // DON'T WANT TO STILL HAVE HITBOX HOVERED FROM POTENTIALLY DIFFERENT LAYER 
         }
     }
 
@@ -542,9 +543,10 @@ export class EditorControlsHandler {
 
         var entityCopy = Object.assign({}, entity);
 
-        // THIS PREVIEW OBJECT IS JUST VISUAL, DON'T WANT ANY COMPONENTS ON IT
+        // THIS PREVIEW OBJECT IS JUST VISUAL, DON'T WANT ANY COMPONENTS ON IT (?)
         delete entityCopy.components;
 
+        this.currentPreviewEntity.ResetValues();
         this.currentPreviewEntity.Init(MakePathForEntity(entityCopy));
         this.currentPreviewEntity.alpha = 0.5;
 
@@ -561,12 +563,89 @@ export class EditorControlsHandler {
         return bareEngine.MouseIsOnEditor(event);
     }
 
+    private GetSnapRect(obj: GameObject): Rectangle
+    {
+        const hitboxRect = (obj as PhysicsObjectBare).physicsHitbox?.rectangle;
+        return (hitboxRect && hitboxRect.width > 0 && hitboxRect.height > 0)
+            ? hitboxRect
+            : { x: 0, y: 0, width: obj.texture?.width ?? 0, height: obj.texture?.height ?? 0 };
+    }
+
+    private GetSnapPivotPercent(obj: GameObject): Vec2
+    {
+        const rect = this.GetSnapRect(obj);
+        if (rect.width <= 0 || rect.height <= 0)
+            return new Vec2(.5, .5);
+
+        return new Vec2(
+            Helper.Clamp((obj.pivot.x - rect.x) / rect.width, 0, 1),
+            Helper.Clamp((obj.pivot.y - rect.y) / rect.height, 0, 1)
+        );
+    }
+
+    private GetSnapAnchorOffset(obj: GameObject): Vec2
+    {
+        const rect = this.GetSnapRect(obj);
+        if (rect.width <= 0 || rect.height <= 0)
+            return new Vec2(0, 0);
+
+        const pivotPercent = this.GetSnapPivotPercent(obj);
+        const anchorX = rect.x + rect.width * pivotPercent.x;
+        const anchorY = rect.y + rect.height * pivotPercent.y;
+        
+        return new Vec2(
+            (anchorX - obj.pivot.x) * obj.totalScaleX,
+            (anchorY - obj.pivot.y) * obj.totalScaleY
+        );
+    }
+
+    private SnapCoordinateToGrid(value: number, gridSize: number, pivotPercent: number): number
+    {
+        return Math.floor(value / gridSize + pivotPercent) * gridSize;
+    }
+
+    // SNAPS EDITOR PLACEMENT TO THE GRID USING A PIVOT-AWARE SNAP REGION.
+    // A 0.0 PIVOT AXIS SNAPS TO THE LOWER/RIGHT EDGE OF THE CURRENT GRID CELL.
+    // A 0.5 PIVOT AXIS SNAPS TO THE NEAREST GRID INTERSECTION.
+    // A 1.0 PIVOT AXIS SNAPS TO THE UPPER/LEFT EDGE OF THE CURRENT GRID CELL.
+    // VALUES BETWEEN THOSE POINTS INTERPOLATE NATURALLY.
+    //
+    // CONCEPTUALLY, EACH SNAPPED POSITION OWNS A GRID-SIZED RECTANGLE AROUND ITS PIVOT.
+    // AS LONG AS THE MOUSE STAYS INSIDE THAT RECTANGLE, THE OBJECT REMAINS SNAPPED TO
+    // THAT POSITION.
+    private GetGridAlignedPosition(obj: GameObject, x: number, y: number, ignoreGrid: boolean = false, guideX: number = x, guideY: number = y): Vec2
+    {
+        const settings = this.scene.settingsData.settings;
+        const gridSize = settings?.gridSize;
+
+        if (!ignoreGrid && settings?.gridEnabled && gridSize && gridSize > 0)
+        {
+            const snapAnchorOffset = this.GetSnapAnchorOffset(obj);
+            const pivotPercent = this.GetSnapPivotPercent(obj);
+
+            return new Vec2(
+                this.SnapCoordinateToGrid(guideX, gridSize, pivotPercent.x) - snapAnchorOffset.x,
+                this.SnapCoordinateToGrid(guideY, gridSize, pivotPercent.y) - snapAnchorOffset.y
+            );
+        }
+
+        return new Vec2(x, y);
+    }
+
+    private SetEditorPosition(obj: GameObject, x: number, y: number, ignoreGrid: boolean = false): void
+    {
+        const position = this.GetGridAlignedPosition(obj, x, y, ignoreGrid);
+        obj.SetPosition(position.x, position.y);
+    }
+
     Update(_deltaTime?: number) {
         if (!this.scene.opened)
             return;
         if (!this.active)
             return;
 
+        var altDown = keyboardController.IsKeyDown("alt");
+            
         if (this.draggingObject)
         {
             var movedX = 0;
@@ -578,20 +657,15 @@ export class EditorControlsHandler {
             const desiredX = mouseController.world.position.x - this.dragOffset.x;
             const desiredY = mouseController.world.position.y - this.dragOffset.y;
 
-            var settings = this.scene.settingsData.settings;
-            if (settings?.gridEnabled)
-            {
-                // Snap to grid
-                const gridSize = settings?.gridSize;
-                const snappedX = Math.round(desiredX / gridSize) * gridSize;
-                const snappedY = Math.round(desiredY / gridSize) * gridSize;
-                this.draggingObject.SetPosition(snappedX, snappedY);
-            }
-            else
-            {
-                // DRAG FREELY
-                this.draggingObject.SetPosition(desiredX, desiredY);
-            }
+            const position = this.GetGridAlignedPosition(
+                this.draggingObject,
+                desiredX,
+                desiredY,
+                altDown,
+                mouseController.world.position.x,
+                mouseController.world.position.y
+            );
+            this.draggingObject.SetPosition(position.x, position.y);
 
             // Calculate the distance moved
             movedX = this.draggingObject.x - origPosX;
@@ -625,17 +699,7 @@ export class EditorControlsHandler {
         const previewX = mouseController.world.position.x;
         const previewY = mouseController.world.position.y;
 
-        var settings = this.scene.settingsData.settings;
-        if (settings?.gridEnabled) {
-            // Snap preview entity to grid
-            const gridSize = settings?.gridSize;
-            const snappedPreviewX = Math.round(previewX / gridSize) * gridSize;
-            const snappedPreviewY = Math.round(previewY / gridSize) * gridSize;
-            this.currentPreviewEntity.SetPosition(snappedPreviewX, snappedPreviewY);
-        } else {
-            // Preview follows mouse freely
-            this.currentPreviewEntity.SetPosition(previewX, previewY);
-        }
+        this.SetEditorPosition(this.currentPreviewEntity, previewX, previewY, altDown);
 
         var distMouseMoved = Helper.Distance(mouseController.world.position, mouseController.world.positionOnDown);
         if (mouseController.IsRightMouseDown() && distMouseMoved > 5) {
