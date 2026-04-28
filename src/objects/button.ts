@@ -30,7 +30,7 @@ export class Button extends GameObject
 
     override RenderTransformed(inheritedColor?: Color): void
     {
-        const buttonColor = Color.fromHex('#014f00');
+        const buttonColor = Color.fromHex('#014f00'); // MAKE CUSTOMIZEABLE - TODO
         buttonColor.a = inheritedColor?.a ?? buttonColor.a;
 
         bare.renderRect({ 

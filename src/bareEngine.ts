@@ -1,13 +1,13 @@
 import { sceneController } from "./controllers/sceneController";
+import { PluginHandler } from "./exports";
+import { GameMode, globalEvents } from "./globals";
 import { assetsHandler } from "./handlers/assetsHandler";
 import { PoolHandler } from "./handlers/poolHandler";
-import { controllerNames, GameMode, globalEvents, RegisterController, SetControllerReferencesOnScene } from "./globals";
 import { EventArgs } from "./libraries/mitt";
 import { ICircleRenderOptions, IGraphicRenderOptions, IRectRenderOptions, IRenderLineOptions, ISpriteRenderOptions, TextureCache } from "./libraries/rapid-render";
 import { GameObject } from "./objects/gameObject";
 import type { Scene } from "./scenes/scene";
 import { BareEvent, BareOptions, Events, GameObjectClass, SceneClass } from "./types/bareTypes";
-import { PluginHandler } from "./exports";
 
 export class BareEngine
 {
@@ -68,6 +68,9 @@ export class BareEngine
     // SEPARATE METHOD TO MAKE ASYNC
     async Init(sceneClass: SceneClass, options?: BareOptions) 
     {
+        if (__DEV__)
+            PluginHandler.Init(options?.editorButtonPosition);
+        
         if (options?.fixedTimestep)
             this.fixedTimestep = options.fixedTimestep;
 
@@ -93,8 +96,6 @@ export class BareEngine
         var scene = await sceneController.Goto(sceneClass);
 
         this.dummyGameObject = new GameObject(scene); // TOO LATE IF USER WANTS TO USE IT IN sceneClass, BUT FINE FOR MY CURRENT USAGE
-        
-        PluginHandler;
         
         if (!(options?.width && options?.height))
             window.addEventListener('resize', ()=>this.ResizeCanvas());
@@ -341,7 +342,7 @@ export class BareEngine
         globalEvents.emit(type, ...event);
 
         // SEND LOCALLY - TO ACTIVE SCENES
-        var scenes = sceneController.GetAllScenes();
+        var scenes = sceneController.GetAllScenes(true);
         for (var scene of scenes)
         {
             if (!scene.enabled || scene.paused) // HERE TO PREVENT INPUT ON DISABLED SCENES, FOR ONE
@@ -377,19 +378,5 @@ export class BareEngine
         obj.scene = scene;
 
         return obj;
-    }
-
-
-    
-    public static controllerNames = controllerNames;
-    
-    static RegisterController(controllerClass: new (...args: any[]) => any): void
-    {
-        RegisterController(controllerClass);
-    }
-
-    static SetControllerReferencesOnScene(scene:Scene)
-    {
-        SetControllerReferencesOnScene(scene);
     }
 }

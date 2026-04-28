@@ -823,20 +823,6 @@ export class LevelHandler
     {
         this.currentLevel = null;
     }
-
-    private static async EnsureEditorSceneRegistered(): Promise<void>
-    {
-        if (__DEV__)
-        {
-            if (LevelHandler.editorUISceneRequested)
-                return;
-
-            LevelHandler.editorUISceneRequested = true;
-
-            const { EditorUIScene } = await import("../scenes/editorUIScene");
-            sceneController.Add(EditorUIScene);
-        }
-    }
 }
 
 export var levelHandler:LevelHandler;

@@ -52,6 +52,7 @@ export class Scene implements SceneI
     public persistent: boolean = false;
     public UI: boolean = false;
     public resize: boolean = false;
+    public ignored: boolean = false;
 
     public isLevel: boolean = false;
 
@@ -68,6 +69,7 @@ export class Scene implements SceneI
     public cameraHandler: CameraHandler; 
 
     public settingsHandler: SettingsHandler = new SettingsHandler(this); // COULD ALSO MAKE THIS WORK LIKE CONTROLLERS ABOVE
+    
     get settingsData(): SettingsData { return this.settingsHandler.Get(); }
     
     isPaused: boolean = false;//
@@ -121,10 +123,11 @@ export class Scene implements SceneI
         this.UI = options.UI ?? false;
         this.resize = options.resize ?? false;
         this.persistent = options.persistent ?? false;
+        this.ignored = options.ignored ?? false;
 
         this.AddClass(GameObject);
         this.AddClass(ObjectController);
-        this.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT, NOT ALWAYS NEEDED
+        this.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT, NOT ALWAYS NEEDED - TODO
 
         SetControllerReferencesOnScene(this);
     }

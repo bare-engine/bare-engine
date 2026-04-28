@@ -10,14 +10,20 @@ export class EditorUIScene extends Scene
     
     constructor()
     {
-        super({UI: true, persistent: true});
+        super({UI: true, resize: true, ignored: true, persistent: true});
     }
 
-    OnStart(): void | Promise<void>
+    OnStart(payload?: any): void | Promise<void>
     {
+        var position = payload.openEditorButtonPosition;
+
         this.editorButton = new Button(this, {text: "Open Editor", OnPress: this.OnClickEditorButton.bind(this)});
-        this.editorButton.alpha = .75;
+        //this.editorButton.alpha = .75;
         this.AddGameObject(this.editorButton);
+
+        this.editorButton.SetPivot(position.x, position.y);
+        this.editorButton.x = this.width * position.x;
+        this.editorButton.y = this.height * position.y;
         
         this.events.persistent.on(BareEvent.scene_changed, this.OnSceneChanged.bind(this));
     }

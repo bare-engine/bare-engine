@@ -1,5 +1,6 @@
 import { keyboardController } from "../controllers/keyboardController";
 import { sceneController } from "../controllers/sceneController";
+import { EditorUIScene } from "../exports";
 import { GameMode, globalEvents } from "../globals";
 import { Color, Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
@@ -9,7 +10,7 @@ import { EntityScene } from "../scenes/entityScene";
 import { Scene } from "../scenes/scene";
 import { OutlineShader } from "../shaders/outlineShader";
 import { defaultSettingsData as defaultEntityData } from "../types/bareData";
-import { BareEvent, Entity, LevelData, SaveData, Scalar, SettingsData } from "../types/bareTypes";
+import { BareEvent, Entity, LevelData, Position, SaveData, Scalar, SettingsData } from "../types/bareTypes";
 import { getButtons } from "../utils/decorators";
 import { Helper } from "../utils/helper";
 import { SaveDataHandler } from "./SaveDataHandler";
@@ -24,8 +25,13 @@ declare global {
 
 window.__GAME_DEBUG_API__ = {
     setPluginConnected(connected: boolean) {
+        if (connected)
         plugin.isPluginConnected = connected;
         trace("setPluginConnected", connected);
+
+        if (__DEV__)
+        if (connected)
+            sceneController.Remove(EditorUIScene);
     },
   clickedComponentButton(uid: string, compName: string, methodName: string)
   {
@@ -134,18 +140,6 @@ window.__GAME_DEBUG_API__ = {
   getAllScenes() {
     var scenes = sceneController.GetAllScenes();
     var sceneStrings = scenes.map(s => s.constructor.name);
-
-    // DON'T SHOW EditorUIScene WHEN THERE'S NO LEVEL
-    // ACTUALLY, DON'T HAVE A EditorUIScene WHEN THERE'S NO LEVEL - TODO
-    for (var i = 0; i < sceneStrings.length; i++)
-    {
-        if (sceneStrings[i] == "EditorUIScene")
-        if (!sceneController.GetLevelScene())
-        {
-            sceneStrings.splice(i, 1);
-            break;
-        }
-    }
 
     sceneStrings = sceneStrings.reverse(); // 
 
@@ -895,6 +889,13 @@ window.__GAME_DEBUG_API__ = {
 
 export class PluginHandler
 {
+    static Init(editorButtonPosition: Position)
+    {
+        plugin = new PluginHandler(editorButtonPosition);
+    }
+
+    public openEditorButtonPosition: Position;
+    
     public isPluginConnected: boolean = false;
 
     public outlineShader;
@@ -905,8 +906,34 @@ export class PluginHandler
     doNotifyAfterSave: boolean = true;
     currentSceneClassString: string = "";
 
-    constructor()
+    constructor(editorButtonPosition: Position)
     {
+        this.openEditorButtonPosition = editorButtonPosition;;
+
+        var check = async () => {
+            if (this.isPluginConnected)
+            {
+                sceneController.Remove(EditorUIScene);
+                return;
+            }
+
+            var levelScene = sceneController.GetLevelScene();
+            if (levelScene)
+            {
+                if (!sceneController.Has(EditorUIScene))
+                {
+                    var scene = await sceneController.Add(EditorUIScene, {openEditorButtonPosition: this.openEditorButtonPosition});
+                    sceneController.MoveToFront(scene);
+                }
+            }
+            else
+            {
+                sceneController.Remove(EditorUIScene);
+            }
+        };
+        check();
+        globalEvents.on(BareEvent.scene_changed, check);
+
         globalEvents.persistent.once(BareEvent.game_started, () => {
             this.outlineShader = new OutlineShader()
             
@@ -1322,5 +1349,4 @@ export class PluginHandler
     }
 }
 
-export const plugin = new PluginHandler();
-globalThis.plugin = plugin;
+export var plugin:PluginHandler;

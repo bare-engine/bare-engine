@@ -21,7 +21,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
         levelPath: ''
     }, ...options };
 
-    window.initialAssetsReady =(assets = [])=>{
+    window.initialAssetsReady = (assets = []) => {
         const doesSupportWebGL = supportsWebGL(canvas);
         if (doesSupportWebGL)
         {

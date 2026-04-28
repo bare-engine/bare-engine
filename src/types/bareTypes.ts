@@ -13,6 +13,7 @@ export type BareOptions =
   fixedTimestep?: number;
   imagePath?: string;
   levelPath?: string;
+  editorButtonPosition?: Position;
 };
 
 export interface Position
@@ -428,6 +429,7 @@ export interface SceneI
 export type SceneOptions = {
     settingsData?: SettingsData;
     persistent?: boolean;
+    ignored?: boolean;
     UI?: boolean;
     resize?: boolean;
     solo?: boolean;

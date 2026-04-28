@@ -8,7 +8,7 @@ import { AwakePayload, BareEvent, Events, SceneClass } from "../types/bareTypes"
 
 export class SceneController
 {
-    currentScenes: Scene[] = [];
+    private currentScenes: Scene[] = [];
 
     constructor()
     {
@@ -285,9 +285,9 @@ export class SceneController
         return this.currentScenes.find(current => current instanceof sceneClass) as T;
     }
 
-    GetAllScenes()
+    GetAllScenes(includeIgnored: boolean = false): Scene[]
     {
-        return this.currentScenes;
+        return this.currentScenes.filter(current => includeIgnored || !current.ignored);
     }
 
     GetAllSceneObjects()
