@@ -5,7 +5,7 @@ export class UIScene extends Scene
 {
     constructor()
     {
-        super({UI: true, persistent: true});
+        super({UI: true/*, persistent: true*/});
     }
 }
 
