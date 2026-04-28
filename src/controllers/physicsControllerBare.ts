@@ -1,5 +1,6 @@
-import { HitboxType } from "../types/bareTypes";
+import { HitboxType, Rectangle } from "../types/bareTypes";
 import { Vec2 } from "../libraries/rapid-render";
+import { QuadTree, QuadTreeItem } from "../libraries/quadTree";
 import type { Scene } from "../scenes/scene";
 import { GameObject } from "../objects/gameObject";
 import { PhysicsObjectBare } from "../objects/physicsObjectBare";
@@ -19,6 +20,8 @@ export class PhysicsControllerBare extends PhysicsControllerBase
   public activeCollisions: Set<string> = new Set();
   private currentFrameCollisions: Set<string> = new Set();
   public OnBeforeCollisionResolve: ((obj1: PhysicsObjectBare, obj2: PhysicsObjectBare) => boolean) | null = null;
+  private broadPhaseMaxItems: number = 8;
+  private broadPhaseMaxLevels: number = 6;
 
   constructor(scene: Scene)
   {
@@ -214,13 +217,12 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     for (let iteration = 0; iteration < maxIterations; iteration++)
     {
       let resolvedAny = false;
+      const broadPhasePairs = this.getBroadPhasePairs();
 
-      for (let i = 0; i < this.objects.length; i++)
+      for (const pair of broadPhasePairs)
       {
-        for (let j = i + 1; j < this.objects.length; j++)
-        {
-          const obj1 = this.objects[i];
-          const obj2 = this.objects[j];
+          const obj1 = pair.p1;
+          const obj2 = pair.p2;
 
           if (obj1.static && obj2.static) continue;
           if (!obj1.collide || !obj2.collide) continue;
@@ -333,7 +335,6 @@ export class PhysicsControllerBare extends PhysicsControllerBase
             }
           }
           // no collision - CheckCollisionEnd() handles end detection
-        }
       }
 
       if (!resolvedAny) {
@@ -346,6 +347,116 @@ export class PhysicsControllerBare extends PhysicsControllerBase
         this.handleBoundaryCollisions(obj);
       }
     }
+  }
+
+  private getBroadPhasePairs(): { p1: PhysicsObjectBare; p2: PhysicsObjectBare }[]
+  {
+    const entries: QuadTreeItem<PhysicsObjectBare>[] = [];
+    const objectIndexes = new Map<PhysicsObjectBare, number>();
+    const bounds = this.getBroadPhaseBounds(entries, objectIndexes);
+
+    if (entries.length < 2) {
+      return [];
+    }
+
+    const tree = new QuadTree<PhysicsObjectBare>(bounds, this.broadPhaseMaxItems, this.broadPhaseMaxLevels);
+
+    for (const entry of entries) {
+      tree.insert(entry);
+    }
+
+    const pairs: { p1: PhysicsObjectBare; p2: PhysicsObjectBare }[] = [];
+    const pairKeys = new Set<string>();
+
+    for (const entry of entries) {
+      const obj1 = entry.value;
+      const obj1Index = objectIndexes.get(obj1)!;
+      const candidates = tree.query(entry.bounds);
+
+      for (const candidate of candidates) {
+        const obj2 = candidate.value;
+        const obj2Index = objectIndexes.get(obj2)!;
+
+        if (obj2Index <= obj1Index) {
+          continue;
+        }
+
+        const key = `${obj1.uniqueID}##${obj2.uniqueID}`;
+        if (pairKeys.has(key)) {
+          continue;
+        }
+
+        pairKeys.add(key);
+        pairs.push({ p1: obj1, p2: obj2 });
+      }
+    }
+
+    return pairs;
+  }
+
+  private getBroadPhaseBounds(entries: QuadTreeItem<PhysicsObjectBare>[], objectIndexes: Map<PhysicsObjectBare, number>): Rectangle
+  {
+    let left = this.x;
+    let top = this.y;
+    let right = this.x + this.width;
+    let bottom = this.y + this.height;
+
+    for (let i = 0; i < this.objects.length; i++) {
+      const obj = this.objects[i];
+      const bounds = this.getObjectBounds(obj);
+
+      if (!bounds) {
+        continue;
+      }
+
+      entries.push({ bounds, value: obj });
+      objectIndexes.set(obj, i);
+
+      left = Math.min(left, bounds.x);
+      top = Math.min(top, bounds.y);
+      right = Math.max(right, bounds.x + bounds.width);
+      bottom = Math.max(bottom, bounds.y + bounds.height);
+    }
+
+    const width = Math.max(1, right - left);
+    const height = Math.max(1, bottom - top);
+
+    return { x: left, y: top, width, height };
+  }
+
+  private getObjectBounds(obj: PhysicsObjectBare): Rectangle | null
+  {
+    if (!obj.physicsHitbox?.active) {
+      return null;
+    }
+
+    if (obj.physicsHitbox.type === HitboxType.Circle) {
+      const radius = obj.physicsHitbox.radius || 0;
+
+      if (radius <= 0) {
+        return null;
+      }
+
+      return {
+        x: obj.x - radius,
+        y: obj.y - radius,
+        width: radius * 2,
+        height: radius * 2
+      };
+    }
+
+    const rect = obj.physicsHitbox.rectangle;
+
+    if (!rect || rect.width === 0 || rect.height === 0) {
+      return null;
+    }
+
+    return {
+      x: obj.x - obj.pivot.x + rect.x,
+      y: obj.y - obj.pivot.y + rect.y,
+      width: Math.abs(rect.width * obj.totalScaleX),
+      height: Math.abs(rect.height * obj.totalScaleY)
+    };
   }
 
   private checkCircleRectCollision(circle: PhysicsObjectBare, obj: PhysicsObjectBare): {

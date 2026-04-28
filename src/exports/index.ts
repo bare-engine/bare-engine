@@ -148,6 +148,8 @@ export * from "../libraries/rapid-render/render";
 export { default as Rapid } from "../libraries/rapid-render/render";
 export * from "../libraries/rapid-render/texture";
 export { BareText } from "../libraries/rapid-render/texture";
+export { QuadTree } from "../libraries/quadTree";
+export type { QuadTreeItem } from "../libraries/quadTree";
 export { default as GLShader } from "../libraries/rapid-render/webgl/glshader";
 export { Uniform } from "../libraries/rapid-render/webgl/uniform";
 
