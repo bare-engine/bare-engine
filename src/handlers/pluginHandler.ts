@@ -26,11 +26,16 @@ declare global {
 window.__GAME_DEBUG_API__ = {
     setPluginConnected(connected: boolean) {
         if (connected)
+        {
             plugin.isPluginConnected = connected;
+        }
 
         if (__DEV__)
         if (connected)
             sceneController.Remove(EditorUIScene);
+    },
+    getShowEditorButton() {
+        return !!sceneController.GetLevelScene();
     },
   clickedComponentButton(uid: string, compName: string, methodName: string)
   {
@@ -922,6 +927,9 @@ export class PluginHandler
     {
         this.openEditorButtonPosition = editorButtonPosition;;
 
+        // HIDE OR SHOW EditorUIScene
+        // SHOWS WHEN NO PLUGIN/CONNECTION
+        // HIDES WHEN THERE IS - CAN PRESS THE BUTTON IN THE PLUGIN
         var check = async () => {
             if (this.isPluginConnected)
             {
