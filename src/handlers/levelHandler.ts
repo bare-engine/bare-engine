@@ -61,7 +61,15 @@ export class LevelHandler
         }
         else
         {
-            level = await Helper.loadJSON<LevelData>(`${bareEngine.levelPath}/${levelStr}.json`);
+            try
+            {
+                level = await Helper.loadJSON<LevelData>(`${bareEngine.levelPath}/${levelStr}.json`);
+            }
+            catch (error)
+            {
+                throw new Error(`Failed to load level "${levelStr}": ${error instanceof Error ? error.message : String(error)}`);
+            }
+
             SaveData.levelCache.set(levelStr, level);
         }
 
@@ -114,7 +122,16 @@ export class LevelHandler
         await this.scene.OnBeforeLoadLevel();
         this.scene.doRender = false;
 
-        var level = await this.LoadLevelOnly(levelInput || SaveData.currentLevelStr); // IF NO LEVEL SUPPLIED, RELOAD CURRENT LEVEL
+        var level: LevelData;
+        try
+        {
+            level = await this.LoadLevelOnly(levelInput || SaveData.currentLevelStr); // IF NO LEVEL SUPPLIED, RELOAD CURRENT LEVEL
+        }
+        catch (error: any)
+        {
+            console.error('Failed to load level', error);
+            return;
+        }
 
         this.scene.doRender = true;
         this.scene.AfterLoadedLevel(level, persistenObjUIDs);

@@ -813,7 +813,7 @@ export class EditorUIHandler {
 
     Clear(): void
     {
-         this.SetMinimize(false);
+        this.SetMinimize(false);
 
         this.abortController.abort();
 

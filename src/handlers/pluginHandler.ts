@@ -116,10 +116,15 @@ window.__GAME_DEBUG_API__ = {
     sceneController.GetMainScene().LoadLevel(levelPath);
   },
 
-  async gotoLevelEdit(levelPath: string) {
+  async gotoLevelEdit(levelPathOrData: string | LevelData) {
     //sceneController.DisableAllScenes();
+
+    if (typeof levelPathOrData === 'string')
+    {
+        levelPathOrData = bareEngine.levelPath + "/" + levelPathOrData + ".json"
+    }
     
-    sceneController.Add(EditorScene, {levelPathOrData: bareEngine.levelPath + "/" + levelPath + ".json", settingsHandler: sceneController.GetMainScene().settingsHandler});
+    sceneController.Add(EditorScene, {levelPathOrData: levelPathOrData, settingsHandler: sceneController.GetMainScene().settingsHandler});
     //sceneController.Goto(EditorScene, {levelInput: levelPath});
   },
 
@@ -760,6 +765,9 @@ window.__GAME_DEBUG_API__ = {
           })
         });
         const json = await res.json().catch(() => null);
+
+        // GO TO THE LEVEL EDITOR
+        window.__GAME_DEBUG_API__.gotoLevelEdit(levelData);
         return { ok: res.ok, saved: res.ok, response: json, level: levelData };
       } catch (error: any) {
         console.error('Failed to create level', error);
@@ -782,6 +790,7 @@ window.__GAME_DEBUG_API__ = {
         if (SaveData.currentLevelStr == levelName)
         {
             SaveData.currentLevelStr = '';
+            sceneController.Remove(EditorScene); // REMOVES IT, IN CASES WE'RE IN THERE. ELSE WE RESTART BACK INTO IT
             plugin.GetCurrentScene().Restart(); // DON'T HAVE LEVEL TO GO TO, SINCE WE JUST REMOVED IT, SO JUST RESTART GAME
         }
         return { ok: res.ok, saved: res.ok, response: json };
@@ -847,6 +856,10 @@ window.__GAME_DEBUG_API__ = {
                     body: JSON.stringify({ path: oldPath })
                 });
                 window.__GAME_DEBUG_API__.refreshLevelFiles();
+
+                // GO TO THE LEVEL EDITOR
+                window.__GAME_DEBUG_API__.gotoLevelEdit(changes.name);
+
             } else {
                 await fetch('/api/save-level', {
                     method: 'POST',
