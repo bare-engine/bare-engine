@@ -88,7 +88,9 @@ export class AnimationComponent extends BaseComponent
         // SO WE JUST PLAY THE DEFAULT ANIMATION
         if (!this.currentAnimation)
         {
-            this.Play();
+            var animationName = this.go.name;
+            if (assetsHandler.GetAnimation(animationName))
+                this.Play();
         }
     }
 

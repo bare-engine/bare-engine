@@ -85,7 +85,7 @@ class SoundHandler
     if (src)
       return src;
 
-    console.error("No sound path found for", id);
+    //console.error("No sound path found for", id);
 
     const fallbackFileName = `${id}.mp3`;
     this.registerSound(id, fallbackFileName);
