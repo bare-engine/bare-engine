@@ -2,7 +2,7 @@ import Rapid from "./render"
 import { Images, ITextTextureOptions, TextureWrapMode, WebGLContext } from "./interface"
 import { Color } from "./math"
 import { createTexture } from "./webgl/utils"
-import { Helper } from "../../exports"
+import { Helper } from "../../utils/helper"
 
 /**
  * texture manager

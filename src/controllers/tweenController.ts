@@ -1,9 +1,9 @@
 import { BareEvent } from '../types/bareTypes';
 import Easing from "../libraries/tweenJS/Easing";
 import Tween, { TweenWithPromise } from "../libraries/tweenJS/Tween";
-import { Scene } from "../main";
+import type { Scene } from "../scenes/scene";
 import { GameObject } from "../objects/gameObject";
-import { BareEngine } from '../bareEngine';
+import { RegisterController } from '../globals';
 
 export class TweenController
 {
@@ -331,4 +331,4 @@ export function TweenTo(object: any, seconds: number, props: any, overwrite: boo
 }
 
 export var tweenController:TweenController;
-BareEngine.RegisterController(TweenController);
+RegisterController(TweenController);

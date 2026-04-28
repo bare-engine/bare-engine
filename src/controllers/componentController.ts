@@ -1,9 +1,10 @@
-import { BareEngine } from "../bareEngine";
-import { Helper } from "../exports";
-import { GameMode, Scene } from "../main";
+import { GameMode } from "../globals";
 import { GameObject } from "../objects/gameObject";
+import type { Scene } from "../scenes/scene";
 import { BareEvent, Component, Ctor, Entity } from '../types/bareTypes';
+import { RegisterController } from "../globals";
 import { RUN_MODES_KEY } from "../utils/decorators";
+import { Helper } from "../utils/helper";
 // REFERENCING A CLASS EXTENDING BASECOMPONENT WILL AUTOMATICALLY ALSO INCLUDE COMPONENTCONTROLLER
 
 export abstract class BaseComponent<T extends GameObject = GameObject> implements Component<T>
@@ -575,4 +576,4 @@ export class ComponentController
 }
 
 export var componentController:ComponentController;
-BareEngine.RegisterController(ComponentController);
+RegisterController(ComponentController);

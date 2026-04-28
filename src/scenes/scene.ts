@@ -1,16 +1,25 @@
-import { BareEngine } from "../bareEngine";
+import { controllerNames, SetControllerReferencesOnScene } from "../globals";
 import { ObjectController } from "../controllers/objectController";
+import { PhysicsControllerBare } from "../controllers/physicsControllerBare";
+import { PhysicsControllerSopiro } from "../controllers/physicsControllerSopiro";
 import { sceneController } from "../controllers/sceneController";
-import { CameraHandler, ComponentController, Helper, HitboxController, LevelHandler, MouseController, ParticleController, TweenController } from "../exports";
-import { PhysicsControllerBare, PhysicsObjectBare } from "../exports/barePhysics";
-import { PhysicsControllerSopiro } from "../exports/sopiroPhysics";
+import { globalEvents } from "../globals";
 import { SettingsHandler } from "../handlers/settingsHandler";
 import mitt from "../libraries/mitt";
 import { Color, FrameBufferObject, ICircleRenderOptions, IGraphicRenderOptions, IRectRenderOptions, IRenderLineOptions, ISpriteRenderOptions, MaskType, RenderTexture, Texture, TextureCache, Vec2 } from "../libraries/rapid-render";
-import { MakePath, MakePathForEntity, globalEvents } from "../main";
 import { GameObject } from "../objects/gameObject";
+import { PhysicsObjectBare } from "../objects/physicsObjectBare";
 import { defaultSettingsData } from "../types/bareData";
 import { AwakePayload, BareEvent, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LayerInfo, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
+import { Helper } from "../utils/helper";
+import { MakePath, MakePathForEntity } from "../globals";
+import type { ComponentController } from "../controllers/componentController";
+import type { HitboxController } from "../controllers/hitboxController";
+import type { MouseController } from "../controllers/mouseController";
+import type { ParticleController } from "../controllers/particleController";
+import type { TweenController } from "../controllers/tweenController";
+import type { CameraHandler } from "../handlers/cameraHandler";
+import type { LevelHandler } from "../handlers/levelHandler";
 
 /*Bare.camera.SetPosition(bare.width * .5, bare.height * .5);
 Bare.sound.Play()
@@ -117,7 +126,7 @@ export class Scene implements SceneI
         this.AddClass(ObjectController);
         this.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT, NOT ALWAYS NEEDED
 
-        BareEngine.SetControllerReferencesOnScene(this);
+        SetControllerReferencesOnScene(this);
     }
 
     async Awake(payload?: any): Promise<void>
@@ -131,7 +140,7 @@ export class Scene implements SceneI
         this.ApplyLayerInfoToSettings(this.settingsData);
         //this.layerNames = this.settingsData.layers.slice();
 
-        var classes = BareEngine.controllerNames;
+        var classes = controllerNames;
         for (let i = 0; i < classes.length; i++)
         {
             this[classes[i]].Awake?.();
@@ -158,7 +167,7 @@ export class Scene implements SceneI
     {
         this.started = false;
 
-        var classes = BareEngine.controllerNames;
+        var classes = controllerNames;
         for (let i = 0; i < classes.length; i++)
         {
             this[classes[i]].Start?.();
@@ -1155,7 +1164,7 @@ export class Scene implements SceneI
         // BUT THAT'S PROBABLY FINE
         window.cancelWaits();
 
-        var classes = BareEngine.controllerNames;
+        var classes = controllerNames;
         for (let i = 0; i < classes.length; i++)
         {
             this[classes[i]].Clear?.(includingPersistent);

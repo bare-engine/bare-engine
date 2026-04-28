@@ -1,6 +1,6 @@
-import { BareEngine } from "../exports";
+import { RegisterController } from "../globals";
 import { Vec2 } from "../libraries/rapid-render";
-import { Scene } from "../main";
+import type { Scene } from "../scenes/scene";
 import { BareEvent, CameraScaleMode, Rectangle, type Size } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
 
@@ -381,4 +381,4 @@ export class CameraHandler {
 }
 
 export var cameraHandler:CameraHandler;
-BareEngine.RegisterController(CameraHandler);
+RegisterController(CameraHandler);

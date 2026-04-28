@@ -2,9 +2,10 @@ import { BaseComponent } from '../controllers/componentController';
 import { hitboxController } from '../controllers/hitboxController';
 import { keyboardController } from '../controllers/keyboardController';
 import { mouseController } from '../controllers/mouseController';
-import { EditorScene, Run } from '../exports';
+import { GameMode } from '../globals';
 import { Color, Vec2 } from '../libraries/rapid-render';
-import { GameMode } from '../main';
+import type { EditorScene } from '../scenes/editorScene';
+import { Run } from '../utils/decorators';
 
 type Edge =
   | 'left' | 'right' | 'top' | 'bottom'

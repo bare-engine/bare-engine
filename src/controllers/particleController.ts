@@ -1,7 +1,7 @@
 import { ParticleEmitter } from "../libraries/rapid-render/particle";
 import { Vec2 } from "../libraries/rapid-render";
-import { BareEngine } from "../bareEngine";
 import { Scene } from "../scenes/scene";
+import { RegisterController } from "../globals";
 type ParticleEmitterEntry = {
     emitter: ParticleEmitter;
     autoRemove: boolean;
@@ -129,4 +129,4 @@ export class ParticleController
 }
 
 export var particleController:ParticleController;
-BareEngine.RegisterController(ParticleController);
+RegisterController(ParticleController);

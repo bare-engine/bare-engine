@@ -1,4 +1,6 @@
-import { BareEvent, Button, globalEvents, SaveData, sceneController } from "../exports";
+import { sceneController } from "../controllers/sceneController";
+import { Button } from "../objects/button";
+import { BareEvent, SaveData } from "../types/bareTypes";
 import { EditorScene } from "./editorScene";
 import { Scene } from "./scene";
 
@@ -14,11 +16,8 @@ export class EditorUIScene extends Scene
     OnStart(): void | Promise<void>
     {
         this.editorButton = new Button(this, {text: "Open Editor", OnPress: this.OnClickEditorButton.bind(this)});
+        this.editorButton.alpha = .75;
         this.AddGameObject(this.editorButton);
-
-        // HIDE EDITOR BUTTON IN PRODUCTION
-        if (!window.isLocalhost)
-            this.editorButton.visible = false;
         
         this.events.persistent.on(BareEvent.scene_changed, this.OnSceneChanged.bind(this));
     }

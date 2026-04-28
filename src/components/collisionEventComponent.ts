@@ -1,5 +1,6 @@
-import { BaseComponent, GameObject, componentController } from "../exports";
-import { Scene } from "../main";
+import { BaseComponent, componentController } from "../controllers/componentController";
+import { GameObject } from "../objects/gameObject";
+import type { Scene } from "../scenes/scene";
 import { InspectorButton } from "../utils/decorators";
 
 export class CollisionEventComponent extends BaseComponent

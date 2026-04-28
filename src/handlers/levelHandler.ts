@@ -1,5 +1,5 @@
 
-import { BareEngine } from "../bareEngine";
+import { RegisterController } from "../globals";
 import { objectController } from "../controllers/objectController";
 import { sceneController } from "../controllers/sceneController";
 import { PivotComponent } from "../editorComponents/pivotComponent";
@@ -7,14 +7,15 @@ import { PivotRemoveComponent } from "../editorComponents/pivotRemoveComponent";
 import { PositionPivotComponent } from "../editorComponents/positionPivotComponent";
 import { ResizableComponent } from "../editorComponents/resizableComponent";
 import { ResizableRemoveComponent } from "../editorComponents/resizableRemoveComponent";
-import { Hitbox } from "../exports";
+import { GameMode } from "../globals";
 import { Color, Texture, Vec2 } from "../libraries/rapid-render";
-import { GameMode, MakePathForEntity, Scene } from "../main";
+import { Hitbox } from "../types/hitbox";
 import { GameObject } from "../objects/gameObject";
-import { EditorUIScene } from "../scenes/editorUIScene";
+import { Scene } from "../scenes/scene";
 import { defaultSettingsData } from "../types/bareData";
 import { BareEvent, BareEventPayload, Component, ConstructEntityOptions, Entity, entityVars, LevelData, SaveData, Scalar, SettingsData } from '../types/bareTypes';
 import { Helper } from "../utils/helper";
+import { MakePathForEntity } from "../globals";
 import { assetsHandler } from "./assetsHandler";
 
 export class LevelHandler
@@ -32,10 +33,6 @@ export class LevelHandler
 
         defaultSettingsData.saveVars.GameObject.push("save");
 
-        if (__DEV__)
-            if (!globalThis.plugin) // ONLY SHOW IF NO PLUGIN EXISTS, ELSE USER CAN PRESS BUTTON IN PLUGIN
-                LevelHandler.EnsureEditorSceneRegistered();
-		
         this.scene.events.on(BareEvent.game_objectAdded, this.OnGameObjectAdded.bind(this));
     }
 
@@ -836,11 +833,11 @@ export class LevelHandler
 
             LevelHandler.editorUISceneRequested = true;
 
-            //const { EditorScene } = await import("../scenes/editorScene");
+            const { EditorUIScene } = await import("../scenes/editorUIScene");
             sceneController.Add(EditorUIScene);
         }
     }
 }
 
 export var levelHandler:LevelHandler;
-BareEngine.RegisterController(LevelHandler);
+RegisterController(LevelHandler);

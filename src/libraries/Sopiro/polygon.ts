@@ -1,4 +1,4 @@
-import { Scene } from "../../exports";
+import type { Scene } from "../../scenes/scene";
 import { Vec2 } from "../rapid-render";
 import { RigidBody, Type } from "./rigidbody";
 import { Settings } from "./settings";

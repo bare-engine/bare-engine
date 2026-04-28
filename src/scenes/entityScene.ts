@@ -1,7 +1,13 @@
-import { assetsHandler, cameraHandler, Color, EditorScene, LevelData, PhysicsObjectBare, RenderTexture, SettingsData, SettingsHandler, TextObject, Vec2 } from "../exports";
+import { cameraHandler } from "../handlers/cameraHandler";
+import { assetsHandler } from "../handlers/assetsHandler";
+import { SettingsHandler } from "../handlers/settingsHandler";
+import { Color, RenderTexture, Vec2 } from "../libraries/rapid-render";
+import { TextObject } from "../objects/textObject";
+import { PhysicsObjectBare } from "../objects/physicsObjectBare";
+import { EditorScene } from "./editorScene";
 import { levelHandler } from "../handlers/levelHandler";
-import { MakePathForEntity } from "../main";
-import { AwakePayload, Entity, entityVars, Rectangle, Size } from "../types/bareTypes";
+import { AwakePayload, Entity, entityVars, LevelData, Rectangle, SettingsData, Size } from "../types/bareTypes";
+import { MakePathForEntity } from "../globals";
 
 type EditorScenePayload = AwakePayload<EditorScene>;
 type EntitySceneAwakePayload = EditorScenePayload & {

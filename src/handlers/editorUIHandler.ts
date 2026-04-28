@@ -1,11 +1,11 @@
 import { Entity, LayerInfo, SettingsData, BareEvent, SaveData, Category } from '../types/bareTypes';
 import { assetsHandler } from "./assetsHandler";
-import { MakePath, MakePathForEntity } from "../main";
 import { FlashShader } from "../shaders/flashShader";
 import { TweenTo } from "../controllers/tweenController";
 import { EditorScene } from '../scenes/editorScene';
 import { objectController } from '../controllers/objectController';
-import { Color, RenderTexture } from '../exports';
+import { Color, RenderTexture } from '../libraries/rapid-render';
+import { MakePath, MakePathForEntity } from '../globals';
 
 /*
     BUILD SETUP/CONTROLS UI

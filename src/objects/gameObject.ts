@@ -2,9 +2,10 @@ import { assetsHandler } from "../handlers/assetsHandler";
 import { Hitbox } from '../types/hitbox';
 import { Entity, GameObjectClass } from '../types/bareTypes';
 import { Helper } from '../utils/helper';
-import { MakePath, MakePathForEntity, Scene } from '../main';
 import { Vec2, Texture, Color, GLShader, Uniform, MaskType, MatrixStack } from "../libraries/rapid-render";
+import type { Scene } from "../scenes/scene";
 import type { Component, Ctor, Rectangle } from "../types/bareTypes";
+import { MakePath, MakePathForEntity } from '../globals';
 
 export class Transform {
     position = new Vec2();

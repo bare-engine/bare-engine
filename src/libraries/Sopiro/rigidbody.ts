@@ -5,7 +5,8 @@ import * as Util from "./util";
 import { Node } from "./aabbtree";
 import { GameObject } from "../../objects/gameObject";
 import { Matrix3 } from "./math";
-import { globalEvents, Scene } from "../../main";
+import { globalEvents } from "../../globals";
+import type { Scene } from "../../scenes/scene";
 import { BareEvent } from '../../types/bareTypes';
 
 export enum Type

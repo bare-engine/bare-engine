@@ -1,12 +1,15 @@
-import { Box, Circle, Polygon, World } from "../exports/sopiroPhysics";
+import { Box } from "../libraries/Sopiro/box";
+import { Circle } from "../libraries/Sopiro/circle";
+import { Polygon } from "../libraries/Sopiro/polygon";
 import { RigidBody } from "../libraries/Sopiro/rigidbody";
 import { Settings } from "../libraries/Sopiro/settings";
+import { World } from "../libraries/Sopiro/world";
 import { PhysicsControllerBase } from "./physicsControllerBase";
-import { Scene } from "../main";
+import type { Scene } from "../scenes/scene";
 import * as Util from "../libraries/Sopiro/util";
 import { BareEvent } from "../types/bareTypes";
-import { BareEngine } from "../bareEngine";
-import { GameObject } from "../exports";
+import { GameObject } from "../objects/gameObject";
+import { RegisterController } from "../globals";
 
 export class PhysicsControllerSopiro extends PhysicsControllerBase
 {
@@ -162,4 +165,4 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 }
 
 export var physicsControllerSopiro:PhysicsControllerSopiro;
-BareEngine.RegisterController(PhysicsControllerSopiro);
+RegisterController(PhysicsControllerSopiro);

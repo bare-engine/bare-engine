@@ -1,5 +1,9 @@
-import { BaseComponent, ParticleEmitter, assetsHandler, IParticleOptions, Vec2, ParticleShape, Color, particleController, GameObject } from "../exports";
-import { Scene } from "../main";
+import { BaseComponent } from "../controllers/componentController";
+import { particleController } from "../controllers/particleController";
+import { assetsHandler } from "../handlers/assetsHandler";
+import { Color, IParticleOptions, ParticleEmitter, ParticleShape, Vec2 } from "../libraries/rapid-render";
+import { GameObject } from "../objects/gameObject";
+import type { Scene } from "../scenes/scene";
 import { InspectorButton } from "../utils/decorators";
 
 export class ParticleComponent extends BaseComponent

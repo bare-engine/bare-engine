@@ -1,10 +1,10 @@
-import { BareEngine } from "../bareEngine";
 import { Vec2 } from "../libraries/rapid-render";
-import { Scene } from "../main";
 import { GameObject } from "../objects/gameObject";
+import type { Scene } from "../scenes/scene";
 import { BareEvent, BareEventPayload, CollisionHandlingType, HitboxType } from '../types/bareTypes';
 import { Hitbox } from "../types/hitbox";
 import { Helper } from "../utils/helper";
+import { RegisterController } from "../globals";
 import { mouseController } from "./mouseController";
 
 type AnyPress = (go: any, ...args: any[]) => any;
@@ -426,4 +426,4 @@ export class HitboxController
 }
 
 export var hitboxController:HitboxController;
-BareEngine.RegisterController(HitboxController);
+RegisterController(HitboxController);

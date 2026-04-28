@@ -1,6 +1,8 @@
-import { GameObject, tweenController } from "../exports";
+import { tweenController } from "../controllers/tweenController";
 import { EventArgs } from "../libraries/mitt";
-import { Scene, globalEvents } from "../main";
+import { globalEvents } from "../globals";
+import { GameObject } from "../objects/gameObject";
+import { Scene } from "../scenes/scene";
 import { UIScene } from "../scenes/uiScene";
 import { AwakePayload, BareEvent, Events, SceneClass } from "../types/bareTypes";
 

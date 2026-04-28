@@ -1,4 +1,4 @@
-import { GameMode } from "../main";
+import { GameMode } from "../globals";
 
 const BUTTON_METADATA_KEY = "__editorButtons__";
 const RUN_MODES_KEY = "__runModes__";

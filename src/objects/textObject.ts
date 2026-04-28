@@ -1,4 +1,5 @@
-import { BareText, ITextTextureOptions, Vec2 } from "../exports";
+import { ITextTextureOptions, Vec2 } from "../libraries/rapid-render";
+import { BareText } from "../libraries/rapid-render/texture";
 import { Scene } from "../scenes/scene";
 import { GameObject } from "./gameObject";
 

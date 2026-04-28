@@ -1,7 +1,8 @@
 import { Texture, Vec2 } from "../libraries/rapid-render";
-import { MakePathForEntity, Scene } from "../main";
 import { BlockedState, ConstructEntityOptions, Entity, HitboxType, Rectangle, Rectangle2Vec } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
+import type { Scene } from "../scenes/scene";
+import { MakePathForEntity } from "../globals";
 import { GameObject } from "./gameObject";
 
 export class PhysicsObjectBare extends GameObject

@@ -5,7 +5,7 @@ import * as Util from "./util";
 import { Settings } from "./settings";
 import { Entity } from "../../types/bareTypes";
 import { GameObject } from "../../objects/gameObject";
-import { Scene } from "../../exports";
+import type { Scene } from "../../scenes/scene";
 
 export class Box extends Polygon
 {

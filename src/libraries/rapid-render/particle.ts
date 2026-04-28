@@ -1,4 +1,4 @@
-import { GameObject } from "../../exports";
+import { GameObject } from "../../objects/gameObject";
 import { IParticleOptions, ITransformOptions, ParticleAttribute, ParticleAttributeData, ParticleAttributeTypes, ParticleShape } from "./interface";
 import { Color, Vec2 } from "./math";
 import { Texture } from "./texture";

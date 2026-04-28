@@ -1,5 +1,5 @@
 import { BareEvent } from '../types/bareTypes';
-import { globalEvents } from "../main";
+import { globalEvents } from "../globals";
 
 export class KeyboardController
 {

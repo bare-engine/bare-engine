@@ -1,5 +1,5 @@
 
-import { Scene } from "../../exports";
+import type { Scene } from "../../scenes/scene";
 import { GameObject } from "../../objects/gameObject";
 import { Entity } from "../../types/bareTypes";
 import { RigidBody, Type } from "./rigidbody";

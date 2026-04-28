@@ -1,14 +1,17 @@
 import { keyboardController } from "../controllers/keyboardController";
-import { CameraHandler, cameraHandler, componentController, defaultEntityData, LevelHandler, levelHandler, MouseController, objectController, Scene, sceneController } from "../exports";
+import { sceneController } from "../controllers/sceneController";
+import { GameMode, globalEvents } from "../globals";
 import { Color, Vec2 } from "../libraries/rapid-render";
-import { GameMode, globalEvents } from "../main";
 import { GameObject } from "../objects/gameObject";
+import { PhysicsObjectBare } from "../objects/physicsObjectBare";
 import { EditorScene } from "../scenes/editorScene";
 import { EntityScene } from "../scenes/entityScene";
+import { Scene } from "../scenes/scene";
 import { OutlineShader } from "../shaders/outlineShader";
-import { BareEvent, BareEventPayload, Entity, LevelData, SaveData, Scalar, SettingsData } from "../types/bareTypes";
-import { Helper } from "../utils/helper";
+import { defaultSettingsData as defaultEntityData } from "../types/bareData";
+import { BareEvent, Entity, LevelData, SaveData, Scalar, SettingsData } from "../types/bareTypes";
 import { getButtons } from "../utils/decorators";
+import { Helper } from "../utils/helper";
 import { SaveDataHandler } from "./SaveDataHandler";
 
 // THIS PLUGIN CODE DOES NOT GET INCLUDED IN PRODUCTION
@@ -20,6 +23,10 @@ declare global {
 }
 
 window.__GAME_DEBUG_API__ = {
+    setPluginConnected(connected: boolean) {
+        plugin.isPluginConnected = connected;
+        trace("setPluginConnected", connected);
+    },
   clickedComponentButton(uid: string, compName: string, methodName: string)
   {
         const scene = plugin.GetCurrentScene();
@@ -888,11 +895,13 @@ window.__GAME_DEBUG_API__ = {
 
 export class PluginHandler
 {
+    public isPluginConnected: boolean = false;
+
     public outlineShader;
     
     debugActions: Array<{label?: string, callback?: () => void}> = [];
     movingObj: GameObject;
-    movingObjData: { obj: GameObject; offset: Vec2; hasMovedAwayEnough: boolean };
+    draggedObjData: { obj: GameObject; offset: Vec2; hasMovedAwayEnough: boolean };
     doNotifyAfterSave: boolean = true;
     currentSceneClassString: string = "";
 
@@ -978,15 +987,15 @@ export class PluginHandler
               var mouseWorldAtClick = obj.scene.ScreenToWorldPos(new Vec2(ev.clientX, ev.clientY));
               var mouseLocalAtClick = obj.parent ? obj.parent.ToLocal(mouseWorldAtClick) : mouseWorldAtClick;
 
-              this.movingObjData = {
+              this.draggedObjData = {
                   obj,
                   offset: obj.position.subtract(mouseLocalAtClick),
                   hasMovedAwayEnough: false
               };
 
-              const pointerMoveBound = this.PointerMove.bind(this);
-              obj.scene.events.on(BareEvent.pointer_move, pointerMoveBound);
-              obj.scene.events.once(BareEvent.pointer_up, () => obj.scene.events.off(BareEvent.pointer_move, pointerMoveBound));
+              const updateDraggedObjectBound = this.UpdateDraggedObject.bind(this);
+              obj.scene.events.on(BareEvent.scene_update, updateDraggedObjectBound);
+              obj.scene.events.once(BareEvent.pointer_up, () => obj.scene.events.off(BareEvent.scene_update, updateDraggedObjectBound));
           }
       }
 
@@ -994,20 +1003,24 @@ export class PluginHandler
       return false;
   };
     
-    private PointerMove({ mouseX, mouseY, event }: BareEventPayload['pointer_move']): void
+    private UpdateDraggedObject(): void
     {
-        var data = this.movingObjData;
+        var data = this.draggedObjData;
+
+        var scene = this.GetCurrentScene();
+        var mouseX = scene.mouseController.screen.position.x;
+        var mouseY = scene.mouseController.screen.position.y;
 
         //mouseX = data.obj.scene.mouseController.screen.position.x;
         //mouseY = data.obj.scene.mouseController.screen.position.y;
 
-        if (!this.movingObjData.hasMovedAwayEnough)
+        if (!this.draggedObjData.hasMovedAwayEnough)
         {
             var mouseScreen = data.obj.scene.mouseController.screen;
             var dist = Helper.Distance(mouseScreen.position, mouseScreen.positionOnDown);
             if (dist > 10)
             {
-                this.movingObjData.hasMovedAwayEnough = true;
+                this.draggedObjData.hasMovedAwayEnough = true;
                 //this.movingObjData.offset = this.movingObjData.obj.position.subtract(mouseController.worldMouse);
             }
             else
@@ -1019,6 +1032,9 @@ export class PluginHandler
         var worldPos = data.obj.scene.ScreenToWorldPos(new Vec2(mouseX, mouseY));
         var ref = data.obj.parent ? data.obj.parent.ToLocal(worldPos) : worldPos;
         data.obj.SetPosition(ref.x + data.offset.x, ref.y + data.offset.y);
+        
+        if (data.obj instanceof PhysicsObjectBare)
+            data.obj.ResetVelocity();
 
         //var worldPos = data.obj.scene.ScreenToWorldPos(new Vec2(mouseX, mouseY));
         //data.obj.SetPosition(worldPos.x + data.offset.x, worldPos.y + data.offset.y);

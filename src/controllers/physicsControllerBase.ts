@@ -1,4 +1,4 @@
-import { Scene } from "../main";
+import type { Scene } from "../scenes/scene";
 import { GameObject } from "../objects/gameObject";
 import { BareEvent, BareEventPayload, Size, SaveData } from '../types/bareTypes';
 

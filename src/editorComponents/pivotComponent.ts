@@ -6,9 +6,12 @@ import { Entity } from "../types/bareTypes";
 import { keyboardController } from "../controllers/keyboardController";
 import { hitboxController } from "../controllers/hitboxController";
 import { mouseController } from "../controllers/mouseController";
-import { PhysicsObjectBare } from "../exports/barePhysics";
+import { PhysicsObjectBare } from "../objects/physicsObjectBare";
 import { objectController } from "../controllers/objectController";
-import { Color, GameMode, Run, Scene } from "../exports";
+import { GameMode } from "../globals";
+import { Color } from "../libraries/rapid-render";
+import { Scene } from "../scenes/scene";
+import { Run } from "../utils/decorators";
 
 @Run(GameMode.Editor)
 export class PivotComponent extends BaseComponent

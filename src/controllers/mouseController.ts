@@ -1,8 +1,8 @@
-import { BareEngine } from '../bareEngine';
 import { Vec2 } from "../libraries/rapid-render";
 import { Scene } from '../scenes/scene';
 import { BareEvent, BareEventPayload } from '../types/bareTypes';
 import { Helper } from "../utils/helper";
+import { RegisterController } from '../globals';
 
 type MouseSpace = {
     position: Vec2;
@@ -212,4 +212,4 @@ export class MouseController
 }
 
 export var mouseController:MouseController;
-BareEngine.RegisterController(MouseController);
+RegisterController(MouseController);

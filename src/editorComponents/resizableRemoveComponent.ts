@@ -1,8 +1,10 @@
 import { BaseComponent, componentController } from '../controllers/componentController';
 import { mouseController } from '../controllers/mouseController';
 import { objectController } from '../controllers/objectController';
-import { GameMode, PhysicsObjectBare, Run } from '../exports';
+import { GameMode } from '../globals';
 import { GameObject } from '../objects/gameObject';
+import { PhysicsObjectBare } from '../objects/physicsObjectBare';
+import { Run } from '../utils/decorators';
 import { Helper } from '../utils/helper';
 import { PivotComponent } from './pivotComponent';
 

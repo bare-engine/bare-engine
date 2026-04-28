@@ -1,11 +1,13 @@
 import { sceneController } from "./controllers/sceneController";
-import { ICircleRenderOptions, IGraphicRenderOptions, IRectRenderOptions, IRenderLineOptions, ISpriteRenderOptions, TextureCache } from "./exports";
 import { assetsHandler } from "./handlers/assetsHandler";
 import { PoolHandler } from "./handlers/poolHandler";
+import { controllerNames, GameMode, globalEvents, RegisterController, SetControllerReferencesOnScene } from "./globals";
 import { EventArgs } from "./libraries/mitt";
-import { GameMode, globalEvents, Scene } from "./main";
+import { ICircleRenderOptions, IGraphicRenderOptions, IRectRenderOptions, IRenderLineOptions, ISpriteRenderOptions, TextureCache } from "./libraries/rapid-render";
 import { GameObject } from "./objects/gameObject";
+import type { Scene } from "./scenes/scene";
 import { BareEvent, BareOptions, Events, GameObjectClass, SceneClass } from "./types/bareTypes";
+import { PluginHandler } from "./exports";
 
 export class BareEngine
 {
@@ -19,7 +21,7 @@ export class BareEngine
     public count: int = 0;
 
     public fixedTimestep: number = 1 / 60;
-    public maxDeltaTime: number = 1 / 15; // CAPS FRAME DELTA AFTER LAG OR TAB REFOCUS
+    public maxDeltaTime: number = 1 / 15; // CAPS FRAME DELTA, USEFUL AFTER LAG OR TAB REFOCUS
     private accumulator: number = 0;
     
     private RunMainLoopBound: () => void;
@@ -60,11 +62,11 @@ export class BareEngine
 
     constructor(sceneClass: SceneClass, options?: BareOptions)
     {
-        this.Start(sceneClass, options);
+        this.Init(sceneClass, options);
     }
 
     // SEPARATE METHOD TO MAKE ASYNC
-    async Start(sceneClass: SceneClass, options?: BareOptions) 
+    async Init(sceneClass: SceneClass, options?: BareOptions) 
     {
         if (options?.fixedTimestep)
             this.fixedTimestep = options.fixedTimestep;
@@ -77,7 +79,7 @@ export class BareEngine
         // DOWNSIDE IS THAT IT'S NOT PART OF THE ATLAS GENERATED FROM INITIAL TEXTURES (texturePackImages)
         // SO YOU GET EXTRA DRAW CALL(S)
         // YOU COULD ADD AN IMAGE IN THE texturePackImages FOLDER NAMED whitePixel AND IT WILL OVERRIDE THIS
-        // BUT IF ANTI-ALIAS IS ON, THAT TEXTURE USES LINEAR FILTERING, SO STRETCHING THAT PIXEL IS NOT GREAT AND GETS KINDA BLURRY
+        // BUT IF ANTI-ALIAS IS ON, THAT TEXTURE USES LINEAR FILTERING, SO STRETCHING THAT PIXEL IS NOT GREAT AND GETS BLURRY
         
         this.ImplementInitialTextures();
         this.ResizeCanvas(options?.width, options?.height);
@@ -86,13 +88,13 @@ export class BareEngine
         
         bareEngine.RegisterGameObjectPool(GameObject, options?.gameObjectPoolSize);
 
-        //rapid.backgroundColor = Color.White;
-        
         globalEvents.emit(BareEvent.game_awake);
 
         var scene = await sceneController.Goto(sceneClass);
 
         this.dummyGameObject = new GameObject(scene); // TOO LATE IF USER WANTS TO USE IT IN sceneClass, BUT FINE FOR MY CURRENT USAGE
+        
+        PluginHandler;
         
         if (!(options?.width && options?.height))
             window.addEventListener('resize', ()=>this.ResizeCanvas());
@@ -323,6 +325,8 @@ export class BareEngine
         return onEditor;
     }
 
+
+
     Restart(): void
     {
         globalEvents.emit(BareEvent.game_completeClear);
@@ -377,27 +381,15 @@ export class BareEngine
 
 
     
-    public static controllerNames: string[] = [];
+    public static controllerNames = controllerNames;
     
     static RegisterController(controllerClass: new (...args: any[]) => any): void
     {
-        var name = (controllerClass as any).name;
-        
-        name = controllerClass.name.replace(/^_/, ''); //REMOVE LEADING _
-        const controllerName = name.charAt(0).toLowerCase() + name.slice(1); // LOWERCASE FIRST LETTER
-
-        const classKey = controllerName + "Class";
-        (globalThis as any)[classKey] = controllerClass;
-
-        this.controllerNames.push(controllerName);
+        RegisterController(controllerClass);
     }
 
     static SetControllerReferencesOnScene(scene:Scene)
     {
-        for (const controllerName of this.controllerNames)
-        {
-            // THIS WILL INSTANTIATE THE CONTROLLER ON THE SCENE, IF THE CONTROLLER REFERENCE EXSIST
-            scene.CreateClassIfNotExist(controllerName, scene);
-        }
+        SetControllerReferencesOnScene(scene);
     }
 }

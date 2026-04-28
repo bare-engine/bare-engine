@@ -1,9 +1,9 @@
-import { PhysicsObjectBare } from "../exports/barePhysics";
 import { BaseComponent } from "../controllers/componentController";
 import { hitboxController } from "../controllers/hitboxController";
 import { mouseController } from "../controllers/mouseController";
 import { GameObject } from "../objects/gameObject";
 import { objectController } from "../controllers/objectController";
+import { PhysicsObjectBare } from "../objects/physicsObjectBare";
 import { Scene } from "../scenes/scene";
 
 export class PositionPivotComponent extends BaseComponent

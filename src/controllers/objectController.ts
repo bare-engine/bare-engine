@@ -1,6 +1,6 @@
 import { GameObject } from "../objects/gameObject";
-import { BareEngine } from "../bareEngine";
 import { Scene } from "../scenes/scene";
+import { RegisterController } from "../globals";
 
 export class ObjectController
 {
@@ -347,4 +347,4 @@ export class ObjectController
 }
 
 export var objectController:ObjectController;
-BareEngine.RegisterController(ObjectController);
+RegisterController(ObjectController);

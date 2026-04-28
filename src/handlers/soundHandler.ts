@@ -1,7 +1,7 @@
 import { Howl, HowlOptions, Howler } from '../libraries/howler/howler.core.js';
 import { SaveData, BareEvent } from '../types/bareTypes';
 import { Helper } from '../utils/helper';
-import { globalEvents } from '../main';
+import { globalEvents } from '../globals';
 
 class SoundHandler
 {

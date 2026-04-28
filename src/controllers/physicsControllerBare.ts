@@ -1,10 +1,10 @@
-import { BareEngine } from "../bareEngine";
-import { HitboxType } from "../exports";
+import { HitboxType } from "../types/bareTypes";
 import { Vec2 } from "../libraries/rapid-render";
-import { Scene } from "../main";
+import type { Scene } from "../scenes/scene";
 import { GameObject } from "../objects/gameObject";
 import { PhysicsObjectBare } from "../objects/physicsObjectBare";
 import { BareEvent, BlockedState } from "../types/bareTypes";
+import { RegisterController } from "../globals";
 import { PhysicsControllerBase } from "./physicsControllerBase";
 
 export class PhysicsControllerBare extends PhysicsControllerBase
@@ -800,4 +800,4 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 }
 
 export var physicsControllerBare:PhysicsControllerBare;
-BareEngine.RegisterController(PhysicsControllerBare);
+RegisterController(PhysicsControllerBare);

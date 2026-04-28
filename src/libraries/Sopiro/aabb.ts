@@ -3,7 +3,7 @@ import { Circle } from "./circle";
 import { Vec2 } from "../rapid-render";
 import { Polygon } from "./polygon";
 import { RigidBody } from "./rigidbody";
-import { Scene } from "../../exports";
+import type { Scene } from "../../scenes/scene";
 
 export class AABB
 {

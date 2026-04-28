@@ -12,7 +12,7 @@ import { Vec2 } from "../rapid-render";
 import { getCollisionPairsNSquared } from "./nsquared";
 import { Renderer } from "./renderer";
 import { Color } from "../rapid-render";
-import { Scene } from "../../exports";
+import type { Scene } from "../../scenes/scene";
 
 type Registrable = RigidBody | Joint;
 

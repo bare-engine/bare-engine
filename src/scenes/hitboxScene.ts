@@ -1,7 +1,11 @@
-import { MakePathForEntity } from "src/main";
-import { assetsHandler, EditorScene, Helper, LevelData, MakePath, PhysicsObjectBare, SettingsData, SettingsHandler } from "../exports";
+import { assetsHandler } from "../handlers/assetsHandler";
+import { SettingsHandler } from "../handlers/settingsHandler";
 import { levelHandler } from "../handlers/levelHandler";
-import { AwakePayload } from "../types/bareTypes";
+import { PhysicsObjectBare } from "../objects/physicsObjectBare";
+import { AwakePayload, LevelData, SettingsData } from "../types/bareTypes";
+import { Helper } from "../utils/helper";
+import { MakePath, MakePathForEntity } from "../globals";
+import { EditorScene } from "./editorScene";
 
 type EditorScenePayload = AwakePayload<EditorScene>;
 type HitboxSceneAwakePayload = EditorScenePayload & {

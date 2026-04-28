@@ -1,4 +1,4 @@
-import { globalEvents } from "../main";
+import { globalEvents } from "../globals";
 import { SaveData, BareEvent } from '../types/bareTypes';
 export class SaveDataHandler
 {
