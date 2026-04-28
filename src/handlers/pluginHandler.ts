@@ -26,8 +26,7 @@ declare global {
 window.__GAME_DEBUG_API__ = {
     setPluginConnected(connected: boolean) {
         if (connected)
-        plugin.isPluginConnected = connected;
-        trace("setPluginConnected", connected);
+            plugin.isPluginConnected = connected;
 
         if (__DEV__)
         if (connected)
