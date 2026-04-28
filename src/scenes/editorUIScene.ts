@@ -1,8 +1,10 @@
 import { sceneController } from "../controllers/sceneController";
 import { Button } from "../objects/button";
-import { BareEvent, SaveData } from "../types/bareTypes";
+import { BareEvent, Position, SaveData } from "../types/bareTypes";
 import { EditorScene } from "./editorScene";
 import { Scene } from "./scene";
+
+export type EditorUIScenePayload = { openEditorButtonPosition: Position }
 
 export class EditorUIScene extends Scene
 {
@@ -13,12 +15,11 @@ export class EditorUIScene extends Scene
         super({UI: true, resize: true, ignored: true, persistent: true});
     }
 
-    OnStart(payload?: any): void | Promise<void>
+    OnStart(payload?: EditorUIScenePayload): void | Promise<void>
     {
         var position = payload.openEditorButtonPosition;
 
         this.editorButton = new Button(this, {text: "Open Editor", OnPress: this.OnClickEditorButton.bind(this)});
-        //this.editorButton.alpha = .75;
         this.AddGameObject(this.editorButton);
 
         this.editorButton.SetPivot(position.x, position.y);

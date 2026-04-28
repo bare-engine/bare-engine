@@ -18,7 +18,8 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
         premultipliedAlpha: true,
         gameObjectPoolSize: 50,
         imagePath: '',
-        levelPath: ''
+        levelPath: '',
+        editorButtonPosition: {x: 0, y: 0}
     }, ...options };
 
     window.initialAssetsReady = (assets = []) => {

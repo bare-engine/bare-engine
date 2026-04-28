@@ -6,6 +6,7 @@ import { BareText } from "../libraries/rapid-render/texture";
 import { GameObject } from "./gameObject";
 
 interface TextOptions extends ITextTextureOptions, ButtonHandlers<Button> {
+    buttonColor?: Color;
     marge?: number;
 }
 
@@ -13,6 +14,7 @@ export class Button extends GameObject
 {
     text: BareText;
     marge: number;
+    buttonColor: Color;
 
     constructor(scene: Scene, textOptions: TextOptions | string)
     {
@@ -21,8 +23,9 @@ export class Button extends GameObject
         const options: TextOptions = (typeof textOptions === "string") ? { text: textOptions } : textOptions;
 
         this.name = options.text;
-
         this.marge = options.marge || 10;
+        this.buttonColor = options.buttonColor || Color.fromHex('#242428eb');
+        
         this.text = new BareText({text: options.text, fontSize: 22, fontFamily: 'monospace', color: '#fff'});
         
         scene.hitboxController.AssignButton(this, options);
@@ -30,8 +33,8 @@ export class Button extends GameObject
 
     override RenderTransformed(inheritedColor?: Color): void
     {
-        const buttonColor = Color.fromHex('#014f00'); // MAKE CUSTOMIZEABLE - TODO
-        buttonColor.a = inheritedColor?.a ?? buttonColor.a;
+        const buttonColor = this.buttonColor;
+        buttonColor.a = this.buttonColor.a * ((inheritedColor?.a ?? 255)/255);
 
         bare.renderRect({ 
             position: new Vec2(-this.pivot.x, -this.pivot.y), 
