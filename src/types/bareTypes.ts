@@ -197,7 +197,8 @@ export interface LevelData
 export interface Category
 {
   image?: string;
-  entries: Array<string> | string;
+  expanded?: boolean;
+  entries?: Array<string> | string;
 }
 
 interface AnimationDataInfo

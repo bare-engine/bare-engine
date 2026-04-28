@@ -107,14 +107,17 @@ export class EditorUIHandler {
         {
             categoriesFinal[categoryName] = categoryData;
 
-            for (const entityName of categoryData.entries)
+            if (categoryData.entries)
             {
-                var i = allEntityNames.indexOf(entityName);
-                if (i != -1)
-                    allEntityNames.splice(i, 1);
+                for (const entityName of categoryData.entries)
+                {
+                    var i = allEntityNames.indexOf(entityName);
+                    if (i != -1)
+                        allEntityNames.splice(i, 1);
+                }
             }
         }
-        categoriesFinal["Uncategorized"] = {entries: allEntityNames};
+        categoriesFinal["uncategorized"] = {...data.categories.uncategorized, entries: allEntityNames};
 
         // Process each category
         for (const [categoryName, categoryData] of Object.entries(categoriesFinal))
@@ -351,12 +354,16 @@ export class EditorUIHandler {
             
             categoryElement.appendChild(categoryHeader);
             categoryElement.appendChild(childrenContainer);
+
+            if (categoryData.expanded === true)
+                categoryElement.classList.add('expanded');
+
             sidebarContent.appendChild(categoryElement);
         }
 
         // IF ONLY 1 CATEGORY, EXPAND IT
         if (sidebarContent.children.length === 1)
-            (sidebarContent.children[0] as HTMLElement).click();
+            (sidebarContent.children[0] as HTMLElement).classList.add('expanded');
     }
 
     public PopulateLayers(data: SettingsData): void {
