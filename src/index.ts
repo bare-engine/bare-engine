@@ -91,6 +91,7 @@ export type {
   Position,
   Rectangle,
   Rectangle2Vec,
+  SceneClass,
   SceneI,
   SettingsData,
   Size,
