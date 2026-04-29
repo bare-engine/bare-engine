@@ -444,8 +444,8 @@ export type AwakePayload<T> = T extends { OnAwake: (payload: infer P) => any } ?
 // CLASSES ARE NOT REALLY TYPES, BUT OK
 export class AnimationData
 {
-  animName: string;
-  animFrames: string[];
+  name: string;
+  frames: string[];
   framesPerSecond: number;
   loop: boolean;
 
@@ -456,14 +456,14 @@ export class AnimationData
 
   constructor(animName: string, animFrames: string[], framesPerSecond: number, loop: boolean)
   {
-    this.animName = animName;
-    this.animFrames = animFrames;
+    this.name = animName;
+    this.frames = animFrames;
     this.framesPerSecond = framesPerSecond;
     this.loop = loop;
   }
   
   clone(): AnimationData {                  // NOT CLONING THE FRAMES, ASSUMED TO STAY UNTOUCHED
-    return new AnimationData(this.animName, this.animFrames, this.framesPerSecond, this.loop);
+    return new AnimationData(this.name, this.frames, this.framesPerSecond, this.loop);
   }
 }
 

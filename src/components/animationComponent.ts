@@ -2,6 +2,7 @@ import { BaseComponent } from "../controllers/componentController";
 import { assetsHandler } from "../handlers/assetsHandler";
 import mitt, { Emitter } from "../libraries/mitt";
 import { AnimationData } from "../types/bareTypes";
+import { InspectorButton, InspectorField, InspectorFieldType, Locked } from "../utils/decorators";
 
 // THIS COMPONENT JUST HANDLES PLAYING/PAUSING OF ANIMATIONS
 // THERE IS NO METHOD TO REGISTER ANIMATIONS HERE, THAT HAPPENS AUTOMATICALLY WHEN YOU SUFFIX YOUR IMAGE NAME WITH "_00", "_01", "_03"...
@@ -77,15 +78,48 @@ export class AnimationComponent extends BaseComponent
 
     events: Emitter<AnimationEventPayload>
 
+    allAnimationNamesForObject: string[] = [];
+
+    @InspectorField
+    playing = {
+        get: () => this.enabled,
+        set: (playing:boolean) => playing ? this.Resume() : this.Pause()
+    };
+
+    @InspectorField(InspectorFieldType.DropDown)
+    current = {
+        get: () => this.currentAnimation?.name.replace(`${this.go.name}_`, "") ?? "",
+        set: (name: string) => this.Play(name),
+        values: () => this.allAnimationNamesForObject
+    };
+
+    @InspectorField
+    frame = {
+        get: () => this.currentAnimation?.currentFrame ?? 0,
+        set: (frame:int) => this.GotoFrame(frame % (this.currentAnimation?.frames.length ?? 0))
+    };
+
+    @InspectorField
+    framesPerSecond = {
+        get: () => this.currentAnimation?.framesPerSecond ?? 0,
+        set: (fps:int) => {if (this.currentAnimation) this.currentAnimation.framesPerSecond = fps}
+    };
+
     OnAdded(): void
     {
         this.events = mitt<AnimationEventPayload>();
+
+        var objName = this.go.name;
+        const prefix = `${objName}_`;
+        this.allAnimationNamesForObject = Object.keys(this.scene.settingsData.animations ?? {})
+            .filter(name => name.startsWith(prefix))
+            .map(name => name.slice(prefix.length));
     }
     
     OnStart(): void
     {
         // THIS HAPPENS AT START OF FIRST UPDATE, SO IF Play() HAS NOT BEEN CALLED YET, NO currentAnimation IS THERE
-        // SO WE JUST PLAY THE DEFAULT ANIMATION
+        // SO WE JUST PLAY THE DEFAULT ANIMATION - ONE THAT SHARES THE NAME WITH OBJECT
         if (!this.currentAnimation)
         {
             var animationName = this.go.name;
@@ -118,10 +152,10 @@ export class AnimationComponent extends BaseComponent
         if  (!animation.texturesLoaded)
         {
             var texturesToLoad: string[] = [];
-            for (var i = 0; i < animation.animFrames.length; i++)
+            for (var i = 0; i < animation.frames.length; i++)
             {
-                if (!assetsHandler.HasTexture(animation.animFrames[i]))
-                    texturesToLoad.push(animation.animFrames[i]);
+                if (!assetsHandler.HasTexture(animation.frames[i]))
+                    texturesToLoad.push(animation.frames[i]);
             }
             if (texturesToLoad.length > 0)
             {
@@ -138,7 +172,7 @@ export class AnimationComponent extends BaseComponent
 
         this.currentAnimation = animation.clone(); // CLONING IT, SO THAT WE MODIFY OUR OWN COPY
 
-        this.SetTextureToFrame(0);
+        this.GotoFrame(0);
 
         if (animationNameOrSingleCallback)
         {
@@ -154,6 +188,11 @@ export class AnimationComponent extends BaseComponent
     Pause(): void
     {
         this.enabled = false;
+    }
+
+    Resume(): void
+    {
+        this.enabled = true;
     }
 
     OnComplete(animationName: string, animationNameOrCallback: string | (() => void)): void
@@ -186,13 +225,13 @@ export class AnimationComponent extends BaseComponent
                 animation: this.currentAnimation 
             });
 
-            if (this.currentAnimation.currentFrame == this.currentAnimation.animFrames.length)
+            if (this.currentAnimation.currentFrame == this.currentAnimation.frames.length)
             {
                 this.OnAnimationComplete();
             }
             else
             {
-                this.SetTextureToFrame(this.currentAnimation.currentFrame);
+                this.GotoFrame(this.currentAnimation.currentFrame);
             }
         }
     }
@@ -202,7 +241,7 @@ export class AnimationComponent extends BaseComponent
         if (this.currentAnimation.loop)
         {
             this.currentAnimation.currentFrame = 0;
-            this.SetTextureToFrame(0);
+            this.GotoFrame(0);
             this.events.emit(AnimationEvent.looped, { animation: this.currentAnimation });
         }
         else
@@ -211,21 +250,27 @@ export class AnimationComponent extends BaseComponent
             this.events.emit(AnimationEvent.completed, { animation: this.currentAnimation });
         }
 
-        if (this.singleCallbacks.has(this.currentAnimation.animName))
+        if (this.singleCallbacks.has(this.currentAnimation.name))
         {
-            this.singleCallbacks.get(this.currentAnimation.animName)!(this);
-            this.singleCallbacks.delete(this.currentAnimation.animName);
+            this.singleCallbacks.get(this.currentAnimation.name)!(this);
+            this.singleCallbacks.delete(this.currentAnimation.name);
         }
 
-        if (this.callbacks.has(this.currentAnimation.animName))
+        if (this.callbacks.has(this.currentAnimation.name))
         {
-            this.callbacks.get(this.currentAnimation.animName)!(this);
+            this.callbacks.get(this.currentAnimation.name)!(this);
         }
     }
 
-    SetTextureToFrame(frame: int)
+    GotoFrame(frame: int)
     {
-        var texturePath = this.currentAnimation.animFrames[frame];
+        if (!this.currentAnimation)
+            return;
+
+        frame = Math.max(0, Math.min(frame, this.currentAnimation.frames.length - 1));
+        this.currentAnimation.currentFrame = frame;
+
+        var texturePath = this.currentAnimation.frames[frame];
         var texture = assetsHandler.GetTexture(texturePath);
         this.go.SetTexture(texture);
     }

@@ -1,6 +1,8 @@
 import { GameMode } from "../globals";
 
 const BUTTON_METADATA_KEY = "__editorButtons__";
+const FIELD_METADATA_KEY = "__editorFields__";
+const LOCKED_METADATA_KEY = "__lockedFields__";
 const RUN_MODES_KEY = "__runModes__";
 
 /**
@@ -24,6 +26,28 @@ export interface ButtonEntry
 {
     label: string;
     methodKey: string;
+    sourceKey?: string;
+}
+
+export enum InspectorFieldType
+{
+    Input = "input",
+    DropDown = "dropdown",
+}
+
+export interface FieldEntry
+{
+    name: string;
+    type: InspectorFieldType;
+}
+
+export interface InspectorFieldData
+{
+    name: string;
+    type: InspectorFieldType;
+    current: any;
+    values?: any[];
+    locked?: boolean;
 }
 
 export interface InspectorButtonOptions
@@ -42,6 +66,8 @@ function addButton(proto: object, name: string, options?: string | InspectorButt
     if (typeof options === "string")
     {
         label = options;
+        if (typeof (proto as any)[options] === "function")
+            methodKey = options;
     }
     else if (options)
     {
@@ -49,7 +75,14 @@ function addButton(proto: object, name: string, options?: string | InspectorButt
         label = options.label || methodKey;
     }
 
-    buttons.push({ label, methodKey });
+    const entry = { label, methodKey, sourceKey: name };
+    const sameSourceIndex = buttons.findIndex(button => (button.sourceKey ?? button.methodKey) === name);
+
+    if (sameSourceIndex === -1)
+        buttons.push(entry);
+    else
+        buttons.splice(sameSourceIndex, 0, entry);
+
     (proto as any)[BUTTON_METADATA_KEY] = buttons;
 }
 
@@ -60,14 +93,27 @@ function addButton(proto: object, name: string, options?: string | InspectorButt
  * @Button("Fire")                             — label = "Fire"
  * @Button({label: "Fire", OnClick: "Fire()"}) — label + explicit method
  */
-// @InspectorButton
-export function InspectorButton(target: any, propertyKey: string): void;
 // @InspectorButton("label")
 export function InspectorButton(label: string): (target: any, propertyKey: string) => void;
+// @InspectorButton("label", "method")
+export function InspectorButton(label: string, methodKey: string): (target: any, propertyKey: string) => void;
 // @InspectorButton({label: "Fire", OnClick: "Fire()"})
 export function InspectorButton(options: InspectorButtonOptions): (target: any, propertyKey: string) => void;
+// @InspectorButton
+export function InspectorButton(target: any, propertyKey: string): void;
 export function InspectorButton(targetOrOptions: any, propertyKey?: string): any
 {
+    if (typeof targetOrOptions === "string" && typeof propertyKey === "string")
+    {
+        const label = targetOrOptions;
+        const methodKey = propertyKey;
+
+        return function (target: any, key: string): void
+        {
+            addButton(target, key, { label, OnClick: methodKey });
+        };
+    }
+
     // @InspectorButton — bare, legacy decorator called with (target, propertyKey)
     if (typeof propertyKey === "string")
     {
@@ -84,11 +130,94 @@ export function InspectorButton(targetOrOptions: any, propertyKey?: string): any
 }
 
 /** Returns all editor buttons registered on the component class. */
-export function getButtons(componentClass: any): { label: string; callback: () => void }[]
+export function getButtons(componentClass: any): { label: string; methodKey: string; callback: () => void }[]
 {
     const entries: ButtonEntry[] = componentClass.prototype[BUTTON_METADATA_KEY] || [];
     return entries.map(e => ({
         label: e.label,
+        methodKey: e.methodKey,
         callback: () => componentClass.prototype[e.methodKey](),
     }));
+}
+
+function addField(proto: object, name: string, type: InspectorFieldType = InspectorFieldType.Input): void
+{
+    const fields: FieldEntry[] = (proto as any)[FIELD_METADATA_KEY] || [];
+    fields.push({ name, type });
+    (proto as any)[FIELD_METADATA_KEY] = fields;
+}
+
+// @InspectorField
+export function InspectorField(target: any, propertyKey: string): void;
+// @InspectorField(InspectorFieldType.DropDown)
+export function InspectorField(type: InspectorFieldType): (target: any, propertyKey: string) => void;
+export function InspectorField(targetOrType: any, propertyKey?: string): any
+{
+    if (typeof propertyKey === "string")
+    {
+        addField(targetOrType, propertyKey);
+        return;
+    }
+
+    const type = targetOrType as InspectorFieldType;
+    return function (target: any, key: string): void
+    {
+        addField(target, key, type);
+    };
+}
+
+export function Locked(target: any, propertyKey: string): void
+{
+    const lockedFields: string[] = target[LOCKED_METADATA_KEY] || [];
+    lockedFields.push(propertyKey);
+    target[LOCKED_METADATA_KEY] = lockedFields;
+}
+
+function getFieldValue(component: any, entry: FieldEntry): any
+{
+    const field = component[entry.name];
+    return typeof field === "function" ? field.call(component) : field;
+}
+
+/** Returns all editor fields registered on a component instance. */
+export function getInspectorFields(component: any): InspectorFieldData[]
+{
+    const entries: FieldEntry[] = component.constructor.prototype[FIELD_METADATA_KEY] || [];
+    const lockedFields: string[] = component.constructor.prototype[LOCKED_METADATA_KEY] || [];
+
+    return entries.map(entry =>
+    {
+        const value = getFieldValue(component, entry) || {};
+
+        return {
+            name: entry.name,
+            type: entry.type,
+            current: value.current ?? (typeof value.get === "function" ? value.get() : undefined),
+            values: typeof value.values === "function" ? value.values() : value.values,
+            locked: lockedFields.includes(entry.name),
+        };
+    });
+}
+
+export async function applyInspectorField(component: any, fieldName: string, value: any): Promise<boolean>
+{
+    const entries: FieldEntry[] = component.constructor.prototype[FIELD_METADATA_KEY] || [];
+    const entry = entries.find(e => e.name === fieldName);
+
+    if (!entry)
+        return false;
+
+    const lockedFields: string[] = component.constructor.prototype[LOCKED_METADATA_KEY] || [];
+    if (lockedFields.includes(fieldName))
+        return true;
+
+    const fieldValue = getFieldValue(component, entry) || {};
+    const setter = fieldValue.set || fieldValue.onChange;
+
+    if (setter)
+        await setter.call(component, value);
+    else
+        component[fieldName] = value;
+
+    return true;
 }

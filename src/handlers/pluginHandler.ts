@@ -11,7 +11,7 @@ import { Scene } from "../scenes/scene";
 import { OutlineShader } from "../shaders/outlineShader";
 import { defaultSettingsData as defaultEntityData } from "../types/bareData";
 import { BareEvent, Entity, LevelData, Position, SaveData, Scalar, SettingsData } from "../types/bareTypes";
-import { getButtons } from "../utils/decorators";
+import { applyInspectorField, getButtons, getInspectorFields } from "../utils/decorators";
 import { Helper } from "../utils/helper";
 import { SaveDataHandler } from "./SaveDataHandler";
 
@@ -240,12 +240,22 @@ window.__GAME_DEBUG_API__ = {
             {
                 var fullCompName = Helper.CapitalizeFirstLetter(compName) + 'Component';
                 var compCls = bareEngine.componentClasses[fullCompName];
+                var comp = o.scene.componentController.GetComponent(o, compCls);
                 var buttons = getButtons(compCls);
                 if (buttons.length > 0)
                 {
                     if (data.components[compName])
                     {
-                        (data.components[compName] as any).__buttons = buttons.map(b => ({ label: b.label, method: b.label }));
+                        (data.components[compName] as any).__buttons = buttons.map(b => ({ label: b.label, method: b.methodKey }));
+                    }
+                }
+
+                if (comp)
+                {
+                    var fields = getInspectorFields(comp);
+                    if (fields.length > 0 && data.components[compName])
+                    {
+                        (data.components[compName] as any).__fields = fields;
                     }
                 }
             }
@@ -323,7 +333,7 @@ window.__GAME_DEBUG_API__ = {
                     var compName = Helper.DecapitalizeFirstLetter(c.constructor.name.replace("Component", ""));
                     if (components[compName])
                     {
-                        (components[compName] as any).__buttons = buttons.map(b => ({ label: b.label, method: b.label }));
+                        (components[compName] as any).__buttons = buttons.map(b => ({ label: b.label, method: b.methodKey }));
                     }
                 }
             }
@@ -541,6 +551,12 @@ window.__GAME_DEBUG_API__ = {
                     var compData:Record<string, Scalar> = props.components[compName];
                     for (let compProp in compData)
                     {
+                        if (compProp.startsWith("__"))
+                            continue;
+
+                        if (await applyInspectorField(comp, compProp, compData[compProp]))
+                            continue;
+
                         comp[compProp] = compData[compProp];
                     }
 

@@ -299,7 +299,7 @@ export class SettingsHandler
                 var existingAnimation = assetsHandler.GetAnimation(animName);
 
                 // TAKE PROVIDED VALUES OR FALLBACK TO DEFAULTS
-                var animationFrames = this.ProcessNumberedNames(animDataInfo.frames, animDataInfo.imagePath ?? "") ?? existingAnimation?.animFrames; // FALLBACK TO ANIMATION FRAMES SET BEFORE IN JSON
+                var animationFrames = this.ProcessNumberedNames(animDataInfo.frames, animDataInfo.imagePath ?? "") ?? existingAnimation?.frames; // FALLBACK TO ANIMATION FRAMES SET BEFORE IN JSON
                 var framesPerSecond = (animDataInfo.framesPerSecond ?? defaultSettingsData.defaultAnimationFramesPerSecond);
                 var loop = animDataInfo.loop;
                 

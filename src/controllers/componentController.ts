@@ -5,8 +5,8 @@ import { BareEvent, Component, Ctor, Entity } from '../types/bareTypes';
 import { RegisterController } from "../globals";
 import { RUN_MODES_KEY } from "../utils/decorators";
 import { Helper } from "../utils/helper";
-// REFERENCING A CLASS EXTENDING BASECOMPONENT WILL AUTOMATICALLY ALSO INCLUDE COMPONENTCONTROLLER
 
+// REFERENCING A CLASS EXTENDING BASECOMPONENT WILL AUTOMATICALLY ALSO INCLUDE COMPONENTCONTROLLER
 export abstract class BaseComponent<T extends GameObject = GameObject> implements Component<T>
 {
     scene: Scene;
@@ -168,6 +168,11 @@ export class ComponentController
     AddComponent<T extends GameObject, C extends Component<T>>(go: T, componentInstance: C): C;
     AddComponent<T extends GameObject, C extends Component<T>>(go: T, arg: Ctor<C> | C, ...args: any[]): C | null
     {
+        // IF IT'S A componentClass, MAKE SURE IT'S REGISTERED
+        // EG: AnimationComponent
+        if (typeof arg === "function")
+            this.scene.AddClass(arg);
+
         const component: C = (typeof arg === "function") ? new arg(go.scene, ...args) : arg;
 
         // Check class-level @Run decorator
