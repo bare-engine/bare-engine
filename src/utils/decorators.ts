@@ -29,22 +29,16 @@ export interface ButtonEntry
     sourceKey?: string;
 }
 
-export enum InspectorFieldType
-{
-    Input = "input",
-    DropDown = "dropdown",
-}
-
 export interface FieldEntry
 {
     name: string;
-    type: InspectorFieldType;
+    type: "input" | "dropdown";
 }
 
 export interface InspectorFieldData
 {
     name: string;
-    type: InspectorFieldType;
+    type: "input" | "dropdown";
     current: any;
     values?: any[];
     locked?: boolean;
@@ -140,17 +134,15 @@ export function getButtons(componentClass: any): { label: string; methodKey: str
     }));
 }
 
-function addField(proto: object, name: string, type: InspectorFieldType = InspectorFieldType.Input): void
+function addField(proto: object, name: string): void
 {
     const fields: FieldEntry[] = (proto as any)[FIELD_METADATA_KEY] || [];
-    fields.push({ name, type });
+    fields.push({ name, type: "input" });
     (proto as any)[FIELD_METADATA_KEY] = fields;
 }
 
 // @InspectorField
 export function InspectorField(target: any, propertyKey: string): void;
-// @InspectorField(InspectorFieldType.DropDown)
-export function InspectorField(type: InspectorFieldType): (target: any, propertyKey: string) => void;
 export function InspectorField(targetOrType: any, propertyKey?: string): any
 {
     if (typeof propertyKey === "string")
@@ -158,12 +150,6 @@ export function InspectorField(targetOrType: any, propertyKey?: string): any
         addField(targetOrType, propertyKey);
         return;
     }
-
-    const type = targetOrType as InspectorFieldType;
-    return function (target: any, key: string): void
-    {
-        addField(target, key, type);
-    };
 }
 
 export function Locked(target: any, propertyKey: string): void
@@ -191,7 +177,7 @@ export function getInspectorFields(component: any): InspectorFieldData[]
 
         return {
             name: entry.name,
-            type: entry.type,
+            type: value.values !== undefined ? "dropdown" : entry.type,
             current: value.current ?? (typeof value.get === "function" ? value.get() : undefined),
             values: typeof value.values === "function" ? value.values() : value.values,
             locked: lockedFields.includes(entry.name),

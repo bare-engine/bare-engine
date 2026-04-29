@@ -2,7 +2,7 @@ import { BaseComponent } from "../controllers/componentController";
 import { assetsHandler } from "../handlers/assetsHandler";
 import mitt, { Emitter } from "../libraries/mitt";
 import { AnimationData } from "../types/bareTypes";
-import { InspectorButton, InspectorField, InspectorFieldType, Locked } from "../utils/decorators";
+import { InspectorButton, InspectorField } from "../utils/decorators";
 
 // THIS COMPONENT JUST HANDLES PLAYING/PAUSING OF ANIMATIONS
 // THERE IS NO METHOD TO REGISTER ANIMATIONS HERE, THAT HAPPENS AUTOMATICALLY WHEN YOU SUFFIX YOUR IMAGE NAME WITH "_00", "_01", "_03"...
@@ -86,7 +86,7 @@ export class AnimationComponent extends BaseComponent
         set: (playing:boolean) => playing ? this.Resume() : this.Pause()
     };
 
-    @InspectorField(InspectorFieldType.DropDown)
+    @InspectorField
     current = {
         get: () => this.currentAnimation?.name.replace(`${this.go.name}_`, "") ?? "",
         set: (name: string) => this.Play(name),
