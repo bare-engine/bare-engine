@@ -51,6 +51,8 @@ declare global
 
     function wait(seconds: number): Promise<void>;
     function cancelWaits(): void;
+
+    function assert(condition: boolean, message?: string): void;
 }
 
 window.debug = false;
@@ -60,6 +62,11 @@ window.onFocusChange = (hasFocus) => {};
 window.trace = (message: any, ...optionalParams: any[]): void => {
     if (!isLocalhost) return;
     console.log(message, ...optionalParams);
+};
+
+window.assert = (condition: boolean, message?: string): void => {
+    if (!condition)
+        throw new Error(message);
 };
 
 window.isLocalhost = ['localhost'].some(domain => window.location.href.includes(domain));

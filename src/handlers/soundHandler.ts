@@ -53,7 +53,7 @@ class SoundHandler
     const sound = this.loadSound(id, options);
 
     if (playRandomPitch)
-      sound.rate(Helper.RandomRange(0.9, 1.1));
+      sound.rate(Helper.RandomRange(.9, 1.1));
 
     sound.volume(volume);
     sound.play();

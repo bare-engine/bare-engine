@@ -858,7 +858,7 @@ export class Scene implements SceneI
         this.componentController?.Update(deltaTime);
         this.particleController?.Update(deltaTime);
 
-        events.emit(BareEvent.scene_update, deltaTime);
+        this.events.emit(BareEvent.scene_update, deltaTime);
         this.OnUpdate(deltaTime);
     }
 
