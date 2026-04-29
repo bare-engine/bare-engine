@@ -37,7 +37,10 @@ Then("all BareEngine browser scenes should pass", async function () {
       });
     }, sceneName);
 
-    assert.equal(started.passed, true, started.error);
+    if (!started.passed) {
+      results.push(started);
+      continue;
+    }
 
     const result = await this.driver.wait(
       async () => {
@@ -48,7 +51,6 @@ Then("all BareEngine browser scenes should pass", async function () {
       `Expected BareEngine browser scene "${sceneName}" to pass`
     );
 
-    assert.equal(result.passed, true, result.error);
     results.push(result);
   }
 
@@ -56,7 +58,30 @@ Then("all BareEngine browser scenes should pass", async function () {
   const allPassed = passedCount === results.length;
   const color = allPassed ? "\x1b[32m" : "\x1b[31m";
   const reset = "\x1b[0m";
-  console.log(`${results.length} scenes (${color}${passedCount} passed${reset})`);
+  console.log(`${results.length} tests (${color}${passedCount} passed${reset})`);
+
+  const longestNameLength = results.reduce((length, result) => Math.max(length, result.name.length), 0);
+
+  for (const result of results) {
+    const status = result.passed ? "\x1b[32mpassed\x1b[0m" : "\x1b[31mfailed\x1b[0m";
+    const assertionCount = typeof result.assertions === "number"
+      ? ` (${result.assertions} ${result.assertions === 1 ? "assertion" : "assertions"})`
+      : "";
+
+    const errors = Array.isArray(result.errors) && result.errors.length > 0
+      ? result.errors
+      : result.error ? [result.error] : [];
+    const errorPrefix = " ";
+    const plainStatus = status.replace(/\x1b\[[0-9;]*m/g, "");
+    const visiblePrefixLength = `${result.name.padEnd(longestNameLength)} (${plainStatus})${assertionCount}${errorPrefix}`.length;
+    const messageIndent = " ".repeat(visiblePrefixLength);
+    const errorMessage = !result.passed && errors.length > 0
+      ? `${errorPrefix}${errors.join(`\n${messageIndent}`)}`
+      : "";
+
+    console.log(`${result.name.padEnd(longestNameLength)} (${status})${assertionCount}${errorMessage}`);
+  }
 
   assert.equal(results.length, sceneNames.length);
+  assert.equal(allPassed, true, "One or more BareEngine browser scenes failed");
 });

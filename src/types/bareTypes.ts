@@ -120,6 +120,7 @@ export interface Entity
   physicsRect?: Size;
   physicsRadius?: number; // ALSO GETS USED BY physicsObjectBare. TODO: GIVE BETTER NAME
   mass?: number;
+  drag?: number;
   restitution?: number;
   polygonVertices?: number[];
 
@@ -180,6 +181,7 @@ export var entityVars = [
     "physicsRect",
     "physicsRadius",
     "mass",
+    "drag",
     "restitution",
     "polygonVertices",
 ];

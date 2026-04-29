@@ -7,6 +7,14 @@ import {
 } from "./browserTestHarness";
 import { EntityTest } from "./testScenes/entityTest";
 import { RotationTest } from "./testScenes/rotationTest";
+import { BarePhysicsTest } from "./testScenes/barePhysicsTest";
+import { BasicsTest } from "./testScenes/basicsTest";
+import { CameraTest } from "./testScenes/cameraTest";
+import { ComponentsTest } from "./testScenes/componentsTest";
+import { EntitiesTest } from "./testScenes/entitiesTest";
+import { GraphicsTest } from "./testScenes/graphicsTest";
+import { TweensTest } from "./testScenes/tweensTest";
+import { UiTest } from "./testScenes/uiTest";
 
 type BrowserSceneTest = 
 {
@@ -37,6 +45,38 @@ class MainGame extends Scene
         {
             name: "entityTest",
             scene: EntityTest,
+        },
+        {
+            name: "basicsTest",
+            scene: BasicsTest,
+        },
+        {
+            name: "entitiesTest",
+            scene: EntitiesTest,
+        },
+        {
+            name: "componentsTest",
+            scene: ComponentsTest,
+        },
+        {
+            name: "tweensTest",
+            scene: TweensTest,
+        },
+        {
+            name: "cameraTest",
+            scene: CameraTest,
+        },
+        {
+            name: "uiTest",
+            scene: UiTest,
+        },
+        {
+            name: "graphicsTest",
+            scene: GraphicsTest,
+        },
+        {
+            name: "barePhysicsTest",
+            scene: BarePhysicsTest,
         },
     ];
 

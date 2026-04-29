@@ -4,6 +4,7 @@ export type BrowserSceneResult =
     passed: boolean;
     assertions?: number;
     error?: string;
+    errors?: string[];
 };
 
 type BrowserAssertState = 
@@ -12,6 +13,7 @@ type BrowserAssertState =
     assertions: number;
     passed: boolean;
     error?: string;
+    errors: string[];
 };
 
 declare global 
@@ -39,11 +41,13 @@ export function installBrowserTestHarness(): void
         {
             state.passed = false;
             state.error = message;
-            throw new Error(message);
+            state.errors.push(message);
+            state.assertions++;
+            return;
         }
 
         state.assertions++;
-        state.passed = true;
+        state.passed = state.errors.length === 0;
     };
 
     window.addEventListener("error", (event) => {
@@ -56,6 +60,7 @@ export function installBrowserTestHarness(): void
 
         state.passed = false;
         state.error = event.error instanceof Error ? event.error.message : event.message;
+        state.errors.push(state.error);
     });
 }
 
@@ -65,6 +70,7 @@ export function resetBrowserSceneTest(name: string): void
         scene: name,
         assertions: 0,
         passed: false,
+        errors: [],
     };
 }
 
@@ -83,8 +89,9 @@ export function getBrowserSceneResult(name: string): BrowserSceneResult
 
     return {
         name,
-        passed: state.assertions > 0 && state.passed && !state.error,
+        passed: state.assertions > 0 && state.passed && state.errors.length === 0,
         assertions: state.assertions,
         error: state.error,
+        errors: state.errors,
     };
 }
