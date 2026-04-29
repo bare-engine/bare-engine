@@ -4,8 +4,9 @@ import { Entity, GameObjectClass } from '../types/bareTypes';
 import { Helper } from '../utils/helper';
 import { Vec2, Texture, Color, GLShader, Uniform, MaskType, MatrixStack } from "../libraries/rapid-render";
 import type { Scene } from "../scenes/scene";
-import type { Component, Ctor, Rectangle } from "../types/bareTypes";
+import type { Component, Ctor, Events, Rectangle } from "../types/bareTypes";
 import { MakePath, MakePathForEntity } from '../globals';
+import mitt from "../libraries/mitt";
 
 export class Transform {
     position = new Vec2();
@@ -74,6 +75,8 @@ export class GameObject
 
     OnTextureLoadedCallbacks: Function[] = [];
 
+    events = mitt<Events>();
+    
     //onDestroy:Function | null = null;
 
     //private cachedChildrenWidth: number = -1;

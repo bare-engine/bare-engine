@@ -1,5 +1,5 @@
 import { Texture, Vec2 } from "../libraries/rapid-render";
-import { BlockedState, ConstructEntityOptions, Entity, HitboxType, Rectangle, Rectangle2Vec } from "../types/bareTypes";
+import { BareEvent, BlockedState, ConstructEntityOptions, Entity, HitboxType, Rectangle, Rectangle2Vec } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
 import type { Scene } from "../scenes/scene";
 import { MakePathForEntity } from "../globals";
@@ -127,17 +127,17 @@ export class PhysicsObjectBare extends GameObject
     
     OnCollisionStart(collidingObject: GameObject)
     {
-        
+        this.events.emit(BareEvent.collision_start, collidingObject, null);
     }
 
     OnCollisionUpdate(collidingObject: GameObject)
     {
-        
+        this.events.emit(BareEvent.collision_update, collidingObject, null);
     }
 
     OnCollisionEnd(collidingObject: GameObject)
     {
-        
+        this.events.emit(BareEvent.collision_end, collidingObject, null);
     }
     
     SetVelocity(velocity: Vec2): PhysicsObjectBare

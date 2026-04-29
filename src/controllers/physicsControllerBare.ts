@@ -386,12 +386,22 @@ export class PhysicsControllerBare extends PhysicsControllerBase
           continue;
         }
 
+        const obj1SpeedSq = this.getVelocityMagnitudeSquared(obj1);
+        const obj2SpeedSq = this.getVelocityMagnitudeSquared(obj2);
+        const firstObj = obj1SpeedSq > obj2SpeedSq ? obj1 : obj2;
+        const secondObj = obj1SpeedSq > obj2SpeedSq ? obj2 : obj1;
+
         pairKeys.add(key);
-        pairs.push({ p1: obj1, p2: obj2 });
+        pairs.push({ p1: firstObj, p2: secondObj });
       }
     }
 
     return pairs;
+  }
+
+  private getVelocityMagnitudeSquared(obj: PhysicsObjectBare): number
+  {
+    return obj.velocity.x * obj.velocity.x + obj.velocity.y * obj.velocity.y;
   }
 
   private getBroadPhaseBounds(entries: QuadTreeItem<PhysicsObjectBare>[], objectIndexes: Map<PhysicsObjectBare, number>): Rectangle
@@ -666,6 +676,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     return this.checkRectRectCollision(obj1, obj2);
   }
 
+  // object1 IS ALWAYS THE OBJECT WITH THE HIGHEST VELOCITY
   HandleCollision(object1: PhysicsObjectBare, object2: PhysicsObjectBare, emitEvents: boolean = true)
   {
       // Create a unique key for this collision pair
