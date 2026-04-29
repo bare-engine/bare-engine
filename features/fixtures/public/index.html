@@ -1,0 +1,275 @@
+<!doctype html><html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    
+    <title>Bare Platformer</title>
+      
+    <style>
+      :root {
+          --sat: env(safe-area-inset-top);
+      }
+
+      html, body {
+          overflow: hidden;
+          width: 100%;
+          height: 100%;
+          margin: 0;
+          padding: 0;
+          background-color: rgb(255, 255, 255);
+      }
+      
+      canvas {
+          display: block;
+      }
+      
+      /* level drag and drop */
+      body.drag-over::after {
+        content: 'Drop level JSON here';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 123, 255, 0.3);
+        border: 3px dashed #DDA112;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        color: white;
+        pointer-events: none;
+        z-index: 1000;
+      }
+
+      /* --- Loading Animation --- */
+      @keyframes bob {
+        0% {
+          /* Start position & opacity */
+          transform: translate(-50%, -50%) translateY(0px);
+          opacity: 0.8; /* Base opacity */
+        }
+        50% {
+          /* Move down slightly & fade slightly */
+          transform: translate(-50%, -50%) translateY(8px);
+          opacity: 0.3; /* Dimmer opacity */
+        }
+        100% {
+          /* Back to start position & opacity */
+          transform: translate(-50%, -50%) translateY(0px);
+          opacity: 0.8; /* Back to base opacity */
+        }
+      }
+
+      /* Loading text styles */
+      #loading-text {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          white-space: nowrap;
+          font-size: 34px;
+          color: white;
+          font-weight: bold;
+          font-family: 'Brush Script MT', cursive;
+          opacity: 1;
+    
+          /* Apply the bobbing animation */
+          animation-name: bob;
+          animation-duration: 1.8s; /* Control speed */
+          animation-timing-function: ease-in-out; /* Smooth start/end */
+          animation-iteration-count: infinite; /* Loop forever */
+      }
+      
+
+      /* Test button for demo */
+      .editor-button {
+          position: fixed;
+          top: 9px;
+          left: 9px;
+          background-color: #fff;
+          color: #333;
+          border: 2px solid #333;
+          padding: 10px 20px;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 16px;
+          z-index: 1000;
+      }
+
+      .editor-button:hover {
+          background-color: #333;
+          color: #fff;
+      }
+
+      /* Focus overlay styles */
+      .focus-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          backdrop-filter: blur(5px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.3s ease, visibility 0.3s ease;
+          cursor: pointer;
+      }
+
+      .focus-overlay.show {
+          opacity: 1;
+          visibility: visible;
+      }
+
+      .focus-message {
+          font-family: Arial, sans-serif;
+          font-size: 44px;
+          text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+          user-select: none;
+          text-align: center;
+          color: white;
+          animation: gentleBounce 1s ease-in-out infinite;
+      }
+
+      @keyframes gentleBounce {
+          0%, 100% {
+              transform: translateY(0);
+          }
+          50% {
+              transform: translateY(-10px);
+          }
+      }
+  </style>
+  </head>
+  <body>
+    <div id="initial-assets"></div>
+
+      <!-- Button to open editor -->
+      <button class="editor-button" id="editor-button" style="display: none">Open Editor</button>
+    
+      <!-- Editor Overlay -->
+        <div id="editor-overlay" style="display: none;">
+          <div id="editor-content"></div>
+      </div>
+
+      <!-- focusOverlay -->
+      <div class="focus-overlay" id="focusOverlay">
+          <div class="focus-message">
+              <div>🖱️Click to Focus</div>
+          </div>
+      </div>
+    
+      <!-- loading text -->
+      <div style="
+              position: fixed;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              white-space: nowrap;
+              font-size: 34px;
+              color: white;
+              font-weight: bold;
+              font-family: 'Brush Script MT';
+              opacity: 0.6;"
+          id="loading-text">LOADING...</div>
+  </body>
+
+  <script>
+    var centerText = document.getElementById('loading-text');
+    
+    window.destroyTextFunc = function() {
+        if (centerText) {
+            centerText.remove();
+        }
+    };
+    
+
+    (function() {
+      // Scan the <head> for all tracked initial assets
+      var head = document.body;
+      var assets = Array.prototype.slice.call(
+          head.querySelectorAll('[data-initial-asset]')
+      );
+      
+      var assetsLinkValue = assets.map(function(asset) {
+            var link = (asset.src || asset.href);
+            var end = link.split('/').pop();
+            return end;
+      })
+      console.log("Initial assets found: ", assetsLinkValue);
+
+      var readyFired = false;
+
+      function fireReady() {
+          if (readyFired) return;
+          readyFired = true;
+          
+          var assetsObj = {};
+          var jsonPromises = [];
+
+          assets.forEach(function(asset) {
+              var url = asset.src || asset.href;
+              var fileName = decodeURIComponent(url.split('/').pop());
+
+              assetsObj[fileName] = asset;
+
+              if (fileName.endsWith(".json")) {
+                  jsonPromises.push(
+                      fetch(url).then(r => r.json()).then(data => {
+                          assetsObj[fileName] = data;   // attach parsed JSON
+                      })
+                  );
+              }
+          });
+
+          Promise.all(jsonPromises).then(function() {
+                window.initialAssets = assetsObj;
+
+                if (window.initialAssetsReady)
+                {
+                    window.initialAssetsReady(window.initialAssets);
+                }
+                else
+                {
+                    // initialAssetsReady WILL TRIGGER ON MAIN SINCE initialAssets HAS BEEN SET
+                }
+          });
+      }
+
+      if (assets.length === 0) {
+          fireReady();
+          return;
+      }
+
+      var remaining = assets.length;
+
+      function markDone(asset) {
+          remaining--;
+          if (remaining <= 0) fireReady();
+      }
+
+      assets.forEach(function(asset) {
+          var alreadyLoaded =
+              (asset.dataset && asset.dataset.loaded === 'true') ||
+              (asset.tagName === 'IMG' && asset.complete) ||
+              (asset.tagName === 'SCRIPT' && (asset.readyState === 'complete' || asset.readyState === 'loaded'));
+
+          if (alreadyLoaded) {
+              markDone(asset);
+              return;
+          }
+
+          asset.addEventListener('load', function() { markDone(asset); });
+          asset.addEventListener('error', function() { markDone(asset); });
+      });
+    })();
+
+
+  </script>
+  <!-- js:bootstrap -->
+
+</html>

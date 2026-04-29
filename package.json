@@ -2,7 +2,9 @@
   "name": "bare-engine",
   "version": "0.1.0",
   "scripts": {
-    "analyze": "webpack --config webpack.config.js --env analyze --json=stats.json && webpack-bundle-analyzer stats.json"
+    "analyze": "webpack --config webpack.config.js --env analyze --json=stats.json && webpack-bundle-analyzer stats.json",
+    "test": "node scripts/runTests.cjs",
+    "test:e2e": "npm run test"
   },
   "description": "Bare Game Engine - Build for Web",
   "license": "MIT",
@@ -29,5 +31,8 @@
     "typescript": "^5.9.3",
     "webpack": "^5.104.1",
     "webpack-cli": "^6.0.1"
+  },
+  "dependencies": {
+    "selenium-webdriver": "^4.43.0"
   }
 }
