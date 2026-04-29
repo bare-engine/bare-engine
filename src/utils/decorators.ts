@@ -4,6 +4,7 @@ const BUTTON_METADATA_KEY = "__editorButtons__";
 const FIELD_METADATA_KEY = "__editorFields__";
 const LOCKED_METADATA_KEY = "__lockedFields__";
 const RANGE_METADATA_KEY = "__fieldRanges__";
+const LABEL_METADATA_KEY = "__fieldLabels__";
 const RUN_MODES_KEY = "__runModes__";
 
 /**
@@ -180,6 +181,16 @@ export function Range(min?: number, max?: number): (target: any, propertyKey: st
     };
 }
 
+export function Label(label: string): (target: any, propertyKey: string) => void
+{
+    return function (target: any, propertyKey: string): void
+    {
+        const labels: Record<string, string> = target[LABEL_METADATA_KEY] || {};
+        labels[propertyKey] = label;
+        target[LABEL_METADATA_KEY] = labels;
+    };
+}
+
 function getFieldValue(component: any, entry: FieldEntry): any
 {
     const field = component[entry.name];
@@ -192,13 +203,14 @@ export function getInspectorFields(component: any): InspectorFieldData[]
     const entries: FieldEntry[] = component.constructor.prototype[FIELD_METADATA_KEY] || [];
     const lockedFields: string[] = component.constructor.prototype[LOCKED_METADATA_KEY] || [];
     const ranges: Record<string, InspectorRangeData> = component.constructor.prototype[RANGE_METADATA_KEY] || {};
+    const labels: Record<string, string> = component.constructor.prototype[LABEL_METADATA_KEY] || {};
 
     return entries.map(entry =>
     {
         const value = getFieldValue(component, entry) || {};
 
         return {
-            name: entry.name,
+            name: labels[entry.name] ?? entry.name,
             type: value.values !== undefined ? "dropdown" : entry.type,
             current: value.current ?? (typeof value.get === "function" ? value.get() : undefined),
             values: typeof value.values === "function" ? value.values() : value.values,
@@ -211,13 +223,14 @@ export function getInspectorFields(component: any): InspectorFieldData[]
 export async function applyInspectorField(component: any, fieldName: string, value: any): Promise<boolean>
 {
     const entries: FieldEntry[] = component.constructor.prototype[FIELD_METADATA_KEY] || [];
-    const entry = entries.find(e => e.name === fieldName);
+    const labels: Record<string, string> = component.constructor.prototype[LABEL_METADATA_KEY] || {};
+    const entry = entries.find(e => e.name === fieldName || labels[e.name] === fieldName);
 
     if (!entry)
         return false;
 
     const lockedFields: string[] = component.constructor.prototype[LOCKED_METADATA_KEY] || [];
-    if (lockedFields.includes(fieldName))
+    if (lockedFields.includes(entry.name))
         return true;
 
     const fieldValue = getFieldValue(component, entry) || {};
