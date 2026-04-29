@@ -11,18 +11,19 @@
     "LICENSE",
     "README.md"
   ],
-  "main": "src/exports/index.ts",
-  "types": "typeDefs/index.d.ts",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
   "sideEffects": [
     "./src/main.ts"
   ],
   "exports": {
     ".": {
-      "types": "./typeDefs/index.d.ts",
-      "default": "./src/exports/index.ts"
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
     }
   },
   "devDependencies": {
+    "@cucumber/cucumber": "^12.8.2",
     "@types/node": "^25.1.0",
     "ts-loader": "^9.5.4",
     "typescript": "^5.9.3",

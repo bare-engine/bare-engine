@@ -1205,6 +1205,8 @@ export class GameObject
 
         this.customData = {};
 
+        this.events.clearAll();
+
         this.RemoveMask();
 
         this.SetPivot(0, 0);

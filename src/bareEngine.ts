@@ -1,5 +1,5 @@
 import { sceneController } from "./controllers/sceneController";
-import { PluginHandler } from "./exports";
+import { PluginHandler } from "./handlers/pluginHandler";
 import { GameMode, globalEvents } from "./globals";
 import { assetsHandler } from "./handlers/assetsHandler";
 import { PoolHandler } from "./handlers/poolHandler";
