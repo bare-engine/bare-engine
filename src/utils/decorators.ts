@@ -3,6 +3,7 @@ import { GameMode } from "../globals";
 const BUTTON_METADATA_KEY = "__editorButtons__";
 const FIELD_METADATA_KEY = "__editorFields__";
 const LOCKED_METADATA_KEY = "__lockedFields__";
+const RANGE_METADATA_KEY = "__fieldRanges__";
 const RUN_MODES_KEY = "__runModes__";
 
 /**
@@ -42,6 +43,13 @@ export interface InspectorFieldData
     current: any;
     values?: any[];
     locked?: boolean;
+    range?: InspectorRangeData;
+}
+
+export interface InspectorRangeData
+{
+    min?: number;
+    max?: number;
 }
 
 export interface InspectorButtonOptions
@@ -159,6 +167,19 @@ export function Locked(target: any, propertyKey: string): void
     target[LOCKED_METADATA_KEY] = lockedFields;
 }
 
+export function Range(min?: number, max?: number): (target: any, propertyKey: string) => void
+{
+    return function (target: any, propertyKey: string): void
+    {
+        const ranges: Record<string, InspectorRangeData> = target[RANGE_METADATA_KEY] || {};
+        ranges[propertyKey] = {
+            min: min !== undefined && Number.isFinite(min) ? min : undefined,
+            max: max !== undefined && Number.isFinite(max) ? max : undefined,
+        };
+        target[RANGE_METADATA_KEY] = ranges;
+    };
+}
+
 function getFieldValue(component: any, entry: FieldEntry): any
 {
     const field = component[entry.name];
@@ -170,6 +191,7 @@ export function getInspectorFields(component: any): InspectorFieldData[]
 {
     const entries: FieldEntry[] = component.constructor.prototype[FIELD_METADATA_KEY] || [];
     const lockedFields: string[] = component.constructor.prototype[LOCKED_METADATA_KEY] || [];
+    const ranges: Record<string, InspectorRangeData> = component.constructor.prototype[RANGE_METADATA_KEY] || {};
 
     return entries.map(entry =>
     {
@@ -181,6 +203,7 @@ export function getInspectorFields(component: any): InspectorFieldData[]
             current: value.current ?? (typeof value.get === "function" ? value.get() : undefined),
             values: typeof value.values === "function" ? value.values() : value.values,
             locked: lockedFields.includes(entry.name),
+            range: ranges[entry.name],
         };
     });
 }
