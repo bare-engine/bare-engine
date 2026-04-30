@@ -15,12 +15,11 @@ import { EntitiesTest } from "./testScenes/entitiesTest";
 import { GraphicsTest } from "./testScenes/graphicsTest";
 import { TweensTest } from "./testScenes/tweensTest";
 import { UiTest } from "./testScenes/uiTest";
+import { SaveTest } from "./testScenes/saveTest";
 
-type BrowserSceneTest = 
-{
-    name: string;
-    scene: SceneClass;
-};
+function sceneName(scene: SceneClass): string {
+    return scene.name[0].toLowerCase() + scene.name.slice(1);
+}
 
 declare global
 {
@@ -37,47 +36,18 @@ declare global
 
 class MainGame extends Scene 
 {
-    private tests: BrowserSceneTest[] = [
-        {
-            name: "rotationTest",
-            scene: RotationTest,
-        },
-        {
-            name: "entityTest",
-            scene: EntityTest,
-        },
-        {
-            name: "basicsTest",
-            scene: BasicsTest,
-        },
-        {
-            name: "entitiesTest",
-            scene: EntitiesTest,
-        },
-        {
-            name: "componentsTest",
-            scene: ComponentsTest,
-        },
-        {
-            name: "tweensTest",
-            scene: TweensTest,
-        },
-        {
-            name: "cameraTest",
-            scene: CameraTest,
-        },
-        {
-            name: "uiTest",
-            scene: UiTest,
-        },
-        {
-            name: "graphicsTest",
-            scene: GraphicsTest,
-        },
-        {
-            name: "barePhysicsTest",
-            scene: BarePhysicsTest,
-        },
+    private tests: SceneClass[] = [
+        RotationTest,
+        EntityTest,
+        BasicsTest,
+        EntitiesTest,
+        ComponentsTest,
+        TweensTest,
+        CameraTest,
+        UiTest,
+        GraphicsTest,
+        BarePhysicsTest,
+        SaveTest,
     ];
 
     constructor() 
@@ -92,20 +62,20 @@ class MainGame extends Scene
         window.__bareBrowserTests = {
             start: (name: string) => this.startTest(name),
             check: (name: string) => this.checkTest(name),
-            names: () => this.tests.map((test) => test.name),
+            names: () => this.tests.map(sceneName),
         };
     }
 
-    async OnStart(): Promise<void> 
+    async OnStart(): Promise<void>
     {
-        await this.startTest(this.tests[0].name);
+        await this.startTest(sceneName(this.tests[0]));
     }
 
-    private async startTest(name: string): Promise<BrowserSceneResult> 
+    private async startTest(name: string): Promise<BrowserSceneResult>
     {
-        const test = this.tests.find((candidate) => candidate.name === name);
+        const scene = this.tests.find((candidate) => sceneName(candidate) === name);
 
-        if (!test) 
+        if (!scene)
         {
             return {
                 name,
@@ -114,32 +84,32 @@ class MainGame extends Scene
             };
         }
 
-        try 
+        try
         {
-            resetBrowserSceneTest(test.name);
-            await sceneController.Goto(test.scene);
+            resetBrowserSceneTest(name);
+            await sceneController.Goto(scene);
             sceneController.MoveToFront(this);
 
             return {
-                name: test.name,
+                name,
                 passed: true,
             };
-        } 
-        catch (error) 
+        }
+        catch (error)
         {
             return {
-                name: test.name,
+                name,
                 passed: false,
                 error: error instanceof Error ? error.message : String(error),
             };
         }
     }
 
-    private checkTest(name: string): BrowserSceneResult 
+    private checkTest(name: string): BrowserSceneResult
     {
-        const test = this.tests.find((candidate) => candidate.name === name);
+        const scene = this.tests.find((candidate) => sceneName(candidate) === name);
 
-        if (!test) 
+        if (!scene)
         {
             return {
                 name,
@@ -148,7 +118,7 @@ class MainGame extends Scene
             };
         }
 
-        return getBrowserSceneResult(test.name);
+        return getBrowserSceneResult(name);
     }
 }
 
