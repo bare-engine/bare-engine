@@ -182,10 +182,6 @@ export class Rapid {
         // Default stencil configuration: always pass, keep existing values
         gl.stencilFunc(gl.ALWAYS, 1, 0xFF);
         gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
-
-        // Expose debug variable globally
-        // @ts-ignore
-        window.debug = this;
     }
 
     private getColorUint32(color?: Color): number {
