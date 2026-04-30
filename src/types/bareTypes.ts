@@ -98,7 +98,8 @@ export interface Entity
 
   children?: Entity[];
 
-  components?: Record<string, Record<string, any> | string>;
+  //components?: Record<string, Record<string, any> | string>;
+  components?: Record<string, any>;
   //editorComponents?: Record<string, Record<string, any>>;
   componentsRemoved?: string[];
   propertiesRemoved?: string[];
