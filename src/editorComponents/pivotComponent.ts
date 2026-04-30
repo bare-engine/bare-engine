@@ -11,23 +11,23 @@ import { objectController } from "../controllers/objectController";
 import { GameMode } from "../globals";
 import { Color } from "../libraries/rapid-render";
 import { Scene } from "../scenes/scene";
-import { Run } from "../utils/decorators";
+import { Run, Save } from "../utils/decorators";
 
 @Run(GameMode.Editor)
 export class PivotComponent extends BaseComponent
 {
-    objName:string;
-    hitboxName:string;
+    @Save
+    objName:string = "";
+
+    @Save
+    hitboxName:string = "";
 
     hitboxObj: GameObject;
     hitboxComp: ResizableComponent;
 
-    constructor(scene: Scene, objectName:string, hitboxName:string)
+    constructor(scene: Scene)
     {
         super(scene);
-
-        this.objName = objectName;
-        this.hitboxName = hitboxName;
     }
 
     OnAdded():void

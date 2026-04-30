@@ -451,7 +451,12 @@ export class Scene implements SceneI
                     console.error('Component class not found: ' + className + '. Add it with bare.AddClass(' + Helper.CapitalizeFirstLetter(component) + 'Component);');
                 }
                 var componentValues = v[component];
-                var componentInstance = new ComponentClass(o.scene, ...Object.values(componentValues));
+                var componentInstance = new ComponentClass(o.scene);
+                for (const key in componentValues)
+                {
+                    componentInstance[key] = componentValues[key];
+                }
+                componentInstance.__paramNames = Object.keys(componentValues);
                 o.AddComponent(componentInstance);
             }
         }

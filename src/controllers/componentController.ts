@@ -129,9 +129,13 @@ export class ComponentController
                     continue;
                 }
 
-                // INSTANCIATE AND ADD COMPONENT - VALUES BECOME ARGUMENTS
+                // INSTANTIATE COMPONENT, THEN APPLY SAVED VALUES BY NAME
                 const componentValues = components[componentName];
-                var componentInstance = new ComponentClass(this.scene, ...Object.values(componentValues));
+                var componentInstance = new ComponentClass(this.scene);
+                for (const key in componentValues)
+                {
+                    componentInstance[key] = componentValues[key];
+                }
                 componentInstance.__paramNames = Object.keys(componentValues);
                 componentController.AddComponent(obj, componentInstance);
             }

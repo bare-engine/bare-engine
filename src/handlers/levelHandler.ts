@@ -17,6 +17,7 @@ import { BareEvent, BareEventPayload, Component, ConstructEntityOptions, Entity,
 import { Helper } from "../utils/helper";
 import { MakePathForEntity } from "../globals";
 import { assetsHandler } from "./assetsHandler";
+import { getSaveFields } from "../utils/decorators";
 
 export class LevelHandler
 {
@@ -801,7 +802,9 @@ export class LevelHandler
     SerializeComponent(component: Component): Record<string, Scalar>
     {
         var componentData: Record<string, Scalar> = {};
-        var constructorVarNames = (component as any).__paramNames || Helper.GetConstructorParamNames(component.constructor);
+        var constructorVarNames = getSaveFields(component);
+        if (constructorVarNames.length == 0)
+            constructorVarNames = (component as any).__paramNames || Helper.GetConstructorParamNames(component.constructor);
         
         // GET VALUE FROM EACH KEY OF CONSTRUCTOR PARAMS
         for (let i = 0; i < constructorVarNames.length; i++)
