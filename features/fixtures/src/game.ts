@@ -15,7 +15,7 @@ import { EntitiesTest } from "./testScenes/entitiesTest";
 import { GraphicsTest } from "./testScenes/graphicsTest";
 import { TweensTest } from "./testScenes/tweensTest";
 import { UiTest } from "./testScenes/uiTest";
-import { SaveTest } from "./testScenes/saveTest";
+import { SaveComponentTest } from "./testScenes/saveComponentTest";
 
 function sceneName(scene: SceneClass): string {
     return scene.name[0].toLowerCase() + scene.name.slice(1);
@@ -47,7 +47,7 @@ class MainGame extends Scene
         UiTest,
         GraphicsTest,
         BarePhysicsTest,
-        SaveTest,
+        SaveComponentTest,
     ];
 
     constructor() 
