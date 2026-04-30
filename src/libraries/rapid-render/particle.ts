@@ -183,7 +183,6 @@ export class ParticleEmitter {
     private emitTimeCounter: number = 0;
     localSpace: boolean = DEFAULT_LOCAL_SPACE;
     position: Vec2 = Vec2.ZERO;
-    gameObject: GameObject; // ADDED, TO CHECK FOR PERSISTENCE
 
     /**
      * Creates a new particle emitter

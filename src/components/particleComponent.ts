@@ -83,10 +83,7 @@ export class ParticleComponent extends BaseComponent
     {
         super.Added(go);
 
-        this.emitter.gameObject = go;
-
         this.emitter.position.set(go.x + this.positionData.x, go.y + this.positionData.y);
-        particleController.Add(this.emitter);
     }
 
     @InspectorButton
@@ -98,6 +95,12 @@ export class ParticleComponent extends BaseComponent
     OnUpdate(deltaTime: number): void
     {
         this.emitter.position.set(this.go.x + this.positionData.x, this.go.y + this.positionData.y);
+        this.emitter.update(deltaTime);
+    }
+
+    OnPostRender(): void
+    {
+        this.emitter.render();
     }
 
     OnRemoved()
