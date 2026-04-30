@@ -5,11 +5,14 @@
     "outDir": "./dist/",
     "moduleResolution": "Node",
     "baseUrl": ".",
+    "paths": {
+      "bare-engine": ["src/index.ts"]
+    },
     "lib": ["ES2020", "DOM"],
     "types": ["node"],
     "skipLibCheck": true,
     "experimentalDecorators": true
   },
-  "include": ["src"],
+  "include": ["src", "features/fixtures/src"],
   "exclude": ["node_modules", "**/*.spec.ts"]
 }

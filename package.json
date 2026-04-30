@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "scripts": {
     "analyze": "webpack --config webpack.config.js --env analyze --json=stats.json && webpack-bundle-analyzer stats.json",
+    "dev:fixture": "node scripts/devFixture.cjs",
     "test": "node scripts/runTests.cjs",
     "test:e2e": "npm run test"
   },

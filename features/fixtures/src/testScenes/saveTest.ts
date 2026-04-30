@@ -1,22 +1,27 @@
-import { GameObject, Scene } from "bare-engine";
+import { BaseComponent, GameObject, Save, Scene } from "bare-engine";
 
 export class SaveTest extends Scene
 {
-    cog!: GameObject;
-
     OnStart(): void
     {
-        this.cog = this.AddGameObject({ name: "cog", texture: "NONE" })
-            .SetPosition(bare.width * 0.5, bare.height * 0.5)
-            .CenterPivot();
+        var obj = this.AddGameObject();
+        obj.AddComponent(TestComponent);
+        obj.AddComponent(TestSaveComponent);
 
-        assert(this.cog.x === bare.width * 0.5, "basic object should be centered on x");
-        assert(this.cog.y === bare.height * 0.5, "basic object should be centered on y");
-    }
+        var entity = this.levelHandler.SerializeObject(obj);
 
-    OnUpdate(): void
-    {
-        this.cog.rotation++;
-        assert(this.cog.rotation === 1, "basic object should rotate during update");
+        assert(entity.components.test.value === undefined, "test value should not be saved");
+        assert(entity.components.testSave.value == "test", "testSave value should be saved");
     }
+}
+
+export class TestComponent extends BaseComponent
+{
+    private value:string = "test";
+}
+
+export class TestSaveComponent extends BaseComponent
+{
+    @Save
+    private value:string = "test";
 }

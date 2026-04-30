@@ -42,7 +42,8 @@ export { SettingsHandler } from "./handlers/settingsHandler";
 export { soundHandler } from "./handlers/soundHandler";
 
 // Components
-export { AnimationComponent, AnimationEvent, AnimationEventPayload as AnimationEvents } from "./components/animationComponent";
+export { AnimationComponent, AnimationEvent } from "./components/animationComponent";
+export type { AnimationEventPayload as AnimationEvents } from "./components/animationComponent";
 export { CollisionEventComponent } from "./components/collisionEventComponent";
 export { ParticleComponent } from "./components/particleComponent";
 

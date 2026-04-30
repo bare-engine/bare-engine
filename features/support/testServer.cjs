@@ -89,9 +89,13 @@ BeforeAll(async function () {
   const builder = new Builder().forBrowser(browserName);
 
   if (requestedBrowser === "chrome") {
-    builder.setChromeOptions(new chrome.Options().addArguments("--headless=new"));
+    builder.setChromeOptions(new chrome.Options()
+      .addArguments("--headless=new", "--remote-debugging-pipe", "--log-level=3")
+      .excludeSwitches("enable-logging"));
   } else if (requestedBrowser === "edge") {
-    builder.setEdgeOptions(new edge.Options().addArguments("--headless=new"));
+    builder.setEdgeOptions(new edge.Options()
+      .addArguments("--headless=new", "--remote-debugging-pipe", "--log-level=3")
+      .excludeSwitches("enable-logging"));
   } else if (requestedBrowser === "firefox") {
     builder.setFirefoxOptions(new firefox.Options().addArguments("-headless"));
   }
