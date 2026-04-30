@@ -14,10 +14,6 @@ everything webpack does:
 	bare -> this.scene (or this.)
 	events -> this.scene.events
 	
-- Auto-inject AddClass() calls in constructors for used controllers. eg:
-	a class uses componentController, add this.AddClass(ComponentController) after super() of Scene added in StartBare(...
-	also auto-adds imports detected classes detected
-	
 - Add .name to GameObject instanciation. eg: 
 	this.globalProgresObj = new GlobalProgressUI(uiScene);
 	this.globalProgresObj.name ||= "globalProgresObj" // <-

@@ -67,7 +67,6 @@ function createControllerProxyTransformer(program) {
             const registeredControllers = explicitControllers;
             const isProjectSource = isProjectSourceFile(sourceFile);
             const startBareTargets = isProjectSource ? collectStartBareTargets(sourceFile) : new Set();
-            const usedControllerClassNames = new Set();
 
             function maybeTransformTweenToCallTopLevel(callNode) {
                 if (!ts.isCallExpression(callNode)) {
@@ -431,14 +430,6 @@ function createControllerProxyTransformer(program) {
                     return member;
                 });
 
-                if (usedControllers && usedControllers.size > 0 && isProjectSource && isStartBareTarget) {
-                    const orderedControllerNames = Array.from(explicitControllers)
-                        .filter((name) => usedControllers.has(name));
-                    for (const name of orderedControllerNames.map((name) => upperFirst(name))) {
-                        usedControllerClassNames.add(name);
-                    }
-                }
-
                 const updated = ts.isClassDeclaration(node)
                     ? factory.updateClassDeclaration(
                         node,
@@ -467,27 +458,7 @@ function createControllerProxyTransformer(program) {
                 return updated;
             }
 
-            let updatedSourceFile = ts.visitNode(sourceFile, visit);
-
-            if (isProjectSource) {
-                const addClassImports = collectAddClassImports(
-                    updatedSourceFile,
-                    explicitControllers
-                );
-                for (const name of addClassImports) {
-                    usedControllerClassNames.add(name);
-                }
-            }
-
-            if (usedControllerClassNames.size > 0) {
-                updatedSourceFile = addBareEngineImports(
-                    updatedSourceFile,
-                    Array.from(usedControllerClassNames),
-                    factory
-                );
-            }
-
-            return updatedSourceFile;
+            return ts.visitNode(sourceFile, visit);
         };
     };
 }
@@ -622,13 +593,6 @@ function lowerFirst(value) {
     return value[0].toLowerCase() + value.slice(1);
 }
 
-function upperFirst(value) {
-    if (!value) {
-        return value;
-    }
-    return value[0].toUpperCase() + value.slice(1);
-}
-
 function collectStartBareTargets(sourceFile) {
     const targets = new Set();
 
@@ -652,33 +616,6 @@ function isProjectSourceFile(sourceFile) {
     const filePath = path.resolve(sourceFile.fileName);
     const projectSrc = path.resolve(process.cwd(), "src");
     return filePath.startsWith(projectSrc + path.sep);
-}
-
-function collectAddClassImports(sourceFile, controllerNames) {
-    const controllerClassNames = new Set(
-        Array.from(controllerNames).map((name) => upperFirst(name))
-    );
-    const found = new Set();
-
-    function walk(node) {
-        if (ts.isCallExpression(node)) {
-            const expr = node.expression;
-            if (ts.isPropertyAccessExpression(expr)) {
-                if (ts.isThis(expr.expression) && expr.name.text === "AddClass") {
-                    const firstArg = node.arguments[0];
-                    if (firstArg && ts.isIdentifier(firstArg)) {
-                        if (controllerClassNames.has(firstArg.text)) {
-                            found.add(firstArg.text);
-                        }
-                    }
-                }
-            }
-        }
-        ts.forEachChild(node, walk);
-    }
-
-    walk(sourceFile);
-    return found;
 }
 
 function collectAddClassDirectiveMapFromDirs(dirs) {
@@ -827,159 +764,6 @@ function normalizeControllerName(value, registeredControllers) {
         return lowered;
     }
     return null;
-}
-
-function addBareEngineImports(sourceFile, names, factory) {
-    if (!names || names.length === 0) {
-        return sourceFile;
-    }
-
-    const specialImportModules = new Map();
-
-    const namesByModule = new Map();
-    for (const name of names) {
-        const moduleName = specialImportModules.get(name) || "bare-engine";
-        if (!namesByModule.has(moduleName)) {
-            namesByModule.set(moduleName, new Set());
-        }
-        namesByModule.get(moduleName).add(name);
-    }
-
-    let updatedSourceFile = sourceFile;
-    for (const [moduleName, nameSet] of namesByModule) {
-        updatedSourceFile = addNamedImports(
-            updatedSourceFile,
-            moduleName,
-            Array.from(nameSet),
-            factory
-        );
-    }
-
-    return updatedSourceFile;
-}
-
-function addNamedImports(sourceFile, moduleName, names, factory) {
-    if (!names || names.length === 0) {
-        return sourceFile;
-    }
-
-    const statements = Array.from(sourceFile.statements);
-    const importIndex = statements.findIndex((statement) => {
-        if (!ts.isImportDeclaration(statement)) {
-            return false;
-        }
-        if (!statement.moduleSpecifier || !ts.isStringLiteral(statement.moduleSpecifier)) {
-            return false;
-        }
-        if (statement.moduleSpecifier.text !== moduleName) {
-            return false;
-        }
-        if (!statement.importClause || !statement.importClause.namedBindings) {
-            return false;
-        }
-        return ts.isNamedImports(statement.importClause.namedBindings);
-    });
-
-    const nameSet = new Set(names);
-
-    if (importIndex >= 0) {
-        const importDecl = statements[importIndex];
-        const namedBindings = importDecl.importClause.namedBindings;
-        const existingNames = new Set(
-            namedBindings.elements.map((el) => el.name.text)
-        );
-
-        const toAdd = Array.from(nameSet).filter((name) => !existingNames.has(name));
-        if (toAdd.length === 0) {
-            return sourceFile;
-        }
-
-        const updatedElements = [
-            ...namedBindings.elements,
-            ...toAdd.map((name) => factory.createImportSpecifier(false, undefined, factory.createIdentifier(name)))
-        ];
-
-        const updatedNamedBindings = factory.updateNamedImports(namedBindings, updatedElements);
-        const isTypeOnly = typeof importDecl.importClause.isTypeOnly === "boolean"
-            ? importDecl.importClause.isTypeOnly
-            : false;
-        const updatedImportClause = createImportClauseCompat(
-            factory,
-            isTypeOnly,
-            importDecl.importClause.name,
-            updatedNamedBindings
-        );
-
-        statements[importIndex] = factory.updateImportDeclaration(
-            importDecl,
-            importDecl.modifiers,
-            updatedImportClause,
-            importDecl.moduleSpecifier,
-            importDecl.assertClause
-        );
-
-        return factory.updateSourceFile(sourceFile, statements);
-    }
-
-    const newImport = createImportDeclarationCompat(
-        factory,
-        createImportClauseCompat(
-            factory,
-            false,
-            undefined,
-            factory.createNamedImports(
-                Array.from(nameSet).map((name) =>
-                    factory.createImportSpecifier(false, undefined, factory.createIdentifier(name))
-                )
-            )
-        ),
-        factory.createStringLiteral(moduleName)
-    );
-
-    const insertIndex = statements.findIndex((statement) => !ts.isImportDeclaration(statement));
-    if (insertIndex === -1) {
-        statements.push(newImport);
-    } else {
-        statements.splice(insertIndex, 0, newImport);
-    }
-
-    return factory.updateSourceFile(sourceFile, statements);
-}
-
-function createImportClauseCompat(factory, isTypeOnly, name, namedBindings) {
-    if (typeof factory.createImportClause !== "function") {
-        return undefined;
-    }
-    const argCount = factory.createImportClause.length;
-    if (argCount >= 3) {
-        if (argCount >= 4) {
-            return factory.createImportClause(isTypeOnly, name, namedBindings, undefined);
-        }
-        return factory.createImportClause(isTypeOnly, name, namedBindings);
-    }
-    return factory.createImportClause(name, namedBindings);
-}
-
-function createImportDeclarationCompat(factory, importClause, moduleSpecifier) {
-    if (typeof factory.createImportDeclaration !== "function") {
-        return undefined;
-    }
-    const argCount = factory.createImportDeclaration.length;
-    if (argCount >= 5) {
-        return factory.createImportDeclaration(
-            undefined,
-            undefined,
-            importClause,
-            moduleSpecifier,
-            undefined
-        );
-    }
-    return factory.createImportDeclaration(
-        undefined,
-        importClause,
-        moduleSpecifier,
-        undefined
-    );
 }
 
 function classHasSceneProperty(node) {
