@@ -311,7 +311,7 @@ export class SettingsHandler
 
     // FIND IF # OR + ARE PRESENT, ADDS THE NUMBERED NAMES
     // EG: "player_walk1#3"       -> ["player_walk1", "player_walk2", "player_walk3"]
-    // EG: "buffalo_eat_00#03"    -> ["buffalo_eat_00", "buffalo_eat_01", "buffalo_eat_02", "buffalo_eat_03"]
+    // EG: "player_walk1_00#03"    -> ["player_walk1_00", "player_walk1_01", "player_walk1_02", "player_walk1_03"]
     // EG: "player_walk1#2+4+6#8" -> ["player_walk1", "player_walk2", "player_walk4", "player_walk6", "player_walk7", "player_walk8"]
     // ALSO, WHEN imagePath IS SET, ADDS IT BEFORE EVERY NAME
     private ProcessNumberedNames(names?: string[], imagePath: string = ""): string[] | null

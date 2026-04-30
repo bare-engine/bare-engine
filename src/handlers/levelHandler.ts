@@ -91,14 +91,6 @@ export class LevelHandler
 
     async LoadLevel(levelInput: string | LevelData = ""):Promise<LevelData>
     {
-        // AAAAH REMOVE THIS - TODO
-        // CURRENTLY NEEDED FOR HACKY DUMMY CREATION
-        this.scene.AddClass(PivotComponent);
-        this.scene.AddClass(PivotRemoveComponent);
-        this.scene.AddClass(ResizableComponent);
-        this.scene.AddClass(ResizableRemoveComponent);
-        this.scene.AddClass(PositionPivotComponent);
-
         // STORE PERSISTENT OBJECTS, TO CALL ONLEVELCHANGED AFTER LOAD
         var persistenObjUIDs:string[] = [];
         var gameLayers = objectController.GetLayers();
