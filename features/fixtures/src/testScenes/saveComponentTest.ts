@@ -6,13 +6,14 @@ export class SaveComponentTest extends Scene
     {
         var obj = this.AddGameObject();
 
-        obj.AddComponent(TestSaveComponent);
+        obj.AddComponent(TestSaveComponent, "testChanged");
         obj.AddComponent(TestNoSaveComponent).save = false;
 
         var entity = this.levelHandler.SerializeObject(obj);
 
         assert(entity.components.testSave.valueNoSave === undefined, "test value should not be saved");
         assert(entity.components.testSave.valueSave == "test", "testSave value should be saved");
+        assert(entity.components.testSave.valueSaveChanged == "testChanged", "saveChanged value should be saved and changed");
         assert(entity.components.testNoSave === undefined, "testNoSave component should not be saved");
     }
 }
@@ -23,6 +24,15 @@ export class TestSaveComponent extends BaseComponent
 
     @Save
     private valueSave:string = "test";
+
+    @Save
+    private valueSaveChanged:string = "test";
+
+    constructor(scene: Scene, valueSaveChanged?:string)
+    {
+        super(scene);
+        this.valueSaveChanged = valueSaveChanged;
+    }
 }
 
 export class TestNoSaveComponent extends BaseComponent
