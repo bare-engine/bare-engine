@@ -1,6 +1,7 @@
-import { DynamicArrayBuffer, ArrayType } from "./buffer.ts";
-import { Rapid } from "./render.ts";
-import { Vec2 } from "./math.ts";
+import { DynamicArrayBuffer, ArrayType } from "./buffer";
+import { Vec2 } from "./math";
+import { Rapid } from "./render";
+
 
 export interface ITransformOptions {
     /** Whether to push a save before applying transforms. Default: true. */
