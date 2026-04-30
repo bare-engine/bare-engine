@@ -4,7 +4,7 @@ import { FlashShader } from "../shaders/flashShader";
 import { TweenTo } from "../controllers/tweenController";
 import { EditorScene } from '../scenes/editorScene';
 import { objectController } from '../controllers/objectController';
-import { Color, RenderTexture } from '../libraries/rapid-render';
+import { Color, RenderTexture } from '../libraries/new-rapid-render';
 import { MakePath, MakePathForEntity } from '../globals';
 
 /*
@@ -267,7 +267,8 @@ export class EditorUIHandler {
                             } else {
                                 if (!window.textureNotFoundString)
                                 {
-                                    var rt = new RenderTexture(128, 128, true, Color.fromHex("#fc0000")); // Fallback tex
+                                    var rt = new RenderTexture(rapid, 128, 128, Color.fromHex("#fc0000"));
+                                    //var rt = new RenderTexture(128, 128, true, Color.fromHex("#fc0000")); // Fallback tex
                                     const pixels = rt.GetPixels();
                                     const canvas = document.createElement('canvas');
                                     canvas.width = 128;

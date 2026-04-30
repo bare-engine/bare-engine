@@ -15,7 +15,7 @@ import { WeldJoint } from "./weld";
 import { LineJoint } from "./line";
 import { PrismaticJoint } from "./prismatic";
 import { MotorJoint } from "./motor";
-import { Color, Vec2 } from "../rapid-render";
+import { Color, Vec2 } from "../new-rapid-render";
 
 export class Renderer
 {
@@ -184,12 +184,12 @@ export class Renderer
 
         if (b instanceof Polygon)
         {
-            rapid.save()
+            rapid.matrixStack.save()
             rapid.matrixStack.translate(b.position.x, b.position.y)
             rapid.matrixStack.scale(b.scale.x, b.scale.y)
             rapid.matrixStack.rotate(b.rotation)
-            rapid.renderGraphic({ points: b.vertices, color: Color.fromHex(fillColor) });
-            rapid.restore()
+            rapid.drawPolygon(b.vertices, Color.fromHex(fillColor));
+            rapid.matrixStack.restore()
 
             /*this.gfx.beginPath();
             for (let i = 0; i < b.count; i++)
@@ -214,11 +214,18 @@ export class Renderer
         }
         else if (b instanceof Circle)
         {
-            rapid.save()
+            rapid.matrixStack.save()
             rapid.matrixStack.translate(b.position.x, b.position.y)
             rapid.matrixStack.scale(b.scale.x, b.scale.y)
-            rapid.renderCircle({ position: center, radius: b.radius, segments: 32, color: Color.fromHex(fillColor) });
-            rapid.restore()
+            rapid.withTransform(()=>{
+                rapid.drawCircle(
+                    b.radius,
+                    Color.fromHex(fillColor),
+                    32,
+                );
+            }, { position: center })
+            //rapid.renderCircle({ position: center, radius: b.radius, segments: 32, color: Color.fromHex(fillColor) });
+            rapid.matrixStack.restore()
 
             /*this.gfx.lineWidth = 1;
             this.gfx.beginPath();
@@ -241,7 +248,14 @@ export class Renderer
         if (drawCenterOfMass)
         {
             var centerVec2 = new Vec2(center.x, center.y);
-            rapid.renderCircle({ position: centerVec2, radius: 0.01, segments: 8 });
+            // rapid.renderCircle({ position: centerVec2, radius: 0.01, segments: 8 });
+            rapid.withTransform(()=>{
+                rapid.drawCircle(
+                    0.01,
+                    Color.fromHex(fillColor),
+                    8,
+                );
+            }, { position: centerVec2 })
             //this.drawCircleV(center, 0.01, true);
         }
 

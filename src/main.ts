@@ -1,7 +1,7 @@
 
 import { BareEngine } from './bareEngine';
-import { BaseTexture, Color, GLShader, Rapid, Texture } from './libraries/rapid-render';
-import { supportsWebGL } from './libraries/rapid-render/webgl/utils';
+import { BaseTexture, Color, CustomGlShader, Rapid, Texture } from './libraries/new-rapid-render';
+import { supportsWebGL } from './libraries/new-rapid-render/webgl/utils';
 import { BareEvent, BareOptions, SceneClass } from './types/bareTypes';
 import { globalEvents } from './globals';
 export { MakePath, MakePathForEntity } from "./globals";
@@ -22,7 +22,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
         editorButtonPosition: {x: 0, y: 0}
     }, ...options };
 
-    window.initialAssetsReady = (assets = []) => {
+    window.initialAssetsReady = (assets:any[] = []) => {
         const doesSupportWebGL = supportsWebGL(canvas);
         if (doesSupportWebGL)
         {
@@ -34,7 +34,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
                 canvas: canvas,
                 backgroundColor: new Color(159/255, 202/255, 74/255, 255/255),
                 antialias: options.antiAlias ?? true,
-                premultiplyAlpha: options.premultipliedAlpha ?? true
+                premultipliedAlpha: options.premultipliedAlpha ?? true
             });
                 
             rapid.canvas.tabIndex = 0; // Make canvas focusable
@@ -44,7 +44,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
                 rapid.canvas.focus();
             });
 
-            window.whiteShader = new GLShader(rapid,
+            window.whiteShader = new CustomGlShader(rapid,
                 // Vertex shader (unchanged)
                 `precision mediump float;
                 attribute vec2 aPosition;

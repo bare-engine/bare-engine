@@ -1,18 +1,17 @@
-import { ITextTextureOptions, Vec2 } from "../libraries/rapid-render";
-import { BareText } from "../libraries/rapid-render/texture";
+import { ITextOptions, TextTexture, Vec2 } from "../libraries/new-rapid-render";
 import { Scene } from "../scenes/scene";
 import { GameObject } from "./gameObject";
 
 export class TextObject extends GameObject
 {
-    textTexture: BareText;
+    textTexture: TextTexture;
     pivotPercentage: Vec2 = new Vec2();
 
-    constructor(scene: Scene, options: ITextTextureOptions = {})
+    constructor(scene: Scene, options: ITextOptions = {})
     {
         super(scene);
 
-        this.textTexture = new BareText(options);
+        this.textTexture = rapid.texture.createTextTexture(options);
         this.SetTexture(this.textTexture);
 
         this.SetNameBasedOnText(options.text || "");
@@ -26,7 +25,7 @@ export class TextObject extends GameObject
 
     SetText(text: string)
     {
-        this.textTexture.setText(text);
+        this.textTexture.text = text;
 
         // REAPLY PIVOT AFTER CHANGING TEXT(URE)
         if (this.pivotPercentage.x != -1)

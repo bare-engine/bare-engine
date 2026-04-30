@@ -3,7 +3,7 @@ import { Matrix2 } from "./math";
 import { RigidBody, Type } from "./rigidbody";
 import { Settings } from "./settings";
 import * as Util from "./util";
-import { Vec2 } from "../rapid-render";
+import { Vec2 } from "../new-rapid-render";
 
 // Line joint + Angle joint
 export class PrismaticJoint extends Joint

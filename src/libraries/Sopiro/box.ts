@@ -1,5 +1,5 @@
 import { Type } from "./rigidbody";
-import { Vec2 } from "../rapid-render";
+import { Vec2 } from "../new-rapid-render";
 import { Polygon } from "./polygon";
 import * as Util from "./util";
 import { Settings } from "./settings";

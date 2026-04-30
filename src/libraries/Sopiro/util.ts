@@ -2,7 +2,7 @@
 //import { Circle } from "./circle";
 //import { RigidBody, Type } from "./rigidbody";
 //import { Type } from "./rigidbody";
-import { Vec2 } from "../rapid-render";
+import { Vec2 } from "../new-rapid-render";
 import { Matrix3 } from "./math";
 //import { Polygon } from "./polygon";
 //import { Settings } from "./settings";

@@ -1,5 +1,5 @@
-import { ParticleEmitter } from "../libraries/rapid-render/particle";
-import { Vec2 } from "../libraries/rapid-render";
+import { ParticleEmitter } from "../libraries/new-rapid-render/particle";
+import { Vec2 } from "../libraries/new-rapid-render";
 import { Scene } from "../scenes/scene";
 import { RegisterController } from "../globals";
 type ParticleEmitterEntry = {

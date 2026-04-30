@@ -9,7 +9,7 @@ import { mouseController } from "../controllers/mouseController";
 import { PhysicsObjectBare } from "../objects/physicsObjectBare";
 import { objectController } from "../controllers/objectController";
 import { GameMode } from "../globals";
-import { Color } from "../libraries/rapid-render";
+import { Color } from "../libraries/new-rapid-render";
 import { Scene } from "../scenes/scene";
 import { Run } from "../utils/decorators";
 
@@ -163,11 +163,14 @@ export class PivotComponent extends BaseComponent
         // *3 UHH?! FIX THOSE HITBOX SHENANIGANS - TODO
         this.go.tapHitbox.rectangle = {x: -radius, y: -radius, width: radius*3, height: radius*3};
 
-        rapid.renderCircle({
-            offset: this.go.position!,
-            radius: radius,//
-            color: Color.White,
-            segments: 16
-        });
+        rapid.withTransform(() => {
+            rapid.drawCircle(radius, Color.White, 16);
+        }, { position: this.go.position });
+        // rapid.renderCircle({
+        //     offset: this.go.position!,
+        //     radius: radius,//
+        //     color: Color.White,
+        //     segments: 16
+        // });
     }
 }

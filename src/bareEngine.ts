@@ -4,7 +4,7 @@ import { GameMode, globalEvents } from "./globals";
 import { assetsHandler } from "./handlers/assetsHandler";
 import { PoolHandler } from "./handlers/poolHandler";
 import { EventArgs } from "./libraries/mitt";
-import { ICircleRenderOptions, IGraphicRenderOptions, IRectRenderOptions, IRenderLineOptions, ISpriteRenderOptions, TextureCache } from "./libraries/rapid-render";
+import { TextureManager } from "./libraries/new-rapid-render";
 import { GameObject } from "./objects/gameObject";
 import type { Scene } from "./scenes/scene";
 import { BareEvent, BareOptions, Events, GameObjectClass, SceneClass } from "./types/bareTypes";
@@ -47,14 +47,31 @@ export class BareEngine
 
     get width(): int { return rapid.width; }
     get height(): int { return rapid.height; }
-    get textures(): TextureCache { return rapid.textures; }
+    // get textures(): TextureCache { return rapid.textures; }
+    get texture(): TextureManager { return rapid.texture }
 
-    get renderGraphic(): (options: IGraphicRenderOptions) => void { return rapid.renderGraphic.bind(rapid); }
-    get renderCircle(): (options: ICircleRenderOptions) => void { return rapid.renderCircle.bind(rapid); }
-    get renderLine(): (options: IRenderLineOptions) => void { return rapid.renderLine.bind(rapid); }
-    get renderRect(): (options: IRectRenderOptions) => void { return rapid.renderRect.bind(rapid); }
-    get renderSprite(): (options: ISpriteRenderOptions) => void { return rapid.renderSprite.bind(rapid); }
+    // get renderGraphic(): (options: IGraphicRenderOptions) => void { return rapid.renderGraphic.bind(rapid); }
+    // get renderCircle(): (options: ICircleRenderOptions) => void { return rapid.renderCircle.bind(rapid); }
+    // get renderLine(): (options: IRenderLineOptions) => void { return rapid.renderLine.bind(rapid); }
+    // get renderRect(): (options: IRectRenderOptions) => void { return rapid.renderRect.bind(rapid); }
+    // get renderSprite(): (options: ISpriteRenderOptions) => void { return rapid.renderSprite.bind(rapid); }
 
+    get drawPolygon(): typeof rapid.drawPolygon {
+        return rapid.drawPolygon.bind(rapid);
+    }
+    get drawCircle(): typeof rapid.drawCircle {
+        return rapid.drawCircle.bind(rapid);
+    }
+    get drawLine(): typeof rapid.drawLine {
+        return rapid.drawLine.bind(rapid);
+    }
+    get drawRect(): typeof rapid.drawRect {
+        return rapid.drawRect.bind(rapid);
+    }
+    get drawSprite(): typeof rapid.drawSprite {
+        return rapid.drawSprite.bind(rapid);
+    }
+    
     static gameObjectPoolSize: int = 50;
     gameObjectPools: Map<string, PoolHandler<GameObject>> = new Map();
 
@@ -146,7 +163,8 @@ export class BareEngine
             if (entriesIgnore.has(name)) continue;
             
             // ADD REGULAR TEXTURE
-            var texture = rapid.textures.addImageFromSource(asset);
+            //var texture = rapid.textures.addImageFromSource(asset);
+            var texture = rapid.texture.create(asset);
             var nameMinusExt = name.split('.')[0];
             assetsHandler.AddTexture(nameMinusExt, texture);
         }
@@ -171,7 +189,10 @@ export class BareEngine
             newHeight = height;
         }
 
-        rapid.resize(newWidth, newHeight);
+        rapid.resize(
+            newWidth/window.devicePixelRatio,
+            newHeight/window.devicePixelRatio, 
+            newWidth, newHeight);
 
         globalEvents.emit(BareEvent.game_resize, { prevWidth: prevWidth, prevHeight: prevHeight, newWidth: newWidth, newHeight: newHeight });
 
@@ -227,20 +248,20 @@ export class BareEngine
 
     Render()
     {
-        rapid.clear(rapid.backgroundColor);//
+        rapid.clear();//
         
-        rapid.startRender();
+        //rapid.startRender();
 
-        rapid.save();
+        rapid.matrixStack.save();
         
         globalEvents.emit(BareEvent.game_preRender);
 
         sceneController.Render();
 
         globalEvents.emit(BareEvent.game_postRender);
-        rapid.restore();
+        rapid.matrixStack.restore();
         
-        rapid.endRender();
+        rapid.flush();
     }
 
 

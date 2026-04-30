@@ -1,4 +1,4 @@
-import { Texture, Vec2 } from "../libraries/rapid-render";
+import { Texture, Vec2 } from "../libraries/new-rapid-render";
 import { BareEvent, BlockedState, ConstructEntityOptions, Entity, HitboxType, Rectangle, Rectangle2Vec } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
 import type { Scene } from "../scenes/scene";

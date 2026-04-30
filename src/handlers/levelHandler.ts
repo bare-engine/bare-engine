@@ -8,7 +8,7 @@ import { PositionPivotComponent } from "../editorComponents/positionPivotCompone
 import { ResizableComponent } from "../editorComponents/resizableComponent";
 import { ResizableRemoveComponent } from "../editorComponents/resizableRemoveComponent";
 import { GameMode } from "../globals";
-import { Color, Texture, Vec2 } from "../libraries/rapid-render";
+import { Color, Texture, Vec2 } from "../libraries/new-rapid-render";
 import { Hitbox } from "../types/hitbox";
 import { GameObject } from "../objects/gameObject";
 import { Scene } from "../scenes/scene";

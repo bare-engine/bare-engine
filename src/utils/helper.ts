@@ -1,6 +1,6 @@
 // helper.ts
 
-import { Vec2, Color } from "../libraries/rapid-render";
+import { Vec2, Color } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { Rectangle } from "../types/bareTypes";
 

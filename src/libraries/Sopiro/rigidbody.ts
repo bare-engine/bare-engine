@@ -1,5 +1,5 @@
 import { ContactInfo } from "./contact";
-import { Texture, Vec2 } from "../rapid-render";
+import { Texture, Vec2 } from "../new-rapid-render";
 import { Settings } from "./settings";
 import * as Util from "./util";
 import { Node } from "./aabbtree";

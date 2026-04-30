@@ -1,9 +1,8 @@
-import { ShaderType, Uniform } from "../libraries/rapid-render";
+import { CustomGlShader } from "../libraries/new-rapid-render";
 
 export class OutlineShader
 {
-    private outlineShader: any = null;
-    public outlineUniform: any = null;
+    private outlineShader: CustomGlShader = null;
     private objectStates = new Map(); // Store state per object
 
     constructor() {
@@ -72,10 +71,9 @@ export class OutlineShader
     }
 `;
 
-        this.outlineShader = rapid.createCostumShader(
+        this.outlineShader = new CustomGlShader(rapid,
             outlineVertexShaderSource, 
             outlineFragmentShaderSource, 
-            ShaderType.SPRITE,
             1
         );
     }
@@ -105,7 +103,7 @@ export class OutlineShader
     const scaleY = Math.abs(gameObject?.totalScaleY);
     const scale = Math.max(scaleX, scaleY, 0.0001);
 
-    this.outlineUniform = new Uniform({
+    this.outlineShader.setUniforms({
         uTextureSize: [textureWidth + 0.00000001, textureHeight + 0.00000001],
         uOutlineColor: [0.867, 0.631, 0.071, 1.0],
         uOutlineWidth: outlineWidth / scale,
@@ -114,24 +112,23 @@ export class OutlineShader
     });
 
     gameObject.shader = this.outlineShader;
-    gameObject.uniforms = this.outlineUniform;
     // Pad the quad just enough to fit the outline; UVs are clamped in-shader to avoid atlas bleeding.
     const padding = (outlineWidth + 2.0) / scale;
     this.outlineShader.setPadding(padding);
 }
 
     public updateColor(color: [number, number, number, number]): void {
-        this.outlineUniform.setUniform('uOutlineColor', color);
+        this.outlineShader.setUniforms({ uOutlineColor: color });
     }
 
     public updateWidth(width: number): void {
         const state = this.objectStates.values().next().value;
         if (state) state.baseWidth = width;
-        this.outlineUniform.setUniform('uOutlineWidth', width);
+        this.outlineShader.setUniforms({ uOutlineWidth: width });
     }
 
     public update(gameObject: any): void {
-        if (!this.objectStates.has(gameObject) || !this.outlineUniform || !gameObject?.texture)
+        if (!this.objectStates.has(gameObject) || !gameObject?.texture)
             return;
 
         const textureWidth = gameObject.texture?.base?.width ?? gameObject.texture?.width ?? 512;
@@ -145,10 +142,12 @@ export class OutlineShader
         const scaleY = Math.abs(gameObject?.totalScaleY);
         const scale = Math.max(scaleX, scaleY, 0.0001);
 
-        this.outlineUniform.setUniform('uTextureSize', [textureWidth + 0.00000001, textureHeight + 0.00000001]);
-        this.outlineUniform.setUniform('uRegionMin', regionMin);
-        this.outlineUniform.setUniform('uRegionMax', regionMax);
-        this.outlineUniform.setUniform('uOutlineWidth', baseWidth / scale);
+        this.outlineShader.setUniforms({
+            uTextureSize: [textureWidth + 0.00000001, textureHeight + 0.00000001],
+            uRegionMin: regionMin,
+            uRegionMax: regionMax,
+            uOutlineWidth: baseWidth / scale
+        });
         this.outlineShader.setPadding((baseWidth + 2.0) / scale);
     }
 

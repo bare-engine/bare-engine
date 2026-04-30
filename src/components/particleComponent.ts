@@ -1,7 +1,7 @@
 import { BaseComponent } from "../controllers/componentController";
 import { particleController } from "../controllers/particleController";
 import { assetsHandler } from "../handlers/assetsHandler";
-import { Color, IParticleOptions, ParticleEmitter, ParticleShape, Vec2 } from "../libraries/rapid-render";
+import { Color, IParticleOptions, ParticleEmitter, ParticleShape, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
 import { InspectorButton } from "../utils/decorators";
@@ -67,14 +67,14 @@ export class ParticleComponent extends BaseComponent
             }
         };
 
-        this.emitter = new ParticleEmitter(options);
+        this.emitter = new ParticleEmitter(rapid, options);
 
         if (!tex)
         {
             (async () =>
             {
                 tex = await assetsHandler.GetTexturePromise(texture);
-                this.emitter.SetTexture(tex);
+                this.emitter.setTexture(tex);
             })();
         }
     }

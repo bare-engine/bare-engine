@@ -2,7 +2,7 @@ import { hitboxController } from "../controllers/hitboxController";
 import { keyboardController } from "../controllers/keyboardController";
 import { mouseController } from "../controllers/mouseController";
 import { objectController } from "../controllers/objectController";
-import { Color, Vec2 } from "../libraries/rapid-render";
+import { Color, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { PhysicsObjectBare } from "../objects/physicsObjectBare";
 import { EditorScene } from "../scenes/editorScene";
@@ -729,53 +729,29 @@ export class EditorControlsHandler {
         if (this.actionThisFrame == 'selectionRect')
         {
             // TRANSPARENT RECT 
-            rapid.renderRect({
-                offset: new Vec2(this.selectionRect.x, this.selectionRect.y),
-                width: this.selectionRect.width,
-                height: this.selectionRect.height,
-                points: [],
-                color: new Color(0, 0, 0, 20),
-            });
+            // rapid.renderRect({
+            //     offset: new Vec2(this.selectionRect.x, this.selectionRect.y),
+            //     width: this.selectionRect.width,
+            //     height: this.selectionRect.height,
+            //     points: [],
+            //     color: new Color(0, 0, 0, 20),
+            // });
+            rapid.withTransform(()=>{
+                rapid.drawRect(
+                    this.selectionRect.width,
+                    this.selectionRect.height,
+                    new Color(0, 0, 0, 20),
+                );
+            }, { position: new Vec2(this.selectionRect.x, this.selectionRect.y) })
                 
             const borderColor = Color.fromHex('#dda112');
             const borderWidth = 2;
 
-            // TOP EDGE
-            rapid.renderLine({
+            rapid.drawLine({
                 points: [
                     new Vec2(this.selectionRect.x, this.selectionRect.y),
                     new Vec2(this.selectionRect.x + this.selectionRect.width, this.selectionRect.y),
-                ],
-                width: borderWidth,
-                roundCap: false,
-                color: borderColor,
-            });
-
-            // RIGHT EDGE
-            rapid.renderLine({
-                points: [
-                    new Vec2(this.selectionRect.x + this.selectionRect.width, this.selectionRect.y),
                     new Vec2(this.selectionRect.x + this.selectionRect.width, this.selectionRect.y + this.selectionRect.height),
-                ],
-                width: borderWidth,
-                roundCap: false,
-                color: borderColor,
-            });
-
-            // BOTTOM EDGE
-            rapid.renderLine({
-                points: [
-                    new Vec2(this.selectionRect.x + this.selectionRect.width, this.selectionRect.y + this.selectionRect.height),
-                    new Vec2(this.selectionRect.x, this.selectionRect.y + this.selectionRect.height),
-                ],
-                width: borderWidth,
-                roundCap: false,
-                color: borderColor,
-            });
-
-            // LEFT EDGE
-            rapid.renderLine({
-                points: [
                     new Vec2(this.selectionRect.x, this.selectionRect.y + this.selectionRect.height),
                     new Vec2(this.selectionRect.x, this.selectionRect.y),
                 ],

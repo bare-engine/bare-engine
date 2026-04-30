@@ -1,7 +1,7 @@
 import { cameraHandler } from "../handlers/cameraHandler";
 import { assetsHandler } from "../handlers/assetsHandler";
 import { SettingsHandler } from "../handlers/settingsHandler";
-import { Color, RenderTexture, Vec2 } from "../libraries/rapid-render";
+import { Color, RenderTexture, Vec2 } from "../libraries/new-rapid-render";
 import { TextObject } from "../objects/textObject";
 import { PhysicsObjectBare } from "../objects/physicsObjectBare";
 import { EditorScene } from "./editorScene";
@@ -32,17 +32,15 @@ export class EntityScene extends EditorScene
     {
         if (!assetsHandler.HasTexture("placeHolder"))
         {
-            var rt = new RenderTexture(512, 512, true, Color.fromHex("b3b3b3"));
-            var text = new TextObject(this, {text: "  Place       Holder", fontSize: 52, color: "white"});
+            var rt = new RenderTexture(rapid, 512, 512, Color.fromHex("b3b3b3"));
+            var text = new TextObject(this, {text: "  Place       Holder", fontSize: 52, fill: "white"});
             text.CenterPivot();
             text.x = rt.width / 2;
             text.y = rt.height / 2;
             this.RenderTo(text, rt);
 
-            const fbo = rt.fbo;
-
-            rapid.drawToFBO(fbo, () => {
-                rapid.renderLine({
+            rapid.drawToRenderTexture(rt, () => {
+                rapid.drawLine({
                     points: [
                         new Vec2(0, 0),
                         new Vec2(rt.width / 2, rt.height / 2),
@@ -51,7 +49,7 @@ export class EntityScene extends EditorScene
                     roundCap: false,
                     color: Color.White,
                 });
-                rapid.renderLine({
+                rapid.drawLine({
                     points: [
                         new Vec2(rt.width, 0),
                         new Vec2(rt.width / 2, rt.height / 2),
@@ -60,7 +58,7 @@ export class EntityScene extends EditorScene
                     roundCap: false,
                     color: Color.White,
                 });
-                rapid.renderLine({
+                rapid.drawLine({
                     points: [
                         new Vec2(0, rt.height),
                         new Vec2(rt.width / 2, rt.height / 2),
@@ -69,7 +67,7 @@ export class EntityScene extends EditorScene
                     roundCap: false,
                     color: Color.White,
                 });
-                rapid.renderLine({
+                rapid.drawLine({
                     points: [
                         new Vec2(rt.width, rt.height),
                         new Vec2(rt.width / 2, rt.height / 2),
@@ -78,7 +76,7 @@ export class EntityScene extends EditorScene
                     roundCap: false,
                     color: Color.White,
                 });
-            });
+            }, Color.fromHex("b3b3b3"));
             
             assetsHandler.AddTexture("placeHolder", rt);
         }

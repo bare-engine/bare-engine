@@ -12,7 +12,7 @@ import { levelHandler } from "../handlers/levelHandler";
 import { SaveDataHandler } from "../handlers/SaveDataHandler";
 import { SettingsHandler } from "../handlers/settingsHandler";
 import { GameMode, globalEvents } from "../globals";
-import { Color, Vec2 } from "../libraries/rapid-render";
+import { Color, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { Scene } from "./scene";
 import { BareEvent, CameraScaleMode, Entity, HitboxType, LevelData, SaveData, SceneOptions, SettingsData, Size } from "../types/bareTypes";
@@ -300,13 +300,11 @@ export class EditorScene extends Scene
             return;
 
         // DRAW COLORED RECT OF LEVEL
-        rapid.renderRect({
-            x: 0,
-            y: 0,
-            width: this.currentLevel.dimensions.width,
-            height: this.currentLevel.dimensions.height,
-            color: this.currentLevel.backgroundColor ? Color.fromHex(this.currentLevel.backgroundColor) : Color.fromHex('666666'),
-        });
+        rapid.drawRect(
+            this.currentLevel.dimensions.width,
+            this.currentLevel.dimensions.height,
+            this.currentLevel.backgroundColor ? Color.fromHex(this.currentLevel.backgroundColor) : Color.fromHex('666666'),
+        );
     }
 
     OnPostRender()
@@ -328,7 +326,7 @@ export class EditorScene extends Scene
         var gridColor = new Color(0, 50, 50, 80);
         for (var i = 0; i <= this.currentLevel.dimensions.width; i += gridSize)
         {
-            rapid.renderLine({
+            rapid.drawLine({
                 points: [
                     new Vec2(i, 0),
                     new Vec2(i, this.currentLevel.dimensions.height),
@@ -340,7 +338,7 @@ export class EditorScene extends Scene
         }
         for (var i = 0; i <= this.currentLevel.dimensions.height; i += gridSize)
         {
-            rapid.renderLine({
+            rapid.drawLine({
                 points: [
                     new Vec2(0, i),
                     new Vec2(this.currentLevel.dimensions.width, i),

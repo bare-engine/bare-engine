@@ -1,5 +1,5 @@
 import { HitboxType, Rectangle } from "../types/bareTypes";
-import { Vec2 } from "../libraries/rapid-render";
+import { Vec2 } from "../libraries/new-rapid-render";
 import { QuadTree, QuadTreeItem } from "../libraries/quadTree";
 import type { Scene } from "../scenes/scene";
 import { GameObject } from "../objects/gameObject";

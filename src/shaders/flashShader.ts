@@ -1,14 +1,10 @@
-import { ShaderType, Uniform } from "../libraries/rapid-render";
+import { CustomGlShader } from "../libraries/new-rapid-render";
 
 export class FlashShader
 {
-    private flashShader: any = null;
-    public flashUniform: any = null;
+    private flashShader: CustomGlShader = null;
     private objectStates = new Map(); // Store state per object
     
-    private isFlashing = false;
-    private originalShader: any = null;
-    private originalUniforms: any = null;
 
     constructor() {
         this.InitShader();
@@ -32,9 +28,9 @@ export class FlashShader
         }
         `;
 
-        this.flashShader = rapid.createCostumShader(flashVertexShaderSource, flashFragmentShaderSource, ShaderType.SPRITE, 0);
+        this.flashShader = new CustomGlShader(rapid, flashVertexShaderSource, flashFragmentShaderSource, 0);
         
-        this.flashUniform = new Uniform({
+        this.flashShader.setUniforms({
             uFlashTime: 1.0  // Start at normal (no flash)
         });
     }
@@ -53,10 +49,9 @@ export class FlashShader
         
         // Apply flash shader
         gameObject.shader = this.flashShader;
-        gameObject.uniforms = this.flashUniform;
         
         // Start flash effect
-        this.flashUniform.setUniform('uFlashTime', 0.0);
+        this.flashShader.setUniforms({ uFlashTime: 0.0 });
     }
 
     public update(gameObject: any): void {
@@ -68,7 +63,7 @@ export class FlashShader
         const progress = Math.min(elapsed / state.fadeDuration, 1.0);
         
         const easeOut = 1 - Math.pow(1 - progress, 2);
-        this.flashUniform.setUniform('uFlashTime', easeOut);
+        this.flashShader.setUniforms({ uFlashTime: easeOut });
         
         if (progress >= 1.0) {
             // Restore original shader and uniforms
@@ -83,15 +78,15 @@ export class FlashShader
     }
 
     public isActive(): boolean {
-        return this.isFlashing;
+        return this.objectStates.size > 0;
     }
 
     public stop(gameObject: any): void {
-        //if (!this.isFlashing) return;
-        this.objectStates.delete(gameObject);
+        const state = this.objectStates.get(gameObject);
+        if (!state) return;
         
-        this.isFlashing = false;
-        gameObject.shader = this.originalShader;
-        gameObject.uniforms = this.originalUniforms;
+        gameObject.shader = state.originalShader;
+        gameObject.uniforms = state.originalUniforms;
+        this.objectStates.delete(gameObject);
     }
 }

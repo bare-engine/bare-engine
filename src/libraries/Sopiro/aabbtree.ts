@@ -1,4 +1,4 @@
-import { Vec2 } from "../rapid-render";
+import { Vec2 } from "../new-rapid-render";
 import { AABB, detectCollisionAABB, testPointInside, union, createAABB, fix } from "./aabb";
 
 import { RigidBody, Type } from "./rigidbody";

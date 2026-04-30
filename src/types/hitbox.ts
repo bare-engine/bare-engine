@@ -1,4 +1,4 @@
-import { Vec2 } from "../libraries/rapid-render";
+import { Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject"
 import { HitboxType, Rectangle, Rectangle2Vec } from "./bareTypes";
 

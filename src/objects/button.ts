@@ -1,18 +1,18 @@
 import { hitboxController } from "../controllers/hitboxController";
-import { Color, ITextTextureOptions, Texture, Vec2 } from "../libraries/rapid-render";
+import { Color, ITextureOptions, TextTexture, Texture, Vec2 } from "../libraries/new-rapid-render";
 import type { ButtonHandlers } from "../controllers/hitboxController";
 import type { Scene } from "../scenes/scene";
-import { BareText } from "../libraries/rapid-render/texture";
 import { GameObject } from "./gameObject";
 
-interface TextOptions extends ITextTextureOptions, ButtonHandlers<Button> {
+interface TextOptions extends ITextureOptions, ButtonHandlers<Button> {
     buttonColor?: Color;
     marge?: number;
+    text: string;
 }
 
 export class Button extends GameObject
 {
-    text: BareText;
+    text: TextTexture;
     marge: number;
     buttonColor: Color;
 
@@ -26,8 +26,8 @@ export class Button extends GameObject
         this.marge = options.marge || 10;
         this.buttonColor = options.buttonColor || Color.fromHex('#242428eb');
         
-        this.text = new BareText({text: options.text, fontSize: 22, fontFamily: 'monospace', color: '#fff'});
-        
+        //this.text = new BareText({text: options.text, fontSize: 22, fontFamily: 'monospace', color: '#fff'});
+        this.text = rapid.texture.createTextTexture({text:options.text, fontSize: 22, fontFamily: 'monospace', fill: '#fff'});
         scene.hitboxController.AssignButton(this, options);
     }
 
@@ -36,18 +36,17 @@ export class Button extends GameObject
         const buttonColor = this.buttonColor;
         buttonColor.a = this.buttonColor.a * ((inheritedColor?.a ?? 255)/255);
 
-        bare.renderRect({ 
-            position: new Vec2(-this.pivot.x, -this.pivot.y), 
-            width: this.width, 
-            height: this.height, 
-            color: buttonColor
-        });
+        rapid.withTransform(()=>{
+            bare.drawRect(
+                this.width, 
+                this.height, 
+                buttonColor
+            );
+        }, { position: new Vec2(-this.pivot.x, -this.pivot.y) })
 
-        bare.renderSprite({
-            texture: this.text, 
-            position: new Vec2(this.marge - this.pivot.x, this.marge - this.pivot.y),
-            color: inheritedColor
-        });
+        rapid.withTransform(()=>{
+            bare.drawSprite(this.text, inheritedColor);
+        }, { position: new Vec2(this.marge - this.pivot.x, this.marge - this.pivot.y) })
     }
 
     get width(): number

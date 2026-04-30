@@ -2,7 +2,7 @@ import { assetsHandler } from "../handlers/assetsHandler";
 import { Hitbox } from '../types/hitbox';
 import { Entity, GameObjectClass } from '../types/bareTypes';
 import { Helper } from '../utils/helper';
-import { Vec2, Texture, Color, GLShader, Uniform, MaskType, MatrixStack } from "../libraries/rapid-render";
+import { Vec2, Texture, Color, GLShader, MaskType, MatrixStack } from "../libraries/new-rapid-render";
 import type { Scene } from "../scenes/scene";
 import type { Component, Ctor, Events, Rectangle } from "../types/bareTypes";
 import { MakePath, MakePathForEntity } from '../globals';
@@ -42,10 +42,10 @@ export class GameObject
     texture: Texture | null;
     color:Color = new Color(255, 255, 255, 255);
     shader: GLShader | undefined;
-    uniforms: Uniform | undefined;
+
     shaders: any[] = [];
     private mask: GameObject | null = null;
-    private maskType: MaskType = MaskType.Include;
+    private maskType: MaskType = MaskType.EQUAL;
 
     transform: Transform = new Transform();
     innerTransform: Transform = new Transform();
@@ -76,6 +76,9 @@ export class GameObject
     OnTextureLoadedCallbacks: Function[] = [];
 
     events = mitt<Events>();
+
+    flipX:boolean = false
+    flipY:boolean = false
     
     //onDestroy:Function | null = null;
 
@@ -334,7 +337,7 @@ export class GameObject
 
         const effectiveColor = inheritedColor ? Helper.MultiplyColors(inheritedColor, this.color) : this.color;
 
-        rapid.save();
+        rapid.matrixStack.save();
         
         if (this.mask)
             this.renderParentTransform = rapid.matrixStack.getTransform();
@@ -342,7 +345,7 @@ export class GameObject
         this.ApplyTransformToMatrixStack(this.transform);
         this.RenderTransformed(effectiveColor);
 
-        rapid.save();
+        rapid.matrixStack.save();
         rapid.matrixStack.translate(-this.pivot.x, -this.pivot.y);
 
         // Render children with inherited color
@@ -351,9 +354,9 @@ export class GameObject
             this.children[i].Render(effectiveColor);
         }
         
-        rapid.restore();
+        rapid.matrixStack.restore();
 
-        rapid.restore();
+        rapid.matrixStack.restore();
         
         this.OnRender();
     }
@@ -370,14 +373,14 @@ export class GameObject
         if (!this.texture)
             return;
 
-        rapid.save();
+        rapid.matrixStack.save();
 
         this.ApplyTransformToMatrixStack(this.innerTransform);
 
         if (this.texture)
             this.RenderSprite(inheritedColor);
 
-        rapid.restore();
+        rapid.matrixStack.restore();
     }
 
     OnRender()
@@ -392,17 +395,15 @@ export class GameObject
         
         if (window.debug)
         {
-            rapid.save();
+            rapid.matrixStack.save();
             rapid.matrixStack.translate(this.x, this.y)
+            rapid.drawCircle(
+                4 / this.scene.GetCameraZoom(),
+                new Color(0, 0, 0, 255),
+                16
+            );
 
-            rapid.renderCircle({
-                offset: new Vec2(0, 0),
-                radius: 4 / this.scene.GetCameraZoom(),
-                color: new Color(0, 0, 0, 255),
-                segments: 16
-            });
-
-            rapid.restore();
+            rapid.matrixStack.restore();
         }
 
         this.OnPostRender();
@@ -417,8 +418,9 @@ export class GameObject
     {
         if (this.mask)
         {
-            rapid.drawMask(this.maskType, () => {
-                rapid.save();
+            rapid.startDrawMask(1, 0xFF)
+            //rapid.drawMask(this.maskType, () => {
+                rapid.matrixStack.save();
                 if (this.renderParentTransform)
                 {
                     rapid.matrixStack.setTransform(this.renderParentTransform);
@@ -426,26 +428,38 @@ export class GameObject
                 this.mask.visible = true;
                 this.mask.Render();
                 this.mask.visible = false;
-                rapid.restore();
-            });
+                rapid.matrixStack.restore();
+            //});
+            rapid.endDrawMask();
         }
         
         const renderColor = color || this.color;
-        rapid.renderSprite({
-            texture: this.texture!,
-            offset: new Vec2(-this.pivot.x, -this.pivot.y),
-            color: renderColor, 
-            shader: this.shader, 
-            uniforms: this.uniforms
-        });
+        // rapid.renderSprite({
+        //     texture: this.texture!,
+        //     offset: new Vec2(-this.pivot.x, -this.pivot.y),
+        //     color: renderColor, 
+        //     shader: this.shader, 
+        //     uniforms: this.uniforms
+        // });
+        
+        if (this.mask) {
+            rapid.enterMask(this.maskType, 1, 0xFF);
+        }
+        if (renderColor.a < 255) {
+            console.log(renderColor.a)
+        }
+        rapid.withTransform(()=>{
+            rapid.drawSprite(this.texture!, renderColor, this.flipX, this.flipY, this.shader)
+        }, {position:new Vec2(-this.pivot.x, -this.pivot.y)})
 
         if (this.mask)
         {
-            rapid.clearMask();
+            //rapid.clearMask();
+            rapid.exitMask()
         }
     }
 
-    SetMask(mask: GameObject, type: MaskType = MaskType.Include)
+    SetMask(mask: GameObject, type: MaskType = MaskType.EQUAL)
     {
         this.mask = mask;
         this.maskType = type;
@@ -752,26 +766,26 @@ export class GameObject
         m.scale(t.scale.x * (t.flipped ? -1 : 1), t.scale.y);
     }
 
-    private cornersToRect(corners: number[][]): Rectangle
+    private cornersToRect(corners: {x: number, y: number}[]): Rectangle
     {
         var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         for (var c of corners)
         {
-            minX = Math.min(minX, c[0]);
-            minY = Math.min(minY, c[1]);
-            maxX = Math.max(maxX, c[0]);
-            maxY = Math.max(maxY, c[1]);
+            minX = Math.min(minX, c.x);
+            minY = Math.min(minY, c.y);
+            maxX = Math.max(maxX, c.x);
+            maxY = Math.max(maxY, c.y);
         }
         return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
     }
 
-    private getCorners(m: MatrixStack, px: number, py: number, w: number, h: number): number[][]
+    private getCorners(m: MatrixStack, px: number, py: number, w: number, h: number): {x: number, y: number}[]
     {
         return [
-            m.apply(px, py) as number[],
-            m.apply(w, py) as number[],
-            m.apply(w, h) as number[],
-            m.apply(px, h) as number[]
+            m.localToWorld(px, py),
+            m.localToWorld(w, py),
+            m.localToWorld(w, h),
+            m.localToWorld(px, h)
         ];
     }
 
@@ -790,18 +804,22 @@ export class GameObject
             };
         }
 
-        var m = new MatrixStack();
-        m.pushIdentity();
+        var m = rapid.matrixStack;
+        m.save();
+        m.identity();
+        
         this.buildAncestorMatrix(m);
         this.applyTransform(m, this);
 
-        m.pushMat();
+        m.save();
         this.applyTransform(m, this.innerTransform);
 
         var px = -this.pivot.x;
         var py = -this.pivot.y;
         var corners = this.getCorners(m, px, py, this.texture!.width + px, this.texture!.height + py);
-        m.popMat();
+        m.restore();
+        
+        m.restore();
 
         return this.cornersToRect(corners);
     }
@@ -813,8 +831,9 @@ export class GameObject
         var maxX = -Infinity;
         var maxY = -Infinity;
 
-        var m = new MatrixStack();
-        m.pushIdentity();
+        var m = rapid.matrixStack;
+        m.save();
+        m.identity();
 
         if (global)
             this.buildAncestorMatrix(m);
@@ -839,30 +858,32 @@ export class GameObject
 
             for (var c of corners)
             {
-                minX = Math.min(minX, c[0]);
-                minY = Math.min(minY, c[1]);
-                maxX = Math.max(maxX, c[0]);
-                maxY = Math.max(maxY, c[1]);
+                minX = Math.min(minX, c.x);
+                minY = Math.min(minY, c.y);
+                maxX = Math.max(maxX, c.x);
+                maxY = Math.max(maxY, c.y);
             }
         };
 
         var recurse = (obj: GameObject) => {
-            m.pushMat();
+            m.save();
             this.applyTransform(m, obj);
 
-            m.pushMat();
+            m.save();
             this.applyTransform(m, obj.innerTransform);
             updateBounds(obj);
-            m.popMat();
+            m.restore();
 
             m.translate(-obj.pivot.x, -obj.pivot.y);
             for (var child of obj.children)
                 recurse(child);
 
-            m.popMat();
+            m.restore();
         };
 
         recurse(this);
+        
+        m.restore();
 
         if (minX === Infinity)
             return { x: 0, y: 0, width: 0, height: 0 };
@@ -1030,33 +1051,41 @@ export class GameObject
         return out;
     }*/
 
-    // Builds the matrix representing this object's "child space" —
-    // the coordinate space where SetPosition(x, y) on direct children operates.
-    // Matches exactly the transform chain used by GetBounds/GetBoundsWithChildren.
-    private buildChildSpaceMatrix(): MatrixStack
-    {
-        const m = new MatrixStack();
-        m.pushIdentity();
-        this.buildAncestorMatrix(m);
-        this.applyTransform(m, this.transform);
-        m.translate(-this.pivot.x, -this.pivot.y);
-        return m;
-    }
-
     // Convert a point from this object's child space to world space.
     ToGlobal(localPoint: Vec2 = new Vec2()): Vec2
     {
-        const m = this.buildChildSpaceMatrix();
-        return m.apply(localPoint) as Vec2;
+        const m = rapid.matrixStack;
+        m.save();
+        m.identity();
+        
+        this.buildAncestorMatrix(m);
+        this.applyTransform(m, this.transform);
+        m.translate(-this.pivot.x, -this.pivot.y);
+        
+        const {x, y} = m.localToWorld(localPoint.x, localPoint.y);
+        
+        m.restore();
+        
+        return new Vec2(x, y);
     }
 
     // Convert a world point to this object's child space
     // (the space where child.SetPosition(x, y) operates).
     ToLocal(globalPoint: Vec2): Vec2
     {
-        const m = this.buildChildSpaceMatrix();
-        m.setTransform(m.getInverse());
-        return m.apply(globalPoint) as Vec2;
+        const m = rapid.matrixStack;
+        m.save();
+        m.identity();
+        
+        this.buildAncestorMatrix(m);
+        this.applyTransform(m, this.transform);
+        m.translate(-this.pivot.x, -this.pivot.y);
+        
+        const {x, y} = m.worldToLocal(globalPoint.x, globalPoint.y);
+        
+        m.restore();
+        
+        return new Vec2(x, y);
     }
 
     BringToFront()
@@ -1231,7 +1260,7 @@ export class GameObject
         this.shaders = [];
 
         this.shader = undefined;
-        this.uniforms = undefined;
+        //this.uniforms = undefined;
     }
     
     Remove(clear:boolean = true)

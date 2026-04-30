@@ -3,7 +3,7 @@ import { hitboxController } from '../controllers/hitboxController';
 import { keyboardController } from '../controllers/keyboardController';
 import { mouseController } from '../controllers/mouseController';
 import { GameMode } from '../globals';
-import { Color, Vec2 } from '../libraries/rapid-render';
+import { Color, Vec2 } from '../libraries/new-rapid-render';
 import type { EditorScene } from '../scenes/editorScene';
 import { Run } from '../utils/decorators';
 
@@ -304,7 +304,13 @@ export class ResizableComponent extends BaseComponent
 
     const draw = (start: Vec2, end: Vec2, round: boolean = false) =>
     {
-      rapid.renderLine({
+      // rapid.renderLine({
+      //   points: [start, end],
+      //   width,
+      //   roundCap: round,
+      //   color,
+      // });
+      rapid.drawLine({
         points: [start, end],
         width,
         roundCap: round,

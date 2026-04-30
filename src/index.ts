@@ -135,18 +135,19 @@ export { Howl, Howler } from "./libraries/howler/howler.core.js";
 export type { HowlOptions } from "./libraries/howler/howler.core.js";
 
 // Libraries: rapid-render
-export * from "./libraries/rapid-render/interface";
-export * from "./libraries/rapid-render/math";
-export { Particle, ParticleEmitter } from "./libraries/rapid-render/particle";
-export { graphicAttributes, spriteAttributes } from "./libraries/rapid-render/regions/attributes";
-export * from "./libraries/rapid-render/render";
-export { default as Rapid } from "./libraries/rapid-render/render";
-export * from "./libraries/rapid-render/texture";
-export { BareText } from "./libraries/rapid-render/texture";
-export { QuadTree } from "./libraries/quadTree";
-export type { QuadTreeItem } from "./libraries/quadTree";
-export { default as GLShader } from "./libraries/rapid-render/webgl/glshader";
-export { Uniform } from "./libraries/rapid-render/webgl/uniform";
+// export * from "./libraries/new-rapid-render/interface";
+// export * from "./libraries/new-rapid-render/math";
+// export { Particle, ParticleEmitter } from "./libraries/new-rapid-render/particle";
+// export { graphicAttributes, spriteAttributes } from "./libraries/new-rapid-render/regions/attributes";
+// export * from "./libraries/new-rapid-render/render";
+// export { default as Rapid } from "./libraries/new-rapid-render/render";
+// export * from "./libraries/new-rapid-render/texture";
+// export { BareText } from "./libraries/new-rapid-render/texture";
+// export { QuadTree } from "./libraries/quadTree";
+// export type { QuadTreeItem } from "./libraries/quadTree";
+// export { default as GLShader } from "./libraries/new-rapid-render/webgl/glshader";
+// export { Uniform } from "./libraries/new-rapid-render/webgl/uniform";
+export * from "./libraries/new-rapid-render"
 
 // Libraries: tweenJS
 export { Easing } from "./libraries/tweenJS/Easing";

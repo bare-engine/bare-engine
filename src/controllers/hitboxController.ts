@@ -1,4 +1,4 @@
-import { Vec2 } from "../libraries/rapid-render";
+import { Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
 import { BareEvent, BareEventPayload, CollisionHandlingType, HitboxType } from '../types/bareTypes';
@@ -85,23 +85,30 @@ export class HitboxController
                 const center = this.GetHitboxCircleCenter(hitbox);
                 const radius = this.GetHitboxRadius(hitbox);
                 
-                rapid.renderCircle({
-                    offset: new Vec2(center.x, center.y),
-                    radius: radius,
-                    segments: 32,
-                    color: obj.hitboxColor
-                });
+                rapid.withTransform(()=>{
+                    rapid.drawCircle(radius, obj.hitboxColor, 32)
+                }, { position: new Vec2(center.x, center.y) })
+                // rapid.renderCircle({
+                //     offset: new Vec2(center.x, center.y),
+                //     radius: radius,
+                //     segments: 32,
+                //     color: obj.hitboxColor
+                // });
             }
             else if (hitbox.type == HitboxType.Rectangle)
             {
                 const rect = this.GetHitboxRect(hitbox);
                 
-                rapid.renderRect({
-                    offset: new Vec2(rect.x1, rect.y1),
-                    width: rect.width,
-                    height: rect.height,
-                    color: obj.hitboxColor
-                });
+                rapid.withTransform(()=>{
+                    rapid.drawRect(rect.width, rect.height, obj.hitboxColor);
+                }, { position: new Vec2(rect.x1, rect.y1) })
+
+                // rapid.renderRect({
+                //     offset: new Vec2(rect.x1, rect.y1),
+                //     width: rect.width,
+                //     height: rect.height,
+                //     color: obj.hitboxColor
+                // });
             }
         }
     }

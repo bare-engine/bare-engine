@@ -2,7 +2,7 @@ import { keyboardController } from "../controllers/keyboardController";
 import { sceneController } from "../controllers/sceneController";
 import { EditorUIScene } from "../scenes/editorUIScene";
 import { GameMode, globalEvents } from "../globals";
-import { Color, Vec2 } from "../libraries/rapid-render";
+import { Color, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { PhysicsObjectBare } from "../objects/physicsObjectBare";
 import { EditorScene } from "../scenes/editorScene";

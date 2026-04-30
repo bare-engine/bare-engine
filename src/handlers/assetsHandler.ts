@@ -1,5 +1,5 @@
 
-import { Texture } from '../libraries/rapid-render';
+import { Texture } from '../libraries/new-rapid-render';
 import { AnimationData, Atlas } from '../types/bareTypes';
 import { Helper } from '../utils/helper';
 
@@ -27,7 +27,7 @@ class AssetsHandler
             return loadingPromise;
 
         const fullPath = (isfullPath ? texturePath : this.GetFullImagePath(texturePath));
-        const texturePromise = rapid.textures.textureFromUrl(fullPath).then(tex => {
+        const texturePromise = rapid.texture.load(fullPath).then(tex => {
             this.AddTexture(texturePath, tex);
             this.loading.delete(texturePath);
             return tex;
@@ -66,7 +66,7 @@ class AssetsHandler
     {
         var promises = [];
         promises.push(Helper.loadJSON<Atlas>(`${bareEngine.imagePath}/${atlasPath}.json`));
-        promises.push(bareEngine.textures.loadImage(`${bareEngine.imagePath}/${atlasPath}.webp`)); // DON'T HARDCODE WEBP, TODO
+        promises.push(bareEngine.texture.load(`${bareEngine.imagePath}/${atlasPath}.webp`)); // DON'T HARDCODE WEBP, TODO
 
         const [json, img] = await Promise.all(promises);
 
@@ -89,7 +89,7 @@ class AssetsHandler
 
     AddTexturesFromAtlas(atlas: Atlas, atlasImg: HTMLImageElement):void
     {
-        var atlasBaseTex = rapid.textures.addImageFromSource(atlasImg);
+        var atlasBaseTex = rapid.texture.create(atlasImg);
         atlasBaseTex.base!.sourceUrl = atlasImg.src;
 
         for (var name in atlas.frames)
@@ -103,10 +103,7 @@ class AssetsHandler
             let fh = frame.frame.h;
 
             tx.isRotated = frame.rotated;
-            if (frame.rotated)
-                tx.setClipRegion(fx, fy, fh, fw);
-            else
-                tx.setClipRegion(fx, fy, fw, fh);
+            tx.setRegion(fx, fy, fw, fh);
 
             tx.sourceSize = frame.sourceSize;
             tx.spriteSourceSize = frame.spriteSourceSize;
@@ -132,7 +129,7 @@ class AssetsHandler
     Clear()
     {
         for (var tex of this.textures.values())
-            rapid.textures.destroy(tex.base);
+            rapid.texture.destroy(tex.base);
 
         this.textures.clear();
         this.loading.clear();

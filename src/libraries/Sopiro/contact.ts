@@ -4,7 +4,7 @@ import { Settings } from "./settings";
 import * as Util from "./util";
 import { Constraint } from "./constraint";
 import { ContactPoint } from "./detection";
-import { Vec2 } from "../rapid-render";
+import { Vec2 } from "../new-rapid-render";
 
 enum ContactType
 {

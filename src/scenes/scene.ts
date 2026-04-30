@@ -6,7 +6,7 @@ import { sceneController } from "../controllers/sceneController";
 import { globalEvents } from "../globals";
 import { SettingsHandler } from "../handlers/settingsHandler";
 import mitt from "../libraries/mitt";
-import { Color, FrameBufferObject, ICircleRenderOptions, IGraphicRenderOptions, IRectRenderOptions, IRenderLineOptions, ISpriteRenderOptions, MaskType, RenderTexture, Texture, TextureCache, Vec2 } from "../libraries/rapid-render";
+import { Color, RenderTexture, Texture, TextureManager, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { PhysicsObjectBare } from "../objects/physicsObjectBare";
 import { defaultSettingsData } from "../types/bareData";
@@ -84,15 +84,27 @@ export class Scene implements SceneI
 
     get width(): int { return rapid.width; }
     get height(): int { return rapid.height; }
-    get textures(): TextureCache { return rapid.textures; }
+    get texture(): TextureManager { return rapid.texture; }
 
-    get renderGraphic(): (options: IGraphicRenderOptions) => void { return rapid.renderGraphic.bind(rapid); }
-    get renderCircle(): (options: ICircleRenderOptions) => void { return rapid.renderCircle.bind(rapid); }
-    get renderLine(): (options: IRenderLineOptions) => void { return rapid.renderLine.bind(rapid); }
-    get renderRect(): (options: IRectRenderOptions) => void { return rapid.renderRect.bind(rapid); }
-    get renderSprite(): (options: ISpriteRenderOptions) => void { return rapid.renderSprite.bind(rapid); }
-    get drawMask(): (type: MaskType, cb: () => void) => void { return rapid.drawMask.bind(rapid); }
-    get clearMask(): () => void { return rapid.clearMask.bind(rapid); }
+
+    get drawPolygon(): typeof rapid.drawPolygon {
+        return rapid.drawPolygon.bind(rapid);
+    }
+    get drawCircle(): typeof rapid.drawCircle {
+        return rapid.drawCircle.bind(rapid);
+    }
+    get drawLine(): typeof rapid.drawLine {
+        return rapid.drawLine.bind(rapid);
+    }
+    get drawRect(): typeof rapid.drawRect {
+        return rapid.drawRect.bind(rapid);
+    }
+    get drawSprite(): typeof rapid.drawSprite {
+        return rapid.drawSprite.bind(rapid);
+    }
+
+    // get drawMask(): (type: MaskType, cb: () => void) => void { return rapid.drawMask.bind(rapid); }
+    // get clearMask(): () => void { return rapid.clearMask.bind(rapid); }
     public events = mitt<Events>(); // private todo
     //private pipes = matt<Pipes>();
     
@@ -897,7 +909,7 @@ export class Scene implements SceneI
 
     Render(): void
     {
-        rapid.save();
+        rapid.matrixStack.save();
 
         if (!this.UI)
             this.cameraHandler?.SetTransform();
@@ -921,7 +933,7 @@ export class Scene implements SceneI
 
         this.OnPostRender();
 
-        rapid.restore();
+        rapid.matrixStack.restore();
     }
 
     OnPreRender()
@@ -942,50 +954,36 @@ export class Scene implements SceneI
     /**
      * Render a source texture into a target rendertexture
      */
-    RenderTextureTo(source: Texture, target: RenderTexture | FrameBufferObject, clear: boolean = false): boolean
+    RenderTextureTo(source: Texture, target: RenderTexture, clear: boolean = false): boolean
     {
-        return rapid.renderTextureTo(source, target, clear);
+        rapid.drawToRenderTexture(target, () => {
+            rapid.drawSprite(source);
+        }, clear ? (target.clearColor ?? new Color(0, 0, 0, 0)) : null);
+        return true;
     }
 
     /**
      * Render a game object into a target rendertexture
      */
-    RenderGameObjectTo(obj: GameObject, target: RenderTexture | FrameBufferObject, clear: boolean = false): boolean
+    RenderGameObjectTo(obj: GameObject, target: RenderTexture, clear: boolean = false): boolean
     {
-        const fbo = target instanceof FrameBufferObject
-            ? target
-            : (target.base instanceof FrameBufferObject ? target.base : undefined);
-
-        if (!fbo)
-            return false;
-
-        rapid.drawToFBO(fbo, () => {
-
+        rapid.drawToRenderTexture(target, () => {
             obj.Render();
-        }, clear);
-
+        }, clear ? (target.clearColor ?? new Color(0, 0, 0, 0)) : null);
         return true;
     }
 
     /**
      * Render a texture or game object into a target rendertexture
      */
-    RenderTo(source: Texture | GameObject, target: RenderTexture | FrameBufferObject, clear: boolean = false): boolean
+    RenderTo(source: Texture | GameObject, target: RenderTexture, clear: boolean = false): boolean
     {
-        const fbo = target instanceof FrameBufferObject
-            ? target
-            : (target.base instanceof FrameBufferObject ? target.base : undefined);
-
-        if (!fbo)
-            return false;
-
-        rapid.drawToFBO(fbo, () => {
+        rapid.drawToRenderTexture(target, () => {
             if (source instanceof GameObject)
                 source.Render();
             else
-                rapid.renderSprite({ texture: source })
-        }, clear);
-
+                rapid.drawSprite(source);
+        }, clear ? (target.clearColor ?? new Color(0, 0, 0, 0)) : null);
         return true;
     }
 

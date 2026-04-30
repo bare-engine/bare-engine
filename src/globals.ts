@@ -1,6 +1,6 @@
 import mitt, { type Emitter } from './libraries/mitt';
 import type { BareEngine } from './bareEngine';
-import type { GLShader, Rapid, Texture } from './libraries/rapid-render';
+import type { CustomGlShader, Rapid, Texture } from './libraries/new-rapid-render';
 import type { Scene } from './scenes/scene';
 import type { Entity, Events } from './types/bareTypes';
 import { Helper } from './utils/helper';
@@ -30,7 +30,7 @@ declare global
 
     var debug:boolean;
 
-    var whiteShader:GLShader;
+    var whiteShader:CustomGlShader;
 
     var rapid: Rapid;
     var isLocalhost:boolean;
