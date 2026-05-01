@@ -80,8 +80,10 @@ export class MouseController
         this.screen.positionPrev.x = this.screen.position.x;
         this.screen.positionPrev.y = this.screen.position.y;
 
-        this.screen.position.x = mouseX;
-        this.screen.position.y = mouseY;
+        const logicMouse = rapid.physicsToLogic(new Vec2(mouseX, mouseY))
+
+        this.screen.position.x = logicMouse.x;
+        this.screen.position.y = logicMouse.y;
 
         this.SetMousePosition(this.screen.position.x, this.screen.position.y);
 
@@ -139,11 +141,13 @@ export class MouseController
         this.screen.positionPrev.x = this.screen.position.x;
         this.screen.positionPrev.y = this.screen.position.y;
 
-        this.screen.position.x = mouseX;
-        this.screen.position.y = mouseY;
+        const logicMouse = rapid.physicsToLogic(new Vec2(mouseX, mouseY))
 
-        MouseController.lastMouseX = mouseX;
-        MouseController.lastMouseY = mouseY;
+        this.screen.position.x = logicMouse.x;
+        this.screen.position.y = logicMouse.y;
+
+        MouseController.lastMouseX = logicMouse.x;
+        MouseController.lastMouseY = logicMouse.y;
 
         this.SetMousePosition(this.screen.position.x, this.screen.position.y);
     }

@@ -7,6 +7,7 @@ import { GraphicRegion } from "./region/graphicRegion";
 import { RenderTexture, Texture, TextureManager } from "./texture";
 import { Color } from "./color";
 import { ILineRenderOptions, getLineGeometry } from "./line";
+import { Vec2 } from "./math";
 
 /**
  * Options for initializing the Rapid application.
@@ -863,5 +864,19 @@ export class Rapid {
 
         const m = this.matrixStack.curWorldM
         this.matrix.invert(m)
+    }
+
+    logicToPhysics(p:Vec2) {
+        return p.multiply(new Vec2(
+            this.physicsWidth / this.logicWidth,
+            this.physicsHeight / this.logicHeight
+        ))
+    }
+
+    physicsToLogic(p:Vec2) {
+        return p.multiply(new Vec2(
+            this.logicWidth / this.physicsWidth,
+            this.logicHeight / this.physicsHeight
+        ))
     }
 }

@@ -11,7 +11,7 @@ export class OutlineShader
 
     private InitShader() {
         const outlineVertexShaderSource = `
-            void vertex(inout vec2 position, inout vec2 region) {
+            void vertex(inout vec4 position, inout vec2 region) {
                 // Keep original region so fragment shader can mask padding area itself.
                 vRegion = region; 
             }
@@ -41,7 +41,7 @@ export class OutlineShader
         
         // Sample base sprite using clamped UVs.
         vec2 baseUv = clamp(vRegion, uRegionMin, uRegionMax);
-        vec4 ownColor = texture2D(uTexture, baseUv);
+        vec4 ownColor = sampleTexture(baseUv);
 
         // Mask out the padded area so the base sprite does not stretch.
         float insideX = step(uRegionMin.x - 0.0001, vRegion.x) * step(vRegion.x, uRegionMax.x + 0.0001);
@@ -56,7 +56,7 @@ export class OutlineShader
         for (float angle = 0.0; angle <= PI * 2.0; angle += 0.39269908) {
             vec2 offset = vec2(cos(angle), sin(angle)) * uOutlineWidth * px;
             vec2 displaced = clamp(vRegion + offset, uRegionMin, uRegionMax);
-            vec4 curColor = texture2D(uTexture, displaced);
+            vec4 curColor = sampleTexture(displaced);
             maxAlpha = max(maxAlpha, curColor.a);
         }
         
