@@ -106,8 +106,8 @@ export class MouseController
             this.world.positionOnMiddleDown.x = this.world.position.x;
             this.world.positionOnMiddleDown.y = this.world.position.y;
 
-            this.screen.positionOnMiddleDown.x = event.clientX;
-            this.screen.positionOnMiddleDown.y = event.clientY;
+            this.screen.positionOnMiddleDown.x = logicMouse.x;
+            this.screen.positionOnMiddleDown.y = logicMouse.y;
         }
 
         if (event.button == 2)
@@ -117,13 +117,14 @@ export class MouseController
             this.world.positionOnRightDown.x = this.world.position.x;
             this.world.positionOnRightDown.y = this.world.position.y;
 
-            this.screen.positionOnRightDown.x = event.clientX;
-            this.screen.positionOnRightDown.y = event.clientY;
+            this.screen.positionOnRightDown.x = logicMouse.x;
+            this.screen.positionOnRightDown.y = logicMouse.y;
         }
     }
 
     PointerUp({ mouseX, mouseY, event }: BareEventPayload['pointer_up']): void
     {
+        const logicMouse = rapid.physicsToLogic(new Vec2(mouseX, mouseY))
         if (event.button == 2)
             this.rightMouseIsDown = false;
 
@@ -133,7 +134,7 @@ export class MouseController
         if (event.button == 0)
             this.mouseIsDown = false;
 
-        this.SetMousePosition(mouseX, mouseY);
+        this.SetMousePosition(logicMouse.x, logicMouse.y);
     }
 
     PointerMove({ mouseX, mouseY, event }: BareEventPayload['pointer_move'])
