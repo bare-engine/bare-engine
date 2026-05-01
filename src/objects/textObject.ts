@@ -12,6 +12,9 @@ export class TextObject extends GameObject
     {
         super(scene);
 
+        if (!options.fontFamily && bareEngine.defaultFont)
+            options.fontFamily = bareEngine.defaultFont; // COULD ALSO DO SAME IN RAPID TEXT - TODO
+
         this.textTexture = new BareText(options);
         this.SetTexture(this.textTexture);
 

@@ -1082,6 +1082,19 @@ export class Scene implements SceneI
         return this.componentController?.GetComponentsFrom(obj);
     }
 
+    async LoadFont(name: string, url?: string)
+    {
+        // SET FIRST LOADED FONT AS DEFAULT
+        bareEngine.defaultFont ||= name;
+
+        if (!url)
+            url = `${name}.ttf`; // DEFAULTING TO TTF FONT WHEN NO URL SPECIFIED
+
+        const font = new FontFace(name, `url(${bareEngine.fontPath}/${url})`);
+        await font.load();
+        (document.fonts as any).add(font); // NEEDS 'as any' FOR LINUX
+    }
+
     // A CATCH-ALL METHOD TO REGISTER CLASSES
     // CAN BE CONTROLLER/GAMEOBJECT/COMPONENT/PHYSICS/ETC
     // DOESN'T ALWAYS DO SOMETHING, BUT JUST A HOAX TO LET THE DEV REFFERENCE THE CLASS
