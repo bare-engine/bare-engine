@@ -339,7 +339,7 @@ export class SettingsHandler
                         const endText = rangeMatch[2];
                         const start = parseInt(startText);
                         const end = parseInt(endText);
-                        const paddingLength = Math.max(startText.length, endText.length);
+                        const paddingLength = startText.startsWith("0") ? startText.length : 0;
                         for (let i = start; i <= end; i++)
                             processedNames.push(base + i.toString().padStart(paddingLength, "0"));
                     }
