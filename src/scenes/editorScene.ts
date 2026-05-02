@@ -49,7 +49,9 @@ export class EditorScene extends Scene
 
     async OnStart(payload?: EditorSceneAwakePayload): Promise<void>
     {
-        this.RegisterEditorComponents();
+        if (__DEV__)
+            this.RegisterEditorComponents(); // JUST FOR PLUGIN - ENTITY EDITOR
+
         cameraHandler.SetScaleMode(CameraScaleMode.Contain);
 
         this.editorControlsHandler = new EditorControlsHandler(this);

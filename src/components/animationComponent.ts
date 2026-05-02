@@ -90,7 +90,7 @@ export class AnimationComponent extends BaseComponent
     current = {
         get: () => this.currentAnimation?.name.replace(`${this.go.name}_`, "") ?? "",
         set: (name: string) => this.Play(name),
-        values: () => this.allAnimationNamesForObject
+        values: () => this.allAnimationNamesForObject // MAKES IT A DROPDOWN
     };
 
     @InspectorField

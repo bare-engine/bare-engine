@@ -463,7 +463,12 @@ export class Scene implements SceneI
                     console.error('Component class not found: ' + className + '. Add it with bare.AddClass(' + Helper.CapitalizeFirstLetter(component) + 'Component);');
                 }
                 var componentValues = v[component];
-                var componentInstance = new ComponentClass(o.scene, ...Object.values(componentValues));
+                var componentInstance = new ComponentClass(o.scene);
+                for (const key in componentValues)
+                {
+                    componentInstance[key] = componentValues[key];
+                }
+                componentInstance.__paramNames = Object.keys(componentValues);
                 o.AddComponent(componentInstance);
             }
         }
@@ -1073,6 +1078,19 @@ export class Scene implements SceneI
     GetAllComponentsFrom(obj:GameObject):any[]
     {
         return this.componentController?.GetComponentsFrom(obj);
+    }
+
+    async LoadFont(name: string, url?: string)
+    {
+        // SET FIRST LOADED FONT AS DEFAULT
+        bareEngine.defaultFont ||= name;
+
+        if (!url)
+            url = `${name}.ttf`; // DEFAULTING TO TTF FONT WHEN NO URL SPECIFIED
+
+        const font = new FontFace(name, `url(${bareEngine.fontPath}/${url})`);
+        await font.load();
+        (document.fonts as any).add(font); // NEEDS 'as any' FOR LINUX
     }
 
     // A CATCH-ALL METHOD TO REGISTER CLASSES

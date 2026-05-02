@@ -1,4 +1,4 @@
-import { Vec2 } from "../libraries/new-rapid-render";
+import { Color, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
 import { BareEvent, BareEventPayload, CollisionHandlingType, HitboxType } from '../types/bareTypes';
@@ -73,9 +73,15 @@ export class HitboxController
             var obj = objs[i];
             var hitbox = obj.tapHitbox;
 
+            var color = Color.fromHex('#f700ff57');
+
             // physicsHitbox SHOULD NOT REALLY BE HANDLED HERE - TODO
             if ((obj as any).isPhysicsObject)
+            {
                 hitbox = (obj as any).physicsHitbox;
+                if (!(obj as any).collide) // DIFFERENT COLOR FOR HITBOXES THAT DON'T COLLIDE
+                    color = Color.fromHex('#e1ff0057');
+            }
             
             if (!hitbox?.active)
                 continue;
@@ -86,29 +92,16 @@ export class HitboxController
                 const radius = this.GetHitboxRadius(hitbox);
                 
                 rapid.withTransform(()=>{
-                    rapid.drawCircle(radius, obj.hitboxColor, 32)
+                    rapid.drawCircle(radius, color, 32)
                 }, { position: new Vec2(center.x, center.y) })
-                // rapid.renderCircle({
-                //     offset: new Vec2(center.x, center.y),
-                //     radius: radius,
-                //     segments: 32,
-                //     color: obj.hitboxColor
-                // });
             }
             else if (hitbox.type == HitboxType.Rectangle)
             {
                 const rect = this.GetHitboxRect(hitbox);
                 
                 rapid.withTransform(()=>{
-                    rapid.drawRect(rect.width, rect.height, obj.hitboxColor);
+                    rapid.drawRect(rect.width, rect.height, color);
                 }, { position: new Vec2(rect.x1, rect.y1) })
-
-                // rapid.renderRect({
-                //     offset: new Vec2(rect.x1, rect.y1),
-                //     width: rect.width,
-                //     height: rect.height,
-                //     color: obj.hitboxColor
-                // });
             }
         }
     }

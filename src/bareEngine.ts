@@ -36,14 +36,16 @@ export class BareEngine
      
     rootDir: string = "assets";
     imageDir: string = "images";
-    dataDir: string = "data";
     levelDir: string = "data/levels";
     soundDir: string = "sounds";
+    dataDir: string = "data";
+    fontDir: string = "fonts";
 
     get imagePath(): string { return this.rootDir + "/" + this.imageDir; }
     get levelPath(): string { return this.rootDir + "/" + this.levelDir; }
     get soundPath(): string { return this.rootDir + "/" + this.soundDir; }
     get dataPath(): string { return this.rootDir + "/" + this.dataDir; }
+    get fontPath(): string { return this.rootDir + "/" + this.fontDir; }
 
     get width(): int { return rapid.width; }
     get height(): int { return rapid.height; }
@@ -76,6 +78,8 @@ export class BareEngine
     gameObjectPools: Map<string, PoolHandler<GameObject>> = new Map();
 
     public gameMode:GameMode = GameMode.Game;
+
+    public defaultFont:string = "";
 
     constructor(sceneClass: SceneClass, options?: BareOptions)
     {

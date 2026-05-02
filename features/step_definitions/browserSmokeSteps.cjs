@@ -42,14 +42,31 @@ Then("all BareEngine browser scenes should pass", async function () {
       continue;
     }
 
-    const result = await this.driver.wait(
-      async () => {
-        const current = await this.driver.executeScript((name) => window.__bareBrowserTests.check(name), sceneName);
-        return current?.passed || current?.error ? current : false;
-      },
-      5000,
-      `Expected BareEngine browser scene "${sceneName}" to pass`
-    );
+    let result;
+    try {
+      result = await this.driver.wait(
+        async () => {
+          const current = await this.driver.executeScript((name) => window.__bareBrowserTests.check(name), sceneName);
+          return current?.passed || current?.error ? current : false;
+        },
+        5000,
+        `Expected BareEngine browser scene "${sceneName}" to pass`
+      );
+    } catch (error) {
+      const current = await this.driver.executeScript((name) => window.__bareBrowserTests.check(name), sceneName);
+      const assertions = typeof current?.assertions === "number" ? current.assertions : 0;
+      const message = assertions === 0
+        ? `Scene did not call assert(). Add at least one assert(...) to the test scene.`
+        : error.message;
+
+      result = {
+        name: sceneName,
+        passed: false,
+        assertions,
+        error: message,
+        errors: [message],
+      };
+    }
 
     results.push(result);
   }

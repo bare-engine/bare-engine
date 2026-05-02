@@ -311,6 +311,7 @@ export class SettingsHandler
 
     // FIND IF # OR + ARE PRESENT, ADDS THE NUMBERED NAMES
     // EG: "player_walk1#3"       -> ["player_walk1", "player_walk2", "player_walk3"]
+    // EG: "player_walk1_00#03"    -> ["player_walk1_00", "player_walk1_01", "player_walk1_02", "player_walk1_03"]
     // EG: "player_walk1#2+4+6#8" -> ["player_walk1", "player_walk2", "player_walk4", "player_walk6", "player_walk7", "player_walk8"]
     // ALSO, WHEN imagePath IS SET, ADDS IT BEFORE EVERY NAME
     private ProcessNumberedNames(names?: string[], imagePath: string = ""): string[] | null
@@ -334,10 +335,13 @@ export class SettingsHandler
                     const rangeMatch = segment.match(/^(\d+)#(\d+)$/);
                     if (rangeMatch)
                     {
-                        const start = parseInt(rangeMatch[1]);
-                        const end = parseInt(rangeMatch[2]);
+                        const startText = rangeMatch[1];
+                        const endText = rangeMatch[2];
+                        const start = parseInt(startText);
+                        const end = parseInt(endText);
+                        const paddingLength = Math.max(startText.length, endText.length);
                         for (let i = start; i <= end; i++)
-                            processedNames.push(base + i);
+                            processedNames.push(base + i.toString().padStart(paddingLength, "0"));
                     }
                     else
                     {

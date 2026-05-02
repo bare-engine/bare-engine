@@ -6,6 +6,7 @@ const LOCKED_METADATA_KEY = "__lockedFields__";
 const RANGE_METADATA_KEY = "__fieldRanges__";
 const LABEL_METADATA_KEY = "__fieldLabels__";
 const RUN_MODES_KEY = "__runModes__";
+const SAVE_METADATA_KEY = "__saveFields__";
 
 /**
  * Restricts when a component is active based on GameMode.
@@ -159,6 +160,20 @@ export function InspectorField(targetOrType: any, propertyKey?: string): any
         addField(targetOrType, propertyKey);
         return;
     }
+}
+
+export function Save(target: any, propertyKey: string): void
+{
+    const saveFields: string[] = target[SAVE_METADATA_KEY] || [];
+    if (!saveFields.includes(propertyKey))
+        saveFields.push(propertyKey);
+
+    target[SAVE_METADATA_KEY] = saveFields;
+}
+
+export function getSaveFields(component: any): string[]
+{
+    return component.constructor.prototype[SAVE_METADATA_KEY] || [];
 }
 
 export function Locked(target: any, propertyKey: string): void

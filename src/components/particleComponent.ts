@@ -4,65 +4,82 @@ import { assetsHandler } from "../handlers/assetsHandler";
 import { Color, IParticleOptions, ParticleEmitter, ParticleShape, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
-import { InspectorButton } from "../utils/decorators";
+import { InspectorButton, Save } from "../utils/decorators";
 
 export class ParticleComponent extends BaseComponent
 {
     public emitter: ParticleEmitter;
-    private positionData: any;
+    
+    @Save
+    private position: any = {x: 0, y: 0};
 
-    constructor(scene: Scene,
-        position: any,
-        life: number,
-        texture: string,
-        origin: any,
-        emitRate: number,
-        localSpace: boolean,
-        emitShape: string,
-        emitRadius: number,
-        animation: any
-    )
+    @Save
+    private life: number = 1;
+
+    @Save
+    private texture: string = "";
+
+    @Save
+    private origin: any;
+
+    @Save
+    private emitRate: number = 0;
+
+    @Save
+    private localSpace: boolean = false;
+
+    @Save
+    private emitShape: string = "POINT";
+
+    @Save
+    private emitRadius: number = 0;
+
+    @Save
+    private animation: any;
+
+    constructor(scene: Scene)
     {
         super(scene);
+    }
 
-        this.positionData = position;
-
-        var tex = assetsHandler.GetTexture(texture);
+    private initEmitter(): void
+    {
+        var tex = assetsHandler.GetTexture(this.texture);
 
         // WANT TO SEE THESE IN COMPONENT IN PLUGIN ACTUALLY - TODO
         var options: IParticleOptions = {
-            position: new Vec2(position.x, position.y),
-            life: life,
+            position: new Vec2(this.position.x, this.position.y),
+            life: this.life,
             texture: tex,
-            origin: origin ? new Vec2(origin.x, origin.y) : undefined,
-            emitRate: emitRate,
-            localSpace: localSpace,
-            emitShape: ParticleShape[emitShape as keyof typeof ParticleShape] ?? ParticleShape.POINT,
-            emitRadius: emitRadius,
+            origin: this.origin ? new Vec2(this.origin.x, this.origin.y) : undefined,
+            emitRate: this.emitRate,
+            localSpace: this.localSpace,
+            emitShape: ParticleShape[this.emitShape as keyof typeof ParticleShape] ?? ParticleShape.POINT,
+            emitRadius: this.emitRadius,
             animation: {
-                scale: animation?.scale ? {
-                    start: animation.scale.start,
-                    end: animation.scale.end,
+                scale: this.animation?.scale ? {
+                    start: this.animation.scale.start,
+                    end: this.animation.scale.end,
                 } : undefined,
-                rotation: animation?.rotation ? {
-                    start: animation.rotation.start,
-                    end: animation.rotation.end,
+                rotation: this.animation?.rotation ? {
+                    start: this.animation.rotation.start,
+                    end: this.animation.rotation.end,
                 } : undefined,
-                color: animation?.color ? {
-                    start: animation.color.start ? Color.fromHex(animation.color.start) : undefined,
-                    end: animation.color.end ? Color.fromHex(animation.color.end) : undefined,
+                color: this.animation?.color ? {
+                    start: this.animation.color.start ? Color.fromHex(this.animation.color.start) : undefined,
+                    end: this.animation.color.end ? Color.fromHex(this.animation.color.end) : undefined,
                 } : undefined,
-                speed: animation?.speed ? {
-                    start: animation.speed.start,
-                    end: animation.speed.end,
+                speed: this.animation?.speed ? {
+                    start: this.animation.speed.start,
+                    end: this.animation.speed.end,
                 } : undefined,
-                velocity: animation?.velocity ? {
-                    start: animation.velocity.start ? new Vec2(animation.velocity.start.x, animation.velocity.start.y) : undefined,
-                    end: animation.velocity.end ? new Vec2(animation.velocity.end.x, animation.velocity.end.y) : undefined,
+                velocity: this.animation?.velocity ? {
+                    start: this.animation.velocity.start ? new Vec2(this.animation.velocity.start.x, this.animation.velocity.start.y) : undefined,
+                    end: this.animation.velocity.end ? new Vec2(this.animation.velocity.end.x, this.animation.velocity.end.y) : undefined,
                 } : undefined,
-                acceleration: animation?.acceleration ? {
-                    start: animation.acceleration.start ? new Vec2(animation.acceleration.start.x, animation.acceleration.start.y) : undefined,
-                    end: animation.acceleration.end ? new Vec2(animation.acceleration.end.x, animation.acceleration.end.y) : undefined,
+                acceleration: this.animation?.acceleration ? {
+                    start: this.animation.acceleration.start ? new Vec2(this.animation.acceleration.start.x, this.animation.acceleration.start.y) : undefined,
+                    end: this.animation.acceleration.end ? new Vec2(this.animation.acceleration.end.x, this.animation.acceleration.end.y) : undefined,
                 } : undefined,
             }
         };
@@ -73,7 +90,7 @@ export class ParticleComponent extends BaseComponent
         {
             (async () =>
             {
-                tex = await assetsHandler.GetTexturePromise(texture);
+                tex = await assetsHandler.GetTexturePromise(this.texture);
                 this.emitter.setTexture(tex);
             })();
         }
@@ -83,10 +100,8 @@ export class ParticleComponent extends BaseComponent
     {
         super.Added(go);
 
-        this.emitter.gameObject = go;
-
-        this.emitter.position.set(go.x + this.positionData.x, go.y + this.positionData.y);
-        particleController.Add(this.emitter);
+        this.initEmitter();
+        this.emitter.position.set(go.x + this.position.x, go.y + this.position.y);
     }
 
     @InspectorButton
@@ -97,7 +112,13 @@ export class ParticleComponent extends BaseComponent
 
     OnUpdate(deltaTime: number): void
     {
-        this.emitter.position.set(this.go.x + this.positionData.x, this.go.y + this.positionData.y);
+        this.emitter.position.set(this.go.x + this.position.x, this.go.y + this.position.y);
+        this.emitter.update(deltaTime);
+    }
+
+    OnPostRender(): void
+    {
+        this.emitter.render();
     }
 
     OnRemoved()

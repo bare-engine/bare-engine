@@ -17,6 +17,7 @@ import { BareEvent, BareEventPayload, Component, ConstructEntityOptions, Entity,
 import { Helper } from "../utils/helper";
 import { MakePathForEntity } from "../globals";
 import { assetsHandler } from "./assetsHandler";
+import { getSaveFields } from "../utils/decorators";
 
 export class LevelHandler
 {
@@ -91,14 +92,6 @@ export class LevelHandler
 
     async LoadLevel(levelInput: string | LevelData = ""):Promise<LevelData>
     {
-        // AAAAH REMOVE THIS - TODO
-        // CURRENTLY NEEDED FOR HACKY DUMMY CREATION
-        this.scene.AddClass(PivotComponent);
-        this.scene.AddClass(PivotRemoveComponent);
-        this.scene.AddClass(ResizableComponent);
-        this.scene.AddClass(ResizableRemoveComponent);
-        this.scene.AddClass(PositionPivotComponent);
-
         // STORE PERSISTENT OBJECTS, TO CALL ONLEVELCHANGED AFTER LOAD
         var persistenObjUIDs:string[] = [];
         var gameLayers = objectController.GetLayers();
@@ -809,7 +802,9 @@ export class LevelHandler
     SerializeComponent(component: Component): Record<string, Scalar>
     {
         var componentData: Record<string, Scalar> = {};
-        var constructorVarNames = (component as any).__paramNames || Helper.GetConstructorParamNames(component.constructor);
+        var constructorVarNames = getSaveFields(component);
+        if (constructorVarNames.length == 0)
+            constructorVarNames = (component as any).__paramNames || Helper.GetConstructorParamNames(component.constructor);
         
         // GET VALUE FROM EACH KEY OF CONSTRUCTOR PARAMS
         for (let i = 0; i < constructorVarNames.length; i++)

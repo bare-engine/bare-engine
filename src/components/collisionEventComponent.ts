@@ -1,23 +1,25 @@
 import { BaseComponent, componentController } from "../controllers/componentController";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
-import { InspectorButton } from "../utils/decorators";
+import { InspectorButton, Save } from "../utils/decorators";
 
 export class CollisionEventComponent extends BaseComponent
 {
-    private object: string;
-    private event: string;
-    private once: boolean;
-    private removeObject: boolean; // ONLY CHECKED WHEN once = TRUE
+    @Save
+    private object: string = "";
 
-    constructor(scene: Scene, object: string, event: string, once: boolean = false, removeObject: boolean = false)
+    @Save
+    private event: string = "";
+
+    @Save
+    private once: boolean = false;
+
+    @Save
+    private removeObject: boolean = false; // ONLY CHECKED WHEN once = TRUE
+
+    constructor(scene: Scene)
     {
         super(scene);
-
-        this.object = object;
-        this.event = event;
-        this.once = once;
-        this.removeObject = removeObject;
     }
 
     OnCollisionStart(other: GameObject): void

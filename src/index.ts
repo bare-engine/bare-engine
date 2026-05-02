@@ -42,7 +42,8 @@ export { SettingsHandler } from "./handlers/settingsHandler";
 export { soundHandler } from "./handlers/soundHandler";
 
 // Components
-export { AnimationComponent, AnimationEvent, AnimationEventPayload as AnimationEvents } from "./components/animationComponent";
+export { AnimationComponent, AnimationEvent } from "./components/animationComponent";
+export type { AnimationEventPayload as AnimationEvents } from "./components/animationComponent";
 export { CollisionEventComponent } from "./components/collisionEventComponent";
 export { ParticleComponent } from "./components/particleComponent";
 
@@ -64,7 +65,7 @@ export { FlashShader } from "./shaders/flashShader";
 export { OutlineShader } from "./shaders/outlineShader";
 export { defaultSettingsData as defaultEntityData } from "./types/bareData";
 export { Hitbox } from "./types/hitbox";
-export { InspectorButton, InspectorField, Label, Locked, Range, Run } from "./utils/decorators";
+export { InspectorButton, InspectorField, Label, Locked, Range, Run, Save } from "./utils/decorators";
 export { Helper } from "./utils/helper";
 
 // Types and constants

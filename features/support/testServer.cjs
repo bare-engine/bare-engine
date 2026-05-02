@@ -4,6 +4,9 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const { BeforeAll, AfterAll, setWorldConstructor } = require("@cucumber/cucumber");
 const { Builder, Browser } = require("selenium-webdriver");
+const chrome = require("selenium-webdriver/chrome");
+const edge = require("selenium-webdriver/edge");
+const firefox = require("selenium-webdriver/firefox");
 
 const publicDir = path.resolve(__dirname, "../fixtures/public");
 
@@ -83,7 +86,21 @@ BeforeAll(async function () {
     throw new Error(`Unsupported BROWSER "${requestedBrowser}". Use chrome, edge, or firefox.`);
   }
 
-  global.__bareEngineDriver = await new Builder().forBrowser(browserName).build();
+  const builder = new Builder().forBrowser(browserName);
+
+  if (requestedBrowser === "chrome") {
+    builder.setChromeOptions(new chrome.Options()
+      .addArguments("--headless=new", "--remote-debugging-pipe", "--log-level=3")
+      .excludeSwitches("enable-logging"));
+  } else if (requestedBrowser === "edge") {
+    builder.setEdgeOptions(new edge.Options()
+      .addArguments("--headless=new", "--remote-debugging-pipe", "--log-level=3")
+      .excludeSwitches("enable-logging"));
+  } else if (requestedBrowser === "firefox") {
+    builder.setFirefoxOptions(new firefox.Options().addArguments("-headless"));
+  }
+
+  global.__bareEngineDriver = await builder.build();
 });
 
 AfterAll(async function () {

@@ -5,18 +5,19 @@ import { GameObject } from "../objects/gameObject";
 import { objectController } from "../controllers/objectController";
 import { PhysicsObjectBare } from "../objects/physicsObjectBare";
 import { Scene } from "../scenes/scene";
+import { Save } from "../utils/decorators";
 
 export class PositionPivotComponent extends BaseComponent
 {
-    objName:string;
-    pivotName:string;
+    @Save
+    objName:string = "";
 
-    constructor(scene: Scene, objectName:string, pivotName:string)
+    @Save
+    pivotName:string = "";
+
+    constructor(scene: Scene)
     {
         super(scene);
-
-        this.objName = objectName;
-        this.pivotName = pivotName;
     }
 
     Added(go: GameObject):void
