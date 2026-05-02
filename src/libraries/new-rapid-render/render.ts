@@ -451,6 +451,8 @@ export class Rapid {
 
         this.canvas.width = this.physicsWidth;
         this.canvas.height = this.physicsHeight;
+        this.canvas.style.width = this.logicWidth + 'px';
+        this.canvas.style.height = this.logicHeight + 'px';
 
         this.gl.viewport(0, 0, this.physicsWidth, this.physicsHeight);
         this.updateProjection(0, this.logicWidth, this.logicHeight, 0);

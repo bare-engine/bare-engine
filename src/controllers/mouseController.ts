@@ -80,10 +80,8 @@ export class MouseController
         this.screen.positionPrev.x = this.screen.position.x;
         this.screen.positionPrev.y = this.screen.position.y;
 
-        const logicMouse = rapid.physicsToLogic(new Vec2(mouseX, mouseY))
-
-        this.screen.position.x = logicMouse.x;
-        this.screen.position.y = logicMouse.y;
+        this.screen.position.x = mouseX;
+        this.screen.position.y = mouseY;
 
         this.SetMousePosition(this.screen.position.x, this.screen.position.y);
 
@@ -106,8 +104,8 @@ export class MouseController
             this.world.positionOnMiddleDown.x = this.world.position.x;
             this.world.positionOnMiddleDown.y = this.world.position.y;
 
-            this.screen.positionOnMiddleDown.x = logicMouse.x;
-            this.screen.positionOnMiddleDown.y = logicMouse.y;
+            this.screen.positionOnMiddleDown.x = mouseX;
+            this.screen.positionOnMiddleDown.y = mouseY;
         }
 
         if (event.button == 2)
@@ -117,14 +115,13 @@ export class MouseController
             this.world.positionOnRightDown.x = this.world.position.x;
             this.world.positionOnRightDown.y = this.world.position.y;
 
-            this.screen.positionOnRightDown.x = logicMouse.x;
-            this.screen.positionOnRightDown.y = logicMouse.y;
+            this.screen.positionOnRightDown.x = mouseX;
+            this.screen.positionOnRightDown.y = mouseY;
         }
     }
 
     PointerUp({ mouseX, mouseY, event }: BareEventPayload['pointer_up']): void
     {
-        const logicMouse = rapid.physicsToLogic(new Vec2(mouseX, mouseY))
         if (event.button == 2)
             this.rightMouseIsDown = false;
 
@@ -134,7 +131,7 @@ export class MouseController
         if (event.button == 0)
             this.mouseIsDown = false;
 
-        this.SetMousePosition(logicMouse.x, logicMouse.y);
+        this.SetMousePosition(mouseX, mouseY);
     }
 
     PointerMove({ mouseX, mouseY, event }: BareEventPayload['pointer_move'])
@@ -142,13 +139,11 @@ export class MouseController
         this.screen.positionPrev.x = this.screen.position.x;
         this.screen.positionPrev.y = this.screen.position.y;
 
-        const logicMouse = rapid.physicsToLogic(new Vec2(mouseX, mouseY))
+        this.screen.position.x = mouseX;
+        this.screen.position.y = mouseY;
 
-        this.screen.position.x = logicMouse.x;
-        this.screen.position.y = logicMouse.y;
-
-        MouseController.lastMouseX = logicMouse.x;
-        MouseController.lastMouseY = logicMouse.y;
+        MouseController.lastMouseX = mouseX;
+        MouseController.lastMouseY = mouseY;
 
         this.SetMousePosition(this.screen.position.x, this.screen.position.y);
     }

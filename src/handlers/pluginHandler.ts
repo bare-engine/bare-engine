@@ -1047,7 +1047,7 @@ export class PluginHandler
               var openObjectsTab = obj.scene.settingsData.selectionEnabled !== false;
               this.SelectObjectInPlugin(obj.uniqueID, openObjectsTab, parentIds);
 
-              var mouseWorldAtClick = obj.scene.ScreenToWorldPos(this.GetLogicPointerPosition(ev));
+              var mouseWorldAtClick = obj.scene.ScreenToWorldPos(new Vec2(ev.clientX, ev.clientY));
               var mouseLocalAtClick = obj.parent ? obj.parent.ToLocal(mouseWorldAtClick) : mouseWorldAtClick;
 
               this.draggedObjData = {
@@ -1070,8 +1070,12 @@ export class PluginHandler
     {
         var data = this.draggedObjData;
 
-        var mouseX = data.obj.scene.mouseController.screen.position.x;
-        var mouseY = data.obj.scene.mouseController.screen.position.y;
+        var scene = this.GetCurrentScene();
+        var mouseX = scene.mouseController.screen.position.x;
+        var mouseY = scene.mouseController.screen.position.y;
+
+        //mouseX = data.obj.scene.mouseController.screen.position.x;
+        //mouseY = data.obj.scene.mouseController.screen.position.y;
 
         if (!this.draggedObjData.hasMovedAwayEnough)
         {
@@ -1120,7 +1124,7 @@ export class PluginHandler
                     continue;
 
                 var objRect = obj.GetBoundsWithChildren()
-                var p = this.GetLogicPointerPosition(ev);
+                var p = new Vec2(ev.clientX, ev.clientY);
                 var pWorld = scene.ScreenToWorldPos(p);
 
                 if (outline)
@@ -1161,7 +1165,7 @@ export class PluginHandler
             var scene = scenes[i];
             var objs = scene.objectController.GetAllObjects();
         
-            var p = this.GetLogicPointerPosition(ev);
+            var p = new Vec2(ev.clientX, ev.clientY);
             var pWorld = scene.ScreenToWorldPos(p);
 
             for (var j in objs)
@@ -1203,11 +1207,6 @@ export class PluginHandler
             return obj;
 
         return null;
-    }
-
-    private GetLogicPointerPosition(ev: PointerEvent): Vec2
-    {
-        return rapid.physicsToLogic(new Vec2(ev.clientX, ev.clientY));
     }
 
     TraceObject(obj: GameObject)

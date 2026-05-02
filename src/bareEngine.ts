@@ -194,10 +194,13 @@ export class BareEngine
             newHeight = height;
         }
 
+        var devicePixelRatio = window.devicePixelRatio || 1;
+
         rapid.resize(
-            newWidth/window.devicePixelRatio,
-            newHeight/window.devicePixelRatio, 
-            newWidth, newHeight);
+            newWidth,
+            newHeight,
+            Math.round(newWidth * devicePixelRatio),
+            Math.round(newHeight * devicePixelRatio));
 
         globalEvents.emit(BareEvent.game_resize, { prevWidth: prevWidth, prevHeight: prevHeight, newWidth: newWidth, newHeight: newHeight });
 
