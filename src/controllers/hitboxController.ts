@@ -79,8 +79,8 @@ export class HitboxController
             if ((obj as any).isPhysicsObject)
             {
                 hitbox = (obj as any).physicsHitbox;
-                if (!(obj as any).collide) // DIFFERENT COLOR FOR HITBOXES THAT DON'T COLLIDE
-                    color = Color.fromHex('#e1ff0057');
+                if (!(obj as any).collide)
+                    continue;
             }
             
             if (!hitbox?.active)
