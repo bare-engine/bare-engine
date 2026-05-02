@@ -58,8 +58,7 @@ export class GameObject
     revertPivotOnSave: boolean = false; // TODO
 
     tapHitbox: Hitbox | null = null; // PHASE THIS OUT, MAKE INTO COMPONENT? TODO
-    hitboxColor:Color = Color.fromHex('#f700ff57'); // ^
-
+  
     startPosition = new Vec2();
 
     texturePromise: Promise<Texture> | null = null;

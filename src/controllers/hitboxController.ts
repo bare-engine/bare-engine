@@ -1,4 +1,4 @@
-import { Vec2 } from "../libraries/rapid-render";
+import { Color, Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
 import { BareEvent, BareEventPayload, CollisionHandlingType, HitboxType } from '../types/bareTypes';
@@ -73,9 +73,15 @@ export class HitboxController
             var obj = objs[i];
             var hitbox = obj.tapHitbox;
 
+            var color = Color.fromHex('#f700ff57');
+
             // physicsHitbox SHOULD NOT REALLY BE HANDLED HERE - TODO
             if ((obj as any).isPhysicsObject)
+            {
                 hitbox = (obj as any).physicsHitbox;
+                if (!(obj as any).collide) // DIFFERENT COLOR FOR HITBOXES THAT DON'T COLLIDE
+                    color = Color.fromHex('#e1ff0057');
+            }
             
             if (!hitbox?.active)
                 continue;
@@ -89,7 +95,7 @@ export class HitboxController
                     offset: new Vec2(center.x, center.y),
                     radius: radius,
                     segments: 32,
-                    color: obj.hitboxColor
+                    color: color
                 });
             }
             else if (hitbox.type == HitboxType.Rectangle)
@@ -100,7 +106,7 @@ export class HitboxController
                     offset: new Vec2(rect.x1, rect.y1),
                     width: rect.width,
                     height: rect.height,
-                    color: obj.hitboxColor
+                    color: color
                 });
             }
         }
