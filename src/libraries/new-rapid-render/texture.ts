@@ -675,7 +675,6 @@ class TextTexture extends Texture {
      */
     public update(): void {
         const ctx = this.ctx;
-        const yOffset = (isMobileOrTablet() && iOS()) ? -7 : 0;
         const fontSize = this._style.fontSize;
         const fontWeight = this._style.fontWeight;
         const fontFamily = this._style.fontFamily;
@@ -714,7 +713,7 @@ class TextTexture extends Texture {
         ctx.textBaseline = this._style.baseline;
         ctx.textAlign = this._style.align;
 
-        let y = padding / 2 + yOffset;
+        let y = padding / 2;
         for (const line of lines) {
             let x = padding / 2;
             if (this._style.align === "center") {
