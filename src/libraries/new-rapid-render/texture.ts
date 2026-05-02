@@ -599,7 +599,7 @@ const defaultTextStyle: ITextStyle = {
     fontFamily: "Arial",
     fontSize: 24,
     fontWeight: "normal",
-    fill: "#ffffff",
+    fill: "#000000",
     strokeThickness: 0,
     align: "left",
     baseline: "top",
