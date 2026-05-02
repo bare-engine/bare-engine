@@ -444,9 +444,7 @@ export class GameObject
         if (this.mask) {
             rapid.enterMask(this.maskType, 1, 0xFF);
         }
-        if (renderColor.a < 255) {
-            console.log(renderColor.a)
-        }
+        
         rapid.withTransform(()=>{
             rapid.drawSprite(this.texture!, renderColor, this.flipX, this.flipY, this.shader)
         }, {position:new Vec2(-this.pivot.x, -this.pivot.y)})
