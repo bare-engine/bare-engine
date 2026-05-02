@@ -73,7 +73,7 @@ class AssetsHandler
         assetsHandler.ProcessAtlas(json, img);
     }
 
-    ProcessAtlas(json: any, img: any):void
+    ProcessAtlas(json: Atlas, img: Texture):void
     {
         this.AddTexturesFromAtlas(json, img);
 
@@ -87,16 +87,18 @@ class AssetsHandler
         }
     }
 
-    AddTexturesFromAtlas(atlas: Atlas, atlasImg: HTMLImageElement):void
+    AddTexturesFromAtlas(atlas: Atlas, atlasTexture: Texture):void
     {
-        var atlasBaseTex = rapid.texture.create(atlasImg);
-        atlasBaseTex.base!.sourceUrl = atlasImg.src;
+        const atlasBase = atlasTexture.base;
+        if (!atlasBase) {
+            throw new Error("Atlas texture was loaded without a base texture.");
+        }
 
         for (var name in atlas.frames)
         {
             const frame = atlas.frames[name];
 
-            const tx = new Texture(atlasBaseTex.base);
+            const tx = new Texture(atlasBase);
             let fx = frame.frame.x;
             let fy = frame.frame.y;
             let fw = frame.frame.w;

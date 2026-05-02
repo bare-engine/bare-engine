@@ -152,7 +152,8 @@ export class BareEngine
 
                 const imgName = json.meta.image;
                 const img = window.initialAssets[imgName];
-                assetsHandler.ProcessAtlas(json, img);
+                const tex = rapid.texture.create(img)
+                assetsHandler.ProcessAtlas(json, tex);
 
                 // ATLAS IS PROCESSED AND ADDED ANIMATIONS POTENTIALLY,
                 // MORE ANIMATION DATA LIKE FPS AND LOOP CAN BE SET LATER IN ENTITY SETTINGS PROCESS()

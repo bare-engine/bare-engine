@@ -237,6 +237,7 @@ export interface SettingsData
 
 export interface Atlas {
     frames: Record<string, AtlasFrame>;
+    animations?: Record<string, string[]>;
 }
 
 export interface AtlasFrame {
