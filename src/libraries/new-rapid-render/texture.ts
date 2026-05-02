@@ -180,7 +180,7 @@ export class BaseTexture {
      * @returns The created BaseTexture.
      */
     static fromSource(render: Rapid, source: Images, options?: ITextureOptions): BaseTexture {
-        const antialias = options?.antialias ?? false;
+        const antialias = options?.antialias ?? render.antialias;
         const wrap = options?.wrap ?? TextureWrapMode.CLAMP;
         const glTexture = createTexture(render.gl, source, antialias, wrap, false, render.premultipliedAlpha);
         return new BaseTexture(glTexture, source.width, source.height);
@@ -387,7 +387,7 @@ class Texture {
      * @param options - Optional antialias and wrap mode settings.
      */
     static fromImageSource(render: Rapid, source: Images, options?: ITextureOptions): Texture {
-        const antialias = options?.antialias ?? false;
+        const antialias = options?.antialias ?? render.antialias;
         const wrap = options?.wrap ?? TextureWrapMode.CLAMP;
         const glTex = createTexture(render.gl, source, antialias, wrap, false, render.premultipliedAlpha);
         return new Texture(new BaseTexture(glTex, source.width, source.height));

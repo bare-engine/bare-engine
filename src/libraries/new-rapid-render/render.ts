@@ -123,6 +123,8 @@ export class Rapid {
 
     /** Whether textures use premultiplied alpha. Set once at construction. */
     premultipliedAlpha: boolean;
+    /** Default texture filtering preference and requested canvas MSAA setting. */
+    antialias: boolean;
 
     /** Internal ping-pong RenderTextures for multi-filter chains. */
     private _filterRT: [RenderTexture | null, RenderTexture | null] = [null, null];
@@ -140,9 +142,10 @@ export class Rapid {
     constructor(options: IAppOptions) {
         this.canvas = options.canvas;
         this.dpr = window.devicePixelRatio || 1;
+        this.antialias = options.antialias ?? false;
         this.premultipliedAlpha = options.premultipliedAlpha ?? true;
 
-        const gl = getContext(this.canvas, options.antialias ?? false, this.premultipliedAlpha);
+        const gl = getContext(this.canvas, this.antialias, this.premultipliedAlpha);
         this.gl = gl;
 
         this.maxTextureUnits = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
@@ -183,6 +186,10 @@ export class Rapid {
         // Default stencil configuration: always pass, keep existing values
         gl.stencilFunc(gl.ALWAYS, 1, 0xFF);
         gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+    }
+
+    setAntialias(antialias: boolean) {
+        this.antialias = antialias;
     }
 
     private getColorUint32(color?: Color): number {
