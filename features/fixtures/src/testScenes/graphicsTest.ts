@@ -6,31 +6,26 @@ export class GraphicsTest extends Scene
 
     OnRender(): void
     {
-        this.renderCircle({
-            position: new Vec2(100, 200),
-            radius: 50,
-            segments: 16,
-            color: Color.Red,
-        });
+        rapid.withTransform(() => {
+            this.drawCircle(50, Color.Red, 16);
+        }, { position: new Vec2(100, 200) });
 
-        this.renderRect({
-            position: new Vec2(200, 150),
-            width: 120,
-            height: 100,
-            color: Color.Blue,
-        });
+        rapid.withTransform(() => {
+            this.drawRect(120, 100, Color.Blue);
+        }, { position: new Vec2(200, 150) });
 
-        this.renderLine({
-            position: new Vec2(380, 150),
-            points: Vec2.FromArray([
-                [0, 30],
-                [120, 20],
-                [130, 100],
-            ]),
-            width: 5,
-            closed: false,
-            color: Color.Green,
-        });
+        rapid.withTransform(() => {
+            this.drawLine({
+                points: Vec2.FromArray([
+                    [0, 30],
+                    [120, 20],
+                    [130, 100],
+                ]),
+                width: 5,
+                closed: false,
+                color: Color.Green,
+            });
+        }, { position: new Vec2(380, 150) });
 
         if (!this.rendered)
         {
