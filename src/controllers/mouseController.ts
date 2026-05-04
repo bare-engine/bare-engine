@@ -77,11 +77,13 @@ export class MouseController
 
     PointerDown({ mouseX, mouseY, event }: BareEventPayload['pointer_down']): void
     {
+        const devicePixel = rapid.cssToDevicePixel(new Vec2(mouseX, mouseY))
+
         this.screen.positionPrev.x = this.screen.position.x;
         this.screen.positionPrev.y = this.screen.position.y;
 
-        this.screen.position.x = mouseX;
-        this.screen.position.y = mouseY;
+        this.screen.position.x = devicePixel.x;
+        this.screen.position.y = devicePixel.y;
 
         this.SetMousePosition(this.screen.position.x, this.screen.position.y);
 
@@ -104,8 +106,8 @@ export class MouseController
             this.world.positionOnMiddleDown.x = this.world.position.x;
             this.world.positionOnMiddleDown.y = this.world.position.y;
 
-            this.screen.positionOnMiddleDown.x = mouseX;
-            this.screen.positionOnMiddleDown.y = mouseY;
+            this.screen.positionOnMiddleDown.x = devicePixel.x;
+            this.screen.positionOnMiddleDown.y = devicePixel.y;
         }
 
         if (event.button == 2)
@@ -115,13 +117,15 @@ export class MouseController
             this.world.positionOnRightDown.x = this.world.position.x;
             this.world.positionOnRightDown.y = this.world.position.y;
 
-            this.screen.positionOnRightDown.x = mouseX;
-            this.screen.positionOnRightDown.y = mouseY;
+            this.screen.positionOnRightDown.x = devicePixel.x;
+            this.screen.positionOnRightDown.y = devicePixel.y;
         }
     }
 
     PointerUp({ mouseX, mouseY, event }: BareEventPayload['pointer_up']): void
     {
+        const devicePixel = rapid.cssToDevicePixel(new Vec2(mouseX, mouseY))
+
         if (event.button == 2)
             this.rightMouseIsDown = false;
 
@@ -131,19 +135,21 @@ export class MouseController
         if (event.button == 0)
             this.mouseIsDown = false;
 
-        this.SetMousePosition(mouseX, mouseY);
+        this.SetMousePosition(devicePixel.x, devicePixel.y);
     }
 
     PointerMove({ mouseX, mouseY, event }: BareEventPayload['pointer_move'])
     {
+        const devicePixel = rapid.cssToDevicePixel(new Vec2(mouseX, mouseY))
+
         this.screen.positionPrev.x = this.screen.position.x;
         this.screen.positionPrev.y = this.screen.position.y;
 
-        this.screen.position.x = mouseX;
-        this.screen.position.y = mouseY;
+        this.screen.position.x = devicePixel.x;
+        this.screen.position.y = devicePixel.y;
 
-        MouseController.lastMouseX = mouseX;
-        MouseController.lastMouseY = mouseY;
+        MouseController.lastMouseX = devicePixel.x;
+        MouseController.lastMouseY = devicePixel.y;
 
         this.SetMousePosition(this.screen.position.x, this.screen.position.y);
     }

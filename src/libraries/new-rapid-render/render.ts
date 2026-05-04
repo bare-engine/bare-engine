@@ -446,27 +446,37 @@ export class Rapid {
      * Resizes the canvas, updates internal viewport values, and recreates projection boundaries.
      * @param logicWidth The new logical display width.
      * @param logicHeight The new logical display height.
-     * @param physicsWidth Optional new physical pixel width (canvas width).
-     * @param physicsHeight Optional new physical pixel height (canvas height).
+     * @param cssWidth Optional CSS display width.
+     * @param cssHeight Optional CSS display height.
      */
-    resize(logicWidth: number, logicHeight: number, physicsWidth?: number, physicsHeight?: number): void {
+    resize(logicWidth: number, logicHeight: number, cssWidth?: number, cssHeight?: number): void {
         this.flush();
-        const cssW = this.canvas.clientWidth || this.canvas.width;
-        const cssH = this.canvas.clientHeight || this.canvas.height;
+        const cssW = cssWidth ?? this.canvas.clientWidth ?? this.canvas.width;
+        const cssH = cssHeight ?? this.canvas.clientHeight ?? this.canvas.height;
+
+        if (cssWidth !== undefined) {
+            this.canvas.style.width = cssW + 'px';
+        }
+
+        if (cssHeight !== undefined) {
+            this.canvas.style.height = cssH + 'px';
+        }
+
+        this.physicsWidth = Math.round(cssW * this.dpr);
+        this.physicsHeight = Math.round(cssH * this.dpr);
+
+        this.canvas.width = this.physicsWidth;
+        this.canvas.height = this.physicsHeight;
+
 
         this.logicWidth = logicWidth;
         this.logicHeight = logicHeight;
 
-        this.physicsWidth = physicsWidth || Math.round(cssW * this.dpr);
-        this.physicsHeight = physicsHeight || Math.round(cssH * this.dpr);
-
-        this.canvas.width = this.physicsWidth;
-        this.canvas.height = this.physicsHeight;
-        this.canvas.style.width = this.logicWidth + 'px';
-        this.canvas.style.height = this.logicHeight + 'px';
-
         this.gl.viewport(0, 0, this.physicsWidth, this.physicsHeight);
         this.updateProjection(0, this.logicWidth, this.logicHeight, 0);
+
+        console.log(`[RESIZE] logic ：${this.logicWidth}, ${this.logicHeight}`)
+        console.log(`[RESIZE] physics ：${this.physicsWidth}, ${this.physicsHeight}`)
     }
 
     /**
@@ -898,5 +908,13 @@ export class Rapid {
             this.logicWidth / this.physicsWidth,
             this.logicHeight / this.physicsHeight
         ))
+    }
+
+    cssToDevicePixel(p:Vec2){
+        return p.mul(this.dpr)
+    }
+
+    devicePixelToCss(p:Vec2){
+        return p.divide(this.dpr)
     }
 }
