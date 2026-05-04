@@ -180,8 +180,9 @@ export class BareEngine
         var prevWidth = rapid.width;
         var prevHeight = rapid.height;
 
-        var gameWidth = resolution?.gameWidth ?? window.innerWidth;
-        var gameHeight = resolution?.gameHeight ?? window.innerHeight;
+        var viewportSize = this.GetViewportSize();
+        var gameWidth = resolution?.gameWidth ?? viewportSize.width;
+        var gameHeight = resolution?.gameHeight ?? viewportSize.height;
 
         var scale = this.CalculateResolutionScale(resolution, gameWidth, gameHeight);
         var cssWidth = gameWidth * scale;
@@ -199,6 +200,16 @@ export class BareEngine
 
         // PERSIST UI LAYOUT
         sceneController.OnResize(prevWidth, prevHeight, gameWidth, gameHeight);
+    }
+
+    private GetViewportSize(): { width: number, height: number }
+    {
+        var visualViewport = window.visualViewport;
+
+        return {
+            width: visualViewport?.width ?? document.documentElement.getBoundingClientRect().width ?? window.innerWidth,
+            height: visualViewport?.height ?? document.documentElement.getBoundingClientRect().height ?? window.innerHeight
+        };
     }
     
     GetCanvasScreenPosition(clientX: number, clientY: number): Vec2
@@ -220,7 +231,8 @@ export class BareEngine
 
         if (resolution.scale == CanvasScale.Fit)
         {
-            var scale = Math.min(window.innerWidth / gameWidth, window.innerHeight / gameHeight);
+            var viewportSize = this.GetViewportSize();
+            var scale = Math.min(viewportSize.width / gameWidth, viewportSize.height / gameHeight);
             
             if (resolution.integerScale)
                 scale = Math.max(1, Math.floor(scale));
@@ -239,8 +251,9 @@ export class BareEngine
 
         if (position == CanvasPosition.Center)
         {
-            rapid.canvas.style.left = `${(window.innerWidth - cssWidth) * .5}px`;
-            rapid.canvas.style.top = `${(window.innerHeight - cssHeight) * .5}px`;
+            var viewportSize = this.GetViewportSize();
+            rapid.canvas.style.left = `${(viewportSize.width - cssWidth) * .5}px`;
+            rapid.canvas.style.top = `${(viewportSize.height - cssHeight) * .5}px`;
             return;
         }
 
