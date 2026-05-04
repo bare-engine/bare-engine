@@ -199,6 +199,10 @@ export class Rapid {
         gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
     }
 
+    setTextureFilter(filter: TextureFilterMode) {
+        this.textureFilter = filter;
+    }
+
     setAntialias(antialias: boolean) {
         this.antialias = antialias;
     }
