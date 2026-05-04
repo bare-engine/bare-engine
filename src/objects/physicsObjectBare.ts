@@ -4,19 +4,22 @@ import { Hitbox } from "../types/hitbox";
 import type { Scene } from "../scenes/scene";
 import { MakePathForEntity } from "../globals";
 import { GameObject } from "./gameObject";
+import { InspectorField } from "../utils/decorators";
 
 export class PhysicsObjectBare extends GameObject
 {
     public isPhysicsObject = true;
     
     physicsHitbox: Hitbox = new Hitbox(this, {x1 : 0, y1 : 0, x2 : 0, y2 : 0});
-    static: boolean = false;
-    collide: boolean = true;
-    sensor:boolean = false;
-    velocity: Vec2 = new Vec2(0, 0);
-    drag: number = 0//.15;
-    restitution: number = 0//.8;
-    stayInBounds: boolean = true;
+    @InspectorField pivotBasedOnHitbox:Vec2 = new Vec2();
+    @InspectorField static: boolean = false;
+    @InspectorField collide: boolean = true;
+    @InspectorField sensor:boolean = false;
+    @InspectorField velocity: Vec2 = new Vec2(0, 0);
+    @InspectorField drag: number = 0//.15;
+    @InspectorField restitution: number = 0//.8;
+    @InspectorField stayInBounds: boolean = true;
+    
     blocked:BlockedState = BlockedState.None;
 
     static dummyPhysicsObjectBare: PhysicsObjectBare = new PhysicsObjectBare();
@@ -183,6 +186,8 @@ export class PhysicsObjectBare extends GameObject
         this.restitution = 0//.8;
         this.blocked = BlockedState.None;
 
+        this.pivotBasedOnHitbox.set(0);
+        
         if (this.physicsHitbox)
         {
             this.physicsHitbox.type = HitboxType.Rectangle;

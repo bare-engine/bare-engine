@@ -322,13 +322,13 @@ export class Scene implements SceneI
                     }
 
                     // ANYTHING WITH A HITBOX IS A PHYSICS OBJECT
-                    if ((entityArg.hitbox || entityArg.physicsRadius) && entityArg.extendClass == "GameObject") 
-                        entityArg.extendClass = "PhysicsObjectBare";
+                    //if ((entityArg.hitbox || entityArg.physicsRadius) && entityArg.baseClass == "GameObject") 
+                    //    entityArg.baseClass = "PhysicsObjectBare";
                     
                     // BIT OF A HACK TO MAKE SURE SOPIRO RIGIDBODIES HAVE A CENTER PIVOT
                     // PUT HERE TO LET THE EDITOR PREVIEW ALSO INHERIT IT
                     var sopiroPhysicsClasses = ["Circle", "Box", "Polygon"];
-                    if (sopiroPhysicsClasses.includes(entityArg.extendClass))
+                    if (sopiroPhysicsClasses.includes(entityArg.baseClass))
                         entityArg.pivot = { x: .5, y: .5 };
                 }
 
@@ -422,8 +422,8 @@ export class Scene implements SceneI
         if (options.fillPresets)
             this.settingsHandler.FillPresets(entity, settingsData); // ALREADY DONE IN SETTINGS CONSTRUCT - BUT COULD HAVE NEW PROPS IN ENTITY
 
-        if (!entity.extendClass)
-            entity.extendClass = "GameObject";
+        if (!entity.baseClass)
+            entity.baseClass = "GameObject";
 
         // NO USE FOR THIS ANYMORE, BUT GONNA REPURPOSE IT TO SHOW baseEntity PATH
         //delete entityConstructed.baseEntity;
@@ -573,13 +573,13 @@ export class Scene implements SceneI
         {
             var gameObject: GameObject;
 
-            if (entityConstructed.extendClass == "GameObject")
+            if (entityConstructed.baseClass == "GameObject")
             {
                 gameObject = bareEngine.dummyGameObject;
             }
             else
             {
-                const pool = bareEngine.gameObjectPools.get(entityConstructed.extendClass);
+                const pool = bareEngine.gameObjectPools.get(entityConstructed.baseClass);
                 if (pool)
                     gameObject = pool.Grab();
                 else
@@ -652,13 +652,13 @@ export class Scene implements SceneI
 
         var gameObject: GameObject;
 
-        if (entityConstructed.extendClass == "GameObject")
+        if (entityConstructed.baseClass == "GameObject")
         {
             gameObject = bareEngine.dummyGameObject;
         }
         else
         {
-            const pool = bareEngine.gameObjectPools.get(entityConstructed.extendClass);
+            const pool = bareEngine.gameObjectPools.get(entityConstructed.baseClass);
             if (pool)
                 gameObject = pool.Grab();
             else
@@ -742,7 +742,7 @@ export class Scene implements SceneI
                     var imagePath = split.slice(0, split.length - 1).join("/");
                     var name = split[split.length - 1];
 
-                    entity = {imagePath: imagePath, name:name, extendClass: "GameObject"};
+                    entity = {imagePath: imagePath, name:name, baseClass: "GameObject"};
                 }
                 else
                 {
@@ -750,7 +750,7 @@ export class Scene implements SceneI
                     entity = this.ConstructEntity(input);
                 }
 
-                gameObject = bareEngine.GetObjectFromPool(entity.extendClass!, this);
+                gameObject = bareEngine.GetObjectFromPool(entity.baseClass!, this);
                 gameObject.Init(MakePathForEntity(entity));
                 //if (entity.texture != "NONE")
                 //    delete entity.texture; // TEXTURE HAS BEEN HANDLED ABOVE WITH Init()

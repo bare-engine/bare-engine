@@ -265,10 +265,10 @@ export class SettingsHandler
 
                 //delete entityBase.name; // DON'T NEED IT ANYMORE
                 
-                // SET DEFAULT extendClass - IF NOT BEEN SET BY CONSTRUCT
-                if (!entityBase.extendClass)
+                // SET DEFAULT baseClass - IF NOT BEEN SET BY CONSTRUCT
+                if (!entityBase.baseClass)
                 {
-                    entityBase.extendClass = "GameObject";
+                    entityBase.baseClass = "GameObject";
                 }
             }
 
@@ -380,13 +380,13 @@ export class SettingsHandler
             }
 
             // ANYTHING WITH A HITBOX IS A PHYSICS OBJECT
-            if ((entity.hitbox || entity.physicsRadius) && entity.extendClass == "GameObject") 
-                entity.extendClass = "PhysicsObjectBare";
+            //if ((entity.hitbox || entity.physicsRadius) && entity.baseClass == "GameObject") 
+            //    entity.baseClass = "PhysicsObjectBare";
 
             // BIT OF A HACK TO MAKE SURE SOPIRO RIGIDBODIES HAVE A CENTER PIVOT
             // PUT HERE TO LET THE EDITOR PREVIEW ALSO INHERIT IT
             var sopiroPhysicsClasses = ["Circle", "Box", "Polygon"];
-            if (sopiroPhysicsClasses.includes(entity.extendClass))
+            if (sopiroPhysicsClasses.includes(entity.baseClass))
                 entity.pivot = { x: .5, y: .5 };
 
             // FILL PRESETS - LIKE hitbox: "FULL"                

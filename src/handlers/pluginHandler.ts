@@ -279,7 +279,7 @@ window.__GAME_DEBUG_API__ = {
         return children.map(c => serializeGameObject(c));
     }
 
-    /*extendClass?: string;
+    /*baseClass?: string;
     baseEntity?: string;
     imagePath?: string;
     texture?: string;
@@ -357,7 +357,7 @@ window.__GAME_DEBUG_API__ = {
     {
         var scene = plugin.GetCurrentScene();
 
-        if (0)
+        //if (0)
         if (scene instanceof EntityScene)
         {
             let entityScene = scene as EntityScene;
@@ -678,7 +678,7 @@ window.__GAME_DEBUG_API__ = {
   getEntityData():SettingsData {
     var settingsData = plugin.GetCurrentScene().settingsHandler.GetRaw();
 
-    return settingsData; // ADDED TO MAKE DEFAULT GAME NOT HAVE BELOW
+    //return settingsData; // ADDED TO MAKE DEFAULT GAME NOT HAVE BELOW
     // SHOULD HAVE IT AGAIN WHEN I START WORK ON PLUGIN ENTITIES
 
     // ADD DEFAULTS - SAME AS defaultEntityData - REBUILD TO ADD IN FRONT

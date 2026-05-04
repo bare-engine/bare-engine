@@ -155,10 +155,10 @@ export class EntityScene extends EditorScene
 
     override OnUpdate(deltaTime: number): void
     {
-        var pivotObj = this.objectController.GetObjectByName("dot");
+        /*var pivotObj = this.objectController.GetObjectByName("dot");
         var mainObj = this.objectController.GetObjectByName(this.objectName);
         var tl = mainObj.GetTopLeftPosition();
-        pivotObj.SetPosition(tl.x + mainObj.pivot.x * mainObj.totalScaleX, tl.y + mainObj.pivot.y * mainObj.totalScaleY);
+        pivotObj.SetPosition(tl.x + mainObj.pivot.x * mainObj.totalScaleX, tl.y + mainObj.pivot.y * mainObj.totalScaleY);*/
     }
 
     override async Open(levelPathOrData?: string | LevelData, saveLevelCallback?: () => Promise<LevelData>, settingsHandler?: SettingsHandler): Promise<void>
@@ -170,7 +170,7 @@ export class EntityScene extends EditorScene
         //obj.y += obj.pivot.y;
 
         // COLLISION RECT
-        if (obj instanceof PhysicsObjectBare)
+        /*if (obj instanceof PhysicsObjectBare)
         {
             var hitbox = obj.physicsHitbox.rectangle;
             var collisionRectEntity:Entity = {
@@ -214,12 +214,12 @@ export class EntityScene extends EditorScene
                 pivotRemove: {}
             }
         }
-        this.AddGameObject(pivotEntity);
+        this.AddGameObject(pivotEntity);*/
 
         // SET CAMERA ZOOM, BASED ON OBJECT BOUNDS
         var bounds = obj.GetBoundsWithChildren();
         var s = Math.max(bounds.width / rapid.width, bounds.height / rapid.height);
-        this.cameraHandler.zoom = 1/s * .7;
+        this.cameraHandler.zoom = 1/s * .5;
         cameraHandler.SetPosition(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
         
         return ret;

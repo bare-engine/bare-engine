@@ -104,7 +104,7 @@ export interface Entity
   componentsRemoved?: string[];
   propertiesRemoved?: string[];
 
-  extendClass?: string;
+  baseClass?: string;
   baseEntity?: string;
   imagePath?: string;
   interactableInEditor?:boolean;
@@ -131,6 +131,22 @@ export interface Entity
 
 export type ConstructEntityOptions = { propsToIgnoreInEntity?: string[], fillPresets?: boolean };
 
+export var entityVarsPhysicsObjectBare = [
+    "pivotBasedOnHitbox",
+    "hitbox",
+    "hitboxType",
+    "physicsRadius",
+]
+
+export var entityVarsRigidbody = [
+    "physicsRect",
+    "physicsRadius",
+    "mass",
+    "drag",
+    "restitution",
+    "polygonVertices",
+]
+
 export var entityVars = [
     "name",
     "customName",
@@ -144,7 +160,6 @@ export var entityVars = [
     "rotation",
     "flipped",
     "pivot",
-    "pivotBasedOnHitbox",
     "innerX",
     "innerY",
     "innerPosition",
@@ -158,9 +173,7 @@ export var entityVars = [
     "alpha",
     "visible",
 
-    "hitbox",
     "tapHitbox",
-    "hitboxType",
 
     "children",
 
@@ -168,23 +181,11 @@ export var entityVars = [
     "componentsRemoved",
     "propertiesRemoved",
 
-    "extendClass",
+    "baseClass",
     "baseEntity",
     "imagePath",
     "interactableInEditor",
     "save",
-
-    "collide",
-    "sensor",
-    "static",
-    "stayInBounds",
-
-    "physicsRect",
-    "physicsRadius",
-    "mass",
-    "drag",
-    "restitution",
-    "polygonVertices",
 ];
 
 export interface LevelData

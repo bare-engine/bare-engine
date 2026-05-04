@@ -7,6 +7,7 @@ import type { Scene } from "../scenes/scene";
 import type { Component, Ctor, Events, Rectangle } from "../types/bareTypes";
 import { MakePath, MakePathForEntity } from '../globals';
 import mitt from "../libraries/mitt";
+import { InspectorField } from "../utils/decorators";
 
 export class Transform {
     position = new Vec2();
@@ -31,16 +32,17 @@ export class GameObject
 
     name:string;
     pluginName:string;
-    customName: string = "";
     uniqueID:string = "";
-    pivot:Vec2 = new Vec2();
-    pivotBasedOnHitbox:Vec2 = new Vec2();
-    visible:boolean = true;
-    persistent: boolean = false;
-    save: boolean = false;
-    tags:Array<string> = [];
-    texture: Texture | null;
-    color:Color = new Color(255, 255, 255, 255);
+
+    @InspectorField customName: string = "";
+    @InspectorField pivot:Vec2 = new Vec2();
+    @InspectorField visible:boolean = true;
+    @InspectorField persistent: boolean = false;
+    @InspectorField save: boolean = false;
+    @InspectorField tags:Array<string> = [];
+    @InspectorField texture: Texture | null;
+    @InspectorField color:Color = new Color(255, 255, 255, 255);
+    
     shader: GLShader | undefined;
 
     shaders: any[] = [];
@@ -76,9 +78,6 @@ export class GameObject
 
     events = mitt<Events>();
 
-    flipX:boolean = false
-    flipY:boolean = false
-    
     //onDestroy:Function | null = null;
 
     //private cachedChildrenWidth: number = -1;
@@ -446,7 +445,7 @@ export class GameObject
         }
         
         rapid.withTransform(()=>{
-            rapid.drawSprite(this.texture!, renderColor, this.flipX, this.flipY, this.shader)
+            rapid.drawSprite(this.texture!, renderColor, false, false, this.shader)
         }, {position:new Vec2(-this.pivot.x, -this.pivot.y)})
 
         if (this.mask)
@@ -1227,7 +1226,6 @@ export class GameObject
         this.entity = null;
         
         this.startPosition.set(0);
-        this.pivotBasedOnHitbox.set(0);
 
         this.transform.Reset();
         this.innerTransform.Reset();

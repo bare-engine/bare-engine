@@ -3,14 +3,14 @@ import { SettingsData } from "./bareTypes";
 export const defaultSettingsData: SettingsData = {
   baseEntities: {
     ANY: {
-      extendClass: "GameObject"
+      baseClass: "GameObject"
     },
     ANY_ENTITY: {
       baseEntity: "ANY",
-      extendClass: "GameObject"
+      baseClass: "GameObject"
     },
     NONE: {
-      extendClass: "GameObject"
+      baseClass: "GameObject"
     }
   },
   entities: {},
