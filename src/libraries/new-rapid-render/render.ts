@@ -32,6 +32,8 @@ export interface IAppOptions {
     /** Whether to enable MSAA antialiasing on the WebGL canvas. Default: false. */
     antialias?: boolean;
 
+    textureFilter?: TextureFilterMode;
+
     /** Whether textures are uploaded with premultiplied alpha. Default: true. */
     premultipliedAlpha?: boolean;
 }
@@ -64,6 +66,11 @@ export enum BlendMode {
     SCREEN,
     /** Erase blending (removes alpha based on source). */
     ERASE
+}
+
+export enum TextureFilterMode {
+    LINEAR,
+    NEAREST
 }
 
 /**
@@ -126,6 +133,9 @@ export class Rapid {
     /** Default texture filtering preference and requested canvas MSAA setting. */
     antialias: boolean;
 
+    /** Default filtering mode used when sampling textures. */
+    textureFilter: TextureFilterMode;
+
     /** Internal ping-pong RenderTextures for multi-filter chains. */
     private _filterRT: [RenderTexture | null, RenderTexture | null] = [null, null];
 
@@ -143,6 +153,7 @@ export class Rapid {
         this.canvas = options.canvas;
         this.dpr = window.devicePixelRatio || 1;
         this.antialias = options.antialias ?? false;
+        this.textureFilter = options.textureFilter ?? TextureFilterMode.NEAREST;
         this.premultipliedAlpha = options.premultipliedAlpha ?? true;
 
         const gl = getContext(this.canvas, this.antialias, this.premultipliedAlpha);
@@ -534,16 +545,16 @@ export class Rapid {
         // source.width/height already reflects the region size (not the full base texture).
         // drawSprite uses the region UV, so only the region pixels are rendered into the RT.
         // The output RT contains the "baked" region content — no region metadata needed.
-        const w = source.width;
-        const h = source.height;
+        const width = source.width;
+        const height = source.height;
 
         // Ensure both ping-pong RTs exist and match the source size (grow-only: no GPU
         // reallocation unless size exceeds the previous maximum)
         for (let i = 0; i < 2; i++) {
             if (!this._filterRT[i]) {
-                this._filterRT[i] = this.texture.createRenderTexture(w, h);
+                this._filterRT[i] = this.texture.createRenderTexture({width, height});
             } else {
-                this._filterRT[i]!.resize(w, h);
+                this._filterRT[i]!.resize(width, height);
             }
         }
 

@@ -1,5 +1,6 @@
 import type { Scene } from "../scenes/scene";
 import { GameObject } from "../objects/gameObject";
+import { TextureFilterMode } from "../libraries/new-rapid-render";
 
 export type Scalar = (number | string | boolean);
 
@@ -8,6 +9,7 @@ export type BareOptions =
   width?: number;
   height?: number;
   antiAlias?: boolean;
+  textureFilter?: TextureFilterMode;
   premultipliedAlpha?: boolean;
   gameObjectPoolSize?: number;
   fixedTimestep?: number;

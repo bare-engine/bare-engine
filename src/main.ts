@@ -1,6 +1,6 @@
 
 import { BareEngine } from './bareEngine';
-import { BaseTexture, Color, CustomGlShader, Rapid, Texture } from './libraries/new-rapid-render';
+import { BaseTexture, Color, CustomGlShader, Rapid, Texture, TextureFilterMode } from './libraries/new-rapid-render';
 import { supportsWebGL } from './libraries/new-rapid-render/webgl/utils';
 import { BareEvent, BareOptions, SceneClass } from './types/bareTypes';
 import { globalEvents } from './globals';
@@ -19,6 +19,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
         gameObjectPoolSize: 50,
         imagePath: '',
         levelPath: '',
+        textureFilter: TextureFilterMode.LINEAR,
         editorButtonPosition: {x: 0, y: 0}
     }, ...options };
 
@@ -32,6 +33,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
             // START RAPID
             let rapid = new Rapid({
                 canvas: canvas,
+                textureFilter: options.textureFilter,
                 backgroundColor: new Color(159/255, 202/255, 74/255, 255/255),
                 antialias: options.antiAlias ?? true,
                 premultipliedAlpha: options.premultipliedAlpha ?? true

@@ -267,7 +267,7 @@ export class EditorUIHandler {
                             } else {
                                 if (!window.textureNotFoundString)
                                 {
-                                    var rt = new RenderTexture(rapid, 128, 128, Color.fromHex("#fc0000"));
+                                    var rt = new RenderTexture(rapid, { width: 128, height: 128, clearColor: Color.fromHex("#fc0000") });
                                     //var rt = new RenderTexture(128, 128, true, Color.fromHex("#fc0000")); // Fallback tex
                                     const pixels = rt.GetPixels();
                                     const canvas = document.createElement('canvas');
