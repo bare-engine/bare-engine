@@ -1047,9 +1047,7 @@ export class PluginHandler
               var openObjectsTab = obj.scene.settingsData.selectionEnabled !== false;
               this.SelectObjectInPlugin(obj.uniqueID, openObjectsTab, parentIds);
 
-              var mouseWorldAtClick = obj.scene.ScreenToWorldPos(
-                  rapid.cssToDevicePixel(new Vec2(ev.clientX, ev.clientY))
-              );
+              var mouseWorldAtClick = obj.scene.ScreenToWorldPos(bareEngine.GetCanvasScreenPosition(ev.clientX, ev.clientY));
               var mouseLocalAtClick = obj.parent ? obj.parent.ToLocal(mouseWorldAtClick) : mouseWorldAtClick;
 
               this.draggedObjData = {
@@ -1126,7 +1124,7 @@ export class PluginHandler
                     continue;
 
                 var objRect = obj.GetBoundsWithChildren()
-                var p = rapid.cssToDevicePixel(new Vec2(ev.clientX, ev.clientY));
+                var p = bareEngine.GetCanvasScreenPosition(ev.clientX, ev.clientY);
                 var pWorld = scene.ScreenToWorldPos(p);
 
                 if (outline)
@@ -1167,7 +1165,7 @@ export class PluginHandler
             var scene = scenes[i];
             var objs = scene.objectController.GetAllObjects();
         
-            var p = rapid.cssToDevicePixel(new Vec2(ev.clientX, ev.clientY));
+            var p = bareEngine.GetCanvasScreenPosition(ev.clientX, ev.clientY);
             var pWorld = scene.ScreenToWorldPos(p);
 
             for (var j in objs)

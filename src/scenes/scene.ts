@@ -1004,15 +1004,14 @@ export class Scene implements SceneI
 
     ScreenToWorld(x:number, y:number)
     {
-        const logic = rapid.physicsToLogic(new Vec2(x, y))
         if (this.cameraHandler)
         {
             // THE CAMERA IS SET TO THIS SCENE EXCLUSIVELY
-            return this.cameraHandler?.ScreenToWorld(logic.x, logic.y);
+            return this.cameraHandler?.ScreenToWorld(x, y);
         }
         else
         {
-            return logic
+            return new Vec2(x, y)
         }
     }
 
@@ -1021,12 +1020,11 @@ export class Scene implements SceneI
         if (this.cameraHandler)
         {
             // THE CAMERA IS SET TO THIS SCENE EXCLUSIVELY
-            const logic = this.cameraHandler?.WorldToScreen(x, y);
-            return rapid.logicToPhysics(logic);
+            return this.cameraHandler?.WorldToScreen(x, y);
         }
         else
         {
-            return rapid.logicToPhysics(new Vec2(x, y));
+            return new Vec2(x, y);
         }
     }
 

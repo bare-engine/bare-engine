@@ -254,9 +254,7 @@ export class EditorControlsHandler {
             return;
 
         if (mouseController.IsMiddleMouseDown()) {
-            var deltaMovedMiddleMouse = rapid.physicsToLogic(
-                mouseController.screen.position.subtract(mouseController.screen.positionPrev)
-            );
+            var deltaMovedMiddleMouse = mouseController.screen.position.subtract(mouseController.screen.positionPrev);
             var zoom = cameraHandler.GetZoom();
             cameraHandler.AddPosition(-deltaMovedMiddleMouse.x /zoom, -deltaMovedMiddleMouse.y / zoom);
         }

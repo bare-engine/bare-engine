@@ -6,8 +6,7 @@ export type Scalar = (number | string | boolean);
 
 export type BareOptions = 
 {
-  width?: number;
-  height?: number;
+  resolution?: ResolutionOptions,
   antiAlias?: boolean;
   textureFilter?: TextureFilterMode;
   premultipliedAlpha?: boolean;
@@ -17,6 +16,26 @@ export type BareOptions =
   levelPath?: string;
   editorButtonPosition?: Position;
 };
+
+export type ResolutionOptions = 
+{
+  gameWidth: number;
+  gameHeight: number;
+  scale?: number | CanvasScale;
+  position?: CanvasPosition;
+  integerScale?: boolean;
+}
+
+export enum CanvasPosition
+{
+  TopLeft = 0,
+  Center
+}
+
+export enum CanvasScale
+{
+  Fit = -1
+}
 
 export interface Position
 {
