@@ -73,6 +73,8 @@ export {
   AnimationData,
   BareEvent,
   CameraScaleMode,
+  CanvasPosition,
+  CanvasScale,
   CollisionHandlingType,
   Events,
   HitboxType,

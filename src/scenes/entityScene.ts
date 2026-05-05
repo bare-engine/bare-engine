@@ -32,7 +32,7 @@ export class EntityScene extends EditorScene
     {
         if (!assetsHandler.HasTexture("placeHolder"))
         {
-            var rt = new RenderTexture(rapid, 512, 512, Color.fromHex("b3b3b3"));
+            var rt = new RenderTexture(rapid, { width: 512, height: 512, clearColor: Color.fromHex("b3b3b3") });
             var text = new TextObject(this, {text: "  Place       Holder", fontSize: 52, fill: "white"});
             text.CenterPivot();
             text.x = rt.width / 2;

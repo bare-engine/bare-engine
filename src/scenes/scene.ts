@@ -1011,7 +1011,7 @@ export class Scene implements SceneI
         }
         else
         {
-            return new Vec2(x, y);
+            return new Vec2(x, y)
         }
     }
 

@@ -4,10 +4,10 @@ import { GameMode, globalEvents } from "./globals";
 import { assetsHandler } from "./handlers/assetsHandler";
 import { PoolHandler } from "./handlers/poolHandler";
 import { EventArgs } from "./libraries/mitt";
-import { TextureManager } from "./libraries/new-rapid-render";
+import { TextureManager, Vec2 } from "./libraries/new-rapid-render";
 import { GameObject } from "./objects/gameObject";
 import type { Scene } from "./scenes/scene";
-import { BareEvent, BareOptions, Events, GameObjectClass, SceneClass } from "./types/bareTypes";
+import { BareEvent, BareOptions, CanvasPosition, CanvasScale, Events, GameObjectClass, SceneClass } from "./types/bareTypes";
 
 export class BareEngine
 {
@@ -23,6 +23,7 @@ export class BareEngine
     public fixedTimestep: number = 1 / 60;
     public maxDeltaTime: number = 1 / 15; // CAPS FRAME DELTA, USEFUL AFTER LAG OR TAB REFOCUS
     private accumulator: number = 0;
+    public resolutionScale: number = 1;
     
     private RunMainLoopBound: () => void;
 
@@ -106,7 +107,7 @@ export class BareEngine
         // BUT IF ANTI-ALIAS IS ON, THAT TEXTURE USES LINEAR FILTERING, SO STRETCHING THAT PIXEL IS NOT GREAT AND GETS BLURRY
         
         this.ImplementInitialTextures();
-        this.ResizeCanvas(options?.width, options?.height);
+        this.ResizeCanvas(options?.resolution);
 
         window.bareEngine = this;
         
@@ -118,8 +119,7 @@ export class BareEngine
 
         this.dummyGameObject = new GameObject(scene); // TOO LATE IF USER WANTS TO USE IT IN sceneClass, BUT FINE FOR MY CURRENT USAGE
         
-        if (!(options?.width && options?.height))
-            window.addEventListener('resize', ()=>this.ResizeCanvas());
+        window.addEventListener('resize', ()=>this.ResizeCanvas(options?.resolution));
 
         document.addEventListener('pointerdown', this.PointerDown.bind(this), { passive: false });
         document.addEventListener('pointerup', this.PointerUp.bind(this), { passive: false });
@@ -175,37 +175,90 @@ export class BareEngine
         }
     }
 
-    ResizeCanvas(width?: number, height?: number)
+    ResizeCanvas(resolution?: BareOptions['resolution'])
     {
         var prevWidth = rapid.width;
         var prevHeight = rapid.height;
 
-        var newWidth:number;
-        var newHeight:number;
-        
-        if (width == undefined && height == undefined)
-        {
-            newWidth = window.innerWidth;
-            newHeight = window.innerHeight;
-        }
-        else
-        {
-            newWidth = width;
-            newHeight = height;
-        }
+        var viewportSize = this.GetViewportSize();
+        var gameWidth = resolution?.gameWidth ?? viewportSize.width;
+        var gameHeight = resolution?.gameHeight ?? viewportSize.height;
 
-        var devicePixelRatio = window.devicePixelRatio || 1;
+        var scale = this.CalculateResolutionScale(resolution, gameWidth, gameHeight);
+        var cssWidth = gameWidth * scale;
+        var cssHeight = gameHeight * scale;
+        this.resolutionScale = scale;
 
         rapid.resize(
-            newWidth,
-            newHeight,
-            Math.round(newWidth * devicePixelRatio),
-            Math.round(newHeight * devicePixelRatio));
+            gameWidth, gameHeight, // LOGIC SIZE
+            cssWidth, cssHeight    // CSS SIZE
+        );
 
-        globalEvents.emit(BareEvent.game_resize, { prevWidth: prevWidth, prevHeight: prevHeight, newWidth: newWidth, newHeight: newHeight });
+        this.PositionCanvas(resolution, cssWidth, cssHeight);
+
+        globalEvents.emit(BareEvent.game_resize, { prevWidth: prevWidth, prevHeight: prevHeight, newWidth: gameWidth, newHeight: gameHeight });
 
         // PERSIST UI LAYOUT
-        sceneController.OnResize(prevWidth, prevHeight, newWidth, newHeight);
+        sceneController.OnResize(prevWidth, prevHeight, gameWidth, gameHeight);
+    }
+
+    private GetViewportSize(): { width: number, height: number }
+    {
+        var visualViewport = window.visualViewport;
+
+        return {
+            width: visualViewport?.width ?? document.documentElement.getBoundingClientRect().width ?? window.innerWidth,
+            height: visualViewport?.height ?? document.documentElement.getBoundingClientRect().height ?? window.innerHeight
+        };
+    }
+    
+    GetCanvasScreenPosition(clientX: number, clientY: number): Vec2
+    {
+        const rect = rapid.canvas.getBoundingClientRect();
+        const cssPixel = new Vec2(clientX - rect.left, clientY - rect.top);
+        const devicePixel = rapid.cssToDevicePixel(cssPixel);
+
+        return rapid.physicsToLogic(devicePixel);
+    }
+
+    private CalculateResolutionScale(resolution: BareOptions['resolution'], gameWidth: number, gameHeight: number): number
+    {
+        if (!resolution)
+            return 1;
+
+        if (resolution.scale == undefined)
+            return 1;
+
+        if (resolution.scale == CanvasScale.Fit)
+        {
+            var viewportSize = this.GetViewportSize();
+            var scale = Math.min(viewportSize.width / gameWidth, viewportSize.height / gameHeight);
+            
+            if (resolution.integerScale)
+                scale = Math.max(1, Math.floor(scale));
+
+            return scale;
+        }
+
+        return resolution.scale;
+    }
+
+    private PositionCanvas(resolution: BareOptions['resolution'], cssWidth: number, cssHeight: number)
+    {
+        var position = resolution?.position ?? CanvasPosition.TopLeft;
+
+        rapid.canvas.style.position = 'absolute';
+
+        if (position == CanvasPosition.Center)
+        {
+            var viewportSize = this.GetViewportSize();
+            rapid.canvas.style.left = `${(viewportSize.width - cssWidth) * .5}px`;
+            rapid.canvas.style.top = `${(viewportSize.height - cssHeight) * .5}px`;
+            return;
+        }
+
+        rapid.canvas.style.left = '0px';
+        rapid.canvas.style.top = '0px';
     }
 
     RunMainLoop()
