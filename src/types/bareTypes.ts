@@ -151,63 +151,86 @@ export interface Entity
 }
 
 export type ConstructEntityOptions = { propsToIgnoreInEntity?: string[], fillPresets?: boolean };
+export type EntityVarsNestedGroup = Record<string, string[]>;
+export type EntityVarsNestedEntry = string | EntityVarsNestedGroup;
 
-export var entityVarsPhysicsObjectBare = [
-    "pivotBasedOnHitbox",
-    "hitbox",
-    "hitboxType",
-    "physicsRadius",
-]
+export var entityVarsNested: EntityVarsNestedEntry[] = 
+[
+  "baseEntity",
+  "baseClass",
+  "imagePath",
+  "children",
+  "components",
+  "componentsRemoved",
 
-export var entityVarsRigidbody = [
-    "physicsRect",
-    "physicsRadius",
-    "mass",
-    "drag",
-    "restitution",
-    "polygonVertices",
-]
+  {
+    "General": [
+        //"name",
 
-export var entityVars = [
-    "name",
-    "customName",
-    "tags",
-    "customData",
+        "position",
+        //"scaleX",
+        //"scaleY",
+        "scale",
+        "rotation",
+        "flipped",
+        "pivot",
+        //"innerX",
+        //"innerY",
+        "innerPosition",
+        //"innerScaleX",
+        //"innerScaleY",
+        "innerScale",
+        "innerRotation",
 
-    "position",
-    "scaleX",
-    "scaleY",
-    "scale",
-    "rotation",
-    "flipped",
-    "pivot",
-    "innerX",
-    "innerY",
-    "innerPosition",
-    "innerScaleX",
-    "innerScaleY",
-    "innerScale",
-    "innerRotation",
+        "texture",
+        "color",
+        "alpha",
+        "visible",
+    ],
+    "Misc": [
+        "propertiesRemoved",
 
-    "texture",
-    "color",
-    "alpha",
-    "visible",
-
-    "tapHitbox",
-
-    "children",
-
-    "components",
-    "componentsRemoved",
-    "propertiesRemoved",
-
-    "baseClass",
-    "baseEntity",
-    "imagePath",
-    "interactableInEditor",
-    "save",
+        "tapHitbox",
+        "interactableInEditor",
+        "save",
+        "customName",
+        "tags",
+        "customData",
+    ],
+    "PhysicsObjectBare": [
+        "drag",
+        "restitution",
+        "pivotBasedOnHitbox",
+        "hitbox",
+        "hitboxType",
+        "physicsRadius",
+    ],
+    "Rigidbody": [
+        "physicsRect",
+        "physicsRadius",
+        "mass",
+        "drag",
+        "restitution",
+        "polygonVertices",
+    ]
+  } 
 ];
+
+export var entityVars: string[] = [];
+
+export function RefreshEntityVars(): void
+{
+  entityVars.length = 0;
+  for (var entry of entityVarsNested)
+  {
+    if (typeof entry === "string")
+      entityVars.push(entry);
+    else
+      entityVars.push(...Object.values(entry).flat());
+  }
+}
+
+RefreshEntityVars();
 
 export interface LevelData
 {

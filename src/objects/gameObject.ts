@@ -1,13 +1,13 @@
 import { assetsHandler } from "../handlers/assetsHandler";
 import { Hitbox } from '../types/hitbox';
-import { Entity, GameObjectClass } from '../types/bareTypes';
+import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';
 import { Helper } from '../utils/helper';
 import { Vec2, Texture, Color, GLShader, MaskType, MatrixStack } from "../libraries/new-rapid-render";
 import type { Scene } from "../scenes/scene";
 import type { Component, Ctor, Events, Rectangle } from "../types/bareTypes";
 import { MakePath, MakePathForEntity } from '../globals';
 import mitt from "../libraries/mitt";
-import { InspectorField } from "../utils/decorators";
+import { getOwnInspectorFieldNames, InspectorField } from "../utils/decorators";
 
 export class Transform {
     position = new Vec2();
@@ -26,6 +26,8 @@ export class Transform {
 
 export class GameObject
 {
+    private static registeredGameObjects: Record<string, GameObjectClass> = {};
+
     static gameObjectCounter = -1; // ONE BACK TO NOT COUNT THE DUMMY GAMEOBJECT INSTANCED IN BAREGAME
  
     scene: Scene;
@@ -34,14 +36,14 @@ export class GameObject
     pluginName:string;
     uniqueID:string = "";
 
-    @InspectorField customName: string = "";
-    @InspectorField pivot:Vec2 = new Vec2();
-    @InspectorField visible:boolean = true;
-    @InspectorField persistent: boolean = false;
-    @InspectorField save: boolean = false;
-    @InspectorField tags:Array<string> = [];
-    @InspectorField texture: Texture | null;
-    @InspectorField color:Color = new Color(255, 255, 255, 255);
+    customName: string = "";
+    pivot:Vec2 = new Vec2();
+    visible:boolean = true;
+    persistent: boolean = false;
+    save: boolean = false;
+    tags:Array<string> = [];
+    texture: Texture | null;
+    color:Color = new Color(255, 255, 255, 255);
     
     shader: GLShader | undefined;
 
@@ -87,6 +89,8 @@ export class GameObject
     
     constructor(scene: Scene, texturePath: string = "", x:number = 0, y:number = 0)
     {
+        GameObject.RegisterGameObject(this.constructor as GameObjectClass);
+
         this.scene = scene;
 
         this.ResetValues(); // MAKES ABOVE VALUES NOT REALLY MATTER, THESE ARE THE DEFAULTS
@@ -101,6 +105,36 @@ export class GameObject
         if (texturePath != "")
         {
             this.Init(texturePath);
+        }
+    }
+ 
+    static GetClassName(cls: GameObjectClass): string
+    {
+        return cls.name.startsWith("_") ? cls.name.substring(1) : cls.name;
+    }
+    
+    static RegisterGameObject(cls: GameObjectClass, defaultPoolSize: number = 1): void
+    {
+        const className = GameObject.GetClassName(cls);
+        const alreadyRegistered = !!GameObject.registeredGameObjects[className];
+
+        if (!alreadyRegistered)
+        {
+            GameObject.registeredGameObjects[className] = cls;
+
+            const hasEntityVars = entityVarsNested.some(entry =>
+                typeof entry !== "string" && Object.prototype.hasOwnProperty.call(entry, className)
+            );
+
+            if (!hasEntityVars)
+            {
+                var vars = getOwnInspectorFieldNames(cls);
+                if (vars.length > 0)
+                {
+                    entityVarsNested.push({ [className]: vars });
+                    RefreshEntityVars();
+                }
+            }
         }
     }
 

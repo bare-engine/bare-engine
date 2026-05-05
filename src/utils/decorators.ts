@@ -146,7 +146,9 @@ export function getButtons(componentClass: any): { label: string; methodKey: str
 
 function addField(proto: object, name: string): void
 {
-    const fields: FieldEntry[] = (proto as any)[FIELD_METADATA_KEY] || [];
+    const fields: FieldEntry[] = Object.prototype.hasOwnProperty.call(proto, FIELD_METADATA_KEY)
+        ? (proto as any)[FIELD_METADATA_KEY]
+        : [];
     fields.push({ name, type: "input" });
     (proto as any)[FIELD_METADATA_KEY] = fields;
 }
@@ -160,6 +162,16 @@ export function InspectorField(targetOrType: any, propertyKey?: string): any
         addField(targetOrType, propertyKey);
         return;
     }
+}
+
+export function getOwnInspectorFieldNames(classOrPrototype: any): string[]
+{
+    const proto = typeof classOrPrototype === "function" ? classOrPrototype.prototype : classOrPrototype;
+    const entries: FieldEntry[] = Object.prototype.hasOwnProperty.call(proto, FIELD_METADATA_KEY)
+        ? proto[FIELD_METADATA_KEY]
+        : [];
+
+    return entries.map(entry => entry.name);
 }
 
 export function Save(target: any, propertyKey: string): void

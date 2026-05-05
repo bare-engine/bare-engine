@@ -10,7 +10,7 @@ import { EntityScene } from "../scenes/entityScene";
 import { Scene } from "../scenes/scene";
 import { OutlineShader } from "../shaders/outlineShader";
 import { defaultSettingsData } from "../types/bareData";
-import { BareEvent, Entity, LevelData, Position, SaveData, Scalar, SettingsData } from "../types/bareTypes";
+import { BareEvent, Entity, entityVarsNested, LevelData, Position, SaveData, Scalar, SettingsData } from "../types/bareTypes";
 import { applyInspectorField, getButtons, getInspectorFields } from "../utils/decorators";
 import { Helper } from "../utils/helper";
 import { SaveDataHandler } from "./SaveDataHandler";
@@ -353,6 +353,11 @@ window.__GAME_DEBUG_API__ = {
     return s;
   },
 
+  getNestedEntityVars(entityName: string)
+  {
+      return entityVarsNested;
+  },
+
   async removeFieldFromEntity(entiyName: string, field: string)
   {
         var scene = plugin.GetCurrentScene();
@@ -390,6 +395,35 @@ window.__GAME_DEBUG_API__ = {
         await entityScene.SaveEntityData(rawSettingsData);
 
         return entityData;
+  },
+
+  getDefaultValueForEntityField(entityName: string, field: string)
+  {
+    var scene = plugin.GetCurrentScene();
+    let entityScene = scene as EntityScene;
+    
+    var rawSettingsData = entityScene.settingsHandler.GetRaw();
+
+    var entity:Entity;
+    if (entityScene.isBase)
+        entity = rawSettingsData.baseEntities[entityScene.objectName]; // USE id?
+    else
+        entity = rawSettingsData.entities[entityScene.objectName];
+    
+    // COMMENTED OUT, SINCE I WANT TO KEEP VALUE IN PLUGIN, EVEN IF IT'S DEFAULT
+    var entityWithDefaultValues = scene.GetEntityWithDefaultValues(entity, scene.settingsData) as any;
+    entityWithDefaultValues.x = entityWithDefaultValues.position.x;
+    entityWithDefaultValues.y = entityWithDefaultValues.position.y;
+    entityWithDefaultValues.scaleX = entityWithDefaultValues.scale.x;
+    entityWithDefaultValues.scaleY = entityWithDefaultValues.scale.y;
+    entityWithDefaultValues.innerX = entityWithDefaultValues.innerPosition.x;
+    entityWithDefaultValues.innerY = entityWithDefaultValues.innerPosition.y;
+    entityWithDefaultValues.innerScaleX = entityWithDefaultValues.innerScale.x;
+    entityWithDefaultValues.innerScaleY = entityWithDefaultValues.innerScale.y;
+
+    var defaultValue = entityWithDefaultValues[field];
+
+    return defaultValue;
   },
 
     async setObject(id: string, props: Record<string, any>, save:boolean = false)
@@ -430,7 +464,9 @@ window.__GAME_DEBUG_API__ = {
                 {
                     delete entityCopy[key];
                 }
-                var entityWithDefaultValues = scene.GetEntityWithDefaultValues(entityCopy, scene.settingsData) as any;
+
+                // COMMENTED OUT, SINCE I WANT TO KEEP VALUE IN PLUGIN, EVEN IF IT'S DEFAULT
+                /*var entityWithDefaultValues = scene.GetEntityWithDefaultValues(entityCopy, scene.settingsData) as any;
                 entityWithDefaultValues.x = entityWithDefaultValues.position.x;
                 entityWithDefaultValues.y = entityWithDefaultValues.position.y;
                 entityWithDefaultValues.scaleX = entityWithDefaultValues.scale.x;
@@ -448,7 +484,7 @@ window.__GAME_DEBUG_API__ = {
                     var defaultVal = entityWithDefaultValues[key];
                     if (val == defaultVal)
                         delete entity[key];
-                }
+                }*/
 
                 // UNDO DEFAULT ADDITIONS TO ANY AND ANY_ENTITY AGAIN, DON'T WANT TO SAVE THEM
                 // THIS IS ALSO ADDED AT getEntityData
