@@ -305,7 +305,7 @@ window.__GAME_DEBUG_API__ = {
             innerRotation: o.innerTransform.rotation,
 
             pivot: {x: o.pivot.x, y: o.pivot.y},
-            pivotBasedOnHitbox: {x: o.pivotBasedOnHitbox.x, y: o.pivotBasedOnHitbox.y},
+            //pivotBasedOnHitbox: {x: o.pivotBasedOnHitbox.x, y: o.pivotBasedOnHitbox.y},
             flipped: o.flipped,
             
             visible: o.visible,
@@ -512,7 +512,7 @@ window.__GAME_DEBUG_API__ = {
             
         }
 
-        if (props.pivotBasedOnHitbox !== undefined) { o.pivotBasedOnHitbox.x = props.pivotBasedOnHitbox.x; o.pivotBasedOnHitbox.y = props.pivotBasedOnHitbox.y; }
+        //if (props.pivotBasedOnHitbox !== undefined) { o.pivotBasedOnHitbox.x = props.pivotBasedOnHitbox.x; o.pivotBasedOnHitbox.y = props.pivotBasedOnHitbox.y; }
        
         if (props.flipped !== undefined) o.flipped = props.flipped;
         if (props.visible !== undefined) o.visible = props.visible;

@@ -101,14 +101,14 @@ export class PivotComponent extends BaseComponent
                         this.go.SetPosition(pivotPosOrig.x, pivotPosOrig.y);
 
                         // VERY UGLY, TODO
-                        objectController.GetObjectByName(this.objName)!.pivotBasedOnHitbox.set(x, y);
+                        //objectController.GetObjectByName(this.objName)!.pivotBasedOnHitbox.set(x, y);
                         objectController.GetObjectByName(this.objName)!.entity!.pivotBasedOnHitbox! = {x: x, y: y};
                     }
                 }
             };
 
             // RESET FIRST, THEN SET LATER IN snapToPosition()
-            objectController.GetObjectByName(this.objName)!.pivotBasedOnHitbox.set(-1, -1);
+            //objectController.GetObjectByName(this.objName)!.pivotBasedOnHitbox.set(-1, -1);
             objectController.GetObjectByName(this.objName)!.entity!.pivotBasedOnHitbox! = {x: -1, y: -1};
             
             snapToPosition(.5, .5);

@@ -11,7 +11,7 @@ export class PhysicsObjectBare extends GameObject
     public isPhysicsObject = true;
     
     physicsHitbox: Hitbox = new Hitbox(this, {x1 : 0, y1 : 0, x2 : 0, y2 : 0});
-    @InspectorField pivotBasedOnHitbox:Vec2 = new Vec2();
+
     @InspectorField static: boolean = false;
     @InspectorField collide: boolean = true;
     @InspectorField sensor:boolean = false;
@@ -186,8 +186,6 @@ export class PhysicsObjectBare extends GameObject
         this.restitution = 0//.8;
         this.blocked = BlockedState.None;
 
-        this.pivotBasedOnHitbox.set(0);
-        
         if (this.physicsHitbox)
         {
             this.physicsHitbox.type = HitboxType.Rectangle;
