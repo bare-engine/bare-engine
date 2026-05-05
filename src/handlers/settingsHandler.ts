@@ -27,7 +27,7 @@ export class SettingsHandler
     {
         var settings = this.clone(raw);
 
-        // SET DEFAULTS - WILL FILL IN ANY VALUE IN settings WITH VALUES FROM defaultEntityData THAT'S NOT PRESENT
+        // SET DEFAULTS - WILL FILL IN ANY VALUE IN settings WITH VALUES FROM defaultSettingsData THAT'S NOT PRESENT
         for (const key of Object.keys(defaultSettingsData) as (keyof SettingsData)[])
         {
             const rawValue = settings[key];

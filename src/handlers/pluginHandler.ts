@@ -9,7 +9,7 @@ import { EditorScene } from "../scenes/editorScene";
 import { EntityScene } from "../scenes/entityScene";
 import { Scene } from "../scenes/scene";
 import { OutlineShader } from "../shaders/outlineShader";
-import { defaultSettingsData as defaultEntityData } from "../types/bareData";
+import { defaultSettingsData } from "../types/bareData";
 import { BareEvent, Entity, LevelData, Position, SaveData, Scalar, SettingsData } from "../types/bareTypes";
 import { applyInspectorField, getButtons, getInspectorFields } from "../utils/decorators";
 import { Helper } from "../utils/helper";
@@ -205,10 +205,10 @@ window.__GAME_DEBUG_API__ = {
     var entityWithLog = plugin.BuildExtendDataLog(entity, name, processedEntity, raw, processed);
 
     // BUILD THE ENTITY TO PASS TO PLUGIN RIGHT AWAY
-    var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(entityWithLog, scene.settingsData, {fillPresets: false});
-    levelEntityWithDefaultValues.name = name;
+    //var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(entityWithLog, scene.settingsData, {fillPresets: false});
+    //levelEntityWithDefaultValues.name = name;
     
-    return levelEntityWithDefaultValues;
+    return entityWithLog;
   },
 
   getObject(id: string) {
@@ -353,6 +353,45 @@ window.__GAME_DEBUG_API__ = {
     return s;
   },
 
+  async removeFieldFromEntity(entiyName: string, field: string)
+  {
+        var scene = plugin.GetCurrentScene();
+        let entityScene = scene as EntityScene;
+        
+        var rawSettingsData = entityScene.settingsHandler.GetRaw();
+
+        rawSettingsData.baseEntities.ANY ??= {};
+        rawSettingsData.baseEntities.ANY_ENTITY ??= {};
+
+        var entity:Entity;
+        if (entityScene.isBase)
+            entity = rawSettingsData.baseEntities[entityScene.objectName];
+        else
+            entity = rawSettingsData.entities[entityScene.objectName];
+
+        delete entity[field];
+
+        var entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase);
+        
+        //
+        if (Object.keys(rawSettingsData.baseEntities.ANY).length == 0)
+            delete rawSettingsData.baseEntities.ANY;
+
+        if (Object.keys(rawSettingsData.baseEntities.ANY_ENTITY).length == 0)
+            delete rawSettingsData.baseEntities.ANY_ENTITY;
+
+        //
+        if (rawSettingsData.baseEntities.ANY == defaultSettingsData.baseEntities.ANY)
+            delete rawSettingsData.baseEntities.ANY;
+
+        if (rawSettingsData.baseEntities.ANY_ENTITY == defaultSettingsData.baseEntities.ANY_ENTITY)
+            delete rawSettingsData.baseEntities.ANY_ENTITY;
+
+        await entityScene.SaveEntityData(rawSettingsData);
+
+        return entityData;
+  },
+
     async setObject(id: string, props: Record<string, any>, save:boolean = false)
     {
         var scene = plugin.GetCurrentScene();
@@ -369,13 +408,11 @@ window.__GAME_DEBUG_API__ = {
                 //if (entityScene.isBase)
                 {
                     //if (entityScene.objectName == "ANY")
-                        rawSettingsData.baseEntities.ANY ??= {...defaultEntityData.baseEntities.ANY};
+                        rawSettingsData.baseEntities.ANY ??= {};
                     
                     //if (entityScene.objectName == "ANY_ENTITY")
-                        rawSettingsData.baseEntities.ANY_ENTITY ??= {...defaultEntityData.baseEntities.ANY_ENTITY};
+                        rawSettingsData.baseEntities.ANY_ENTITY ??= {};
                 }
-
-                var entityCopy = Object.assign({}, entity);
 
                 // WRITE ENTITY PROPS TO RAW 
                 var entity:Entity;
@@ -384,6 +421,8 @@ window.__GAME_DEBUG_API__ = {
                 else
                     entity = rawSettingsData.entities[entityScene.objectName];
                 
+                var entityCopy = Object.assign({}, entity);
+
                 Object.assign(entity, props);
 
                 // GET ENTITY WITH DEFAULT VALUES
@@ -420,10 +459,10 @@ window.__GAME_DEBUG_API__ = {
 
                     //if (entityScene.objectName == "ANY")
                     {
-                        var anyKeys = Object.keys(defaultEntityData.baseEntities.ANY);
+                        var anyKeys = Object.keys(defaultSettingsData.baseEntities.ANY);
                         for (var key of anyKeys)
                         {
-                            if (rawSettingsData.baseEntities.ANY[key] == defaultEntityData.baseEntities.ANY[key]) // IF SAME AS DEFAULT
+                            if (rawSettingsData.baseEntities.ANY[key] == defaultSettingsData.baseEntities.ANY[key]) // IF SAME AS DEFAULT
                             if (entityScene.objectName != "ANY" || !propKeys.includes(key))
                                 delete rawSettingsData.baseEntities.ANY[key];
                         }
@@ -434,10 +473,10 @@ window.__GAME_DEBUG_API__ = {
 
                     //if (entityScene.objectName == "ANY_ENTITY")
                     {
-                        var anyEntityKeys = Object.keys(defaultEntityData.baseEntities.ANY_ENTITY);
+                        var anyEntityKeys = Object.keys(defaultSettingsData.baseEntities.ANY_ENTITY);
                         for (var key of anyEntityKeys)
                         {
-                            if (rawSettingsData.baseEntities.ANY_ENTITY[key] == defaultEntityData.baseEntities.ANY_ENTITY[key])
+                            if (rawSettingsData.baseEntities.ANY_ENTITY[key] == defaultSettingsData.baseEntities.ANY_ENTITY[key])
                             if (entityScene.objectName != "ANY_ENTITY" || !propKeys.includes(key))
                                 delete rawSettingsData.baseEntities.ANY_ENTITY[key];
                         }
@@ -450,19 +489,27 @@ window.__GAME_DEBUG_API__ = {
                 // SINCE WE JUST MODIFIED THE RAW ENTITY, WE RE-PROCESS THE settingsData AGAIN, SO IT'S UP TO DATE 
                 await entityScene.settingsHandler.Process(rawSettingsData);
 
+                var entityData;
+
                 // SAVE TO FILE
                 if (save)
                 {
                     trace(444)
-                    window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase);
+                    entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase);
+                    
                     await entityScene.SaveEntityData(rawSettingsData);
                 }
 
                 // ADD DEFAULTS TO RAW SETTINGS AGAIN, SO PROPS CAN BE ADDED TO IT
-                rawSettingsData.baseEntities.ANY ??= {...defaultEntityData.baseEntities.ANY};
-                rawSettingsData.baseEntities.ANY_ENTITY ??= {...defaultEntityData.baseEntities.ANY_ENTITY};
+                rawSettingsData.baseEntities.ANY ??= {...defaultSettingsData.baseEntities.ANY};
+                rawSettingsData.baseEntities.ANY_ENTITY ??= {...defaultSettingsData.baseEntities.ANY_ENTITY};
+
+                return entityData;
             }
-            f();
+            var entityData = await f();
+
+            if (entityData)
+                return entityData;
 
             return;
         }
@@ -586,10 +633,10 @@ window.__GAME_DEBUG_API__ = {
             //if (entityScene.isBase)
             {
                 //if (entityScene.objectName == "ANY")
-                    rawSettingsData.baseEntities.ANY ??= {...defaultEntityData.baseEntities.ANY};
+                    rawSettingsData.baseEntities.ANY ??= {...defaultSettingsData.baseEntities.ANY};
                 
                 //if (entityScene.objectName == "ANY_ENTITY")
-                    rawSettingsData.baseEntities.ANY_ENTITY ??= {...defaultEntityData.baseEntities.ANY_ENTITY};
+                    rawSettingsData.baseEntities.ANY_ENTITY ??= {...defaultSettingsData.baseEntities.ANY_ENTITY};
             }
             
             // UNDO DEFAULT ADDITIONS TO ANY AND ANY_ENTITY AGAIN, DON'T WANT TO SAVE THEM
@@ -601,10 +648,10 @@ window.__GAME_DEBUG_API__ = {
 
                 //if (entityScene.objectName == "ANY")
                 {
-                    var anyKeys = Object.keys(defaultEntityData.baseEntities.ANY);
+                    var anyKeys = Object.keys(defaultSettingsData.baseEntities.ANY);
                     for (var key of anyKeys)
                     {
-                        if (rawSettingsData.baseEntities.ANY[key] == defaultEntityData.baseEntities.ANY[key]) // IF SAME AS DEFAULT
+                        if (rawSettingsData.baseEntities.ANY[key] == defaultSettingsData.baseEntities.ANY[key]) // IF SAME AS DEFAULT
                         if (entityScene.objectName != "ANY" || !propKeys.includes(key))
                             delete rawSettingsData.baseEntities.ANY[key];
                     }
@@ -615,10 +662,10 @@ window.__GAME_DEBUG_API__ = {
 
                 //if (entityScene.objectName == "ANY_ENTITY")
                 {
-                    var anyEntityKeys = Object.keys(defaultEntityData.baseEntities.ANY_ENTITY);
+                    var anyEntityKeys = Object.keys(defaultSettingsData.baseEntities.ANY_ENTITY);
                     for (var key of anyEntityKeys)
                     {
-                        if (rawSettingsData.baseEntities.ANY_ENTITY[key] == defaultEntityData.baseEntities.ANY_ENTITY[key])
+                        if (rawSettingsData.baseEntities.ANY_ENTITY[key] == defaultSettingsData.baseEntities.ANY_ENTITY[key])
                         if (entityScene.objectName != "ANY_ENTITY" || !propKeys.includes(key))
                             delete rawSettingsData.baseEntities.ANY_ENTITY[key];
                     }
@@ -638,8 +685,8 @@ window.__GAME_DEBUG_API__ = {
             }
 
             // ADD DEFAULTS TO RAW SETTINGS AGAIN, SO PROPS CAN BE ADDED TO IT
-            rawSettingsData.baseEntities.ANY ??= {...defaultEntityData.baseEntities.ANY};
-            rawSettingsData.baseEntities.ANY_ENTITY ??= {...defaultEntityData.baseEntities.ANY_ENTITY};
+            rawSettingsData.baseEntities.ANY ??= {...defaultSettingsData.baseEntities.ANY};
+            rawSettingsData.baseEntities.ANY_ENTITY ??= {...defaultSettingsData.baseEntities.ANY_ENTITY};
         }
         else
         {
@@ -681,7 +728,7 @@ window.__GAME_DEBUG_API__ = {
     //return settingsData; // ADDED TO MAKE DEFAULT GAME NOT HAVE BELOW
     // SHOULD HAVE IT AGAIN WHEN I START WORK ON PLUGIN ENTITIES
 
-    // ADD DEFAULTS - SAME AS defaultEntityData - REBUILD TO ADD IN FRONT
+    // ADD DEFAULTS - SAME AS defaultSettingsData - REBUILD TO ADD IN FRONT
     settingsData.baseEntities ??= {};
 
     const {
@@ -691,8 +738,8 @@ window.__GAME_DEBUG_API__ = {
     } = settingsData.baseEntities;
 
     settingsData.baseEntities = {
-        ANY: ANY ?? defaultEntityData.baseEntities.ANY,
-        ANY_ENTITY: ANY_ENTITY ?? defaultEntityData.baseEntities.ANY_ENTITY,
+        ANY: ANY ?? defaultSettingsData.baseEntities.ANY,
+        ANY_ENTITY: ANY_ENTITY ?? defaultSettingsData.baseEntities.ANY_ENTITY,
         ...rest
     };
 
@@ -708,11 +755,11 @@ window.__GAME_DEBUG_API__ = {
 
     if (isBase)
     {
-        newRawData.baseEntities[name] = defaultEntityData.baseEntities[name];
+        newRawData.baseEntities[name] = defaultSettingsData.baseEntities[name];
     }
     else
     {
-        newRawData.entities[name] = defaultEntityData.entities[name];
+        newRawData.entities[name] = defaultSettingsData.entities[name];
     }*/
 
     try {
@@ -1363,7 +1410,8 @@ export class PluginHandler
 
         // FILL INFO ABOUT WHAT ENTITY PROPERTIES ARE EXTENDED BY WHY WHICH DATA - USING extendOrder
         let propsInThisEntity = Object.keys(entity); // USING entity, NOT newEntity SINCE THAT CONTAINS ALL PROPS ALREADY
-        propsInThisEntity.splice(propsInThisEntity.indexOf("name"), 1);
+        if (propsInThisEntity.includes("name"))
+            propsInThisEntity.splice(propsInThisEntity.indexOf("name"), 1);
         newEntity.baseEntityLog[entityName] = propsInThisEntity;
 
         var propsFound = propsInThisEntity.slice();
@@ -1372,7 +1420,7 @@ export class PluginHandler
         {
             // LOG EXTENDED PROPERTIES - SHOULD NOT HAVE BEEN FOUND BEFORE
             var extendEntityName = extendOrder[i];
-            var extendEntity = settingsDataRaw.baseEntities[extendEntityName] || defaultEntityData.baseEntities[extendEntityName];
+            var extendEntity = settingsDataRaw.baseEntities[extendEntityName] || defaultSettingsData.baseEntities[extendEntityName];
             var propsExtended = Object.keys(extendEntity);
             var propsExtendedFiltered = propsExtended.filter(p => !propsFound.includes(p));
 

@@ -48,7 +48,7 @@ export class ResizableRemoveComponent extends BaseComponent
     }
 
     // CLEAR pivotBasedOnHitbox
-    objectController.GetObjectByName(mainObj.name)!.pivotBasedOnHitbox.set(-1, -1);
+    //objectController.GetObjectByName(mainObj.name)!.pivotBasedOnHitbox.set(-1, -1);
     objectController.GetObjectByName(mainObj.name)!.entity.pivotBasedOnHitbox = {x: -1, y: -1};
     
     var gameObject = this.scene.AddGameObject(entityBare, 0);
