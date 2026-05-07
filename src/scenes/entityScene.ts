@@ -22,6 +22,7 @@ export class EntityScene extends EditorScene
     isBase: boolean = false;
     
     lastPayload: EntitySceneAwakePayload;
+    degugAtStart: boolean;
 
     constructor()
     {
@@ -30,6 +31,9 @@ export class EntityScene extends EditorScene
 
     override async OnStart(payload: EntitySceneAwakePayload = this.lastPayload): Promise<void>
     {
+        this.degugAtStart = window.debug;
+        window.debug = true;
+        
         if (!assetsHandler.HasTexture("placeHolder"))
         {
             var rt = new RenderTexture(rapid, { width: 512, height: 512, clearColor: Color.fromHex("b3b3b3") });
@@ -37,7 +41,7 @@ export class EntityScene extends EditorScene
             text.CenterPivot();
             text.x = rt.width / 2;
             text.y = rt.height / 2;
-            this.RenderTo(text, rt);
+            this.RenderTo(text, rt, true);
 
             rapid.drawToRenderTexture(rt, () => {
                 rapid.drawLine({
@@ -76,7 +80,7 @@ export class EntityScene extends EditorScene
                     roundCap: false,
                     color: Color.White,
                 });
-            }, Color.fromHex("b3b3b3"));
+            }, null);
             
             assetsHandler.AddTexture("placeHolder", rt);
         }
@@ -105,6 +109,14 @@ export class EntityScene extends EditorScene
         
         var levelData = await this.CreateEntityDataFor(objectName, isBase);
         await super.OnStart({levelPathOrData: levelData, saveLevelCallback: this.SaveEntityDataToSettingsData});
+    }
+
+    override OnClear(): void
+    {
+        if (this.opened)
+            window.debug = this.degugAtStart;
+        
+        super.OnClear();
     }
 
     async CreateEntityDataFor(objectName: string, isBase: boolean): Promise<LevelData>
