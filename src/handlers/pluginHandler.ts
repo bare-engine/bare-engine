@@ -1,17 +1,17 @@
 import { keyboardController } from "../controllers/keyboardController";
 import { sceneController } from "../controllers/sceneController";
-import { EditorUIScene } from "../scenes/editorUIScene";
 import { GameMode, globalEvents } from "../globals";
 import { Color, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { PhysicsObjectBare } from "../objects/physicsObjectBare";
 import { EditorScene } from "../scenes/editorScene";
+import { EditorUIScene } from "../scenes/editorUIScene";
 import { EntityScene } from "../scenes/entityScene";
 import { Scene } from "../scenes/scene";
 import { OutlineShader } from "../shaders/outlineShader";
 import { defaultSettingsData } from "../types/bareData";
-import { BareEvent, Entity, entityVarsNested, LevelData, Position, SaveData, Scalar, SettingsData } from "../types/bareTypes";
-import { applyInspectorField, getButtons, getInspectorFields } from "../utils/decorators";
+import { BareEvent, Entity, EntityVarsNestedEntry, entityVarsNested, LevelData, Position, SaveData, Scalar, SettingsData } from "../types/bareTypes";
+import { applyInspectorField, getButtons, getInspectorFieldDescriptions, getInspectorFields } from "../utils/decorators";
 import { Helper } from "../utils/helper";
 import { SaveDataHandler } from "./SaveDataHandler";
 
@@ -177,6 +177,46 @@ window.__GAME_DEBUG_API__ = {
   async GetLevelData(levelStr: string): Promise<LevelData> {
      return await Helper.loadJSON<LevelData>(`${bareEngine.levelPath}/${levelStr}.json`);
   },
+
+  getBaseClassValues() {
+    var values = Object.keys(Scene.registeredClasses);
+    return values;
+  },
+
+  getFieldInfo()
+  {
+    var info:Record<string, string> = {};
+    info.baseClass = "The GameObject class this entity will assign.\nAdd it with bareEngine.AddClass(CustomGameObjectClass); to make it appear in the dropdown.";
+    info.baseEntity = "The entity this entity will inherit from.";
+    info.imagePath = `Where to find the image. Looks in bareEngine.imagePath: ${bareEngine.imagePath}/[imagePath]`;
+    info.texture = "The texture to use for the entity. Overrides entity.name, which is used as the default texture name.";
+    info.pivot = "The pivot point of the entity. 0, 0 is the top left corner. Can also supply percentual values.";
+    info.hitbox = "Hitbox defined as x1,x2,y1,y2, not x/y/width/height. Can supply percentual values. Can also supply a string to use a pre-defined hitbox, eg: FULL";
+
+    const addDescriptions = (prefix: string | null, descriptions: Record<string, string>) => {
+        for (var fieldName in descriptions)
+        {
+            const description = descriptions[fieldName];
+            info[fieldName] ??= description;
+
+            if (prefix)
+                info[`${prefix}.${fieldName}`] = description;
+        }
+    };
+
+    for (var className in Scene.registeredClasses)
+        addDescriptions(className, getInspectorFieldDescriptions(Scene.registeredClasses[className]));
+
+    // FOR COMPONENTS, NOT WORKING YET
+    /*for (var componentClassName in bareEngine.componentClasses)
+    {
+        var componentClass = bareEngine.componentClasses[componentClassName];
+        var componentName = Helper.DecapitalizeFirstLetter(componentClassName.replace("Component", ""));
+        addDescriptions(`components.${componentName}`, getInspectorFieldDescriptions(componentClass));
+    }*/
+
+    return info;
+  },
   
   async gotoEntity(name: string, isBase: boolean = false) {
     /*const levelController = getLevelController();
@@ -203,6 +243,7 @@ window.__GAME_DEBUG_API__ = {
         processedEntity = processed.entities[name];
 
     var entityWithLog = plugin.BuildExtendDataLog(entity, name, processedEntity, raw, processed);
+
 
     // BUILD THE ENTITY TO PASS TO PLUGIN RIGHT AWAY
     //var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(entityWithLog, scene.settingsData, {fillPresets: false});
@@ -355,7 +396,22 @@ window.__GAME_DEBUG_API__ = {
 
   getNestedEntityVars(entityName: string)
   {
-      return entityVarsNested;
+      var varsPluginHideApplied: EntityVarsNestedEntry[] = [];
+
+      for (var entry of entityVarsNested)
+      {
+          if (typeof entry === "string")
+          {
+              varsPluginHideApplied.push(entry);
+              continue;
+          }
+
+          var groupEntries = Object.entries(entry).filter(([groupName]) => groupName !== "HideInPlugin");
+          if (groupEntries.length > 0)
+              varsPluginHideApplied.push(Object.fromEntries(groupEntries));
+      }
+
+      return varsPluginHideApplied;
   },
 
   async removeFieldFromEntity(entiyName: string, field: string)
@@ -412,8 +468,11 @@ window.__GAME_DEBUG_API__ = {
     
     // COMMENTED OUT, SINCE I WANT TO KEEP VALUE IN PLUGIN, EVEN IF IT'S DEFAULT
     var entityWithDefaultValues = scene.GetEntityWithDefaultValues(entity, scene.settingsData) as any;
-    entityWithDefaultValues.x = entityWithDefaultValues.position.x;
-    entityWithDefaultValues.y = entityWithDefaultValues.position.y;
+    if (entityWithDefaultValues.position)
+    {
+        entityWithDefaultValues.x = entityWithDefaultValues.position.x;//
+        entityWithDefaultValues.y = entityWithDefaultValues.position.y;//
+    }
     entityWithDefaultValues.scaleX = entityWithDefaultValues.scale.x;
     entityWithDefaultValues.scaleY = entityWithDefaultValues.scale.y;
     entityWithDefaultValues.innerX = entityWithDefaultValues.innerPosition.x;
@@ -1463,6 +1522,30 @@ export class PluginHandler
             newEntity.baseEntityLog[extendEntityName] = propsExtendedFiltered;
 
             propsFound.push(...propsExtendedFiltered);
+        }
+
+        newEntity.baseEntityLog["__componentSources__"] = {
+            components: {},
+            editorComponents: {},
+        };
+
+        for (var componentType of ["components"])
+        {
+            var componentSources = newEntity.baseEntityLog["__componentSources__"][componentType];
+            for (var sourceName of extendOrder)
+            {
+                var sourceEntity = sourceName == entityName
+                    ? entity
+                    : settingsDataRaw.baseEntities[sourceName] || defaultSettingsData.baseEntities[sourceName];
+                var sourceComponents = sourceEntity?.[componentType];
+                if (!sourceComponents) continue;
+
+                for (var componentName in sourceComponents)
+                {
+                    if (!componentSources[componentName])
+                        componentSources[componentName] = sourceName;
+                }
+            }
         }
 
         return newEntity;

@@ -159,15 +159,24 @@ export var entityVarsNested: EntityVarsNestedEntry[] =
   "baseEntity",
   "baseClass",
   "imagePath",
-  "children",
-  "components",
-  "componentsRemoved",
+
+  {
+    "HideInPlugin": [
+      "name",
+      "position",
+      "children",
+      "components",
+      "componentsRemoved",
+      "propertiesRemoved",
+      "interactableInEditor",
+    ]
+  },
 
   {
     "General": [
         //"name",
 
-        "position",
+          //"position",
         //"scaleX",
         //"scaleY",
         "scale",
@@ -188,10 +197,10 @@ export var entityVarsNested: EntityVarsNestedEntry[] =
         "visible",
     ],
     "Misc": [
-        "propertiesRemoved",
+          //"propertiesRemoved",
 
         "tapHitbox",
-        "interactableInEditor",
+          //"interactableInEditor",
         "save",
         "customName",
         "tags",

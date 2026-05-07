@@ -65,7 +65,7 @@ export { FlashShader } from "./shaders/flashShader";
 export { OutlineShader } from "./shaders/outlineShader";
 export { defaultSettingsData as defaultEntityData } from "./types/bareData";
 export { Hitbox } from "./types/hitbox";
-export { InspectorButton, InspectorField, Label, Locked, Range, Run, Save } from "./utils/decorators";
+export { Description, InspectorButton, InspectorField, Label, Locked, Range, Run, Save } from "./utils/decorators";
 export { Helper } from "./utils/helper";
 
 // Types and constants

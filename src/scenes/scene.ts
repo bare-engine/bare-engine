@@ -621,7 +621,8 @@ export class Scene implements SceneI
         var entityVarsCopy = entityVars.slice();
         for (var propName in entityConstructed)
         {
-            entityVarsCopy.splice(entityVarsCopy.indexOf(propName), 1);
+            if (entityVarsCopy.includes(propName))
+                entityVarsCopy.splice(entityVarsCopy.indexOf(propName), 1);
         }
 
         for (var varName of entityVarsCopy)

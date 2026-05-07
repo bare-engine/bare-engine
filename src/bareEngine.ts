@@ -452,7 +452,9 @@ export class BareEngine
         var pool = this.gameObjectPools.get(objectName);
         if (!pool)
         {
-            throw new Error(`No pool found for ${objectName}`);
+            throw new Error(`No pool found for ${objectName}\n
+            Add bare.AddClass(${objectName}) to register a class for this object type.\n
+            Or bareEngine.RegisterGameObjectPool(${objectName}, 10) to register a pool for this object type.`);
             //this.RegisterGameObjectPool(objectName, () => new GameObject(), 20);
         }
 
