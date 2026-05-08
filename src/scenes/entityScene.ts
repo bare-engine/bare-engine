@@ -47,16 +47,7 @@ export class EntityScene extends EditorScene
                 rapid.drawLine({
                     points: [
                         new Vec2(0, 0),
-                        new Vec2(rt.width / 2, rt.height / 2),
-                    ],
-                    width: 5,
-                    roundCap: false,
-                    color: Color.White,
-                });
-                rapid.drawLine({
-                    points: [
-                        new Vec2(rt.width, 0),
-                        new Vec2(rt.width / 2, rt.height / 2),
+                        new Vec2(rt.width, rt.height),
                     ],
                     width: 5,
                     roundCap: false,
@@ -65,16 +56,7 @@ export class EntityScene extends EditorScene
                 rapid.drawLine({
                     points: [
                         new Vec2(0, rt.height),
-                        new Vec2(rt.width / 2, rt.height / 2),
-                    ],
-                    width: 5,
-                    roundCap: false,
-                    color: Color.White,
-                });
-                rapid.drawLine({
-                    points: [
-                        new Vec2(rt.width, rt.height),
-                        new Vec2(rt.width / 2, rt.height / 2),
+                        new Vec2(rt.width, 0),
                     ],
                     width: 5,
                     roundCap: false,
@@ -115,7 +97,7 @@ export class EntityScene extends EditorScene
     {
         if (this.opened)
             window.debug = this.degugAtStart;
-        
+
         super.OnClear();
     }
 

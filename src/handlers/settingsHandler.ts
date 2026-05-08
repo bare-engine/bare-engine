@@ -507,6 +507,8 @@ export class SettingsHandler
     SetRaw(raw: SettingsData): void
     {
         this.raw = raw;
+
+        // PROCESS NOW?? TODO
     }
 
     async UpdateRaw(mutator: (raw: SettingsData) => void | Promise<void>, options: ConstructEntityOptions = {}): Promise<SettingsData>

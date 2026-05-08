@@ -113,6 +113,7 @@ export class GameObject
         return cls.name.startsWith("_") ? cls.name.substring(1) : cls.name;
     }
     
+    // ONLY FOR PLUGIN - MOVE - TODO
     static RegisterGameObject(cls: GameObjectClass, defaultPoolSize: number = 1): void
     {
         const className = GameObject.GetClassName(cls);
@@ -121,19 +122,35 @@ export class GameObject
         if (!alreadyRegistered)
         {
             GameObject.registeredGameObjects[className] = cls;
+        }
 
-            const hasEntityVars = entityVarsNested.some(entry =>
+        var vars = getOwnInspectorFieldNames(cls);
+        if (vars.length > 0)
+        {
+            var existingEntityVars = entityVarsNested.find(entry =>
                 typeof entry !== "string" && Object.prototype.hasOwnProperty.call(entry, className)
             );
-
-            if (!hasEntityVars)
+            if (existingEntityVars && typeof existingEntityVars !== "string")
             {
-                var vars = getOwnInspectorFieldNames(cls);
-                if (vars.length > 0)
+                var existingVars = existingEntityVars[className];
+                var addedVars = false;
+
+                for (var fieldName of vars)
                 {
-                    entityVarsNested.push({ [className]: vars });
-                    RefreshEntityVars();
+                    if (!existingVars.includes(fieldName))
+                    {
+                        existingVars.push(fieldName);
+                        addedVars = true;
+                    }
                 }
+
+                if (addedVars)
+                    RefreshEntityVars();
+            }
+            else
+            {
+                entityVarsNested.push({ [className]: vars });
+                RefreshEntityVars();
             }
         }
     }
