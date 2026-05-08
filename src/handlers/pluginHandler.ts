@@ -225,9 +225,11 @@ window.__GAME_DEBUG_API__ = {
         return;
     }*/
     
+    plugin.notifyLeaveEntity = false;
     var scene = await sceneController.Add(EntityScene, {name: name, isBase: isBase, settingsHandler: plugin.GetCurrentScene().settingsHandler});
     //sceneController.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
-    
+    plugin.notifyLeaveEntity = true;
+
     var entity:Entity;
     var raw = scene.settingsHandler.GetRaw();
     if (isBase)
@@ -874,6 +876,10 @@ window.__GAME_DEBUG_API__ = {
       window.postMessage({ __fromGame: true, type: "settingsData", data: newData }, "*");
   },
 
+  notifyLeaveEntity() {
+    window.postMessage({ __fromGame: true, type: "notifyLeaveEntity" }, "*");
+  },
+
   refreshLevelFiles() {
     window.postMessage({ __fromGame: true, type: "refreshLevelFiles" }, "*");
   },
@@ -1050,6 +1056,7 @@ export class PluginHandler
     movingObj: GameObject;
     draggedObjData: { obj: GameObject; offset: Vec2; hasMovedAwayEnough: boolean };
     doNotifyAfterSave: boolean = true;
+    notifyLeaveEntity: boolean = true;
     currentSceneClassString: string = "";
 
     constructor(editorButtonPosition: Position)
@@ -1106,6 +1113,11 @@ export class PluginHandler
                 const scene = sceneController.GetMainScene();
                 if (scene)
                     this.SetCurrentScene(scene.constructor.name);
+            }
+
+            if (type == "removed" && scene instanceof EntityScene && plugin.notifyLeaveEntity)
+            {
+                window.__GAME_DEBUG_API__.notifyLeaveEntity();
             }
         });
 
