@@ -192,7 +192,7 @@ export class BaseTexture {
      * @param gl - The WebGL rendering context.
      * @param source - The new image source.
      */
-    updateSource(gl: WebGL2RenderingContext, source: Images, options:ITextureOptions): void {
+    updateSource(gl: WebGL2RenderingContext, source: Images, options: ITextureOptions = {}): void {
         if (!this.glTexture) return;
         gl.bindTexture(gl.TEXTURE_2D, this.glTexture);
 
@@ -660,7 +660,7 @@ class TextTexture extends Texture {
         this.render = render;
         this._style = { ...defaultTextStyle, ...options };
         this._text = options?.text ?? "";
-        this.options = options;
+        this.options = { premultipliedAlpha: render.premultipliedAlpha, ...options };
         this.scale = 1 / TEXT_SCALEFACTOR
 
         this.canvas = document.createElement("canvas");
@@ -670,7 +670,7 @@ class TextTexture extends Texture {
 
         this.canvas.width = 1;
         this.canvas.height = 1;
-        const glTexture = createTexture(render, this.canvas, options);
+        const glTexture = createTexture(render, this.canvas, this.options);
         this._base = new BaseTexture(glTexture, 1, 1);
         this.setBase(this._base);
 
