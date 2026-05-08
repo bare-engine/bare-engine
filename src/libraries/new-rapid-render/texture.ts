@@ -23,7 +23,7 @@ export enum TextureWrapMode {
 export interface ITextureOptions {
     textureFilter?: TextureFilterMode;
     wrap?: TextureWrapMode;
-    premultipliedAlpha? :boolean;
+    premultipliedAlpha?: boolean;
     key?: string;
 }
 
@@ -181,7 +181,7 @@ export class BaseTexture {
      * @param options - Optional configuration.
      * @returns The created BaseTexture.
      */
-    static fromSource(render: Rapid, source: Images, options: ITextureOptions={}): BaseTexture {
+    static fromSource(render: Rapid, source: Images, options: ITextureOptions = {}): BaseTexture {
         const glTexture = createTexture(render, source, options);
         return new BaseTexture(glTexture, source.width, source.height);
     }
@@ -282,9 +282,9 @@ class Texture {
     protected _ph: number = 0;
 
     texturePath: string
-    sourceSize: {w: number, h: number} 
-    spriteSourceSize: {x: number, y: number, w: number, h: number}
-    frame: {x: number, y: number, w: number, h: number}  
+    sourceSize: { w: number, h: number }
+    spriteSourceSize: { x: number, y: number, w: number, h: number }
+    frame: { x: number, y: number, w: number, h: number }
 
     constructor(base?: BaseTexture) {
         if (base) this.setBase(base);
@@ -432,7 +432,7 @@ class Texture {
 export interface IRenderTextureOptions extends ITextureOptions {
     width: number;
     height: number;
-    clearColor?:Color;
+    clearColor?: Color;
 }
 
 /**
@@ -456,10 +456,10 @@ class RenderTexture extends Texture {
 
         this.clearColor = options.clearColor ?? Color.Black;
 
-        const width = Math.max(options.width, 1);
-        const height = Math.max(options.height, 1);
-
-        const glTex = createTexture(render, { width, height }, options);
+        const width = Math.max(Math.round(options.width), 1);
+        const height = Math.max(Math.round(options.height), 1);
+        const source = { width, height }
+        const glTex = createTexture(render, source, { ...options, onlySize: true });
         this._base = new BaseTexture(glTex, width, height);
         this.setBase(this._base);
 
@@ -486,6 +486,10 @@ class RenderTexture extends Texture {
      * @param force  - Force full GPU reallocation regardless of current allocation size.
      */
     resize(width: number, height: number, force: boolean = false): void {
+
+        width = Math.max(Math.round(width), 1);
+        height = Math.max(Math.round(height), 1);
+
         const sameLogical = this.width === width && this.height === height;
         if (!force && sameLogical) return;
 
@@ -638,7 +642,7 @@ const defaultTextStyle: ITextStyle = {
 };
 
 export interface ITextOptions extends ITextStyle, ITextureOptions {
-    text?:string
+    text?: string
 }
 
 export const TEXT_SCALEFACTOR = 2
@@ -652,7 +656,7 @@ class TextTexture extends Texture {
     private _text: string;
     private _style: ITextStyle;
     private _base: BaseTexture;
-    private options:ITextOptions
+    private options: ITextOptions
     flipY = true
 
     constructor(render: Rapid, options?: ITextOptions) {
