@@ -154,75 +154,75 @@ export type ConstructEntityOptions = { propsToIgnoreInEntity?: string[], fillPre
 export type EntityVarsNestedGroup = Record<string, string[]>;
 export type EntityVarsNestedEntry = string | EntityVarsNestedGroup;
 
-export var entityVarsNested: EntityVarsNestedEntry[] = 
+export var entityVarsNestedRecord: Record<string, string[]> =
+{
+  "HideInPlugin": [
+    "name",
+    "children",
+    "components",
+    "componentsRemoved",
+    "propertiesRemoved",
+    "interactableInEditor",
+  ],
+  "General": [
+      //"scaleX",
+      //"scaleY",
+      "position", // ONLY FOR CHILD
+      "scale",
+      "rotation",
+      "flipped",
+      "pivot",
+      //"innerX",
+      //"innerY",
+      "innerPosition",
+      //"innerScaleX",
+      //"innerScaleY",
+      "innerScale",
+      "innerRotation",
+
+      "texture",
+      "color",
+      "alpha",
+      "visible",
+  ],
+  "Misc": [
+        //"propertiesRemoved",
+
+      "tapHitbox",
+        //"interactableInEditor",
+      "save",
+      "customName",
+      "tags",
+      "customData",
+  ],
+  "PhysicsObjectBare": [
+      "drag",
+      "restitution",
+      "pivotBasedOnHitbox",
+      "hitbox",
+      "hitboxType",
+      "physicsRadius",
+  ],
+  "Rigidbody": [
+      "drag",
+      "mass",
+      "restitution",
+      "physicsRect",
+      "physicsRadius",
+      "polygonVertices",
+  ]
+}
+
+export var entityVarsAr: string[] =
 [
   "baseEntity",
   "baseClass",
-  "imagePath",
+  "imagePath"
+];
 
-  {
-    "HideInPlugin": [
-      "name",
-      "position",
-      "children",
-      "components",
-      "componentsRemoved",
-      "propertiesRemoved",
-      "interactableInEditor",
-    ]
-  },
-
-  {
-    "General": [
-        //"name",
-
-          //"position",
-        //"scaleX",
-        //"scaleY",
-        "scale",
-        "rotation",
-        "flipped",
-        "pivot",
-        //"innerX",
-        //"innerY",
-        "innerPosition",
-        //"innerScaleX",
-        //"innerScaleY",
-        "innerScale",
-        "innerRotation",
-
-        "texture",
-        "color",
-        "alpha",
-        "visible",
-    ],
-    "Misc": [
-          //"propertiesRemoved",
-
-        "tapHitbox",
-          //"interactableInEditor",
-        "save",
-        "customName",
-        "tags",
-        "customData",
-    ],
-    "PhysicsObjectBare": [
-        "drag",
-        "restitution",
-        "pivotBasedOnHitbox",
-        "hitbox",
-        "hitboxType",
-        "physicsRadius",
-    ],
-    "Rigidbody": [
-        "physicsRect",
-        "physicsRadius",
-        "mass",
-        "drag",
-        "restitution",
-        "polygonVertices",
-    ]
-  } 
+export var entityVarsNested: EntityVarsNestedEntry[] = [
+  ...entityVarsAr,
+  entityVarsNestedRecord,
 ];
 
 export var entityVars: string[] = [];

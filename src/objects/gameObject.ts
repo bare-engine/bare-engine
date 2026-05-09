@@ -124,6 +124,9 @@ export class GameObject
             GameObject.registeredGameObjects[className] = cls;
         }
 
+        // ADDING FIELDS DECORATED WITH @InspectorField OF THIS CLASS TO entityVarsNested
+        // SO IT SHOWN IN PLUGIN DROPDOWN LATER
+        // MAKE THIS ALSO WORK WITH INHERITANCE OF MULTIPLE CUSTOM CLASSES - TODOR
         var vars = getOwnInspectorFieldNames(cls);
         if (vars.length > 0)
         {

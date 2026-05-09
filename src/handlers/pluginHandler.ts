@@ -10,7 +10,7 @@ import { EntityScene } from "../scenes/entityScene";
 import { Scene } from "../scenes/scene";
 import { OutlineShader } from "../shaders/outlineShader";
 import { defaultSettingsData } from "../types/bareData";
-import { BareEvent, Entity, EntityVarsNestedEntry, entityVarsNested, LevelData, Position, SaveData, Scalar, SettingsData } from "../types/bareTypes";
+import { BareEvent, Entity, EntityVarsNestedEntry, entityVarsNested, LevelData, Position, SaveData, Scalar, SettingsData, entityVarsNestedRecord, entityVarsAr } from "../types/bareTypes";
 import { applyInspectorField, getButtons, getInspectorFieldDescriptions, getInspectorFields } from "../utils/decorators";
 import { Helper } from "../utils/helper";
 import { SaveDataHandler } from "./SaveDataHandler";
@@ -217,8 +217,43 @@ window.__GAME_DEBUG_API__ = {
 
     return info;
   },
+
+  onBaseClassChange(baseClass: string): string[]
+  {
+    // GET CURRENT ENTITY KEYS
+    var scene = (plugin.GetCurrentScene() as EntityScene);
+    var name = scene.objectName;
+    var isBase = scene.isBase;
+    var raw = scene.settingsHandler.GetRaw();
+    var entity = (isBase ? raw.baseEntities[name] : raw.entities[name]);
+    var entityKeys = Object.keys(entity);
+
+    // GET EXTRA KEYS
+    var extraKeys = plugin.GetExtraKeys(entityKeys, baseClass);
+    return extraKeys;
+
+    // IF EXTRA KEYS > 0, PLUGIN WILL WILL ASK FOR CONFIRMATION YES/NO
+  },
+
+  async onPressYesChangeBaseClass(extraKeys: string[])
+  {
+    // REMOVE FROM ENTITY EXTRA KEYS
+    var scene = (plugin.GetCurrentScene() as EntityScene);
+    var name = scene.objectName;
+    var isBase = scene.isBase;
+    var raw = scene.settingsHandler.GetRaw();
+    var entity = (isBase ? raw.baseEntities[name] : raw.entities[name]);
+
+    for (var key of extraKeys)
+        delete entity[key];
+
+    await plugin.SaveSettingsData(raw);
+  },
   
-  async gotoEntity(name: string, isBase: boolean = false) {
+  async gotoEntity(name: string, isBase: boolean = false)
+  {
+    window.postMessage({ __fromGame: true, type: "lockObjectsTab", flag: true }, "*");
+
     /*const levelController = getLevelController();
     if (levelController && levelController.currentLevel && levelController.currentLevel.name == name)
     {
@@ -243,6 +278,15 @@ window.__GAME_DEBUG_API__ = {
         processedEntity = processed.baseEntities[name];
     else
         processedEntity = processed.entities[name];
+
+    /*var processedEntityCopy = {...processedEntity};
+
+    // REMOVE KEYS THAT ARE NOT IN baseClass
+    var extraKeys = plugin.GetExtraKeys(Object.keys(processedEntityCopy), processedEntityCopy.baseClass || "GameObject");
+    for (var key of extraKeys)
+    {
+        delete processedEntityCopy[key];
+    }*/
 
     var entityWithLog = plugin.BuildExtendDataLog(entity, name, processedEntity, raw, processed);
 
@@ -269,7 +313,7 @@ window.__GAME_DEBUG_API__ = {
     // BUILD THE ENTITY TO PASS TO PLUGIN RIGHT AWAY
     //var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(entityWithLog, scene.settingsData, {fillPresets: false});
     //levelEntityWithDefaultValues.name = name;
-    
+
     return entityWithLog;
   },
 
@@ -854,38 +898,7 @@ window.__GAME_DEBUG_API__ = {
 
   async setEntityData(newData: SettingsData)
   {
-    plugin.FilterSettingsDataDefaults(newData);
-
-    plugin.doNotifyAfterSave = false;
-
-    var scene = plugin.GetCurrentScene();
-    if (scene instanceof EditorScene)
-    {
-        await (plugin.GetCurrentScene() as EditorScene).SaveEntityData(newData);
-    }
-    else
-    {
-        await fetch('/api/save-entity-data', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                path: bareEngine.dataPath,
-                settingsData: newData,
-                skipReload: true
-            })
-        });
-    }
-
-    plugin.doNotifyAfterSave = true;
-
-    /*if (bareEngine.levelEditorOpen)
-    {
-      await plugin.GetCurrentScene().Restart();//
-    }
-    else
-    {
-      await plugin.GetCurrentScene().Restart();
-    }*/
+    plugin.SaveSettingsData(newData);
   },
 
   notifyEntityDataChanged(newData) {
@@ -1136,6 +1149,7 @@ export class PluginHandler
             if (type == "removed" && scene instanceof EntityScene && plugin.notifyLeaveEntity)
             {
                 window.__GAME_DEBUG_API__.notifyLeaveEntity();
+                window.postMessage({ __fromGame: true, type: "lockObjectsTab", flag: false }, "*");
             }
         });
 
@@ -1596,6 +1610,69 @@ export class PluginHandler
         }
 
         return newEntity;
+    }
+
+    GetExtraKeys(entityKeys: string[], baseClass: string): string[]
+    {
+        // GET ALL POSSIBLE KEYS, FROM CLASS AND INHEREITED CLASSES
+        var cls = Scene.registeredClasses[baseClass];
+        var parentClassNames = Helper.GetParentClasses(cls);
+        parentClassNames.push(baseClass);
+
+        var allPossibleEntityKeys:string[] = [];
+
+        // GAMEOBJECT KEYS
+        allPossibleEntityKeys.push(...entityVarsAr)
+        allPossibleEntityKeys.push(...entityVarsNestedRecord.General)
+        allPossibleEntityKeys.push(...entityVarsNestedRecord.HideInPlugin)
+        allPossibleEntityKeys.push(...entityVarsNestedRecord.Misc)
+
+        for (var i = 0; i < parentClassNames.length; i++)
+        {
+            var parentClassName = parentClassNames[i];
+            if (entityVarsNestedRecord[parentClassName])
+                allPossibleEntityKeys.push(...entityVarsNestedRecord[parentClassName]);
+        }
+
+        // COMPARE - GET KEYS IN entityKeys NOT IN allPossibleEntityKeys
+        var keysToRemove = entityKeys.filter(k => !allPossibleEntityKeys.includes(k));
+        return keysToRemove;
+    }
+
+    async SaveSettingsData(newData: SettingsData): Promise<void>
+    {
+        plugin.FilterSettingsDataDefaults(newData);
+
+        plugin.doNotifyAfterSave = false;
+
+        var scene = plugin.GetCurrentScene();
+        if (scene instanceof EditorScene)
+        {
+            await (plugin.GetCurrentScene() as EditorScene).SaveEntityData(newData);
+        }
+        else
+        {
+            await fetch('/api/save-entity-data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    path: bareEngine.dataPath,
+                    settingsData: newData,
+                    skipReload: true
+                })
+            });
+        }
+
+        plugin.doNotifyAfterSave = true;
+
+        /*if (bareEngine.levelEditorOpen)
+        {
+        await plugin.GetCurrentScene().Restart();//
+        }
+        else
+        {
+        await plugin.GetCurrentScene().Restart();
+        }*/
     }
 }
 
