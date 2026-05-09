@@ -857,7 +857,25 @@ window.__GAME_DEBUG_API__ = {
     plugin.FilterSettingsDataDefaults(newData);
 
     plugin.doNotifyAfterSave = false;
-    await (plugin.GetCurrentScene() as EditorScene).SaveEntityData(newData);
+
+    var scene = plugin.GetCurrentScene();
+    if (scene instanceof EditorScene)
+    {
+        await (plugin.GetCurrentScene() as EditorScene).SaveEntityData(newData);
+    }
+    else
+    {
+        await fetch('/api/save-entity-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                path: bareEngine.dataPath,
+                settingsData: newData,
+                skipReload: true
+            })
+        });
+    }
+
     plugin.doNotifyAfterSave = true;
 
     /*if (bareEngine.levelEditorOpen)

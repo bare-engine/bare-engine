@@ -486,7 +486,8 @@ export class EditorScene extends Scene
 
     async SaveEntityData(newRawData: SettingsData)
     {
-        plugin.FilterSettingsDataDefaults(newRawData);
+        //if (globalThis.plugin)
+        //    globalThis.plugin.FilterSettingsDataDefaults(newRawData);
 
         await this.OnSaveEntityData(newRawData);
 
