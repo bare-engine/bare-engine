@@ -261,18 +261,19 @@ window.__GAME_DEBUG_API__ = {
     }*/
     
     plugin.notifyLeaveEntity = false;
-    var scene = await sceneController.Add(EntityScene, {name: name, isBase: isBase, settingsHandler: plugin.GetCurrentScene().settingsHandler});
+    const sceneMain = sceneController.GetMainScene();
+    var entityScene = await sceneController.Add(EntityScene, {name: name, isBase: isBase, settingsHandler: sceneMain.settingsHandler});
     //sceneController.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
     plugin.notifyLeaveEntity = true;
 
     var entity:Entity;
-    var raw = scene.settingsHandler.GetRaw();
+    var raw = entityScene.settingsHandler.GetRaw();
     if (isBase)
         entity = raw.baseEntities[name];
     else
         entity = raw.entities[name];
 
-    var processed = scene.settingsHandler.Get();
+    var processed = entityScene.settingsHandler.Get();
     var processedEntity:Entity;
     if (isBase)
         processedEntity = processed.baseEntities[name];
@@ -461,25 +462,54 @@ window.__GAME_DEBUG_API__ = {
 
   getNestedEntityVars(entityName: string)
   {
-      var varsPluginHideApplied: EntityVarsNestedEntry[] = [];
+        var entity = plugin.GetCurrentEntityProcessed();
+        var baseClass = entity.baseClass || "GameObject";
+        var allPossibleEntityKeys = plugin.GetAllPossibleEntityKeys(baseClass);
 
-      for (var entry of entityVarsNested)
-      {
-          if (typeof entry === "string")
-          {
-              varsPluginHideApplied.push(entry);
-              continue;
-          }
+        // TAKE OFF CURRENT FROM ALL POSSIBLE
+        var keys = Object.keys(entity);
+        allPossibleEntityKeys = allPossibleEntityKeys.filter(key => !keys.includes(key));
 
-          var groupEntries = Object.entries(entry).filter(([groupName]) => groupName !== "HideInPlugin");
-          if (groupEntries.length > 0)
-              varsPluginHideApplied.push(Object.fromEntries(groupEntries));
-      }
+        var lockIfUnavailable = (key: string): string => {
+            return allPossibleEntityKeys.includes(key) ? key : `${key}:locked`;
+        };
 
-      return varsPluginHideApplied;
+        var varsPluginHideApplied: EntityVarsNestedEntry[] = [];
+
+        // GET parentClassNames, TO CHECK IF GROUP IS NOT IN HERE
+        // THEN LOCK THE WHOLE GROUP, EG: RigidBody, PhysicsObjectBare
+        var cls = Scene.registeredClasses[baseClass];
+        var parentClassNames = Helper.GetParentClasses(cls);
+        parentClassNames.push(baseClass);
+
+        for (var entry of entityVarsNested)
+        {
+            if (typeof entry === "string")
+            {
+                varsPluginHideApplied.push(lockIfUnavailable(entry));
+                continue;
+            }
+
+            var groupEntries = Object.entries(entry)
+                .filter(([groupName]) => groupName !== "HideInPlugin")
+                .map(([groupName, keys]) => {
+                    var isGeneralGroup = groupName == "General" || groupName == "Misc";
+                    var groupUnavailable = !isGeneralGroup && !parentClassNames.includes(groupName);
+                    var lockedKeys = groupUnavailable ? keys.map(key => `${key}:locked`) : keys.map(lockIfUnavailable);
+                    var groupLocked = groupUnavailable || keys.every(key => !allPossibleEntityKeys.includes(key));
+                    var lockedGroupName = groupLocked ? `${groupName}:locked` : groupName;
+
+                    return [lockedGroupName, lockedKeys];
+                });
+
+            if (groupEntries.length > 0)
+                varsPluginHideApplied.push(Object.fromEntries(groupEntries));
+        }
+
+        return varsPluginHideApplied;
   },
 
-  async removeFieldFromEntity(entiyName: string, field: string)
+  async removeFieldFromEntity(entiyName: string, childPath: string[], field: string)
   {
         var scene = plugin.GetCurrentScene();
         let entityScene = scene as EntityScene;
@@ -494,6 +524,15 @@ window.__GAME_DEBUG_API__ = {
             entity = rawSettingsData.baseEntities[entityScene.objectName];
         else
             entity = rawSettingsData.entities[entityScene.objectName];
+
+        // GET THE CHILD
+        if (childPath.length > 0)
+        {
+            for (var i = 0; i < childPath.length; i++)
+            {
+                entity = entity.children[childPath[i]];
+            }
+        }
 
         delete entity[field];
 
@@ -536,7 +575,7 @@ window.__GAME_DEBUG_API__ = {
     return defaultValue;
   },
 
-    async setEntityField(name: string, props: Record<string, any>, save:boolean = false)
+    async setEntityField(name: string, props: Record<string, any>, childPath: number[], save:boolean = false)
     {
         let entityScene = plugin.GetCurrentScene() as EntityScene;
 
@@ -558,6 +597,15 @@ window.__GAME_DEBUG_API__ = {
             entity = rawSettingsData.baseEntities[entityScene.objectName]; // USE id?
         else
             entity = rawSettingsData.entities[entityScene.objectName];
+
+        // GET THE CHILD
+        if (childPath.length > 0)
+        {
+            for (var i = 0; i < childPath.length; i++)
+            {
+                entity = entity.children[childPath[i]];
+            }
+        }
         
         var entityCopy = Object.assign({}, entity);
 
@@ -823,7 +871,8 @@ window.__GAME_DEBUG_API__ = {
     },
 
   getEntityData():SettingsData {
-    var settingsData = plugin.GetCurrentScene().settingsHandler.GetRaw();
+    const scene = sceneController.GetMainScene();
+    var settingsData = scene.settingsHandler.GetRaw();
 
     //return settingsData; // ADDED TO MAKE DEFAULT GAME NOT HAVE BELOW
     // SHOULD HAVE IT AGAIN WHEN I START WORK ON PLUGIN ENTITIES
@@ -1612,7 +1661,7 @@ export class PluginHandler
         return newEntity;
     }
 
-    GetExtraKeys(entityKeys: string[], baseClass: string): string[]
+    GetAllPossibleEntityKeys(baseClass: string): string[]
     {
         // GET ALL POSSIBLE KEYS, FROM CLASS AND INHEREITED CLASSES
         var cls = Scene.registeredClasses[baseClass];
@@ -1634,7 +1683,13 @@ export class PluginHandler
                 allPossibleEntityKeys.push(...entityVarsNestedRecord[parentClassName]);
         }
 
-        // COMPARE - GET KEYS IN entityKeys NOT IN allPossibleEntityKeys
+        return allPossibleEntityKeys;
+    }
+
+    //  GET KEYS IN entityKeys NOT IN allPossibleEntityKeys
+    GetExtraKeys(entityKeys: string[], baseClass: string): string[]
+    {
+        var allPossibleEntityKeys:string[] = this.GetAllPossibleEntityKeys(baseClass);
         var keysToRemove = entityKeys.filter(k => !allPossibleEntityKeys.includes(k));
         return keysToRemove;
     }
@@ -1673,6 +1728,28 @@ export class PluginHandler
         {
         await plugin.GetCurrentScene().Restart();
         }*/
+    }
+
+    GetCurrentEntity(): Entity
+    {
+        var scene = (plugin.GetCurrentScene() as EntityScene);
+        var name = scene.objectName;
+        var isBase = scene.isBase;
+        var raw = scene.settingsHandler.GetRaw();
+        var entity = (isBase ? raw.baseEntities[name] : raw.entities[name]);
+
+        return entity;
+    }
+
+    GetCurrentEntityProcessed(): Entity
+    {
+        var scene = (plugin.GetCurrentScene() as EntityScene);
+        var name = scene.objectName;
+        var isBase = scene.isBase;
+        var processed = scene.settingsHandler.Get();
+        var entity = (isBase ? processed.baseEntities[name] : processed.entities[name]);
+
+        return entity;
     }
 }
 
