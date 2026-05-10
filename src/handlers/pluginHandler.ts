@@ -460,6 +460,50 @@ window.__GAME_DEBUG_API__ = {
     return s;
   },
 
+  // GIVES SUGGESTION FIELDS, TAKES OFF ONES THAT ARE LOCKED/ALREADY IN HUSE
+  getFieldsSuggestions(entityName: string, childPath: string[]): string[]
+  {
+    var suggestions = [
+        "baseEntity",
+        "baseClass",
+        "imagePath",
+        "texture",
+        "alpha",
+        "visible",
+        "scale",
+        "rotation",
+        "hitbox",
+        "pivot",
+    ];
+    var limitNumber = 5;
+
+    var possibleVarsNested = window.__GAME_DEBUG_API__.getNestedEntityVars(entityName, childPath);
+    var lockedVars = new Set<string>();
+
+    var addLockedVar = (field: string) => {
+        if (field.endsWith(":locked"))
+            lockedVars.add(field.slice(0, -":locked".length));
+    };
+
+    for (var entry of possibleVarsNested)
+    {
+        if (typeof entry === "string")
+        {
+            addLockedVar(entry);
+            continue;
+        }
+
+        for (var keys of Object.values(entry) as string[][])
+            for (var key of keys)
+                addLockedVar(key);
+    }
+
+    var finalSuggestions = suggestions.filter(suggestion => !lockedVars.has(suggestion));
+    finalSuggestions = finalSuggestions.slice(0, limitNumber);
+    
+    return finalSuggestions;
+  },
+
   getNestedEntityVars(entityName: string, childPath: string[])
   {
         var entity = plugin.GetCurrentEntityProcessed();
@@ -557,7 +601,7 @@ window.__GAME_DEBUG_API__ = {
 
         var entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase);
         
-        await entityScene.SaveEntityData(rawSettingsData);
+        await plugin.SaveSettingsData(rawSettingsData);
 
         return entityData;
   },
@@ -667,7 +711,7 @@ window.__GAME_DEBUG_API__ = {
         {
             entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase);
             
-            await entityScene.SaveEntityData(rawSettingsData);
+            await plugin.SaveSettingsData(rawSettingsData);
         }
 
         // ADD DEFAULTS TO RAW SETTINGS AGAIN, SO PROPS CAN BE ADDED TO IT

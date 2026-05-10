@@ -557,6 +557,7 @@ export class Scene implements SceneI
         return {entity: entityConstructed, gameObject: bareEngine.dummyGameObject};
     }
 
+    // STILL RETURNS SOME ENTITY VALUES AS undefined, EG imagePath, SHOULD BE "". TODO
     GetEntityWithDefaultValues(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true }): Entity
     {
         var entityConstructed:Entity;
