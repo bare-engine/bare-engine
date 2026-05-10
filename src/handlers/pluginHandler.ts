@@ -640,7 +640,7 @@ window.__GAME_DEBUG_API__ = {
 
     async setEntityField(name: string, props: Record<string, any>, childPath: number[], save:boolean = false)
     {
-        let entityScene = plugin.GetCurrentScene() as EntityScene;
+        let entityScene = sceneController.Get(EntityScene);
 
         var rawSettingsData = entityScene.settingsHandler.GetRaw();
 
