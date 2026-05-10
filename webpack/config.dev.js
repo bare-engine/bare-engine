@@ -1,13 +1,19 @@
-const { CleanWebpackPlugin } = require("clean-webpack-plugin");
-const HtmlWebpackPlugin = require("html-webpack-plugin");
 const path = require("path");
-const webpack = require("webpack");
 const fs = require("fs");
+const projectRequire = require("./projectRequire");
+const { CleanWebpackPlugin } = projectRequire("clean-webpack-plugin");
+const HtmlWebpackPlugin = projectRequire("html-webpack-plugin");
+const webpack = projectRequire("webpack");
 const InjectInitialAssetsPlugin = require("./InjectInitialAssetsPlugin");
 const WatchTexturePackImagesPlugin = require("./WatchTexturePackImagesPlugin");
 const createControllerProxyTransformer = require("./controllerProxyTransformer");
 const createGameObjectNameTransformer = require("./gameObjectNameTransformer");
 const GenerateLayersPlugin = require("./GenerateLayersPlugin");
+const projectRoot = process.cwd();
+const projectPackage = require(path.join(projectRoot, "package.json"));
+const htmlOptions = projectPackage.bareEngine?.index || {};
+const engineIndexHtmlPath = path.resolve(__dirname, "../config/index.html");
+const engineEditorHtmlPath = path.resolve(__dirname, "../config/editor.html");
 
 // Counter for skip reload requests (handles rapid successive saves)
 let skipReloadCount = 0;
@@ -17,10 +23,10 @@ let lastSettingsDataPath = "";
 
 
 const watchTexturePackImagesPlugin = new WatchTexturePackImagesPlugin({
-    watchDir: path.join(__dirname, "../texturePackImages"),
+    watchDir: path.join(projectRoot, "texturePackImages"),
     reloadPath: "/assets/initial",
     buildCommand: ["npm", "run", "build:assets"],
-    buildCwd: process.cwd(),
+    buildCwd: projectRoot,
     runOnStart: true
 });
 
@@ -87,7 +93,9 @@ module.exports = {
             cleanOnceBeforeBuildPatterns: [path.join(__dirname, "dist/**/*")]
         }),
         new HtmlWebpackPlugin({
-            template: "./public/index.html",
+            template: engineIndexHtmlPath,
+            title: htmlOptions.title || "Bare Game",
+            backgroundColor: htmlOptions.backgroundColor || "rgb(255, 255, 255)",
             scriptLoading: "blocking",
             inject: 'head'
         }),
@@ -114,7 +122,7 @@ module.exports = {
     },
     devServer: {
         static: {
-            directory: path.join(__dirname, '../public'),
+            directory: path.join(projectRoot, "public"),
             watch: {
                 ignored: [
                     '**/public/assets/data/levels/**',
@@ -132,6 +140,10 @@ module.exports = {
             }
 
             watchTexturePackImagesPlugin.attachDevServer(devServer);
+
+            devServer.app.get(["/editor", "/editor.html"], (req, res) => {
+                res.sendFile(engineEditorHtmlPath);
+            });
 
             // Intercept HMR/reload messages
             const originalSendMessage = devServer.sendMessage.bind(devServer);
@@ -169,7 +181,7 @@ module.exports = {
                 req.on('end', () => {
                     try {
                         const { levelData, levelPath } = JSON.parse(body);
-                        const fullPath = path.join(__dirname, '../public', levelPath);
+                        const fullPath = path.join(projectRoot, "public", levelPath);
                         const dir = path.dirname(fullPath);
                         if (!fs.existsSync(dir)) {
                             fs.mkdirSync(dir, { recursive: true });
@@ -209,7 +221,7 @@ module.exports = {
                             throw new Error('Invalid path');
                         }
 
-                        const fullPath = path.join(__dirname, '../public', safePath);
+                        const fullPath = path.join(projectRoot, "public", safePath);
                         const dir = path.dirname(fullPath);
 
                         if (!fs.existsSync(dir)) {
@@ -255,7 +267,7 @@ module.exports = {
                             throw new Error('Invalid path');
                         }
 
-                        const fullPath = path.join(__dirname, '../public', safePath);
+                        const fullPath = path.join(projectRoot, "public", safePath);
                         if (!fs.existsSync(fullPath)) {
                             res.status(404).setHeader('Content-Type', 'application/json');
                             res.end(JSON.stringify({ error: `Level not found: ${safePath}` }));
@@ -296,7 +308,7 @@ module.exports = {
                         const relativePath = customPath
                             ? path.join(customPath, fileName)
                             : path.join('assets/data', fileName);
-                        const fullPath = path.join(__dirname, '../public', relativePath);
+                        const fullPath = path.join(projectRoot, "public", relativePath);
                         const dir = path.dirname(fullPath);
                         if (!fs.existsSync(dir)) {
                             fs.mkdirSync(dir, { recursive: true });
@@ -337,7 +349,7 @@ module.exports = {
                 try {
                     const folderPath = req.query.path;
                     const recursive = req.query.recursive === 'true';
-                    const fullPath = path.join(__dirname, '../public', folderPath);
+                    const fullPath = path.join(projectRoot, "public", folderPath);
 
                     if (!fs.existsSync(fullPath)) {
                         res.status(404).setHeader('Content-Type', 'application/json');

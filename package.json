@@ -10,7 +10,9 @@
   "description": "Bare Game Engine - Build for Web",
   "license": "MIT",
   "files": [
+    "config",
     "src",
+    "webpack",
     "LICENSE",
     "README.md"
   ],
@@ -23,6 +25,31 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./config/webpack.config": "./config/webpack.config.js",
+    "./config/webpack.config.js": "./config/webpack.config.js",
+    "./config/tsconfig.base.json": "./config/tsconfig.base.json",
+    "./webpack/*": "./webpack/*"
+  },
+  "peerDependencies": {
+    "@babel/core": "^7.24.5",
+    "@babel/preset-env": "^7.24.5",
+    "babel-loader": "^9.1.3",
+    "clean-webpack-plugin": "^4.0.0",
+    "copy-webpack-plugin": "^12.0.2",
+    "esbuild-loader": "^4.4.2",
+    "file-loader": "^6.2.0",
+    "html-replace-webpack-plugin": "^2.6.0",
+    "html-webpack-plugin": "^5.6.0",
+    "raw-loader": "^4.0.2",
+    "ts-loader": "^9.5.1",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.1.0"
+  },
+  "peerDependenciesMeta": {
+    "webpack-dev-server": {
+      "optional": true
     }
   },
   "devDependencies": {

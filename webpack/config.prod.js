@@ -1,17 +1,21 @@
-const { CleanWebpackPlugin } = require("clean-webpack-plugin");
-const CopyPlugin = require("copy-webpack-plugin");
-const HtmlWebpackPlugin = require("html-webpack-plugin");
-const HtmlReplaceWebpackPlugin = require("html-replace-webpack-plugin");
 const path = require("path");
-const webpack = require("webpack");
 const fs = require("fs");
-const CompressionPlugin = require("compression-webpack-plugin");
-const rimraf = require("rimraf");
-const ComponentParamPreserverPlugin = require('./ComponentParamPreserverPlugin');
+const projectRequire = require("./projectRequire");
+const { CleanWebpackPlugin } = projectRequire("clean-webpack-plugin");
+const CopyPlugin = projectRequire("copy-webpack-plugin");
+const HtmlWebpackPlugin = projectRequire("html-webpack-plugin");
+const HtmlReplaceWebpackPlugin = projectRequire("html-replace-webpack-plugin");
+const webpack = projectRequire("webpack");
 const InjectInitialAssetsPlugin = require("./InjectInitialAssetsPlugin");
-const { EsbuildPlugin } = require("esbuild-loader");
+const GenerateLayersPlugin = require("./GenerateLayersPlugin");
+const { EsbuildPlugin } = projectRequire("esbuild-loader");
 const createControllerProxyTransformer = require("./controllerProxyTransformer");
 const createGameObjectNameTransformer = require("./gameObjectNameTransformer");
+const projectRoot = process.cwd();
+const projectPackage = require(path.join(projectRoot, "package.json"));
+const htmlOptions = projectPackage.bareEngine?.index || {};
+const engineIndexHtmlPath = path.resolve(__dirname, "../config/index.html");
+const engineEditorHtmlPath = path.resolve(__dirname, "../config/editor.html");
 
 
 module.exports = {
@@ -82,7 +86,9 @@ module.exports = {
     plugins: [
         new CleanWebpackPlugin(),
         new HtmlWebpackPlugin({
-            template: "./public/index.html",
+            template: engineIndexHtmlPath,
+            title: htmlOptions.title || "Bare Game",
+            backgroundColor: htmlOptions.backgroundColor || "rgb(255, 255, 255)",
             inject: false,
             minify: false
         }),
@@ -98,13 +104,19 @@ module.exports = {
 			__DEV__: JSON.stringify(false)
 		}),
         new InjectInitialAssetsPlugin(),
+        new GenerateLayersPlugin(),
         new CopyPlugin({
-            patterns: [{ from: "public", to: "", globOptions: { ignore: ["**/index.html"] } }]
+            patterns: [
+                { from: engineEditorHtmlPath, to: "editor.html" },
+                { from: "public", to: "", globOptions: { ignore: ["**/index.html", "**/editor.html"] } }
+            ]
         }),
         new (class {
             apply(compiler) {
                 compiler.hooks.done.tap("Remove EmojiData", () => {
-                    rimraf.sync("./dist/assets/data/emojiData.json");
+                    fs.rmSync(path.resolve(process.cwd(), "dist/assets/data/emojiData.json"), {
+                        force: true
+                    });
                 });
             }
         })()
