@@ -460,11 +460,30 @@ window.__GAME_DEBUG_API__ = {
     return s;
   },
 
-  getNestedEntityVars(entityName: string)
+  getNestedEntityVars(entityName: string, childPath: string[])
   {
         var entity = plugin.GetCurrentEntityProcessed();
+        
+        // GET THE CHILD
+        if (childPath.length > 0)
+        {
+            for (var i = 0; i < childPath.length; i++)
+            {
+                entity = entity.children[childPath[i]];
+            }
+        }
+
         var baseClass = entity.baseClass || "GameObject";
         var allPossibleEntityKeys = plugin.GetAllPossibleEntityKeys(baseClass);
+
+        // WANT POSITION LOCKED FOR ENTIY WITH NO CHILDREN
+        // BUT CHILD CAN HAVE POSITION
+        var includePosition = (childPath.length > 0);
+        if (!includePosition)
+        {
+            var i = allPossibleEntityKeys.indexOf("position");
+            allPossibleEntityKeys.splice(i, 1);
+        }
 
         // TAKE OFF CURRENT FROM ALL POSSIBLE
         var keys = Object.keys(entity);
