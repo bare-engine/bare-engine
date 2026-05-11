@@ -543,7 +543,7 @@ class RenderTexture extends Texture {
         const gl = this.gl;
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
         gl.viewport(0, 0, this.width, this.height);
-        
+
         if (clear) this.clear()
     }
 
@@ -553,7 +553,7 @@ class RenderTexture extends Texture {
 
         const c = clearColor ?? this.clearColor;
         if (c) {
-            gl.clearColor(c.r, c.g, c.b, c.a);
+            c.setClearColor(gl)
             gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
         }
     }

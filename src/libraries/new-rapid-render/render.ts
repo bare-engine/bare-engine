@@ -399,8 +399,7 @@ export class Rapid {
      */
     clear(): void {
         const gl = this.gl;
-        const { r, g, b, a } = this.backgroundColor;
-        gl.clearColor(r / 255, g / 255, b / 255, a / 255);
+        this.backgroundColor.setClearColor(gl);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
         this.drawcallCount = 0;
         this.matrixStack.reset()
@@ -518,7 +517,7 @@ export class Rapid {
     clearRenderTexture(color: Color = new Color(0, 0, 0, 0)): void {
         this.flush();
         const gl = this.gl;
-        gl.clearColor(color.r, color.g, color.b, color.a);
+        color.setClearColor(gl)
         gl.clear(gl.COLOR_BUFFER_BIT);
     }
 
