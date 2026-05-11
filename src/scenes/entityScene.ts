@@ -22,6 +22,7 @@ export class EntityScene extends EditorScene
     isBase: boolean = false;
     
     lastPayload: EntitySceneAwakePayload;
+    degugAtStart: boolean;
 
     constructor()
     {
@@ -30,6 +31,9 @@ export class EntityScene extends EditorScene
 
     override async OnStart(payload: EntitySceneAwakePayload = this.lastPayload): Promise<void>
     {
+        this.degugAtStart = window.debug;
+        window.debug = true;
+        
         if (!assetsHandler.HasTexture("placeHolder"))
         {
             var rt = new RenderTexture(rapid, { width: 512, height: 512, clearColor: Color.fromHex("b3b3b3") });
@@ -37,22 +41,13 @@ export class EntityScene extends EditorScene
             text.CenterPivot();
             text.x = rt.width / 2;
             text.y = rt.height / 2;
-            this.RenderTo(text, rt);
+            this.RenderTo(text, rt, true);
 
             rapid.drawToRenderTexture(rt, () => {
                 rapid.drawLine({
                     points: [
                         new Vec2(0, 0),
-                        new Vec2(rt.width / 2, rt.height / 2),
-                    ],
-                    width: 5,
-                    roundCap: false,
-                    color: Color.White,
-                });
-                rapid.drawLine({
-                    points: [
-                        new Vec2(rt.width, 0),
-                        new Vec2(rt.width / 2, rt.height / 2),
+                        new Vec2(rt.width, rt.height),
                     ],
                     width: 5,
                     roundCap: false,
@@ -61,22 +56,13 @@ export class EntityScene extends EditorScene
                 rapid.drawLine({
                     points: [
                         new Vec2(0, rt.height),
-                        new Vec2(rt.width / 2, rt.height / 2),
+                        new Vec2(rt.width, 0),
                     ],
                     width: 5,
                     roundCap: false,
                     color: Color.White,
                 });
-                rapid.drawLine({
-                    points: [
-                        new Vec2(rt.width, rt.height),
-                        new Vec2(rt.width / 2, rt.height / 2),
-                    ],
-                    width: 5,
-                    roundCap: false,
-                    color: Color.White,
-                });
-            }, Color.fromHex("b3b3b3"));
+            }, null);
             
             assetsHandler.AddTexture("placeHolder", rt);
         }
@@ -105,6 +91,14 @@ export class EntityScene extends EditorScene
         
         var levelData = await this.CreateEntityDataFor(objectName, isBase);
         await super.OnStart({levelPathOrData: levelData, saveLevelCallback: this.SaveEntityDataToSettingsData});
+    }
+
+    override OnClear(): void
+    {
+        if (this.opened)
+            window.debug = this.degugAtStart;
+
+        super.OnClear();
     }
 
     async CreateEntityDataFor(objectName: string, isBase: boolean): Promise<LevelData>
@@ -155,10 +149,10 @@ export class EntityScene extends EditorScene
 
     override OnUpdate(deltaTime: number): void
     {
-        var pivotObj = this.objectController.GetObjectByName("dot");
+        /*var pivotObj = this.objectController.GetObjectByName("dot");
         var mainObj = this.objectController.GetObjectByName(this.objectName);
         var tl = mainObj.GetTopLeftPosition();
-        pivotObj.SetPosition(tl.x + mainObj.pivot.x * mainObj.totalScaleX, tl.y + mainObj.pivot.y * mainObj.totalScaleY);
+        pivotObj.SetPosition(tl.x + mainObj.pivot.x * mainObj.totalScaleX, tl.y + mainObj.pivot.y * mainObj.totalScaleY);*/
     }
 
     override async Open(levelPathOrData?: string | LevelData, saveLevelCallback?: () => Promise<LevelData>, settingsHandler?: SettingsHandler): Promise<void>
@@ -170,7 +164,7 @@ export class EntityScene extends EditorScene
         //obj.y += obj.pivot.y;
 
         // COLLISION RECT
-        if (obj instanceof PhysicsObjectBare)
+        /*if (obj instanceof PhysicsObjectBare)
         {
             var hitbox = obj.physicsHitbox.rectangle;
             var collisionRectEntity:Entity = {
@@ -214,12 +208,12 @@ export class EntityScene extends EditorScene
                 pivotRemove: {}
             }
         }
-        this.AddGameObject(pivotEntity);
+        this.AddGameObject(pivotEntity);*/
 
         // SET CAMERA ZOOM, BASED ON OBJECT BOUNDS
         var bounds = obj.GetBoundsWithChildren();
         var s = Math.max(bounds.width / rapid.width, bounds.height / rapid.height);
-        this.cameraHandler.zoom = 1/s * .7;
+        this.cameraHandler.zoom = 1/s * .5;
         cameraHandler.SetPosition(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
         
         return ret;

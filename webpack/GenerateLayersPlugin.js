@@ -1,14 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 
-const jsonPath = path.join(__dirname, '../public/assets/data/settingsData.json');
-const outputPath = path.join(__dirname, '../src/generated/layers.ts');
-
 function toConstantCase(str) {
     return str.replace(/([a-z])([A-Z])/g, '$1_$2').toUpperCase();
 }
 
-function generateLayers() {
+function generateLayers(jsonPath, outputPath) {
     if (!fs.existsSync(jsonPath)) return;
     try {
         const jsonContent = fs.readFileSync(jsonPath, 'utf-8');
@@ -41,13 +38,19 @@ export type Layer = typeof Layer[keyof typeof Layer];
 }
 
 class GenerateLayersPlugin {
-    apply(compiler) {
-        generateLayers();
+    constructor(options = {}) {
+        this.projectRoot = options.projectRoot || process.cwd();
+        this.jsonPath = path.join(this.projectRoot, "public/assets/data/settingsData.json");
+        this.outputPath = path.join(this.projectRoot, "src/generated/layers.ts");
+    }
 
-        if (compiler.options.mode === 'development' && fs.existsSync(jsonPath)) {
-            fs.watch(jsonPath, (eventType) => {
+    apply(compiler) {
+        generateLayers(this.jsonPath, this.outputPath);
+
+        if (compiler.options.mode === 'development' && fs.existsSync(this.jsonPath)) {
+            fs.watch(this.jsonPath, (eventType) => {
                 if (eventType === 'change') {
-                    generateLayers();
+                    generateLayers(this.jsonPath, this.outputPath);
                 }
             });
         }

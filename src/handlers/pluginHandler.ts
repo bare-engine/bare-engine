@@ -1,17 +1,17 @@
 import { keyboardController } from "../controllers/keyboardController";
 import { sceneController } from "../controllers/sceneController";
-import { EditorUIScene } from "../scenes/editorUIScene";
 import { GameMode, globalEvents } from "../globals";
 import { Color, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { PhysicsObjectBare } from "../objects/physicsObjectBare";
 import { EditorScene } from "../scenes/editorScene";
+import { EditorUIScene } from "../scenes/editorUIScene";
 import { EntityScene } from "../scenes/entityScene";
 import { Scene } from "../scenes/scene";
 import { OutlineShader } from "../shaders/outlineShader";
-import { defaultSettingsData as defaultEntityData } from "../types/bareData";
-import { BareEvent, Entity, LevelData, Position, SaveData, Scalar, SettingsData } from "../types/bareTypes";
-import { applyInspectorField, getButtons, getInspectorFields } from "../utils/decorators";
+import { defaultSettingsData } from "../types/bareData";
+import { BareEvent, Entity, EntityVarsNestedEntry, entityVarsNested, LevelData, Position, SaveData, Scalar, SettingsData, entityVarsNestedRecord, entityVarsAr } from "../types/bareTypes";
+import { applyInspectorField, getButtons, getInspectorFieldDescriptions, getInspectorFields } from "../utils/decorators";
 import { Helper } from "../utils/helper";
 import { SaveDataHandler } from "./SaveDataHandler";
 
@@ -177,38 +177,145 @@ window.__GAME_DEBUG_API__ = {
   async GetLevelData(levelStr: string): Promise<LevelData> {
      return await Helper.loadJSON<LevelData>(`${bareEngine.levelPath}/${levelStr}.json`);
   },
+
+  getBaseClassValues() {
+    var values = Object.keys(Scene.registeredClasses);
+    return values;
+  },
+
+  getFieldInfo()
+  {
+    var info:Record<string, string> = {};
+    info.baseClass = "The GameObject class this entity will assign.\nAdd it with bareEngine.AddClass(CustomGameObjectClass); to make it appear in the dropdown.";
+    info.baseEntity = "The entity this entity will inherit from.";
+    info.imagePath = `Where to find the image. Looks in bareEngine.imagePath: ${bareEngine.imagePath}/[imagePath]`;
+    info.texture = "The texture to use for the entity. Overrides entity.name, which is used as the default texture name.";
+    info.pivot = "The pivot point of the entity. 0,0 is the top left corner. Can also supply percentual values.";
+    info.hitbox = "Hitbox defined as x1,x2,y1,y2, not x/y/width/height. Can supply percentual values. Can also supply a string to use a pre-defined hitbox, eg: FULL";
+
+    const addDescriptions = (prefix: string | null, descriptions: Record<string, string>) => {
+        for (var fieldName in descriptions)
+        {
+            const description = descriptions[fieldName];
+            info[fieldName] ??= description;
+
+            if (prefix)
+                info[`${prefix}.${fieldName}`] = description;
+        }
+    };
+
+    for (var className in Scene.registeredClasses)
+        addDescriptions(className, getInspectorFieldDescriptions(Scene.registeredClasses[className]));
+
+    // FOR COMPONENTS, NOT WORKING YET
+    /*for (var componentClassName in bareEngine.componentClasses)
+    {
+        var componentClass = bareEngine.componentClasses[componentClassName];
+        var componentName = Helper.DecapitalizeFirstLetter(componentClassName.replace("Component", ""));
+        addDescriptions(`components.${componentName}`, getInspectorFieldDescriptions(componentClass));
+    }*/
+
+    return info;
+  },
+
+  onBaseClassChange(baseClass: string): string[]
+  {
+    // GET CURRENT ENTITY KEYS
+    var scene = (plugin.GetCurrentScene() as EntityScene);
+    var name = scene.objectName;
+    var isBase = scene.isBase;
+    var raw = scene.settingsHandler.GetRaw();
+    var entity = (isBase ? raw.baseEntities[name] : raw.entities[name]);
+    var entityKeys = Object.keys(entity);
+
+    // GET EXTRA KEYS
+    var extraKeys = plugin.GetExtraKeys(entityKeys, baseClass);
+    return extraKeys;
+
+    // IF EXTRA KEYS > 0, PLUGIN WILL WILL ASK FOR CONFIRMATION YES/NO
+  },
+
+  async onPressYesChangeBaseClass(extraKeys: string[])
+  {
+    // REMOVE FROM ENTITY EXTRA KEYS
+    var scene = (plugin.GetCurrentScene() as EntityScene);
+    var name = scene.objectName;
+    var isBase = scene.isBase;
+    var raw = scene.settingsHandler.GetRaw();
+    var entity = (isBase ? raw.baseEntities[name] : raw.entities[name]);
+
+    for (var key of extraKeys)
+        delete entity[key];
+
+    await plugin.SaveSettingsData(raw);
+  },
   
-  async gotoEntity(name: string, isBase: boolean = false) {
+  async gotoEntity(name: string, isBase: boolean = false)
+  {
+    window.postMessage({ __fromGame: true, type: "lockObjectsTab", flag: true }, "*");
+
     /*const levelController = getLevelController();
     if (levelController && levelController.currentLevel && levelController.currentLevel.name == name)
     {
         return;
     }*/
     
-    var scene = await sceneController.Add(EntityScene, {name: name, isBase: isBase, settingsHandler: plugin.GetCurrentScene().settingsHandler});
+    plugin.notifyLeaveEntity = false;
+    const sceneMain = sceneController.GetMainScene();
+    var entityScene = await sceneController.Add(EntityScene, {name: name, isBase: isBase, settingsHandler: sceneMain.settingsHandler});
     //sceneController.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
-    
+    plugin.notifyLeaveEntity = true;
+
     var entity:Entity;
-    var raw = scene.settingsHandler.GetRaw();
+    var raw = entityScene.settingsHandler.GetRaw();
     if (isBase)
         entity = raw.baseEntities[name];
     else
         entity = raw.entities[name];
 
-    var processed = scene.settingsHandler.Get();
+    var processed = entityScene.settingsHandler.Get();
     var processedEntity:Entity;
     if (isBase)
         processedEntity = processed.baseEntities[name];
     else
         processedEntity = processed.entities[name];
 
+    /*var processedEntityCopy = {...processedEntity};
+
+    // REMOVE KEYS THAT ARE NOT IN baseClass
+    var extraKeys = plugin.GetExtraKeys(Object.keys(processedEntityCopy), processedEntityCopy.baseClass || "GameObject");
+    for (var key of extraKeys)
+    {
+        delete processedEntityCopy[key];
+    }*/
+
     var entityWithLog = plugin.BuildExtendDataLog(entity, name, processedEntity, raw, processed);
 
+    // WE'VE SET entity.baseEntity = "ANY_ENTITY"; WHEN CONSTRUCTING ENTITY, BUT DON'T WANT TO SHOW THIS IN PLUGIN (NOT USER VALUE)
+    // ALONG WITH THE VALUES ANY_ENTITY SETS (EG: baseClass)
+    // PASSING THIS INFO TO __defaultFieldsToIgnore__
+    var defaultFieldsToIgnore = [];
+    entityWithLog["__defaultFieldsToIgnore__"] = defaultFieldsToIgnore;
+
+    if (!isBase)
+    {
+        if (entityWithLog.baseEntity == "ANY_ENTITY")
+        {
+            entityWithLog["__defaultFieldsToIgnore__"] = ["baseEntity"];
+
+            var defaultBaseClass = defaultSettingsData.baseEntities.ANY_ENTITY.baseClass;
+            if (entityWithLog.baseClass == defaultBaseClass)
+            {
+                entityWithLog["__defaultFieldsToIgnore__"].push("baseClass");
+            }
+        }
+    }
+
     // BUILD THE ENTITY TO PASS TO PLUGIN RIGHT AWAY
-    var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(entityWithLog, scene.settingsData, {fillPresets: false});
-    levelEntityWithDefaultValues.name = name;
-    
-    return levelEntityWithDefaultValues;
+    //var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(entityWithLog, scene.settingsData, {fillPresets: false});
+    //levelEntityWithDefaultValues.name = name;
+
+    return entityWithLog;
   },
 
   getObject(id: string) {
@@ -279,7 +386,7 @@ window.__GAME_DEBUG_API__ = {
         return children.map(c => serializeGameObject(c));
     }
 
-    /*extendClass?: string;
+    /*baseClass?: string;
     baseEntity?: string;
     imagePath?: string;
     texture?: string;
@@ -305,7 +412,7 @@ window.__GAME_DEBUG_API__ = {
             innerRotation: o.innerTransform.rotation,
 
             pivot: {x: o.pivot.x, y: o.pivot.y},
-            pivotBasedOnHitbox: {x: o.pivotBasedOnHitbox.x, y: o.pivotBasedOnHitbox.y},
+            //pivotBasedOnHitbox: {x: o.pivotBasedOnHitbox.x, y: o.pivotBasedOnHitbox.y},
             flipped: o.flipped,
             
             visible: o.visible,
@@ -353,119 +460,270 @@ window.__GAME_DEBUG_API__ = {
     return s;
   },
 
+  // GIVES SUGGESTION FIELDS, TAKES OFF ONES THAT ARE LOCKED/ALREADY IN HUSE
+  getFieldsSuggestions(entityName: string, childPath: string[]): string[]
+  {
+    var suggestions = [
+        "baseEntity",
+        "baseClass",
+        "imagePath",
+        "texture",
+        "alpha",
+        "visible",
+        "scale",
+        "rotation",
+        "hitbox",
+        "pivot",
+    ];
+    var limitNumber = 5;
+
+    var possibleVarsNested = window.__GAME_DEBUG_API__.getNestedEntityVars(entityName, childPath);
+    var lockedVars = new Set<string>();
+
+    var addLockedVar = (field: string) => {
+        if (field.endsWith(":locked"))
+            lockedVars.add(field.slice(0, -":locked".length));
+    };
+
+    for (var entry of possibleVarsNested)
+    {
+        if (typeof entry === "string")
+        {
+            addLockedVar(entry);
+            continue;
+        }
+
+        for (var keys of Object.values(entry) as string[][])
+            for (var key of keys)
+                addLockedVar(key);
+    }
+
+    var finalSuggestions = suggestions.filter(suggestion => !lockedVars.has(suggestion));
+    finalSuggestions = finalSuggestions.slice(0, limitNumber);
+    
+    return finalSuggestions;
+  },
+
+  getNestedEntityVars(entityName: string, childPath: string[])
+  {
+        var entity = plugin.GetCurrentEntityProcessed();
+        
+        // GET THE CHILD
+        if (childPath.length > 0)
+        {
+            for (var i = 0; i < childPath.length; i++)
+            {
+                entity = entity.children[childPath[i]];
+            }
+        }
+
+        var baseClass = entity.baseClass || "GameObject";
+        var allPossibleEntityKeys = plugin.GetAllPossibleEntityKeys(baseClass);
+
+        // WANT POSITION LOCKED FOR ENTIY WITH NO CHILDREN
+        // BUT CHILD CAN HAVE POSITION
+        var includePosition = (childPath.length > 0);
+        if (!includePosition)
+        {
+            var i = allPossibleEntityKeys.indexOf("position");
+            allPossibleEntityKeys.splice(i, 1);
+        }
+
+        // TAKE OFF CURRENT FROM ALL POSSIBLE
+        var keys = Object.keys(entity);
+        allPossibleEntityKeys = allPossibleEntityKeys.filter(key => !keys.includes(key));
+
+        var lockIfUnavailable = (key: string): string => {
+            return allPossibleEntityKeys.includes(key) ? key : `${key}:locked`;
+        };
+
+        var varsPluginHideApplied: EntityVarsNestedEntry[] = [];
+
+        // GET parentClassNames, TO CHECK IF GROUP IS NOT IN HERE
+        // THEN LOCK THE WHOLE GROUP, EG: RigidBody, PhysicsObjectBare
+        var cls = Scene.registeredClasses[baseClass];
+        var parentClassNames = Helper.GetParentClasses(cls);
+        parentClassNames.push(baseClass);
+
+        for (var entry of entityVarsNested)
+        {
+            if (typeof entry === "string")
+            {
+                varsPluginHideApplied.push(lockIfUnavailable(entry));
+                continue;
+            }
+
+            var groupEntries = Object.entries(entry)
+                .filter(([groupName]) => groupName !== "HideInPlugin")
+                .map(([groupName, keys]) => {
+                    var isGeneralGroup = groupName == "General" || groupName == "Misc";
+                    var groupUnavailable = !isGeneralGroup && !parentClassNames.includes(groupName);
+                    var lockedKeys = groupUnavailable ? keys.map(key => `${key}:locked`) : keys.map(lockIfUnavailable);
+                    var groupLocked = groupUnavailable || keys.every(key => !allPossibleEntityKeys.includes(key));
+                    var lockedGroupName = groupLocked ? `${groupName}:locked` : groupName;
+
+                    return [lockedGroupName, lockedKeys];
+                });
+
+            if (groupEntries.length > 0)
+                varsPluginHideApplied.push(Object.fromEntries(groupEntries));
+        }
+
+        return varsPluginHideApplied;
+  },
+
+  async removeFieldFromEntity(entiyName: string, childPath: string[], field: string)
+  {
+        var scene = plugin.GetCurrentScene();
+        let entityScene = scene as EntityScene;
+        
+        var rawSettingsData = entityScene.settingsHandler.GetRaw();
+
+        rawSettingsData.baseEntities.ANY ??= {};
+        rawSettingsData.baseEntities.ANY_ENTITY ??= {};
+
+        var entity:Entity;
+        if (entityScene.isBase)
+            entity = rawSettingsData.baseEntities[entityScene.objectName];
+        else
+            entity = rawSettingsData.entities[entityScene.objectName];
+
+        // GET THE CHILD
+        if (childPath.length > 0)
+        {
+            for (var i = 0; i < childPath.length; i++)
+            {
+                entity = entity.children[childPath[i]];
+            }
+        }
+
+        delete entity[field];
+
+        var entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase);
+        
+        await plugin.SaveSettingsData(rawSettingsData);
+
+        return entityData;
+  },
+
+  getDefaultValueForEntityField(entityName: string, field: string)
+  {
+    var scene = plugin.GetCurrentScene();
+    let entityScene = scene as EntityScene;
+    
+    var rawSettingsData = entityScene.settingsHandler.GetRaw();
+
+    var entity:Entity;
+    if (entityScene.isBase)
+        entity = rawSettingsData.baseEntities[entityScene.objectName]; // USE id?
+    else
+        entity = rawSettingsData.entities[entityScene.objectName];
+    
+    // COMMENTED OUT, SINCE I WANT TO KEEP VALUE IN PLUGIN, EVEN IF IT'S DEFAULT
+    var entityWithDefaultValues = scene.GetEntityWithDefaultValues(entity, scene.settingsData) as any;
+    if (entityWithDefaultValues.position)
+    {
+        entityWithDefaultValues.x = entityWithDefaultValues.position.x;//
+        entityWithDefaultValues.y = entityWithDefaultValues.position.y;//
+    }
+    entityWithDefaultValues.scaleX = entityWithDefaultValues.scale.x;
+    entityWithDefaultValues.scaleY = entityWithDefaultValues.scale.y;
+    entityWithDefaultValues.innerX = entityWithDefaultValues.innerPosition.x;
+    entityWithDefaultValues.innerY = entityWithDefaultValues.innerPosition.y;
+    entityWithDefaultValues.innerScaleX = entityWithDefaultValues.innerScale.x;
+    entityWithDefaultValues.innerScaleY = entityWithDefaultValues.innerScale.y;
+
+    var defaultValue = entityWithDefaultValues[field];
+
+    return defaultValue;
+  },
+
+    async setEntityField(name: string, props: Record<string, any>, childPath: number[], save:boolean = false)
+    {
+        let entityScene = sceneController.Get(EntityScene);
+
+        var rawSettingsData = entityScene.settingsHandler.GetRaw();
+
+        // MAKE SURE ANY OR ANY_ENTITY EXISTS, IF WE'RE GONNA WRITE TO IT
+        //if (entityScene.isBase)
+        {
+            //if (entityScene.objectName == "ANY")
+                rawSettingsData.baseEntities.ANY ??= {};
+            
+            //if (entityScene.objectName == "ANY_ENTITY")
+                rawSettingsData.baseEntities.ANY_ENTITY ??= {};
+        }
+
+        // WRITE ENTITY PROPS TO RAW 
+        var entity:Entity;
+        if (entityScene.isBase)
+            entity = rawSettingsData.baseEntities[entityScene.objectName]; // USE id?
+        else
+            entity = rawSettingsData.entities[entityScene.objectName];
+
+        // GET THE CHILD
+        if (childPath.length > 0)
+        {
+            for (var i = 0; i < childPath.length; i++)
+            {
+                entity = entity.children[childPath[i]];
+            }
+        }
+        
+        var entityCopy = Object.assign({}, entity);
+
+        Object.assign(entity, props);
+
+        // GET ENTITY WITH DEFAULT VALUES
+        for (var key in props)
+        {
+            delete entityCopy[key];
+        }
+
+        // COMMENTED OUT, SINCE I WANT TO KEEP VALUE IN PLUGIN, EVEN IF IT'S DEFAULT
+        /*var entityWithDefaultValues = scene.GetEntityWithDefaultValues(entityCopy, scene.settingsData) as any;
+        entityWithDefaultValues.x = entityWithDefaultValues.position.x;
+        entityWithDefaultValues.y = entityWithDefaultValues.position.y;
+        entityWithDefaultValues.scaleX = entityWithDefaultValues.scale.x;
+        entityWithDefaultValues.scaleY = entityWithDefaultValues.scale.y;
+        entityWithDefaultValues.innerX = entityWithDefaultValues.innerPosition.x;
+        entityWithDefaultValues.innerY = entityWithDefaultValues.innerPosition.y;
+        entityWithDefaultValues.innerScaleX = entityWithDefaultValues.innerScale.x;
+        entityWithDefaultValues.innerScaleY = entityWithDefaultValues.innerScale.y;
+
+        // DELETE ANY PROPS FROM ENTITY THAT HAVE SAME VALUE AS DEFAULT, THEY'RE NOT NEEDED
+        // EG: YOU SET scaleX TO 2, THEN BACK TO 1, IT WILL REMOVE THE scaleX PROPERTY
+        for (var key in props)
+        {
+            var val = props[key];
+            var defaultVal = entityWithDefaultValues[key];
+            if (val == defaultVal)
+                delete entity[key];
+        }*/
+        
+        // SINCE WE JUST MODIFIED THE RAW ENTITY, WE RE-PROCESS THE settingsData AGAIN, SO IT'S UP TO DATE 
+        await entityScene.settingsHandler.Process(rawSettingsData);
+
+        var entityData;
+
+        // SAVE TO FILE
+        if (save)
+        {
+            entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase);
+            
+            await plugin.SaveSettingsData(rawSettingsData);
+        }
+
+        // ADD DEFAULTS TO RAW SETTINGS AGAIN, SO PROPS CAN BE ADDED TO IT
+        rawSettingsData.baseEntities.ANY ??= {...defaultSettingsData.baseEntities.ANY};
+        rawSettingsData.baseEntities.ANY_ENTITY ??= {...defaultSettingsData.baseEntities.ANY_ENTITY};
+
+        return entityData;
+    },
+
     async setObject(id: string, props: Record<string, any>, save:boolean = false)
     {
         var scene = plugin.GetCurrentScene();
-
-        if (0)
-        if (scene instanceof EntityScene)
-        {
-            let entityScene = scene as EntityScene;
-            
-            var f = async () => {
-                var rawSettingsData = entityScene.settingsHandler.GetRaw();
-
-                // MAKE SURE ANY OR ANY_ENTITY EXISTS, IF WE'RE GONNA WRITE TO IT
-                //if (entityScene.isBase)
-                {
-                    //if (entityScene.objectName == "ANY")
-                        rawSettingsData.baseEntities.ANY ??= {...defaultEntityData.baseEntities.ANY};
-                    
-                    //if (entityScene.objectName == "ANY_ENTITY")
-                        rawSettingsData.baseEntities.ANY_ENTITY ??= {...defaultEntityData.baseEntities.ANY_ENTITY};
-                }
-
-                var entityCopy = Object.assign({}, entity);
-
-                // WRITE ENTITY PROPS TO RAW 
-                var entity:Entity;
-                if (entityScene.isBase)
-                    entity = rawSettingsData.baseEntities[entityScene.objectName]; // USE id?
-                else
-                    entity = rawSettingsData.entities[entityScene.objectName];
-                
-                Object.assign(entity, props);
-
-                // GET ENTITY WITH DEFAULT VALUES
-                for (var key in props)
-                {
-                    delete entityCopy[key];
-                }
-                var entityWithDefaultValues = scene.GetEntityWithDefaultValues(entityCopy, scene.settingsData) as any;
-                entityWithDefaultValues.x = entityWithDefaultValues.position.x;
-                entityWithDefaultValues.y = entityWithDefaultValues.position.y;
-                entityWithDefaultValues.scaleX = entityWithDefaultValues.scale.x;
-                entityWithDefaultValues.scaleY = entityWithDefaultValues.scale.y;
-                entityWithDefaultValues.innerX = entityWithDefaultValues.innerPosition.x;
-                entityWithDefaultValues.innerY = entityWithDefaultValues.innerPosition.y;
-                entityWithDefaultValues.innerScaleX = entityWithDefaultValues.innerScale.x;
-                entityWithDefaultValues.innerScaleY = entityWithDefaultValues.innerScale.y;
-
-                // DELETE ANY PROPS FROM ENTITY THAT HAVE SAME VALUE AS DEFAULT, THEY'RE NOT NEEDED
-                // EG: YOU SET scaleX TO 2, THEN BACK TO 1, IT WILL REMOVE THE scaleX PROPERTY
-                for (var key in props)
-                {
-                    var val = props[key];
-                    var defaultVal = entityWithDefaultValues[key];
-                    if (val == defaultVal)
-                        delete entity[key];
-                }
-
-                // UNDO DEFAULT ADDITIONS TO ANY AND ANY_ENTITY AGAIN, DON'T WANT TO SAVE THEM
-                // THIS IS ALSO ADDED AT getEntityData
-                //if (entityScene.objectName == "ANY" || entityScene.objectName == "ANY_ENTITY")
-                //if (entityScene.isBase)
-                {
-                    var propKeys = Object.keys(props);
-
-                    //if (entityScene.objectName == "ANY")
-                    {
-                        var anyKeys = Object.keys(defaultEntityData.baseEntities.ANY);
-                        for (var key of anyKeys)
-                        {
-                            if (rawSettingsData.baseEntities.ANY[key] == defaultEntityData.baseEntities.ANY[key]) // IF SAME AS DEFAULT
-                            if (entityScene.objectName != "ANY" || !propKeys.includes(key))
-                                delete rawSettingsData.baseEntities.ANY[key];
-                        }
-
-                        if (Object.keys(rawSettingsData.baseEntities.ANY).length == 0)
-                            delete rawSettingsData.baseEntities.ANY;
-                    }
-
-                    //if (entityScene.objectName == "ANY_ENTITY")
-                    {
-                        var anyEntityKeys = Object.keys(defaultEntityData.baseEntities.ANY_ENTITY);
-                        for (var key of anyEntityKeys)
-                        {
-                            if (rawSettingsData.baseEntities.ANY_ENTITY[key] == defaultEntityData.baseEntities.ANY_ENTITY[key])
-                            if (entityScene.objectName != "ANY_ENTITY" || !propKeys.includes(key))
-                                delete rawSettingsData.baseEntities.ANY_ENTITY[key];
-                        }
-
-                        if (Object.keys(rawSettingsData.baseEntities.ANY_ENTITY).length == 0)
-                            delete rawSettingsData.baseEntities.ANY_ENTITY;
-                    }
-                }
-                
-                // SINCE WE JUST MODIFIED THE RAW ENTITY, WE RE-PROCESS THE settingsData AGAIN, SO IT'S UP TO DATE 
-                await entityScene.settingsHandler.Process(rawSettingsData);
-
-                // SAVE TO FILE
-                if (save)
-                {
-                    trace(444)
-                    window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase);
-                    await entityScene.SaveEntityData(rawSettingsData);
-                }
-
-                // ADD DEFAULTS TO RAW SETTINGS AGAIN, SO PROPS CAN BE ADDED TO IT
-                rawSettingsData.baseEntities.ANY ??= {...defaultEntityData.baseEntities.ANY};
-                rawSettingsData.baseEntities.ANY_ENTITY ??= {...defaultEntityData.baseEntities.ANY_ENTITY};
-            }
-            f();
-
-            return;
-        }
 
         var o:GameObject;
         
@@ -512,7 +770,7 @@ window.__GAME_DEBUG_API__ = {
             
         }
 
-        if (props.pivotBasedOnHitbox !== undefined) { o.pivotBasedOnHitbox.x = props.pivotBasedOnHitbox.x; o.pivotBasedOnHitbox.y = props.pivotBasedOnHitbox.y; }
+        //if (props.pivotBasedOnHitbox !== undefined) { o.pivotBasedOnHitbox.x = props.pivotBasedOnHitbox.x; o.pivotBasedOnHitbox.y = props.pivotBasedOnHitbox.y; }
        
         if (props.flipped !== undefined) o.flipped = props.flipped;
         if (props.visible !== undefined) o.visible = props.visible;
@@ -586,10 +844,10 @@ window.__GAME_DEBUG_API__ = {
             //if (entityScene.isBase)
             {
                 //if (entityScene.objectName == "ANY")
-                    rawSettingsData.baseEntities.ANY ??= {...defaultEntityData.baseEntities.ANY};
+                    rawSettingsData.baseEntities.ANY ??= {...defaultSettingsData.baseEntities.ANY};
                 
                 //if (entityScene.objectName == "ANY_ENTITY")
-                    rawSettingsData.baseEntities.ANY_ENTITY ??= {...defaultEntityData.baseEntities.ANY_ENTITY};
+                    rawSettingsData.baseEntities.ANY_ENTITY ??= {...defaultSettingsData.baseEntities.ANY_ENTITY};
             }
             
             // UNDO DEFAULT ADDITIONS TO ANY AND ANY_ENTITY AGAIN, DON'T WANT TO SAVE THEM
@@ -601,10 +859,10 @@ window.__GAME_DEBUG_API__ = {
 
                 //if (entityScene.objectName == "ANY")
                 {
-                    var anyKeys = Object.keys(defaultEntityData.baseEntities.ANY);
+                    var anyKeys = Object.keys(defaultSettingsData.baseEntities.ANY);
                     for (var key of anyKeys)
                     {
-                        if (rawSettingsData.baseEntities.ANY[key] == defaultEntityData.baseEntities.ANY[key]) // IF SAME AS DEFAULT
+                        if (rawSettingsData.baseEntities.ANY[key] == defaultSettingsData.baseEntities.ANY[key]) // IF SAME AS DEFAULT
                         if (entityScene.objectName != "ANY" || !propKeys.includes(key))
                             delete rawSettingsData.baseEntities.ANY[key];
                     }
@@ -615,10 +873,10 @@ window.__GAME_DEBUG_API__ = {
 
                 //if (entityScene.objectName == "ANY_ENTITY")
                 {
-                    var anyEntityKeys = Object.keys(defaultEntityData.baseEntities.ANY_ENTITY);
+                    var anyEntityKeys = Object.keys(defaultSettingsData.baseEntities.ANY_ENTITY);
                     for (var key of anyEntityKeys)
                     {
-                        if (rawSettingsData.baseEntities.ANY_ENTITY[key] == defaultEntityData.baseEntities.ANY_ENTITY[key])
+                        if (rawSettingsData.baseEntities.ANY_ENTITY[key] == defaultSettingsData.baseEntities.ANY_ENTITY[key])
                         if (entityScene.objectName != "ANY_ENTITY" || !propKeys.includes(key))
                             delete rawSettingsData.baseEntities.ANY_ENTITY[key];
                     }
@@ -638,8 +896,8 @@ window.__GAME_DEBUG_API__ = {
             }
 
             // ADD DEFAULTS TO RAW SETTINGS AGAIN, SO PROPS CAN BE ADDED TO IT
-            rawSettingsData.baseEntities.ANY ??= {...defaultEntityData.baseEntities.ANY};
-            rawSettingsData.baseEntities.ANY_ENTITY ??= {...defaultEntityData.baseEntities.ANY_ENTITY};
+            rawSettingsData.baseEntities.ANY ??= {...defaultSettingsData.baseEntities.ANY};
+            rawSettingsData.baseEntities.ANY_ENTITY ??= {...defaultSettingsData.baseEntities.ANY_ENTITY};
         }
         else
         {
@@ -676,12 +934,13 @@ window.__GAME_DEBUG_API__ = {
     },
 
   getEntityData():SettingsData {
-    var settingsData = plugin.GetCurrentScene().settingsHandler.GetRaw();
+    const scene = sceneController.GetMainScene();
+    var settingsData = scene.settingsHandler.GetRaw();
 
-    return settingsData; // ADDED TO MAKE DEFAULT GAME NOT HAVE BELOW
+    //return settingsData; // ADDED TO MAKE DEFAULT GAME NOT HAVE BELOW
     // SHOULD HAVE IT AGAIN WHEN I START WORK ON PLUGIN ENTITIES
 
-    // ADD DEFAULTS - SAME AS defaultEntityData - REBUILD TO ADD IN FRONT
+    // ADD DEFAULTS - SAME AS defaultSettingsData - REBUILD TO ADD IN FRONT
     settingsData.baseEntities ??= {};
 
     const {
@@ -691,15 +950,14 @@ window.__GAME_DEBUG_API__ = {
     } = settingsData.baseEntities;
 
     settingsData.baseEntities = {
-        ANY: ANY ?? defaultEntityData.baseEntities.ANY,
-        ANY_ENTITY: ANY_ENTITY ?? defaultEntityData.baseEntities.ANY_ENTITY,
+        ANY: ANY ?? defaultSettingsData.baseEntities.ANY,
+        ANY_ENTITY: ANY_ENTITY ?? defaultSettingsData.baseEntities.ANY_ENTITY,
         ...rest
     };
 
     return settingsData;
   },
 
-  // FUCKED
   async addNewEntity(name: string, isBase: boolean = true, newRawData: SettingsData)
   {
     /*var scene = plugin.GetCurrentScene();
@@ -708,12 +966,15 @@ window.__GAME_DEBUG_API__ = {
 
     if (isBase)
     {
-        newRawData.baseEntities[name] = defaultEntityData.baseEntities[name];
+        newRawData.baseEntities[name] = defaultSettingsData.baseEntities[name];
     }
     else
     {
-        newRawData.entities[name] = defaultEntityData.entities[name];
+        newRawData.entities[name] = defaultSettingsData.entities[name];
     }*/
+
+    plugin.GetCurrentScene().settingsHandler.SetRaw(newRawData);
+    plugin.GetCurrentScene().settingsHandler.Process(newRawData);
 
     try {
         const res = await fetch('/api/save-entity-data', {
@@ -739,26 +1000,27 @@ window.__GAME_DEBUG_API__ = {
     //window.__GAME_DEBUG_API__.gotoEntity(name, isBase);
   },
 
-  async setEntityData(newData: SettingsData, notifyPlugin: boolean = true)
+  removeEntity(name: string, isBase: boolean = true, newRawData: SettingsData)
   {
-    plugin.doNotifyAfterSave = false;
-    await (plugin.GetCurrentScene() as EditorScene).SaveEntityData(newData);
-    plugin.doNotifyAfterSave = true;
+    var scene = plugin.GetCurrentScene();
 
-    if (bareEngine.levelEditorOpen)
-    {
-      await plugin.GetCurrentScene().Restart();//
-    }
-    else
-    {
-      await plugin.GetCurrentScene().Restart();
-    }
+    scene.settingsHandler.SetRaw(newRawData);
+    scene.settingsHandler.Process(newRawData);
+  },
+
+  async setEntityData(newData: SettingsData)
+  {
+    plugin.SaveSettingsData(newData);
   },
 
   notifyEntityDataChanged(newData) {
     //window.postMessage({ __fromGame: true, type: "entityDataChanged" }, "*");
     if (plugin.doNotifyAfterSave)
       window.postMessage({ __fromGame: true, type: "settingsData", data: newData }, "*");
+  },
+
+  notifyLeaveEntity() {
+    window.postMessage({ __fromGame: true, type: "notifyLeaveEntity" }, "*");
   },
 
   refreshLevelFiles() {
@@ -937,6 +1199,7 @@ export class PluginHandler
     movingObj: GameObject;
     draggedObjData: { obj: GameObject; offset: Vec2; hasMovedAwayEnough: boolean };
     doNotifyAfterSave: boolean = true;
+    notifyLeaveEntity: boolean = true;
     currentSceneClassString: string = "";
 
     constructor(editorButtonPosition: Position)
@@ -993,6 +1256,12 @@ export class PluginHandler
                 const scene = sceneController.GetMainScene();
                 if (scene)
                     this.SetCurrentScene(scene.constructor.name);
+            }
+
+            if (type == "removed" && scene instanceof EntityScene && plugin.notifyLeaveEntity)
+            {
+                window.__GAME_DEBUG_API__.notifyLeaveEntity();
+                window.postMessage({ __fromGame: true, type: "lockObjectsTab", flag: false }, "*");
             }
         });
 
@@ -1279,6 +1548,52 @@ export class PluginHandler
         return fallback;
     }
 
+    FilterSettingsDataDefaults(settingsData: SettingsData)
+    {
+        // UNDO DEFAULT ADDITIONS TO ANY AND ANY_ENTITY AGAIN, DON'T WANT TO SAVE THEM
+        // THIS IS ALSO ADDED AT getEntityData
+        //if (entityScene.objectName == "ANY" || entityScene.objectName == "ANY_ENTITY")
+        //if (entityScene.isBase)
+
+        //
+        if (settingsData.baseEntities.ANY == defaultSettingsData.baseEntities.ANY)
+        {
+            delete settingsData.baseEntities.ANY;
+        }
+        else
+        if (settingsData.baseEntities.ANY)
+        {
+            var anyKeys = Object.keys(defaultSettingsData.baseEntities.ANY);
+            for (var key of anyKeys)
+            {
+                if (settingsData.baseEntities.ANY[key] == defaultSettingsData.baseEntities.ANY[key]) // IF SAME AS DEFAULT
+                    delete settingsData.baseEntities.ANY[key];
+            }
+
+            if (Object.keys(settingsData.baseEntities.ANY).length == 0)
+                delete settingsData.baseEntities.ANY;
+        }
+
+        //
+        if (settingsData.baseEntities.ANY_ENTITY == defaultSettingsData.baseEntities.ANY_ENTITY)
+        {
+            delete settingsData.baseEntities.ANY_ENTITY;
+        }
+        else
+        if (settingsData.baseEntities.ANY_ENTITY)
+        {
+            var anyEntityKeys = Object.keys(defaultSettingsData.baseEntities.ANY_ENTITY);
+            for (var key of anyEntityKeys)
+            {
+                if (settingsData.baseEntities.ANY_ENTITY[key] == defaultSettingsData.baseEntities.ANY_ENTITY[key])
+                    delete settingsData.baseEntities.ANY_ENTITY[key];
+            }
+
+            if (Object.keys(settingsData.baseEntities.ANY_ENTITY).length == 0)
+                delete settingsData.baseEntities.ANY_ENTITY;
+        }
+    }
+
     // FOR ALL ENTITIES IN SETTINGS,
     // FILL entity.baseEntityLog WITH DATA ABOUT WHAT PROPERTIES IT EXTENDS
     ProcessSettingsData(settings: SettingsData):void
@@ -1363,7 +1678,8 @@ export class PluginHandler
 
         // FILL INFO ABOUT WHAT ENTITY PROPERTIES ARE EXTENDED BY WHY WHICH DATA - USING extendOrder
         let propsInThisEntity = Object.keys(entity); // USING entity, NOT newEntity SINCE THAT CONTAINS ALL PROPS ALREADY
-        propsInThisEntity.splice(propsInThisEntity.indexOf("name"), 1);
+        if (propsInThisEntity.includes("name"))
+            propsInThisEntity.splice(propsInThisEntity.indexOf("name"), 1);
         newEntity.baseEntityLog[entityName] = propsInThisEntity;
 
         var propsFound = propsInThisEntity.slice();
@@ -1372,7 +1688,7 @@ export class PluginHandler
         {
             // LOG EXTENDED PROPERTIES - SHOULD NOT HAVE BEEN FOUND BEFORE
             var extendEntityName = extendOrder[i];
-            var extendEntity = settingsDataRaw.baseEntities[extendEntityName] || defaultEntityData.baseEntities[extendEntityName];
+            var extendEntity = settingsDataRaw.baseEntities[extendEntityName] || defaultSettingsData.baseEntities[extendEntityName];
             var propsExtended = Object.keys(extendEntity);
             var propsExtendedFiltered = propsExtended.filter(p => !propsFound.includes(p));
 
@@ -1381,7 +1697,122 @@ export class PluginHandler
             propsFound.push(...propsExtendedFiltered);
         }
 
+        newEntity.baseEntityLog["__componentSources__"] = {
+            components: {},
+            editorComponents: {},
+        };
+
+        for (var componentType of ["components"])
+        {
+            var componentSources = newEntity.baseEntityLog["__componentSources__"][componentType];
+            for (var sourceName of extendOrder)
+            {
+                var sourceEntity = sourceName == entityName
+                    ? entity
+                    : settingsDataRaw.baseEntities[sourceName] || defaultSettingsData.baseEntities[sourceName];
+                var sourceComponents = sourceEntity?.[componentType];
+                if (!sourceComponents) continue;
+
+                for (var componentName in sourceComponents)
+                {
+                    if (!componentSources[componentName])
+                        componentSources[componentName] = sourceName;
+                }
+            }
+        }
+
         return newEntity;
+    }
+
+    GetAllPossibleEntityKeys(baseClass: string): string[]
+    {
+        // GET ALL POSSIBLE KEYS, FROM CLASS AND INHEREITED CLASSES
+        var cls = Scene.registeredClasses[baseClass];
+        var parentClassNames = Helper.GetParentClasses(cls);
+        parentClassNames.push(baseClass);
+
+        var allPossibleEntityKeys:string[] = [];
+
+        // GAMEOBJECT KEYS
+        allPossibleEntityKeys.push(...entityVarsAr)
+        allPossibleEntityKeys.push(...entityVarsNestedRecord.General)
+        allPossibleEntityKeys.push(...entityVarsNestedRecord.HideInPlugin)
+        allPossibleEntityKeys.push(...entityVarsNestedRecord.Misc)
+
+        for (var i = 0; i < parentClassNames.length; i++)
+        {
+            var parentClassName = parentClassNames[i];
+            if (entityVarsNestedRecord[parentClassName])
+                allPossibleEntityKeys.push(...entityVarsNestedRecord[parentClassName]);
+        }
+
+        return allPossibleEntityKeys;
+    }
+
+    //  GET KEYS IN entityKeys NOT IN allPossibleEntityKeys
+    GetExtraKeys(entityKeys: string[], baseClass: string): string[]
+    {
+        var allPossibleEntityKeys:string[] = this.GetAllPossibleEntityKeys(baseClass);
+        var keysToRemove = entityKeys.filter(k => !allPossibleEntityKeys.includes(k));
+        return keysToRemove;
+    }
+
+    async SaveSettingsData(newData: SettingsData): Promise<void>
+    {
+        plugin.FilterSettingsDataDefaults(newData);
+
+        plugin.doNotifyAfterSave = false;
+
+        var scene = plugin.GetCurrentScene();
+        if (scene instanceof EditorScene)
+        {
+            await (plugin.GetCurrentScene() as EditorScene).SaveEntityData(newData);
+        }
+        else
+        {
+            await fetch('/api/save-entity-data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    path: bareEngine.dataPath,
+                    settingsData: newData,
+                    skipReload: true
+                })
+            });
+        }
+
+        plugin.doNotifyAfterSave = true;
+
+        /*if (bareEngine.levelEditorOpen)
+        {
+        await plugin.GetCurrentScene().Restart();//
+        }
+        else
+        {
+        await plugin.GetCurrentScene().Restart();
+        }*/
+    }
+
+    GetCurrentEntity(): Entity
+    {
+        var scene = (plugin.GetCurrentScene() as EntityScene);
+        var name = scene.objectName;
+        var isBase = scene.isBase;
+        var raw = scene.settingsHandler.GetRaw();
+        var entity = (isBase ? raw.baseEntities[name] : raw.entities[name]);
+
+        return entity;
+    }
+
+    GetCurrentEntityProcessed(): Entity
+    {
+        var scene = (plugin.GetCurrentScene() as EntityScene);
+        var name = scene.objectName;
+        var isBase = scene.isBase;
+        var processed = scene.settingsHandler.Get();
+        var entity = (isBase ? processed.baseEntities[name] : processed.entities[name]);
+
+        return entity;
     }
 }
 

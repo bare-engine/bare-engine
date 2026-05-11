@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entity Editor</title>
+    <style>
+        :root {
+            --bg-panel: #242428EB;
+            --bg-item: #4b4b5196;
+            --bg-item-dark: #00000040;
+            --bg-item-hover: #ffffff18;
+            --selected: #747474;
+            --border-subtle: #ffffff15;
+            --text-accent: #cccccc;
+            --text-muted: #bbbbbb;
+            --radius: 6px;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        /* Allow caret and text selection in form controls inside the editor */
+        input, textarea, select {
+            user-select: text;
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+        }
+        
+        #editor-controls-window {
+            position: fixed;
+            top: 5px;
+            left: 5px;
+            width: 219px;
+            background-color: var(--bg-panel);
+            display: flex;
+            flex-direction: column;
+            z-index: 6;
+            overflow: hidden;
+            border-radius: var(--radius);
+        }
+
+        #left-sidebar {
+            position: fixed;
+            left: 5px;
+            top: 90px;
+            bottom: 5px;
+            width: 219px;
+            background-color: var(--bg-panel);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 5;
+            overflow: hidden;
+            border-radius: var(--radius);
+        }
+
+        #left-sidebar.minimized {
+            top: auto;
+            bottom: 5px;
+            height: 67px;
+        }
+
+        /* Right bottom sidebar - Layers */
+        #layers-sidebar {
+            position: fixed;
+            bottom: 5px;
+            right: 5px;
+            width: 219px;
+            background-color: var(--bg-panel);
+            display: flex;
+            flex-direction: column;
+            z-index: 5;
+            overflow: hidden;
+            border-radius: var(--radius);
+        }
+
+        .sidebar-content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #left-sidebar.minimized .sidebar-content-wrapper {
+            display: none;
+        }
+
+        .sidebar-header {
+            padding: 10px;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            scrollbar-color: #ffffffeb #4e4e4e17;
+        }
+
+        /* Layer item styles */
+        .layer-item {
+            margin-bottom: 8px;
+            padding: 8px;
+            background-color: var(--bg-item);
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            overflow: hidden; /* Clear floats */
+        }
+
+        .layer-item:hover:not(.selected-layer) {
+            background-color: var(--bg-item-hover);
+        }
+
+        .layer-name {
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            flex: 1;
+        }
+
+        .selected-layer {
+            background-color: var(--selected) !important;
+            color: white;
+        }
+
+        .layer-inner-btn {
+            background-color: var(--bg-item-dark);
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 2px;
+            height: 24px;
+            float: right;
+        }
+
+        .layer-inner-btn:hover {
+            background-color: var(--bg-panel);
+        }
+
+        /* Component styles */
+        .component-selected-name {
+            color: var(--text-accent);
+            font-size: 12px;
+            font-weight: normal;
+        }
+
+        .component-item {
+            margin-bottom: 10px;
+            padding: 8px;
+            background-color: var(--bg-item);
+            border-radius: var(--radius);
+        }
+
+        .component-header {
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid var(--border-subtle);
+            padding-bottom: 4px;
+        }
+
+        .component-field {
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .component-field-value {
+            flex: 1;
+            padding: 4px 6px;
+            border: 1px solid #555;
+            background-color: #333;
+            color: #f0f0f0;
+            border-radius: var(--radius);
+            font-size: 12px;
+            word-break: break-word;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .component-empty {
+            color: var(--text-muted);
+            font-size: 12px;
+            font-style: italic;
+            padding: 4px 0;
+        }
+
+        .component-badge {
+            margin-left: 8px;
+            padding: 1px 6px;
+            background-color: var(--bg-item-dark);
+            color: var(--text-accent);
+            border-radius: 10px;
+            font-size: 10px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .component-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .component-field-label {
+            color: #ccc;
+            font-size: 12px;
+            min-width: 60px;
+        }
+
+        .component-field-input {
+            flex: 1;
+            padding: 4px 6px;
+            border: 1px solid #555;
+            background-color: #333;
+            color: white;
+            border-radius: var(--radius);
+            font-size: 12px;
+			width: 100px;
+        }
+
+        .component-field-input:focus {
+            outline: none;
+            border-color: var(--bg-panel);
+        }
+
+        .entity-item {
+            margin-bottom: 9px;
+            padding: 4px;
+            background-color: var(--bg-item);
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: background-color 0.2s;
+            padding-right: -10px;
+        }
+
+        .entity-item:hover:not(.selected-entity) {
+            background-color: var(--bg-item-hover);
+        }
+
+        .entity-header {
+            display: flex;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+			padding-right: 13px;
+        }
+
+        .entity-image {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius);
+            margin-right: 10px;
+            background-color: #dddddd42;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            overflow: hidden;
+            padding: 9px;
+        }
+
+        .entity-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: var(--radius);
+        }
+
+        .entity-children {
+            margin-top: 8px;
+            margin-left: 0px;
+            display: none;
+            overflow: hidden;
+        }
+
+        .entity-children::after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+
+        .entity-item.expanded .entity-children {
+            display: block;
+        }
+
+        .child-entity {
+            display: block;
+            width: 40px;
+            height: 40px;
+            margin-bottom: 4px;
+            margin-right: 4px;
+            background-color: var(--bg-item-dark);
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: background-color 0.2s;
+            overflow: hidden;
+            float: left;
+        }
+
+        .child-entity:hover:not(.selected-entity) {
+            background-color: var(--bg-panel);
+        }
+
+        .child-entity.selected {
+            background-color: var(--bg-item-hover);
+            color: white;
+        }
+
+        .child-entity .entity-image {
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            margin-right: 8px;
+            overflow: hidden;
+        }
+
+        .child-entity .entity-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: var(--radius);
+        }
+
+        .selected-entity {
+            background-color: var(--selected) !important;
+            color: white;
+        }
+
+        .expand-arrow {
+            margin-left: auto;
+            transition: transform 0.2s;
+        }
+
+        .entity-item.expanded .expand-arrow {
+            transform: rotate(90deg);
+        }
+
+        .sidebar-footer {
+            background-color: var(--bg-item-dark);
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            padding: 10px 10px 0px 10px;
+			display: none;
+        }
+
+        .sidebar-btn {
+            margin-bottom: 10px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: var(--radius);
+            transition: background-color 0.2s;
+        }
+
+        .sidebar-btn:hover {
+            background-color: #333;
+        }
+
+        .settings-panel {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #222;
+            border-radius: var(--radius);
+            box-sizing: border-box;
+            width: 100%;
+            overflow-x: hidden;
+            display: none;
+        }
+
+        .settings-panel.expanded {
+            display: block;
+        }
+
+        .setting-item {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 100%;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .setting-label {
+            color: #ccc;
+            font-size: 12px;
+            min-width: 30px;
+        }
+
+        .setting-input {
+            flex: 1;
+            margin-left: 10px;
+            padding: 4px 6px;
+            border: 1px solid #555;
+            background-color: #333;
+            color: white;
+            border-radius: var(--radius);
+            font-size: 12px;
+            min-width: 0;
+        }
+
+        .setting-input:focus {
+            outline: none;
+            border-color: var(--bg-panel);
+        }
+
+        .main-content {
+            margin-left: 220px;
+            padding: 20px;
+            color: #333;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 8px;
+            margin: 8px;
+        }
+
+        .settings-btn {
+            background-color: #373737;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 16px;
+            z-index: 1000;
+        }
+
+        .settings-btn:hover {
+            background-color: #4f4f4f;
+        }
+
+        .close-editor-btn {
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            padding: 10px 27px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 16px;
+            z-index: 1000;
+        }
+
+        .close-editor-btn:hover {
+            background-color: #cc0000;
+        }
+
+        .loading-message {
+            color: #ccc;
+            font-style: italic;
+            padding: 20px;
+            text-align: center;
+        }
+
+        #minimize-btn {
+            background-color: #ffffff;
+            color: #333;
+            border: none;
+            margin: 7px 8px 10px 8px;
+            padding: 6px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 28px;
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #minimize-btn:hover {
+            background-color: #e0e0e0;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.785);
+        }
+
+        .modal-content {
+            background-color: #1e1e1e;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: var(--radius);
+            width: 300px;
+            color: white;
+            position: relative;
+        }
+
+        .modal-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: white;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #ccc;
+        }
+
+        .modal-close:hover {
+            color: white;
+        }
+
+        .modal-setting {
+            margin-bottom: 15px;
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .toggle-label {
+            font-size: 14px;
+            color: white;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background-color: #333;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .toggle-switch.active {
+            background-color: var(--bg-item-hover);
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background-color: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(26px);
+        }
+
+        .grid-size-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .grid-size-label {
+            font-size: 14px;
+            color: white;
+            min-width: 70px;
+        }
+
+        .grid-size-input {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid #555;
+            background-color: #333;
+            color: white;
+            border-radius: var(--radius);
+            font-size: 14px;
+        }
+
+        .grid-size-input:focus {
+            outline: none;
+            border-color: var(--bg-item-hover);
+        }
+    </style>
+</head>
+<body>
+    <div id="editor-controls-window">
+        <div class="header-buttons">
+            <button class="close-editor-btn" id="close-editor-btn">Close Editor</button>
+            <button class="settings-btn" id="settings-btn">⚙️</button>
+        </div>
+    </div>
+
+    <div id="left-sidebar">
+        <div class="sidebar-content-wrapper">
+            <div class="sidebar-header">Entities</div>
+            
+            <div class="sidebar-content">
+                <div class="loading-message">Loading entities...</div>
+            </div>
+            
+            <div class="sidebar-footer">
+                <div class="sidebar-btn" onclick="toggleSettings()">Entity Settings</div>
+                <div class="settings-panel expanded" id="settings-panel">
+                    <div class="setting-item">
+                        <label class="setting-label">ID:</label>
+                        <input type="text" class="setting-input" placeholder="Enter entity ID" value="">
+                    </div>
+                    <div class="setting-item">
+                        <label class="setting-label">Path:</label>
+                        <input type="text" class="setting-input" placeholder="Enter entity path" value="">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <button id="minimize-btn">🔻</button>
+    </div>
+
+    <!-- Layers Sidebar -->
+    <div id="layers-sidebar">
+        <div class="sidebar-header">Layers</div>
+        <div class="sidebar-content">
+            <div class="layer-item" style="display: none;" id="layer-template">
+                <span class="layer-name">Default Layer</span>
+                <button class="layer-inner-btn" id="showHide-btn">👁️</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="gridModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <div class="modal-header">Grid Settings</div>
+            
+            <div class="modal-setting">
+                <div class="toggle-container">
+                    <span class="toggle-label">Grid</span>
+                    <div class="toggle-switch" id="gridToggle">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-setting">
+                <div class="grid-size-container">
+                    <label class="grid-size-label">Grid Size</label>
+                    <input type="number" class="grid-size-input" id="gridSizeInput" value="20" min="0" step="16">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleSettings() {
+            const panel = document.getElementById('settings-panel');
+            panel.classList.toggle('expanded');
+        }
+        function formatComponentValue(value) {
+            if (value === undefined) return 'None';
+            if (value === null) return 'null';
+            if (Array.isArray(value)) return value.length ? value.join(', ') : '[]';
+            if (typeof value === 'object') {
+                try {
+                    return JSON.stringify(value);
+                } catch (err) {
+                    return String(value);
+                }
+            }
+            return String(value);
+        }
+
+        function renderComponents(entity) {
+            const list = document.getElementById('component-list');
+            if (!list) return;
+
+            const guardInput = (inputEl) => {
+                if (!inputEl) return;
+                // Keep editor focus; don't let pointer events bubble to game handlers
+                ['pointerdown', 'pointerup', 'click'].forEach(evt => {
+                    inputEl.addEventListener(evt, (e) => e.stopPropagation());
+                });
+            };
+
+            list.innerHTML = '';
+            let rendered = 0;
+
+            const sections = [
+                { key: 'components', badge: null },
+                { key: 'editorComponents', badge: 'editor' }
+            ];
+
+            sections.forEach(section => {
+                const data = entity && entity[section.key];
+                if (!data || Object.keys(data).length === 0) return;
+
+                Object.keys(data).forEach(componentName => {
+                    const componentValues = data[componentName];
+                    const item = document.createElement('div');
+                    item.className = 'component-item';
+
+                    const header = document.createElement('div');
+                    header.className = 'component-header';
+                    header.textContent = componentName;
+
+                    if (section.badge) {
+                        const badge = document.createElement('span');
+                        badge.className = 'component-badge';
+                        badge.textContent = section.badge;
+                        header.appendChild(badge);
+                    }
+
+                    item.appendChild(header);
+
+                    const isObject = componentValues && typeof componentValues === 'object' && !Array.isArray(componentValues);
+                    const hasFields = isObject && Object.keys(componentValues).length > 0;
+
+                    if (hasFields) {
+                        Object.keys(componentValues).forEach(fieldName => {
+                            const fieldRow = document.createElement('div');
+                            fieldRow.className = 'component-field';
+
+                            const label = document.createElement('label');
+                            label.className = 'component-field-label';
+                            label.textContent = `${fieldName}:`;
+
+                            const value = document.createElement('input');
+                            value.type = 'text';
+                            value.className = 'component-field-value';
+                            value.value = formatComponentValue(componentValues[fieldName]);
+                            guardInput(value);
+
+                            fieldRow.appendChild(label);
+                            fieldRow.appendChild(value);
+                            item.appendChild(fieldRow);
+                        });
+                    } else if (componentValues !== undefined && componentValues !== null) {
+                        const fieldRow = document.createElement('div');
+                        fieldRow.className = 'component-field';
+
+                        const label = document.createElement('label');
+                        label.className = 'component-field-label';
+                        label.textContent = 'value:';
+
+                        const value = document.createElement('input');
+                        value.type = 'text';
+                        value.className = 'component-field-value';
+                        value.value = formatComponentValue(componentValues);
+                        guardInput(value);
+
+                        fieldRow.appendChild(label);
+                        fieldRow.appendChild(value);
+                        item.appendChild(fieldRow);
+                    } else {
+                        const empty = document.createElement('div');
+                        empty.className = 'component-empty';
+                        empty.textContent = 'No values for this component.';
+                        item.appendChild(empty);
+                    }
+
+                    list.appendChild(item);
+                    rendered++;
+                });
+            });
+
+            if (rendered === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'component-empty';
+                empty.textContent = 'No components attached.';
+                list.appendChild(empty);
+            }
+        }
+
+        window.renderComponents = renderComponents;
+
+        // Modal functionality
+        document.getElementById('settings-btn').onclick = function() {
+            document.getElementById('gridModal').style.display = 'block';
+        }
+
+        document.querySelector('.modal-close').onclick = function() {
+            document.getElementById('gridModal').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('gridModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Toggle functionality
+        document.getElementById('gridToggle').onclick = function() {
+            this.classList.toggle('active');
+        }
+    </script>
+</body>
+</html>
+

@@ -1,4 +1,4 @@
-const ts = require("typescript");
+const ts = require("./projectRequire")("typescript");
 
 /**
  * TypeScript transformer that auto-assigns .name on GameObject instantiations.

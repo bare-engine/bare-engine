@@ -1,4 +1,4 @@
-const ts = require("typescript");
+const ts = require("./projectRequire")("typescript");
 const fs = require("fs");
 const path = require("path");
 

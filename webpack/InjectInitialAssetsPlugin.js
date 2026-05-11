@@ -3,8 +3,12 @@ const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 
 class InjectInitialAssetsPlugin {
+    constructor(options = {}) {
+        this.projectRoot = options.projectRoot || process.cwd();
+    }
+
     apply(compiler) {
-        const watchDir = path.join(__dirname, "../public/assets/initial");
+        const watchDir = path.join(this.projectRoot, "public/assets/initial");
         const { RawSource } = compiler.webpack.sources;
 
         compiler.hooks.afterCompile.tap("InjectInitialAssetsPlugin", compilation => {
@@ -21,7 +25,7 @@ class InjectInitialAssetsPlugin {
             this.lastInitialAssetsSignature = signature;
 
             compilation.hooks.fullHash.tap("InjectInitialAssetsPlugin", hash => {
-                const folder = path.join(__dirname, "../public/assets/initial");
+                const folder = path.join(this.projectRoot, "public/assets/initial");
                 if (!fs.existsSync(folder)) {
                     return;
                 }
@@ -84,7 +88,7 @@ class InjectInitialAssetsPlugin {
     }
 
     getInitialAssetsSignature() {
-        const folder = path.join(__dirname, "../public/assets/initial");
+        const folder = path.join(this.projectRoot, "public/assets/initial");
         if (!fs.existsSync(folder)) {
             return "";
         }
@@ -115,7 +119,7 @@ class InjectInitialAssetsPlugin {
             }
         );
 
-        const folder = path.join(__dirname, "../public/assets/initial");
+        const folder = path.join(this.projectRoot, "public/assets/initial");
         let tags = "";
 
         if (fs.existsSync(folder)) {

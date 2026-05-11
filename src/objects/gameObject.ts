@@ -1,12 +1,13 @@
 import { assetsHandler } from "../handlers/assetsHandler";
 import { Hitbox } from '../types/hitbox';
-import { Entity, GameObjectClass } from '../types/bareTypes';
+import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';
 import { Helper } from '../utils/helper';
 import { Vec2, Texture, Color, GLShader, MaskType, MatrixStack } from "../libraries/new-rapid-render";
 import type { Scene } from "../scenes/scene";
 import type { Component, Ctor, Events, Rectangle } from "../types/bareTypes";
 import { MakePath, MakePathForEntity } from '../globals';
 import mitt from "../libraries/mitt";
+import { getOwnInspectorFieldNames, InspectorField } from "../utils/decorators";
 
 export class Transform {
     position = new Vec2();
@@ -25,22 +26,25 @@ export class Transform {
 
 export class GameObject
 {
+    private static registeredGameObjects: Record<string, GameObjectClass> = {};
+
     static gameObjectCounter = -1; // ONE BACK TO NOT COUNT THE DUMMY GAMEOBJECT INSTANCED IN BAREGAME
  
     scene: Scene;
 
     name:string;
     pluginName:string;
-    customName: string = "";
     uniqueID:string = "";
+
+    customName: string = "";
     pivot:Vec2 = new Vec2();
-    pivotBasedOnHitbox:Vec2 = new Vec2();
     visible:boolean = true;
     persistent: boolean = false;
     save: boolean = false;
     tags:Array<string> = [];
     texture: Texture | null;
     color:Color = new Color(255, 255, 255, 255);
+    
     shader: GLShader | undefined;
 
     shaders: any[] = [];
@@ -76,9 +80,6 @@ export class GameObject
 
     events = mitt<Events>();
 
-    flipX:boolean = false
-    flipY:boolean = false
-    
     //onDestroy:Function | null = null;
 
     //private cachedChildrenWidth: number = -1;
@@ -88,6 +89,8 @@ export class GameObject
     
     constructor(scene: Scene, texturePath: string = "", x:number = 0, y:number = 0)
     {
+        GameObject.RegisterGameObject(this.constructor as GameObjectClass);
+
         this.scene = scene;
 
         this.ResetValues(); // MAKES ABOVE VALUES NOT REALLY MATTER, THESE ARE THE DEFAULTS
@@ -102,6 +105,56 @@ export class GameObject
         if (texturePath != "")
         {
             this.Init(texturePath);
+        }
+    }
+ 
+    static GetClassName(cls: GameObjectClass): string
+    {
+        return cls.name.startsWith("_") ? cls.name.substring(1) : cls.name;
+    }
+    
+    // ONLY FOR PLUGIN - MOVE - TODO
+    static RegisterGameObject(cls: GameObjectClass, defaultPoolSize: number = 1): void
+    {
+        const className = GameObject.GetClassName(cls);
+        const alreadyRegistered = !!GameObject.registeredGameObjects[className];
+
+        if (!alreadyRegistered)
+        {
+            GameObject.registeredGameObjects[className] = cls;
+        }
+
+        // ADDING FIELDS DECORATED WITH @InspectorField OF THIS CLASS TO entityVarsNested
+        // SO IT SHOWN IN PLUGIN DROPDOWN LATER
+        // MAKE THIS ALSO WORK WITH INHERITANCE OF MULTIPLE CUSTOM CLASSES - TODOR
+        var vars = getOwnInspectorFieldNames(cls);
+        if (vars.length > 0)
+        {
+            var existingEntityVars = entityVarsNested.find(entry =>
+                typeof entry !== "string" && Object.prototype.hasOwnProperty.call(entry, className)
+            );
+            if (existingEntityVars && typeof existingEntityVars !== "string")
+            {
+                var existingVars = existingEntityVars[className];
+                var addedVars = false;
+
+                for (var fieldName of vars)
+                {
+                    if (!existingVars.includes(fieldName))
+                    {
+                        existingVars.push(fieldName);
+                        addedVars = true;
+                    }
+                }
+
+                if (addedVars)
+                    RefreshEntityVars();
+            }
+            else
+            {
+                entityVarsNested.push({ [className]: vars });
+                RefreshEntityVars();
+            }
         }
     }
 
@@ -448,8 +501,6 @@ export class GameObject
         rapid.drawSprite({
             texture: this.texture!,
             color: renderColor,
-            flipX: this.flipX,
-            flipY: this.flipY,
             shader: this.shader,
             position: new Vec2(-this.pivot.x, -this.pivot.y),
         });
@@ -1232,7 +1283,6 @@ export class GameObject
         this.entity = null;
         
         this.startPosition.set(0);
-        this.pivotBasedOnHitbox.set(0);
 
         this.transform.Reset();
         this.innerTransform.Reset();

@@ -5,6 +5,7 @@ import { Entity } from "../../types/bareTypes";
 import { RigidBody, Type } from "./rigidbody";
 import { Settings } from "./settings";
 import * as Util from "./util";
+import { InspectorField } from "../../utils/decorators";
 
 export class Circle extends RigidBody
 {
@@ -78,6 +79,7 @@ export class Circle extends RigidBody
     }
 
     // This will automatically set the mass and inertia
+    @InspectorField
     override set density(density: number) //kg/m²
     {
         Util.assert(density > 0);

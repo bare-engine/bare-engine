@@ -5,6 +5,7 @@ const FIELD_METADATA_KEY = "__editorFields__";
 const LOCKED_METADATA_KEY = "__lockedFields__";
 const RANGE_METADATA_KEY = "__fieldRanges__";
 const LABEL_METADATA_KEY = "__fieldLabels__";
+const DESCRIPTION_METADATA_KEY = "__fieldDescriptions__";
 const RUN_MODES_KEY = "__runModes__";
 const SAVE_METADATA_KEY = "__saveFields__";
 
@@ -46,6 +47,7 @@ export interface InspectorFieldData
     values?: any[];
     locked?: boolean;
     range?: InspectorRangeData;
+    description?: string;
 }
 
 export interface InspectorRangeData
@@ -146,7 +148,9 @@ export function getButtons(componentClass: any): { label: string; methodKey: str
 
 function addField(proto: object, name: string): void
 {
-    const fields: FieldEntry[] = (proto as any)[FIELD_METADATA_KEY] || [];
+    const fields: FieldEntry[] = Object.prototype.hasOwnProperty.call(proto, FIELD_METADATA_KEY)
+        ? (proto as any)[FIELD_METADATA_KEY]
+        : [];
     fields.push({ name, type: "input" });
     (proto as any)[FIELD_METADATA_KEY] = fields;
 }
@@ -160,6 +164,16 @@ export function InspectorField(targetOrType: any, propertyKey?: string): any
         addField(targetOrType, propertyKey);
         return;
     }
+}
+
+export function getOwnInspectorFieldNames(classOrPrototype: any): string[]
+{
+    const proto = typeof classOrPrototype === "function" ? classOrPrototype.prototype : classOrPrototype;
+    const entries: FieldEntry[] = Object.prototype.hasOwnProperty.call(proto, FIELD_METADATA_KEY)
+        ? proto[FIELD_METADATA_KEY]
+        : [];
+
+    return entries.map(entry => entry.name);
 }
 
 export function Save(target: any, propertyKey: string): void
@@ -206,6 +220,26 @@ export function Label(label: string): (target: any, propertyKey: string) => void
     };
 }
 
+export function Description(description: string): (target: any, propertyKey: string) => void
+{
+    return function (target: any, propertyKey: string): void
+    {
+        const descriptions: Record<string, string> = Object.prototype.hasOwnProperty.call(target, DESCRIPTION_METADATA_KEY)
+            ? target[DESCRIPTION_METADATA_KEY]
+            : {};
+        descriptions[propertyKey] = description;
+        target[DESCRIPTION_METADATA_KEY] = descriptions;
+    };
+}
+
+export function getInspectorFieldDescriptions(classOrPrototype: any): Record<string, string>
+{
+    const proto = typeof classOrPrototype === "function" ? classOrPrototype.prototype : classOrPrototype;
+    return Object.prototype.hasOwnProperty.call(proto, DESCRIPTION_METADATA_KEY)
+        ? proto[DESCRIPTION_METADATA_KEY]
+        : {};
+}
+
 function getFieldValue(component: any, entry: FieldEntry): any
 {
     const field = component[entry.name];
@@ -219,6 +253,7 @@ export function getInspectorFields(component: any): InspectorFieldData[]
     const lockedFields: string[] = component.constructor.prototype[LOCKED_METADATA_KEY] || [];
     const ranges: Record<string, InspectorRangeData> = component.constructor.prototype[RANGE_METADATA_KEY] || {};
     const labels: Record<string, string> = component.constructor.prototype[LABEL_METADATA_KEY] || {};
+    const descriptions: Record<string, string> = component.constructor.prototype[DESCRIPTION_METADATA_KEY] || {};
 
     return entries.map(entry =>
     {
@@ -231,6 +266,7 @@ export function getInspectorFields(component: any): InspectorFieldData[]
             values: typeof value.values === "function" ? value.values() : value.values,
             locked: lockedFields.includes(entry.name),
             range: ranges[entry.name],
+            description: descriptions[entry.name],
         };
     });
 }

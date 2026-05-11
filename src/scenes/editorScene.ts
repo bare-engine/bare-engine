@@ -18,6 +18,7 @@ import { Scene } from "./scene";
 import { BareEvent, CameraScaleMode, Entity, HitboxType, LevelData, SaveData, SceneOptions, SettingsData, Size } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
 import { Helper } from "../utils/helper";
+import { plugin } from "../handlers/pluginHandler";
 
 type EditorSceneAwakePayload = {
     levelPathOrData?: string | LevelData;
@@ -485,6 +486,9 @@ export class EditorScene extends Scene
 
     async SaveEntityData(newRawData: SettingsData)
     {
+        //if (globalThis.plugin)
+        //    globalThis.plugin.FilterSettingsDataDefaults(newRawData);
+
         await this.OnSaveEntityData(newRawData);
 
         // Persist to disk via dev-server endpoint when available (local only)
