@@ -238,7 +238,7 @@ export class Particle {
             ms.translate(-originX * this.texture.width, -originY * this.texture.height);
         }
 
-        this.rapid.drawSprite(this.texture, color);
+        this.rapid.drawSprite({ texture: this.texture, color });
 
         ms.restore();
     }

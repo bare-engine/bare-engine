@@ -188,7 +188,11 @@ export class Renderer
             rapid.matrixStack.translate(b.position.x, b.position.y)
             rapid.matrixStack.scale(b.scale.x, b.scale.y)
             rapid.matrixStack.rotate(b.rotation)
-            rapid.drawPolygon(b.vertices, Color.fromHex(fillColor));
+            rapid.drawGraphic({
+                points: b.vertices,
+                color: Color.fromHex(fillColor),
+                drawMode: rapid.gl.TRIANGLE_FAN,
+            });
             rapid.matrixStack.restore()
 
             /*this.gfx.beginPath();
@@ -217,13 +221,12 @@ export class Renderer
             rapid.matrixStack.save()
             rapid.matrixStack.translate(b.position.x, b.position.y)
             rapid.matrixStack.scale(b.scale.x, b.scale.y)
-            rapid.withTransform(()=>{
-                rapid.drawCircle(
-                    b.radius,
-                    Color.fromHex(fillColor),
-                    32,
-                );
-            }, { position: center })
+            rapid.drawCircle({
+                radius: b.radius,
+                color: Color.fromHex(fillColor),
+                segments: 32,
+                position: center,
+            });
             //rapid.renderCircle({ position: center, radius: b.radius, segments: 32, color: Color.fromHex(fillColor) });
             rapid.matrixStack.restore()
 
@@ -249,13 +252,12 @@ export class Renderer
         {
             var centerVec2 = new Vec2(center.x, center.y);
             // rapid.renderCircle({ position: centerVec2, radius: 0.01, segments: 8 });
-            rapid.withTransform(()=>{
-                rapid.drawCircle(
-                    0.01,
-                    Color.fromHex(fillColor),
-                    8,
-                );
-            }, { position: centerVec2 })
+            rapid.drawCircle({
+                radius: 0.01,
+                color: Color.fromHex(fillColor),
+                segments: 8,
+                position: centerVec2,
+            });
             //this.drawCircleV(center, 0.01, true);
         }
 

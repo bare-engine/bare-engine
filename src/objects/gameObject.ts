@@ -396,11 +396,11 @@ export class GameObject
         {
             rapid.matrixStack.save();
             rapid.matrixStack.translate(this.x, this.y)
-            rapid.drawCircle(
-                4 / this.scene.GetCameraZoom(),
-                new Color(0, 0, 0, 255),
-                16
-            );
+            rapid.drawCircle({
+                radius: 4 / this.scene.GetCameraZoom(),
+                color: new Color(0, 0, 0, 255),
+                segments: 16,
+            });
 
             rapid.matrixStack.restore();
         }
@@ -445,9 +445,14 @@ export class GameObject
             rapid.enterMask(this.maskType, 1, 0xFF);
         }
         
-        rapid.withTransform(()=>{
-            rapid.drawSprite(this.texture!, renderColor, this.flipX, this.flipY, this.shader)
-        }, {position:new Vec2(-this.pivot.x, -this.pivot.y)})
+        rapid.drawSprite({
+            texture: this.texture!,
+            color: renderColor,
+            flipX: this.flipX,
+            flipY: this.flipY,
+            shader: this.shader,
+            position: new Vec2(-this.pivot.x, -this.pivot.y),
+        });
 
         if (this.mask)
         {

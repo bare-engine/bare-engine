@@ -87,14 +87,14 @@ export class Scene implements SceneI
     get texture(): TextureManager { return rapid.texture; }
 
 
-    get drawPolygon(): typeof rapid.drawPolygon {
-        return rapid.drawPolygon.bind(rapid);
-    }
     get drawCircle(): typeof rapid.drawCircle {
         return rapid.drawCircle.bind(rapid);
     }
     get drawLine(): typeof rapid.drawLine {
         return rapid.drawLine.bind(rapid);
+    }
+    get drawGraphic(): typeof rapid.drawGraphic {
+        return rapid.drawGraphic.bind(rapid);
     }
     get drawRect(): typeof rapid.drawRect {
         return rapid.drawRect.bind(rapid);
@@ -962,7 +962,7 @@ export class Scene implements SceneI
     RenderTextureTo(source: Texture, target: RenderTexture, clear: boolean = false): boolean
     {
         rapid.drawToRenderTexture(target, () => {
-            rapid.drawSprite(source);
+            rapid.drawSprite({ texture: source });
         }, clear ? (target.clearColor ?? new Color(0, 0, 0, 0)) : null);
         return true;
     }
@@ -987,7 +987,7 @@ export class Scene implements SceneI
             if (source instanceof GameObject)
                 source.Render();
             else
-                rapid.drawSprite(source);
+                rapid.drawSprite({ texture: source });
         }, clear ? (target.clearColor ?? new Color(0, 0, 0, 0)) : null);
         return true;
     }

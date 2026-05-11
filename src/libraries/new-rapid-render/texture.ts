@@ -536,13 +536,20 @@ class RenderTexture extends Texture {
 
     /**
      * Activates this texture as the current render target.
-     * @param clearColor - Optional color to clear the buffer with.
+     * @param clear - Whether to clear the render target after activation.
      */
-    activate(clearColor?: Color): void {
+    activate(clear:boolean = false): void {
         if (!this.framebuffer) return;
         const gl = this.gl;
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
         gl.viewport(0, 0, this.width, this.height);
+        
+        if (clear) this.clear()
+    }
+
+    clear(clearColor?: Color){
+        if (!this.framebuffer) return;
+        const gl = this.gl;
 
         const c = clearColor ?? this.clearColor;
         if (c) {

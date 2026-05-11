@@ -736,13 +736,12 @@ export class EditorControlsHandler {
             //     points: [],
             //     color: new Color(0, 0, 0, 20),
             // });
-            rapid.withTransform(()=>{
-                rapid.drawRect(
-                    this.selectionRect.width,
-                    this.selectionRect.height,
-                    new Color(0, 0, 0, 20),
-                );
-            }, { position: new Vec2(this.selectionRect.x, this.selectionRect.y) })
+            rapid.drawRect({
+                width: this.selectionRect.width,
+                height: this.selectionRect.height,
+                color: new Color(0, 0, 0, 20),
+                position: new Vec2(this.selectionRect.x, this.selectionRect.y),
+            });
                 
             const borderColor = Color.fromHex('#dda112');
             const borderWidth = 2;

@@ -59,14 +59,14 @@ export class BareEngine
     // get renderRect(): (options: IRectRenderOptions) => void { return rapid.renderRect.bind(rapid); }
     // get renderSprite(): (options: ISpriteRenderOptions) => void { return rapid.renderSprite.bind(rapid); }
 
-    get drawPolygon(): typeof rapid.drawPolygon {
-        return rapid.drawPolygon.bind(rapid);
-    }
     get drawCircle(): typeof rapid.drawCircle {
         return rapid.drawCircle.bind(rapid);
     }
     get drawLine(): typeof rapid.drawLine {
         return rapid.drawLine.bind(rapid);
+    }
+    get drawGraphic(): typeof rapid.drawGraphic {
+        return rapid.drawGraphic.bind(rapid);
     }
     get drawRect(): typeof rapid.drawRect {
         return rapid.drawRect.bind(rapid);

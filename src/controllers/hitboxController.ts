@@ -91,17 +91,23 @@ export class HitboxController
                 const center = this.GetHitboxCircleCenter(hitbox);
                 const radius = this.GetHitboxRadius(hitbox);
                 
-                rapid.withTransform(()=>{
-                    rapid.drawCircle(radius, color, 32)
-                }, { position: new Vec2(center.x, center.y) })
+                rapid.drawCircle({
+                    radius,
+                    color,
+                    segments: 32,
+                    position: new Vec2(center.x, center.y),
+                });
             }
             else if (hitbox.type == HitboxType.Rectangle)
             {
                 const rect = this.GetHitboxRect(hitbox);
                 
-                rapid.withTransform(()=>{
-                    rapid.drawRect(rect.width, rect.height, color);
-                }, { position: new Vec2(rect.x1, rect.y1) })
+                rapid.drawRect({
+                    width: rect.width,
+                    height: rect.height,
+                    color,
+                    position: new Vec2(rect.x1, rect.y1),
+                });
             }
         }
     }

@@ -302,11 +302,11 @@ export class EditorScene extends Scene
             return;
 
         // DRAW COLORED RECT OF LEVEL
-        rapid.drawRect(
-            this.currentLevel.dimensions.width,
-            this.currentLevel.dimensions.height,
-            this.currentLevel.backgroundColor ? Color.fromHex(this.currentLevel.backgroundColor) : Color.fromHex('666666'),
-        );
+        rapid.drawRect({
+            width: this.currentLevel.dimensions.width,
+            height: this.currentLevel.dimensions.height,
+            color: this.currentLevel.backgroundColor ? Color.fromHex(this.currentLevel.backgroundColor) : Color.fromHex('666666'),
+        });
     }
 
     OnPostRender()

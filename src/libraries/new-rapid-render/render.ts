@@ -6,7 +6,20 @@ import { MatrixStack, MatrixStore, ITransformOptions } from "./matrix-engine";
 import { GraphicRegion } from "./region/graphicRegion";
 import { RenderTexture, Texture, TextureManager } from "./texture";
 import { Color } from "./color";
-import { ILineRenderOptions, getLineGeometry } from "./line";
+import {
+    ICircleOptions,
+    IGraphicOptions,
+    ILineOptions,
+    IMaskImageOptions,
+    IRectOptions,
+    ISpriteOptions,
+    drawCircle,
+    drawGraphic,
+    drawLine,
+    drawMaskImage,
+    drawRect,
+    drawSprite,
+} from "./draw";
 import { Vec2 } from "./math";
 
 /**
@@ -226,133 +239,24 @@ export class Rapid {
         region.enter(customShader);
     }
 
-    /**
-     * Draws a rectangular sprite using the current world matrix from matrixStack.
-     * @param texture  The WebGL texture wrapper.
-     * @param color    An optional tint color applied to the sprite.
-     * @param customShader An optional custom shader overriding the region's default shader.
-     */
-    drawSprite(
-        texture: Texture,
-        color?: Color,
-
-        flipX: boolean = false,
-        flipY: boolean = false,
-
-        customShader?: GLShader | CustomGlShader,
-        customMatrix?: number
-    ): void {
-        if (this.inCreateMask) {
-            return;
-        }
-        this.enterRegion(this.spriteRegion, customShader);
-
-        let u = texture.uvX, v = texture.uvY, w = texture.uvW, h = texture.uvH;
-        if (flipX) { u += w; w = -w; }
-        if (flipY) { v += h; h = -h; }
-
-        this.spriteRegion.drawSprite(
-            texture,
-            customMatrix ?? this.matrixStack.curWorldM,
-            u,
-            v,
-            w,
-            h,
-            this.getColorUint32(color),
-        );
+    drawSprite(options: ISpriteOptions): void {
+        drawSprite(this, options);
     }
 
-    /**
-     * Draws a line geometry based on the provided options.
-     * @param options Line rendering options.
-     * @param customShader An optional custom shader overriding the region's default shader.
-     * @param customMatrix An optional custom matrix to use for transformation.
-     */
-    drawLine(
-        options: ILineRenderOptions,
-        customShader?: GLShader | CustomGlShader,
-        customMatrix?: number
-    ): void {
-        if (this.inCreateMask) {
-            return;
-        }
-
-        const { vertices, uv } = getLineGeometry(options);
-        if (vertices.length === 0) return;
-
-        this.startGraphic(this.gl.TRIANGLES, options.texture, customShader, customMatrix);
-        const unitColor = this.getColorUint32(options.color);
-        for (let i = 0; i < vertices.length; i++) {
-            this.addGraphicVertex(vertices[i].x, vertices[i].y, uv[i].x, uv[i].y, unitColor);
-        }
-        this.endGraphic();
+    drawLine(options: ILineOptions): void {
+        drawLine(this, options);
     }
 
-    /**
-     * Draws a filled rectangle at the current world transform.
-     * @param w Width of the rectangle.
-     * @param h Height of the rectangle.
-     * @param color Fill color.
-     * @param customShader Optional custom shader.
-     * @param customMatrix Optional custom transform matrix.
-     */
-    drawRect(
-        w: number, h: number,
-        color?: Color,
-        customShader?: GLShader | CustomGlShader,
-        customMatrix?: number
-    ): void {
-        this.startGraphic(this.gl.TRIANGLE_FAN, undefined, customShader, customMatrix);
-        this.addRectVertex(w, h, color);
-        this.endGraphic();
+    drawGraphic(options: IGraphicOptions): void {
+        drawGraphic(this, options);
     }
 
-    /**
-     * Draws a filled circle centered at the current world transform origin.
-     * @param r Radius of the circle.
-     * @param color Fill color.
-     * @param segments Number of segments used to approximate the circle. Default: 32.
-     * @param customShader Optional custom shader.
-     * @param customMatrix Optional custom transform matrix.
-     */
-    drawCircle(
-        r: number,
-        color?: Color,
-        segments: number = 32,
-        customShader?: GLShader | CustomGlShader,
-        customMatrix?: number
-    ): void {
-        this.startGraphic(this.gl.TRIANGLE_FAN, undefined, customShader, customMatrix);
-        // Center vertex first for TRIANGLE_FAN
-        const unitColor = this.getColorUint32(color);
-        this.addGraphicVertex(0, 0, 0.5, 0.5, unitColor);
-        this.addCircleVertex(r, color, segments);
-        // Close the fan by repeating the first edge vertex
-        this.addGraphicVertex(r, 0, 1, 0.5, unitColor);
-        this.endGraphic();
+    drawRect(options: IRectOptions): void {
+        drawRect(this, options);
     }
 
-    /**
-     * Draws a filled polygon from an array of vertices using the current world transform.
-     * Vertices are expected in order (convex or simple polygons work best with TRIANGLE_FAN).
-     * @param points Array of {x, y} points.
-     * @param color Fill color.
-     * @param customShader Optional custom shader.
-     * @param customMatrix Optional custom transform matrix.
-     */
-    drawPolygon(
-        points: { x: number; y: number }[],
-        color?: Color,
-        customShader?: GLShader | CustomGlShader,
-        customMatrix?: number
-    ): void {
-        if (points.length < 3) return;
-        this.startGraphic(this.gl.TRIANGLE_FAN, undefined, customShader, customMatrix);
-        const unitColor = this.getColorUint32(color);
-        for (const p of points) {
-            this.addGraphicVertex(p.x, p.y, 0, 0, unitColor);
-        }
-        this.endGraphic();
+    drawCircle(options: ICircleOptions): void {
+        drawCircle(this, options);
     }
 
     /**
@@ -384,10 +288,8 @@ export class Rapid {
      * Utility method: Draws an image directly as a mask using a generic rectangle geometry.
      * @param texture The texture to be used as a mask.
      */
-    drawMaskImage(texture: Texture, customMatrix?: number): void {
-        this.startMaskGraphic(this.gl.TRIANGLE_FAN, texture, customMatrix);
-        this.addRectVertex(texture.width, texture.height);
-        this.endGraphic();
+    drawMaskImage(options: IMaskImageOptions): void {
+        drawMaskImage(this, options);
     }
 
     /**
@@ -545,11 +447,11 @@ export class Rapid {
      * @param source   The input texture to start the filter chain from.
      * @param shaders  An ordered array of CustomGlShader to apply in sequence.
      * @returns The RenderTexture containing the final filtered result.
-     *          Draw it with `rapid.drawSprite(result)` to display it on screen.
+     *          Draw it with `rapid.drawSprite({ texture: result })` to display it on screen.
      *
      * @example
      * const result = rapid.applyFilters(tex, [blurShader, outlineShader]);
-     * rapid.drawSprite(result);
+     * rapid.drawSprite({ texture: result });
      */
     applyFilters(source: Texture, shaders: CustomGlShader[]): RenderTexture {
         if (shaders.length === 0) {
@@ -585,7 +487,7 @@ export class Rapid {
             // Draw the full source (or previous pass output) as a full-RT quad at (0,0).
             // The projection is already set to (0, w, h, 0) by enterRenderTexture.
 
-            this.drawSprite(inputTex, undefined, false, false, shaders[i]);
+            this.drawSprite({ texture: inputTex, shader: shaders[i] });
 
             this.leaveRenderTexture();
 
@@ -639,16 +541,19 @@ export class Rapid {
      *
      * @example
      * rapid.drawToRenderTexture(myRT, () => {
-     *     rapid.drawSprite(mySprite);
+     *     rapid.drawSprite({ texture: mySprite });
      * });
      */
     drawToRenderTexture(rt: RenderTexture, cb: () => void, color: Color | null = new Color(0, 0, 0, 0)): void {
         this.enterRenderTexture(rt);
-        if (color !== null) {
-            this.clearRenderTexture(color);
+        try {
+            if (color !== null) {
+                this.clearRenderTexture(color);
+            }
+            cb();
+        } finally {
+            this.leaveRenderTexture();
         }
-        cb();
-        this.leaveRenderTexture();
     }
 
     /**
@@ -660,18 +565,25 @@ export class Rapid {
      *
      * @example
      * rapid.withMask(
-     *     () => rapid.drawRect(200, 200),
-     *     () => rapid.drawSprite(myTexture),
+     *     () => rapid.drawRect({ width: 200, height: 200 }),
+     *     () => rapid.drawSprite({ texture: myTexture }),
      * );
      */
     withMask(maskCb: () => void, drawCb: () => void, type: MaskType = MaskType.EQUAL, ref: number = 1): void {
         this.clearMask();
         this.startDrawMask(ref);
-        maskCb();
-        this.endDrawMask();
+        try {
+            maskCb();
+        } finally {
+            this.endDrawMask();
+        }
+
         this.enterMask(type, ref);
-        drawCb();
-        this.exitMask();
+        try {
+            drawCb();
+        } finally {
+            this.exitMask();
+        }
     }
 
     /**
@@ -687,26 +599,34 @@ export class Rapid {
      * // Simple save/restore
      * rapid.withTransform(() => {
      *     rapid.matrixStack.translate(100, 100);
-     *     rapid.drawSprite(myTexture);
+     *     rapid.drawSprite({ texture: myTexture });
      * });
      *
      * @example
      * // With a transform applied
      * rapid.withTransform(() => {
-     *     rapid.drawSprite(myTexture);
+     *     rapid.drawSprite({ texture: myTexture });
      * }, { x: 100, y: 50, rotation: Math.PI / 4, origin: 0.5 }, myTexture.width, myTexture.height);
      */
     withTransform(cb: () => void, transform?: ITransformOptions, width: number = 0, height: number = 0): void {
         if (transform) {
-            this.matrixStack.applyTransform(transform, width, height);
-            cb();
-            if (transform.saveTransform ?? true) {
-                this.matrixStack.restore();
+            const shouldRestore = transform.saveTransform ?? true;
+            try {
+                // save in applyTransform
+                this.matrixStack.applyTransform(transform, width, height);
+                cb();
+            } finally {
+                if (shouldRestore) {
+                    this.matrixStack.restore();
+                }
             }
         } else {
             this.matrixStack.save();
-            cb();
-            this.matrixStack.restore();
+            try {
+                cb();
+            } finally {
+                this.matrixStack.restore();
+            }
         }
     }
 
@@ -720,13 +640,16 @@ export class Rapid {
      *
      * @example
      * rapid.withScissor(50, 50, 300, 200, () => {
-     *     rapid.drawSprite(myTexture);
+     *     rapid.drawSprite({ texture: myTexture });
      * });
      */
     withScissor(x: number, y: number, width: number, height: number, cb: () => void): void {
         this.startScissor(x, y, width, height);
-        cb();
-        this.endScissor();
+        try {
+            cb();
+        } finally {
+            this.endScissor();
+        }
     }
 
     /**
@@ -736,13 +659,16 @@ export class Rapid {
      *
      * @example
      * rapid.withBlendMode(BlendMode.ADD, () => {
-     *     rapid.drawSprite(glowTexture);
+     *     rapid.drawSprite({ texture: glowTexture });
      * });
      */
     withBlendMode(mode: BlendMode, cb: () => void): void {
         this.setBlendMode(mode);
-        cb();
-        this.setBlendMode(BlendMode.NORMAL);
+        try {
+            cb();
+        } finally {
+            this.setBlendMode(BlendMode.NORMAL);
+        }
     }
 
     /**

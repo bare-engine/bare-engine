@@ -36,17 +36,18 @@ export class Button extends GameObject
         const buttonColor = this.buttonColor;
         buttonColor.a = this.buttonColor.a * ((inheritedColor?.a ?? 255)/255);
 
-        rapid.withTransform(()=>{
-            bare.drawRect(
-                this.width, 
-                this.height, 
-                buttonColor
-            );
-        }, { position: new Vec2(-this.pivot.x, -this.pivot.y) })
+        bare.drawRect({
+            width: this.width,
+            height: this.height,
+            color: buttonColor,
+            position: new Vec2(-this.pivot.x, -this.pivot.y),
+        });
 
-        rapid.withTransform(()=>{
-            bare.drawSprite(this.text, inheritedColor);
-        }, { position: new Vec2(this.marge - this.pivot.x, this.marge - this.pivot.y) })
+        bare.drawSprite({
+            texture: this.text,
+            color: inheritedColor,
+            position: new Vec2(this.marge - this.pivot.x, this.marge - this.pivot.y),
+        });
     }
 
     get width(): number
