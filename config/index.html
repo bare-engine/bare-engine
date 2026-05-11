@@ -8,6 +8,7 @@
     <style>
       :root {
           --sat: env(safe-area-inset-top);
+          --bare-index-text-color: <%= htmlWebpackPlugin.options.textColor %>;
       }
 
       html, body {
@@ -37,7 +38,7 @@
         align-items: center;
         justify-content: center;
         font-size: 24px;
-        color: white;
+        color: var(--bare-index-text-color);
         pointer-events: none;
         z-index: 1000;
       }
@@ -69,9 +70,9 @@
           transform: translate(-50%, -50%);
           white-space: nowrap;
           font-size: 34px;
-          color: white;
+          color: var(--bare-index-text-color);
           font-weight: bold;
-          font-family: 'Brush Script MT', cursive;
+          font-family: 'Trebuchet MS', sans-serif;
           opacity: 1;
     
           /* Apply the bobbing animation */
@@ -131,7 +132,7 @@
           text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
           user-select: none;
           text-align: center;
-          color: white;
+          color: var(--bare-index-text-color);
           animation: gentleBounce 1s ease-in-out infinite;
       }
 
@@ -171,9 +172,9 @@
               transform: translate(-50%, -50%);
               white-space: nowrap;
               font-size: 34px;
-              color: white;
+              color: var(--bare-index-text-color);
               font-weight: bold;
-              font-family: 'Brush Script MT';
+              font-family: 'Trebuchet MS', sans-serif;
               opacity: 0.6;"
           id="loading-text">LOADING...</div>
   </body>

@@ -9,6 +9,7 @@ const WatchTexturePackImagesPlugin = require("./WatchTexturePackImagesPlugin");
 const createControllerProxyTransformer = require("./controllerProxyTransformer");
 const createGameObjectNameTransformer = require("./gameObjectNameTransformer");
 const GenerateLayersPlugin = require("./GenerateLayersPlugin");
+const ProjectCompileStatusPlugin = require("./ProjectCompileStatusPlugin");
 const projectRoot = process.cwd();
 const projectPackage = require(path.join(projectRoot, "package.json"));
 const htmlOptions = projectPackage.bareEngine?.index || {};
@@ -96,6 +97,7 @@ module.exports = {
             template: engineIndexHtmlPath,
             title: htmlOptions.title || "Bare Game",
             backgroundColor: htmlOptions.backgroundColor || "rgb(255, 255, 255)",
+            textColor: htmlOptions.textColor || "rgb(0, 0, 0)",
             scriptLoading: "blocking",
             inject: 'head'
         }),
@@ -104,6 +106,7 @@ module.exports = {
 		}),
         new InjectInitialAssetsPlugin(),
         new GenerateLayersPlugin(),
+        new ProjectCompileStatusPlugin(htmlOptions.title || projectPackage.name),
         watchTexturePackImagesPlugin
     ],
     watchOptions: {

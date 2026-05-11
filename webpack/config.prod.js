@@ -8,6 +8,7 @@ const HtmlReplaceWebpackPlugin = projectRequire("html-replace-webpack-plugin");
 const webpack = projectRequire("webpack");
 const InjectInitialAssetsPlugin = require("./InjectInitialAssetsPlugin");
 const GenerateLayersPlugin = require("./GenerateLayersPlugin");
+const ProjectCompileStatusPlugin = require("./ProjectCompileStatusPlugin");
 const { EsbuildPlugin } = projectRequire("esbuild-loader");
 const createControllerProxyTransformer = require("./controllerProxyTransformer");
 const createGameObjectNameTransformer = require("./gameObjectNameTransformer");
@@ -89,6 +90,7 @@ module.exports = {
             template: engineIndexHtmlPath,
             title: htmlOptions.title || "Bare Game",
             backgroundColor: htmlOptions.backgroundColor || "rgb(255, 255, 255)",
+            textColor: htmlOptions.textColor || "rgb(0, 0, 0)",
             inject: false,
             minify: false
         }),
