@@ -266,10 +266,10 @@ export class SettingsHandler
                 //delete entityBase.name; // DON'T NEED IT ANYMORE
                 
                 // SET DEFAULT baseClass - IF NOT BEEN SET BY CONSTRUCT
-                if (!entityBase.baseClass)
+                /*if (!entityBase.baseClass)
                 {
                     entityBase.baseClass = "GameObject";
-                }
+                }*/
             }
 
             // CONSTRUCT ALL ENTITIES
