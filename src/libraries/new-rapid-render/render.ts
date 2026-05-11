@@ -272,7 +272,7 @@ export class Rapid {
         customMatrix?: number
     ): void {
         this.enterRegion(this.graphicRegion, customShader);
-        this.graphicRegion.startGraphic(customMatrix ?? this.matrixStack.curWorldM, drawMode, texture?.glTexture!);
+        this.graphicRegion.startGraphic(customMatrix ?? this.matrixStack.curWorldM, drawMode, texture);
     }
 
     /**
