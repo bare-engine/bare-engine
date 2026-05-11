@@ -355,8 +355,8 @@ module.exports = {
                     const fullPath = path.join(projectRoot, "public", folderPath);
 
                     if (!fs.existsSync(fullPath)) {
-                        res.status(404).setHeader('Content-Type', 'application/json');
-                        res.end(JSON.stringify({ error: 'Folder not found' }));
+                        res.setHeader('Content-Type', 'application/json');
+                        res.end(JSON.stringify({ files: [] }));
                         return;
                     }
 

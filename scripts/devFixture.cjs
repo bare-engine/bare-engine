@@ -55,6 +55,38 @@ function contentType(filePath) {
   return "application/octet-stream";
 }
 
+function listFiles(folderPath, recursive) {
+  const rootPath = path.resolve(publicDir);
+  const fullPath = path.resolve(publicDir, folderPath || "");
+
+  if (!fullPath.startsWith(rootPath)) {
+    return null;
+  }
+
+  if (!fs.existsSync(fullPath) || !fs.statSync(fullPath).isDirectory()) {
+    return [];
+  }
+
+  if (!recursive) {
+    return fs.readdirSync(fullPath);
+  }
+
+  function getAllFiles(dirPath, files = []) {
+    for (const entry of fs.readdirSync(dirPath)) {
+      const entryPath = path.join(dirPath, entry);
+      if (fs.statSync(entryPath).isDirectory()) {
+        getAllFiles(entryPath, files);
+      } else {
+        files.push(path.relative(fullPath, entryPath));
+      }
+    }
+
+    return files;
+  }
+
+  return getAllFiles(fullPath);
+}
+
 const compiler = webpack(webpackConfig);
 compiler.watch({}, (error, stats) => {
   if (error) {
@@ -78,6 +110,25 @@ compiler.watch({}, (error, stats) => {
 
 const server = http.createServer((request, response) => {
   const url = new URL(request.url, `http://127.0.0.1:${server.address()?.port || startPort}`);
+
+  if (url.pathname === "/api/list-files") {
+    const files = listFiles(
+      url.searchParams.get("path"),
+      url.searchParams.get("recursive") === "true"
+    );
+
+    if (files === null) {
+      response.writeHead(403);
+      response.end("Forbidden");
+      return;
+    }
+
+    response.setHeader("Access-Control-Allow-Origin", "*");
+    response.setHeader("Content-Type", "application/json; charset=utf-8");
+    response.end(JSON.stringify({ files }));
+    return;
+  }
+
   const fileName = url.pathname === "/" ? "/index.html" : url.pathname;
   const filePath = path.normalize(path.join(publicDir, fileName));
 
