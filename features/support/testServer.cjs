@@ -58,9 +58,9 @@ function listFiles(folderPath, recursive) {
 }
 
 BeforeAll(async function () {
-  const webpackScript = path.resolve(__dirname, "../../node_modules/webpack/bin/webpack.js");
-  const webpackConfig = path.resolve(__dirname, "../fixtures/webpack.e2e.cjs");
-  const build = spawnSync(process.execPath, [webpackScript, "--config", webpackConfig], {
+  const viteScript = path.resolve(__dirname, "../../node_modules/vite/bin/vite.js");
+  const viteConfig = path.resolve(__dirname, "../fixtures/vite.e2e.config.cjs");
+  const build = spawnSync(process.execPath, [viteScript, "build", "--config", viteConfig], {
     cwd: path.resolve(__dirname, "../fixtures"),
     encoding: "utf8",
   });

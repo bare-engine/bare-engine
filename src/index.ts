@@ -134,8 +134,8 @@ export * from "./libraries/Sopiro/weld";
 export * from "./libraries/Sopiro/world";
 
 // Libraries: howler
-export { Howl, Howler } from "./libraries/howler/howler.core.js";
-export type { HowlOptions } from "./libraries/howler/howler.core.js";
+export { Howl, Howler } from "./libraries/howler/howler";
+export type { HowlOptions } from "./libraries/howler/howler";
 
 // Libraries: rapid-render
 // export * from "./libraries/new-rapid-render/interface";

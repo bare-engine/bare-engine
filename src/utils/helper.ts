@@ -179,7 +179,7 @@ export class Helper
     
     static async GetFilesInFolder(folderPath: string, recursive: boolean = false): Promise<string[]>
     {
-        // SPECIFIC FOR THIS PROJECT - FUNCTIONALITY IT webpack/config.dev.js
+        // SPECIFIC FOR THIS PROJECT - FUNCTIONALITY IN config/vite.config.cjs
         try {
             const response = await fetch(`/api/list-files?path=${encodeURIComponent(folderPath)}&recursive=${recursive}`);
             if (!response.ok) {

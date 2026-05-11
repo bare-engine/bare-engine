@@ -1,0 +1,139 @@
+const path = require("node:path");
+const fs = require("node:fs");
+const {
+    bareEditorAndApiPlugin,
+    bareFullReloadPlugin,
+    bareGeneratedLayersPlugin,
+    bareHtmlPlugin,
+    bareInitialAssetsPlugin,
+    bareShaderRawPlugin,
+    bareTexturePackImagesPlugin,
+    bareTypeScriptTransformPlugin
+} = require("../vite/plugins.cjs");
+
+module.exports = ({ mode }) => {
+    const projectRoot = process.cwd();
+    const isDev = mode === "development";
+    const engineIndexPath = path.resolve(__dirname, "index.html");
+    const buildIndexPath = ensureLocalBuildIndex(projectRoot, engineIndexPath);
+
+    return {
+        root: projectRoot,
+        base: "./",
+        publicDir: path.join(projectRoot, "public"),
+        define: {
+            __DEV__: JSON.stringify(isDev)
+        },
+        resolve: {
+            extensions: [".ts", ".js", ".json"]
+        },
+        plugins: [
+            bareShaderRawPlugin(),
+            bareTypeScriptTransformPlugin({
+                projectRoot,
+                useTypeChecker: !isDev
+            }),
+            bareFullReloadPlugin({ projectRoot }),
+            bareHtmlPlugin({
+                projectRoot,
+                indexHtmlPath: engineIndexPath
+            }),
+            bareIndexOutputPlugin(),
+            bareInitialAssetsPlugin({ projectRoot }),
+            bareGeneratedLayersPlugin({ projectRoot }),
+            bareEditorAndApiPlugin({
+                projectRoot,
+                editorHtmlPath: path.resolve(__dirname, "editor.html")
+            }),
+            bareTexturePackImagesPlugin({
+                projectRoot,
+                runOnStart: false
+            })
+        ],
+        server: {
+            open: false,
+            watch: {
+                ignored: [
+                    "**/node_modules/**",
+                    "**/public/assets/data/levels/**",
+                    "**/dist/**",
+                    "**/src/_bareTypes/layer.ts",
+                    "**/levels/**"
+                ]
+            }
+        },
+        build: {
+            outDir: path.join(projectRoot, "dist"),
+            emptyOutDir: true,
+            copyPublicDir: true,
+            sourcemap: false,
+            minify: "esbuild",
+            target: "es2020",
+            commonjsOptions: {
+                include: [/node_modules/, /src[\\/]libraries[\\/]howler[\\/]howler\.core\.js/]
+            },
+            rollupOptions: {
+                input: {
+                    index: buildIndexPath
+                },
+                output: {
+                    entryFileNames: "bundle.min.js",
+                    chunkFileNames: "assets/[name]-[hash].js",
+                    assetFileNames: "assets/[name]-[hash][extname]"
+                }
+            }
+        }
+    };
+};
+
+function ensureLocalBuildIndex(projectRoot, engineIndexPath) {
+    const outputPath = path.join(projectRoot, "node_modules/.bare-engine/index.html");
+    const html = fs.readFileSync(engineIndexPath, "utf8");
+
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+
+    const existing = fs.existsSync(outputPath)
+        ? fs.readFileSync(outputPath, "utf8")
+        : "";
+
+    if (existing !== html) {
+        fs.writeFileSync(outputPath, html);
+    }
+
+    return outputPath;
+}
+
+function bareIndexOutputPlugin() {
+    let outDir = "";
+
+    return {
+        name: "bare:index-output",
+        configResolved(config) {
+            outDir = config.build.outDir;
+        },
+        generateBundle(_options, bundle) {
+            for (const [fileName, item] of Object.entries(bundle)) {
+                if (fileName.replace(/\\/g, "/").endsWith("node_modules/.bare-engine/index.html")) {
+                    delete bundle[fileName];
+                    item.fileName = "index.html";
+                    bundle["index.html"] = item;
+                    return;
+                }
+            }
+        },
+        closeBundle() {
+            const nestedPath = path.join(outDir, "node_modules/.bare-engine/index.html");
+            const outputPath = path.join(outDir, "index.html");
+
+            if (!fs.existsSync(nestedPath)) {
+                return;
+            }
+
+            const html = fs.readFileSync(nestedPath, "utf8")
+                .replace(/src="\.\.\/\.\.\/bundle\.min\.js"/g, 'src="./bundle.min.js"');
+
+            fs.writeFileSync(outputPath, html);
+            fs.rmSync(path.join(outDir, "node_modules"), { recursive: true, force: true });
+        }
+    };
+}

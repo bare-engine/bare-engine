@@ -2,11 +2,10 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
-const webpack = require("webpack");
 
 const fixtureDir = path.resolve(__dirname, "../features/fixtures");
 const publicDir = path.join(fixtureDir, "public");
-const webpackConfig = require(path.join(fixtureDir, "webpack.e2e.cjs"));
+const viteConfig = path.join(fixtureDir, "vite.e2e.config.cjs");
 
 const requestedScene = process.argv[2] || "";
 const startPort = Number(process.env.PORT || 5173);
@@ -87,26 +86,7 @@ function listFiles(folderPath, recursive) {
   return getAllFiles(fullPath);
 }
 
-const compiler = webpack(webpackConfig);
-compiler.watch({}, (error, stats) => {
-  if (error) {
-    console.error(error);
-    return;
-  }
-
-  const info = stats.toJson({ all: false, errors: true, warnings: true });
-
-  if (stats.hasErrors()) {
-    console.error(info.errors);
-    return;
-  }
-
-  if (stats.hasWarnings()) {
-    console.warn(info.warnings);
-  }
-
-  console.log(`Fixture bundle ready${requestedScene ? ` for ${requestedScene}` : ""}.`);
-});
+startViteWatch();
 
 const server = http.createServer((request, response) => {
   const url = new URL(request.url, `http://127.0.0.1:${server.address()?.port || startPort}`);
@@ -203,4 +183,22 @@ function openBrowser(url) {
     stdio: "ignore",
   });
   child.unref();
+}
+
+async function startViteWatch() {
+  const { build } = await import("vite");
+  const watcher = await build({
+    configFile: viteConfig,
+    build: {
+      watch: {}
+    }
+  });
+
+  watcher.on("event", (event) => {
+    if (event.code === "BUNDLE_END") {
+      console.log(`Fixture bundle ready${requestedScene ? ` for ${requestedScene}` : ""}.`);
+    } else if (event.code === "ERROR") {
+      console.error(event.error);
+    }
+  });
 }

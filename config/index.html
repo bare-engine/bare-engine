@@ -3,12 +3,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     
-    <title><%= htmlWebpackPlugin.options.title %></title>
+    <title>%BARE_TITLE%</title>
       
     <style>
       :root {
           --sat: env(safe-area-inset-top);
-          --bare-index-text-color: <%= htmlWebpackPlugin.options.textColor %>;
+          --bare-index-text-color: %BARE_TEXT_COLOR%;
       }
 
       html, body {
@@ -17,7 +17,7 @@
           height: 100%;
           margin: 0;
           padding: 0;
-          background-color: <%= htmlWebpackPlugin.options.backgroundColor %>;
+          background-color: %BARE_BACKGROUND_COLOR%;
       }
       
       canvas {

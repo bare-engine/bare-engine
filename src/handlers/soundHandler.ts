@@ -1,4 +1,4 @@
-import { Howl, HowlOptions, Howler } from '../libraries/howler/howler.core.js';
+import { Howl, HowlOptions, Howler } from '../libraries/howler/howler';
 import { SaveData, BareEvent } from '../types/bareTypes';
 import { Helper } from '../utils/helper';
 import { globalEvents } from '../globals';
