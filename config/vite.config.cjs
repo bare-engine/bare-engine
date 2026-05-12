@@ -28,6 +28,7 @@ module.exports = ({ mode }) => {
             extensions: [".ts", ".js", ".json"]
         },
         plugins: [
+            bareFilterSettingsDataWarningPlugin(),
             bareShaderRawPlugin(),
             bareTypeScriptTransformPlugin({
                 projectRoot,
@@ -101,6 +102,40 @@ function ensureLocalBuildIndex(projectRoot, engineIndexPath) {
     }
 
     return outputPath;
+}
+
+function bareFilterSettingsDataWarningPlugin() {
+    return {
+        name: "bare:filter-settings-data-warning",
+        configResolved(config) {
+            const logger = config.logger;
+            const warn = logger.warn.bind(logger);
+            const warnOnce = logger.warnOnce.bind(logger);
+
+            logger.warn = (message, options) => {
+                if (isSettingsDataPublicImportWarning(message)) {
+                    return;
+                }
+
+                warn(message, options);
+            };
+
+            logger.warnOnce = (message, options) => {
+                if (isSettingsDataPublicImportWarning(message)) {
+                    return;
+                }
+
+                warnOnce(message, options);
+            };
+        }
+    };
+}
+
+function isSettingsDataPublicImportWarning(message) {
+    const text = String(message).replace(/\\/g, "/");
+
+    return text.includes("Assets in public directory cannot be imported from JavaScript")
+        && text.includes("/public/assets/data/settingsData.json");
 }
 
 function bareIndexOutputPlugin() {
