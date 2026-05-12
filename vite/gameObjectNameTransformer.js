@@ -1,4 +1,12 @@
 const ts = require("./projectRequire")("typescript");
+const fs = require("fs");
+const path = require("path");
+
+const externalClassInfoMap = collectClassInfoFromDirs([
+    path.resolve(process.cwd(), "../BareEngine/src"),
+    path.resolve(process.cwd(), "node_modules/bare-engine/src"),
+    path.resolve(process.cwd(), "src")
+]);
 
 /**
  * TypeScript transformer that auto-assigns .name on GameObject instantiations.
@@ -15,11 +23,15 @@ const ts = require("./projectRequire")("typescript");
  */
 function createGameObjectNameTransformer(program) {
     const typeChecker = program ? program.getTypeChecker() : null;
+    const classInfoMap = program ? collectClassInfo(program) : new Map();
+    for (const [name, info] of externalClassInfoMap) {
+        if (!classInfoMap.has(name)) {
+            classInfoMap.set(name, info);
+        }
+    }
 
     return (context) => {
         return (sourceFile) => {
-            if (!typeChecker) return sourceFile;
-
             function extendsGameObject(type) {
                 if (!type) return false;
                 const symbol = type.getSymbol();
@@ -34,6 +46,16 @@ function createGameObjectNameTransformer(program) {
 
             function isGameObjectNew(expr) {
                 if (!ts.isNewExpression(expr)) return false;
+
+                const className = getNewExpressionClassName(expr);
+                if (className && classExtendsGameObjectInHierarchy(className, classInfoMap)) {
+                    return true;
+                }
+
+                if (!typeChecker) {
+                    return false;
+                }
+
                 const type = typeChecker.getTypeAtLocation(expr);
                 return extendsGameObject(type);
             }
@@ -119,6 +141,142 @@ function createGameObjectNameTransformer(program) {
             return ts.factory.updateSourceFile(sourceFile, newStatements);
         };
     };
+}
+
+function collectClassInfo(program) {
+    const map = new Map();
+
+    for (const sourceFile of program.getSourceFiles()) {
+        if (sourceFile.isDeclarationFile) {
+            continue;
+        }
+
+        collectClassInfoFromSourceFile(sourceFile, map);
+    }
+
+    return map;
+}
+
+function collectClassInfoFromDirs(dirs) {
+    const map = new Map();
+
+    for (const dir of dirs) {
+        if (!dir || !fs.existsSync(dir)) {
+            continue;
+        }
+        const files = listTsFiles(dir);
+        for (const filePath of files) {
+            const sourceText = fs.readFileSync(filePath, "utf8");
+            const sourceFile = ts.createSourceFile(
+                filePath,
+                sourceText,
+                ts.ScriptTarget.Latest,
+                true,
+                ts.ScriptKind.TS
+            );
+
+            collectClassInfoFromSourceFile(sourceFile, map);
+        }
+    }
+
+    return map;
+}
+
+function collectClassInfoFromSourceFile(sourceFile, map) {
+    ts.forEachChild(sourceFile, (node) => {
+        if (!ts.isClassDeclaration(node) || !node.name) {
+            return;
+        }
+        const name = node.name.text;
+        if (!map.has(name)) {
+            map.set(name, { bases: getBaseClassNames(node) });
+        }
+    });
+}
+
+function listTsFiles(rootDir) {
+    const results = [];
+    const stack = [rootDir];
+
+    while (stack.length > 0) {
+        const current = stack.pop();
+        const entries = fs.readdirSync(current, { withFileTypes: true });
+
+        for (const entry of entries) {
+            const fullPath = path.join(current, entry.name);
+            if (entry.isDirectory()) {
+                stack.push(fullPath);
+                continue;
+            }
+            if (entry.isFile() && entry.name.endsWith(".ts") && !entry.name.endsWith(".d.ts")) {
+                results.push(fullPath);
+            }
+        }
+    }
+
+    return results;
+}
+
+function getNewExpressionClassName(expr) {
+    const callee = expr.expression;
+    if (ts.isIdentifier(callee)) {
+        return callee.text;
+    }
+    if (ts.isPropertyAccessExpression(callee)) {
+        return callee.name.text;
+    }
+    return null;
+}
+
+function classExtendsGameObjectInHierarchy(className, classInfoMap) {
+    if (className === "GameObject") {
+        return true;
+    }
+
+    const visited = new Set();
+
+    function walk(name) {
+        if (!name || visited.has(name)) {
+            return false;
+        }
+        visited.add(name);
+
+        if (name === "GameObject") {
+            return true;
+        }
+
+        const info = classInfoMap.get(name);
+        if (!info) {
+            return false;
+        }
+
+        return info.bases.some(walk);
+    }
+
+    return walk(className);
+}
+
+function getBaseClassNames(node) {
+    if (!node.heritageClauses) {
+        return [];
+    }
+
+    const bases = [];
+    for (const clause of node.heritageClauses) {
+        if (clause.token !== ts.SyntaxKind.ExtendsKeyword) {
+            continue;
+        }
+        for (const type of clause.types) {
+            const expression = type.expression;
+            if (ts.isIdentifier(expression)) {
+                bases.push(expression.text);
+            } else if (ts.isPropertyAccessExpression(expression)) {
+                bases.push(expression.name.text);
+            }
+        }
+    }
+
+    return bases;
 }
 
 module.exports = createGameObjectNameTransformer;

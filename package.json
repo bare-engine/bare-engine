@@ -20,7 +20,10 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "sideEffects": [
-    "./src/main.ts"
+    "./src/main.ts",
+    "./src/controllers/*.ts",
+    "./src/handlers/cameraHandler.ts",
+    "./src/handlers/levelHandler.ts"
   ],
   "exports": {
     ".": {

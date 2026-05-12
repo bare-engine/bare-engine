@@ -32,7 +32,7 @@ module.exports = ({ mode }) => {
             bareShaderRawPlugin(),
             bareTypeScriptTransformPlugin({
                 projectRoot,
-                useTypeChecker: !isDev
+                useTypeChecker: false
             }),
             bareFullReloadPlugin({ projectRoot }),
             bareHtmlPlugin({
@@ -62,6 +62,9 @@ module.exports = ({ mode }) => {
                     "**/levels/**"
                 ]
             }
+        },
+        esbuild: {
+            keepNames: true
         },
         build: {
             outDir: path.join(projectRoot, "dist"),
