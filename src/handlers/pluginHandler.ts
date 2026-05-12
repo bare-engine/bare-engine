@@ -1258,7 +1258,8 @@ export class PluginHandler
                     this.SetCurrentScene(scene.constructor.name);
             }
 
-            if (type == "removed" && scene instanceof EntityScene && plugin.notifyLeaveEntity)
+            var isAnyEntityScene = sceneController.Get(EntityScene);
+            if (!isAnyEntityScene && plugin.notifyLeaveEntity)
             {
                 window.__GAME_DEBUG_API__.notifyLeaveEntity();
                 window.postMessage({ __fromGame: true, type: "lockObjectsTab", flag: false }, "*");
