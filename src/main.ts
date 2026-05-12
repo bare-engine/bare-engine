@@ -6,12 +6,20 @@ import { BareEvent, BareOptions, SceneClass } from './types/bareTypes';
 import { globalEvents } from './globals';
 export { MakePath, MakePathForEntity } from "./globals";
 
-var canvas = document.createElement("canvas");
-canvas.className = "canvas";
-document.body.appendChild(canvas);
+var canvas = document.querySelector<HTMLCanvasElement>("canvas.canvas");
+if (!canvas) {
+    canvas = document.createElement("canvas");
+    canvas.className = "canvas";
+    document.body.appendChild(canvas);
+}
 
 export function StartBare(gameClass: SceneClass, options?: BareOptions): void
 {
+    if (__DEV__ && window.bareEngine) {
+        window.bareEngine.Restart(gameClass);
+        return;
+    }
+
     // DEFAULTS + OVERRIDE OPTIONS
     options = { ...{
         antiAlias: true,
@@ -211,7 +219,6 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
             // START!
             var start = async () => {
                 window.bareEngine = new BareEngine(gameClass, options);
-
             };
 
             var testGetElementById = document.getElementById('editor-overlay');

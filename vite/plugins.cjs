@@ -25,6 +25,7 @@ function bareTypeScriptTransformPlugin(options = {}) {
     const projectRoot = options.projectRoot || process.cwd();
     const tsconfigPath = options.tsconfigPath || findTsconfig(projectRoot);
     const useTypeChecker = options.useTypeChecker !== false;
+    const hotRestart = options.hotRestart !== false;
     const include = options.include || ((filePath) => {
         const normalized = normalize(filePath);
         return normalized.startsWith(normalize(path.join(projectRoot, "src")))
@@ -60,15 +61,16 @@ function bareTypeScriptTransformPlugin(options = {}) {
             const result = useTypeChecker
                 ? emitTransformedTs(filePath, code, compilerOptions)
                 : transpileTransformedTs(filePath, code, compilerOptions);
-            return result ? { code: result.code, map: result.map } : null;
+            return result ? {
+                code: hotRestart ? appendHotRestart(result.code) : result.code,
+                map: result.map
+            } : null;
         }
     };
 }
 
 function bareFullReloadPlugin(options = {}) {
-    const projectRoot = options.projectRoot || process.cwd();
     const roots = (options.roots || [
-        path.join(projectRoot, "src"),
         path.resolve(__dirname, "../src")
     ]).map(root => normalize(path.resolve(root)));
 
@@ -84,6 +86,23 @@ function bareFullReloadPlugin(options = {}) {
             return [];
         }
     };
+}
+
+function appendHotRestart(code) {
+    const hmrCode = `
+if (import.meta.hot) {
+    import.meta.hot.accept(() => {
+        window.bareEngine?.Restart();
+    });
+}
+`;
+
+    const sourceMapMatch = code.match(/\n?\/\/# sourceMappingURL=.*\s*$/);
+    if (!sourceMapMatch) {
+        return `${code}${hmrCode}`;
+    }
+
+    return `${code.slice(0, sourceMapMatch.index)}${hmrCode}${sourceMapMatch[0]}`;
 }
 
 function bareHtmlPlugin(options = {}) {

@@ -12,6 +12,7 @@ import { BareEvent, BareOptions, CanvasPosition, CanvasScale, Events, GameObject
 export class BareEngine
 {
     private initialSceneClass: SceneClass;
+    private restartTimeout: ReturnType<typeof setTimeout> | null = null;
 
     public lastUpdateTimeRef:number;
     public deltaTime: number;
@@ -410,12 +411,25 @@ export class BareEngine
 
 
 
-    Restart(): void
+    Restart(sceneClass?: SceneClass): void
     {
-        globalEvents.emit(BareEvent.game_completeClear);
-        
-        sceneController.Clear(true);
-        sceneController.Goto(this.initialSceneClass);
+        if (sceneClass) {
+            this.initialSceneClass = sceneClass;
+        }
+
+        if (this.restartTimeout) {
+            clearTimeout(this.restartTimeout);
+        }
+
+        this.restartTimeout = setTimeout(() => {
+            this.restartTimeout = null;
+
+            globalEvents.emit(BareEvent.game_completeClear);
+            
+            sceneController.Clear(true);
+            sceneController.Goto(this.initialSceneClass);
+            this.lastUpdateTimeRef = performance.now();
+        }, 0);
     }
 
     SendEvent<K extends keyof Events>(type: K, ...event: EventArgs<Events[K]>): void
