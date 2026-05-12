@@ -1010,7 +1010,7 @@ window.__GAME_DEBUG_API__ = {
 
   async setEntityData(newData: SettingsData)
   {
-    plugin.SaveSettingsData(newData);
+    await plugin.SaveSettingsData(newData);
   },
 
   notifyEntityDataChanged(newData) {
@@ -1779,6 +1779,9 @@ export class PluginHandler
                     skipReload: true
                 })
             });
+
+            scene.settingsHandler.SetRaw(newData);
+            await scene.settingsHandler.Process(newData);
         }
 
         plugin.doNotifyAfterSave = true;
