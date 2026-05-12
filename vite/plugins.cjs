@@ -113,6 +113,7 @@ function bareHtmlPlugin(options = {}) {
     const title = htmlOptions.title || "Bare Game";
     const backgroundColor = htmlOptions.backgroundColor || "rgb(255, 255, 255)";
     const textColor = htmlOptions.textColor || "rgb(0, 0, 0)";
+    const loadingTextStyle = htmlOptions.showLoading === false ? "display: none;" : "";
 
     return {
         name: "bare:html",
@@ -145,6 +146,7 @@ function bareHtmlPlugin(options = {}) {
                     .replace(/%BARE_TITLE%/g, escapeHtml(title))
                     .replace(/%BARE_BACKGROUND_COLOR%/g, backgroundColor)
                     .replace(/%BARE_TEXT_COLOR%/g, textColor)
+                    .replace(/%BARE_LOADING_TEXT_STYLE%/g, loadingTextStyle)
                     .replace("<!-- js:bootstrap -->", '<script type="module" src="/src/game.ts"></script>');
             }
         }
