@@ -94,10 +94,15 @@ export class OutlineShader
         
     
     // Use atlas (base) size for pixel steps; region width/height are too small for UV space.
-    const textureWidth = gameObject.texture?.base?.width ?? gameObject.texture?.width ?? 512;
-    const textureHeight = gameObject.texture?.base?.height ?? gameObject.texture?.height ?? 512;
-    const regionMin: [number, number] = [gameObject.texture?.clipX ?? 0, gameObject.texture?.clipY ?? 0];
-    const regionMax: [number, number] = [gameObject.texture?.clipW ?? 1, gameObject.texture?.clipH ?? 1];
+    const texture = gameObject.texture;
+    const textureWidth = texture?.base?.width ?? texture?.width ?? 512;
+    const textureHeight = texture?.base?.height ?? texture?.height ?? 512;
+    const uvX = texture?.uvX ?? 0;
+    const uvY = texture?.uvY ?? 0;
+    const uvW = texture?.uvW ?? 1;
+    const uvH = texture?.uvH ?? 1;
+    const regionMin: [number, number] = [Math.min(uvX, uvW), Math.min(uvY, uvH)];
+    const regionMax: [number, number] = [Math.max(uvX, uvW), Math.max(uvY, uvH)];
     const outlineWidth = width ?? 7.0;
     const scaleX = Math.abs(gameObject?.totalScaleX);
     const scaleY = Math.abs(gameObject?.totalScaleY);
@@ -131,10 +136,15 @@ export class OutlineShader
         if (!this.objectStates.has(gameObject) || !gameObject?.texture)
             return;
 
-        const textureWidth = gameObject.texture?.base?.width ?? gameObject.texture?.width ?? 512;
-        const textureHeight = gameObject.texture?.base?.height ?? gameObject.texture?.height ?? 512;
-        const regionMin: [number, number] = [gameObject.texture?.clipX ?? 0, gameObject.texture?.clipY ?? 0];
-        const regionMax: [number, number] = [gameObject.texture?.clipW ?? 1, gameObject.texture?.clipH ?? 1];
+        const texture = gameObject.texture;
+        const textureWidth = texture?.base?.width ?? texture?.width ?? 512;
+        const textureHeight = texture?.base?.height ?? texture?.height ?? 512;
+        const uvX = texture?.uvX ?? 0;
+        const uvY = texture?.uvY ?? 0;
+        const uvW = texture?.uvW ?? 1;
+        const uvH = texture?.uvH ?? 1;
+        const regionMin: [number, number] = [Math.min(uvX, uvW), Math.min(uvY, uvH)];
+        const regionMax: [number, number] = [Math.max(uvX, uvW), Math.max(uvY, uvH)];
 
         const state = this.objectStates.get(gameObject);
         const baseWidth = state?.baseWidth ?? 7.0;

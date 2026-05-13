@@ -43,8 +43,23 @@ export class Region {
             (_, index) => index);
     }
 
+    protected findTextureUnit(texture: WebGLTexture, paddingX: number = 0, paddingY: number = 0) {
+        for (let i = 0; i < this.usedTextures.length; i++) {
+            const p = i * 2;
+            if (
+                this.usedTextures[i] === texture &&
+                this.usedTexturePadding[p] === paddingX &&
+                this.usedTexturePadding[p + 1] === paddingY
+            ) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
     useTexture(texture: WebGLTexture, paddingX: number = 0, paddingY: number = 0) {
-        const textureUnit = this.usedTextures.indexOf(texture)
+        const textureUnit = this.findTextureUnit(texture, paddingX, paddingY)
         if (textureUnit == -1) {
             this.usedTextures.push(texture)
 

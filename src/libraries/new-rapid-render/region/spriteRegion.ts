@@ -95,9 +95,10 @@ export class SpriteRegion extends Region {
         matrixIndex: number,
         u0: number = 0, v0: number = 0, u1: number = 1, v1: number = 1,
         color: number = 0xFFFFFFFF,
+        paddingX: number = 0,
+        paddingY: number = 0,
     ): void {
-        // No free texture units — flush first to reset, then register
-        if (this.freeTextureUnitNum === 0) {
+       if (this.freeTextureUnitNum === 0) {
             this.flush();
         }
 
@@ -106,8 +107,6 @@ export class SpriteRegion extends Region {
 
         // Padding comes from the shader (e.g. outline/glow shaders need extra room)
         const p = this.currentShader.padding;
-        const paddingX = p / texture.base!.width;
-        const paddingY = p / texture.base!.height;
 
         const textureId = this.useTexture(texture.glTexture!, paddingX, paddingY);
         // Read 2×3 affine matrix from MatrixStore and bake (width + 2p) / (height + 2p) into it.

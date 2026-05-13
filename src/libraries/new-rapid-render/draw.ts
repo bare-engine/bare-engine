@@ -19,6 +19,8 @@ export interface ISpriteOptions extends IDrawOptions {
     color?: Color;
     flipX?: boolean;
     flipY?: boolean;
+    paddingX?: number;
+    paddingY?: number;
 }
 
 export interface IGraphicOptions extends IDrawOptions {
@@ -110,6 +112,16 @@ const drawSpriteRaw = (rapid: Rapid, options: ISpriteOptions): void => {
         [v0, v1] = [v1, v0];
     }
 
+    const p = rapid.spriteRegion.currentShader.padding;
+    let paddingX = options.paddingX ?? 0;
+    let paddingY = options.paddingY ?? 0;
+    if (p !== 0) {
+        // If uv0 and uv1 are reversed, then padding needs to be set to a negative number.
+        const base = texture.base;
+        if (options.paddingX === undefined) paddingX = (u0 <= u1 ? p : -p) / base.width;
+        if (options.paddingY === undefined) paddingY = (v0 <= v1 ? p : -p) / base.height;
+    }
+
     rapid.spriteRegion.drawSprite(
         texture,
         options.customMatrix ?? rapid.matrixStack.curWorldM,
@@ -118,6 +130,8 @@ const drawSpriteRaw = (rapid: Rapid, options: ISpriteOptions): void => {
         u1,
         v1,
         getColorUint32(rapid, options.color),
+        paddingX,
+        paddingY,
     );
 };
 
