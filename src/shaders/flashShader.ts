@@ -12,7 +12,7 @@ export class FlashShader
 
     private InitShader() {
         const flashVertexShaderSource = `
-        void vertex(inout vec2 position, inout vec2 region) {
+        void vertex(inout vec4 position, inout vec2 region) {
             // Do nothing - just pass through
         }
         `;

@@ -398,7 +398,7 @@ export class LevelHandler
                 if (comp.save || forceAllEntityVars)
                 {
                     var compData = this.SerializeComponent(comp);
-                    var name = Helper.DecapitalizeFirstLetter(comp.constructor.name.replace('Component', ''));
+                    var name = bareEngine.GetComponentNameFromClassName(comp.constructor.name);
                     comps[name] = compData;
                 }
             }

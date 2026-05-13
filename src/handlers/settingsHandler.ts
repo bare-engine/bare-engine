@@ -119,10 +119,11 @@ export class SettingsHandler
             {
                 if (!categoryData || !categoryData.entries || categoryData.entries.length === 0) continue;
 
-                // PARSE STRING ENTRIES, EG: "roadTexture_1#12" 
+                // PARSE STRING ENTRIES, EG: "roadTexture_1#12"
+                // CAN ALSO OMIT 1: "roadTexture_#12". 1 IS DEFAULT
                 if (typeof categoryData.entries === 'string') 
                 {
-                    if (typeof categoryData.entries === 'string' && categoryData.entries.indexOf('#') != -1)
+                    if (typeof categoryData.entries === 'string' && this.IsNumberedName(categoryData.entries))
                     {
                         const entityBaseName = this.GetNumberedNameBaseName(categoryData.entries);
                         const entity = this.scene.ConstructEntity(entityBaseName, settings, options);
@@ -311,6 +312,7 @@ export class SettingsHandler
 
     // FIND IF # OR + ARE PRESENT, ADDS THE NUMBERED NAMES
     // EG: "player_walk1#3"       -> ["player_walk1", "player_walk2", "player_walk3"]
+    // EG: "player_walk#3"        -> ["player_walk1", "player_walk2", "player_walk3"]
     // EG: "player_walk1_00#03"    -> ["player_walk1_00", "player_walk1_01", "player_walk1_02", "player_walk1_03"]
     // EG: "player_walk1#2+4+6#8" -> ["player_walk1", "player_walk2", "player_walk4", "player_walk6", "player_walk7", "player_walk8"]
     // ALSO, WHEN imagePath IS SET, ADDS IT BEFORE EVERY NAME
@@ -325,13 +327,24 @@ export class SettingsHandler
         const processedNames: string[] = [];
         for (const name of names)
         {
-            const match = name.includes('#') ? name.match(/^(.+?)(\d+.*)$/) : null;
+            const match = this.IsNumberedName(name) ? name.match(/^(.+?)(\d*#\d+.*)$/) : null;
             if (match)
             {
                 const base = imagePath + match[1];
                 const segments = match[2].split('+');
                 for (const segment of segments)
                 {
+                    const shorthandRangeMatch = segment.match(/^#(\d+)$/);
+                    if (shorthandRangeMatch)
+                    {
+                        const endText = shorthandRangeMatch[1];
+                        const end = parseInt(endText);
+                        const paddingLength = endText.startsWith("0") ? endText.length : 0;
+                        for (let i = 1; i <= end; i++)
+                            processedNames.push(base + i.toString().padStart(paddingLength, "0"));
+                        continue;
+                    }
+
                     const rangeMatch = segment.match(/^(\d+)#(\d+)$/);
                     if (rangeMatch)
                     {
@@ -357,9 +370,14 @@ export class SettingsHandler
         return processedNames;
     }
 
+    private IsNumberedName(name: string): boolean
+    {
+        return name.includes('#');
+    }
+
     private GetNumberedNameBaseName(name: string): string
     {
-        const match = name.includes('#') ? name.match(/^(.+?)(\d+.*)$/) : null;
+        const match = this.IsNumberedName(name) ? name.match(/^(.+?)(\d*#\d+.*)$/) : null;
         return match ? match[1] + "#" : name;
     }
     

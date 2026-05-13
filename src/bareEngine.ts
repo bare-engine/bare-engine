@@ -8,6 +8,7 @@ import { TextureManager, Vec2 } from "./libraries/new-rapid-render";
 import { GameObject } from "./objects/gameObject";
 import { Scene } from "./scenes/scene";
 import { BareEvent, BareOptions, CanvasPosition, CanvasScale, Events, GameObjectClass, SceneClass } from "./types/bareTypes";
+import { Helper } from "./utils/helper";
 
 export class BareEngine
 {
@@ -36,11 +37,20 @@ export class BareEngine
 
     private mouseDownOnLeave: boolean = false;
 
-    // REMOVE LEADING _ THAT SOME COMPONENTS GET
-    // REMOVE NUMBER AT END - CAUSED BY DECORATOR ON COMPONENT, EG: @Run(GameMode.Game, GameMode.Editor)
-    private GetRegisteredClassName(_class: any): string
+    // USED JUST FOR COMPONENTS ATM
+    // REMOVES LEADING _ THAT SOME COMPONENTS GET
+    // REMOVES NUMBER AT END - CAUSED BY DECORATOR ON COMPONENT, EG: @Run(GameMode.Game, GameMode.Editor)
+    private GetNameFromClass(_class: any): string
     {
         return _class.name.replace(/^_/, '').replace(/\d+$/, '');
+    }
+
+    public GetComponentNameFromClassName(componentName: string): string
+    {
+        var res = Helper.DecapitalizeFirstLetter(componentName.replace('Component', ''))
+                        .replace(/\d+$/, '');
+
+        return res;
     }
      
     rootDir: string = "assets";
@@ -353,7 +363,7 @@ export class BareEngine
     // DOESN'T ALWAYS DO SOMETHING, BUT JUST A HOAX TO LET THE DEV REFFERENCE THE CLASS
     AddClass(_class: any): void
     {
-        const className = this.GetRegisteredClassName(_class);
+        const className = this.GetNameFromClass(_class);
 
         if (Scene.registeredClasses[className])
         {
@@ -393,7 +403,8 @@ export class BareEngine
 
     RegisterComponent(componentClass: any)
     {
-        bareEngine.componentClasses[this.GetRegisteredClassName(componentClass)] = componentClass;
+        var className = this.GetNameFromClass(componentClass);
+        bareEngine.componentClasses[className] = componentClass;
     }
 
 
