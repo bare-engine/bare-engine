@@ -6,7 +6,7 @@ import { PoolHandler } from "./handlers/poolHandler";
 import { EventArgs } from "./libraries/mitt";
 import { TextureManager, Vec2 } from "./libraries/new-rapid-render";
 import { GameObject } from "./objects/gameObject";
-import type { Scene } from "./scenes/scene";
+import { Scene } from "./scenes/scene";
 import { BareEvent, BareOptions, CanvasPosition, CanvasScale, Events, GameObjectClass, SceneClass } from "./types/bareTypes";
 
 export class BareEngine
@@ -327,6 +327,68 @@ export class BareEngine
     }
 
 
+
+    async LoadFont(name: string, url?: string)
+    {
+        // SET FIRST LOADED FONT AS DEFAULT
+        bareEngine.defaultFont ||= name;
+
+        if (!url)
+            url = `${name}.ttf`; // DEFAULTING TO TTF FONT WHEN NO URL SPECIFIED
+
+        const font = new FontFace(name, `url(${bareEngine.fontPath}/${url})`);
+        await font.load();
+        (document.fonts as any).add(font); // NEEDS 'as any' FOR LINUX
+    }
+
+    // A CATCH-ALL METHOD TO REGISTER CLASSES
+    // CAN BE CONTROLLER/GAMEOBJECT/COMPONENT/PHYSICS/ETC
+    // DOESN'T ALWAYS DO SOMETHING, BUT JUST A HOAX TO LET THE DEV REFFERENCE THE CLASS
+    AddClass(_class: any): void
+    {
+        const className = _class.name;
+
+        if (Scene.registeredClasses[className])
+        {
+            //console.warn(`Module ${className} is already registered`);
+            return;
+        }
+
+        // CONTROLLERS
+        var classNameFirstLowercase = className.charAt(0).toLowerCase() + className.slice(1);
+        if (globalThis[classNameFirstLowercase])
+        {
+            return;
+        }
+
+        // GAMEOBJECT
+        if (_class.prototype instanceof GameObject || _class === GameObject)
+        {
+            bareEngine.RegisterGameObjectPool(_class, 1);
+
+            Scene.registeredClasses[className] = _class;
+            return;
+        }
+
+        // COMPONENT
+        if (className.endsWith('Component'))
+        {
+            this.RegisterComponent(_class);
+
+            //Scene.modules[className] = "taken"; // COMMENTED OUT SINCE REGISTERED COMPONENTS ARE LOCAL TO BARE, HAS TO ADD
+
+            return;
+        }
+
+        //let instance = new _class(...args);
+        //Scene.registeredClasses[className] = instance;
+    }
+
+    RegisterComponent(componentClass: any)
+    {
+        var classNameNoLeadingUnderscore = componentClass.name.replace(/^_/, ''); // REMOVE LEADING _ THAT SOME COMPONENTS GET
+        bareEngine.componentClasses[classNameNoLeadingUnderscore] = componentClass;
+    }
 
 
     PointerEnter(event: PointerEvent)

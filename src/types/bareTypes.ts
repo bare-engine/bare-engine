@@ -90,7 +90,7 @@ export interface Entity
   tags?: Array<string>;
   customData?: Record<string, Scalar>;
 
-  position?: Position; // ONLY USED WITHIN LEVEL DATA
+  position?: Position; // ONLY USED WITHIN LEVEL DATA AND FOR CHILDREN
   x?: number;
   y?: number;
   //scaleX?: number;

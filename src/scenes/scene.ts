@@ -137,9 +137,9 @@ export class Scene implements SceneI
         this.persistent = options.persistent ?? false;
         this.ignored = options.ignored ?? false;
 
-        this.AddClass(GameObject);
-        this.AddClass(ObjectController);
-        this.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT, NOT ALWAYS NEEDED - TODO
+        bareEngine.AddClass(GameObject);
+        bareEngine.AddClass(ObjectController);
+        bareEngine.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT, NOT ALWAYS NEEDED - TODO
 
         SetControllerReferencesOnScene(this);
     }
@@ -1080,68 +1080,6 @@ export class Scene implements SceneI
     GetAllComponentsFrom(obj:GameObject):any[]
     {
         return this.componentController?.GetComponentsFrom(obj);
-    }
-
-    async LoadFont(name: string, url?: string)
-    {
-        // SET FIRST LOADED FONT AS DEFAULT
-        bareEngine.defaultFont ||= name;
-
-        if (!url)
-            url = `${name}.ttf`; // DEFAULTING TO TTF FONT WHEN NO URL SPECIFIED
-
-        const font = new FontFace(name, `url(${bareEngine.fontPath}/${url})`);
-        await font.load();
-        (document.fonts as any).add(font); // NEEDS 'as any' FOR LINUX
-    }
-
-    // A CATCH-ALL METHOD TO REGISTER CLASSES
-    // CAN BE CONTROLLER/GAMEOBJECT/COMPONENT/PHYSICS/ETC
-    // DOESN'T ALWAYS DO SOMETHING, BUT JUST A HOAX TO LET THE DEV REFFERENCE THE CLASS
-    AddClass(_class: any): void
-    {
-        const className = _class.name;
-
-        if (Scene.registeredClasses[className])
-        {
-            //console.warn(`Module ${className} is already registered`);
-            return;
-        }
-
-        // CONTROLLERS
-        var classNameFirstLowercase = className.charAt(0).toLowerCase() + className.slice(1);
-        if (globalThis[classNameFirstLowercase])
-        {
-            return;
-        }
-
-        // GAMEOBJECT
-        if (_class.prototype instanceof GameObject || _class === GameObject)
-        {
-            bareEngine.RegisterGameObjectPool(_class, 1);
-
-            Scene.registeredClasses[className] = _class;
-            return;
-        }
-
-        // COMPONENT
-        if (className.endsWith('Component'))
-        {
-            this.RegisterComponent(_class);
-
-            //Scene.modules[className] = "taken"; // COMMENTED OUT SINCE REGISTERED COMPONENTS ARE LOCAL TO BARE, HAS TO ADD
-
-            return;
-        }
-
-        //let instance = new _class(...args);
-        //Scene.registeredClasses[className] = instance;
-    }
-
-    RegisterComponent(componentClass: any)
-    {
-        var classNameNoLeadingUnderscore = componentClass.name.replace(/^_/, ''); // REMOVE LEADING _ THAT SOME COMPONENTS GET
-        bareEngine.componentClasses[classNameNoLeadingUnderscore] = componentClass;
     }
 
     Resize(prevWidth: number, prevHeight: number, newWidth: number, newHeight: number)
