@@ -3,7 +3,6 @@ precision mediump float;
 
 in vec4 vColor;
 in vec2 vRegion;
-in vec2 vUV;
 in vec4 vUVRect;
 
 uniform sampler2D uTexture;
@@ -22,6 +21,13 @@ vec4 sampleTexture(vec2 uv) {
         return texture(uTexture, uv) * vColor;
     }
     return vColor;
+}
+
+vec4 sampleClampTexture(vec2 uv) {
+    if (clampUV(uv)) {
+        return vec4(0.0, 0.0, 0.0, 0.0);
+    }
+    return sampleTexture(uv);
 }
 
 vec4 sampleTextureLocal(vec2 uv) {

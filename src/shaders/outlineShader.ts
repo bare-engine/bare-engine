@@ -29,25 +29,14 @@ export class OutlineShader
         `;*/
         
         const outlineFragmentShaderSource = `
-    uniform sampler2D uTexture;
     uniform vec4 uOutlineColor;
     uniform float uOutlineWidth;
     uniform vec2 uTextureSize;
-    uniform vec2 uRegionMin;
-    uniform vec2 uRegionMax;
 
     void fragment(inout vec4 color) {
-        vec2 px = vec2(1.0 / uTextureSize.x, 1.0 / uTextureSize.y);
-        
-        // Sample base sprite using clamped UVs.
-        vec2 baseUv = clamp(vRegion, uRegionMin, uRegionMax);
-        vec4 ownColor = sampleTexture(baseUv);
-
-        // Mask out the padded area so the base sprite does not stretch.
-        float insideX = step(uRegionMin.x - 0.0001, vRegion.x) * step(vRegion.x, uRegionMax.x + 0.0001);
-        float insideY = step(uRegionMin.y - 0.0001, vRegion.y) * step(vRegion.y, uRegionMax.y + 0.0001);
-        float inRegion = insideX * insideY;
-        ownColor *= inRegion;
+        vec2 uvSize = abs(vUVRect.zw - vUVRect.xy);
+        vec2 px = uvSize / max(uTextureSize, vec2(0.00000001));
+        vec4 ownColor = sampleClampTexture(vRegion);
 
         float maxAlpha = 0.0;
         
@@ -55,8 +44,7 @@ export class OutlineShader
         
         for (float angle = 0.0; angle <= PI * 2.0; angle += 0.39269908) {
             vec2 offset = vec2(cos(angle), sin(angle)) * uOutlineWidth * px;
-            vec2 displaced = clamp(vRegion + offset, uRegionMin, uRegionMax);
-            vec4 curColor = sampleTexture(displaced);
+            vec4 curColor = sampleClampTexture(vRegion + offset);
             maxAlpha = max(maxAlpha, curColor.a);
         }
         
@@ -74,7 +62,7 @@ export class OutlineShader
         this.outlineShader = new CustomGlShader(rapid,
             outlineVertexShaderSource, 
             outlineFragmentShaderSource, 
-            1
+            0
         );
     }
 
@@ -91,18 +79,10 @@ export class OutlineShader
         originalUniforms: gameObject.uniforms,
         baseWidth: width ?? 7.0
     });
-        
     
-    // Use atlas (base) size for pixel steps; region width/height are too small for UV space.
     const texture = gameObject.texture;
-    const textureWidth = texture?.base?.width ?? texture?.width ?? 512;
-    const textureHeight = texture?.base?.height ?? texture?.height ?? 512;
-    const uvX = texture?.uvX ?? 0;
-    const uvY = texture?.uvY ?? 0;
-    const uvW = texture?.uvW ?? 1;
-    const uvH = texture?.uvH ?? 1;
-    const regionMin: [number, number] = [Math.min(uvX, uvW), Math.min(uvY, uvH)];
-    const regionMax: [number, number] = [Math.max(uvX, uvW), Math.max(uvY, uvH)];
+    const textureWidth = texture?.width ?? texture?.base?.width ?? 512;
+    const textureHeight = texture?.height ?? texture?.base?.height ?? 512;
     const outlineWidth = width ?? 7.0;
     const scaleX = Math.abs(gameObject?.totalScaleX);
     const scaleY = Math.abs(gameObject?.totalScaleY);
@@ -111,9 +91,7 @@ export class OutlineShader
     this.outlineShader.setUniforms({
         uTextureSize: [textureWidth + 0.00000001, textureHeight + 0.00000001],
         uOutlineColor: [0.867, 0.631, 0.071, 1.0],
-        uOutlineWidth: outlineWidth / scale,
-        uRegionMin: regionMin,
-        uRegionMax: regionMax,
+        uOutlineWidth: outlineWidth,
     });
 
     gameObject.shader = this.outlineShader;
@@ -137,14 +115,8 @@ export class OutlineShader
             return;
 
         const texture = gameObject.texture;
-        const textureWidth = texture?.base?.width ?? texture?.width ?? 512;
-        const textureHeight = texture?.base?.height ?? texture?.height ?? 512;
-        const uvX = texture?.uvX ?? 0;
-        const uvY = texture?.uvY ?? 0;
-        const uvW = texture?.uvW ?? 1;
-        const uvH = texture?.uvH ?? 1;
-        const regionMin: [number, number] = [Math.min(uvX, uvW), Math.min(uvY, uvH)];
-        const regionMax: [number, number] = [Math.max(uvX, uvW), Math.max(uvY, uvH)];
+        const textureWidth = texture?.width ?? texture?.base?.width ?? 512;
+        const textureHeight = texture?.height ?? texture?.base?.height ?? 512;
 
         const state = this.objectStates.get(gameObject);
         const baseWidth = state?.baseWidth ?? 7.0;
@@ -154,8 +126,6 @@ export class OutlineShader
 
         this.outlineShader.setUniforms({
             uTextureSize: [textureWidth + 0.00000001, textureHeight + 0.00000001],
-            uRegionMin: regionMin,
-            uRegionMax: regionMax,
             uOutlineWidth: baseWidth / scale
         });
         this.outlineShader.setPadding((baseWidth + 2.0) / scale);
