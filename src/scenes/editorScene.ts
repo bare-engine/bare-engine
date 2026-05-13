@@ -278,11 +278,11 @@ export class EditorScene extends Scene
 
     private RegisterEditorComponents()
     {
-        this.AddClass(PivotComponent);
-        this.AddClass(PivotRemoveComponent);
-        this.AddClass(ResizableComponent);
-        this.AddClass(ResizableRemoveComponent);
-        this.AddClass(PositionPivotComponent);
+        bareEngine.AddClass(PivotComponent);
+        bareEngine.AddClass(PivotRemoveComponent);
+        bareEngine.AddClass(ResizableComponent);
+        bareEngine.AddClass(ResizableRemoveComponent);
+        bareEngine.AddClass(PositionPivotComponent);
     }
 
     SelectEntity(entity: Entity, childEntity: HTMLElement | null = null): void {
