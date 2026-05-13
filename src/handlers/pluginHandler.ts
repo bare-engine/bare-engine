@@ -170,6 +170,9 @@ window.__GAME_DEBUG_API__ = {
   },
 
   async GetLevelFiles() {
+    if (!bareEngine)
+      return [];
+    
     var l = await Helper.GetFilesInFolder(`${bareEngine.levelPath}/`, false);
     return l;
   },

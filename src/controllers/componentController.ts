@@ -125,7 +125,7 @@ export class ComponentController
 
                 if (!ComponentClass) // THIS IS NEEDED FOR RELEASE BUILD, SOME P COMPONENT GETS ADDED THAT'S NOT THERE IN GAME, TODO
                 {
-                    console.error('Component class not found: ' + className + '. Add it with bare.AddClass(' + Helper.CapitalizeFirstLetter(componentName) + 'Component);');
+                    console.error('Component class not found: ' + className + '. Add it with bareEngine.AddClass(' + Helper.CapitalizeFirstLetter(componentName) + 'Component);');
                     continue;
                 }
 
@@ -175,7 +175,7 @@ export class ComponentController
         // IF IT'S A componentClass, MAKE SURE IT'S REGISTERED
         // EG: AnimationComponent
         if (typeof arg === "function")
-            this.scene.AddClass(arg);
+            bareEngine.AddClass(arg);
 
         const component: C = (typeof arg === "function") ? new arg(go.scene, ...args) : arg;
 

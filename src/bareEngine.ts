@@ -35,6 +35,13 @@ export class BareEngine
     public componentClasses: Record<string, any> = {};
 
     private mouseDownOnLeave: boolean = false;
+
+    // REMOVE LEADING _ THAT SOME COMPONENTS GET
+    // REMOVE NUMBER AT END - CAUSED BY DECORATOR ON COMPONENT, EG: @Run(GameMode.Game, GameMode.Editor)
+    private GetRegisteredClassName(_class: any): string
+    {
+        return _class.name.replace(/^_/, '').replace(/\d+$/, '');
+    }
      
     rootDir: string = "assets";
     imageDir: string = "images";
@@ -346,7 +353,7 @@ export class BareEngine
     // DOESN'T ALWAYS DO SOMETHING, BUT JUST A HOAX TO LET THE DEV REFFERENCE THE CLASS
     AddClass(_class: any): void
     {
-        const className = _class.name;
+        const className = this.GetRegisteredClassName(_class);
 
         if (Scene.registeredClasses[className])
         {
@@ -386,8 +393,7 @@ export class BareEngine
 
     RegisterComponent(componentClass: any)
     {
-        var classNameNoLeadingUnderscore = componentClass.name.replace(/^_/, ''); // REMOVE LEADING _ THAT SOME COMPONENTS GET
-        bareEngine.componentClasses[classNameNoLeadingUnderscore] = componentClass;
+        bareEngine.componentClasses[this.GetRegisteredClassName(componentClass)] = componentClass;
     }
 
 
@@ -529,7 +535,7 @@ export class BareEngine
         if (!pool)
         {
             throw new Error(`No pool found for ${objectName}\n
-            Add bare.AddClass(${objectName}) to register a class for this object type.\n
+            Add bareEngine.AddClass(${objectName}) to register a class for this object type.\n
             Or bareEngine.RegisterGameObjectPool(${objectName}, 10) to register a pool for this object type.`);
             //this.RegisterGameObjectPool(objectName, () => new GameObject(), 20);
         }

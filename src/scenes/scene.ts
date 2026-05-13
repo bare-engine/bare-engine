@@ -460,7 +460,7 @@ export class Scene implements SceneI
                 var ComponentClass = bareEngine.componentClasses[className];
                 if (!ComponentClass)
                 {
-                    console.error('Component class not found: ' + className + '. Add it with bare.AddClass(' + Helper.CapitalizeFirstLetter(component) + 'Component);');
+                    console.error('Component class not found: ' + className + '. Add it with bareEngine.AddClass(' + Helper.CapitalizeFirstLetter(component) + 'Component);');
                 }
                 var componentValues = v[component];
                 var componentInstance = new ComponentClass(o.scene);
@@ -1183,7 +1183,7 @@ export class Scene implements SceneI
         if (!Ctor)
         {
             const className = propertyName.charAt(0).toUpperCase() + propertyName.slice(1);
-            throw new Error(`${className} not registered. Call bare.AddClass(${className}) at OnAwake() of your game.`);
+            throw new Error(`${className} not registered. Call bareEngine.AddClass(${className}) at OnAwake() of your game.`);
         }
 
         return true;
