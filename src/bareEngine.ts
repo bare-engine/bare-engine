@@ -500,14 +500,16 @@ export class BareEngine
             clearTimeout(this.restartTimeout);
         }
 
-        this.restartTimeout = setTimeout(() => {
+        this.restartTimeout = setTimeout(async () => {
             this.restartTimeout = null;
 
             globalEvents.emit(BareEvent.game_completeClear);
             
             sceneController.Clear(true);
-            sceneController.Goto(this.initialSceneClass);
+            await sceneController.Goto(this.initialSceneClass);
             this.lastUpdateTimeRef = performance.now();
+            
+            this.SendEvent(BareEvent.game_started);
         }, 0);
     }
 

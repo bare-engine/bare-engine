@@ -433,7 +433,7 @@ export class Scene implements SceneI
 
     ApplyEntityToGameObject(entity: Entity, obj: GameObject, addComponents: boolean = true)
     {
-        this.ApplyEntityVarsToGameObject(entity, obj);
+        this.ApplyEntityVarsToGameObject(entity, obj, addComponents);
         obj.OnApplyEntityToGameObject(entity, addComponents);
 
         obj.entity = entity;
@@ -474,7 +474,7 @@ export class Scene implements SceneI
         }
     };
 
-    ApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
+    ApplyEntityVarsToGameObject(entity: Entity, obj: GameObject, addComponents: boolean = true)
     {
         obj.OnApplyEntityVarsToGameObject(entity, obj);
         
@@ -514,6 +514,9 @@ export class Scene implements SceneI
         }
 
         for (const key in entity) {
+            if (key == "components" && !addComponents)
+                continue;
+
             const value = entity[key];
             if (value === undefined) continue;
 
