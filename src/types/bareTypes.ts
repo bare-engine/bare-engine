@@ -440,10 +440,12 @@ export interface Component<T extends GameObject = GameObject>
     enabled?: boolean;
     go: T; 
     save: boolean; // IF FALSE, DOES NOT SERIALIZE
+    hasAdded: boolean;
 
     Added?(go: T): void
     OnAdded?(): void;
     OnStart?(): void
+    Removed?(): void
     OnRemoved?(): void
     OnEnable?(): void
     OnDisable?(): void

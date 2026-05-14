@@ -437,9 +437,6 @@ export class Scene implements SceneI
         obj.OnApplyEntityToGameObject(entity, addComponents);
 
         obj.entity = entity;
-
-        //if (addComponents)
-        //    this.componentController?.ProcessCompentsFromEntity(entity, obj);
     }
 
     private specialMap: Record<string, (obj: GameObject, value: any) => void> =

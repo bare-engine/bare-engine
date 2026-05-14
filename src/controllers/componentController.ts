@@ -13,6 +13,7 @@ export abstract class BaseComponent<T extends GameObject = GameObject> implement
     enabled: boolean = true;
     go!: T;
     save: boolean = true; // IF FALSE, DOES NOT SERIALIZE
+    hasAdded: boolean = false;
 
     constructor(scene: Scene)
     {
@@ -23,6 +24,12 @@ export abstract class BaseComponent<T extends GameObject = GameObject> implement
     {
         this.go = go;
         this.OnAdded?.();
+    }
+
+    Removed(): void
+    {
+        if (this.hasAdded)
+            this.OnRemoved?.();
     }
 
     OnAdded?(): void;
@@ -65,85 +72,6 @@ export class ComponentController
         this.scene.events.on(BareEvent.level_preSave, this.OnPreSaveLevel.bind(this));
     }
 
-    // NOT USING - TODO
-    public ProcessCompentsFromEntity(entity:Entity, obj:GameObject)
-    {
-        // CREATE COMPONENTS
-        const ProcessComponents = (componentType: 'components' | 'editorComponents') =>
-        {
-            // PREPARE NEW DATA OBJ
-            var components: Record<string, Record<string, any>> = {};
-
-            var entityComps = entity[componentType];
-
-            // COPY OVER ENTITY OBJ TO NEW OBJ
-            for (const componentName in entityComps)
-            {
-                // ADD ENTITY COMPONENT (DEEP COPY) TODO: USE STRUCTURED CLONE THING FOR BETTER PERFORMANCE 
-                components[componentName] = JSON.parse(JSON.stringify(entityComps[componentName]));
-            }
-
-            // CHECK ENTITY MODIFICATIONS
-            if (entity)
-            {
-                var entityComps = entity[componentType];
-
-                for (const componentName in entityComps)
-                {
-                    if (components[componentName])
-                    {
-                        // COMPONENT ALREADY EXISTS, OVERWRITE WITH NEW VALUES
-                        for (const key in entityComps[componentName])
-                        {
-                            components[componentName][key] = entityComps[componentName][key];
-                        }
-                    }
-                    else
-                    {
-                        // ADD NEW COMPONENT
-                        components[componentName] = entityComps[componentName];
-                    }
-                }
-
-                // REMOVED COMPONENTS SPECIFICALLY LISTED IN ENTITY
-                /*if (entity.componentsRemoved)
-                {
-                    for (const componentName of entity.componentsRemoved)
-                    {
-                        //obj.componentsRemoved.push(componentName); // STORE SO IT'S SO IT'S SAVED AGAIN LATER
-                        delete components[componentName];
-                    }
-                }*/
-            }
-
-            // ADD COMPONENTS BASED ON OBJ
-            for (const componentName in components)
-            {
-                // FIND COMPONENT CLASS BASED ON NAME e.g. goal -> GoalComponent
-                const className = componentName.charAt(0).toUpperCase() + componentName.slice(1) + 'Component';
-                const ComponentClass = bareEngine.componentClasses[className];
-
-                if (!ComponentClass) // THIS IS NEEDED FOR RELEASE BUILD, SOME P COMPONENT GETS ADDED THAT'S NOT THERE IN GAME, TODO
-                {
-                    console.error('Component class not found: ' + className + '. Add it with bareEngine.AddClass(' + Helper.CapitalizeFirstLetter(componentName) + 'Component);');
-                    continue;
-                }
-
-                // INSTANTIATE COMPONENT, THEN APPLY SAVED VALUES BY NAME
-                const componentValues = components[componentName];
-                var componentInstance = new ComponentClass(this.scene);
-                for (const key in componentValues)
-                {
-                    componentInstance[key] = componentValues[key];
-                }
-                componentInstance.__paramNames = Object.keys(componentValues);
-                componentController.AddComponent(obj, componentInstance);
-            }
-        }
-
-        ProcessComponents('components');
-    }
-
     public AfterLoadedLevel(uids:string[]): void
     {
         // CALL ONLEVELCHANGED ON PERSISTENT OBJECTS
@@ -181,9 +109,10 @@ export class ComponentController
 
         // Check class-level @Run decorator
         const runModes: number[] | undefined = (component.constructor as any)[RUN_MODES_KEY];
+        const runsInCurrentMode = runModes?.includes(bareEngine.gameMode) ?? false;
         
-        if (runModes && !runModes.includes(bareEngine.gameMode))
-            return null as any;
+        if (runModes && !runsInCurrentMode)
+            return null;
 
         component.go = go;
 
@@ -209,18 +138,24 @@ export class ComponentController
 
         component.enabled = false;
 
-        const shouldActivate = runModes ? runModes.includes(bareEngine.gameMode) : bareEngine.gameMode == GameMode.Game;
-
+        const shouldActivate = (runsInCurrentMode || bareEngine.gameMode == GameMode.Game);
         if (shouldActivate)
         {
             component.enabled = true;
 
             component.Added?.(go);
 
+            component.hasAdded = true;
+            
             if (component.OnStart)
             {
                 this.queuedForStart.push(component)
             }
+        }
+        else
+        {
+            // COMPONENT JUST HANGS AROUND DOING NOTHING - NOT ENABLED+ADDED
+            // BUT IT'S THERE TO BE SERIALIZED AGAIN BY THE LEVEL
         }
 
         return component;
@@ -295,8 +230,7 @@ export class ComponentController
         if (index < 0)
             return false;
 
-        if (component.OnRemoved)
-            component.OnRemoved();
+        component.Removed();
 
         components.splice(index, 1);
 
@@ -356,8 +290,7 @@ export class ComponentController
 
             components.splice(i, 1);
 
-            if (component.OnRemoved)
-                component.OnRemoved();
+            component.Removed();
         }
 
         if (components.length == 0)
@@ -368,7 +301,7 @@ export class ComponentController
     {
         if (includingPersistent)
         {
-            this.CallMethodOnAllComponents('OnRemoved');
+            this.CallMethodOnAllComponents('Removed');
             this.componentsByGameObject.clear()
             this.componentsByType.clear()
             this.queuedForStart = []
@@ -384,8 +317,7 @@ export class ComponentController
 
             for (const component of components)
             {
-                if (component.OnRemoved)
-                    component.OnRemoved();
+                component.Removed();
 
                 const typeComponents = this.componentsByType.get(component.constructor as Ctor<Component<any>>);
                 if (typeComponents)

@@ -189,7 +189,7 @@ export class SettingsHandler
             {
                 if (!Scene.registeredClasses[className])
                 {
-                    console.warn(`Class ${className} is not registered.\nAdd it in scene with: this.AddClass(${className})`);
+                    console.warn(`Class ${className} is not registered.\nAdd it in scene with: bareEngine.AddClass(${className})`);
                     continue;
                 }
 
