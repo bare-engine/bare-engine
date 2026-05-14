@@ -61,8 +61,9 @@ function bareTypeScriptTransformPlugin(options = {}) {
             const result = useTypeChecker
                 ? emitTransformedTs(filePath, code, compilerOptions)
                 : transpileTransformedTs(filePath, code, compilerOptions);
+            const shouldAppendHotRestart = hotRestart && hasStartBareCall(code, filePath);
             return result ? {
-                code: hotRestart ? appendHotRestart(result.code) : result.code,
+                code: shouldAppendHotRestart ? appendHotRestart(result.code) : result.code,
                 map: result.map
             } : null;
         }
@@ -91,9 +92,7 @@ function bareFullReloadPlugin(options = {}) {
 function appendHotRestart(code) {
     const hmrCode = `
 if (import.meta.hot) {
-    import.meta.hot.accept(() => {
-        window.bareEngine?.Restart();
-    });
+    import.meta.hot.accept();
 }
 `;
 
@@ -103,6 +102,35 @@ if (import.meta.hot) {
     }
 
     return `${code.slice(0, sourceMapMatch.index)}${hmrCode}${sourceMapMatch[0]}`;
+}
+
+function hasStartBareCall(code, filePath) {
+    const sourceFile = ts.createSourceFile(filePath, code, ts.ScriptTarget.Latest, true);
+    let found = false;
+
+    function visit(node) {
+        if (found) {
+            return;
+        }
+
+        if (ts.isCallExpression(node)) {
+            const expression = node.expression;
+            if (ts.isIdentifier(expression) && expression.text === "StartBare") {
+                found = true;
+                return;
+            }
+
+            if (ts.isPropertyAccessExpression(expression) && expression.name.text === "StartBare") {
+                found = true;
+                return;
+            }
+        }
+
+        ts.forEachChild(node, visit);
+    }
+
+    visit(sourceFile);
+    return found;
 }
 
 function bareHtmlPlugin(options = {}) {
