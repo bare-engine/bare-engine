@@ -675,10 +675,14 @@ export class Scene implements SceneI
         // DON'T WANT COMPONENTS TO BE CREATED AT ApplyEntityToGameObject(). 
         //delete entityConstructed.components;
 
-        // STILL ADDING FALSE TO PREVENT COMPONENTS CREATION IN OVERRIDEN ApplyEntityToGameObject
+        // ADDING FALSE TO PREVENT COMPONENTS CREATION...
         this.ApplyEntityToGameObject(entityConstructed, gameObject, false);
 
         var entity = this.levelHandler.SerializeObjectFully(gameObject);
+
+        // ... BUT ADDING IT BACK TO THE ENITY HERE, SO IT'S NOT LOST
+        if (entityConstructed.components)
+            entity.components = entityConstructed.components;
 
         return entity;
     }
