@@ -119,10 +119,11 @@ export class SettingsHandler
             {
                 if (!categoryData || !categoryData.entries || categoryData.entries.length === 0) continue;
 
-                // PARSE STRING ENTRIES, EG: "roadTexture_1#12"
-                // CAN ALSO OMIT 1: "roadTexture_#12". 1 IS DEFAULT
+                // PARSE STRING ENTRIES...
                 if (typeof categoryData.entries === 'string') 
-                {
+                { 
+                    // ... EG: "roadTexture_1#12"
+                    // CAN ALSO OMIT 1: "roadTexture_#12" (1 IS DEFAULT)
                     if (typeof categoryData.entries === 'string' && this.IsNumberedName(categoryData.entries))
                     {
                         const entityBaseName = this.GetNumberedNameBaseName(categoryData.entries);
@@ -133,20 +134,21 @@ export class SettingsHandler
                         for (const entryName of entryNames)
                         {
                             // ALSO PUSH EACH AS ENTITY SO WE CAN FIND THEM LATER
-                            const entityClone = {...entity, name: entryName};
                             if (!settings.entities[entryName]) // DON'T OVERWRITE EXISTING ENTRIES
-                                settings.entities[entryName] = entityClone;
+                                settings.entities[entryName] = {...entity, name: entryName};
                         }
                     }
 
+                    // ... EG: "level_[editorImages]"
+                    // WILL FIND ALL FILES UNDER editorImages AND CREATE level_... ENTRIES OUT OF THEM
                     if (typeof categoryData.entries === 'string')
                     {
-                        const regex = /(.+)_\[(.+)\]/; // eg "level_[editorImages]"
+                        const regex = /(.+)_\[(.+)\]/;
                         const match = categoryData.entries.match(regex);
                         if (match)
                         {
-                            const prefix = match[1]; // eg "level"
-                            const imagePath = match[2]; // eg "editorImages"
+                            const prefix = match[1]; // EG "level"
+                            const imagePath = match[2]; // EG "editorImages"
 
                             var entityBaseName = prefix + "_*";
                             var entity = this.scene.ConstructEntity(entityBaseName, settings, options);
@@ -160,12 +162,14 @@ export class SettingsHandler
                                 categoryData.entries.push(fileName);
 
                                 // ALSO PUSH EACH AS ENTITY SO WE CAN FIND THEM LATER
-                                var entityClone = {...entity};
-                                if (!settings.entities[entityClone.name]) // DON'T OVERWRITE EXISTING ENTRIES
-                                    settings.entities[entityClone.name] = entityClone;
+                                if (!settings.entities[entity.name]) // DON'T OVERWRITE EXISTING ENTRIES
+                                    settings.entities[entity.name] = {...entity};
                             }
                         }
                     }
+
+                    // REMOVE THE STRING ENTRY
+                    delete categoryData.entries;
                 }
             }
         }
