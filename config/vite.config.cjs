@@ -8,7 +8,9 @@ const {
     bareInitialAssetsPlugin,
     bareShaderRawPlugin,
     bareTexturePackImagesPlugin,
-    bareTypeScriptTransformPlugin
+    bareTypeScriptTransformPlugin,
+    stripUnusedMethodsPlugin,
+    readProjectPackage
 } = require("../vite/plugins.cjs");
 
 module.exports = ({ mode }) => {
@@ -16,6 +18,8 @@ module.exports = ({ mode }) => {
     const isDev = mode === "development";
     const engineIndexPath = path.resolve(__dirname, "index.html");
     const buildIndexPath = ensureLocalBuildIndex(projectRoot, engineIndexPath);
+    const projectPackage = readProjectPackage(projectRoot);
+    const stripOptions = projectPackage.bareEngine?.stripUnusedMethods;
 
     return {
         root: projectRoot,
@@ -49,7 +53,8 @@ module.exports = ({ mode }) => {
             bareTexturePackImagesPlugin({
                 projectRoot,
                 runOnStart: false
-            })
+            }),
+            ...(!isDev && stripOptions !== false ? [stripUnusedMethodsPlugin(typeof stripOptions === "object" ? stripOptions : {})] : [])
         ],
         server: {
             open: false,

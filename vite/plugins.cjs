@@ -1,6 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
+const { parse: acornParse } = require("acorn");
 const ts = require("./projectRequire")("typescript");
 const createControllerProxyTransformer = require("./controllerProxyTransformer");
 const createGameObjectNameTransformer = require("./gameObjectNameTransformer");
@@ -658,6 +659,105 @@ function normalize(value) {
     return value.replace(/\\/g, "/");
 }
 
+const STRIP_ALWAYS_KEEP = new Set(["constructor"]);
+
+function walkAst(node, visitors) {
+    if (!node || typeof node !== "object") return;
+    visitors.enter && visitors.enter(node);
+    for (const key of Object.keys(node)) {
+        const child = node[key];
+        if (Array.isArray(child)) {
+            for (const item of child) {
+                if (item && typeof item.type === "string") walkAst(item, visitors);
+            }
+        } else if (child && typeof child.type === "string") {
+            walkAst(child, visitors);
+        }
+    }
+    visitors.leave && visitors.leave(node);
+}
+
+function stripUnusedMethodsPlugin(options = {}) {
+    const alwaysKeep = new Set([...STRIP_ALWAYS_KEEP, ...(options.keep || [])]);
+
+    return {
+        name: "bare:strip-unused-methods",
+        apply: "build",
+        renderChunk(code) {
+            let ast;
+            try {
+                ast = acornParse(code, { ecmaVersion: "latest", sourceType: "module" });
+            } catch {
+                return null;
+            }
+
+            const methodNodes = new Map();
+            const methodBodyRefs = new Map();
+            const externalRefs = new Set(alwaysKeep);
+            const methodStack = [];
+
+            function addRef(name) {
+                if (methodStack.length > 0)
+                    methodBodyRefs.get(methodStack[methodStack.length - 1]).add(name);
+                else
+                    externalRefs.add(name);
+            }
+
+            walkAst(ast, {
+                enter(node) {
+                    if (node.type === "MethodDefinition" && node.key.type === "Identifier") {
+                        const name = node.key.name;
+                        if (!methodNodes.has(name)) methodNodes.set(name, []);
+                        methodNodes.get(name).push(node);
+                        if (!methodBodyRefs.has(name)) methodBodyRefs.set(name, new Set());
+                        methodStack.push(name);
+                    }
+                    if (node.type === "MemberExpression") {
+                        if (node.property.type === "Identifier")
+                            addRef(node.property.name);
+                        if (node.property.type === "Literal" && typeof node.property.value === "string")
+                            addRef(node.property.value);
+                    }
+                },
+                leave(node) {
+                    if (node.type === "MethodDefinition" && node.key.type === "Identifier")
+                        methodStack.pop();
+                }
+            });
+
+            // BFS reachability from external refs through the call graph
+            const alive = new Set();
+            const queue = [...externalRefs].filter(n => methodNodes.has(n));
+            while (queue.length > 0) {
+                const name = queue.shift();
+                if (alive.has(name)) continue;
+                alive.add(name);
+                for (const callee of methodBodyRefs.get(name) ?? []) {
+                    if (methodNodes.has(callee) && !alive.has(callee))
+                        queue.push(callee);
+                }
+            }
+
+            // Collect removal ranges for dead methods, then apply back-to-front
+            const removals = [];
+            for (const [name, nodes] of methodNodes) {
+                if (!alive.has(name))
+                    for (const node of nodes)
+                        removals.push({ start: node.start, end: node.end });
+            }
+
+            if (removals.length === 0) return null;
+
+            removals.sort((a, b) => b.start - a.start);
+            let result = code;
+            for (const { start, end } of removals)
+                result = result.slice(0, start) + result.slice(end);
+
+            return { code: result };
+        }
+    };
+}
+
 module.exports = {
     bareEditorAndApiPlugin,
     bareGeneratedLayersPlugin,
@@ -666,5 +766,7 @@ module.exports = {
     bareInitialAssetsPlugin,
     bareShaderRawPlugin,
     bareTexturePackImagesPlugin,
-    bareTypeScriptTransformPlugin
+    bareTypeScriptTransformPlugin,
+    stripUnusedMethodsPlugin,
+    readProjectPackage
 };
