@@ -287,7 +287,7 @@ export class SceneController
 
     GetAllScenes(includeIgnored: boolean = false): Scene[]
     {
-        return this.currentScenes.filter(current => includeIgnored || !current.ignored);
+        return this.currentScenes.filter(current => includeIgnored || !current.secret);
     }
 
     GetAllSceneObjects()

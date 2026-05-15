@@ -490,7 +490,7 @@ export interface SceneI
 export type SceneOptions = {
     settingsData?: SettingsData;
     persistent?: boolean;
-    ignored?: boolean;
+    secret?: boolean;
     UI?: boolean;
     resize?: boolean;
     solo?: boolean;

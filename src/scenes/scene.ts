@@ -52,7 +52,7 @@ export class Scene implements SceneI
     public persistent: boolean = false;
     public UI: boolean = false;
     public resize: boolean = false;
-    public ignored: boolean = false;
+    public secret: boolean = false; // WILL MAKE THE SCENE NOT INCLUDE IN GetAllScenes() - USED FOR PLUGIN ATM
 
     public isLevel: boolean = false;
 
@@ -135,7 +135,7 @@ export class Scene implements SceneI
         this.UI = options.UI ?? false;
         this.resize = options.resize ?? false;
         this.persistent = options.persistent ?? false;
-        this.ignored = options.ignored ?? false;
+        this.secret = options.secret ?? false;
 
         bareEngine.AddClass(GameObject);
         bareEngine.AddClass(ObjectController);

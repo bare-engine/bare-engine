@@ -12,12 +12,12 @@ export class EditorUIScene extends Scene
     
     constructor()
     {
-        super({UI: true, resize: true, ignored: true, persistent: true});
+        super({UI: true, resize: true, secret: !true, persistent: true});
     }
 
     OnStart(payload?: EditorUIScenePayload): void | Promise<void>
     {
-        var position = payload.openEditorButtonPosition;
+        var position = payload?.openEditorButtonPosition ?? { x: .5, y: 0 };
 
         this.editorButton = new Button(this, {text: "Open Editor", OnPress: this.OnClickEditorButton.bind(this)});
         this.AddGameObject(this.editorButton);

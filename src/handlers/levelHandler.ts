@@ -21,8 +21,6 @@ import { getSaveFields } from "../utils/decorators";
 
 export class LevelHandler
 {
-    private static editorUISceneRequested: boolean = false;
-
     currentLevel: LevelData;
     levelCache: Map<string, LevelData> = new Map();
     
