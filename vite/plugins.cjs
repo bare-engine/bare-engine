@@ -235,6 +235,7 @@ function bareEditorAndApiPlugin(options = {}) {
     const publicDir = path.join(projectRoot, "public");
     let skipReloadUntil = 0;
     let lastSettingsDataPath = "";
+    let shouldEmitEditorHtml = false;
 
     return {
         name: "bare:editor-api",
@@ -337,15 +338,33 @@ function bareEditorAndApiPlugin(options = {}) {
                 return [];
             }
         },
+        generateBundle(_options, bundle) {
+            shouldEmitEditorHtml = bundleIncludesEditorScene(bundle);
+        },
         closeBundle() {
             const outDir = path.join(projectRoot, "dist");
-            if (fs.existsSync(editorHtmlPath) && fs.existsSync(outDir)) {
-                fs.copyFileSync(editorHtmlPath, path.join(outDir, "editor.html"));
+            const editorOutputPath = path.join(outDir, "editor.html");
+
+            if (fs.existsSync(outDir)) {
+                if (shouldEmitEditorHtml && fs.existsSync(editorHtmlPath)) {
+                    fs.copyFileSync(editorHtmlPath, editorOutputPath);
+                } else {
+                    fs.rmSync(editorOutputPath, { force: true });
+                }
             }
 
             fs.rmSync(path.join(outDir, "assets/data/emojiData.json"), { force: true });
         }
     };
+}
+
+function bundleIncludesEditorScene(bundle) {
+    return Object.values(bundle).some(item =>
+        item.type === "chunk"
+        && Object.keys(item.modules || {}).some(moduleId =>
+            normalize(moduleId).endsWith("/src/scenes/editorScene.ts")
+        )
+    );
 }
 
 function bareTexturePackImagesPlugin(options = {}) {
