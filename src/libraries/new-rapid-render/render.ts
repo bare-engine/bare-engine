@@ -380,9 +380,6 @@ export class Rapid {
 
         this.gl.viewport(0, 0, this.physicsWidth, this.physicsHeight);
         this.updateProjection(0, this.logicWidth, this.logicHeight, 0);
-
-        console.log(`[RESIZE] logic ：${this.logicWidth}, ${this.logicHeight}`)
-        console.log(`[RESIZE] physics ：${this.physicsWidth}, ${this.physicsHeight}`)
     }
 
     /**
