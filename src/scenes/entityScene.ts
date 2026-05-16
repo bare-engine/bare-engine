@@ -368,7 +368,7 @@ export class EntityScene extends EditorScene
         return level;*/
     }
 
-    async OnSaveEntityData(rawData: SettingsData): Promise<void>
+    async OnPreSaveEntityData(rawData: SettingsData): Promise<void>
     {
         this.settingsHandler.Process(rawData);
 

@@ -490,7 +490,7 @@ export class EditorScene extends Scene
         //if (globalThis.plugin)
         //    globalThis.plugin.FilterSettingsDataDefaults(newRawData);
 
-        await this.OnSaveEntityData(newRawData);
+        await this.OnPreSaveEntityData(newRawData);
 
         // Persist to disk via dev-server endpoint when available (local only)
         if (!window.isLocalhost) {
@@ -521,7 +521,7 @@ export class EditorScene extends Scene
         }
     }
 
-    async OnSaveEntityData(rawData: SettingsData)
+    async OnPreSaveEntityData(rawData: SettingsData)
     {
         // FOR OVERRIDE
     }
