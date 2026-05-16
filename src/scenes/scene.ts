@@ -1224,24 +1224,6 @@ export class Scene implements SceneI
     {
         /* @ AddClass(levelHandler) */
 
-        if (!window.isLocalhost)
-        {
-            // CHECK IF LEVEL IS IN EDITED CACHE, WILL BE SAVED HERE WHEN NOT ON LOCALHOST
-            // SINCE CAN'T SAVE TO DISK
-
-            var levelStr = SaveData.currentLevelStr;
-            if (typeof levelInput === "string")
-                levelStr = levelInput;
-
-            var levelCached = SaveData.levelsEditedCache.get(levelStr);
-            if (levelCached)
-            {
-                var levelPromise = this.levelHandler?.LoadLevel(levelCached);
-                SaveData.currentLevelStr = levelStr; // SETTING IT HERE BECAUSE IT'S NOT SET IN LOADLEVEL() SINCE WE SUPPLY A LEVELDATA OBJECT (NOT LEVELNAME STRING)
-                return levelPromise;
-            }
-        }
-
         return this.levelHandler?.LoadLevel(levelInput);
     }
 }

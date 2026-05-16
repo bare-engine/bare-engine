@@ -90,6 +90,25 @@ export class LevelHandler
 
     async LoadLevel(levelInput: string | LevelData = ""):Promise<LevelData>
     {
+        // WHEN IN PRODUCTION, WE DON'T LOAD LEVELS FROM DISK INITIALLY
+        // BUT ONCE PLAYER EDITS IT IN LEVEL EDITOR, IT'S LOADED FROM CACHE (SINCE IN PROD WE CAN'T SAVE EDITS TO DISK)
+        if (!window.isLocalhost)
+        {
+            var levelStr = SaveData.currentLevelStr;
+            if (typeof levelInput === "string")
+                levelStr = levelInput;
+
+            var levelCached = SaveData.levelsEditedCache.get(levelStr);
+            if (levelCached)
+            {
+                levelInput = levelCached;
+                
+                // SETTING currentLevelStr HERE SINCE IT'S NOT SET IN LOADLEVEL() 
+                // BECAUSE WE SUPPLY A LEVELDATA OBJECT (NOT LEVELNAME STRING)
+                SaveData.currentLevelStr = levelStr;
+            }
+        }
+
         // STORE PERSISTENT OBJECTS, TO CALL ONLEVELCHANGED AFTER LOAD
         var persistenObjUIDs:string[] = [];
         var gameLayers = objectController.GetLayers();
