@@ -23,7 +23,8 @@
     "./src/main.ts",
     "./src/controllers/*.ts",
     "./src/handlers/cameraHandler.ts",
-    "./src/handlers/levelHandler.ts"
+    "./src/handlers/levelHandler.ts",
+    "./src/libraries/howler/howler.core.js"
   ],
   "exports": {
     ".": {

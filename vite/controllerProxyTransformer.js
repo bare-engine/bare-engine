@@ -104,6 +104,8 @@ function createControllerProxyTransformer(program) {
                 return callNode;
             }
 
+            const usedControllersInSource = new Set();
+
             function visit(node) {
                 if (ts.isClassDeclaration(node) || ts.isClassExpression(node)) {
                     return transformClass(node);
@@ -128,7 +130,7 @@ function createControllerProxyTransformer(program) {
             function transformClass(node) {
                 const className = node.name ? node.name.text : null;
                 const isStartBareTarget = className && startBareTargets.has(className);
-                const usedControllers = isStartBareTarget ? new Set() : null;
+                const usedControllers = isProjectSource ? new Set() : null;
                 const hasScene = classHasSceneProperty(node);
                 const extendsScene = classExtendsScene(node);
                 const extendsSceneDeep = extendsScene
@@ -176,6 +178,18 @@ function createControllerProxyTransformer(program) {
                             hasScene = true;
                         }
                     }
+
+                    if (usedControllers) {
+
+
+                        usedControllers.add("tweenController");
+
+
+                    }
+
+
+                    
+
 
                     let tweenControllerAccess;
                     if (hasScene) {
@@ -455,14 +469,77 @@ function createControllerProxyTransformer(program) {
                     );
                 }
 
+                if (usedControllers) {
+                    for (const controllerName of usedControllers) {
+                        usedControllersInSource.add(controllerName);
+                    }
+                }
+
                 return updated;
             }
 
-            return ts.visitNode(sourceFile, visit);
+            const transformed = ts.visitNode(sourceFile, visit);
+            return addControllerImports(transformed, usedControllersInSource, factory);
         };
     };
 }
 
+
+function addControllerImports(sourceFile, controllerNames, factory) {
+    if (!controllerNames || controllerNames.size === 0) {
+        return sourceFile;
+    }
+
+    const imports = [];
+    const refs = [];
+    const sortedControllerNames = Array.from(controllerNames).sort();
+
+    for (const controllerName of sortedControllerNames) {
+        const className = controllerNameToClassName(controllerName);
+        const localName = `__Bare${className}`;
+
+        imports.push(factory.createImportDeclaration(
+            undefined,
+            factory.createImportClause(
+                false,
+                undefined,
+                factory.createNamedImports([
+                    factory.createImportSpecifier(
+                        false,
+                        factory.createIdentifier(className),
+                        factory.createIdentifier(localName)
+                    )
+                ])
+            ),
+            factory.createStringLiteral("bare-engine")
+        ));
+
+        refs.push(factory.createExpressionStatement(
+            factory.createCallExpression(
+                factory.createPropertyAccessExpression(factory.createIdentifier("Object"), "defineProperty"),
+                undefined,
+                [
+                    factory.createIdentifier(localName),
+                    factory.createStringLiteral("__bareControllerRef"),
+                    factory.createObjectLiteralExpression([
+                        factory.createPropertyAssignment("value", factory.createTrue()),
+                        factory.createPropertyAssignment("configurable", factory.createTrue())
+                    ])
+                ]
+            )
+        ));
+    }
+
+    return factory.updateSourceFile(sourceFile, [
+        ...imports,
+        ...refs,
+        ...sourceFile.statements
+    ]);
+}
+
+function controllerNameToClassName(value) {
+    return value[0].toUpperCase() + value.slice(1);
+}
 function collectRegisteredControllersFromProgram(program) {
     const names = new Set();
     for (const sourceFile of program.getSourceFiles()) {
@@ -1295,3 +1372,7 @@ function isIdentifierReference(node) {
 }
 
 module.exports = createControllerProxyTransformer;
+
+
+
+
