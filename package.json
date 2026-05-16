@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "scripts": {
     "build": "node scripts/cleanDist.cjs && vite build",
-    "analyze": "vite build",
+    "analyze": "node scripts/analyze.cjs",
     "dev:fixture": "node scripts/devFixture.cjs",
     "test": "node scripts/runTests.cjs",
     "test:e2e": "npm run test"
@@ -12,6 +12,7 @@
   "license": "MIT",
   "files": [
     "config",
+    "scripts/analyze.cjs",
     "src",
     "vite",
     "LICENSE",
@@ -19,6 +20,9 @@
   ],
   "main": "src/index.ts",
   "types": "src/index.ts",
+  "bin": {
+    "bare-engine-analyze": "./scripts/analyze.cjs"
+  },
   "sideEffects": [
     "./src/main.ts",
     "./src/controllers/*.ts",
@@ -47,6 +51,7 @@
     "vite": "^6.3.5"
   },
   "dependencies": {
-    "selenium-webdriver": "^4.43.0"
+    "selenium-webdriver": "^4.43.0",
+    "vite-bundle-visualizer": "^1.2.1"
   }
 }
