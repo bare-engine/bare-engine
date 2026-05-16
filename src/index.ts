@@ -2,11 +2,11 @@ import { PhysicsControllerBare } from "./controllers/physicsControllerBare";
 import { ComponentController } from "./controllers/componentController";
 import { PhysicsObjectBare } from "./objects/physicsObjectBare";
 
-export const BareClasses = {
+/*export const BareClasses = {
   PhysicsControllerBare,
   PhysicsObjectBare,
   ComponentController,
-};
+};*/
 
 // Core
 export { BareEngine } from "./bareEngine";
