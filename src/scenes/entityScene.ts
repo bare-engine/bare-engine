@@ -82,11 +82,8 @@ export class EntityScene extends EditorScene
 
         this.isBase = isBase;
 
-        // DON'T WANT TO SHOW THE UI, WE UNDO THIS BEFORE SAVING THE ENTITY DATA AGAIN, BIT AWKWARD
-        this.settingsHandler.UpdateRaw((raw) => {
-            raw.showUI = false;
-            raw.selectionEnabled = false;
-        }, {fillPresets: false}); // fillPresets FALSE!!! DON'T WANT TO FILL PRESETS SO THEY REMAIN AS STRING IN PLUGIN PANEL
+        // Entity editor UI state is local to this scene; don't write it into the shared settings raw data.
+        this.HideEditorUIForScene();
         // PROBLEM: THE ACTUAL RECT INGAME - TODO
         
         var levelData = await this.CreateEntityDataFor(objectName, isBase);
@@ -368,21 +365,22 @@ export class EntityScene extends EditorScene
         return level;*/
     }
 
+    private HideEditorUIForScene(): void
+    {
+        this.settingsData.showUI = false;
+        this.settingsData.selectionEnabled = false;
+    }
+
     async OnPreSaveEntityData(rawData: SettingsData): Promise<void>
     {
-        this.settingsHandler.Process(rawData);
+        delete rawData.showUI;
+        delete rawData.selectionEnabled;
 
-        this.settingsHandler.UpdateRaw((raw) => {
-            delete raw.showUI;
-            delete raw.selectionEnabled;
-        });
+        await this.settingsHandler.Process(rawData);
     }
 
     async OnPostSaveEntityData(rawData: SettingsData): Promise<void>
     {
-        await this.settingsHandler.UpdateRaw((raw) => {
-            raw.showUI = false;
-            raw.selectionEnabled = false;
-        });
+        this.HideEditorUIForScene();
     }
 }
