@@ -370,7 +370,7 @@ function bundleIncludesEditorScene(bundle) {
 function bareTexturePackImagesPlugin(options = {}) {
     const projectRoot = options.projectRoot || process.cwd();
     const watchDir = options.watchDir || path.join(projectRoot, "texturePackImages");
-    const buildCommand = options.buildCommand || ["npm", "run", "build:assets"];
+    const buildCommand = options.buildCommand || [process.execPath, path.resolve(__dirname, "../scripts/buildAssets.cjs")];
     const debounceMs = options.debounceMs ?? 200;
     const runOnStart = options.runOnStart ?? false;
     let timer = null;
@@ -398,10 +398,12 @@ function bareTexturePackImagesPlugin(options = {}) {
         const [command, ...args] = buildCommand;
         const resolvedCommand = process.platform === "win32" && command === "npm" ? "npm.cmd" : command;
         console.log(`[assets] Running ${buildCommand.join(" ")} (${reason})`);
+        const useShell = process.platform === "win32" && /\.cmd$/i.test(resolvedCommand);
+
         child = spawn(resolvedCommand, args, {
             cwd: projectRoot,
             stdio: "inherit",
-            shell: process.platform === "win32"
+            shell: useShell
         });
         child.on("close", (code) => {
             if (code !== 0) {

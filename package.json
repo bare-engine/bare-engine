@@ -13,6 +13,7 @@
   "files": [
     "config",
     "scripts/analyze.cjs",
+    "scripts/buildAssets.cjs",
     "src",
     "vite",
     "LICENSE",
@@ -21,7 +22,8 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "bin": {
-    "bare-engine-analyze": "./scripts/analyze.cjs"
+    "bare-engine-analyze": "./scripts/analyze.cjs",
+    "bare-engine-assets": "./scripts/buildAssets.cjs"
   },
   "sideEffects": [
     "./src/main.ts",
@@ -37,6 +39,8 @@
     },
     "./config/vite.config": "./config/vite.config.cjs",
     "./config/vite.config.cjs": "./config/vite.config.cjs",
+    "./config/assetpack.config": "./config/assetpack.config.mjs",
+    "./config/assetpack.config.mjs": "./config/assetpack.config.mjs",
     "./config/tsconfig.base.json": "./config/tsconfig.base.json",
     "./vite/*": "./vite/*"
   },
