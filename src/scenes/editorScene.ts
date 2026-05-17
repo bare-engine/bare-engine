@@ -193,7 +193,11 @@ export class EditorScene extends Scene
         sceneController.EnableAllScenes();
 
         var level = sceneController.GetLevelScene();
-        level.Restart();
+
+        if (level)
+            level.Restart();
+        else
+            sceneController.Restart(); // 
 
         //if (loadLevelAfter)
         //    levelController.LoadCurrentLevel();
