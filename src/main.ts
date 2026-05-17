@@ -13,15 +13,9 @@ if (!canvas) {
     document.body.appendChild(canvas);
 }
 
-export function StartBare(gameClass: SceneClass, options?: BareOptions): void
+function GetBareOptions(options?: BareOptions): BareOptions
 {
-    if (__DEV__ && window.bareEngine) {
-        window.bareEngine.Restart(gameClass);
-        return;
-    }
-
-    // DEFAULTS + OVERRIDE OPTIONS
-    options = { ...{
+    return { ...{
         antiAlias: true,
         premultipliedAlpha: true,
         gameObjectPoolSize: 50,
@@ -30,6 +24,17 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
         textureFilter: TextureFilterMode.LINEAR,
         editorButtonPosition: {x: 0, y: 0}
     }, ...options };
+}
+
+export function StartBare(gameClass: SceneClass, options?: BareOptions): void
+{
+    // DEFAULTS + OVERRIDE OPTIONS
+    options = GetBareOptions(options);
+
+    if (__DEV__ && window.bareEngine) {
+        window.bareEngine.Restart(gameClass, options);
+        return;
+    }
 
     window.initialAssetsReady = (assets:any[] = []) => {
         const doesSupportWebGL = supportsWebGL(canvas);

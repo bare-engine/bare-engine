@@ -13,6 +13,7 @@ import { Helper } from "./utils/helper";
 export class BareEngine
 {
     private initialSceneClass: SceneClass;
+    private options: BareOptions = {};
     private restartTimeout: ReturnType<typeof setTimeout> | null = null;
 
     public lastUpdateTimeRef:number;
@@ -105,14 +106,34 @@ export class BareEngine
         this.Init(sceneClass, options);
     }
 
+    private ApplyOptions(options?: BareOptions): void
+    {
+        this.options = options ?? {};
+        this.fixedTimestep = this.options.fixedTimestep ?? 1 / 60;
+
+        if (this.options.textureFilter !== undefined)
+        {
+            rapid.setTextureFilter(this.options.textureFilter);
+
+            var baseTextures = new Set([...assetsHandler.textures.values()].map(texture => texture.base).filter(base => base));
+            for (var baseTexture of baseTextures)
+                baseTexture!.setFilterMode(rapid.gl, this.options.textureFilter);
+        }
+
+        if (this.options.antiAlias !== undefined)
+            rapid.setAntialias(this.options.antiAlias);
+
+        if (this.options.gameObjectPoolSize !== undefined)
+            BareEngine.gameObjectPoolSize = this.options.gameObjectPoolSize;
+    }
+
     // SEPARATE METHOD TO MAKE ASYNC
     async Init(sceneClass: SceneClass, options?: BareOptions) 
     {
+        this.ApplyOptions(options);
+
         if (__DEV__)
-            PluginHandler.Init(options?.editorButtonPosition);
-        
-        if (options?.fixedTimestep)
-            this.fixedTimestep = options.fixedTimestep;
+            PluginHandler.Init(this.options.editorButtonPosition);
 
         this.initialSceneClass = sceneClass;
         
@@ -125,11 +146,11 @@ export class BareEngine
         // BUT IF ANTI-ALIAS IS ON, THAT TEXTURE USES LINEAR FILTERING, SO STRETCHING THAT PIXEL IS NOT GREAT AND GETS BLURRY
         
         this.ImplementInitialTextures();
-        this.ResizeCanvas(options?.resolution);
+        this.ResizeCanvas(this.options.resolution);
 
         window.bareEngine = this;
         
-        bareEngine.RegisterGameObjectPool(GameObject, options?.gameObjectPoolSize);
+        bareEngine.RegisterGameObjectPool(GameObject, this.options.gameObjectPoolSize);
 
         globalEvents.emit(BareEvent.game_awake);
 
@@ -137,7 +158,7 @@ export class BareEngine
 
         this.dummyGameObject = new GameObject(scene); // TOO LATE IF USER WANTS TO USE IT IN sceneClass, BUT FINE FOR MY CURRENT USAGE
         
-        window.addEventListener('resize', ()=>this.ResizeCanvas(options?.resolution));
+        window.addEventListener('resize', () => this.ResizeCanvas(this.options.resolution));
 
         document.addEventListener('pointerdown', this.PointerDown.bind(this), { passive: false });
         document.addEventListener('pointerup', this.PointerUp.bind(this), { passive: false });
@@ -490,10 +511,14 @@ export class BareEngine
 
 
 
-    Restart(sceneClass?: SceneClass): void
+    Restart(sceneClass?: SceneClass, options?: BareOptions): void
     {
         if (sceneClass) {
             this.initialSceneClass = sceneClass;
+        }
+
+        if (options) {
+            this.ApplyOptions(options);
         }
 
         if (this.restartTimeout) {
