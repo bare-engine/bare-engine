@@ -166,8 +166,6 @@ export class BaseTexture {
     public uid?: string;
     public refCount: number = 0;
 
-    sourceUrl?: string
-
     constructor(texture: WebGLTexture, width: number, height: number) {
         this.glTexture = texture;
         this.width = width;
