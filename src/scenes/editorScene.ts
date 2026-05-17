@@ -14,7 +14,7 @@ import { SaveDataHandler } from "../handlers/SaveDataHandler";
 import { SettingsHandler } from "../handlers/settingsHandler";
 import { Color, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
-import { BareEvent, CameraScaleMode, Entity, HitboxType, LevelData, SaveData, SceneOptions, SettingsData, Size } from "../types/bareTypes";
+import { BareEvent, BareOptions, CameraScaleMode, Entity, HitboxType, LevelData, SaveData, SceneOptions, SettingsData, Size } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
 import { Helper } from "../utils/helper";
 import { Scene } from "./scene";
@@ -35,6 +35,7 @@ export class EditorScene extends Scene
     
     // State management
     private backgroundColorOrig: Color;
+    private gameResolution: BareOptions['resolution'] = undefined;
     public draggingLevelEntity: GameObject | null = null;
     public currentLevelPath: string = '';
     
@@ -112,6 +113,11 @@ export class EditorScene extends Scene
         var level = await this.LoadLevel(levelNameOrData);
 
         bareEngine.gameMode = GameMode.Editor; // JUST SET TO GAME IN OnClear()
+        if (!this.opened)
+            this.gameResolution = bareEngine.resolution;
+
+        if (this.gameResolution)
+            bareEngine.SetResolution();
 
         this.saveLevelCallback = saveLevelCallback.bind(this);
 
@@ -171,13 +177,20 @@ export class EditorScene extends Scene
         bareEngine.SendEvent(BareEvent.editor_opened, {settingsDataName: this.settingsData.name || 'levelEditor', levelName: level.isData ? "data" : SaveData.currentLevelStr});
     }
 
-    OnClear(): void
+    OnClear(includingPersistent: boolean = true): void
     {
         if (this.opened) // CHECKING, SINCE THIS ALSO RUNS ON INIT WHEN CALLING LoadLevel()
         {
-            this.opened = false;
-            bareEngine.gameMode = GameMode.Game; // SETTING IT IN BARE.START() NOW, BUT ALSO KINDA MAKES SENSE HERE
-            bareEngine.SendEvent(BareEvent.editor_closed, {settingsDataName: this.settingsData.name || 'levelEditor', levelName: SaveData.currentLevelStr});
+            if (includingPersistent)
+            {
+                this.opened = false;
+                bareEngine.gameMode = GameMode.Game; // SETTING IT IN BARE.START() NOW, BUT ALSO KINDA MAKES SENSE HERE
+                
+                if (this.gameResolution)
+                    bareEngine.SetResolution(this.gameResolution);
+
+                bareEngine.SendEvent(BareEvent.editor_closed, {settingsDataName: this.settingsData.name || 'levelEditor', levelName: SaveData.currentLevelStr});
+            }
         }
         
         rapid.backgroundColor = this.backgroundColorOrig;

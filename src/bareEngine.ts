@@ -27,6 +27,7 @@ export class BareEngine
     public maxDeltaTime: number = 1 / 15; // CAPS FRAME DELTA, USEFUL AFTER LAG OR TAB REFOCUS
     private accumulator: number = 0;
     public resolutionScale: number = 1;
+    public resolution: BareOptions['resolution'] = undefined;
     
     private RunMainLoopBound: () => void;
 
@@ -110,6 +111,7 @@ export class BareEngine
     {
         this.options = options ?? {};
         this.fixedTimestep = this.options.fixedTimestep ?? 1 / 60;
+        this.resolution = this.options.resolution;
 
         if (this.options.textureFilter !== undefined)
         {
@@ -125,6 +127,12 @@ export class BareEngine
 
         if (this.options.gameObjectPoolSize !== undefined)
             BareEngine.gameObjectPoolSize = this.options.gameObjectPoolSize;
+    }
+
+    public SetResolution(resolution?: BareOptions['resolution']): void
+    {
+        this.resolution = resolution;
+        this.ResizeCanvas(this.resolution);
     }
 
     // SEPARATE METHOD TO MAKE ASYNC
@@ -146,7 +154,7 @@ export class BareEngine
         // BUT IF ANTI-ALIAS IS ON, THAT TEXTURE USES LINEAR FILTERING, SO STRETCHING THAT PIXEL IS NOT GREAT AND GETS BLURRY
         
         this.ImplementInitialTextures();
-        this.ResizeCanvas(this.options.resolution);
+        this.ResizeCanvas(this.resolution);
 
         window.bareEngine = this;
         
@@ -158,7 +166,7 @@ export class BareEngine
 
         this.dummyGameObject = new GameObject(scene); // TOO LATE IF USER WANTS TO USE IT IN sceneClass, BUT FINE FOR MY CURRENT USAGE
         
-        window.addEventListener('resize', () => this.ResizeCanvas(this.options.resolution));
+        window.addEventListener('resize', () => this.ResizeCanvas(this.resolution));
 
         document.addEventListener('pointerdown', this.PointerDown.bind(this), { passive: false });
         document.addEventListener('pointerup', this.PointerUp.bind(this), { passive: false });
@@ -513,17 +521,11 @@ export class BareEngine
 
     Restart(sceneClass?: SceneClass, options?: BareOptions): void
     {
-        if (sceneClass) {
+        if (sceneClass)
             this.initialSceneClass = sceneClass;
-        }
 
-        if (options) {
-            this.ApplyOptions(options);
-        }
-
-        if (this.restartTimeout) {
+        if (this.restartTimeout)
             clearTimeout(this.restartTimeout);
-        }
 
         this.restartTimeout = setTimeout(async () => {
             this.restartTimeout = null;
@@ -531,6 +533,11 @@ export class BareEngine
             globalEvents.emit(BareEvent.game_completeClear);
             
             sceneController.Clear(true);
+            
+            if (options)
+                this.ApplyOptions(options);
+
+            this.ResizeCanvas(this.resolution);
             await sceneController.Goto(this.initialSceneClass);
             this.lastUpdateTimeRef = performance.now();
 
