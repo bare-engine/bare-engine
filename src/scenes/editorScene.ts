@@ -4,6 +4,7 @@ import { PivotRemoveComponent } from "../editorComponents/pivotRemoveComponent";
 import { PositionPivotComponent } from "../editorComponents/positionPivotComponent";
 import { ResizableComponent } from "../editorComponents/resizableComponent";
 import { ResizableRemoveComponent } from "../editorComponents/resizableRemoveComponent";
+import { GameMode, globalEvents } from "../globals";
 import { cameraHandler } from "../handlers/cameraHandler";
 import { EditorControlsHandler } from "../handlers/editorControlsHandler";
 import { EditorUIHandler } from "../handlers/editorUIHandler";
@@ -11,14 +12,12 @@ import { FileDropHandler } from "../handlers/fileDropHandler";
 import { levelHandler } from "../handlers/levelHandler";
 import { SaveDataHandler } from "../handlers/SaveDataHandler";
 import { SettingsHandler } from "../handlers/settingsHandler";
-import { GameMode, globalEvents } from "../globals";
 import { Color, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
-import { Scene } from "./scene";
 import { BareEvent, CameraScaleMode, Entity, HitboxType, LevelData, SaveData, SceneOptions, SettingsData, Size } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
 import { Helper } from "../utils/helper";
-import { plugin } from "../handlers/pluginHandler";
+import { Scene } from "./scene";
 
 type EditorSceneAwakePayload = {
     levelPathOrData?: string | LevelData;

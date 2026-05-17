@@ -47,14 +47,6 @@ export class EditorControlsHandler {
             EditorControlsHandler.copiedObjectCached = [];
         }
 
-        // Keyboard controls
-        if (window.isLocalhost)
-        document.addEventListener('keydown', (e: KeyboardEvent) => {
-            if (e.key.toLowerCase() == "x") {
-                this.scene.Toggle(this.scene.settingsHandler);
-            }
-        }, { passive: false });
-
         this.currentPreviewEntity = new PhysicsObjectBare(this.scene, '', -100, -100);
         this.currentPreviewEntity.name = 'currentPreviewEntity';
         this.currentPreviewEntity.customName = 'ignoreInPlugin';
