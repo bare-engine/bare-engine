@@ -94,12 +94,14 @@ export class EditorControlsHandler {
         // CUT
         if (allKeys[0] == 'control' && allKeys[1] == 'x')
         {
-            // - TODO
+            this.CopySelectedObjects();
+            this.RemoveSelectedObjects();
+            this.scene.saveLevelCallback();
         }
         // COPY
         if (allKeys[0] == 'control' && allKeys[1] == 'c')
         {
-            this.copiedObjects = this.selectedObjects.map(obj => levelHandler.SerializeObject(obj));
+            this.CopySelectedObjects();
         }
         // PASTE
         if (allKeys[0] == 'control' && allKeys[1] == 'v')
@@ -229,11 +231,19 @@ export class EditorControlsHandler {
         }
     }
 
+    CopySelectedObjects()
+    {
+        this.copiedObjects = this.selectedObjects.map(obj => levelHandler.SerializeObject(obj));
+    }
+
     RemoveSelectedObjects()
     {
-        for (var i = 0; i < this.selectedObjects.length; i++)
+        const objsToRemove = this.selectedObjects.slice();
+        this.ClearSelection();
+
+        for (var i = 0; i < objsToRemove.length; i++)
         {
-            const obj = this.selectedObjects[i];
+            const obj = objsToRemove[i];
             this.scene.RemoveGameObject(obj);
         }
     }
