@@ -72,7 +72,7 @@ export class ComponentController
         this.scene.events.on(BareEvent.level_preSave, this.OnPreSaveLevel.bind(this));
     }
 
-    public AfterLoadedLevel(uids:string[]): void
+    public PostLoadLevel(uids:string[]): void
     {
         // CALL ONLEVELCHANGED ON PERSISTENT OBJECTS
         for (var i = 0; i < uids.length; i++)
@@ -146,7 +146,7 @@ export class ComponentController
             component.Added?.(go);
 
             component.hasAdded = true;
-            
+
             if (component.OnStart)
             {
                 this.queuedForStart.push(component)

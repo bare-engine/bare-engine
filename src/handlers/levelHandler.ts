@@ -129,7 +129,7 @@ export class LevelHandler
 
         this.scene.Clear(false);
         
-        await this.scene.OnBeforeLoadLevel();
+        await this.scene.OnPreLoadLevel();
         this.scene.doRender = false;
 
         var level: LevelData;
@@ -144,7 +144,7 @@ export class LevelHandler
         }
 
         this.scene.doRender = true;
-        this.scene.AfterLoadedLevel(level, persistenObjUIDs);
+        this.scene.PostLoadLevel(level, persistenObjUIDs);
         
         bareEngine.SendEvent(BareEvent.level_loaded, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
 

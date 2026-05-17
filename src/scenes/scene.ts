@@ -1063,20 +1063,20 @@ export class Scene implements SceneI
         return [];
     }
     
-    async OnBeforeLoadLevel()
+    async OnPreLoadLevel()
     {
         // FOR OVERRIDE
     }
 
-    AfterLoadedLevel(level:LevelData, uids:string[])
+    PostLoadLevel(level:LevelData, uids:string[])
     {
         this.isLevel = true;
 
-        this.componentController?.AfterLoadedLevel(uids);
-        this.OnAfterLoadedLevel(level);
+        this.componentController?.PostLoadLevel(uids);
+        this.OnPostLoadLevel(level);
     }
     
-    OnAfterLoadedLevel(level:LevelData)
+    OnPostLoadLevel(level:LevelData)
     {
         // FOR OVERRIDE
     }

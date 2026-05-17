@@ -19,7 +19,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
   
   public activeCollisions: Set<string> = new Set();
   private currentFrameCollisions: Set<string> = new Set();
-  public OnBeforeCollisionResolve: ((obj1: PhysicsObjectBare, obj2: PhysicsObjectBare) => boolean) | null = null;
+  public OnPreCollisionResolve: ((obj1: PhysicsObjectBare, obj2: PhysicsObjectBare) => boolean) | null = null;
   private broadPhaseMaxItems: number = 8;
   private broadPhaseMaxLevels: number = 6;
 
@@ -314,7 +314,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
               collisionInfo.dy = -collisionInfo.dy;
             }
 
-            if (this.OnBeforeCollisionResolve && !this.OnBeforeCollisionResolve(obj1, obj2)) continue;
+            if (this.OnPreCollisionResolve && !this.OnPreCollisionResolve(obj1, obj2)) continue;
             const corr = this.ResolveSolidCollision(obj1, obj2, collisionInfo);
             if (!corr) continue;
 
