@@ -61,10 +61,8 @@ module.exports = ({ mode }) => {
             watch: {
                 ignored: [
                     "**/node_modules/**",
-                    "**/public/data/levels/**",
                     "**/dist/**",
-                    "**/src/_bareTypes/layer.ts",
-                    "**/levels/**"
+                    "**/src/_bareTypes/layer.ts"
                 ]
             }
         },
