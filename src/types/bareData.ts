@@ -17,6 +17,9 @@ export const defaultSettingsData: SettingsData = {
       doSave: true
     }
   },
+  categories: {
+    
+  },
   presets: {
     DEFAULT: {
       pivotBasedOnHitbox: {
