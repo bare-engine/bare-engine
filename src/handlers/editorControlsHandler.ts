@@ -106,6 +106,9 @@ export class EditorControlsHandler {
         // PASTE
         if (allKeys[0] == 'control' && allKeys[1] == 'v')
         {
+            if (this.copiedObjects.length == 0)
+                return;
+
             var topLeftCopiedObjects = new Vec2(Number.MAX_VALUE, Number.MAX_VALUE);
             this.copiedObjects.forEach(entity => {
                 if (entity.position.x < topLeftCopiedObjects.x)
@@ -123,6 +126,7 @@ export class EditorControlsHandler {
                 var objCreated = this.scene.AddGameObjectAtPosition(entity.position.x + offset.x, entity.position.y + offset.y, entity, layer);
                 objsCreated.push(objCreated);
             });
+            this.SnapPastedObjectsToGrid(objsCreated);
 
             this.SelectGameObjects(objsCreated);
 
@@ -246,6 +250,38 @@ export class EditorControlsHandler {
             const obj = objsToRemove[i];
             this.scene.RemoveGameObject(obj);
         }
+    }
+
+    private SnapPastedObjectsToGrid(objs: GameObject[])
+    {
+        if (objs.length == 0)
+            return;
+
+        var anchorObj = objs[0];
+        for (var i = 1; i < objs.length; i++)
+        {
+            const obj = objs[i];
+            if (obj.x < anchorObj.x || (obj.x == anchorObj.x && obj.y < anchorObj.y))
+                anchorObj = obj;
+        }
+
+        const snappedPosition = this.GetGridAlignedPosition(
+            anchorObj,
+            anchorObj.x,
+            anchorObj.y,
+            keyboardController.IsKeyDown("alt"),
+            mouseController.world.position.x,
+            mouseController.world.position.y
+        );
+
+        const movedX = snappedPosition.x - anchorObj.x;
+        const movedY = snappedPosition.y - anchorObj.y;
+
+        if (movedX == 0 && movedY == 0)
+            return;
+
+        for (const obj of objs)
+            obj.SetPosition(obj.x + movedX, obj.y + movedY);
     }
     
     private PointerMove({ mouseX, mouseY, event }: BareEventPayload['pointer_move']): void {
