@@ -255,7 +255,7 @@ export class EditorUIHandler {
                             }
                         } else {
                             const entityImagePath = this.GetEntityImagePath(entity);
-                            if (entityImagePath && entityImagePath !== 'assets/images/whitePixel.webp') {
+                            if (entityImagePath && entityImagePath !== 'images/whitePixel.webp') {
                                 const img = document.createElement('img');
                                 img.src = entityImagePath;
                                 img.id = entityId;

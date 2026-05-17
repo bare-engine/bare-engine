@@ -39,7 +39,7 @@ import { Description, InspectorButton, InspectorField, Range } from "../utils/de
 // }
 
 // THIS IS JUST A QUICK EXAMPLE, IDEALLY YOU'D WANT TO HAVE THIS IN A JSON AND INCLUDE IT IN CODE WITH: 
-// import entityDataJson from '../public/assets/data/settingsData.json';
+// import entityDataJson from '../public/data/settingsData.json';
 // ... super(entityDataJson);
 
 // THE IDEA WITH THIS IS THAT ANIMATIONS STAYS SEPARATED IN DATA, AND ARE NOT DEFINED SOMEWHERE IN CODE

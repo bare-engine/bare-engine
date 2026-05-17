@@ -184,7 +184,7 @@ function bareHtmlPlugin(options = {}) {
 
 function bareInitialAssetsPlugin(options = {}) {
     const projectRoot = options.projectRoot || process.cwd();
-    const folder = path.join(projectRoot, "public/assets/initial");
+    const folder = path.join(projectRoot, "public/initial");
 
     return {
         name: "bare:initial-assets",
@@ -204,7 +204,7 @@ function bareInitialAssetsPlugin(options = {}) {
 
 function bareGeneratedLayersPlugin(options = {}) {
     const projectRoot = options.projectRoot || process.cwd();
-    const jsonPath = options.jsonPath || path.join(projectRoot, "public/assets/data/settingsData.json");
+    const jsonPath = options.jsonPath || path.join(projectRoot, "public/data/settingsData.json");
     const outputPath = options.outputPath || path.join(projectRoot, "src/generated/layers.ts");
 
     return {
@@ -311,7 +311,7 @@ function bareEditorAndApiPlugin(options = {}) {
                             : "settingsData.json";
                         const relativePath = customPath
                             ? path.join(String(customPath), fileName)
-                            : path.join("assets/data", fileName);
+                            : path.join("data", fileName);
                         const fullPath = path.join(publicDir, relativePath);
 
                         if (skipReload) {
@@ -334,7 +334,7 @@ function bareEditorAndApiPlugin(options = {}) {
             }
 
             const filePath = normalize(ctx.file);
-            if (filePath.includes("/assets/data/settingsData.json") || (lastSettingsDataPath && filePath.includes(lastSettingsDataPath))) {
+            if (filePath.includes("/data/settingsData.json") || (lastSettingsDataPath && filePath.includes(lastSettingsDataPath))) {
                 return [];
             }
         },
@@ -353,7 +353,7 @@ function bareEditorAndApiPlugin(options = {}) {
                 }
             }
 
-            fs.rmSync(path.join(outDir, "assets/data/emojiData.json"), { force: true });
+            fs.rmSync(path.join(outDir, "data/emojiData.json"), { force: true });
         }
     };
 }
@@ -409,7 +409,7 @@ function bareTexturePackImagesPlugin(options = {}) {
             }
             child = null;
             if (serverRef) {
-                serverRef.ws.send({ type: "full-reload", path: "/assets/initial" });
+                serverRef.ws.send({ type: "full-reload", path: "/initial" });
             }
             if (queued) {
                 queued = false;
@@ -509,7 +509,7 @@ function injectInitialAssets(html, folder) {
     if (fs.existsSync(folder)) {
         for (const filePath of getFilesRecursive(folder)) {
             const relativePath = path.relative(folder, filePath).replace(/\\/g, "/");
-            const url = `./assets/initial/${relativePath}`;
+            const url = `./initial/${relativePath}`;
             if (filePath.endsWith(".js")) {
                 tags += `<script data-initial-asset="true" src="${url}" async onload="this.dataset.loaded='true'" onerror="this.dataset.loaded='true'"></script>\n`;
             } else if (/\.(png|jpe?g|gif|webp|svg)$/i.test(filePath)) {

@@ -61,7 +61,7 @@ module.exports = ({ mode }) => {
             watch: {
                 ignored: [
                     "**/node_modules/**",
-                    "**/public/assets/data/levels/**",
+                    "**/public/data/levels/**",
                     "**/dist/**",
                     "**/src/_bareTypes/layer.ts",
                     "**/levels/**"
@@ -87,8 +87,8 @@ module.exports = ({ mode }) => {
                 },
                 output: {
                     entryFileNames: "bundle.min.js",
-                    chunkFileNames: "assets/[name]-[hash].js",
-                    assetFileNames: "assets/[name]-[hash][extname]"
+                    chunkFileNames: "[name]-[hash].js",
+                    assetFileNames: "[name]-[hash][extname]"
                 }
             }
         }
@@ -143,7 +143,7 @@ function isSettingsDataPublicImportWarning(message) {
     const text = String(message).replace(/\\/g, "/");
 
     return text.includes("Assets in public directory cannot be imported from JavaScript")
-        && text.includes("/public/assets/data/settingsData.json");
+        && text.includes("/public/data/settingsData.json");
 }
 
 function bareIndexOutputPlugin() {

@@ -53,7 +53,7 @@ export class BareEngine
         return res;
     }
      
-    rootDir: string = "assets";
+    rootDir: string = "";
     imageDir: string = "images";
     levelDir: string = "data/levels";
     soundDir: string = "sounds";
@@ -508,7 +508,7 @@ export class BareEngine
             sceneController.Clear(true);
             await sceneController.Goto(this.initialSceneClass);
             this.lastUpdateTimeRef = performance.now();
-            
+
             this.SendEvent(BareEvent.game_started);
         }, 0);
     }
