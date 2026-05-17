@@ -25,6 +25,7 @@ export class LevelHandler
     levelCache: Map<string, LevelData> = new Map();
     
     public scene: Scene;
+    backgroundColor: Color | null = null;
     
     constructor(scene: Scene)
     {
@@ -192,7 +193,7 @@ export class LevelHandler
         this.currentLevel = level;
 
         if (level.backgroundColor)
-            rapid.backgroundColor = Color.fromHex(level.backgroundColor);
+            this.backgroundColor = Color.fromHex(level.backgroundColor);
 
         // LOAD ALL TEXTURES
         await Promise.all(this.CreatePromiseLevelTextures(level));
@@ -848,8 +849,15 @@ export class LevelHandler
         }
     }
 
+    PreRender()
+    {
+        if (this.backgroundColor)
+            rapid.drawRect({ width: this.currentLevel.dimensions.width, height: this.currentLevel.dimensions.height, color: this.backgroundColor });
+    }
+
     Clear()
     {
+        this.backgroundColor = null;
         this.currentLevel = null;
     }
 }

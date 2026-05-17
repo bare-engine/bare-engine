@@ -925,6 +925,8 @@ export class Scene implements SceneI
         if (!this.UI)
             this.cameraHandler?.SetTransform();
 
+        this.levelHandler?.PreRender();
+        
         this.OnPreRender();
 
         this.componentController?.PreRender();
