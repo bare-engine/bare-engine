@@ -596,8 +596,10 @@ function assertSafePath(value) {
 
 function listFiles(publicDir, folderPath, recursive) {
     const rootPath = path.resolve(publicDir);
-    const fullPath = path.resolve(publicDir, folderPath || "");
-    if (!fullPath.startsWith(rootPath)) {
+    const relativeFolderPath = String(folderPath || "").replace(/^[/\\]+/, "");
+    const fullPath = path.resolve(publicDir, relativeFolderPath);
+    const isInsidePublic = fullPath === rootPath || fullPath.startsWith(rootPath + path.sep);
+    if (!isInsidePublic) {
         return null;
     }
     if (!fs.existsSync(fullPath) || !fs.statSync(fullPath).isDirectory()) {

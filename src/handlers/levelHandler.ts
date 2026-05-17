@@ -183,7 +183,7 @@ export class LevelHandler
         // FOR INGAME USE, YOU MORE LIKELY SUPPLY THE settingsData DIRECTLY INSTEAD OF LOADING IT
         // EG:
         // await sceneController.Add(EditorScene, {
-        //     levelPathOrData: "assets/data/levels/map.json",
+        //     levelPathOrData: "data/levels/map.json",
         //     settingsHandler: game.mapSettingsHandler,
         // });
         if (level.settingsData && level.settingsData != this.scene.settingsData.name)
