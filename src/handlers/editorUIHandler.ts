@@ -588,15 +588,7 @@ export class EditorUIHandler {
         const editorButton = document.getElementById('close-editor-btn') as HTMLButtonElement;
         editorButton.addEventListener('click', (event: MouseEvent) => {
             event.preventDefault();
-
-            if (SaveData.currentLevelStr != '')
-            {
-                this.scene.Close();
-            }
-            else
-            {
-                this.scene.Restart(); // THERE IS NO LEVEL, JUST RESTART. THIS HAPPENS FOR HITBOX EDITOR
-            }
+            this.scene.Close();
         }, { signal });
 
         // MINIMIZE BUTTON HOVER

@@ -187,20 +187,17 @@ export class EditorScene extends Scene
         this.editorControlsHandler.Clear();
     }
 
-    async Close(loadLevelAfter: boolean = true)
+    async Close()
     {
         sceneController.Remove(EditorScene); // CALLS ONCLEAR
-        sceneController.EnableAllScenes();
+        sceneController.EnableAllScenes(); // COULD ENABLE SCENES THAT WERE PREVIOUSLY DISABLED - TODO
 
         var level = sceneController.GetLevelScene();
 
         if (level)
             level.Restart();
         else
-            sceneController.Restart(); // 
-
-        //if (loadLevelAfter)
-        //    levelController.LoadCurrentLevel();
+            sceneController.Restart(); // CAN GET HERE WHEN LOADED LEVEL FROM PLUGIN, BUT LAST GAME SCENE DOESN'T LOAD LEVEL
     }
 
     async Toggle(settingsHandler: SettingsHandler, levelPathOrData: string | LevelData = '', saveLevelCallback: () => Promise<LevelData> = this.SaveLevel)
