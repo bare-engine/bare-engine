@@ -48,10 +48,14 @@ export class EditorUIHandler {
         const base = texture.base;
         if (!base?.uid) return;
 
-        element.style.backgroundImage = `url(${base.uid})`;
         this.ApplyTextureBackgroundStyle(element, texture);
 
-        if (!texture.frame) return;
+        if (!texture.frame) {
+            element.style.backgroundImage = `url(${base.uid})`;
+            return;
+        }
+
+        element.style.backgroundImage = '';
 
         const frame = texture.frame;
         const img = new Image();
@@ -366,7 +370,7 @@ export class EditorUIHandler {
         });
 
         var visible = (data.layers.length > 1);
-        document.getElementById('layers-sidebar')!.style.display = (visible ? 'block' : 'none');
+        document.getElementById('layers-sidebar')!.style.marginRight = visible ? '0px' : '-1000px'; // HACKY WAY TO HIDE SIDEBAR, DISPLAY GETS TOGGLED AT OTHER OffPointers
 
         data.layers.forEach((layerName) => {
             const info = data.layersInfo?.[layerName] as LayerInfo | undefined;
