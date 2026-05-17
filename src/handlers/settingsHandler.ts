@@ -169,7 +169,7 @@ export class SettingsHandler
                     }
 
                     // REMOVE THE STRING ENTRY
-                    delete categoryData.entries;
+                    //delete categoryData.entries;
                 }
             }
         }

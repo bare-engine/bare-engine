@@ -4,7 +4,7 @@ import { FlashShader } from "../shaders/flashShader";
 import { TweenTo } from "../controllers/tweenController";
 import { EditorScene } from '../scenes/editorScene';
 import { objectController } from '../controllers/objectController';
-import { Color, RenderTexture } from '../libraries/new-rapid-render';
+import { Color, RenderTexture, Texture, TextureFilterMode } from '../libraries/new-rapid-render';
 import { MakePath, MakePathForEntity } from '../globals';
 
 /*
@@ -35,6 +35,40 @@ export class EditorUIHandler {
         this.scene = scene;
 
         this.flashShader = new FlashShader()
+    }
+
+    private ApplyTextureBackgroundStyle(element: HTMLElement, texture: Texture): void {
+        element.style.backgroundSize = 'contain';
+        element.style.backgroundRepeat = 'no-repeat';
+        element.style.backgroundPosition = 'center';
+        element.style.imageRendering = rapid.textureFilter === TextureFilterMode.LINEAR ? 'auto' : 'pixelated';
+    }
+
+    private SetTextureBackground(element: HTMLElement, texture: Texture): void {
+        const base = texture.base;
+        if (!base?.uid) return;
+
+        element.style.backgroundImage = `url(${base.uid})`;
+        this.ApplyTextureBackgroundStyle(element, texture);
+
+        if (!texture.frame) return;
+
+        const frame = texture.frame;
+        const img = new Image();
+        img.src = base.uid;
+
+        const drawFrame = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = frame.w;
+            canvas.height = frame.h;
+            const ctx = canvas.getContext('2d')!;
+            ctx.drawImage(img, frame.x, frame.y, frame.w, frame.h, 0, 0, frame.w, frame.h);
+            element.style.backgroundImage = `url(${canvas.toDataURL()})`;
+            this.ApplyTextureBackgroundStyle(element, texture);
+        };
+
+        if (img.complete) drawFrame();
+        else img.onload = drawFrame;
     }
 
     async LoadEditorPage(): Promise<void> {
@@ -141,30 +175,7 @@ export class EditorUIHandler {
                 ? assetsHandler.GetTexture(categoryData.image)
                 : null;
             if (texture?.base?.uid) {
-                const base = texture.base;
-                categoryIcon.style.backgroundImage = `url(${base.uid})`;
-                if (texture.frame) {
-                    const frame = texture.frame;
-                    const img = new Image();
-                    img.src = base.uid;
-                    const drawFrame = () => {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = frame.w;
-                        canvas.height = frame.h;
-                        const ctx = canvas.getContext('2d')!;
-                        ctx.drawImage(img, frame.x, frame.y, frame.w, frame.h, 0, 0, frame.w, frame.h);
-                        categoryIcon.style.backgroundImage = `url(${canvas.toDataURL()})`;
-                        categoryIcon.style.backgroundSize = 'contain';
-                        categoryIcon.style.backgroundRepeat = 'no-repeat';
-                        categoryIcon.style.backgroundPosition = 'center';
-                    };
-                    if (img.complete) drawFrame();
-                    else img.onload = drawFrame;
-                } else {
-                    categoryIcon.style.backgroundSize = 'contain';
-                    categoryIcon.style.backgroundRepeat = 'no-repeat';
-                    categoryIcon.style.backgroundPosition = 'center';
-                }
+                this.SetTextureBackground(categoryIcon, texture);
             } else {
                 if (categoryData.image)
                 {
@@ -227,32 +238,9 @@ export class EditorUIHandler {
                         const entityTex = assetsHandler.HasTexture(texKey) ? assetsHandler.GetTexture(texKey) : null;
 
                         if (entityTex?.base?.uid) {
-                            const base = entityTex.base;
                             childEntity.id = entityId;
-                            childEntity.style.backgroundImage = `url(${base.uid})`;
                             childEntity.style.borderRadius = '3px';
-                            if (entityTex.frame) {
-                                const frame = entityTex.frame;
-                                const img = new Image();
-                                img.src = base.uid;
-                                const drawFrame = () => {
-                                    const canvas = document.createElement('canvas');
-                                    canvas.width = frame.w;
-                                    canvas.height = frame.h;
-                                    const ctx = canvas.getContext('2d')!;
-                                    ctx.drawImage(img, frame.x, frame.y, frame.w, frame.h, 0, 0, frame.w, frame.h);
-                                    childEntity.style.backgroundImage = `url(${canvas.toDataURL()})`;
-                                    childEntity.style.backgroundSize = 'contain';
-                                    childEntity.style.backgroundRepeat = 'no-repeat';
-                                    childEntity.style.backgroundPosition = 'center';
-                                };
-                                if (img.complete) drawFrame();
-                                else img.onload = drawFrame;
-                            } else {
-                                childEntity.style.backgroundSize = 'contain';
-                                childEntity.style.backgroundRepeat = 'no-repeat';
-                                childEntity.style.backgroundPosition = 'center';
-                            }
+                            this.SetTextureBackground(childEntity, entityTex);
                         } else {
                             const entityImagePath = this.GetEntityImagePath(entity);
                             if (entityImagePath && entityImagePath !== 'images/whitePixel.webp') {
