@@ -140,13 +140,13 @@ export class EditorUIHandler {
             const texture = assetsHandler.HasTexture(categoryData.image)
                 ? assetsHandler.GetTexture(categoryData.image)
                 : null;
-            if (texture?.base?.sourceUrl) {
+            if (texture?.base?.uid) {
                 const base = texture.base;
-                categoryIcon.style.backgroundImage = `url(${base.sourceUrl})`;
+                categoryIcon.style.backgroundImage = `url(${base.uid})`;
                 if (texture.frame) {
                     const frame = texture.frame;
                     const img = new Image();
-                    img.src = base.sourceUrl;
+                    img.src = base.uid;
                     const drawFrame = () => {
                         const canvas = document.createElement('canvas');
                         canvas.width = frame.w;
@@ -226,15 +226,15 @@ export class EditorUIHandler {
                         const texKey = MakePathForEntity(entity);
                         const entityTex = assetsHandler.HasTexture(texKey) ? assetsHandler.GetTexture(texKey) : null;
 
-                        if (entityTex?.base?.sourceUrl) {
+                        if (entityTex?.base?.uid) {
                             const base = entityTex.base;
                             childEntity.id = entityId;
-                            childEntity.style.backgroundImage = `url(${base.sourceUrl})`;
+                            childEntity.style.backgroundImage = `url(${base.uid})`;
                             childEntity.style.borderRadius = '3px';
                             if (entityTex.frame) {
                                 const frame = entityTex.frame;
                                 const img = new Image();
-                                img.src = base.sourceUrl;
+                                img.src = base.uid;
                                 const drawFrame = () => {
                                     const canvas = document.createElement('canvas');
                                     canvas.width = frame.w;

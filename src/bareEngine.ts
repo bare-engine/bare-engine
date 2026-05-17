@@ -170,7 +170,7 @@ export class BareEngine
 
                 const imgName = json.meta.image;
                 const img = window.initialAssets[imgName];
-                const tex = rapid.texture.create(img)
+                const tex = rapid.texture.create(img, {key: "initial/generated/" + imgName});
                 assetsHandler.ProcessAtlas(json, tex);
 
                 // ATLAS IS PROCESSED AND ADDED ANIMATIONS POTENTIALLY,
