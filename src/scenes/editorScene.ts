@@ -177,20 +177,17 @@ export class EditorScene extends Scene
         bareEngine.SendEvent(BareEvent.editor_opened, {settingsDataName: this.settingsData.name || 'levelEditor', levelName: level.isData ? "data" : SaveData.currentLevelStr});
     }
 
-    OnClear(includingPersistent: boolean = true): void
+    OnClear(): void
     {
         if (this.opened) // CHECKING, SINCE THIS ALSO RUNS ON INIT WHEN CALLING LoadLevel()
         {
-            if (includingPersistent)
-            {
-                this.opened = false;
-                bareEngine.gameMode = GameMode.Game; // SETTING IT IN BARE.START() NOW, BUT ALSO KINDA MAKES SENSE HERE
-                
-                if (this.gameResolution)
-                    bareEngine.SetResolution(this.gameResolution);
+            this.opened = false;
+            bareEngine.gameMode = GameMode.Game; // SETTING IT IN BARE.START() NOW, BUT ALSO KINDA MAKES SENSE HERE
+            
+            if (this.gameResolution)
+                bareEngine.SetResolution(this.gameResolution);
 
-                bareEngine.SendEvent(BareEvent.editor_closed, {settingsDataName: this.settingsData.name || 'levelEditor', levelName: SaveData.currentLevelStr});
-            }
+            bareEngine.SendEvent(BareEvent.editor_closed, {settingsDataName: this.settingsData.name || 'levelEditor', levelName: SaveData.currentLevelStr});
         }
         
         rapid.backgroundColor = this.backgroundColorOrig;
