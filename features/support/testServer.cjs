@@ -26,8 +26,9 @@ class BareEngineWorld {
 setWorldConstructor(BareEngineWorld);
 
 function listFiles(folderPath, recursive) {
+  const publicPath = toPublicRelativePath(folderPath);
   const rootPath = path.resolve(publicDir);
-  const fullPath = path.resolve(publicDir, folderPath || "");
+  const fullPath = path.resolve(publicDir, publicPath);
 
   if (!fullPath.startsWith(rootPath)) {
     return null;
@@ -55,6 +56,10 @@ function listFiles(folderPath, recursive) {
   }
 
   return getAllFiles(fullPath);
+}
+
+function toPublicRelativePath(value) {
+  return String(value || "").replace(/\\/g, "/").replace(/^\/+/, "");
 }
 
 BeforeAll(async function () {

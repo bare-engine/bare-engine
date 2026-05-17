@@ -597,11 +597,10 @@ function assertSafePath(value) {
 }
 
 function listFiles(publicDir, folderPath, recursive) {
+    const publicPath = toPublicRelativePath(folderPath);
     const rootPath = path.resolve(publicDir);
-    const relativeFolderPath = String(folderPath || "").replace(/^[/\\]+/, "");
-    const fullPath = path.resolve(publicDir, relativeFolderPath);
-    const isInsidePublic = fullPath === rootPath || fullPath.startsWith(rootPath + path.sep);
-    if (!isInsidePublic) {
+    const fullPath = path.resolve(publicDir, publicPath);
+    if (!fullPath.startsWith(rootPath)) {
         return null;
     }
     if (!fs.existsSync(fullPath) || !fs.statSync(fullPath).isDirectory()) {
@@ -611,6 +610,10 @@ function listFiles(publicDir, folderPath, recursive) {
         return fs.readdirSync(fullPath);
     }
     return getFilesRecursive(fullPath).map(filePath => path.relative(fullPath, filePath));
+}
+
+function toPublicRelativePath(value) {
+    return String(value || "").replace(/\\/g, "/").replace(/^\/+/, "");
 }
 
 function getFilesRecursive(dir) {
