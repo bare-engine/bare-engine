@@ -19,8 +19,8 @@ export type BareOptions =
 
 export type ResolutionOptions = 
 {
-  gameWidth: number;
-  gameHeight: number;
+  width: number;
+  height: number;
   scale?: number | CanvasScale;
   position?: CanvasPosition;
   integerScale?: boolean;

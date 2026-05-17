@@ -228,8 +228,8 @@ export class BareEngine
         var prevHeight = rapid.height;
 
         var viewportSize = this.GetViewportSize();
-        var gameWidth = resolution?.gameWidth ?? viewportSize.width;
-        var gameHeight = resolution?.gameHeight ?? viewportSize.height;
+        var gameWidth = resolution?.width ?? viewportSize.width;
+        var gameHeight = resolution?.height ?? viewportSize.height;
 
         var scale = this.CalculateResolutionScale(resolution, gameWidth, gameHeight);
         var cssWidth = gameWidth * scale;
