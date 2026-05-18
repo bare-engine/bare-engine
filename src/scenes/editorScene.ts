@@ -430,6 +430,9 @@ export class EditorScene extends Scene
         
         var entity = this.ConstructEntity(entityLevel);
 
+        // MAKE SURE IT'S NOT PERSISTENT, SO IT'S SERIALIZED/SAVED
+        entity.persistent = false;
+
         //entity = { ...entity, hitbox: entity.hitbox, pivot: entity.pivot, imagePath: entity.imagePath};
 
         //entity.components = {}; // DON'T WANT TO LOAD COMPONENTS IN EDITOR
