@@ -129,6 +129,7 @@ export interface Entity
   baseEntity?: string;
   imagePath?: string;
   interactableInEditor?:boolean;
+  persistent?:boolean;
   save?:boolean;
 
   baseEntityLog?: Record<string, any>;
@@ -190,6 +191,7 @@ export var entityVarsNestedRecord: Record<string, string[]> =
 
       "tapHitbox",
         //"interactableInEditor",
+      "persistent",
       "save",
       "customName",
       "tags",

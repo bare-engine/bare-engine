@@ -611,6 +611,9 @@ window.__GAME_DEBUG_API__ = {
 
   getDefaultValueForEntityField(entityName: string, field: string)
   {
+    if (field == "pivotBasedOnHitbox")
+        return {x: 0, y: 0};
+
     var scene = plugin.GetCurrentScene();
     let entityScene = scene as EntityScene;
     
@@ -949,12 +952,14 @@ window.__GAME_DEBUG_API__ = {
     const {
         ANY,
         ANY_ENTITY,
+        NONE,
         ...rest
     } = settingsData.baseEntities;
 
     settingsData.baseEntities = {
         ANY: ANY ?? defaultSettingsData.baseEntities.ANY,
         ANY_ENTITY: ANY_ENTITY ?? defaultSettingsData.baseEntities.ANY_ENTITY,
+        NONE: defaultSettingsData.baseEntities.NONE,
         ...rest
     };
 
