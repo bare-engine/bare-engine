@@ -601,23 +601,24 @@ export class EditorControlsHandler {
         return bareEngine.MouseIsOnEditor(event);
     }
 
-    // SNAPS EDITOR PLACEMENT TO THE GRID USING A PIVOT-AWARE SNAP REGION.
+    // SNAPS EDITOR PLACEMENT TO THE GRID USING THE OBJECT PIVOT AS THE SNAP POINT.
     // A 0,0 PIVOT AXIS SNAPS TO THE UPPER/LEFT EDGE OF THE CURRENT GRID CELL.
-    // A 0,5 PIVOT AXIS SNAPS TO THE NEAREST GRID INTERSECTION.
+    // A 0.5 PIVOT AXIS SNAPS TO THE NEAREST GRID INTERSECTION.
     // A 1,0 PIVOT AXIS SNAPS TO THE LOWER/RIGHT EDGE OF THE CURRENT GRID CELL.
     // VALUES BETWEEN THOSE POINTS INTERPOLATE NATURALLY.
-    //
-    // CONCEPTUALLY, EACH GRID INTERSECTION OWNS A GRID-SIZED RECTANGLE AROUND WITH PIVOT SAME AS OBJECT.
-    // AS LONG AS THE MOUSE STAYS INSIDE THAT RECTANGLE, THE OBJECT REMAINS SNAPPED TO THAT POSITION.
     private GetGridAlignedPosition(obj: GameObject, x: number, y: number, ignoreGrid: boolean = false, guideX: number = x, guideY: number = y): Vec2
     {
 
-        function GetSnapRect(obj: GameObject): Rectangle
+        function GetPivotReferenceRect(obj: GameObject): Rectangle
         {
+            if (obj.texture && obj.texture.width > 0 && obj.texture.height > 0)
+                return { x: 0, y: 0, width: obj.texture.width, height: obj.texture.height };
+
             const hitboxRect = (obj as PhysicsObjectBare).physicsHitbox?.rectangle;
-            return (hitboxRect && hitboxRect.width > 0 && hitboxRect.height > 0)
-                ? hitboxRect
-                : { x: 0, y: 0, width: obj.texture?.width ?? 0, height: obj.texture?.height ?? 0 };
+            if (hitboxRect && hitboxRect.width > 0 && hitboxRect.height > 0)
+                return hitboxRect;
+
+            return { x: 0, y: 0, width: 0, height: 0 };
         }
 
         function SnapCoordinateToGrid(value: number, gridSize: number, pivotPercent: number): number
@@ -627,7 +628,7 @@ export class EditorControlsHandler {
         
         function GetSnapPivotPercent(obj: GameObject): Vec2
         {
-            const rect = GetSnapRect(obj);
+            const rect = GetPivotReferenceRect(obj);
             if (rect.width <= 0 || rect.height <= 0)
                 return new Vec2(.5, .5);
 
@@ -637,33 +638,16 @@ export class EditorControlsHandler {
             );
         }
 
-        function GetSnapAnchorOffset(obj: GameObject): Vec2
-        {
-            const rect = GetSnapRect(obj);
-            if (rect.width <= 0 || rect.height <= 0)
-                return new Vec2(0, 0);
-
-            const pivotPercent = GetSnapPivotPercent(obj);
-            const anchorX = rect.x + rect.width * pivotPercent.x;
-            const anchorY = rect.y + rect.height * pivotPercent.y;
-            
-            return new Vec2(
-                (anchorX - obj.pivot.x) * obj.totalScaleX,
-                (anchorY - obj.pivot.y) * obj.totalScaleY
-            );
-        }
-
         const settings = this.scene.settingsData.settings;
         const gridSize = settings?.gridSize;
 
         if (!ignoreGrid && settings?.gridEnabled && gridSize && gridSize > 0)
         {
-            const snapAnchorOffset = GetSnapAnchorOffset(obj);
             const pivotPercent = GetSnapPivotPercent(obj);
 
             return new Vec2(
-                SnapCoordinateToGrid(guideX, gridSize, pivotPercent.x) - snapAnchorOffset.x,
-                SnapCoordinateToGrid(guideY, gridSize, pivotPercent.y) - snapAnchorOffset.y
+                SnapCoordinateToGrid(guideX, gridSize, pivotPercent.x),
+                SnapCoordinateToGrid(guideY, gridSize, pivotPercent.y)
             );
         }
 
@@ -695,14 +679,7 @@ export class EditorControlsHandler {
             const desiredX = mouseController.world.position.x - this.dragOffset.x;
             const desiredY = mouseController.world.position.y - this.dragOffset.y;
 
-            const position = this.GetGridAlignedPosition(
-                this.draggingObject,
-                desiredX,
-                desiredY,
-                altDown,
-                mouseController.world.position.x,
-                mouseController.world.position.y
-            );
+            const position = this.GetGridAlignedPosition(this.draggingObject, desiredX, desiredY, altDown);
             this.draggingObject.SetPosition(position.x, position.y);
 
             // Calculate the distance moved
