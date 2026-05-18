@@ -56,11 +56,18 @@ export class BareEngine
     dataDir: string = "data";
     fontDir: string = "fonts";
 
-    get imagePath(): string { return this.rootDir + "/" + this.imageDir; }
-    get levelPath(): string { return this.rootDir + "/" + this.levelDir; }
-    get soundPath(): string { return this.rootDir + "/" + this.soundDir; }
-    get dataPath(): string { return this.rootDir + "/" + this.dataDir; }
-    get fontPath(): string { return this.rootDir + "/" + this.fontDir; }
+    private MakeRootPath(dir: string): string
+    {
+        const rootDir = this.rootDir.replace(/\/+$/, "");
+
+        return rootDir ? `${rootDir}/${dir}` : dir;
+    }
+
+    get imagePath(): string { return this.MakeRootPath(this.imageDir); }
+    get levelPath(): string { return this.MakeRootPath(this.levelDir); }
+    get soundPath(): string { return this.MakeRootPath(this.soundDir); }
+    get dataPath(): string { return this.MakeRootPath(this.dataDir); }
+    get fontPath(): string { return this.MakeRootPath(this.fontDir); }
 
     get width(): int { return rapid.width; }
     get height(): int { return rapid.height; }
@@ -585,3 +592,4 @@ export class BareEngine
         return obj;
     }
 }
+
