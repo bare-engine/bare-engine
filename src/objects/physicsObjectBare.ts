@@ -1,7 +1,7 @@
 import { Texture, Vec2 } from "../libraries/new-rapid-render";
 import { BareEvent, BlockedState, ConstructEntityOptions, Entity, HitboxType, Rectangle, Rectangle2Vec } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
-import type { Scene } from "../scenes/scene";
+import { Scene } from "../scenes/scene";
 import { MakePathForEntity } from "../globals";
 import { GameObject } from "./gameObject";
 import { InspectorField } from "../utils/decorators";
@@ -145,6 +145,8 @@ export class PhysicsObjectBare extends GameObject
     
     SetVelocity(velocity: Vec2): PhysicsObjectBare
     {
+        /* @ AddClass(PhysicsControllerBare) */
+        
         this.velocity.x = velocity.x;
         this.velocity.y = velocity.y;
 
@@ -153,6 +155,8 @@ export class PhysicsObjectBare extends GameObject
 
     SetVelocityXY(x: number, y: number): PhysicsObjectBare
     {
+        /* @ AddClass(PhysicsControllerBare) */
+        
         this.velocity.x = x;
         this.velocity.y = y;
 

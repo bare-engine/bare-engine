@@ -39,13 +39,7 @@ export class BareEngine
 
     private mouseDownOnLeave: boolean = false;
 
-    // USED JUST FOR COMPONENTS ATM
-    // REMOVES LEADING _ THAT SOME COMPONENTS GET
-    // REMOVES NUMBER AT END - CAUSED BY DECORATOR ON COMPONENT, EG: @Run(GameMode.Game, GameMode.Editor)
-    private GetNameFromClass(_class: any): string
-    {
-        return _class.name.replace(/^_/, '').replace(/\d+$/, '');
-    }
+    public registeredClasses: Record<string, any> = {};
 
     public GetComponentNameFromClassName(componentName: string): string
     {
@@ -392,9 +386,9 @@ export class BareEngine
     // DOESN'T ALWAYS DO SOMETHING, BUT JUST A HOAX TO LET THE DEV REFFERENCE THE CLASS
     AddClass(_class: any): void
     {
-        const className = this.GetNameFromClass(_class);
+        const className = Helper.GetNameFromClass(_class);
 
-        if (Scene.registeredClasses[className])
+        if (bareEngine.registeredClasses[className])
         {
             //console.warn(`Module ${className} is already registered`);
             return;
@@ -412,7 +406,7 @@ export class BareEngine
         {
             bareEngine.RegisterGameObjectPool(_class, 1);
 
-            Scene.registeredClasses[className] = _class;
+            bareEngine.registeredClasses[className] = _class;
             return;
         }
 
@@ -427,12 +421,12 @@ export class BareEngine
         }
 
         //let instance = new _class(...args);
-        //Scene.registeredClasses[className] = instance;
+        //bareEngine.registeredClasses[className] = instance;
     }
 
     RegisterComponent(componentClass: any)
     {
-        var className = this.GetNameFromClass(componentClass);
+        var className = Helper.GetNameFromClass(componentClass);
         bareEngine.componentClasses[className] = componentClass;
     }
 

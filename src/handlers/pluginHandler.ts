@@ -182,7 +182,7 @@ window.__GAME_DEBUG_API__ = {
   },
 
   getBaseClassValues() {
-    var values = Object.keys(Scene.registeredClasses);
+    var values = Object.keys(bareEngine.registeredClasses);
     return values;
   },
 
@@ -207,8 +207,8 @@ window.__GAME_DEBUG_API__ = {
         }
     };
 
-    for (var className in Scene.registeredClasses)
-        addDescriptions(className, getInspectorFieldDescriptions(Scene.registeredClasses[className]));
+    for (var className in bareEngine.registeredClasses)
+        addDescriptions(className, getInspectorFieldDescriptions(bareEngine.registeredClasses[className]));
 
     // FOR COMPONENTS, NOT WORKING YET
     /*for (var componentClassName in bareEngine.componentClasses)
@@ -304,7 +304,7 @@ window.__GAME_DEBUG_API__ = {
     {
         if (entityWithLog.baseEntity == "ANY_ENTITY")
         {
-            entityWithLog["__defaultFieldsToIgnore__"] = ["baseEntity"];
+            //entityWithLog["__defaultFieldsToIgnore__"] = ["baseEntity"];
 
             var defaultBaseClass = defaultSettingsData.baseEntities.ANY_ENTITY.baseClass;
             if (entityWithLog.baseClass == defaultBaseClass)
@@ -544,7 +544,7 @@ window.__GAME_DEBUG_API__ = {
 
         // GET parentClassNames, TO CHECK IF GROUP IS NOT IN HERE
         // THEN LOCK THE WHOLE GROUP, EG: RigidBody, PhysicsObjectBare
-        var cls = Scene.registeredClasses[baseClass];
+        var cls = bareEngine.registeredClasses[baseClass];
         var parentClassNames = Helper.GetParentClasses(cls);
         parentClassNames.push(baseClass);
 
@@ -1190,6 +1190,7 @@ export class PluginHandler
     static Init(editorButtonPosition: Position)
     {
         plugin = new PluginHandler(editorButtonPosition);
+        globalThis.plugin = plugin;
     }
 
     public openEditorButtonPosition: Position;
@@ -1731,7 +1732,7 @@ export class PluginHandler
     GetAllPossibleEntityKeys(baseClass: string): string[]
     {
         // GET ALL POSSIBLE KEYS, FROM CLASS AND INHEREITED CLASSES
-        var cls = Scene.registeredClasses[baseClass];
+        var cls = bareEngine.registeredClasses[baseClass];
         var parentClassNames = Helper.GetParentClasses(cls);
         parentClassNames.push(baseClass);
 
@@ -1767,7 +1768,8 @@ export class PluginHandler
 
         plugin.doNotifyAfterSave = false;
 
-        var scene = plugin.GetCurrentScene();
+        //var scene = plugin.GetCurrentScene();
+        const scene = sceneController.GetMainScene();
         if (scene instanceof EditorScene)
         {
             await (plugin.GetCurrentScene() as EditorScene).SaveEntityData(newData);

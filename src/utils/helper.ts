@@ -398,4 +398,12 @@ export class Helper
 
         return classes;
     }
+
+    // USED JUST FOR COMPONENTS ATM
+    // REMOVES LEADING _ THAT SOME COMPONENTS GET
+    // REMOVES NUMBER AT END - CAUSED BY DECORATOR ON COMPONENT, EG: @Run(GameMode.Game, GameMode.Editor)
+    static GetNameFromClass(_class: any): string
+    {
+        return _class.name.replace(/^_/, '').replace(/\d+$/, '');
+    }
 }

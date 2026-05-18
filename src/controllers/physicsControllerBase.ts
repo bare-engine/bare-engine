@@ -19,14 +19,15 @@ export class PhysicsControllerBase
 
 		if (__DEV__)
         	globalThis.plugin?.AddDebugAction("Toggle Collision", () => this.setCollisionsEnabled(!this.collisionsEnabled));
-	}
-
-	Start(): void
-	{  
+		
 		this.scene.events.on(BareEvent.game_resize, this.OnResize.bind(this));
 		this.scene.events.on(BareEvent.game_objectAdded, this.OnGameObjectAdded.bind(this));
 		this.scene.events.on(BareEvent.game_objectRemoved, this.OnGameObjectRemoved.bind(this));
 		this.scene.events.on(BareEvent.level_loaded, this.OnLevelLoaded.bind(this));
+	}
+
+	Start(): void
+	{  
 		
 		//pipes.set("physicsController_Update", this.Update.bind(this));
 		//pipes.set("physicsController_Render", this.Render.bind(this));	

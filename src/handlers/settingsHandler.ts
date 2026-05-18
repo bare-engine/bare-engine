@@ -191,13 +191,13 @@ export class SettingsHandler
         {
             for (const [className, saveVars] of Object.entries(settings.saveVars))
             {
-                if (!Scene.registeredClasses[className])
+                if (!bareEngine.registeredClasses[className])
                 {
                     console.warn(`Class ${className} is not registered.\nAdd it in scene with: bareEngine.AddClass(${className})`);
                     continue;
                 }
 
-                var cls = Scene.registeredClasses[className];
+                var cls = bareEngine.registeredClasses[className];
                 var parentClasses = Helper.GetParentClasses(cls);
 
                 for (var classNameParent of parentClasses)

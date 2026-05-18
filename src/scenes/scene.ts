@@ -44,7 +44,6 @@ export class Scene implements SceneI
 {
     //private pipes = matt<Pipes>();
     //private pipes = matt<Pipes>();
-    static registeredClasses: Record<string, any> = {};
 
     public started: boolean = false;
     public enabled: boolean = true;
@@ -139,7 +138,7 @@ export class Scene implements SceneI
 
         bareEngine.AddClass(GameObject);
         bareEngine.AddClass(ObjectController);
-        bareEngine.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT, NOT ALWAYS NEEDED - TODO
+        //bareEngine.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT, NOT ALWAYS NEEDED - TODO
 
         SetControllerReferencesOnScene(this);
     }
@@ -926,7 +925,7 @@ export class Scene implements SceneI
             this.cameraHandler?.SetTransform();
 
         this.levelHandler?.PreRender();
-        
+
         this.OnPreRender();
 
         this.componentController?.PreRender();
