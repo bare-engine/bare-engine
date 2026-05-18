@@ -83,11 +83,14 @@ export class EntityScene extends EditorScene
         this.isBase = isBase;
 
         // Entity editor UI state is local to this scene; don't write it into the shared settings raw data.
-        this.HideEditorUIForScene();
+        //this.HideEditorUIForScene();
         // PROBLEM: THE ACTUAL RECT INGAME - TODO
         
+        targetSettingsHandler.Get().showUI = false;
+        targetSettingsHandler.Get().selectionEnabled = false;
+
         var levelData = await this.CreateEntityDataFor(objectName, isBase);
-        await super.OnStart({levelPathOrData: levelData, saveLevelCallback: this.SaveEntityDataToSettingsData});
+        await super.OnStart({levelPathOrData: levelData, saveLevelCallback: this.SaveEntityDataToSettingsData, settingsHandler: targetSettingsHandler});
     }
 
     override OnClear(): void
