@@ -204,7 +204,10 @@ export class EditorScene extends Scene
         var level = sceneController.GetLevelScene();
 
         if (level)
-            level.Restart();
+        {                   
+            SaveData.levelCache.clear();
+            levelHandler.RestartLevel();
+        }
         else
             sceneController.Restart(); // CAN GET HERE WHEN LOADED LEVEL FROM PLUGIN, BUT LAST GAME SCENE DOESN'T LOAD LEVEL
     }
