@@ -601,13 +601,15 @@ export class EditorControlsHandler {
         return bareEngine.MouseIsOnEditor(event);
     }
 
-    // SNAPS EDITOR PLACEMENT TO THE GRID USING THE OBJECT PIVOT AS THE SNAP POINT.
-    // A 0,0 PIVOT AXIS SNAPS TO THE UPPER/LEFT EDGE OF THE CURRENT GRID CELL.
-    // A 0.5 PIVOT AXIS SNAPS TO THE NEAREST GRID INTERSECTION.
-    // A 1,0 PIVOT AXIS SNAPS TO THE LOWER/RIGHT EDGE OF THE CURRENT GRID CELL.
-    // VALUES BETWEEN THOSE POINTS INTERPOLATE NATURALLY.
+    // SNAPS EDITOR PLACEMENT TO THE GRID.
+    // BY DEFAULT, THE OBJECT PIVOT IS USED AS THE SNAP POINT AND ALSO CONTROLS
+    // WHICH GRID EDGE/INTERSECTION THE MOUSE POSITION RESOLVES TO.
+    // WHEN editorObjectSnapPosition IS SET, IT IS USED AS A LITERAL PERCENTUAL
+    // SNAP POINT ON THE OBJECT AND THAT POINT SNAPS TO THE NEAREST GRID INTERSECTION.
     private GetGridAlignedPosition(obj: GameObject, x: number, y: number, ignoreGrid: boolean = false, guideX: number = x, guideY: number = y): Vec2
     {
+        const editorObjectSnapPosition = this.scene.settingsData.editorObjectSnapPosition;
+        const useEditorObjectSnapPosition = editorObjectSnapPosition && editorObjectSnapPosition.x != -1 && editorObjectSnapPosition.y != -1;
 
         function GetPivotReferenceRect(obj: GameObject): Rectangle
         {
@@ -625,9 +627,37 @@ export class EditorControlsHandler {
         {
             return Math.floor(value / gridSize + pivotPercent) * gridSize;
         }
+
+        function SnapCoordinateToNearestGrid(value: number, gridSize: number): number
+        {
+            return Math.round(value / gridSize) * gridSize;
+        }
+
+        function GetSnapPivotOffset(obj: GameObject, pivotPercent: Vec2): Vec2
+        {
+            if (!useEditorObjectSnapPosition)
+                return new Vec2(0, 0);
+
+            const rect = GetPivotReferenceRect(obj);
+            const snapPivotX = rect.x + rect.width * pivotPercent.x;
+            const snapPivotY = rect.y + rect.height * pivotPercent.y;
+
+            return new Vec2(
+                (snapPivotX - obj.pivot.x) * obj.totalScaleX,
+                (snapPivotY - obj.pivot.y) * obj.totalScaleY
+            );
+        }
         
         function GetSnapPivotPercent(obj: GameObject): Vec2
         {
+            if (useEditorObjectSnapPosition)
+            {
+                return new Vec2(
+                    Helper.Clamp(editorObjectSnapPosition!.x, 0, 1),
+                    Helper.Clamp(editorObjectSnapPosition!.y, 0, 1)
+                );
+            }
+
             const rect = GetPivotReferenceRect(obj);
             if (rect.width <= 0 || rect.height <= 0)
                 return new Vec2(.5, .5);
@@ -644,10 +674,19 @@ export class EditorControlsHandler {
         if (!ignoreGrid && settings?.gridEnabled && gridSize && gridSize > 0)
         {
             const pivotPercent = GetSnapPivotPercent(obj);
+            const snapPivotOffset = GetSnapPivotOffset(obj, pivotPercent);
+
+            if (useEditorObjectSnapPosition)
+            {
+                return new Vec2(
+                    SnapCoordinateToNearestGrid(guideX + snapPivotOffset.x, gridSize) - snapPivotOffset.x,
+                    SnapCoordinateToNearestGrid(guideY + snapPivotOffset.y, gridSize) - snapPivotOffset.y
+                );
+            }
 
             return new Vec2(
-                SnapCoordinateToGrid(guideX, gridSize, pivotPercent.x),
-                SnapCoordinateToGrid(guideY, gridSize, pivotPercent.y)
+                SnapCoordinateToGrid(guideX + snapPivotOffset.x, gridSize, pivotPercent.x) - snapPivotOffset.x,
+                SnapCoordinateToGrid(guideY + snapPivotOffset.y, gridSize, pivotPercent.y) - snapPivotOffset.y
             );
         }
 

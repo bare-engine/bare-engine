@@ -51,5 +51,6 @@ export const defaultSettingsData: SettingsData = {
     gridSize: 64
   },
   defaultAnimationFramesPerSecond: 8,
-  gravity: 0
+  gravity: 0,
+  editorObjectSnapPosition: {x: -1, y: -1},
 };

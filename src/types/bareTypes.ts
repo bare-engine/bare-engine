@@ -285,6 +285,7 @@ export interface SettingsData
   selectionEnabled?: boolean,
   defaultAnimationFramesPerSecond?: number,
   gravity?: number,
+  editorObjectSnapPosition?: Position,
   processed?: boolean
 } 
 
