@@ -14,6 +14,9 @@ import { MakePath, MakePathForEntity } from '../globals';
 
 export class EditorUIHandler {
     static lastLoadedSettingsData:SettingsData;
+    private static readonly textureFrameUrlCache = new Map<string, string>();
+    private static readonly textureFrameLoadCache = new Map<string, Promise<string>>();
+    private static readonly imageLoadCache = new Map<string, Promise<HTMLImageElement>>();
 
     private flashShader:FlashShader;
 
@@ -44,6 +47,72 @@ export class EditorUIHandler {
         element.style.imageRendering = rapid.textureFilter === TextureFilterMode.LINEAR ? 'auto' : 'pixelated';
     }
 
+    private GetTextureFrameCacheKey(texture: Texture): string | null {
+        const base = texture.base;
+        const frame = texture.frame;
+        if (!base?.uid || !frame) return null;
+
+        return `${base.uid}|${base.width}x${base.height}|${frame.x},${frame.y},${frame.w},${frame.h}`;
+    }
+
+    private LoadCachedImage(src: string): Promise<HTMLImageElement> {
+        let imageLoad = EditorUIHandler.imageLoadCache.get(src);
+        if (imageLoad)
+            return imageLoad;
+
+        imageLoad = new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => {
+                EditorUIHandler.imageLoadCache.delete(src);
+                reject(new Error(`Failed to load editor texture image: ${src}`));
+            };
+            img.src = src;
+        });
+
+        EditorUIHandler.imageLoadCache.set(src, imageLoad);
+        return imageLoad;
+    }
+
+    private LoadTextureFrameBackground(texture: Texture): Promise<string> {
+        const cacheKey = this.GetTextureFrameCacheKey(texture);
+        const base = texture.base;
+        const frame = texture.frame;
+
+        if (!cacheKey || !base?.uid || !frame)
+            return Promise.resolve('');
+
+        const cachedUrl = EditorUIHandler.textureFrameUrlCache.get(cacheKey);
+        if (cachedUrl)
+            return Promise.resolve(cachedUrl);
+
+        let frameLoad = EditorUIHandler.textureFrameLoadCache.get(cacheKey);
+        if (frameLoad)
+            return frameLoad;
+
+        frameLoad = this.LoadCachedImage(base.uid)
+            .then((img) => {
+                const canvas = document.createElement('canvas');
+                canvas.width = frame.w;
+                canvas.height = frame.h;
+
+                const ctx = canvas.getContext('2d')!;
+                ctx.drawImage(img, frame.x, frame.y, frame.w, frame.h, 0, 0, frame.w, frame.h);
+
+                const frameUrl = canvas.toDataURL();
+                EditorUIHandler.textureFrameUrlCache.set(cacheKey, frameUrl);
+                EditorUIHandler.textureFrameLoadCache.delete(cacheKey);
+                return frameUrl;
+            })
+            .catch((error) => {
+                EditorUIHandler.textureFrameLoadCache.delete(cacheKey);
+                throw error;
+            });
+
+        EditorUIHandler.textureFrameLoadCache.set(cacheKey, frameLoad);
+        return frameLoad;
+    }
+
     private SetTextureBackground(element: HTMLElement, texture: Texture): void {
         const base = texture.base;
         if (!base?.uid) return;
@@ -57,22 +126,14 @@ export class EditorUIHandler {
 
         element.style.backgroundImage = '';
 
-        const frame = texture.frame;
-        const img = new Image();
-        img.src = base.uid;
+        this.LoadTextureFrameBackground(texture)
+            .then((frameUrl) => {
+                if (!frameUrl) return;
 
-        const drawFrame = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = frame.w;
-            canvas.height = frame.h;
-            const ctx = canvas.getContext('2d')!;
-            ctx.drawImage(img, frame.x, frame.y, frame.w, frame.h, 0, 0, frame.w, frame.h);
-            element.style.backgroundImage = `url(${canvas.toDataURL()})`;
-            this.ApplyTextureBackgroundStyle(element, texture);
-        };
-
-        if (img.complete) drawFrame();
-        else img.onload = drawFrame;
+                element.style.backgroundImage = `url(${frameUrl})`;
+                this.ApplyTextureBackgroundStyle(element, texture);
+            })
+            .catch((error) => console.error(error));
     }
 
     async LoadEditorPage(): Promise<void> {
