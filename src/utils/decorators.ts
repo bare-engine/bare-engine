@@ -246,6 +246,19 @@ function getFieldValue(component: any, entry: FieldEntry): any
     return typeof field === "function" ? field.call(component) : field;
 }
 
+function isInspectorFieldDescriptor(value: any): boolean
+{
+    return value !== null
+        && typeof value === "object"
+        && (
+            "current" in value
+            || "get" in value
+            || "set" in value
+            || "onChange" in value
+            || "values" in value
+        );
+}
+
 /** Returns all editor fields registered on a component instance. */
 export function getInspectorFields(component: any): InspectorFieldData[]
 {
@@ -257,13 +270,17 @@ export function getInspectorFields(component: any): InspectorFieldData[]
 
     return entries.map(entry =>
     {
-        const value = getFieldValue(component, entry) || {};
+        const value = getFieldValue(component, entry);
+        const isDescriptor = isInspectorFieldDescriptor(value);
+        const descriptor = isDescriptor ? value : {};
 
         return {
             name: labels[entry.name] ?? entry.name,
-            type: value.values !== undefined ? "dropdown" : entry.type,
-            current: value.current ?? (typeof value.get === "function" ? value.get() : undefined),
-            values: typeof value.values === "function" ? value.values() : value.values,
+            type: descriptor.values !== undefined ? "dropdown" : entry.type,
+            current: isDescriptor
+                ? descriptor.current ?? (typeof descriptor.get === "function" ? descriptor.get() : undefined)
+                : value,
+            values: typeof descriptor.values === "function" ? descriptor.values() : descriptor.values,
             locked: lockedFields.includes(entry.name),
             range: ranges[entry.name],
             description: descriptions[entry.name],
@@ -284,13 +301,15 @@ export async function applyInspectorField(component: any, fieldName: string, val
     if (lockedFields.includes(entry.name))
         return true;
 
-    const fieldValue = getFieldValue(component, entry) || {};
-    const setter = fieldValue.set || fieldValue.onChange;
+    const fieldValue = getFieldValue(component, entry);
+    const setter = isInspectorFieldDescriptor(fieldValue)
+        ? fieldValue.set || fieldValue.onChange
+        : undefined;
 
     if (setter)
         await setter.call(component, value);
     else
-        component[fieldName] = value;
+        component[entry.name] = value;
 
     return true;
 }
