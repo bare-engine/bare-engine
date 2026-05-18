@@ -205,8 +205,8 @@ export class EditorScene extends Scene
 
         if (level)
         {                   
-            SaveData.levelCache.clear();
-            levelHandler.RestartLevel();
+            //SaveData.levelCache.clear();
+            await level.levelHandler.RestartLevel();
         }
         else
             sceneController.Restart(); // CAN GET HERE WHEN LOADED LEVEL FROM PLUGIN, BUT LAST GAME SCENE DOESN'T LOAD LEVEL
@@ -216,11 +216,11 @@ export class EditorScene extends Scene
     {
         if (this.settingsHandler == settingsHandler && bareEngine.gameMode == GameMode.Editor)
         {
-            this.Close();
+            await this.Close();
             return;
         }
 
-        this.Open(levelPathOrData, saveLevelCallback, settingsHandler);
+        await this.Open(levelPathOrData, saveLevelCallback, settingsHandler);
     }
 
     //OnUpdate(deltaTime: number): void
