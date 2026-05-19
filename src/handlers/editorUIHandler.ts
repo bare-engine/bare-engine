@@ -216,10 +216,14 @@ export class EditorUIHandler {
                 }
             }
         }
-        categoriesFinal["uncategorized"] = {...data.categories.uncategorized, entries: allEntityNames};
+
+        // IF ANY ENTRIES LEFT, ADD THEM TO UNCATEGORIZED
+        if (allEntityNames.length > 0)
+            categoriesFinal["uncategorized"] = {...data.categories.uncategorized, entries: allEntityNames};
 
         // Process each category
-        for (const [categoryName, categoryData] of Object.entries(categoriesFinal))
+        var categoriesEntries = Object.entries(categoriesFinal)
+        for (const [categoryName, categoryData] of categoriesEntries)
         {
             if (!categoryData || !categoryData.entries || categoryData.entries.length === 0) return;
 
@@ -409,6 +413,10 @@ export class EditorUIHandler {
             categoryElement.appendChild(categoryHeader);
             categoryElement.appendChild(childrenContainer);
 
+            // START EXANDED IF ONLY ENTRY
+            if (categoryData.expanded === undefined && categoriesEntries.length == 1)
+                categoryData.expanded = true;
+            
             if (categoryData.expanded === true)
                 categoryElement.classList.add('expanded');
 
