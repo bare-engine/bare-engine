@@ -12,12 +12,15 @@ type Entry =
   | { fn: (...evt: any[]) => void; once?: boolean; persistent?: boolean; wildcard?: false; alias?: string }
   | { fn: (type: any, ...evt: any[]) => void; once?: boolean; persistent?: boolean; wildcard: true; alias?: string };
 
+type EntryOptions = {
+  once?: boolean;
+  persistent?: boolean;
+  alias?: string;
+};
+
 type List = Entry[];
 
-export interface Emitter<Events extends object> {
-  // raw storage (optional to expose, but keeping parity with mitt style)
-  all: Map<keyof Events | "*", List>;
-
+export interface EventSubscriber<Events extends object> {
   on<K extends keyof Events>(type: K, handler: Handler<Events[K]>, alias?: string): void;
   on(type: "*", handler: WildcardHandler<Events>, alias?: string): void;
 
@@ -28,6 +31,11 @@ export interface Emitter<Events extends object> {
   off(type: "*", handler?: WildcardHandler<Events>): void;
 
   offAlias(alias: string): void;
+}
+
+export interface Emitter<Events extends object> extends EventSubscriber<Events> {
+  // raw storage (optional to expose, but keeping parity with mitt style)
+  all: Map<keyof Events | "*", List>;
 
   emit<K extends keyof Events>(type: K, ...event: EventArgs<Events[K]>): void;
 
@@ -38,18 +46,7 @@ export interface Emitter<Events extends object> {
   clearAll(type?: keyof Events | "*"): void;
 
   // persistent view: registers handlers that survive clear()
-  persistent: {
-    on<K extends keyof Events>(type: K, handler: Handler<Events[K]>, alias?: string): void;
-    on(type: "*", handler: WildcardHandler<Events>, alias?: string): void;
-
-    once<K extends keyof Events>(type: K, handler: Handler<Events[K]>, alias?: string): void;
-    once(type: "*", handler: WildcardHandler<Events>, alias?: string): void;
-
-    off<K extends keyof Events>(type: K, handler?: Handler<Events[K]>): void;
-    off(type: "*", handler?: WildcardHandler<Events>): void;
-
-    offAlias(alias: string): void;
-  };
+  persistent: EventSubscriber<Events>;
 }
 
 function getList<Events extends object>(
@@ -69,7 +66,7 @@ export default function mitt<Events extends object>(
 ): Emitter<Events> {
   all = all || new Map();
 
-  const add = (type: any, fn: any, opts?: Partial<Entry>) => {
+  const add = (type: any, fn: any, opts?: EntryOptions) => {
     const list = getList<Events>(all!, type);
     if (type === "*") list.push({ fn, wildcard: true, ...opts } as Entry);
     else list.push({ fn, wildcard: false, ...opts } as Entry);
@@ -129,22 +126,26 @@ export default function mitt<Events extends object>(
   };
 
   const removeAlias = (alias: string) => {
-    for (const [type, list] of all!.entries()) {
+    for (const list of all!.values()) {
       for (let i = list.length - 1; i >= 0; i--) {
         if (list[i]!.alias === alias) list.splice(i, 1);
       }
     }
   };
 
-  const api: any = {
-    all,
+  const entryOptions = (isPersistent: boolean, once: boolean, alias?: string): EntryOptions => ({
+    ...(isPersistent ? { persistent: true } : {}),
+    ...(once ? { once: true } : {}),
+    ...(alias ? { alias } : {}),
+  });
 
+  const createSubscriber = (isPersistent: boolean): EventSubscriber<Events> => ({
     on(type: any, handler: any, alias?: string) {
-      add(type, handler, alias ? { alias } : undefined);
+      add(type, handler, entryOptions(isPersistent, false, alias));
     },
 
     once(type: any, handler: any, alias?: string) {
-      add(type, handler, alias ? { once: true, alias } : { once: true });
+      add(type, handler, entryOptions(isPersistent, true, alias));
     },
 
     off(type: any, handler?: any) {
@@ -154,6 +155,12 @@ export default function mitt<Events extends object>(
     offAlias(alias: string) {
       removeAlias(alias);
     },
+  });
+
+  const api: any = {
+    all,
+
+    ...createSubscriber(false),
 
     emit: emit as any,
 
@@ -161,23 +168,7 @@ export default function mitt<Events extends object>(
     clearAll,
   };
 
-  api.persistent = {
-    on(type: any, handler: any, alias?: string) {
-      add(type, handler, alias ? { persistent: true, alias } : { persistent: true });
-    },
-
-    once(type: any, handler: any, alias?: string) {
-      add(type, handler, alias ? { persistent: true, once: true, alias } : { persistent: true, once: true });
-    },
-
-    off(type: any, handler?: any) {
-      remove(type, handler);
-    },
-
-    offAlias(alias: string) {
-      removeAlias(alias);
-    },
-  };
+  api.persistent = createSubscriber(true);
 
   return api as Emitter<Events>;
 }
