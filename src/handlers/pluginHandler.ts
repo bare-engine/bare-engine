@@ -318,6 +318,10 @@ window.__GAME_DEBUG_API__ = {
     //var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(entityWithLog, scene.settingsData, {fillPresets: false});
     //levelEntityWithDefaultValues.name = name;
 
+    var obj = entityScene.objectController.GetObjectByName(name);
+    if (obj)
+        plugin.AddComponentInspectorData(entityWithLog, obj);
+
     return entityWithLog;
   },
 
@@ -343,33 +347,7 @@ window.__GAME_DEBUG_API__ = {
         data.innerScaleY = o.innerScale.y;
         data.persistent = o.persistent;
 
-        // ADD DATA FOR @InspectorButton DECORATOR
-        if (data.components)
-        {
-            for (var compName in data.components)
-            {
-                var fullCompName = Helper.CapitalizeFirstLetter(compName) + 'Component';
-                var compCls = bareEngine.componentClasses[fullCompName];
-                var comp = o.scene.componentController.GetComponent(o, compCls);
-                var buttons = getButtons(compCls);
-                if (buttons.length > 0)
-                {
-                    if (data.components[compName])
-                    {
-                        (data.components[compName] as any).__buttons = buttons.map(b => ({ label: b.label, method: b.methodKey }));
-                    }
-                }
-
-                if (comp)
-                {
-                    var fields = getInspectorFields(comp);
-                    if (fields.length > 0 && data.components[compName])
-                    {
-                        (data.components[compName] as any).__fields = fields;
-                    }
-                }
-            }
-        }
+        plugin.AddComponentInspectorData(data, o);
 
         if (data.children)
         {
@@ -1192,9 +1170,9 @@ window.__GAME_DEBUG_API__ = {
 
 export class PluginHandler
 {
-    static Init(editorButtonPosition: Position)
+    static Init(showEditorButton: boolean, editorButtonPosition: Position)
     {
-        plugin = new PluginHandler(editorButtonPosition);
+        plugin = new PluginHandler(showEditorButton, editorButtonPosition);
         globalThis.plugin = plugin;
     }
 
@@ -1211,7 +1189,7 @@ export class PluginHandler
     notifyLeaveEntity: boolean = true;
     currentSceneClassString: string = "";
 
-    constructor(editorButtonPosition: Position)
+    constructor(showEditorButton: boolean, editorButtonPosition: Position)
     {
         this.openEditorButtonPosition = editorButtonPosition;;
 
@@ -1228,7 +1206,7 @@ export class PluginHandler
             var levelScene = sceneController.GetLevelScene();
             if (levelScene)
             {
-                if (!sceneController.Has(EditorUIScene))
+                if (!sceneController.Has(EditorUIScene) && showEditorButton)
                 {
                     var scene = await sceneController.Add(EditorUIScene, {openEditorButtonPosition: this.openEditorButtonPosition});
                     sceneController.MoveToFront(scene);
@@ -1731,6 +1709,47 @@ export class PluginHandler
         }
 
         return newEntity;
+    }
+
+    AddComponentInspectorData(data: any, o: GameObject): void
+    {
+        // ADD DATA FOR @InspectorButton AND @InspectorField DECORATORS
+        if (data.components)
+        {
+            for (var compName in data.components)
+            {
+                var compData = data.components[compName];
+                if (!compData)
+                    continue;
+
+                var fullCompName = Helper.CapitalizeFirstLetter(compName) + 'Component';
+                var compCls = bareEngine.componentClasses[fullCompName];
+                if (!compCls)
+                    continue;
+
+                var buttons = getButtons(compCls);
+                if (buttons.length > 0)
+                    (compData as any).__buttons = buttons.map(b => ({ label: b.label, method: b.methodKey }));
+
+                var comp = o.scene.componentController.GetComponent(o, compCls);
+                if (comp)
+                {
+                    var fields = getInspectorFields(comp);
+                    if (fields.length > 0)
+                        (compData as any).__fields = fields;
+                }
+            }
+        }
+
+        if (data.children)
+        {
+            for (var i = 0; i < data.children.length; i++)
+            {
+                var child = o.children[i];
+                if (child)
+                    this.AddComponentInspectorData(data.children[i], child);
+            }
+        }
     }
 
     GetAllPossibleEntityKeys(baseClass: string): string[]
