@@ -90,6 +90,26 @@ function bareFullReloadPlugin(options = {}) {
     };
 }
 
+function bareIgnoreLevelJsonHotUpdatesPlugin(options = {}) {
+    const projectRoot = options.projectRoot || process.cwd();
+    const publicDir = normalize(path.resolve(options.publicDir || path.join(projectRoot, "public")));
+    const levelDirs = (options.levelDirs || [
+        path.join(projectRoot, "public/data/levels")
+    ]).map(dir => normalize(path.resolve(dir)));
+
+    return {
+        name: "bare:ignore-level-json-hot-updates",
+        handleHotUpdate(ctx) {
+            const filePath = normalize(path.resolve(ctx.file));
+            const isConfiguredLevelFile = levelDirs.some(dir => filePath.startsWith(`${dir}/`));
+            const isPublicLevelFile = filePath.startsWith(`${publicDir}/`) && filePath.includes("/levels/");
+            if (filePath.endsWith(".json") && (isConfiguredLevelFile || isPublicLevelFile)) {
+                return [];
+            }
+        }
+    };
+}
+
 function appendHotRestart(code) {
     const hmrCode = `
 if (import.meta.hot) {
@@ -789,6 +809,7 @@ module.exports = {
     bareGeneratedLayersPlugin,
     bareFullReloadPlugin,
     bareHtmlPlugin,
+    bareIgnoreLevelJsonHotUpdatesPlugin,
     bareInitialAssetsPlugin,
     bareShaderRawPlugin,
     bareTexturePackImagesPlugin,
@@ -796,3 +817,4 @@ module.exports = {
     stripUnusedMethodsPlugin,
     readProjectPackage
 };
+

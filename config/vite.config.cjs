@@ -5,6 +5,7 @@ const {
     bareFullReloadPlugin,
     bareGeneratedLayersPlugin,
     bareHtmlPlugin,
+    bareIgnoreLevelJsonHotUpdatesPlugin,
     bareInitialAssetsPlugin,
     bareShaderRawPlugin,
     bareTexturePackImagesPlugin,
@@ -39,6 +40,7 @@ module.exports = ({ mode }) => {
                 useTypeChecker: false
             }),
             bareFullReloadPlugin({ projectRoot }),
+            bareIgnoreLevelJsonHotUpdatesPlugin({ projectRoot }),
             bareHtmlPlugin({
                 projectRoot,
                 indexHtmlPath: engineIndexPath
@@ -178,3 +180,4 @@ function bareIndexOutputPlugin() {
         }
     };
 }
+
