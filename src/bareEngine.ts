@@ -7,7 +7,7 @@ import { EventArgs } from "./libraries/mitt";
 import { TextureManager, Vec2 } from "./libraries/new-rapid-render";
 import { GameObject } from "./objects/gameObject";
 import { Scene } from "./scenes/scene";
-import { BareEvent, BareOptions, CanvasPosition, CanvasScale, Events, GameObjectClass, SceneClass } from "./types/bareTypes";
+import { BareEvent, BareEventPayload, BareOptions, CanvasPosition, CanvasScale, Events, GameObjectClass, SceneClass } from "./types/bareTypes";
 import { Helper } from "./utils/helper";
 
 export class BareEngine
@@ -15,7 +15,7 @@ export class BareEngine
     private initialSceneClass: SceneClass;
     private options: BareOptions = {};
     private restartTimeout: ReturnType<typeof setTimeout> | null = null;
-
+    
     public lastUpdateTimeRef:number;
     public deltaTime: number;
     public gameSpeed: number;
@@ -128,6 +128,38 @@ export class BareEngine
 
         if (this.options.gameObjectPoolSize !== undefined)
             BareEngine.gameObjectPoolSize = this.options.gameObjectPoolSize;
+
+        this.ApplyDebugKeys();
+    }
+
+    private ApplyDebugKeys(): void
+    {
+        globalEvents.persistent.offAlias('debugKeys');
+
+        if (!window.isLocalhost || !this.options.debugKeys)
+            return;
+
+        const debugKeyActions = new Map<string, () => void>();
+
+        for (const debugKeyGroup of this.options.debugKeys)
+        {
+            for (const [key, action] of Object.entries(debugKeyGroup))
+            {
+                if (action)
+                    debugKeyActions.set(key.toLocaleLowerCase(), action);
+            }
+        }
+
+        if (debugKeyActions.size == 0)
+            return;
+
+        var debugKeysHandler = ({ key }) => {
+            const action = debugKeyActions.get(key.toLocaleLowerCase());
+            if (action)
+                action();
+        };
+
+        globalEvents.persistent.on(BareEvent.key_pressed, debugKeysHandler, 'debugKeys');
     }
 
     public SetResolution(resolution?: BareOptions['resolution']): void

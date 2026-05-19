@@ -4,6 +4,7 @@ import { BaseTexture, Color, CustomGlShader, Rapid, Texture, TextureFilterMode }
 import { supportsWebGL } from './libraries/new-rapid-render/webgl/utils';
 import { BareEvent, BareOptions, SceneClass } from './types/bareTypes';
 import { globalEvents } from './globals';
+import { sceneController } from './controllers/sceneController';
 export { MakePath, MakePathForEntity } from "./globals";
 
 var canvas = document.querySelector<HTMLCanvasElement>("canvas.canvas");
@@ -23,7 +24,12 @@ function GetBareOptions(options?: BareOptions): BareOptions
         levelPath: '',
         textureFilter: TextureFilterMode.LINEAR,
         editorButtonPosition: {x: 0, y: 0},
-        showEditorButton: undefined
+        showEditorButton: undefined,
+        debugKeys: [
+            {e: () => window.debug = !window.debug},
+            {r: () => bareEngine.Restart()},
+            {t: () => sceneController.GetLevelScene()?.levelHandler.RestartLevel()},
+        ],
     }, ...options };
 }
 

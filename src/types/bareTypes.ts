@@ -16,6 +16,7 @@ export type BareOptions =
   levelPath?: string;
   editorButtonPosition?: Position;
   showEditorButton?: boolean;
+  debugKeys?: Record<string, () => void>[];
 };
 
 export type ResolutionOptions = 
