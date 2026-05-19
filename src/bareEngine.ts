@@ -110,38 +110,37 @@ export class BareEngine
 
     private ApplyOptions(options?: BareOptions): void
     {
-        this.options = options ?? {};
-        this.fixedTimestep = this.options.fixedTimestep ?? 1 / 60;
-        this.resolution = this.options.resolution;
+        this.fixedTimestep = options.fixedTimestep ?? 1 / 60;
+        this.resolution = options.resolution;
 
-        if (this.options.textureFilter !== undefined)
+        if (options.textureFilter !== undefined)
         {
-            rapid.setTextureFilter(this.options.textureFilter);
+            rapid.setTextureFilter(options.textureFilter);
 
             var baseTextures = new Set([...assetsHandler.textures.values()].map(texture => texture.base).filter(base => base));
             for (var baseTexture of baseTextures)
-                baseTexture!.setFilterMode(rapid.gl, this.options.textureFilter);
+                baseTexture!.setFilterMode(rapid.gl, options.textureFilter);
         }
 
-        if (this.options.antiAlias !== undefined)
-            rapid.setAntialias(this.options.antiAlias);
+        if (options.antiAlias !== undefined)
+            rapid.setAntialias(options.antiAlias);
 
-        if (this.options.gameObjectPoolSize !== undefined)
-            BareEngine.gameObjectPoolSize = this.options.gameObjectPoolSize;
+        if (options.gameObjectPoolSize !== undefined)
+            BareEngine.gameObjectPoolSize = options.gameObjectPoolSize;
 
-        this.ApplyDebugKeys();
+        this.SetDebugKeys(options.debugKeys);
     }
 
-    private ApplyDebugKeys(): void
+    private SetDebugKeys(debugKeys?: BareOptions['debugKeys']): void
     {
         globalEvents.persistent.offAlias('debugKeys');
 
-        if (!window.isLocalhost || !this.options.debugKeys)
+        if (!window.isLocalhost || !debugKeys || debugKeys.length == 0)
             return;
 
         const debugKeyActions = new Map<string, () => void>();
 
-        for (const debugKeyGroup of this.options.debugKeys)
+        for (const debugKeyGroup of debugKeys)
         {
             for (const [key, action] of Object.entries(debugKeyGroup))
             {
@@ -174,7 +173,7 @@ export class BareEngine
         this.ApplyOptions(options);
 
         if (__DEV__)
-            PluginHandler.Init(this.options.showEditorButton, this.options.editorButtonPosition);
+            PluginHandler.Init(options.showEditorButton, options.editorButtonPosition);
 
         this.initialSceneClass = sceneClass;
         
@@ -191,7 +190,7 @@ export class BareEngine
 
         window.bareEngine = this;
         
-        bareEngine.RegisterGameObjectPool(GameObject, this.options.gameObjectPoolSize);
+        bareEngine.RegisterGameObjectPool(GameObject, options.gameObjectPoolSize);
 
         globalEvents.emit(BareEvent.game_awake);
 
