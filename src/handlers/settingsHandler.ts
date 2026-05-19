@@ -119,6 +119,8 @@ export class SettingsHandler
             {
                 if (!categoryData || !categoryData.entries || categoryData.entries.length === 0) continue;
 
+                var entitiesMade: Entity[] = [];
+
                 // PARSE STRING ENTRIES...
                 if (typeof categoryData.entries === 'string') 
                 { 
@@ -135,7 +137,12 @@ export class SettingsHandler
                         {
                             // ALSO PUSH EACH AS ENTITY SO WE CAN FIND THEM LATER
                             if (!settings.entities[entryName]) // DON'T OVERWRITE EXISTING ENTRIES
-                                settings.entities[entryName] = {...entity, name: entryName};
+                            {
+                                var entityFinal = {...entity, name: entryName}
+                                settings.entities[entryName] = entityFinal;
+
+                                entitiesMade.push(entityFinal);
+                            }
                         }
                     }
 
@@ -162,14 +169,28 @@ export class SettingsHandler
                                 categoryData.entries.push(fileName);
 
                                 // ALSO PUSH EACH AS ENTITY SO WE CAN FIND THEM LATER
-                                if (!settings.entities[entity.name]) // DON'T OVERWRITE EXISTING ENTRIES
-                                    settings.entities[entity.name] = {...entity};
+                                if (!settings.entities[fileName]) // DON'T OVERWRITE EXISTING ENTRIES
+                                {
+                                    var entityFinal = {...entity, name: fileName}
+                                    settings.entities[fileName] = entityFinal;
+
+                                    entitiesMade.push(entityFinal);
+                                }
                             }
                         }
                     }
 
                     // REMOVE THE STRING ENTRY
                     //delete categoryData.entries;
+                }
+
+                // ASSIGN BASE ENTITY TO ENTITIES UNDER THIS CATEGORY
+                if (categoryData.baseEntity)
+                {
+                    for (var entity of entitiesMade)
+                    {
+                        entity.baseEntity = categoryData.baseEntity;
+                    }
                 }
             }
         }

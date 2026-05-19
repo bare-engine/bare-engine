@@ -258,6 +258,7 @@ export interface Category
   image?: string;
   expanded?: boolean;
   entries?: Array<string> | string;
+  baseEntity?: string;
 }
 
 interface AnimationDataInfo
@@ -285,7 +286,7 @@ export interface SettingsData
   selectionEnabled?: boolean,
   defaultAnimationFramesPerSecond?: number,
   gravity?: number,
-  editorObjectSnapPosition?: Position,
+  editorObjectSnapToPivot?: boolean,
   processed?: boolean
 } 
 
