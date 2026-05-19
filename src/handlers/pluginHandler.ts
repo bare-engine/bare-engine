@@ -1215,6 +1215,9 @@ export class PluginHandler
                 if (showEditorButton != true && this.isPluginConnected)
                     _showEditorButton = false;
 
+                if (showEditorButton == false)
+                    _showEditorButton = false;
+
                 if (!sceneController.Has(EditorUIScene) && _showEditorButton)
                 {
                     var scene = await sceneController.Add(EditorUIScene, {openEditorButtonPosition: this.openEditorButtonPosition});
