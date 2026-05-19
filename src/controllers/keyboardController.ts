@@ -15,14 +15,23 @@ export class KeyboardController
 
     private setupEventListeners(): void
     {
+        var processKey = (key: string) => {
+            var processedkey = key.charAt(0).toLowerCase() + key.slice(1); // LOWERCASE FIRST LETTER
+
+            if (processedkey == " ")
+                processedkey = "space";
+
+            return processedkey;
+        };
+
         // KEY DOWN
         document.addEventListener('keydown', (event: any) => {
             //if (bareEngine.MouseIsOnEditor(event))
             //    return; // Allow normal typing inside the editor UI
 
             //trace(event.key)
-
-            const key = event.key.charAt(0).toLowerCase() + event.key.slice(1); // LOWERCASE FIRST LETTER
+            var key = processKey(event.key);
+            
             if (!this.keysPressed.has(key)) {
                 this.keysJustPressed.add(key);
             }
@@ -43,7 +52,8 @@ export class KeyboardController
             //if (bareEngine.MouseIsOnEditor(event))
             //    return; // Allow normal typing inside the editor UI
 
-            const key = event.key.charAt(0).toLowerCase() + event.key.slice(1); // LOWERCASE FIRST LETTER
+            var key = processKey(event.key);
+            
             this.keysPressed.delete(key);
             this.keysJustPressed.delete(key);
 
