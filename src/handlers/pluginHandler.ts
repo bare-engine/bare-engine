@@ -129,7 +129,8 @@ window.__GAME_DEBUG_API__ = {
         levelPathOrData = bareEngine.levelPath + "/" + levelPathOrData + ".json"
     }
     
-    sceneController.Add(EditorScene, {levelPathOrData: levelPathOrData, settingsHandler: sceneController.GetMainScene().settingsHandler});
+    var scene = sceneController.GetMainScene(false); // WILL NOT ALWAYS FIND CORRECT ONE? TODO, CACHE IT, OR SEND IT ALONG
+    sceneController.Add(EditorScene, {levelPathOrData: levelPathOrData, settingsHandler: scene.settingsHandler});
     //sceneController.Goto(EditorScene, {levelInput: levelPath});
   },
 

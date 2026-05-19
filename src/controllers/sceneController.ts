@@ -297,18 +297,21 @@ export class SceneController
             .flatMap(controller => controller.GetLayers().flat());
     }
 
-    GetLevelScene(): Scene | null
+    GetLevelScene(checkEnabled: boolean = true): Scene | null
     {
-        var tryEnabled = this.currentScenes.find(current => current.isLevel && current.enabled);
-        if (tryEnabled)
-            return tryEnabled;
+        if (checkEnabled)
+        {
+            var tryEnabled = this.currentScenes.find(current => current.isLevel && current.enabled);
+            if (tryEnabled)
+                return tryEnabled;
+        }
 
         return this.currentScenes.find(current => current.isLevel);
     }
 
-    GetMainScene(): Scene
+    GetMainScene(checkEnabled: boolean = true): Scene
     {
-        return this.GetLevelScene() || this.currentScenes[0];
+        return this.GetLevelScene(checkEnabled) || this.currentScenes[0];
     }
 
     DisableAllScenes()
