@@ -1198,7 +1198,7 @@ export class PluginHandler
         // SHOWS WHEN NO PLUGIN/CONNECTION
         // HIDES WHEN THERE IS - CAN PRESS THE BUTTON IN THE PLUGIN
         var check = async () => {
-            if (this.isPluginConnected && !showEditorButton)
+            if (this.isPluginConnected && showEditorButton === false)
             {
                 sceneController.Remove(EditorUIScene);
                 return;
@@ -1207,7 +1207,15 @@ export class PluginHandler
             var levelScene = sceneController.GetLevelScene();
             if (levelScene)
             {
-                if (!sceneController.Has(EditorUIScene) && showEditorButton)
+                var _showEditorButton = true;
+
+                if (showEditorButton)
+                    _showEditorButton = true;
+
+                if (showEditorButton != true && this.isPluginConnected)
+                    _showEditorButton = false;
+
+                if (!sceneController.Has(EditorUIScene) && _showEditorButton)
                 {
                     var scene = await sceneController.Add(EditorUIScene, {openEditorButtonPosition: this.openEditorButtonPosition});
                     sceneController.MoveToFront(scene);
