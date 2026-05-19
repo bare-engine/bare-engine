@@ -39,14 +39,16 @@ export interface Emitter<Events extends object> {
 
   // persistent view: registers handlers that survive clear()
   persistent: {
-    on<K extends keyof Events>(type: K, handler: Handler<Events[K]>): void;
-    on(type: "*", handler: WildcardHandler<Events>): void;
+    on<K extends keyof Events>(type: K, handler: Handler<Events[K]>, alias?: string): void;
+    on(type: "*", handler: WildcardHandler<Events>, alias?: string): void;
 
-    once<K extends keyof Events>(type: K, handler: Handler<Events[K]>): void;
-    once(type: "*", handler: WildcardHandler<Events>): void;
+    once<K extends keyof Events>(type: K, handler: Handler<Events[K]>, alias?: string): void;
+    once(type: "*", handler: WildcardHandler<Events>, alias?: string): void;
 
     off<K extends keyof Events>(type: K, handler?: Handler<Events[K]>): void;
     off(type: "*", handler?: WildcardHandler<Events>): void;
+
+    offAlias(alias: string): void;
   };
 }
 
@@ -126,6 +128,14 @@ export default function mitt<Events extends object>(
     for (const k of all!.keys()) all!.set(k, []);
   };
 
+  const removeAlias = (alias: string) => {
+    for (const [type, list] of all!.entries()) {
+      for (let i = list.length - 1; i >= 0; i--) {
+        if (list[i]!.alias === alias) list.splice(i, 1);
+      }
+    }
+  };
+
   const api: any = {
     all,
 
@@ -142,11 +152,7 @@ export default function mitt<Events extends object>(
     },
 
     offAlias(alias: string) {
-      for (const [type, list] of all!.entries()) {
-        for (let i = list.length - 1; i >= 0; i--) {
-          if (list[i]!.alias === alias) list.splice(i, 1);
-        }
-      }
+      removeAlias(alias);
     },
 
     emit: emit as any,
@@ -156,16 +162,20 @@ export default function mitt<Events extends object>(
   };
 
   api.persistent = {
-    on(type: any, handler: any) {
-      add(type, handler, { persistent: true });
+    on(type: any, handler: any, alias?: string) {
+      add(type, handler, alias ? { persistent: true, alias } : { persistent: true });
     },
 
-    once(type: any, handler: any) {
-      add(type, handler, { persistent: true, once: true });
+    once(type: any, handler: any, alias?: string) {
+      add(type, handler, alias ? { persistent: true, once: true, alias } : { persistent: true, once: true });
     },
 
     off(type: any, handler?: any) {
       remove(type, handler);
+    },
+
+    offAlias(alias: string) {
+      removeAlias(alias);
     },
   };
 
