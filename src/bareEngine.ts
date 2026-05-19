@@ -13,7 +13,6 @@ import { Helper } from "./utils/helper";
 export class BareEngine
 {
     private initialSceneClass: SceneClass;
-    private options: BareOptions = {};
     private restartTimeout: ReturnType<typeof setTimeout> | null = null;
     
     public lastUpdateTimeRef:number;
