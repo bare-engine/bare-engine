@@ -22,7 +22,8 @@ function GetBareOptions(options?: BareOptions): BareOptions
         imagePath: '',
         levelPath: '',
         textureFilter: TextureFilterMode.LINEAR,
-        editorButtonPosition: {x: 0, y: 0}
+        editorButtonPosition: {x: 0, y: 0},
+        showEditorButton: true
     }, ...options };
 }
 

@@ -15,6 +15,7 @@ export type BareOptions =
   imagePath?: string;
   levelPath?: string;
   editorButtonPosition?: Position;
+  showEditorButton?: boolean;
 };
 
 export type ResolutionOptions = 

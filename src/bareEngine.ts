@@ -142,7 +142,7 @@ export class BareEngine
         this.ApplyOptions(options);
 
         if (__DEV__)
-            PluginHandler.Init(this.options.editorButtonPosition);
+            PluginHandler.Init(this.options.showEditorButton, this.options.editorButtonPosition);
 
         this.initialSceneClass = sceneClass;
         
