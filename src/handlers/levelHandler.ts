@@ -193,7 +193,10 @@ export class LevelHandler
         this.currentLevel = level;
 
         if (level.backgroundColor)
-            this.backgroundColor = Color.fromHex(level.backgroundColor);
+        {
+            //this.backgroundColor = Color.fromHex(level.backgroundColor); // CAUSES FLASH ON LEVEL SWITCH AND NOT USEFUL FOR DEMO
+            rapid.backgroundColor = Color.fromHex(level.backgroundColor);
+        }
 
         // LOAD ALL TEXTURES
         await Promise.all(this.CreatePromiseLevelTextures(level));

@@ -1708,8 +1708,7 @@ export class PluginHandler
         }
 
         newEntity.baseEntityLog["__componentSources__"] = {
-            components: {},
-            editorComponents: {},
+            components: {}
         };
 
         for (var componentType of ["components"])
