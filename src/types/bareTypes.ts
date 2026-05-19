@@ -260,6 +260,7 @@ export interface Category
   expanded?: boolean;
   entries?: Array<string> | string;
   baseEntity?: string;
+  showLabels?: boolean;
 }
 
 interface AnimationDataInfo

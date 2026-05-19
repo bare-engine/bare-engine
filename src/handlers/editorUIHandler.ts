@@ -344,7 +344,24 @@ export class EditorUIHandler {
                             }
                         }
 
-                        childrenContainer.appendChild(childEntity);
+                        if (categoryData.showLabels)
+                        {
+                            const childEntityItem = document.createElement('div');
+                            childEntityItem.className = 'child-entity-item';
+
+                            const categoryLabel = document.createElement('div');
+                            categoryLabel.className = 'category-label';
+                            const labelText = entity.name ?? entityId;
+                            categoryLabel.textContent = labelText;
+
+                            childEntityItem.appendChild(childEntity);
+                            childEntityItem.appendChild(categoryLabel);
+                            childrenContainer.appendChild(childEntityItem);
+                        }
+                        else
+                        {
+                            childrenContainer.appendChild(childEntity);
+                        }
                     }
                 });
             }
