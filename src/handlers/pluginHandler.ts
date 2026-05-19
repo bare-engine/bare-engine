@@ -1198,7 +1198,7 @@ export class PluginHandler
         // SHOWS WHEN NO PLUGIN/CONNECTION
         // HIDES WHEN THERE IS - CAN PRESS THE BUTTON IN THE PLUGIN
         var check = async () => {
-            if (this.isPluginConnected)
+            if (this.isPluginConnected && !showEditorButton)
             {
                 sceneController.Remove(EditorUIScene);
                 return;
