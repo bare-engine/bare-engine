@@ -24,6 +24,7 @@ export class HitboxController
 
     private currentHitboxHover: Hitbox | null = null;
     private currentHitboxDown: Hitbox | null = null;
+    private currentHitboxHoverPath: Hitbox[] = [];
 
     private exclusiveLayers: int[] = [];
 
@@ -66,7 +67,7 @@ export class HitboxController
         if (!window.debug)
             return;
 
-        var objs = this.scene.objectController.GetAllObjects();
+        var objs = this.GetAllObjectsWithChildren();
 
         for (var i = objs.length - 1; i >= 0; i--)
         {
@@ -115,15 +116,7 @@ export class HitboxController
     HandleUpdate(layers: GameObject[][])
     {
         const mouse = mouseController.world.position;
-
-        if (this.currentHitboxHover)
-        {
-            const isInsideCurrentHitbox = this.IsPointInsideHitbox(this.currentHitboxHover, mouse);
-            if (!isInsideCurrentHitbox)
-            {
-                this.HandleHitboxLeave(this.currentHitboxHover);
-            }
-        }
+        var foundHover = false;
 
         var l = Object.keys(this.scene.layerInfos).length;
         for (var i = 0; i < layers.length; i++)
@@ -147,43 +140,31 @@ export class HitboxController
             for (var j = objs.length - 1; j >= 0; j--)
             {
                 var obj = objs[j];
-                var hitbox = obj.tapHitbox;
-                
-                if (!hitbox?.active)
-                    continue;
-
-                if (!hitbox.parent.visible && !bareEngine.levelEditorOpen)
-                    continue;
-
-                if (!hitbox.parent.visibleInEditor)
-                    continue;
 
                 if (layerCollisionHandlingType == CollisionHandlingType.POINT)
                 {
-                    const isInside = this.IsPointInsideHitbox(hitbox, mouse);
-                    if (isInside)
+                    const hitbox = this.GetTopHitboxInObject(obj, mouse);
+                    if (hitbox)
                     {
-                        if (hitbox != this.currentHitboxHover)
-                            this.HandleHitboxEnter(hitbox);
-                        
+                        this.SetHoverHitbox(hitbox);
+                        foundHover = true;
                         fullBreak = true;
                         break;
                     }
                 }
                 else if (layerCollisionHandlingType == CollisionHandlingType.RADIUS)
                 {
-                    const center = this.GetHitboxCenter(hitbox);
-                    const distToHitboxSqr = Helper.DistanceNoSqr(mouse, center);
-                    const isInside = this.IsPointInsideHitbox(hitbox, mouse);
-
-                    if (isInside && distToHitboxSqr < closestDistSqr)
+                    const hitboxes = this.GetHitboxesInObject(obj, mouse);
+                    for (var k = 0; k < hitboxes.length; k++)
                     {
-                        closestDistSqr = distToHitboxSqr;
-                        curClosestHitbox = hitbox;
-                        
-                        if (hitbox == this.currentHitboxHover)
+                        const hitbox = hitboxes[k];
+                        const center = this.GetHitboxCenter(hitbox);
+                        const distToHitboxSqr = Helper.DistanceNoSqr(mouse, center);
+
+                        if (distToHitboxSqr < closestDistSqr)
                         {
-                            curClosestHitbox = null;
+                            closestDistSqr = distToHitboxSqr;
+                            curClosestHitbox = hitbox;
                         }
                     }
                 }
@@ -194,11 +175,17 @@ export class HitboxController
 
             if (layerCollisionHandlingType == CollisionHandlingType.RADIUS && curClosestHitbox)
             {
-                this.HandleHitboxEnter(curClosestHitbox);
+                this.SetHoverHitbox(curClosestHitbox);
+                foundHover = true;
             }
 
             if (layerCollisionHandlingType == CollisionHandlingType.POINT && fullBreak)
                 break;
+        }
+
+        if (!foundHover)
+        {
+            this.SetHoverHitbox(null);
         }
     }
 
@@ -234,20 +221,15 @@ export class HitboxController
         const rect = hitbox.rectangle;
         const parent = hitbox.parent;
 
-        const topLeft = parent.GetTopLeftPosition();
-        const totalScaleX = parent.totalScaleX;
-        const totalScaleY = parent.totalScaleY;
+        const topLeft = parent.ToGlobal(new Vec2(rect.x, rect.y));
+        const topRight = parent.ToGlobal(new Vec2(rect.x + rect.width, rect.y));
+        const bottomRight = parent.ToGlobal(new Vec2(rect.x + rect.width, rect.y + rect.height));
+        const bottomLeft = parent.ToGlobal(new Vec2(rect.x, rect.y + rect.height));
 
-        const x1 = topLeft.x + rect.x * totalScaleX;
-        const y1 = topLeft.y + rect.y * totalScaleY;
-        const w = rect.width * totalScaleX;
-        const h = rect.height * totalScaleY;
-
-        // HANDLE NEGATIVE SCALE (FLIPPED)
-        const minX = Math.min(x1, x1 + w);
-        const minY = Math.min(y1, y1 + h);
-        const maxX = Math.max(x1, x1 + w);
-        const maxY = Math.max(y1, y1 + h);
+        const minX = Math.min(topLeft.x, topRight.x, bottomRight.x, bottomLeft.x);
+        const minY = Math.min(topLeft.y, topRight.y, bottomRight.y, bottomLeft.y);
+        const maxX = Math.max(topLeft.x, topRight.x, bottomRight.x, bottomLeft.x);
+        const maxY = Math.max(topLeft.y, topRight.y, bottomRight.y, bottomLeft.y);
 
         return {
             x1: minX,
@@ -293,23 +275,136 @@ export class HitboxController
         return false;
     }
 
-    private HandleHitboxLeave(hitbox: Hitbox): void
+    private IsHitboxTouchable(hitbox: Hitbox | null): hitbox is Hitbox
     {
-        hitbox.OnLeave?.(hitbox.parent);
-        bareEngine.SetCursor('inherit');
-        this.currentHitboxHover = null;
-    }
+        if (!hitbox?.active)
+            return false;
 
-    private HandleHitboxEnter(hitbox: Hitbox): void
-    {
-        if (this.currentHitboxHover)
+        var obj: GameObject | null = hitbox.parent;
+        while (obj)
         {
-            this.HandleHitboxLeave(this.currentHitboxHover);
+            if (!obj.visible && !bareEngine.levelEditorOpen)
+                return false;
+
+            if (!obj.visibleInEditor)
+                return false;
+
+            obj = obj.parent;
         }
 
-        bareEngine.SetCursor('pointer');
-        hitbox.OnEnter?.(hitbox.parent);
-        this.currentHitboxHover = hitbox;
+        return true;
+    }
+
+    private GetTopHitboxInObject(obj: GameObject, point: Vec2): Hitbox | null
+    {
+        for (var i = obj.children.length - 1; i >= 0; i--)
+        {
+            const childHitbox = this.GetTopHitboxInObject(obj.children[i], point);
+            if (childHitbox)
+                return childHitbox;
+        }
+
+        const hitbox = obj.tapHitbox;
+        if (!this.IsHitboxTouchable(hitbox))
+            return null;
+
+        return this.IsPointInsideHitbox(hitbox, point) ? hitbox : null;
+    }
+
+    private GetHitboxesInObject(obj: GameObject, point: Vec2): Hitbox[]
+    {
+        var hitboxes: Hitbox[] = [];
+
+        const collect = (current: GameObject) => {
+            for (var i = current.children.length - 1; i >= 0; i--)
+            {
+                collect(current.children[i]);
+            }
+
+            const hitbox = current.tapHitbox;
+            if (this.IsHitboxTouchable(hitbox) && this.IsPointInsideHitbox(hitbox, point))
+            {
+                hitboxes.push(hitbox);
+            }
+        };
+
+        collect(obj);
+
+        return hitboxes;
+    }
+
+    private BuildHoverPath(hitbox: Hitbox | null): Hitbox[]
+    {
+        if (!hitbox)
+            return [];
+
+        var path: Hitbox[] = [];
+        var obj: GameObject | null = hitbox.parent;
+
+        while (obj)
+        {
+            if (this.IsHitboxTouchable(obj.tapHitbox))
+            {
+                path.unshift(obj.tapHitbox);
+            }
+
+            obj = obj.parent;
+        }
+
+        return path;
+    }
+
+    private SetHoverHitbox(hitbox: Hitbox | null): void
+    {
+        const newHoverPath = this.BuildHoverPath(hitbox);
+        var commonPathLength = 0;
+
+        while (
+            commonPathLength < this.currentHitboxHoverPath.length &&
+            commonPathLength < newHoverPath.length &&
+            this.currentHitboxHoverPath[commonPathLength] == newHoverPath[commonPathLength]
+        )
+        {
+            commonPathLength++;
+        }
+
+        for (var i = this.currentHitboxHoverPath.length - 1; i >= commonPathLength; i--)
+        {
+            const leavingHitbox = this.currentHitboxHoverPath[i];
+            leavingHitbox.OnLeave?.(leavingHitbox.parent);
+        }
+
+        for (var i = commonPathLength; i < newHoverPath.length; i++)
+        {
+            const enteringHitbox = newHoverPath[i];
+            enteringHitbox.OnEnter?.(enteringHitbox.parent);
+        }
+
+        this.currentHitboxHoverPath = newHoverPath;
+        this.currentHitboxHover = newHoverPath.length > 0 ? newHoverPath[newHoverPath.length - 1] : null;
+
+        bareEngine.SetCursor(this.currentHitboxHover ? 'pointer' : 'inherit');
+    }
+
+    private GetAllObjectsWithChildren(): GameObject[]
+    {
+        var allObjects: GameObject[] = [];
+        var objs = this.scene.objectController.GetAllObjects();
+
+        const collect = (obj: GameObject) => {
+            allObjects.push(obj);
+            for (var i = 0; i < obj.children.length; i++)
+            {
+                collect(obj.children[i]);
+            }
+        };
+
+        for (var i = 0; i < objs.length; i++)
+        {
+            collect(objs[i]);
+        }
+
+        return allObjects;
     }
 
     private PointerDown({ mouseX, mouseY, event, isLeftButton }: BareEventPayload['pointer_down']): void
@@ -338,7 +433,7 @@ export class HitboxController
         {
             if (this.currentHitboxHover)
             {
-                this.HandleHitboxLeave(this.currentHitboxHover);
+                this.SetHoverHitbox(null);
             }
         }
 
@@ -380,6 +475,7 @@ export class HitboxController
     ResetCurrentHover()
     {
         this.currentHitboxHover = null;
+        this.currentHitboxHoverPath = [];
         bareEngine.SetCursor('inherit');
     }
 
