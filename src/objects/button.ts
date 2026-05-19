@@ -1,6 +1,5 @@
-import { hitboxController } from "../controllers/hitboxController";
-import { Color, ITextureOptions, TextTexture, Texture, Vec2 } from "../libraries/new-rapid-render";
 import type { ButtonHandlers } from "../controllers/hitboxController";
+import { Color, ITextureOptions, TextTexture, Vec2 } from "../libraries/new-rapid-render";
 import type { Scene } from "../scenes/scene";
 import { GameObject } from "./gameObject";
 

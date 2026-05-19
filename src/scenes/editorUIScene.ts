@@ -25,6 +25,12 @@ export class EditorUIScene extends Scene
         this.editorButton.SetPivot(position.x, position.y);
         this.editorButton.x = this.width * position.x;
         this.editorButton.y = this.height * position.y;
+
+        var scale = 1;
+        if (bareEngine.resolution && bareEngine.resolution.width != undefined && bareEngine.resolution.height != undefined)
+            scale = bareEngine.resolution.width * .001736;
+        
+        this.editorButton.SetScale(scale);
         
         this.events.persistent.on(BareEvent.scene_changed, this.OnSceneChanged.bind(this));
     }

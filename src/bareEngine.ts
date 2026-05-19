@@ -27,7 +27,7 @@ export class BareEngine
     public maxDeltaTime: number = 1 / 15; // CAPS FRAME DELTA, USEFUL AFTER LAG OR TAB REFOCUS
     private accumulator: number = 0;
     public resolutionScale: number = 1;
-    public resolution: BareOptions['resolution'] = undefined;
+    public resolution: BareOptions['resolution'];
     
     private RunMainLoopBound: () => void;
 
