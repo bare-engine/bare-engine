@@ -12,7 +12,7 @@ import { FileDropHandler } from "../handlers/fileDropHandler";
 import { levelHandler } from "../handlers/levelHandler";
 import { SaveDataHandler } from "../handlers/SaveDataHandler";
 import { SettingsHandler } from "../handlers/settingsHandler";
-import { Color, Vec2 } from "../libraries/new-rapid-render";
+import { Color, Texture, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { BareEvent, BareOptions, CameraScaleMode, Entity, HitboxType, LevelData, SaveData, SceneOptions, SettingsData, Size } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
@@ -426,7 +426,7 @@ export class EditorScene extends Scene
 
     override AddGameObject(entityLevel: Entity | string, parent: int | string | GameObject = "objects"): GameObject
     {
-        if (entityLevel instanceof GameObject)
+        if (entityLevel instanceof GameObject || entityLevel instanceof Texture)
         {
             return super.AddGameObject(entityLevel, parent); //
         }
@@ -447,7 +447,7 @@ export class EditorScene extends Scene
         // Hitbox linkage
         if (entity.interactableInEditor !== false) // UNDEFINED OR TRUE...
         {
-            gameObject.tapHitbox = new Hitbox(gameObject, 0);
+            gameObject.tapHitbox ??= new Hitbox(gameObject, 0);
             gameObject.tapHitbox.shouldReleaseOnTop = false;
             gameObject.tapHitbox.OnPress = (_levelEntiy: GameObject, event: PointerEvent) => {
                 if (bareEngine.MouseIsOnEditor(event))
