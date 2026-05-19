@@ -1221,11 +1221,11 @@ export class Scene implements SceneI
         return this.levelHandler?.currentLevel;
     }
 
-    LoadLevel(levelInput: string | LevelData = ""): Promise<LevelData>
+    async LoadLevel(levelInput: string | LevelData = ""): Promise<LevelData>
     {
         /* @ AddClass(levelHandler) */
 
-        return this.levelHandler?.LoadLevel(levelInput);
+        return await this.levelHandler?.LoadLevel(levelInput);
     }
 }
 

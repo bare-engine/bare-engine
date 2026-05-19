@@ -18,6 +18,7 @@ import { Helper } from "../utils/helper";
 import { MakePathForEntity } from "../globals";
 import { assetsHandler } from "./assetsHandler";
 import { getSaveFields } from "../utils/decorators";
+import { SettingsHandler } from "./settingsHandler";
 
 export class LevelHandler
 {
@@ -234,7 +235,14 @@ export class LevelHandler
         //this.scene.settingsHandler.Process(settingsData);
 
         //this.scene.settingsHandler.SetRaw(settingsData);
+
+        // INSTATIATE A NEW SETTINGS HANDLER, SO THE OLD ONE IS LOST
+        // WHEN GOING FROM GAME TO EDITOR, EDITOR TAKES SETTINGS HANDLER FROM GAME
+        // SO IN THIS CASE, WE DON'T WANT TO WRITE TO THAT
+        this.scene.settingsHandler = new SettingsHandler(this.scene);
+
         await this.scene.settingsHandler.Process(settingsData);
+
     }
 
     CreatePromiseLevelTextures(level: LevelData)
