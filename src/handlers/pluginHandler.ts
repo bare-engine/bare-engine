@@ -10,7 +10,7 @@ import { EntityScene } from "../scenes/entityScene";
 import { Scene } from "../scenes/scene";
 import { OutlineShader } from "../shaders/outlineShader";
 import { defaultSettingsData } from "../types/bareData";
-import { BareEvent, Entity, EntityVarsNestedEntry, entityVarsNested, LevelData, Position, SaveData, Scalar, SettingsData, entityVarsNestedRecord, entityVarsAr } from "../types/bareTypes";
+import { BareEvent, Entity, EntityVarsNestedEntry, entityVarsNested, LevelData, Position, SaveData, Scalar, SettingsData } from "../types/bareTypes";
 import { applyInspectorField, getButtons, getInspectorFieldDescriptions, getInspectorFields } from "../utils/decorators";
 import { Helper } from "../utils/helper";
 import { SaveDataHandler } from "./SaveDataHandler";
@@ -1771,22 +1771,28 @@ export class PluginHandler
         var parentClassNames = Helper.GetParentClasses(cls);
         parentClassNames.push(baseClass);
 
-        var allPossibleEntityKeys:string[] = [];
+        var allPossibleEntityKeys = new Set<string>();
 
-        // GAMEOBJECT KEYS
-        allPossibleEntityKeys.push(...entityVarsAr)
-        allPossibleEntityKeys.push(...entityVarsNestedRecord.General)
-        allPossibleEntityKeys.push(...entityVarsNestedRecord.HideInPlugin)
-        allPossibleEntityKeys.push(...entityVarsNestedRecord.Misc)
-
-        for (var i = 0; i < parentClassNames.length; i++)
+        for (var entry of entityVarsNested)
         {
-            var parentClassName = parentClassNames[i];
-            if (entityVarsNestedRecord[parentClassName])
-                allPossibleEntityKeys.push(...entityVarsNestedRecord[parentClassName]);
+            if (typeof entry === "string")
+            {
+                allPossibleEntityKeys.add(entry);
+                continue;
+            }
+
+            for (var [groupName, keys] of Object.entries(entry))
+            {
+                var isGeneralGroup = groupName == "General" || groupName == "HideInPlugin" || groupName == "Misc";
+                if (isGeneralGroup || parentClassNames.includes(groupName))
+                {
+                    for (var key of keys)
+                        allPossibleEntityKeys.add(key);
+                }
+            }
         }
 
-        return allPossibleEntityKeys;
+        return Array.from(allPossibleEntityKeys);
     }
 
     //  GET KEYS IN entityKeys NOT IN allPossibleEntityKeys
