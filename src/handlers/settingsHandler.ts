@@ -119,18 +119,20 @@ export class SettingsHandler
             {
                 if (!categoryData || !categoryData.entries || categoryData.entries.length === 0) continue;
 
-                var entitiesMade: Entity[] = [];
+                var entitiesInCategory: Entity[] = [];
 
                 // PARSE STRING ENTRIES...
                 if (typeof categoryData.entries === 'string') 
-                { 
-                    // ... EG: "roadTexture_1#12"
-                    // CAN ALSO OMIT 1: "roadTexture_#12" (1 IS DEFAULT)
-                    if (typeof categoryData.entries === 'string' && this.IsNumberedName(categoryData.entries))
+                {
+                    const entries = categoryData.entries;
+
+                    if (this.IsNumberedName(entries))
                     {
-                        const entityBaseName = this.GetNumberedNameBaseName(categoryData.entries);
+                        // ... EG: "roadTexture_1#12"
+                        // CAN ALSO OMIT 1: "roadTexture_#12" (1 IS DEFAULT)
+                        const entityBaseName = this.GetNumberedNameBaseName(entries);
                         const entity = this.scene.ConstructEntity(entityBaseName, settings, options);
-                        const entryNames = this.ProcessNumberedNames([categoryData.entries]) ?? [];
+                        const entryNames = this.ProcessNumberedNames([entries]) ?? [];
 
                         categoryData.entries = entryNames;
                         for (const entryName of entryNames)
@@ -141,17 +143,16 @@ export class SettingsHandler
                                 var entityFinal = {...entity, name: entryName}
                                 settings.entities[entryName] = entityFinal;
 
-                                entitiesMade.push(entityFinal);
+                                entitiesInCategory.push(entityFinal);
                             }
                         }
                     }
-
-                    // ... EG: "level_[editorImages]"
-                    // WILL FIND ALL FILES UNDER editorImages AND CREATE level_... ENTRIES OUT OF THEM
-                    if (typeof categoryData.entries === 'string')
+                    else
                     {
+                        // ... EG: "level_[editorImages]"
+                        // WILL FIND ALL FILES UNDER editorImages AND CREATE level_... ENTRIES OUT OF THEM
                         const regex = /(.+)_\[(.+)\]/;
-                        const match = categoryData.entries.match(regex);
+                        const match = entries.match(regex);
                         if (match)
                         {
                             const prefix = match[1]; // EG "level"
@@ -174,7 +175,7 @@ export class SettingsHandler
                                     var entityFinal = {...entity, name: fileName}
                                     settings.entities[fileName] = entityFinal;
 
-                                    entitiesMade.push(entityFinal);
+                                    entitiesInCategory.push(entityFinal);
                                 }
                             }
                         }
@@ -187,7 +188,28 @@ export class SettingsHandler
                 // ASSIGN BASE ENTITY TO ENTITIES UNDER THIS CATEGORY
                 if (categoryData.baseEntity)
                 {
-                    for (var entity of entitiesMade)
+                    if (typeof categoryData.entries !== 'string')
+                    {
+                        // ENTRIES IS AN ARRAY. EG ["tile_0098", "tile_0123", ...]
+                        // TURN EACH NAME INTO AN ENTITY, TAKE EXISTING ONE OR CREATE NEW
+                        entitiesInCategory = categoryData.entries.map(name => {
+                            var newEntity:Entity;
+                            if (settings.entities[name])
+                            {
+                                newEntity = settings.entities[name];
+                            }
+                            else
+                            {
+                                newEntity = { name: name }
+                                settings.entities[name] = newEntity;
+                            }
+
+                            return newEntity;
+                        });
+                    }
+
+                    // ASSIGN BASE ENTITY (ENTITIES IN CATEGORY ARE ONES IN settings.entities[name] NOW)
+                    for (var entity of entitiesInCategory)
                     {
                         entity.baseEntity = categoryData.baseEntity;
                     }
