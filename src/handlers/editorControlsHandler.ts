@@ -481,9 +481,16 @@ export class EditorControlsHandler {
         const zoomStep = 1.2; // EXPONENTIAL ZOOM FOR CONSISTENT FEEL AT ALL SCALES
         const scrollDirection = ev.deltaY > 0 ? -1 : 1;
 
+        const screen = bareEngine.GetCanvasScreenPosition(ev.clientX, ev.clientY);
+        const before = cameraHandler.ScreenToWorld(screen.x, screen.y);
+
         cameraHandler.zoom *= (scrollDirection > 0 ? zoomStep : 1 / zoomStep);
         cameraHandler.zoom = Math.max(.08, cameraHandler.zoom); // SO WE DON'T ZOOM OUT TOO MUCH AND LOSE THE CONTENT
     
+        const after = cameraHandler.ScreenToWorld(screen.x, screen.y);
+        // Keep the mouse anchored to the same world position, similar to the zoom behavior in design software and map applications.
+        cameraHandler.AddPosition(before.x - after.x, before.y - after.y);
+
         ev.preventDefault();
     }
 
