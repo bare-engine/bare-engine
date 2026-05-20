@@ -1056,7 +1056,7 @@ export class GameObject
         if(typeof color === 'string')
             this.color = Color.fromHex(color);
         else
-            this.color = color;
+            this.color.setRGBA(color.r, color.g, color.b, color.a);
 
         return this;
     }
