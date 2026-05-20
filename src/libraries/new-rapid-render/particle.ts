@@ -3,6 +3,7 @@ import { Vec2 } from "./math";
 import { Rapid } from "./render";
 import { Texture } from "./texture";
 import { isPlainObject, Random } from "./utils";
+import { drawSpriteRaw } from "./draw"
 
 export type ParticleAttributeTypes = number | Vec2 | Color;
 
@@ -238,8 +239,8 @@ export class Particle {
             ms.translate(-originX * this.texture.width, -originY * this.texture.height);
         }
 
-        this.rapid.drawSprite({ texture: this.texture, color });
-
+        //this.rapid.drawSprite({ texture: this.texture, color });
+        drawSpriteRaw(rapid, { texture: this.texture, color })
         ms.restore();
     }
 
