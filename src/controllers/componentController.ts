@@ -44,6 +44,7 @@ export abstract class BaseComponent<T extends GameObject = GameObject> implement
     OnRender?(): void;
     OnPostRender?(): void;
     OnUpdate?(dt: number): void;
+    OnFixedUpdate?(fixedDt: number): void;
     OnPreSaveLevel?(): void;
     OnLevelChanged?(): void;
 }
@@ -469,6 +470,11 @@ export class ComponentController
         }
 
         this.CallMethodOnAllComponents('OnUpdate', deltaTime);
+    }
+
+    FixedUpdate(deltaTime: number)
+    {
+        this.CallMethodOnAllComponents('OnFixedUpdate', deltaTime);
     }
 
     PreRender()

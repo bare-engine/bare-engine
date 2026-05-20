@@ -463,6 +463,7 @@ export interface Component<T extends GameObject = GameObject>
     OnRender?(): void
     OnPostRender?(): void
     OnUpdate?(dt: number): void
+    OnFixedUpdate?(fixedDt: number): void
     OnPreSaveLevel?(): void // IN CASE RELATED OBJECT IS PERSISTENT
     OnLevelChanged?(): void // IN CASE RELATED OBJECT IS PERSISTENT
 }

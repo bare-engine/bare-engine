@@ -889,6 +889,8 @@ export class Scene implements SceneI
         this.physicsControllerBare?.FixedUpdate(fixedDeltaTime);
         this.physicsControllerSopiro?.FixedUpdate(fixedDeltaTime);
 
+        this.componentController?.FixedUpdate(fixedDeltaTime);
+
         this.OnFixedUpdate(fixedDeltaTime);
     }
 
