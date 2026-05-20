@@ -104,6 +104,8 @@ export class SpriteRegion extends Region {
 
         const width = texture.width;
         const height = texture.height;
+        const offsetX = texture.offsetX;
+        const offsetY = texture.offsetY;
 
         // Padding comes from the shader (e.g. outline/glow shaders need extra room)
         const p = this.currentShader.padding;
@@ -126,11 +128,11 @@ export class SpriteRegion extends Region {
 
         // A naive `tx - p` would only work for axis-aligned sprites;
         // need md[o] * p - md[o + 2] * p to correctly offset based on scale and rotation
-        f32[index + 2] = md[o + 4] - md[o] * p - md[o + 2] * p;
+        f32[index + 2] = md[o + 4] + md[o] * (offsetX - p) + md[o + 2] * (offsetY - p);
 
         f32[index + 3] = md[o + 1] * (width  + 2 * p);
         f32[index + 4] = md[o + 3] * (height + 2 * p);
-        f32[index + 5] = md[o + 5] - md[o + 1] * p - md[o + 3] * p;
+        f32[index + 5] = md[o + 5] + md[o + 1] * (offsetX - p) + md[o + 3] * (offsetY - p);
 
         f32[index + 6] = u0;
         f32[index + 7] = v0;

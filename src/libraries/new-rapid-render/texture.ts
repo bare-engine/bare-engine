@@ -267,6 +267,10 @@ class Texture {
 
     public width: number = 0;
     public height: number = 0;
+
+    public offsetX: number = 0;
+    public offsetY: number = 0;
+
     public scale: number = 1;
 
     public flipY: boolean = false;
@@ -370,6 +374,7 @@ class Texture {
         t.uvX = this.uvX; t.uvY = this.uvY;
         t.uvW = this.uvW; t.uvH = this.uvH;
         t.width = this.width; t.height = this.height;
+        t.offsetX = this.offsetX; t.offsetY = this.offsetY;
         t.flipY = this.flipY;
         t.isRotated = this.isRotated;
         // Copy stored pixel region so getSubTexture() works on clones too
@@ -660,7 +665,6 @@ class TextTexture extends Texture {
     private render: Rapid;
     private _text: string;
     private _style: ITextStyle;
-    private _base: BaseTexture;
     private options: ITextOptions
     flipY = true
 
@@ -680,8 +684,7 @@ class TextTexture extends Texture {
         this.canvas.width = 1;
         this.canvas.height = 1;
         const glTexture = createTexture(render, this.canvas, this.options);
-        this._base = new BaseTexture(glTexture, 1, 1);
-        this.setBase(this._base);
+        this.setBase(new BaseTexture(glTexture, 1, 1));
 
         this.update();
     }
@@ -710,6 +713,37 @@ class TextTexture extends Texture {
     public set style(value: Partial<ITextStyle>) {
         this._style = { ...this._style, ...value };
         this.update();
+    }
+
+    private updateOffset(width: number, height: number): void {
+        switch (this._style.align) {
+            case "center":
+                this.offsetX = -width / 2;
+                break;
+            case "right":
+                this.offsetX = -width;
+                break;
+            case "left":
+            default:
+                this.offsetX = 0;
+                break;
+        }
+
+        switch (this._style.baseline) {
+            case "middle":
+                this.offsetY = -height / 2;
+                break;
+            case "bottom":
+                this.offsetY = -height;
+                break;
+            case "alphabetic":
+            case "hanging":
+            case "ideographic":
+            case "top":
+            default:
+                this.offsetY = 0;
+                break;
+        }
     }
 
     /**
@@ -750,10 +784,10 @@ class TextTexture extends Texture {
         ctx.setTransform(TEXT_SCALEFACTOR, 0, 0, TEXT_SCALEFACTOR, 0, 0);
         ctx.clearRect(0, 0, logicalWidth, logicalHeight);
 
-        // Must set font again if canvas resized
         ctx.font = font;
-        ctx.textBaseline = this._style.baseline;
-        ctx.textAlign = this._style.align;
+        ctx.textBaseline = "top";
+        ctx.textAlign = "left";
+        this.updateOffset(logicalWidth, logicalHeight);
 
         let y = padding / 2;
         for (const line of lines) {
@@ -777,8 +811,8 @@ class TextTexture extends Texture {
 
             y += lineHeight;
         }
-
-        this._base.updateSource(this.render.gl, this.canvas, this.options);
+        
+        this.base.updateSource(this.render.gl, this.canvas, this.options);
         this.setRegion(0, 0, this.canvas.width, this.canvas.height);
     }
 }
