@@ -43,6 +43,8 @@ export class PhysicsControllerBare extends PhysicsControllerBase
   {
       if (object instanceof PhysicsObjectBare && !object.parent)
       {
+        this.removeAllCollidingObjectReferences(object);
+
         const index = this.objects.indexOf(object);
         if (index > -1) {
             this.objects.splice(index, 1);
@@ -70,6 +72,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     if (!enabled && this.activeCollisions.size > 0) {
       this.CheckCollisionEnd();
       this.activeCollisions.clear();
+      this.clearCollidingObjects();
     }
   }
 
@@ -361,6 +364,49 @@ export class PhysicsControllerBare extends PhysicsControllerBase
         this.handleBoundaryCollisions(obj);
       }
     }
+  }
+
+  private addCollidingObjects(object1: PhysicsObjectBare, object2: PhysicsObjectBare): void
+  {
+      if (!object1.collidingObjects.includes(object2)) {
+          object1.collidingObjects.push(object2);
+      }
+
+      if (!object2.collidingObjects.includes(object1)) {
+          object2.collidingObjects.push(object1);
+      }
+  }
+
+  private removeCollidingObjects(object1: PhysicsObjectBare, object2: PhysicsObjectBare): void
+  {
+      const object1Index = object1.collidingObjects.indexOf(object2);
+      if (object1Index > -1) {
+          object1.collidingObjects.splice(object1Index, 1);
+      }
+
+      const object2Index = object2.collidingObjects.indexOf(object1);
+      if (object2Index > -1) {
+          object2.collidingObjects.splice(object2Index, 1);
+      }
+  }
+
+  private removeAllCollidingObjectReferences(object: PhysicsObjectBare): void
+  {
+      for (const collidingObject of object.collidingObjects) {
+          const index = collidingObject.collidingObjects.indexOf(object);
+          if (index > -1) {
+              collidingObject.collidingObjects.splice(index, 1);
+          }
+      }
+
+      object.collidingObjects.length = 0;
+  }
+
+  private clearCollidingObjects(): void
+  {
+      for (const obj of this.getCollisionObjects()) {
+          obj.collidingObjects.length = 0;
+      }
   }
 
   private getBroadPhasePairs(): { p1: PhysicsObjectBare; p2: PhysicsObjectBare }[]
@@ -927,6 +973,8 @@ export class PhysicsControllerBare extends PhysicsControllerBase
           this.activeCollisions.add(collisionKey);
       }
 
+      this.addCollidingObjects(object1, object2);
+
       if (!emitEvents) {
           return;
       }
@@ -963,6 +1011,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 
         if (object1 && object2)
         {
+          this.removeCollidingObjects(object1, object2);
           object1.OnCollisionEnd(object2);
           object2.OnCollisionEnd(object1);
           events.emit(BareEvent.collision_end, object1 as PhysicsObjectBare, object2 as PhysicsObjectBare);

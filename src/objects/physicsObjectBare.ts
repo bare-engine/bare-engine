@@ -21,6 +21,7 @@ export class PhysicsObjectBare extends GameObject
     @InspectorField stayInBounds: boolean = true;
     
     blocked:BlockedState = BlockedState.None;
+    collidingObjects: PhysicsObjectBare[] = [];
 
     static dummyPhysicsObjectBare: PhysicsObjectBare = new PhysicsObjectBare();
     
@@ -189,6 +190,8 @@ export class PhysicsObjectBare extends GameObject
         this.drag = 0//.07;
         this.restitution = 0//.8;
         this.blocked = BlockedState.None;
+        if (this.collidingObjects)
+            this.collidingObjects.length = 0;
 
         if (this.physicsHitbox)
         {
