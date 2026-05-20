@@ -835,14 +835,22 @@ export class LevelHandler
         if (constructorVarNames.length == 0)
             constructorVarNames = (component as any).__paramNames || Helper.GetConstructorParamNames(component.constructor);
         
+        var className = Helper.GetNameFromClass(component.constructor);
+        var defaultValues = bareEngine.componentDefaulValues[className];
+
         // GET VALUE FROM EACH KEY OF CONSTRUCTOR PARAMS
         for (let i = 0; i < constructorVarNames.length; i++)
         {
             const paramName = constructorVarNames[i];
-            const paramValue = component[paramName as keyof typeof component] as any; // SHOULD STRING, NUMBER OR BOOLEAN
+            const paramValue = component[paramName as keyof typeof component] as any; // SHOULD BE STRING, NUMBER OR BOOLEAN
 
             // SKIP SCENE
             if (paramName == "scene" || paramValue instanceof Scene)
+                continue;
+
+            // SKIP IF DEFAULT
+            var defaultValue = defaultValues[paramName];
+            if (paramValue === defaultValue)
                 continue;
 
             componentData[paramName] = paramValue;

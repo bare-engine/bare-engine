@@ -9,6 +9,7 @@ import { GameObject } from "./objects/gameObject";
 import { Scene } from "./scenes/scene";
 import { BareEvent, BareEventPayload, BareOptions, CanvasPosition, CanvasScale, Events, GameObjectClass, SceneClass } from "./types/bareTypes";
 import { Helper } from "./utils/helper";
+import { getSaveFields } from "./utils/decorators";
 
 export class BareEngine
 {
@@ -35,6 +36,7 @@ export class BareEngine
     get levelEditorOpen(): boolean { return bareEngine.gameMode == GameMode.Editor; }
     
     public componentClasses: Record<string, any> = {};
+    public componentDefaulValues: Record<string, Record<string, any>> = {};
 
     private mouseDownOnLeave: boolean = false;
 
@@ -465,6 +467,21 @@ export class BareEngine
     {
         var className = Helper.GetNameFromClass(componentClass);
         bareEngine.componentClasses[className] = componentClass;
+
+        // FIND DEFAULT VALUES - DUPLICATE CODE FROM SerializeComponent - TODO
+        var component = new componentClass();
+        var constructorVarNames = getSaveFields(component);
+        if (constructorVarNames.length == 0)
+            constructorVarNames = (component as any).__paramNames || Helper.GetConstructorParamNames(component.constructor);
+        
+        var defaulValues:Record<string, any> = {};
+        for (let i = 0; i < constructorVarNames.length; i++)
+        {
+            const paramName = constructorVarNames[i];
+            const paramValue = component[paramName as keyof typeof component] as any; // SHOULD BE STRING, NUMBER OR BOOLEAN
+            defaulValues[paramName] = paramValue;
+        }
+        bareEngine.componentDefaulValues[className] = defaulValues;
     }
 
 
