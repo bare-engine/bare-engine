@@ -80,6 +80,10 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 
     for (const obj of this.objects)
     {
+      if (obj.parent) {
+        continue;
+      }
+
       obj.blocked = BlockedState.None;
 
       if (!obj.physicsHitbox.rectangle || obj.physicsHitbox.rectangle.width == 0 || obj.physicsHitbox.rectangle.height == 0)
@@ -224,7 +228,9 @@ export class PhysicsControllerBare extends PhysicsControllerBase
           const obj1 = pair.p1;
           const obj2 = pair.p2;
 
-          if (obj1.static && obj2.static) continue;
+          const sensorCollision = obj1.sensor || obj2.sensor || !!obj1.parent || !!obj2.parent;
+
+          if (!sensorCollision && obj1.static && obj2.static) continue;
           if (!obj1.collide || !obj2.collide) continue;
           if (!obj1.physicsHitbox.active || !obj2.physicsHitbox.active) continue;
 
@@ -247,11 +253,18 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 
           // Circle-Circle collision
           if (obj1.physicsHitbox.type === HitboxType.Circle && obj2.physicsHitbox.type === HitboxType.Circle) {
-            const dx = obj2.x - obj1.x;
-            const dy = obj2.y - obj1.y;
+            const circle1 = this.getWorldCircle(obj1);
+            const circle2 = this.getWorldCircle(obj2);
+
+            if (!circle1 || !circle2) {
+              continue;
+            }
+
+            const dx = circle2.x - circle1.x;
+            const dy = circle2.y - circle1.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
 
-            if (distance < obj1.physicsHitbox.radius + obj2.physicsHitbox.radius) {
+            if (distance < circle1.radius + circle2.radius) {
               collision = true;
               collisionInfo = {
                 dx,
@@ -291,7 +304,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
             }
 
             // Skip physical response for sensors or non-solid objects
-            if (obj1.sensor || obj2.sensor) {
+            if (sensorCollision) {
                 continue;
             }
 
@@ -341,7 +354,8 @@ export class PhysicsControllerBare extends PhysicsControllerBase
         break;
       }
 
-      for (const obj of this.objects) {
+    for (const obj of this.objects) {
+        if (obj.parent) continue;
         if (!obj.physicsHitbox.active) continue;
         if (!obj.physicsHitbox.rectangle || obj.physicsHitbox.rectangle.width == 0 || obj.physicsHitbox.rectangle.height == 0) continue;
         this.handleBoundaryCollisions(obj);
@@ -353,7 +367,8 @@ export class PhysicsControllerBare extends PhysicsControllerBase
   {
     const entries: QuadTreeItem<PhysicsObjectBare>[] = [];
     const objectIndexes = new Map<PhysicsObjectBare, number>();
-    const bounds = this.getBroadPhaseBounds(entries, objectIndexes);
+    const collisionObjects = this.getCollisionObjects();
+    const bounds = this.getBroadPhaseBounds(entries, objectIndexes, collisionObjects);
 
     if (entries.length < 2) {
       return [];
@@ -381,7 +396,11 @@ export class PhysicsControllerBare extends PhysicsControllerBase
           continue;
         }
 
-        const key = `${obj1.uniqueID}##${obj2.uniqueID}`;
+        if (this.shouldSkipInternalCollision(obj1, obj2)) {
+          continue;
+        }
+
+        const key = this.getCollisionKey(obj1, obj2);
         if (pairKeys.has(key)) {
           continue;
         }
@@ -399,20 +418,114 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     return pairs;
   }
 
+  private getCollisionObjects(): PhysicsObjectBare[]
+  {
+    const collisionObjects: PhysicsObjectBare[] = [];
+    const seen = new Set<PhysicsObjectBare>();
+
+    const addPhysicsObject = (obj: PhysicsObjectBare): void => {
+      if (seen.has(obj)) {
+        return;
+      }
+
+      seen.add(obj);
+      collisionObjects.push(obj);
+    };
+
+    const collectChildren = (obj: GameObject): void => {
+      for (const child of obj.children) {
+        if (child instanceof PhysicsObjectBare) {
+          addPhysicsObject(child);
+        }
+
+        collectChildren(child);
+      }
+    };
+
+    const sceneObjects = this.scene.objectController?.GetAllObjects?.() ?? [];
+
+    for (const obj of sceneObjects) {
+      if (obj instanceof PhysicsObjectBare) {
+        addPhysicsObject(obj);
+      }
+
+      collectChildren(obj);
+    }
+
+    for (const obj of this.objects) {
+      if (obj instanceof PhysicsObjectBare) {
+        addPhysicsObject(obj);
+      }
+
+      collectChildren(obj);
+    }
+
+    return collisionObjects;
+  }
+
+  private shouldSkipInternalCollision(obj1: PhysicsObjectBare, obj2: PhysicsObjectBare): boolean
+  {
+    if (this.isAncestorOf(obj1, obj2) || this.isAncestorOf(obj2, obj1)) {
+      return true;
+    }
+
+    const owner1 = this.getPhysicsOwner(obj1);
+    const owner2 = this.getPhysicsOwner(obj2);
+
+    return !!owner1 && owner1 === owner2;
+  }
+
+  private isAncestorOf(ancestor: GameObject, obj: GameObject): boolean
+  {
+    let current = obj.parent;
+
+    while (current) {
+      if (current === ancestor) {
+        return true;
+      }
+
+      current = current.parent;
+    }
+
+    return false;
+  }
+
+  private getPhysicsOwner(obj: GameObject): PhysicsObjectBare | null
+  {
+    let current = obj.parent;
+
+    while (current) {
+      if (current instanceof PhysicsObjectBare) {
+        return current;
+      }
+
+      current = current.parent;
+    }
+
+    return null;
+  }
+
+  private getCollisionKey(obj1: PhysicsObjectBare, obj2: PhysicsObjectBare): string
+  {
+    return obj1.uniqueID < obj2.uniqueID
+      ? `${obj1.uniqueID}##${obj2.uniqueID}`
+      : `${obj2.uniqueID}##${obj1.uniqueID}`;
+  }
+
   private getVelocityMagnitudeSquared(obj: PhysicsObjectBare): number
   {
     return obj.velocity.x * obj.velocity.x + obj.velocity.y * obj.velocity.y;
   }
 
-  private getBroadPhaseBounds(entries: QuadTreeItem<PhysicsObjectBare>[], objectIndexes: Map<PhysicsObjectBare, number>): Rectangle
+  private getBroadPhaseBounds(entries: QuadTreeItem<PhysicsObjectBare>[], objectIndexes: Map<PhysicsObjectBare, number>, collisionObjects: PhysicsObjectBare[]): Rectangle
   {
     let left = this.x;
     let top = this.y;
     let right = this.x + this.width;
     let bottom = this.y + this.height;
 
-    for (let i = 0; i < this.objects.length; i++) {
-      const obj = this.objects[i];
+    for (let i = 0; i < collisionObjects.length; i++) {
+      const obj = collisionObjects[i];
       const bounds = this.getObjectBounds(obj);
 
       if (!bounds) {
@@ -447,18 +560,57 @@ export class PhysicsControllerBare extends PhysicsControllerBase
         return null;
       }
 
+      const circle = this.getWorldCircle(obj);
+
+      if (!circle) {
+        return null;
+      }
+
       return {
-        x: obj.x - radius,
-        y: obj.y - radius,
-        width: radius * 2,
-        height: radius * 2
+        x: circle.x - circle.radius,
+        y: circle.y - circle.radius,
+        width: circle.radius * 2,
+        height: circle.radius * 2
       };
     }
 
+    return this.getWorldHitboxRect(obj);
+  }
+
+  private getWorldHitboxRect(obj: PhysicsObjectBare): Rectangle | null
+  {
     const rect = obj.physicsHitbox.rectangle;
 
     if (!rect || rect.width === 0 || rect.height === 0) {
       return null;
+    }
+
+    if (obj.parent) {
+      const points = [
+        obj.ToGlobal(new Vec2(rect.x, rect.y)),
+        obj.ToGlobal(new Vec2(rect.x + rect.width, rect.y)),
+        obj.ToGlobal(new Vec2(rect.x + rect.width, rect.y + rect.height)),
+        obj.ToGlobal(new Vec2(rect.x, rect.y + rect.height))
+      ];
+
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+
+      for (const point of points) {
+        minX = Math.min(minX, point.x);
+        minY = Math.min(minY, point.y);
+        maxX = Math.max(maxX, point.x);
+        maxY = Math.max(maxY, point.y);
+      }
+
+      return {
+        x: minX,
+        y: minY,
+        width: maxX - minX,
+        height: maxY - minY
+      };
     }
 
     return {
@@ -466,6 +618,32 @@ export class PhysicsControllerBare extends PhysicsControllerBase
       y: obj.y - obj.pivot.y + rect.y,
       width: Math.abs(rect.width * obj.totalScaleX),
       height: Math.abs(rect.height * obj.totalScaleY)
+    };
+  }
+
+  private getWorldCircle(obj: PhysicsObjectBare): { x: number; y: number; radius: number } | null
+  {
+    const radius = obj.physicsHitbox.radius || 0;
+
+    if (radius <= 0) {
+      return null;
+    }
+
+    if (!obj.parent) {
+      return {
+        x: obj.x,
+        y: obj.y,
+        radius: radius * Math.max(Math.abs(obj.totalScaleX), Math.abs(obj.totalScaleY))
+      };
+    }
+
+    const center = obj.ToGlobal(new Vec2(obj.pivot.x, obj.pivot.y));
+    const edge = obj.ToGlobal(new Vec2(obj.pivot.x + radius, obj.pivot.y));
+
+    return {
+      x: center.x,
+      y: center.y,
+      radius: Math.hypot(edge.x - center.x, edge.y - center.y)
     };
   }
 
@@ -477,32 +655,45 @@ export class PhysicsControllerBare extends PhysicsControllerBase
       angle: number;
     }
   {
+    const circleBounds = this.getWorldCircle(circle);
+    const rectBounds = this.getWorldHitboxRect(obj);
+
+    if (!circleBounds || !rectBounds) {
+      return {
+        collision: false,
+        dx: 0,
+        dy: 0,
+        distance: 0,
+        angle: 0
+      };
+    }
+
     // Get rectangle bounds
-    const rectLeft = obj.x + obj.physicsHitbox.rectangle.x - obj.pivot.x;
-    const rectRight = rectLeft + obj.physicsHitbox.rectangle.width;
-    const rectTop = obj.y + obj.physicsHitbox.rectangle.y - obj.pivot.y;
-    const rectBottom = rectTop + obj.physicsHitbox.rectangle.height;
+    const rectLeft = rectBounds.x;
+    const rectRight = rectLeft + rectBounds.width;
+    const rectTop = rectBounds.y;
+    const rectBottom = rectTop + rectBounds.height;
 
     const insideRect =
-      circle.x >= rectLeft &&
-      circle.x <= rectRight &&
-      circle.y >= rectTop &&
-      circle.y <= rectBottom;
+      circleBounds.x >= rectLeft &&
+      circleBounds.x <= rectRight &&
+      circleBounds.y >= rectTop &&
+      circleBounds.y <= rectBottom;
 
     // Find closest point on rectangle to circle center
-    const closestX = Math.max(rectLeft, Math.min(circle.x, rectRight));
-    const closestY = Math.max(rectTop, Math.min(circle.y, rectBottom));
+    const closestX = Math.max(rectLeft, Math.min(circleBounds.x, rectRight));
+    const closestY = Math.max(rectTop, Math.min(circleBounds.y, rectBottom));
 
     // Calculate distance from circle center to closest point
-    const dx = circle.x - closestX;
-    const dy = circle.y - closestY;
+    const dx = circleBounds.x - closestX;
+    const dy = circleBounds.y - closestY;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
     if (insideRect) {
-      const distLeft = circle.x - rectLeft;
-      const distRight = rectRight - circle.x;
-      const distTop = circle.y - rectTop;
-      const distBottom = rectBottom - circle.y;
+      const distLeft = circleBounds.x - rectLeft;
+      const distRight = rectRight - circleBounds.x;
+      const distTop = circleBounds.y - rectTop;
+      const distBottom = rectBottom - circleBounds.y;
 
       const minDist = Math.min(distLeft, distRight, distTop, distBottom);
 
@@ -511,7 +702,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
           collision: true,
           dx: -1,
           dy: 0,
-          distance: circle.physicsHitbox.radius + distLeft,
+          distance: circleBounds.radius + distLeft,
           angle: Math.PI
         };
       }
@@ -521,7 +712,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
           collision: true,
           dx: 1,
           dy: 0,
-          distance: circle.physicsHitbox.radius + distRight,
+          distance: circleBounds.radius + distRight,
           angle: 0
         };
       }
@@ -531,7 +722,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
           collision: true,
           dx: 0,
           dy: -1,
-          distance: circle.physicsHitbox.radius + distTop,
+          distance: circleBounds.radius + distTop,
           angle: -Math.PI / 2
         };
       }
@@ -540,17 +731,17 @@ export class PhysicsControllerBare extends PhysicsControllerBase
         collision: true,
         dx: 0,
         dy: 1,
-        distance: circle.physicsHitbox.radius + distBottom,
+        distance: circleBounds.radius + distBottom,
         angle: Math.PI / 2
       };
     }
 
-    if (distance < circle.physicsHitbox.radius) {
+    if (distance < circleBounds.radius) {
       return {
         collision: true,
         dx: dx,
         dy: dy,
-        distance: circle.physicsHitbox.radius - distance, // Penetration depth
+        distance: circleBounds.radius - distance, // Penetration depth
         angle: Math.atan2(dy, dx)
       };
     }
@@ -573,17 +764,30 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     distance: number;
     angle: number;
   } {
+    const rect1 = this.getWorldHitboxRect(obj1);
+    const rect2 = this.getWorldHitboxRect(obj2);
+
+    if (!rect1 || !rect2) {
+      return {
+        collision: false,
+        dx: 0,
+        dy: 0,
+        distance: 0,
+        angle: 0
+      };
+    }
+
     // Get rectangle 1 bounds
-    const rect1Left = obj1.x - obj1.pivot.x + obj1.physicsHitbox.rectangle.x;
-    const rect1Right = rect1Left + obj1.physicsHitbox.rectangle.width * obj1.totalScaleX;
-    const rect1Top = obj1.y - obj1.pivot.y + obj1.physicsHitbox.rectangle.y;
-    const rect1Bottom = rect1Top + obj1.physicsHitbox.rectangle.height * obj1.totalScaleY;
+    const rect1Left = rect1.x;
+    const rect1Right = rect1Left + rect1.width;
+    const rect1Top = rect1.y;
+    const rect1Bottom = rect1Top + rect1.height;
 
     // Get rectangle 2 bounds
-    const rect2Left = obj2.x - obj2.pivot.x + obj2.physicsHitbox.rectangle.x;
-    const rect2Right = rect2Left + obj2.physicsHitbox.rectangle.width * obj2.totalScaleX;
-    const rect2Top = obj2.y - obj2.pivot.y + obj2.physicsHitbox.rectangle.y;
-    const rect2Bottom = rect2Top + obj2.physicsHitbox.rectangle.height * obj2.totalScaleY;
+    const rect2Left = rect2.x;
+    const rect2Right = rect2Left + rect2.width;
+    const rect2Top = rect2.y;
+    const rect2Bottom = rect2Top + rect2.height;
 
     // Check for AABB collision
     const colliding = rect1Left < rect2Right && 
@@ -649,12 +853,16 @@ export class PhysicsControllerBare extends PhysicsControllerBase
   GetCollidingObjectsAgainst(obj: PhysicsObjectBare): PhysicsObjectBare[]
   {
     var collidingObjects: PhysicsObjectBare[] = [];
+    const collisionObjects = this.getCollisionObjects();
 
-    for (let i = 0; i < this.objects.length; i++)
+    for (let i = 0; i < collisionObjects.length; i++)
     {
-        var otherObj = this.objects[i];
+        var otherObj = collisionObjects[i];
 
         if (otherObj == obj)
+            continue;
+
+        if (this.shouldSkipInternalCollision(obj, otherObj))
             continue;
 
         if (this.CheckCollision(obj, otherObj))
@@ -673,14 +881,41 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 
   GetCollisionInfo(obj1: PhysicsObjectBare, obj2: PhysicsObjectBare): {collision: boolean, dx: number, dy: number, distance: number, angle: number}
   {
-    return this.checkRectRectCollision(obj1, obj2);
+    if (obj1.physicsHitbox.type === HitboxType.Rectangle && obj2.physicsHitbox.type === HitboxType.Rectangle) {
+      return this.checkRectRectCollision(obj1, obj2);
+    }
+
+    if (obj1.physicsHitbox.type === HitboxType.Circle && obj2.physicsHitbox.type === HitboxType.Circle) {
+      const circle1 = this.getWorldCircle(obj1);
+      const circle2 = this.getWorldCircle(obj2);
+
+      if (!circle1 || !circle2) {
+        return { collision: false, dx: 0, dy: 0, distance: 0, angle: 0 };
+      }
+
+      const dx = circle2.x - circle1.x;
+      const dy = circle2.y - circle1.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      return {
+        collision: distance < circle1.radius + circle2.radius,
+        dx,
+        dy,
+        distance,
+        angle: Math.atan2(dy, dx)
+      };
+    }
+
+    const circle = obj1.physicsHitbox.type === HitboxType.Circle ? obj1 : obj2;
+    const rectObj = obj1.physicsHitbox.type === HitboxType.Rectangle ? obj1 : obj2;
+    return this.checkCircleRectCollision(circle, rectObj);
   }
 
   // object1 IS ALWAYS THE OBJECT WITH THE HIGHEST VELOCITY
   HandleCollision(object1: PhysicsObjectBare, object2: PhysicsObjectBare, emitEvents: boolean = true)
   {
       // Create a unique key for this collision pair
-      const collisionKey = `${object1.uniqueID}##${object2.uniqueID}`;
+      const collisionKey = this.getCollisionKey(object1, object2);
       const alreadyTrackedThisFrame = this.currentFrameCollisions.has(collisionKey);
       
       this.currentFrameCollisions.add(collisionKey);
@@ -692,7 +927,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
           this.activeCollisions.add(collisionKey);
       }
 
-      if (!emitEvents || !object1.texture || !object2.texture) {
+      if (!emitEvents) {
           return;
       }
 
@@ -722,8 +957,9 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 
         // Find the actual objects
         const [obj1ID, obj2ID] = collisionKey.split('##');
-        const object1 = this.objects.find(obj => obj.uniqueID == obj1ID);
-        const object2 = this.objects.find(obj => obj.uniqueID == obj2ID);
+        const collisionObjects = this.getCollisionObjects();
+        const object1 = collisionObjects.find(obj => obj.uniqueID == obj1ID);
+        const object2 = collisionObjects.find(obj => obj.uniqueID == obj2ID);
 
         if (object1 && object2)
         {
@@ -881,22 +1117,24 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 
 	GetObjectAtPoint(position: Vec2, ignoredObject?: PhysicsObjectBare): PhysicsObjectBare | null
 	{
-		for (let i = 0; i < this.objects.length; i++)
+    const collisionObjects = this.getCollisionObjects();
+
+		for (let i = 0; i < collisionObjects.length; i++)
 		{
-			var obj = this.objects[i];
+			var obj = collisionObjects[i];
 
 			if (obj == ignoredObject)
 				continue;
 
-			var rect = obj.physicsHitbox.rectangle;
+			var rect = this.getWorldHitboxRect(obj);
 
 			if (!rect)
 			continue
 
-			if (position.x >= obj.x + rect.x - obj.pivot.x &&
-				position.x <= obj.x + rect.x + rect.width - obj.pivot.x &&
-				position.y >= obj.y + rect.y - obj.pivot.y &&
-				position.y <= obj.y + rect.y + rect.height - obj.pivot.y)
+			if (position.x >= rect.x &&
+				position.x <= rect.x + rect.width &&
+				position.y >= rect.y &&
+				position.y <= rect.y + rect.height)
 			{
 				return obj;
 			}
