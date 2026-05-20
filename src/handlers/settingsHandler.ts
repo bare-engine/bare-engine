@@ -211,7 +211,7 @@ export class SettingsHandler
                     // ASSIGN BASE ENTITY (ENTITIES IN CATEGORY ARE ONES IN settings.entities[name] NOW)
                     for (var entity of entitiesInCategory)
                     {
-                        entity.baseEntity = categoryData.baseEntity;
+                        entity.baseEntity ??= categoryData.baseEntity;
                     }
                 }
             }

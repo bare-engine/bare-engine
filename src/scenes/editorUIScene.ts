@@ -19,7 +19,7 @@ export class EditorUIScene extends Scene
     {
         var position = payload?.openEditorButtonPosition ?? { x: .5, y: 0 };
 
-        this.editorButton = new Button(this, {text: "Open Editor", OnPress: this.OnClickEditorButton.bind(this)});
+        this.editorButton = new Button(this, {text: "Level Editor", OnPress: this.OnClickEditorButton.bind(this)});
         this.AddGameObject(this.editorButton);
 
         this.editorButton.SetPivot(position.x, position.y);

@@ -1690,7 +1690,7 @@ export class PluginHandler
             var extendEntityName = extendOrder[i];
             var extendEntity = settingsDataRaw.baseEntities[extendEntityName] || defaultSettingsData.baseEntities[extendEntityName];
             var propsExtended = Object.keys(extendEntity);
-            var propsExtendedFiltered = propsExtended.filter(p => !propsFound.includes(p));
+            var propsExtendedFiltered = propsExtended.filter(p => !propsFound.includes(p) && Helper.ObjectsAreEqual(extendEntity[p], processedEntity[p]));
 
             newEntity.baseEntityLog[extendEntityName] = propsExtendedFiltered;
 
