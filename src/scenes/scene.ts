@@ -1071,15 +1071,15 @@ export class Scene implements SceneI
         // FOR OVERRIDE
     }
 
-    PostLoadLevel(level:LevelData, uids:string[])
+    PostLoadLevel(level:LevelData, persistenObjUIDs:string[] = [])
     {
         this.isLevel = true;
 
-        this.componentController?.PostLoadLevel(uids);
-        this.OnPostLoadLevel(level);
+        this.componentController?.PostLoadLevel(persistenObjUIDs);
+        this.OnPostLoadLevel(level, persistenObjUIDs);
     }
     
-    OnPostLoadLevel(level:LevelData)
+    OnPostLoadLevel(level:LevelData, persistenObjUIDs:string[] = [])
     {
         // FOR OVERRIDE
     }

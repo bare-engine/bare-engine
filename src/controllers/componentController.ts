@@ -73,12 +73,12 @@ export class ComponentController
         this.scene.events.on(BareEvent.level_preSave, this.OnPreSaveLevel.bind(this));
     }
 
-    public PostLoadLevel(uids:string[]): void
+    public PostLoadLevel(persistenObjUIDs:string[] = []): void
     {
         // CALL ONLEVELCHANGED ON PERSISTENT OBJECTS
-        for (var i = 0; i < uids.length; i++)
+        for (var i = 0; i < persistenObjUIDs.length; i++)
         {
-            let uid = uids[i]; 
+            let uid = persistenObjUIDs[i]; 
             var comps = this.GetAllComponentsFromUID(uid); // CHECKING WITH UID IN CASE OBJECT WAS MANUALLY REMOVED, THEN THIS WILL FIND NO COMPONENTS
             for (var k = 0; k < comps.length; k++)
             {
