@@ -1125,9 +1125,8 @@ export class Scene implements SceneI
 
     Clear(includingPersistent: boolean = true)
     {
-        // THIS CANCELS ALL AWAITS, PREVENTING SOME NASTY PROBLEMS
-        // THOUGHT IT MEANS YOU CANNOT RESOLVE AN AWAIT wait() AFTER A RESTART
-        // BUT THAT'S PROBABLY FINE
+        // THIS CANCELS ALL AWAITS, PREVENTING SOME NASTY PROBLEMS ON SCENE SWITCHING AND RESTART
+        // CAN STILL SUPPLY A persistent PARAMETER TO wait() TO PREVENT THIS
         window.cancelWaits();
 
         var classes = controllerNames;

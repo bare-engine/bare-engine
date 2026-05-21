@@ -56,9 +56,10 @@ export class Tween<T extends UnknownProps = any> {
 	private _isChainStopped = false
 	private _propertiesAreSetUp = false
 	private _object: T
-	private _group?: Group
+    private _group?: Group
     public object: T
     public valuesEnd: Record<string, number | string> = {}
+    public persistent: boolean = false
 
 	/**
 	 * @param object - The object whose properties this Tween will animate.

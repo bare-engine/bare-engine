@@ -49,7 +49,7 @@ declare global
 
     function trace(message: any, ...optionalParams: any[]): void;
 
-    function wait(seconds: number): Promise<void>;
+    function wait(seconds: number, persistent?: boolean): Promise<void>;
     function cancelWaits(): void;
 
     function assert(condition: boolean, message?: string): void;
@@ -74,13 +74,13 @@ window.isLocalhost = ['localhost'].some(domain => window.location.href.includes(
 window.isMobile = Helper.MobileAndTabletCheck();
     
 let _waitGen = 0;
-window.wait = (seconds: number): Promise<void> => {
+window.wait = (seconds: number, persistent = false): Promise<void> => {
     const gen = _waitGen;
     return new Promise(resolve => {
         setTimeout(() => {
-            if (_waitGen == gen)
+            if (persistent ||_waitGen == gen)
                 resolve(); 
-            // ELSE... WE DON'T RESOLVE AND TIME OUT WILL STAY SUSPENDED UNTIL GC CLEANS IT UP
+            // ELSE... WE DON'T RESOLVE AND TIME OUT WILL STAY SUSPENDED UNTIL GC CLEANS IT UP (DOES IT?? TODO)
         }, seconds * 1000);
     });
 };
