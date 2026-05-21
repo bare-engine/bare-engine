@@ -35,7 +35,7 @@ export class FlashShader
         });
     }
 
-    public start(gameObject: any, duration: number = 1000, fadePreDuration: number = 400): void {
+    public start(gameObject: any, duration: number = 300, fadePreDuration: number = 100): void {
         if (this.objectStates.has(gameObject))
             return; // Already flashing
 

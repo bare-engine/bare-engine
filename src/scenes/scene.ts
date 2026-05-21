@@ -457,6 +457,7 @@ export class Scene implements SceneI
                 if (!ComponentClass)
                 {
                     console.error('Component class not found: ' + className + '. Add it with bareEngine.AddClass(' + Helper.CapitalizeFirstLetter(component) + 'Component);');
+                    return;
                 }
                 var componentValues = v[component];
                 var componentInstance = new ComponentClass(o.scene);
@@ -485,12 +486,21 @@ export class Scene implements SceneI
             delete entity.polygonVertices;
         }
 
-        // PUT STATIC LAST - FOR SOPIRO PHYSICS, IT NEEDS ALL OTHER RIGIDBODY DATA LIKE MASS FIRST, THEN SET STATIC
+        // PUT STATIC 3RD LAST - FOR SOPIRO PHYSICS, IT NEEDS ALL OTHER RIGIDBODY DATA LIKE MASS FIRST, THEN SET STATIC
         if (entity.static)
         {
             let val = entity.static;
             delete entity.static;
             entity.static = val;
+        }
+
+        // PUT CHILDREN 2ND LAST - SO ALL OTHER PROPS ARE SET FOR THIS PARENT
+        // ALSO, CHILDREN HAVE TO BE ADDED BEFORE COMPONENTS, SO COMPONENT ADDED() CAN ACCESS THEM
+        if (entity.children)
+        {
+            let val = entity.children;
+            delete entity.children;
+            entity.children = val;
         }
 
         // PUT COMPONENTS LAST - SO PROPS LIKE POSITION/SCALE/ROTATION ARE SET AT ADDED() OF COMPONENT
@@ -499,14 +509,6 @@ export class Scene implements SceneI
             let val = entity.components;
             delete entity.components;
             entity.components = val;
-        }
-
-        // PUT CHILDREN LAST
-        if (entity.children)
-        {
-            let val = entity.children;
-            delete entity.children;
-            entity.children = val;
         }
 
         for (const key in entity) {
