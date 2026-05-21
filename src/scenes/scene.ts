@@ -269,6 +269,25 @@ export class Scene implements SceneI
             window.destroyTextFunc = null;
         }
     }
+
+    // COMP2 OVERRIDES COMP1
+    // DOESN'T REALLY BELONG HERE? TODO
+    MergeComponents(comp1: any, comp2: any):Record<string, Record<string, any>>
+    {
+        const merged = { ...comp1 };
+        //
+        if (comp2) {
+            for (const [key, value] of Object.entries(comp2)) {
+                if (merged[key] && typeof value === 'object' && !Array.isArray(value)) {
+                    merged[key] = { ...merged[key], ...value };
+                } else {
+                    merged[key] = value;
+                }
+            }
+        }
+        
+        return merged;
+    }
     
     ConstructEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [] }): Entity
     {
@@ -280,23 +299,6 @@ export class Scene implements SceneI
         function cloneEntityData<T>(data: T): T
         {
             return JSON.parse(JSON.stringify(data));
-        }
-
-        function mergeComponents(comp1: any, comp2: any):Record<string, Record<string, any>>
-        {
-            const merged = { ...comp1 };
-            //
-            if (comp2) {
-                for (const [key, value] of Object.entries(comp2)) {
-                    if (merged[key] && typeof value === 'object' && !Array.isArray(value)) {
-                        merged[key] = { ...merged[key], ...value };
-                    } else {
-                        merged[key] = value;
-                    }
-                }
-            }
-            
-            return merged;
         }
 
         var entity:Entity;
@@ -346,7 +348,7 @@ export class Scene implements SceneI
                     entity = {
                         ...possibleEntity, // OVERRIDE
                         ...entityArg, // START
-                        components: mergeComponents(possibleEntity.components, entityArg.components),
+                        components: this.MergeComponents(possibleEntity.components, entityArg.components),
                     };
 
                     // REMOVE COMPONENTS SPECIFICALLY LISTED IN ENTITY
@@ -377,7 +379,7 @@ export class Scene implements SceneI
                         entity = {
                             ...entityBase, // OVERRIDE
                             ...entityArg, // START
-                            components: mergeComponents(entityBase.components, entityArg.components),
+                            components: this.MergeComponents(entityBase.components, entityArg.components),
                         };
 
                         entity = cloneEntityData(entity);

@@ -657,6 +657,13 @@ window.__GAME_DEBUG_API__ = {
         
         var entityCopy = Object.assign({}, entity);
 
+        // MERGE COMPONENTS, ELSE Object.assign WOULD OVERWRITE THE EXISTING COMPONENTS, SINCE THEY'RE NESTED
+        if (props.components)
+        {
+            entity.components = entityScene.MergeComponents(entity.components, props.components);
+            delete props.components;
+        }
+
         Object.assign(entity, props);
 
         // GET ENTITY WITH DEFAULT VALUES

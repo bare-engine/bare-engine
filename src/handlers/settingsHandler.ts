@@ -513,7 +513,7 @@ export class SettingsHandler
                 }
             }
 
-            entity.components = mergeComponents(entityBase.components, entity.components);
+            entity.components = this.scene.MergeComponents(entityBase.components, entity.components);
 
             baseEntity = entityBase.baseEntity;
         }
