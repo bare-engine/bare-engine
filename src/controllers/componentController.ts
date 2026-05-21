@@ -505,14 +505,21 @@ export class ComponentController
         }
     }
 
-    CallMethodOnComponentsOfObject<T extends keyof Component<any>>(methodName: T, object: GameObject, ...args: any[]): void {
+    CallMethodOnComponentsOfObject<T extends keyof Component<any>>(methodName: T, object: GameObject, ...args: any[]): void
+    {
         var allCompsObject = this.GetComponentsFrom(object);
 
-        for (const component of allCompsObject) {
+        // GET THE FINAL COMPONENT HERE ALREADY, SINCE FIRING A METHOD CAN CHANGE THE PROPERTIES OF OTHER COMPONENTS
+        // EG, DISABLING IT, PREVENTING IT FROM BEING CALLED NEXT
+        var allCompsFiltered = allCompsObject.filter(comp => {
+            const method = comp[methodName];
+            return (comp.enabled && typeof method === 'function');
+        });
+
+        for (const component of allCompsFiltered)
+        {
             const method = component[methodName];
-            if (component.enabled && typeof method === 'function') {
-                (method as Function).call(component, ...args);
-            }
+            (method as Function).call(component, ...args);
         }
     }
 
