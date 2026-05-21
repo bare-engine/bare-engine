@@ -78,10 +78,13 @@ export class TweenController
             'onEveryStart',
             'onUpdate',
             'onRepeat',
-            'onStop'
+            'onStop',
+            'persistent'
         ]);
 
         const normalizedProps = this.NormalizeTweenProps(props);
+        for (const configProp of configProps)
+            delete normalizedProps[configProp];
 
         if (overwrite) 
         {
@@ -113,6 +116,7 @@ export class TweenController
         const tween = new Tween(object)
             .to(normalizedProps, seconds * 1000)
             .easing(props.ease || Easing.Quadratic.Out);
+        tween.persistent = props.persistent ?? false;
         
         // Apply TweenJS-style configuration
         if (props.yoyo) {
@@ -312,10 +316,15 @@ export class TweenController
         this.RemoveTweensFrom(this);
     }
 
-    Clear()
+    Clear(includingPersistent: boolean = true)
     {
-        this.RemoveTweensFrom(this);
-        this.tweens = [];
+        if (includingPersistent)
+        {
+            this.tweens = [];
+            return;
+        }
+
+        this.tweens = this.tweens.filter(tween => tween.persistent);
     }
 }
 
