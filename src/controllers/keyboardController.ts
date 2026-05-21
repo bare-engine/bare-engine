@@ -50,10 +50,10 @@ export class KeyboardController
         // KEY UP
         document.addEventListener('keyup', (event: any) => {
             //if (bareEngine.MouseIsOnEditor(event))
-            //    return; // Allow normal typing inside the editor UI
+            //    return; // Allow typing inside editor UI
 
             var key = processKey(event.key);
-            
+
             this.keysPressed.delete(key);
             this.keysJustPressed.delete(key);
 
@@ -98,15 +98,41 @@ export class KeyboardController
         return this.keysJustPressed.has(key);
     }
 
+    public IsKeyUp(key: string): boolean
+    {
+        return !this.keysPressed.has(key);
+    }
+
+    public IsKeyReleased(key: string): boolean
+    {
+        return !this.keysPressed.has(key) && this.keysPressedPrevFrame.has(key);
+    }
+
     public IsAnyKeyDown(): boolean
     {
         return (this.keysPressed.size > 0);
     }
 
-    public IsAnyDirectionKeyDown(): boolean
+    public GetKeysDown(): string[]
     {
-        return (this.IsUpDown() || this.IsDownDown() || this.IsLeftDown() || this.IsRightDown());
+        return Array.from(this.keysPressed);
     }
+
+    public GetKeysPressed(): string[]
+    {
+        return Array.from(this.keysJustPressed);
+    }
+
+    public ClearAll(): void
+    {
+        this.keysPressed.clear();
+        this.keysPressedPrevFrame.clear();
+        this.keysJustPressed.clear();
+    }
+
+
+    
+    // EXTRAS FOR DIRECTIONAL MOVEMENT
 
     public IsUpDown(): boolean
     {
@@ -148,21 +174,39 @@ export class KeyboardController
         return this.IsKeyPressed("d") || this.IsKeyPressed("arrowRight");
     }
 
-    public GetKeysDown(): string[]
+    public IsUpReleased(): boolean
     {
-        return Array.from(this.keysPressed);
+        return this.IsKeyReleased("w") || this.IsKeyReleased("z") || this.IsKeyReleased("arrowUp");
     }
 
-    public GetKeysPressed(): string[]
+    public IsDownReleased(): boolean
     {
-        return Array.from(this.keysJustPressed);
+        return this.IsKeyReleased("s") || this.IsKeyReleased("arrowDown");
     }
 
-    public ClearAll(): void
+    public IsLeftReleased(): boolean
     {
-        this.keysPressed.clear();
-        this.keysPressedPrevFrame.clear();
-        this.keysJustPressed.clear();
+        return this.IsKeyReleased("a") || this.IsKeyReleased("q") || this.IsKeyReleased("arrowLeft");
+    }
+
+    public IsRightReleased(): boolean
+    {
+        return this.IsKeyReleased("d") || this.IsKeyReleased("arrowRight");
+    }
+
+    public IsAnyDirectionKeyDown(): boolean
+    {
+        return (this.IsUpDown() || this.IsDownDown() || this.IsLeftDown() || this.IsRightDown());
+    }
+
+    public IsAnyDirectionPressed(): boolean
+    {
+        return (this.IsUpPressed() || this.IsDownPressed() || this.IsLeftPressed() || this.IsRightPressed());
+    }
+
+    public IsAnyDirectionReleased(): boolean
+    {
+        return (this.IsUpReleased() || this.IsDownReleased() || this.IsLeftReleased() || this.IsRightReleased());
     }
 }
 

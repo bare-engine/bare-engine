@@ -1327,8 +1327,8 @@ export class GameObject
         this.scene.RemoveGameObject(this, undefined, clear);
     }
 
-	Destroy()
+	/*Destroy()
 	{
         // todo
-	}
+	}*/
 }
