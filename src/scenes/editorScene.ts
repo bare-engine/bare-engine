@@ -153,20 +153,20 @@ export class EditorScene extends Scene
         this.opened = true;
 
         // HANDLE CAMERA POSITION
-        if (this.settingsData.showUI !== false)
+        var dims:Size = this.currentLevel.dimensions;
+        var s = Math.max(dims.width / rapid.width, dims.height / rapid.height);
+        var shouldFrameNextToSidebar = this.settingsData.showUI !== false && this.settingsData.settings?.minimized !== true;
+
+        if (shouldFrameNextToSidebar)
         {
             // POSIION CAMERA SO THAT LEVEL SITS A BIT RIGHT, NEXT TO OBJECTS UI
-            var dims:Size = this.currentLevel.dimensions;
-            var s = Math.max(dims.width / rapid.width, dims.height / rapid.height);
             cameraHandler.zoom = 1/s * .62; // ZOOM OUT A BIT, TO FIT RIGHT OF ENTITES WINDOW
             cameraHandler.SetPosition(dims.width * .25, dims.height / 2); // AND CAMERA LEFT A BIT FOR SAME REASON
         }
         else
         {
             // CENTER CAMERA, BIT ZOOMED OUT
-            var dims:Size = this.currentLevel.dimensions;
-            var s = Math.max(dims.width / rapid.width, dims.height / rapid.height);
-            cameraHandler.zoom = 1/s * .7;
+            cameraHandler.zoom = 1/s * .85;
             cameraHandler.SetPosition(dims.width / 2, dims.height / 2);
         }
 
