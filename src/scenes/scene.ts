@@ -1068,7 +1068,7 @@ export class Scene implements SceneI
         return [];
     }
     
-    async OnPreLoadLevel()
+    OnPreLoadLevel(levelInput:LevelData | string) : void | Promise<void>
     {
         // FOR OVERRIDE
     }

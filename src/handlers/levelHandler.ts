@@ -131,7 +131,7 @@ export class LevelHandler
 
         this.scene.Clear(false);
         
-        await this.scene.OnPreLoadLevel();
+        await this.scene.OnPreLoadLevel(levelInput || SaveData.currentLevelStr);
         this.scene.doRender = false;
 
         var level: LevelData;
