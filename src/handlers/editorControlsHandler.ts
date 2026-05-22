@@ -604,7 +604,7 @@ export class EditorControlsHandler {
     // SNAPS EDITOR PLACEMENT TO THE GRID.
     // BY DEFAULT, THE OBJECT PIVOT CONTROLS WHICH GRID EDGE/INTERSECTION THE
     // MOUSE POSITION RESOLVES TO. WHEN editorObjectSnapToPivot IS FALSE, THE
-    // OBJECT'S LOCAL 0,0 POINT SNAPS TO THE NEAREST GRID INTERSECTION.
+    // OBJECT'S LOCAL 0,0 POINT RESOLVES TO THE UPPER/LEFT GRID EDGE.
     private GetGridAlignedPosition(obj: GameObject, x: number, y: number, ignoreGrid: boolean = false, guideX: number = x, guideY: number = y): Vec2
     {
         function GetPivotReferenceRect(obj: GameObject): Rectangle
@@ -624,9 +624,9 @@ export class EditorControlsHandler {
             return Math.floor(value / gridSize + pivotPercent) * gridSize;
         }
 
-        function SnapCoordinateToNearestGrid(value: number, gridSize: number): number
+        function SnapCoordinateToGridCell(value: number, gridSize: number): number
         {
-            return Math.round(value / gridSize) * gridSize;
+            return Math.floor((value + gridSize * 0.000001) / gridSize) * gridSize;
         }
 
         function GetLocalPointOffset(obj: GameObject, localPoint: Vec2): Vec2
@@ -661,8 +661,8 @@ export class EditorControlsHandler {
                 const localZeroOffset = GetLocalPointOffset(obj, new Vec2(0, 0));
 
                 return new Vec2(
-                    SnapCoordinateToNearestGrid(guideX + localZeroOffset.x, gridSize) - localZeroOffset.x,
-                    SnapCoordinateToNearestGrid(guideY + localZeroOffset.y, gridSize) - localZeroOffset.y
+                    SnapCoordinateToGridCell(guideX, gridSize) - localZeroOffset.x,
+                    SnapCoordinateToGridCell(guideY, gridSize) - localZeroOffset.y
                 );
             }
 
@@ -689,7 +689,7 @@ export class EditorControlsHandler {
 
         var altDown = keyboardController.IsKeyDown("alt");
             
-        if (this.draggingObject)
+        if (this.draggingObject && Helper.Distance(mouseController.screen.position, mouseController.screen.positionOnDown) != 0)
         {
             var movedX = 0;
             var movedY = 0;
@@ -700,7 +700,14 @@ export class EditorControlsHandler {
             const desiredX = mouseController.world.position.x - this.dragOffset.x;
             const desiredY = mouseController.world.position.y - this.dragOffset.y;
 
-            const position = this.GetGridAlignedPosition(this.draggingObject, desiredX, desiredY, altDown);
+            const guideX = this.scene.settingsData.editorObjectSnapToPivot === false
+                ? mouseController.world.position.x
+                : desiredX;
+            const guideY = this.scene.settingsData.editorObjectSnapToPivot === false
+                ? mouseController.world.position.y
+                : desiredY;
+
+            const position = this.GetGridAlignedPosition(this.draggingObject, desiredX, desiredY, altDown, guideX, guideY);
             this.draggingObject.SetPosition(position.x, position.y);
 
             // Calculate the distance moved

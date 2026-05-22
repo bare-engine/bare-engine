@@ -21,6 +21,7 @@ export class EditorUIScene extends Scene
 
         this.editorButton = new Button(this, {text: "Level Editor", OnPress: this.OnClickEditorButton.bind(this)});
         this.AddGameObject(this.editorButton);
+        this.editorButton.buttonColor.a = 180;
 
         this.editorButton.SetPivot(position.x, position.y);
         this.editorButton.x = this.width * position.x;
