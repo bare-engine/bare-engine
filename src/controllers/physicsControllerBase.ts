@@ -19,15 +19,28 @@ export class PhysicsControllerBase
 
 		if (__DEV__)
         	globalThis.plugin?.AddDebugAction("Toggle Collision", () => this.setCollisionsEnabled(!this.collisionsEnabled));
+		
+		// ALREADY LISTENING TO EVENTS HERE, SO THAT OBJECTS CREATED BEFORE Start(), EG AT Awake(), GET REGISTERED
+		this.ListenToEvents();
 	}
 
 	Start(): void
+	{ 
+
+	}
+
+	Restart(): void
+	{  
+		this.ListenToEvents();
+	}
+
+	ListenToEvents(): void
 	{  
 		this.scene.events.on(BareEvent.game_resize, this.OnResize.bind(this));
 		this.scene.events.on(BareEvent.game_objectAdded, this.OnGameObjectAdded.bind(this));
 		this.scene.events.on(BareEvent.game_objectRemoved, this.OnGameObjectRemoved.bind(this));
 		this.scene.events.on(BareEvent.level_loaded, this.OnLevelLoaded.bind(this));
-		
+
 		//pipes.set("physicsController_Update", this.Update.bind(this));
 		//pipes.set("physicsController_Render", this.Render.bind(this));	
 	}

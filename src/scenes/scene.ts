@@ -1124,7 +1124,17 @@ export class Scene implements SceneI
     {
         this.events.clear();
         this.Clear();
+        this.RestartClasses();
         await this.Start();
+    }
+
+    RestartClasses()
+    {
+        var classes = controllerNames;
+        for (let i = 0; i < classes.length; i++)
+        {
+            this[classes[i]].Restart?.();
+        }
     }
 
     Clear(includingPersistent: boolean = true)
