@@ -35,6 +35,7 @@ export class EditorControlsHandler {
     copiedObjects: Entity[] = [];
 
     private outlineShader = new OutlineShader();
+    private lastMultiPlaceGridKey: string | null = null;
     static copiedObjectCached: Entity[] = [];
     
     constructor(editorScene: any) {
@@ -172,12 +173,10 @@ export class EditorControlsHandler {
         {
             if (this.currentPreviewActive && this.currentPreviewEntity.visible)
             {
-                var obj = this.scene.AddGameObjectAtPosition(this.currentPreviewEntity.x, this.currentPreviewEntity.y, this.currentPreviewEntity.name, layer);
-               
-                var multiSelect = keyboardController.IsKeyDown("shift");
-                this.SelectGameObjects([obj], !multiSelect);
-
-                this.actionThisFrame = 'objCreation';
+                const altDown = keyboardController.IsKeyDown("alt");
+                this.SetEditorPosition(this.currentPreviewEntity, mouseController.world.position.x, mouseController.world.position.y, altDown);
+                this.PlaceCurrentPreviewObject(layer);
+                this.lastMultiPlaceGridKey = this.GetCurrentPreviewPlacementKey(layer);
             }
         }
         else
@@ -336,6 +335,7 @@ export class EditorControlsHandler {
         this.selectionRect.height = 0;
             
         this.actionThisFrame = '';
+        this.lastMultiPlaceGridKey = null;
 
         if (!this.scene.opened)
             return;
@@ -681,6 +681,61 @@ export class EditorControlsHandler {
         obj.SetPosition(position.x, position.y);
     }
 
+    private PlaceCurrentPreviewObject(layer: int): GameObject
+    {
+        const obj = this.scene.AddGameObjectAtPosition(this.currentPreviewEntity.x, this.currentPreviewEntity.y, this.currentPreviewEntity.name, layer);
+        const multiSelect = keyboardController.IsKeyDown("shift");
+        const firstPlacementThisGesture = this.lastMultiPlaceGridKey == null;
+        this.SelectGameObjects([obj], !multiSelect || firstPlacementThisGesture);
+
+        this.actionThisFrame = 'objCreation';
+        return obj;
+    }
+
+    private IsMultiPlaceGridEnabled(ignoreGrid: boolean = false): boolean
+    {
+        const settings = this.scene.settingsData.settings;
+        return !!(
+            this.currentPreviewActive &&
+            this.currentPreviewEntity.visible &&
+            keyboardController.IsKeyDown("shift") &&
+            !ignoreGrid &&
+            settings?.gridEnabled &&
+            settings.gridSize &&
+            settings.gridSize > 0
+        );
+    }
+
+    private GetCurrentPreviewPlacementKey(layer: int): string
+    {
+        return [
+            layer,
+            this.currentPreviewEntity.name,
+            this.currentPreviewEntity.x.toFixed(4),
+            this.currentPreviewEntity.y.toFixed(4)
+        ].join(":");
+    }
+
+    private PlaceCurrentPreviewObjectOnNewGridSquare(ignoreGrid: boolean): void
+    {
+        if (!mouseController.IsMouseDown())
+        {
+            this.lastMultiPlaceGridKey = null;
+            return;
+        }
+
+        if (!this.IsMultiPlaceGridEnabled(ignoreGrid))
+            return;
+
+        const layer = this.GetSelectedLayer();
+        const placementKey = this.GetCurrentPreviewPlacementKey(layer);
+        if (placementKey == this.lastMultiPlaceGridKey)
+            return;
+
+        this.PlaceCurrentPreviewObject(layer);
+        this.lastMultiPlaceGridKey = placementKey;
+    }
+
     Update(_deltaTime?: number) {
         if (!this.scene.opened)
             return;
@@ -743,6 +798,7 @@ export class EditorControlsHandler {
         const previewY = mouseController.world.position.y;
 
         this.SetEditorPosition(this.currentPreviewEntity, previewX, previewY, altDown);
+        this.PlaceCurrentPreviewObjectOnNewGridSquare(altDown);
 
         var distMouseMoved = Helper.Distance(mouseController.world.position, mouseController.world.positionOnDown);
         if (mouseController.IsRightMouseDown() && distMouseMoved > 5) {
