@@ -36,6 +36,8 @@ export class EditorControlsHandler {
 
     private outlineShader = new OutlineShader();
     private lastMultiPlaceGridKey: string | null = null;
+    private firstMultiPlacedObject: GameObject | null = null;
+    private multiPlaceSelectionReset: boolean = false;
     static copiedObjectCached: Entity[] = [];
     
     constructor(editorScene: any) {
@@ -336,6 +338,8 @@ export class EditorControlsHandler {
             
         this.actionThisFrame = '';
         this.lastMultiPlaceGridKey = null;
+        this.firstMultiPlacedObject = null;
+        this.multiPlaceSelectionReset = false;
 
         if (!this.scene.opened)
             return;
@@ -446,17 +450,9 @@ export class EditorControlsHandler {
         {
             var obj = objs[i];
 
-            // DESELECT IF ALREADY SELECTED
+            // Already selected objects stay selected during additive selection.
             if (this.selectedObjects.includes(obj))
-            {
-                obj.color = new Color(255, 255, 255, 255);
-                this.outlineShader.stop(obj);
-                obj.shaders.splice(obj.shaders.indexOf(this.outlineShader), 1);
-                
-                this.selectedObjects.splice(this.selectedObjects.indexOf(obj), 1);
-
                 continue;
-            }
             
             this.outlineShader.start(obj, [1.0, 1.0, 1.0, 1.0], 8.0);
             obj.shaders.push(this.outlineShader);
@@ -685,8 +681,29 @@ export class EditorControlsHandler {
     {
         const obj = this.scene.AddGameObjectAtPosition(this.currentPreviewEntity.x, this.currentPreviewEntity.y, this.currentPreviewEntity.name, layer);
         const multiSelect = keyboardController.IsKeyDown("shift");
-        const firstPlacementThisGesture = this.lastMultiPlaceGridKey == null;
-        this.SelectGameObjects([obj], !multiSelect || firstPlacementThisGesture);
+
+        if (!multiSelect)
+        {
+            this.firstMultiPlacedObject = null;
+            this.multiPlaceSelectionReset = false;
+            this.SelectGameObjects([obj], true);
+        }
+        else
+        if (!this.firstMultiPlacedObject)
+        {
+            this.firstMultiPlacedObject = obj;
+            this.SelectGameObjects([obj], false);
+        }
+        else
+        if (!this.multiPlaceSelectionReset)
+        {
+            this.SelectGameObjects([this.firstMultiPlacedObject, obj], true);
+            this.multiPlaceSelectionReset = true;
+        }
+        else
+        {
+            this.SelectGameObjects([obj], false);
+        }
 
         this.actionThisFrame = 'objCreation';
         return obj;
@@ -721,6 +738,8 @@ export class EditorControlsHandler {
         if (!mouseController.IsMouseDown())
         {
             this.lastMultiPlaceGridKey = null;
+            this.firstMultiPlacedObject = null;
+            this.multiPlaceSelectionReset = false;
             return;
         }
 
