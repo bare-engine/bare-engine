@@ -1014,7 +1014,7 @@ window.__GAME_DEBUG_API__ = {
   },
 
   notifyLeaveEntity() {
-    window.postMessage({ __fromGame: true, type: "notifyLeaveEntity" }, "*");
+    window.postMessage({ __fromGame: true, type: "notifyLeaveEntity2" }, "*");
   },
 
   refreshLevelFiles() {
