@@ -1178,11 +1178,7 @@ window.__GAME_DEBUG_API__ = {
 
 export class PluginHandler
 {
-    static Init(showEditorButton: boolean, editorButtonPosition: Position)
-    {
-        plugin = new PluginHandler(showEditorButton, editorButtonPosition);
-        globalThis.plugin = plugin;
-    }
+    lastRightClickedObject: GameObject;
 
     public openEditorButtonPosition: Position;
     
@@ -1196,6 +1192,12 @@ export class PluginHandler
     doNotifyAfterSave: boolean = true;
     notifyLeaveEntity: boolean = true;
     currentSceneClassString: string = "";
+
+    static Init(showEditorButton: boolean, editorButtonPosition: Position)
+    {
+        plugin = new PluginHandler(showEditorButton, editorButtonPosition);
+        globalThis.plugin = plugin;
+    }
 
     constructor(showEditorButton: boolean, editorButtonPosition: Position)
     {
@@ -1308,6 +1310,24 @@ export class PluginHandler
           const obj = isControlDown ? this.CheckClickDeepChild(ev) : this.CheckClickGameObject(ev);
           if (obj)
           {
+            plugin.TraceObject(obj);
+            
+            // REMOVE OUTLINE SHADER FOR LAST SELECTED OBJECT
+            if (this.lastRightClickedObject)
+            {
+                if (this.lastRightClickedObject.shaders.indexOf(this.outlineShader) != -1)
+                {
+                    this.outlineShader.stop(this.lastRightClickedObject);
+                    this.lastRightClickedObject.shaders.splice(this.lastRightClickedObject.shaders.indexOf(this.outlineShader), 1);
+                }
+            }
+
+            // ENABLE OUTLINE SHADER FOR SELECTED OBJECT
+            this.outlineShader.start(obj, [1.0, 1.0, 1.0, 1.0], 8.0);
+            obj.shaders.push(this.outlineShader);
+
+            this.lastRightClickedObject = obj;
+
               plugin.TraceObject(obj);
 
               var parentIds = [];
@@ -1379,7 +1399,7 @@ export class PluginHandler
         //data.obj.SetPosition(worldPos.x + data.offset.x, worldPos.y + data.offset.y);
     }
 
-    CheckClickGameObject(ev: PointerEvent, outline: boolean = true): GameObject | null
+    CheckClickGameObject(ev: PointerEvent): GameObject | null
     {
         //var objs = this.GetCurrentScene().objectController.GetAllObjects();
         var foundObj:GameObject | null = null;
@@ -1403,24 +1423,9 @@ export class PluginHandler
                 var p = bareEngine.GetCanvasScreenPosition(ev.clientX, ev.clientY);
                 var pWorld = scene.ScreenToWorldPos(p);
 
-                if (outline)
-                if (obj.shaders.indexOf(this.outlineShader) != -1)
-                {
-                    this.outlineShader.stop(obj);
-                    obj.shaders.splice(obj.shaders.indexOf(this.outlineShader), 1);
-                }
-
                 if (!foundObj)
                 if (Helper.IsPointInRectangle(pWorld, objRect))
                 {
-                    plugin.TraceObject(obj);
-
-                    if (outline)
-                    {
-                        this.outlineShader.start(obj, [1.0, 1.0, 1.0, 1.0], 8.0);
-                        obj.shaders.push(this.outlineShader);
-                    }
-
                     foundObj = obj;
 
                     //break;
