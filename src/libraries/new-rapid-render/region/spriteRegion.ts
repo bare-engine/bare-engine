@@ -128,11 +128,12 @@ export class SpriteRegion extends Region {
 
         // A naive `tx - p` would only work for axis-aligned sprites;
         // need md[o] * p - md[o + 2] * p to correctly offset based on scale and rotation
-        f32[index + 2] = md[o + 4] + md[o] * (offsetX - p) + md[o + 2] * (offsetY - p);
+        let tx = md[o + 4] + md[o] * (offsetX - p) + md[o + 2] * (offsetY - p);
 
         f32[index + 3] = md[o + 1] * (width  + 2 * p);
         f32[index + 4] = md[o + 3] * (height + 2 * p);
-        f32[index + 5] = md[o + 5] + md[o + 1] * (offsetX - p) + md[o + 3] * (offsetY - p);
+
+        let ty = md[o + 5] + md[o + 1] * (offsetX - p) + md[o + 3] * (offsetY - p);
 
         f32[index + 6] = u0;
         f32[index + 7] = v0;
@@ -142,6 +143,14 @@ export class SpriteRegion extends Region {
 
         u32[index + 10] = color;
         u32[index + 11] = textureId;
+
+        if (this.rapid.roundPixels) {
+            tx = Math.ceil(tx);
+            ty = Math.ceil(ty);
+        }
+
+        f32[index + 2] = tx;
+        f32[index + 5] = ty;
 
         buf.usedElemNum += 12;
         buf.makeDirty();

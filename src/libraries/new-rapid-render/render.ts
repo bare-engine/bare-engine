@@ -49,6 +49,8 @@ export interface IAppOptions {
 
     /** Whether textures are uploaded with premultiplied alpha. Default: true. */
     premultipliedAlpha?: boolean;
+
+    roundPixels?: boolean;
 }
 
 /**
@@ -146,6 +148,8 @@ export class Rapid {
     /** Default texture filtering preference and requested canvas MSAA setting. */
     antialias: boolean;
 
+    roundPixels: boolean;
+
     /** Default filtering mode used when sampling textures. */
     textureFilter: TextureFilterMode;
 
@@ -168,6 +172,7 @@ export class Rapid {
         this.antialias = options.antialias ?? false;
         this.textureFilter = options.textureFilter ?? TextureFilterMode.NEAREST;
         this.premultipliedAlpha = options.premultipliedAlpha ?? true;
+        this.roundPixels = options.roundPixels ?? false;
 
         const gl = getContext(this.canvas, this.antialias, this.premultipliedAlpha);
         this.gl = gl;

@@ -17,6 +17,7 @@ export type BareOptions =
   editorButtonPosition?: Position;
   showEditorButton?: boolean;
   debugKeys?: Record<string, () => void>[];
+  roundPixels? :boolean;
 };
 
 export type ResolutionOptions = 

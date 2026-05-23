@@ -133,8 +133,16 @@ export class GraphicRegion extends Region {
         const o = this.matrixIndex * 6;
         const md = this.matrixStore.data;
 
-        shader.setUniform("uMatrixRow0", [md[o], md[o + 2], md[o + 4]]);
-        shader.setUniform("uMatrixRow1", [md[o + 1], md[o + 3], md[o + 5]]);
+        let tx = md[o + 4]
+        let ty = md[o + 5]
+
+        if (this.rapid.roundPixels) {
+            tx = Math.ceil(tx);
+            ty = Math.ceil(ty);
+        }
+
+        shader.setUniform("uMatrixRow0", [md[o],     md[o + 2], tx]);
+        shader.setUniform("uMatrixRow1", [md[o + 1], md[o + 3], ty]);
         shader.setUniform("uUVRect", this.texture
             ? [this.texture.uvX, this.texture.uvY, this.texture.uvW, this.texture.uvH]
             : [0, 0, 1, 1]
