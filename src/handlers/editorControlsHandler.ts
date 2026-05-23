@@ -877,11 +877,11 @@ export class EditorControlsHandler {
                     new Vec2(this.selectionRect.x + this.selectionRect.width, this.selectionRect.y),
                     new Vec2(this.selectionRect.x + this.selectionRect.width, this.selectionRect.y + this.selectionRect.height),
                     new Vec2(this.selectionRect.x, this.selectionRect.y + this.selectionRect.height),
-                    new Vec2(this.selectionRect.x, this.selectionRect.y),
                 ],
                 width: borderWidth,
                 roundCap: false,
                 color: borderColor,
+                closed: true
             });
         }
     }
