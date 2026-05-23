@@ -1,3 +1,4 @@
+import { CameraHandler } from "src/handlers/cameraHandler";
 import { CustomGlShader } from "../libraries/new-rapid-render";
 
 export class OutlineShader
@@ -104,11 +105,13 @@ export class OutlineShader
 
         const scaleX = Math.abs(gameObject?.totalScaleX);
         const scaleY = Math.abs(gameObject?.totalScaleY);
+        const camera:CameraHandler = gameObject.scene.cameraHandler
+        
         const globalScale = Math.max(scaleX, scaleY, 0.0001);
         const lpscale = Math.max(rapid.logicHeight / rapid.physicsHeight, rapid.logicWidth / rapid.physicsWidth)
 
         // game world scaling * webgl -> canvas scaling
-        const scale = lpscale / globalScale;
+        const scale = lpscale / globalScale / camera.zoom;
 
         const texture = gameObject.texture;
         const textureWidth = texture?.width ?? texture?.base?.width ?? 512;

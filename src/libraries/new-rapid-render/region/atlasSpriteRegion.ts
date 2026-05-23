@@ -12,6 +12,7 @@ export class AtlasSprtieRegion extends SpriteRegion {
     }
 
     createCustomShader(customShader: CustomGlShader) {
+        // override sprite Region
         const fs = generateShader(AtlasFsShaderSource, this.rapid.maxTextureUnits - customShader.usedTextureUnitNum);
         const vs = generateShader(VsShaderSource, this.rapid.maxTextureUnits - customShader.usedTextureUnitNum);
 
