@@ -91,13 +91,15 @@ const getColorUint32 = (rapid: Rapid, color?: Color): number => {
     return rapid.premultipliedAlpha ? color.premultipliedUint32 : color.uint32;
 };
 
+const ATLAS_PADDING = 2
 export const drawSpriteRaw = (rapid: Rapid, options: ISpriteOptions): void => {
     const texture = options.texture;
     if (!texture?.base || rapid.inCreateMask) {
         return;
     }
 
-    rapid.enterRegion(rapid.spriteRegion, options.shader);
+    const isAtlas = texture.isAtlas ? rapid.spriteRegion.atlasShader : undefined
+    rapid.enterRegion(rapid.spriteRegion, options.shader || isAtlas);
 
     let u0 = texture.uvX;
     let v0 = texture.uvY;
@@ -112,7 +114,10 @@ export const drawSpriteRaw = (rapid: Rapid, options: ISpriteOptions): void => {
     }
 
     // pixel size
-    const p = options.padding ?? rapid.spriteRegion.currentShader.padding;
+    let p = (options.padding ?? rapid.spriteRegion.currentShader.padding);
+    if (texture.isAtlas) {
+        p += ATLAS_PADDING
+    }
 
     // pass pixel size not uv size
     const paddingX = (u0 <= u1 ? p : -p);

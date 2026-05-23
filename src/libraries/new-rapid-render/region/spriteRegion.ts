@@ -1,11 +1,13 @@
 import { Rapid } from "../render";
 import { Region } from "./region";
-import { CustomGlShader } from "../webgl/glshader";
+import GLShader, { CustomGlShader } from "../webgl/glshader";
 import { ArrayType, WebglBufferArray } from "../buffer";
 import { drawArraysInstanced, generateShader, UNSIGNED_BYTE } from "../webgl/utils";
 
 import VsShaderSource from "../shader/sprite.vert";
 import FsShaderSource from "../shader/sprite.frag";
+import AtlasFsShaderSource from "../shader/sprite_atlas.frag";
+
 import { Texture } from "../texture";
 
 // Per-instance buffer stride: 12 floats + 2 uint32 = 48 bytes
@@ -25,6 +27,8 @@ export class SpriteRegion extends Region {
     private instanceBuffer: WebglBufferArray;
     private quadBuffer: WebglBufferArray;
     private instanceCount: number = 0;
+    public atlasShader: GLShader;
+
     KEY = "Sprite"
 
     constructor(rapid: Rapid) {
@@ -45,6 +49,9 @@ export class SpriteRegion extends Region {
         const fs = generateShader(FsShaderSource, rapid.maxTextureUnits);
         const vs = generateShader(VsShaderSource, rapid.maxTextureUnits);
         this.createDefaultShader(vs, fs);
+
+        const atlasFs = generateShader(AtlasFsShaderSource, rapid.maxTextureUnits);
+        this.atlasShader = this.createShader(vs, atlasFs)
     }
 
     createShader(vs: string, fs: string) {
@@ -107,9 +114,6 @@ export class SpriteRegion extends Region {
         const height = texture.height;
         const offsetX = texture.offsetX;
         const offsetY = texture.offsetY;
-
-        // Padding comes from the shader (e.g. outline/glow shaders need extra room)
-        const p = this.currentShader.padding;
 
         // base.width is full texture size, texture.width is alts texture size
         const textureId = this.useTexture(texture.glTexture!, paddingX / base.width , paddingY / base.height);

@@ -373,8 +373,8 @@ export class Rapid {
             this.canvas.style.height = cssH + 'px';
         }
 
-        this.physicsWidth = Math.round(cssW * this.dpr);
-        this.physicsHeight = Math.round(cssH * this.dpr);
+        this.physicsWidth = cssW * this.dpr;
+        this.physicsHeight = cssH * this.dpr;
 
         this.canvas.width = this.physicsWidth;
         this.canvas.height = this.physicsHeight;
@@ -469,7 +469,7 @@ export class Rapid {
         // reallocation unless size exceeds the previous maximum)
         for (let i = 0; i < 2; i++) {
             if (!this._filterRT[i]) {
-                this._filterRT[i] = this.texture.createRenderTexture({width, height});
+                this._filterRT[i] = this.texture.createRenderTexture({ width, height });
             } else {
                 this._filterRT[i]!.resize(width, height);
             }
@@ -827,25 +827,25 @@ export class Rapid {
         this.matrix.invert(m)
     }
 
-    logicToPhysics(p:Vec2) {
+    logicToPhysics(p: Vec2) {
         return p.multiply(new Vec2(
             this.physicsWidth / this.logicWidth,
             this.physicsHeight / this.logicHeight
         ))
     }
 
-    physicsToLogic(p:Vec2) {
+    physicsToLogic(p: Vec2) {
         return p.multiply(new Vec2(
             this.logicWidth / this.physicsWidth,
             this.logicHeight / this.physicsHeight
         ))
     }
 
-    cssToDevicePixel(p:Vec2){
+    cssToDevicePixel(p: Vec2) {
         return p.mul(this.dpr)
     }
 
-    devicePixelToCss(p:Vec2){
+    devicePixelToCss(p: Vec2) {
         return p.divide(this.dpr)
     }
 }

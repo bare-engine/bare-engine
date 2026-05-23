@@ -273,6 +273,8 @@ class Texture {
 
     public scale: number = 1;
 
+    public isAtlas: boolean = false;
+
     public flipY: boolean = false;
     public isRotated: boolean = false;
     public glTexture: WebGLTexture | null = null;
@@ -325,6 +327,7 @@ class Texture {
 
         // Store pixel-space region for use by withPadding()
         this._px = x; this._py = y; this._pw = w; this._ph = h;
+        this.isAtlas = x !== 0 || y !== 0 || w !== this.base.width || h !== this.base.height;
 
         this.uvX = x / this.base.width;
         this.uvY = y / this.base.height;
@@ -377,6 +380,7 @@ class Texture {
         t.offsetX = this.offsetX; t.offsetY = this.offsetY;
         t.flipY = this.flipY;
         t.isRotated = this.isRotated;
+        t.isAtlas = this.isAtlas;
         // Copy stored pixel region so getSubTexture() works on clones too
         t._px = this._px; t._py = this._py;
         t._pw = this._pw; t._ph = this._ph;
