@@ -137,8 +137,8 @@ export class GraphicRegion extends Region {
         let ty = md[o + 5]
 
         if (this.rapid.roundPixels) {
-            tx = Math.ceil(tx);
-            ty = Math.ceil(ty);
+            tx = Math.round(tx);
+            ty = Math.round(ty);
         }
 
         shader.setUniform("uMatrixRow0", [md[o],     md[o + 2], tx]);

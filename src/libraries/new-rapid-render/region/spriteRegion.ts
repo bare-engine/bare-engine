@@ -102,6 +102,7 @@ export class SpriteRegion extends Region {
             this.flush();
         }
 
+        const base = texture.base;
         const width = texture.width;
         const height = texture.height;
         const offsetX = texture.offsetX;
@@ -110,7 +111,8 @@ export class SpriteRegion extends Region {
         // Padding comes from the shader (e.g. outline/glow shaders need extra room)
         const p = this.currentShader.padding;
 
-        const textureId = this.useTexture(texture.glTexture!, paddingX, paddingY);
+        // base.width is full texture size, texture.width is alts texture size
+        const textureId = this.useTexture(texture.glTexture!, paddingX / base.width , paddingY / base.height);
         // Read 2×3 affine matrix from MatrixStore and bake (width + 2p) / (height + 2p) into it.
         // Offset tx/ty by -p in local space (rotation-aware) so the quad expands symmetrically.
         const o = matrixIndex * 6;
@@ -123,17 +125,17 @@ export class SpriteRegion extends Region {
         const f32 = buf.float32!;
         const u32 = buf.uint32!;
 
-        f32[index]     = md[o]     * (width  + 2 * p);
-        f32[index + 1] = md[o + 2] * (height + 2 * p);
+        f32[index]     = md[o]     * (width  + 2 * paddingX);
+        f32[index + 1] = md[o + 2] * (height + 2 * paddingY);
 
         // A naive `tx - p` would only work for axis-aligned sprites;
         // need md[o] * p - md[o + 2] * p to correctly offset based on scale and rotation
-        let tx = md[o + 4] + md[o] * (offsetX - p) + md[o + 2] * (offsetY - p);
+        let tx = md[o + 4] + md[o] * (offsetX - paddingX) + md[o + 2] * (offsetY - paddingY);
 
-        f32[index + 3] = md[o + 1] * (width  + 2 * p);
-        f32[index + 4] = md[o + 3] * (height + 2 * p);
+        f32[index + 3] = md[o + 1] * (width  + 2 * paddingX);
+        f32[index + 4] = md[o + 3] * (height + 2 * paddingY);
 
-        let ty = md[o + 5] + md[o + 1] * (offsetX - p) + md[o + 3] * (offsetY - p);
+        let ty = md[o + 5] + md[o + 1] * (offsetX - paddingX) + md[o + 3] * (offsetY - paddingY);
 
         f32[index + 6] = u0;
         f32[index + 7] = v0;
@@ -145,8 +147,8 @@ export class SpriteRegion extends Region {
         u32[index + 11] = textureId;
 
         if (this.rapid.roundPixels) {
-            tx = Math.ceil(tx);
-            ty = Math.ceil(ty);
+            tx = Math.round(tx);
+            ty = Math.round(ty);
         }
 
         f32[index + 2] = tx;
