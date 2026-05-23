@@ -646,7 +646,7 @@ const defaultTextStyle: ITextStyle = {
     fontSize: 24,
     fontWeight: "normal",
     fill: "#000000",
-    strokeThickness: 0,
+    strokeThickness: 1,
     align: "left",
     baseline: "top",
 };
