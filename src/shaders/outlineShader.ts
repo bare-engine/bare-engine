@@ -80,24 +80,12 @@ export class OutlineShader
         baseWidth: width ?? 7.0
     });
     
-    const texture = gameObject.texture;
-    const textureWidth = texture?.width ?? texture?.base?.width ?? 512;
-    const textureHeight = texture?.height ?? texture?.base?.height ?? 512;
-    const outlineWidth = width ?? 7.0;
-    const scaleX = Math.abs(gameObject?.totalScaleX);
-    const scaleY = Math.abs(gameObject?.totalScaleY);
-    const scale = Math.max(scaleX, scaleY, 0.0001);
-
     this.outlineShader.setUniforms({
-        uTextureSize: [textureWidth + 0.00000001, textureHeight + 0.00000001],
         uOutlineColor: [0.867, 0.631, 0.071, 1.0],
-        uOutlineWidth: outlineWidth,
     });
 
     gameObject.shader = this.outlineShader;
-    // Pad the quad just enough to fit the outline; UVs are clamped in-shader to avoid atlas bleeding.
-    const padding = (outlineWidth + 2.0) / scale;
-    this.outlineShader.setPadding(padding);
+    this.update(gameObject)
 }
 
     public updateColor(color: [number, number, number, number]): void {
@@ -114,21 +102,25 @@ export class OutlineShader
         if (!this.objectStates.has(gameObject) || !gameObject?.texture)
             return;
 
+        // Perhaps encapsulated in RapidJS
+        const globalScale = rapid.matrix.getScale(rapid.matrixStack.curWorldM)
+        const lpscale = Math.max(rapid.logicHeight / rapid.physicsHeight, rapid.logicWidth / rapid.physicsWidth)
+
+        // game world scaling * webgl -> canvas scaling
+        const scale = Math.max(globalScale.x, globalScale.y, 0.0001) * lpscale;
+
         const texture = gameObject.texture;
         const textureWidth = texture?.width ?? texture?.base?.width ?? 512;
         const textureHeight = texture?.height ?? texture?.base?.height ?? 512;
 
         const state = this.objectStates.get(gameObject);
-        const baseWidth = state?.baseWidth ?? 7.0;
-        const scaleX = Math.abs(gameObject?.totalScaleX);
-        const scaleY = Math.abs(gameObject?.totalScaleY);
-        const scale = Math.max(scaleX, scaleY, 0.0001);
+        const outlineWidth = state?.baseWidth ?? 7.0;
 
         this.outlineShader.setUniforms({
             uTextureSize: [textureWidth + 0.00000001, textureHeight + 0.00000001],
-            uOutlineWidth: baseWidth / scale
+            uOutlineWidth: outlineWidth * scale // pixel size
         });
-        this.outlineShader.setPadding((baseWidth + 2.0) / scale);
+        this.outlineShader.setPadding(outlineWidth * scale); // pixel size
     }
 
     public isActiveFor(gameObject: any): boolean {
