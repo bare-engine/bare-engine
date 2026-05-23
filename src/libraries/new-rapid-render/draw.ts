@@ -98,8 +98,8 @@ export const drawSpriteRaw = (rapid: Rapid, options: ISpriteOptions): void => {
         return;
     }
 
-    const isAtlas = texture.isAtlas ? rapid.spriteRegion.atlasShader : undefined
-    rapid.enterRegion(rapid.spriteRegion, options.shader || isAtlas);
+    const region = texture.isAtlas ? rapid.atlasSpriteRegion : rapid.spriteRegion
+    rapid.enterRegion(region, options.shader);
 
     let u0 = texture.uvX;
     let v0 = texture.uvY;
@@ -114,7 +114,7 @@ export const drawSpriteRaw = (rapid: Rapid, options: ISpriteOptions): void => {
     }
 
     // pixel size
-    let p = (options.padding ?? rapid.spriteRegion.currentShader.padding);
+    let p = (options.padding ?? region.currentShader.padding);
     if (texture.isAtlas) {
         p += ATLAS_PADDING
     }
@@ -123,7 +123,7 @@ export const drawSpriteRaw = (rapid: Rapid, options: ISpriteOptions): void => {
     const paddingX = (u0 <= u1 ? p : -p);
     const paddingY = (v0 <= v1 ? p : -p);
 
-    rapid.spriteRegion.drawSprite(
+    region.drawSprite(
         texture,
         options.customMatrix ?? rapid.matrixStack.curWorldM,
         u0,

@@ -30,11 +30,22 @@ export class GraphicRegion extends Region {
 
     constructor(rapid: Rapid) {
         super(rapid);
+
+        this.createDefaultShader()
+    }
+
+    createBuffer(){
         const gl = this.gl;
 
         this.vertexBuffer = new WebglBufferArray(gl, ArrayType.Float32, gl.ARRAY_BUFFER, gl.DYNAMIC_DRAW);
-        this.createDefaultShader(VsShaderSource, FsShaderSource);
         this.maskShader = this.createMaskShader(MaskVsShaderSource, MaskFsShaderSource);
+    }
+
+    createDefaultShader() {
+        this.vs = VsShaderSource;
+        this.fs = FsShaderSource;
+        this.defaultShader = this.createShader(this.vs, this.fs)
+        return this.defaultShader;
     }
 
     createMaskShader(vs: string, fs: string) {

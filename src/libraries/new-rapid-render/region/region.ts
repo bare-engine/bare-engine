@@ -25,13 +25,17 @@ export class Region {
         this.gl = rapid.gl;
         this.maxTextureUnits = rapid.maxTextureUnits;
         this.matrixStore = rapid.matrix;
+
+        this.createBuffer()
+        this.createDefaultShader()
     }
 
-    protected createDefaultShader(vs: string, fs: string) {
-        this.vs = vs;
-        this.fs = fs;
-        this.defaultShader = this.createShader(vs, fs)
-        return this.defaultShader;
+    protected createBuffer(){
+
+    }
+
+    protected createDefaultShader() {
+
     }
 
     get freeTextureUnitNum(): number {

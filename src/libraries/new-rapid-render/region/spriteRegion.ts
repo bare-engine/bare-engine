@@ -6,7 +6,6 @@ import { drawArraysInstanced, generateShader, UNSIGNED_BYTE } from "../webgl/uti
 
 import VsShaderSource from "../shader/sprite.vert";
 import FsShaderSource from "../shader/sprite.frag";
-import AtlasFsShaderSource from "../shader/sprite_atlas.frag";
 
 import { Texture } from "../texture";
 
@@ -27,12 +26,15 @@ export class SpriteRegion extends Region {
     private instanceBuffer: WebglBufferArray;
     private quadBuffer: WebglBufferArray;
     private instanceCount: number = 0;
-    public atlasShader: GLShader;
 
     KEY = "Sprite"
 
     constructor(rapid: Rapid) {
         super(rapid);
+
+    }
+
+    createBuffer(){
         const gl = this.gl;
 
         // Static quad geometry buffer
@@ -45,13 +47,16 @@ export class SpriteRegion extends Region {
         // Dynamic per-instance buffer — use Uint32 base type so we can
         // write both float32 and uint32 into the same ArrayBuffer
         this.instanceBuffer = new WebglBufferArray(gl, ArrayType.Uint32, gl.ARRAY_BUFFER, gl.DYNAMIC_DRAW);
+    }
 
+    createDefaultShader() {
+        const rapid = this.rapid
         const fs = generateShader(FsShaderSource, rapid.maxTextureUnits);
         const vs = generateShader(VsShaderSource, rapid.maxTextureUnits);
-        this.createDefaultShader(vs, fs);
-
-        const atlasFs = generateShader(AtlasFsShaderSource, rapid.maxTextureUnits);
-        this.atlasShader = this.createShader(vs, atlasFs)
+        this.vs = vs;
+        this.fs = fs;
+        this.defaultShader = this.createShader(vs, fs)
+        return this.defaultShader;
     }
 
     createShader(vs: string, fs: string) {
