@@ -1,6 +1,6 @@
 import type { Scene } from "../scenes/scene";
 import { GameObject } from "../objects/gameObject";
-import { TextureFilterMode } from "../libraries/new-rapid-render";
+import { CanvasScaleMode, TextureFilterMode } from "../libraries/new-rapid-render";
 
 export type Scalar = (number | string | boolean);
 
@@ -18,6 +18,7 @@ export type BareOptions =
   showEditorButton?: boolean;
   debugKeys?: Record<string, () => void>[];
   roundPixels? :boolean;
+  scaleMode?: CanvasScaleMode;
 };
 
 export type ResolutionOptions = 

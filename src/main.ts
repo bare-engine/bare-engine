@@ -55,9 +55,10 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
                 canvas: canvas,
                 textureFilter: options.textureFilter,
                 backgroundColor: new Color(159/255, 202/255, 74/255, 255/255),
-                antialias: options.antiAlias ?? true,
-                premultipliedAlpha: options.premultipliedAlpha ?? true,
-                roundPixels: options.roundPixels ?? false,
+                antialias: options.antiAlias,
+                premultipliedAlpha: options.premultipliedAlpha,
+                roundPixels: options.roundPixels,
+                scaleMode: options.scaleMode,
             });
                 
             rapid.canvas.tabIndex = 0; // Make canvas focusable

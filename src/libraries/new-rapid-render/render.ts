@@ -52,6 +52,8 @@ export interface IAppOptions {
     premultipliedAlpha?: boolean;
 
     roundPixels?: boolean;
+
+    scaleMode?: CanvasScaleMode;
 }
 
 /**
@@ -87,6 +89,22 @@ export enum BlendMode {
 export enum TextureFilterMode {
     LINEAR,
     NEAREST
+}
+
+export enum CanvasScaleMode {
+  /**
+   * Scales the canvas by increasing the WebGL backbuffer size.
+   * The logical game size stays the same, but rendering happens at the final display resolution,
+   * so rotated sprites, lines, and geometry get more rasterized pixels and look smoother.
+   */
+  CanvasItem,
+  /**
+   * Scales only the final canvas element on the page.
+   * The WebGL backbuffer stays at the logical game size, then the browser stretches that bitmap
+   * to the CSS display size. This preserves low-resolution/pixel-art rendering and does not add
+   * more fragments while scaling up.
+   */
+  Viewport,
 }
 
 /**
@@ -156,6 +174,8 @@ export class Rapid {
     /** Default filtering mode used when sampling textures. */
     textureFilter: TextureFilterMode;
 
+    scaleMode?: CanvasScaleMode;
+
     /** Internal ping-pong RenderTextures for multi-filter chains. */
     private _filterRT: [RenderTexture | null, RenderTexture | null] = [null, null];
 
@@ -176,6 +196,7 @@ export class Rapid {
         this.textureFilter = options.textureFilter ?? TextureFilterMode.NEAREST;
         this.premultipliedAlpha = options.premultipliedAlpha ?? true;
         this.roundPixels = options.roundPixels ?? false;
+        this.scaleMode = options.scaleMode ?? CanvasScaleMode.CanvasItem
 
         const gl = getContext(this.canvas, this.antialias, this.premultipliedAlpha);
         this.gl = gl;
@@ -380,14 +401,27 @@ export class Rapid {
         this.physicsWidth = cssW * this.dpr;
         this.physicsHeight = cssH * this.dpr;
 
-        this.canvas.width = this.physicsWidth;
-        this.canvas.height = this.physicsHeight;
-
-
         this.logicWidth = logicWidth;
         this.logicHeight = logicHeight;
 
-        this.gl.viewport(0, 0, this.physicsWidth, this.physicsHeight);
+        switch (this.scaleMode) {
+            case CanvasScaleMode.Viewport:
+                // no new pixel
+                this.canvas.width = logicWidth;
+                this.canvas.height = logicHeight;
+                this.canvas.style.imageRendering = "pixelated";
+                this.gl.viewport(0, 0, logicWidth, logicHeight);
+                break;
+            case CanvasScaleMode.CanvasItem:
+                this.canvas.width = this.physicsWidth;
+                this.canvas.height = this.physicsHeight;
+                this.canvas.style.imageRendering = "auto";
+                this.gl.viewport(0, 0, this.physicsWidth, this.physicsHeight);
+                break;
+            default:
+                throw new Error("scaleMode can only be CanvasScaleMode.Viewport or CanvasScaleMode.CanvasItem")
+        }
+        
         this.updateProjection(0, this.logicWidth, this.logicHeight, 0);
     }
 
