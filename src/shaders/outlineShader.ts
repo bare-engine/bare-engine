@@ -102,12 +102,13 @@ export class OutlineShader
         if (!this.objectStates.has(gameObject) || !gameObject?.texture)
             return;
 
-        // Perhaps encapsulated in RapidJS
-        const globalScale = rapid.matrix.getScale(rapid.matrixStack.curWorldM)
+        const scaleX = Math.abs(gameObject?.totalScaleX);
+        const scaleY = Math.abs(gameObject?.totalScaleY);
+        const globalScale = Math.max(scaleX, scaleY, 0.0001);
         const lpscale = Math.max(rapid.logicHeight / rapid.physicsHeight, rapid.logicWidth / rapid.physicsWidth)
 
         // game world scaling * webgl -> canvas scaling
-        const scale = Math.max(globalScale.x, globalScale.y, 0.0001) * lpscale;
+        const scale = lpscale / globalScale;
 
         const texture = gameObject.texture;
         const textureWidth = texture?.width ?? texture?.base?.width ?? 512;
