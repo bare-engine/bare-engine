@@ -19,7 +19,7 @@ export interface ISpriteOptions extends IDrawOptions {
     color?: Color;
     flipX?: boolean;
     flipY?: boolean;
-    padding: number
+    padding?: number
 }
 
 export interface IGraphicOptions extends IDrawOptions {
