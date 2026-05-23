@@ -5,6 +5,7 @@ import AtlasFsShaderSource from "../shader/sprite_atlas.frag";
 import { Rapid } from "../render";
 
 export class AtlasSprtieRegion extends SpriteRegion {
+    KEY = "AtlasSprite"
     constructor(rapid:Rapid) {
         super(rapid)
     }
