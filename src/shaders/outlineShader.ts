@@ -107,11 +107,8 @@ export class OutlineShader
         const scaleY = Math.abs(gameObject?.totalScaleY);
         const camera:CameraHandler = gameObject.scene.cameraHandler
         
-        const globalScale = Math.max(scaleX, scaleY, 0.0001);
+        const globalScale = Math.max(scaleX, scaleY, 0.0001) * camera.zoom;
         const lpscale = Math.max(rapid.logicHeight / rapid.physicsHeight, rapid.logicWidth / rapid.physicsWidth)
-
-        // game world scaling * webgl -> canvas scaling
-        const scale = lpscale / globalScale / camera.zoom;
 
         const texture = gameObject.texture;
         const textureWidth = texture?.width ?? texture?.base?.width ?? 512;
@@ -119,12 +116,12 @@ export class OutlineShader
 
         const state = this.objectStates.get(gameObject);
         const outlineWidth = state?.baseWidth ?? 7.0;
-
+        const padding = outlineWidth / globalScale
         this.outlineShader.setUniforms({
             uTextureSize: [textureWidth + 0.00000001, textureHeight + 0.00000001],
-            uOutlineWidth: outlineWidth * scale // pixel size
+            uOutlineWidth: outlineWidth * lpscale / globalScale // pixel size
         });
-        this.outlineShader.setPadding(outlineWidth * scale); // pixel size
+        this.outlineShader.setPadding(padding); // pixel size
     }
 
     public isActiveFor(gameObject: any): boolean {
