@@ -179,7 +179,7 @@ export class Helper
     
     static async GetFilesInFolder(folderPath: string, recursive: boolean = false): Promise<string[]>
     {
-        if (__DEV__)
+        if (!__DEV__)
             return [];
         
         // SPECIFIC FOR THIS PROJECT - FUNCTIONALITY IN config/vite.config.cjs
