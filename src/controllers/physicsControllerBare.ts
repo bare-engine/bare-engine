@@ -140,9 +140,13 @@ export class PhysicsControllerBare extends PhysicsControllerBase
       this.currentFrameCollisions.clear();
       this.handleObjectCollisions();
     }
-
-    //
-    this.CheckCollisionEnd()
+  } 
+  
+  override Update(deltaTime: number = 0): void
+  {
+    // Collision-end cleanup is here at Update() so gameplay OnUpdate()
+    // can still observe contacts that happened during this render frame
+    this.CheckCollisionEnd();
   }
 
   private handleBoundaryCollisions(obj: PhysicsObjectBare): void

@@ -886,6 +886,9 @@ export class Scene implements SceneI
 
         this.events.emit(BareEvent.scene_update, deltaTime);
         this.OnUpdate(deltaTime);
+        
+        this.physicsControllerBare?.Update(deltaTime);
+        this.physicsControllerSopiro?.Update(deltaTime);
     }
 
     FixedUpdate(fixedDeltaTime: number): void
