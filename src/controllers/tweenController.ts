@@ -317,6 +317,7 @@ export class TweenController
 
         while (tweens.length > 0)
         {
+            tweens[0]._isPlaying = true;
             tweens[0].update(1000000000000);
             tweens.splice(0, 1);
         }
