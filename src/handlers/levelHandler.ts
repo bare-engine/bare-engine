@@ -1,29 +1,23 @@
 
-import { RegisterController } from "../globals";
 import { objectController } from "../controllers/objectController";
-import { sceneController } from "../controllers/sceneController";
-import { PivotComponent } from "../editorComponents/pivotComponent";
-import { PivotRemoveComponent } from "../editorComponents/pivotRemoveComponent";
-import { PositionPivotComponent } from "../editorComponents/positionPivotComponent";
-import { ResizableComponent } from "../editorComponents/resizableComponent";
-import { ResizableRemoveComponent } from "../editorComponents/resizableRemoveComponent";
-import { GameMode } from "../globals";
+import { GameMode, MakePathForEntity, RegisterController } from "../globals";
 import { Color, Texture, Vec2 } from "../libraries/new-rapid-render";
-import { Hitbox } from "../types/hitbox";
 import { GameObject } from "../objects/gameObject";
 import { Scene } from "../scenes/scene";
 import { defaultSettingsData } from "../types/bareData";
 import { BareEvent, BareEventPayload, Component, ConstructEntityOptions, Entity, entityVars, LevelData, SaveData, Scalar, SettingsData } from '../types/bareTypes';
-import { Helper } from "../utils/helper";
-import { MakePathForEntity } from "../globals";
-import { assetsHandler } from "./assetsHandler";
+import { Hitbox } from "../types/hitbox";
 import { getSaveFields } from "../utils/decorators";
+import { Helper } from "../utils/helper";
+import { assetsHandler } from "./assetsHandler";
 import { SettingsHandler } from "./settingsHandler";
+
+
+var levelCache: Map<string, LevelData> = new Map();
 
 export class LevelHandler
 {
     currentLevel: LevelData;
-    levelCache: Map<string, LevelData> = new Map();
     
     public scene: Scene;
     backgroundColor: Color | null = null;
@@ -62,16 +56,22 @@ export class LevelHandler
         }
         else
         {
-            try
+            if (levelCache.has(levelStr))
             {
-                level = await Helper.loadJSON<LevelData>(`${bareEngine.levelPath}/${levelStr}.json`);
+                level = levelCache.get(levelStr)!;
             }
-            catch (error)
+            else
             {
-                throw new Error(`Failed to load level "${levelStr}": ${error instanceof Error ? error.message : String(error)}`);
+                try
+                {
+                    level = await Helper.loadJSON<LevelData>(`${bareEngine.levelPath}/${levelStr}.json`);
+                    levelCache.set(levelStr, level);
+                }
+                catch (error)
+                {
+                    throw new Error(`Failed to load level "${levelStr}": ${error instanceof Error ? error.message : String(error)}`);
+                }
             }
-
-            SaveData.levelCache.set(levelStr, level);
         }
 
         return level;
@@ -872,6 +872,11 @@ export class LevelHandler
     {
         if (this.backgroundColor)
             rapid.drawRect({ width: this.currentLevel.dimensions.width, height: this.currentLevel.dimensions.height, color: this.backgroundColor });
+    }
+
+    ClearLevelCache()
+    {
+        levelCache = new Map();
     }
 
     Clear()
