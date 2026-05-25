@@ -37,6 +37,7 @@
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./config": "./config/index.cjs",
     "./config/vite.config": "./config/vite.config.cjs",
     "./config/vite.config.cjs": "./config/vite.config.cjs",
     "./config/assetpack.config": "./config/assetpack.config.mjs",
