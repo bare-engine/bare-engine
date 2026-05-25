@@ -28,7 +28,7 @@ export class ObjectController
             for (let j = 0; j < this.layers[i].length; j++)
             {
                 const object = this.layers[i][j];
-                object.OnUpdate(deltaTime);
+                object.Update(deltaTime);
             }
         }
     }

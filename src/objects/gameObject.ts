@@ -38,6 +38,7 @@ export class GameObject
 
     customName: string = "";
     pivot:Vec2 = new Vec2();
+    active:boolean = true;
     visible:boolean = true;
     persistent: boolean = false;
     save: boolean = false;
@@ -353,6 +354,19 @@ export class GameObject
     Removed()
     {
         this.addedToLevel = false;
+    }
+
+    Update(deltaTime: number)
+    {
+        if (!this.active)
+            return;
+        
+        this.OnUpdate(deltaTime);
+
+        for (var child of this.children)
+        {
+            child.Update(deltaTime);
+        }
     }
 
     /** @virtual */
@@ -1273,6 +1287,7 @@ export class GameObject
         this.pooled = false;
         this.save = false;
         this.color.setRGBA(255, 255, 255, 255);
+        this.active = true;
         this.visible = true;
         this.visibleInEditor = true;
         this.tags = [];
