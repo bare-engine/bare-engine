@@ -4,7 +4,7 @@ import { GameMode, globalEvents } from "./globals";
 import { assetsHandler } from "./handlers/assetsHandler";
 import { PoolHandler } from "./handlers/poolHandler";
 import { EventArgs } from "./libraries/mitt";
-import { TextureManager, Vec2 } from "./libraries/new-rapid-render";
+import { Color, TextureManager, Vec2 } from "./libraries/new-rapid-render";
 import { GameObject } from "./objects/gameObject";
 import { Scene } from "./scenes/scene";
 import { BareEvent, BareEventPayload, BareOptions, CanvasPosition, CanvasScale, Events, GameObjectClass, SceneClass } from "./types/bareTypes";
@@ -339,6 +339,11 @@ export class BareEngine
 
         rapid.canvas.style.left = '0px';
         rapid.canvas.style.top = '0px';
+    }
+    
+    SetBackgroundColor(backgroundColor: Color)
+    {
+        rapid.backgroundColor = backgroundColor;
     }
 
     RunMainLoop()

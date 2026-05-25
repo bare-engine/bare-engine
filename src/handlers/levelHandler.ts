@@ -196,7 +196,7 @@ export class LevelHandler
         if (level.backgroundColor)
         {
             //this.backgroundColor = Color.fromHex(level.backgroundColor); // CAUSES FLASH ON LEVEL SWITCH AND NOT USEFUL FOR DEMO
-            rapid.backgroundColor = Color.fromHex(level.backgroundColor);
+            bareEngine.SetBackgroundColor(Color.fromHex(level.backgroundColor));
         }
 
         // LOAD ALL TEXTURES
