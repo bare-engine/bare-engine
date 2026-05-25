@@ -141,7 +141,9 @@ export class Particle {
         if (isPlainObject(attribute)) {
             const attr = attribute as ParticleAttribute<T>;
             const start = Random.scalarOrRange(attr.start, defaultData) as T;
-            const end   = Random.scalarOrRange(attr.end ?? attr.start, defaultData) as T;
+            const end   = attr.end === undefined
+                ? start
+                : Random.scalarOrRange(attr.end, defaultData) as T;
             return {
                 delta:   attr.delta ?? this.getDelta(start, end, this.maxLife),
                 value:   start,
