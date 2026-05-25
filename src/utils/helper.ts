@@ -179,6 +179,9 @@ export class Helper
     
     static async GetFilesInFolder(folderPath: string, recursive: boolean = false): Promise<string[]>
     {
+        if (__DEV__)
+            return [];
+        
         // SPECIFIC FOR THIS PROJECT - FUNCTIONALITY IN config/vite.config.cjs
         try {
             const response = await fetch(`/api/list-files?path=${encodeURIComponent(folderPath)}&recursive=${recursive}`);
