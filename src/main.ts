@@ -151,6 +151,21 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
             rapid.canvas.addEventListener('touchend', function(e) {
                 e.preventDefault();
             }, { passive: false });
+
+            var preventTouchDefault = (ev: TouchEvent) => {
+                if (bareEngine.MouseIsOnEditor(ev as any))
+                    return;
+
+                if (ev.type === 'touchstart')
+                    rapid.canvas.focus();
+
+                ev.preventDefault();
+            };
+
+            document.addEventListener('touchstart', preventTouchDefault, { passive: false });
+            document.addEventListener('touchmove', preventTouchDefault, { passive: false });
+            document.addEventListener('touchend', preventTouchDefault, { passive: false });
+            document.addEventListener('touchcancel', preventTouchDefault, { passive: false });
             
             // PREVENT SCROLLING WITH KEYBOARD KEYS OR MOUSE WHEEL
             var preventScrollCheck = (ev:MouseEvent | WheelEvent | KeyboardEvent)=>{
