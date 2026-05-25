@@ -56,14 +56,15 @@ export class MouseController
     constructor(scene: Scene)
     {
         this.scene = scene;
+        
+        // MOVED HERE FROM Start(), SINCE IT NEEDS TO BE THE FIRST POINTER EVENT THAT FIRES
+        this.scene.events.on(BareEvent.pointer_down, this.PointerDown.bind(this));
+        this.scene.events.on(BareEvent.pointer_move, this.PointerMove.bind(this));
+        this.scene.events.on(BareEvent.pointer_up, this.PointerUp.bind(this));
     }
 
     Start()
     {
-        this.scene.events.on(BareEvent.pointer_down, this.PointerDown.bind(this));
-        this.scene.events.on(BareEvent.pointer_move, this.PointerMove.bind(this));
-        this.scene.events.on(BareEvent.pointer_up, this.PointerUp.bind(this));
-
         // SET MOUSE POSITION TO LAST KNOW POSITION
         // THIS IS NEEDED AFTER A SCENE SWITCH, SO THE VALUES ARE UP TO TO DATE
         // SO WE DON'T HAVE TO WAIT ON THE NEXT MOUSE MOVE
@@ -77,6 +78,9 @@ export class MouseController
 
     PointerDown({ mouseX, mouseY, event }: BareEventPayload['pointer_down']): void
     {
+        if (!this.scene.started)
+            return;
+        
         const screenPosition = bareEngine.GetCanvasScreenPosition(mouseX, mouseY);
 
         this.screen.positionPrev.x = this.screen.position.x;
@@ -124,6 +128,9 @@ export class MouseController
 
     PointerUp({ mouseX, mouseY, event }: BareEventPayload['pointer_up']): void
     {
+        if (!this.scene.started)
+            return;
+        
         const screenPosition = bareEngine.GetCanvasScreenPosition(mouseX, mouseY);
 
         if (event.button == 2)
@@ -149,6 +156,9 @@ export class MouseController
 
     PointerMove({ mouseX, mouseY, event }: BareEventPayload['pointer_move'])
     {
+        if (!this.scene.started)
+            return;
+        
         const screenPosition = bareEngine.GetCanvasScreenPosition(mouseX, mouseY);
         
         this.screen.positionPrev.x = this.screen.position.x;
