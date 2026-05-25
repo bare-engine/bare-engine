@@ -419,8 +419,9 @@ export class EditorScene extends Scene
             console.error('❌ Save error:', error);
         }
 
+        // ONLY SENDING TO globalEvents NOT TO ALL WITH bareEngine.SendEvent, SINCE IT WON'T REACH OTHER SCENES ANYWAY, THEY'RE DISABLED
         globalEvents.emit(BareEvent.level_savedToDisk, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
-
+        
         return level;
     }
 

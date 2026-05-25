@@ -758,6 +758,9 @@ function stripUnusedMethodsPlugin(options = {}) {
                         if (!methodBodyRefs.has(name)) methodBodyRefs.set(name, new Set());
                         methodStack.push(name);
                     }
+                    if (node.type === "Literal" && typeof node.value === "string") {
+                        externalRefs.add(node.value);
+                    }
                     if (node.type === "MemberExpression") {
                         if (node.property.type === "Identifier")
                             addRef(node.property.name);
