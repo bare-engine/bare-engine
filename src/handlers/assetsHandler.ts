@@ -57,6 +57,17 @@ class AssetsHandler
         return this.textures.has(texturePath);
     }
 
+    RemoveTexture(texturePath: string): void
+    {
+        if (!this.HasTexture(texturePath))
+            return;
+
+        var texture = this.textures.get(texturePath);
+        rapid.texture.destroy(texture);
+
+        this.textures.delete(texturePath);
+    }
+
     GetFullImagePath(path: string): string
     {
         return `${bareEngine.imagePath}/${path}.webp`;
@@ -131,7 +142,7 @@ class AssetsHandler
     Clear()
     {
         for (var tex of this.textures.values())
-            rapid.texture.destroy(tex.base);
+            rapid.texture.destroy(tex);
 
         this.textures.clear();
         this.loading.clear();
