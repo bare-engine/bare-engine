@@ -1,35 +1,27 @@
-import { CameraHandler } from "src/handlers/cameraHandler";
 import { CustomGlShader } from "../libraries/new-rapid-render";
+import type { CameraHandler } from "src/handlers/cameraHandler";
+import type { GameObject } from "../objects/gameObject";
+import { IShader } from "../types/bareTypes";
 
-export class OutlineShader
+type OutlineColor = [number, number, number, number];
+
+export type OutlineShaderPayload = { color: OutlineColor, width: number };
+
+interface OutlineShaderState
 {
-    private outlineShader: CustomGlShader = null;
-    private objectStates = new Map(); // Store state per object
+    originalShader: CustomGlShader;
+    originalUniforms: Record<string, any>;
+    baseWidth: number;
+}
 
-    constructor() {
-        this.InitShader();
+const outlineVertexShaderSource = `
+    void vertex(inout vec4 position, inout vec2 region) {
+        // Keep original region so fragment shader can mask padding area itself.
+        vRegion = region; 
     }
+`;
 
-    private InitShader() {
-        const outlineVertexShaderSource = `
-            void vertex(inout vec4 position, inout vec2 region) {
-                // Keep original region so fragment shader can mask padding area itself.
-                vRegion = region; 
-            }
-        `;
-
-        /*const outlineFragmentShaderSource = `
-            uniform sampler2D uTexture;
-            uniform vec2 uTextureSize;
-
-            void fragment(inout vec4 color) {
-                vec2 px = vec2(1.0 / uTextureSize.x, 1.0 / uTextureSize.y);
-                vec4 originalColor = texture2D(uTexture, vRegion + vec2(5.0,  5.0) * px);
-                color = originalColor;
-            }
-        `;*/
-        
-        const outlineFragmentShaderSource = `
+const outlineFragmentShaderSource = `
     uniform vec4 uOutlineColor;
     uniform float uOutlineWidth;
     uniform vec2 uTextureSize;
@@ -60,55 +52,65 @@ export class OutlineShader
     }
 `;
 
-        this.outlineShader = new CustomGlShader(rapid,
-            outlineVertexShaderSource, 
-            outlineFragmentShaderSource, 
-            0
-        );
+export class OutlineShader implements IShader
+{
+    shader: CustomGlShader = null;
+
+    private objectStates = new Map<GameObject, OutlineShaderState>(); // Store state per object
+
+    constructor()
+    {
+        this.shader = new CustomGlShader(rapid, outlineVertexShaderSource, outlineFragmentShaderSource, 0);
+
+        this.shader.setUniforms({
+            uOutlineColor: [0.867, 0.631, 0.071, 1.0],
+            uOutlineWidth: 2.0,
+            uTextureSize: [512.0, 512.0],
+        });
     }
 
-    public start(
-    gameObject: any, 
-    color: [number, number, number, number] = [1.0, 1.0, 1.0, 1.0], 
-    width: number = 2.0
-): void {
-    if (this.objectStates.has(gameObject))
-        return;
+    public start(gameObject: GameObject, args: OutlineShaderPayload = { color: [0.867, 0.631, 0.071, 1.0], width: 8.0 }): void
+    {
+        if (this.objectStates.has(gameObject))
+            return;
 
-    this.objectStates.set(gameObject, {
-        originalShader: gameObject.shader,
-        originalUniforms: gameObject.uniforms,
-        baseWidth: width ?? 7.0
-    });
-    
-    this.outlineShader.setUniforms({
-        uOutlineColor: [0.867, 0.631, 0.071, 1.0],
-    });
+        this.objectStates.set(gameObject, {
+            originalShader: (gameObject as any).shader,
+            originalUniforms: (gameObject as any).uniforms,
+            baseWidth: args.width ?? 7.0
+        });
+        
+        this.shader.setUniforms({
+            uOutlineColor: args.color,
+        });
 
-    gameObject.shader = this.outlineShader;
-    this.update(gameObject)
-}
-
-    public updateColor(color: [number, number, number, number]): void {
-        this.outlineShader.setUniforms({ uOutlineColor: color });
+        (gameObject as any).shader = this.shader;
+        this.update(gameObject);
     }
 
-    public updateWidth(width: number): void {
+    public updateColor(color: OutlineColor): void
+    {
+        this.shader.setUniforms({ uOutlineColor: color });
+    }
+
+    public updateWidth(width: number): void
+    {
         const state = this.objectStates.values().next().value;
         if (state) state.baseWidth = width;
-        this.outlineShader.setUniforms({ uOutlineWidth: width });
+        this.shader.setUniforms({ uOutlineWidth: width });
     }
 
-    public update(gameObject: any): void {
+    public update(gameObject: GameObject): boolean
+    {
         if (!this.objectStates.has(gameObject) || !gameObject?.texture)
-            return;
+            return false;
 
         const scaleX = Math.abs(gameObject?.totalScaleX);
         const scaleY = Math.abs(gameObject?.totalScaleY);
-        const camera:CameraHandler = gameObject.scene.cameraHandler
+        const camera: CameraHandler = gameObject.scene.cameraHandler;
         
         const globalScale = Math.max(scaleX, scaleY, 0.0001) * camera.zoom;
-        const lpscale = Math.max(rapid.logicHeight / rapid.physicsHeight, rapid.logicWidth / rapid.physicsWidth)
+        const lpscale = Math.max(rapid.logicHeight / rapid.physicsHeight, rapid.logicWidth / rapid.physicsWidth);
 
         const texture = gameObject.texture;
         const textureWidth = texture?.width ?? texture?.base?.width ?? 512;
@@ -116,32 +118,32 @@ export class OutlineShader
 
         const state = this.objectStates.get(gameObject);
         const outlineWidth = state?.baseWidth ?? 7.0;
-        const padding = outlineWidth / globalScale
-        this.outlineShader.setUniforms({
+        const padding = outlineWidth / globalScale;
+        this.shader.setUniforms({
             uTextureSize: [textureWidth + 0.00000001, textureHeight + 0.00000001],
             uOutlineWidth: outlineWidth * lpscale / globalScale // pixel size
         });
-        this.outlineShader.setPadding(padding); // pixel size
+        this.shader.setPadding(padding); // pixel size
+
+        return false;
     }
 
-    public isActiveFor(gameObject: any): boolean {
-        return this.objectStates.has(gameObject);
-    }
-
-    public stop(gameObject: any): void {
+    public stop(gameObject: GameObject): void
+    {
         const state = this.objectStates.get(gameObject);
         if (!state) return;
         
         // Restore original shader and uniforms
-        gameObject.shader = state.originalShader;
-        gameObject.uniforms = state.originalUniforms;
+        (gameObject as any).shader = state.originalShader;
+        (gameObject as any).uniforms = state.originalUniforms;
         this.objectStates.delete(gameObject);
     }
 
-    public stopAll(): void {
+    public stopAll(): void
+    {
         for (const [gameObject, state] of this.objectStates) {
-            gameObject.shader = state.originalShader;
-            gameObject.uniforms = state.originalUniforms;
+            (gameObject as any).shader = state.originalShader;
+            (gameObject as any).uniforms = state.originalUniforms;
         }
         this.objectStates.clear();
     }

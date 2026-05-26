@@ -454,7 +454,7 @@ export class EditorControlsHandler {
             if (this.selectedObjects.includes(obj))
                 continue;
             
-            this.outlineShader.start(obj, [1.0, 1.0, 1.0, 1.0], 8.0);
+            this.outlineShader.start(obj);
             obj.shaders.push(this.outlineShader);
 
             //obj.color = Color.fromHex('#707070ff');

@@ -2,12 +2,13 @@ import { assetsHandler } from "../handlers/assetsHandler";
 import { Hitbox } from '../types/hitbox';
 import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';
 import { Helper } from '../utils/helper';
-import { Vec2, Texture, Color, GLShader, MaskType, MatrixStack } from "../libraries/new-rapid-render";
+import { Vec2, Texture, Color, GLShader, MaskType, MatrixStack, CustomGlShader } from "../libraries/new-rapid-render";
 import type { Scene } from "../scenes/scene";
 import type { Component, Ctor, Events, Rectangle } from "../types/bareTypes";
 import { MakePath, MakePathForEntity } from '../globals';
 import mitt from "../libraries/mitt";
 import { getOwnInspectorFieldNames, InspectorField } from "../utils/decorators";
+import { IShader } from "../shaders/flashShader";
 
 export class Transform {
     position = new Vec2();
@@ -46,9 +47,7 @@ export class GameObject
     texture: Texture | null;
     color:Color = new Color(255, 255, 255, 255);
     
-    shader: GLShader | undefined;
-
-    shaders: any[] = [];
+    shaders: (CustomGlShader | IShader)[] = [];
     private mask: GameObject | null = null;
     private maskType: MaskType = MaskType.EQUAL;
 
@@ -360,7 +359,7 @@ export class GameObject
     {
         if (!this.active)
             return;
-        
+
         this.OnUpdate(deltaTime);
 
         for (var child of this.children)
@@ -395,10 +394,20 @@ export class GameObject
         if (!this.visibleInEditor || !this.visible || this.alpha == 0 || this.scale.x == 0 || this.scale.y == 0 || this.innerScale.x == 0 || this.innerScale.y == 0)
             return;
         
-        for (var shader of this.shaders)
+        // UPDATE SHADERS
+        for (var i = this.shaders.length - 1; i >= 0; i--)
         {
+            var shader = this.shaders[i];
+
+            if (shader instanceof CustomGlShader)
+                continue;
+
             if (shader.update)
-                shader.update(this);
+            {
+                var remove = shader.update(this);
+                if (remove)
+                    this.shaders.splice(i, 1);
+            }
         }
 
         const effectiveColor = inheritedColor ? Helper.MultiplyColors(inheritedColor, this.color) : this.color;
@@ -512,10 +521,20 @@ export class GameObject
             rapid.enterMask(this.maskType, 1, 0xFF);
         }
         
+        var texture = this.texture;
+
+        if (this.shaders.length > 0)
+        {
+            const glShaders = this.shaders
+                .map(shader => shader instanceof CustomGlShader ? shader : shader.shader)
+                .filter((shader): shader is CustomGlShader => shader instanceof CustomGlShader);
+
+            texture = rapid.applyFilters(this.texture, glShaders);
+        }
+
         rapid.drawSprite({
-            texture: this.texture!,
+            texture: texture,
             color: renderColor,
-            shader: this.shader,
             position: new Vec2(-this.pivot.x, -this.pivot.y),
         });
 
@@ -541,12 +560,6 @@ export class GameObject
 
         this.mask.visible = true;
         this.mask = null;
-    }
-
-    AddShader(shader: any)
-    {
-        this.shaders.push(shader);
-        shader.start(this);
     }
 
     get x(): number
@@ -1317,16 +1330,31 @@ export class GameObject
 
         return this;
     }
+
+    AddShader(shader: CustomGlShader | IShader, args:Record<string, any>)
+    {
+        this.shaders.push(shader);
+
+        if (!(shader instanceof CustomGlShader))
+        shader.start(this, args);
+    }
+
+    RemoveShader(shader: any)
+    {
+        const i = this.shaders.indexOf(shader);
+        if (i !== -1)
+            this.shaders.splice(i, 1);
+    }
     
     RemoveShaders()
     {
         for (var shader of this.shaders)
         {
-            shader.stop(this);
+            if (!(shader instanceof CustomGlShader))
+                shader.stop(this);
         }
         this.shaders = [];
 
-        this.shader = undefined;
         //this.uniforms = undefined;
     }
     

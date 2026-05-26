@@ -1,6 +1,6 @@
 import type { Scene } from "../scenes/scene";
 import { GameObject } from "../objects/gameObject";
-import { CanvasScaleMode, TextureFilterMode } from "../libraries/new-rapid-render";
+import { CanvasScaleMode, CustomGlShader, TextureFilterMode } from "../libraries/new-rapid-render";
 
 export type Scalar = (number | string | boolean);
 
@@ -495,6 +495,15 @@ export interface SceneI
     //Add?: (obj: GameObject) => void
     //Remove?: (obj: GameObject) => void
     //Clear?: (full:boolean) => void
+}
+
+export interface IShader
+{
+    shader: CustomGlShader;
+    
+    start(gameObject: GameObject, args:Record<string, any>): void;
+    update(gameObject: GameObject): boolean;
+    stop(gameObject: GameObject): void;
 }
 
 export type SceneOptions = {

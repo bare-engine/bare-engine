@@ -637,7 +637,7 @@ export class EditorUIHandler {
         var flash = this.flashShader;
 
         objs.forEach((obj) => {
-            flash.start(obj, 600, 0);
+            flash.start(obj, { duration: 600, fadePreDuration: 0 });
 
             TweenTo(obj, 1, { onUpdate: () => {
                 flash.update(obj);

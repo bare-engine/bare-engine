@@ -85,7 +85,7 @@ window.__GAME_DEBUG_API__ = {
       if (!selected) return false;
 
       // ADD TO SELECTED
-      outlineShader.start(selected, [1.0, 1.0, 1.0, 1.0], 8.0);
+      outlineShader.start(selected);
       selected.shaders.push(outlineShader);
 
       return true;
@@ -1184,7 +1184,7 @@ export class PluginHandler
     
     public isPluginConnected: boolean = false;
 
-    public outlineShader;
+    public outlineShader: OutlineShader;
     
     debugActions: Array<{label?: string, callback?: () => void}> = [];
     movingObj: GameObject;
@@ -1323,7 +1323,7 @@ export class PluginHandler
             }
 
             // ENABLE OUTLINE SHADER FOR SELECTED OBJECT
-            this.outlineShader.start(obj, [1.0, 1.0, 1.0, 1.0], 8.0);
+            this.outlineShader.start(obj);
             obj.shaders.push(this.outlineShader);
 
             this.lastRightClickedObject = obj;
