@@ -2,7 +2,7 @@ import { assetsHandler } from "../handlers/assetsHandler";
 import mitt from "../libraries/mitt";
 import { Color, CustomGlShader, MaskType, MatrixStack, Texture, Vec2 } from "../libraries/new-rapid-render";
 import type { Scene } from "../scenes/scene";
-import type { Component, Ctor, Events, IShader, Rectangle } from "../types/bareTypes";
+import type { Component, Ctor, Events, IShader, Rectangle, Shader } from "../types/bareTypes";
 import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';
 import { Hitbox } from '../types/hitbox';
 import { getOwnInspectorFieldNames } from "../utils/decorators";
@@ -45,7 +45,7 @@ export class GameObject
     texture: Texture | null;
     color:Color = new Color(255, 255, 255, 255);
     
-    shaders: (CustomGlShader | IShader)[] = [];
+    shaders: Shader[] = [];
     private mask: GameObject | null = null;
     private maskType: MaskType = MaskType.EQUAL;
 
@@ -396,9 +396,6 @@ export class GameObject
         for (var i = this.shaders.length - 1; i >= 0; i--)
         {
             var shader = this.shaders[i];
-
-            if (shader instanceof CustomGlShader)
-                continue;
 
             if (shader.update)
             {
@@ -1329,31 +1326,27 @@ export class GameObject
         return this;
     }
 
-    AddShader(shader: CustomGlShader | IShader, args:Record<string, any>)
+    AddShader<T extends Shader, TArgs extends any[]>(shaderClass: new (...args: TArgs) => T, ...args: TArgs): T
     {
-        this.shaders.push(shader);
+        var shaderInst = new shaderClass(...args);
+        this.shaders.push(shaderInst);
 
-        if (!(shader instanceof CustomGlShader))
-        shader.start(this, args);
+        return shaderInst;
     }
 
-    RemoveShader(shader: any)
+    RemoveShader<T extends Shader>(shaderClass: new (...args: any[]) => T): T | null
     {
-        const i = this.shaders.indexOf(shader);
+        const i = this.shaders.findIndex(shader => shader instanceof shaderClass);
+
         if (i !== -1)
-            this.shaders.splice(i, 1);
+            return this.shaders.splice(i, 1)[0] as T;
+
+        return null;
     }
     
     RemoveShaders()
     {
-        for (var shader of this.shaders)
-        {
-            if (!(shader instanceof CustomGlShader))
-                shader.stop(this);
-        }
         this.shaders = [];
-
-        //this.uniforms = undefined;
     }
     
     Remove(clear:boolean = true)

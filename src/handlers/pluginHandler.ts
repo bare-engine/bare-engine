@@ -61,8 +61,6 @@ window.__GAME_DEBUG_API__ = {
 
   selectedObject(uid: string)
   {
-      const outlineShader = plugin.outlineShader;
-
       var objs = sceneController.GetAllSceneObjects();
       let selected: any = objs.find(o => o.uniqueID === uid);
 
@@ -74,38 +72,25 @@ window.__GAME_DEBUG_API__ = {
           if (o.customName === 'ignoreInPlugin') continue;
           if (!o.visible || !o.visibleInEditor) continue;
 
-          const idx = o.shaders.indexOf(outlineShader);
-          if (idx !== -1)
-          {
-              outlineShader.stop(o);
-              o.shaders.splice(idx, 1);
-          }
+          o.RemoveShader(OutlineShader);
       }
 
       if (!selected) return false;
 
       // ADD TO SELECTED
-      outlineShader.start(selected);
-      selected.shaders.push(outlineShader);
+      selected.AddShader(OutlineShader, { color: [0.867, 0.631, 0.071, 1.0], width: 8.0 });
 
       return true;
   },
 
   unselectedObject(uid: string)
   {
-      const outlineShader = plugin.outlineShader;
-
       var objs = sceneController.GetAllSceneObjects();
       let selected: any = objs.find(o => o.uniqueID === uid) ?? null;
 
       if (!selected) return false;
 
-      const idx = selected.shaders.indexOf(outlineShader);
-      if (idx !== -1)
-      {
-          outlineShader.stop(selected);
-          selected.shaders.splice(idx, 1);
-      }
+      selected.RemoveShader(OutlineShader);
 
       return true;
   },
@@ -1184,8 +1169,6 @@ export class PluginHandler
     
     public isPluginConnected: boolean = false;
 
-    public outlineShader: OutlineShader;
-    
     debugActions: Array<{label?: string, callback?: () => void}> = [];
     movingObj: GameObject;
     draggedObjData: { obj: GameObject; offset: Vec2; hasMovedAwayEnough: boolean };
@@ -1242,8 +1225,6 @@ export class PluginHandler
         globalEvents.on(BareEvent.scene_changed, check);
 
         globalEvents.persistent.once(BareEvent.game_started, () => {
-            this.outlineShader = new OutlineShader()
-            
             // RIGHT CLICK FOR PLUGIN SELECT
             document.addEventListener('pointerdown', this.OnRightClickPointerDown, false);
             
@@ -1315,16 +1296,11 @@ export class PluginHandler
             // REMOVE OUTLINE SHADER FOR LAST SELECTED OBJECT
             if (this.lastRightClickedObject)
             {
-                if (this.lastRightClickedObject.shaders.indexOf(this.outlineShader) != -1)
-                {
-                    this.outlineShader.stop(this.lastRightClickedObject);
-                    this.lastRightClickedObject.shaders.splice(this.lastRightClickedObject.shaders.indexOf(this.outlineShader), 1);
-                }
+                this.lastRightClickedObject.RemoveShader(OutlineShader);
             }
 
             // ENABLE OUTLINE SHADER FOR SELECTED OBJECT
-            this.outlineShader.start(obj);
-            obj.shaders.push(this.outlineShader);
+            obj.AddShader(OutlineShader, { color: [0.867, 0.631, 0.071, 1.0], width: 8.0 });
 
             this.lastRightClickedObject = obj;
 

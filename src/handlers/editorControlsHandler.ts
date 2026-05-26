@@ -34,7 +34,6 @@ export class EditorControlsHandler {
     selectedObjects: GameObject[] = [];
     copiedObjects: Entity[] = [];
 
-    private outlineShader = new OutlineShader();
     private lastMultiPlaceGridKey: string | null = null;
     private firstMultiPlacedObject: GameObject | null = null;
     private multiPlaceSelectionReset: boolean = false;
@@ -429,8 +428,7 @@ export class EditorControlsHandler {
             var obj = this.selectedObjects[i];
             obj.color = new Color(255, 255, 255, 255);
 
-            this.outlineShader.stop(obj);
-            obj.shaders.splice(obj.shaders.indexOf(this.outlineShader), 1);
+            obj.RemoveShader(OutlineShader);
         }
 
         this.selectedObjects.length = 0;
@@ -454,8 +452,7 @@ export class EditorControlsHandler {
             if (this.selectedObjects.includes(obj))
                 continue;
             
-            this.outlineShader.start(obj);
-            obj.shaders.push(this.outlineShader);
+            obj.AddShader(OutlineShader, { color: [0.867, 0.631, 0.071, 1.0], width: 8.0 });
 
             //obj.color = Color.fromHex('#707070ff');
             this.selectedObjects.push(obj);
@@ -840,9 +837,6 @@ export class EditorControlsHandler {
             return a.y - b.y;
         });*/
         
-        for (const obj of this.selectedObjects)
-            this.outlineShader.update(obj);
-
         //trace(this.actionThisFrame);
     }
 

@@ -4,7 +4,7 @@ import { GameMode, globalEvents } from "./globals";
 import { assetsHandler } from "./handlers/assetsHandler";
 import { PoolHandler } from "./handlers/poolHandler";
 import { EventArgs } from "./libraries/mitt";
-import { Color, TextureManager, Vec2 } from "./libraries/new-rapid-render";
+import { Color, CustomGlShader, TextureManager, Vec2 } from "./libraries/new-rapid-render";
 import { GameObject } from "./objects/gameObject";
 import { Scene } from "./scenes/scene";
 import { BareEvent, BareEventPayload, BareOptions, CanvasPosition, CanvasScale, Events, GameObjectClass, SceneClass } from "./types/bareTypes";
@@ -32,7 +32,7 @@ export class BareEngine
     private RunMainLoopBound: () => void;
 
     public dummyGameObject: GameObject; // JUST USED FOR DEFAULT VALUES AND DUMMY CONSTRUCTION
-
+    
     get levelEditorOpen(): boolean { return bareEngine.gameMode == GameMode.Editor; }
     
     public componentClasses: Record<string, any> = {};
@@ -41,6 +41,7 @@ export class BareEngine
     private mouseDownOnLeave: boolean = false;
 
     public registeredClasses: Record<string, any> = {};
+    public shaders: Record<string, CustomGlShader> = {};
 
     public GetComponentNameFromClassName(componentName: string): string
     {

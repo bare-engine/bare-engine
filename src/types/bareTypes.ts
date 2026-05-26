@@ -500,10 +500,28 @@ export interface SceneI
 export interface IShader
 {
     shader: CustomGlShader;
-    
-    start(gameObject: GameObject, args:Record<string, any>): void;
-    update(gameObject: GameObject): boolean;
-    stop(gameObject: GameObject): void;
+    update?(): boolean;
+}
+
+export class Shader implements IShader
+{
+    shader: CustomGlShader;
+
+    constructor(vs: string, fs: string)
+    {
+        var name = this.constructor.name;
+        
+        // IF THIS CustomGlShader IS NOT CACHED YET, CREATE IT
+        if (!bareEngine.shaders[name])
+        {
+            bareEngine.shaders[name] = new CustomGlShader(rapid, vs, fs);
+        }
+
+        // USE THE CACHED SHADER - SAVES SOME SHADER COMPILATION TIME
+        this.shader = bareEngine.shaders[name];
+    }
+
+    update?(gameObject?: GameObject): boolean;
 }
 
 export type SceneOptions = {

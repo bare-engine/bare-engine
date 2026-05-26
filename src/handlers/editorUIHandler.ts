@@ -18,8 +18,6 @@ export class EditorUIHandler {
     private static readonly textureFrameLoadCache = new Map<string, Promise<string>>();
     private static readonly imageLoadCache = new Map<string, Promise<HTMLImageElement>>();
 
-    private flashShader:FlashShader;
-
     private abortController: AbortController = new AbortController();
     private isMinimized: boolean = false;
     private lastMinimize: number = 0;
@@ -36,8 +34,6 @@ export class EditorUIHandler {
 
     constructor(scene: EditorScene) {
         this.scene = scene;
-
-        this.flashShader = new FlashShader()
     }
 
     private ApplyTextureBackgroundStyle(element: HTMLElement, texture: Texture): void {
@@ -635,7 +631,7 @@ export class EditorUIHandler {
         var objs = objectController.GetLayerByName(layerName);
         for (var obj of objs)
         {
-            obj.AddShader(this.flashShader, { duration: 600, fadePreDuration: 0 });
+            obj.AddShader(FlashShader, { duration: 600, fadePreDuration: 0 });
         }
     }
 
