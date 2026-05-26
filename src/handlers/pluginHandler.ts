@@ -30,9 +30,12 @@ window.__GAME_DEBUG_API__ = {
             plugin.isPluginConnected = connected;
         }
 
-        if (__DEV__)
+        // REMOVED THE EditorUIScene WHEN PLUGIN BECOMES CONNECTED
+        // COMMENTED OUT SINCE THE EditorUIScene KEPT BEING REMOVED HERE AND ADDED AT Check()
+        // AND IT CAUSED ENTITY SCREEN TO RESET IN PLUGIN?
+        /*if (__DEV__)
         if (connected)
-            sceneController.Remove(EditorUIScene);
+            sceneController.Remove(EditorUIScene);*/
     },
     getShowEditorButton() {
         return !!sceneController.GetLevelScene();
