@@ -310,7 +310,7 @@ window.__GAME_DEBUG_API__ = {
     var obj = entityScene.objectController.GetObjectByName(name);
     if (obj)
         plugin.AddComponentInspectorData(entityWithLog, obj);
-
+    
     return entityWithLog;
   },
 
@@ -568,6 +568,8 @@ window.__GAME_DEBUG_API__ = {
         }
 
         delete entity[field];
+
+        await entityScene.settingsHandler.Process();
 
         var entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase);
         
