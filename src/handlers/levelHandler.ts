@@ -883,6 +883,8 @@ export class LevelHandler
 
     Clear()
     {
+        this.ClearLevelCache();
+        
         this.backgroundColor = null;
         this.currentLevel = null;
     }
