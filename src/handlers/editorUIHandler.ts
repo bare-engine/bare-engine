@@ -633,16 +633,10 @@ export class EditorUIHandler {
 
     private FlashObjectsInLayer(layerName: string): void {
         var objs = objectController.GetLayerByName(layerName);
-
-        var flash = this.flashShader;
-
-        objs.forEach((obj) => {
-            flash.start(obj, { duration: 600, fadePreDuration: 0 });
-
-            TweenTo(obj, 1, { onUpdate: () => {
-                flash.update(obj);
-            }});
-        });
+        for (var obj of objs)
+        {
+            obj.AddShader(this.flashShader, { duration: 600, fadePreDuration: 0 });
+        }
     }
 
     private GetCategoryImagePath(imageId: string): string | null {
