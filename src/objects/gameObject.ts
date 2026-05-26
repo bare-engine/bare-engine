@@ -1,14 +1,12 @@
 import { assetsHandler } from "../handlers/assetsHandler";
-import { Hitbox } from '../types/hitbox';
-import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';
-import { Helper } from '../utils/helper';
-import { Vec2, Texture, Color, GLShader, MaskType, MatrixStack, CustomGlShader } from "../libraries/new-rapid-render";
-import type { Scene } from "../scenes/scene";
-import type { Component, Ctor, Events, Rectangle } from "../types/bareTypes";
-import { MakePath, MakePathForEntity } from '../globals';
 import mitt from "../libraries/mitt";
-import { getOwnInspectorFieldNames, InspectorField } from "../utils/decorators";
-import { IShader } from "../shaders/flashShader";
+import { Color, CustomGlShader, MaskType, MatrixStack, Texture, Vec2 } from "../libraries/new-rapid-render";
+import type { Scene } from "../scenes/scene";
+import type { Component, Ctor, Events, IShader, Rectangle } from "../types/bareTypes";
+import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';
+import { Hitbox } from '../types/hitbox';
+import { getOwnInspectorFieldNames } from "../utils/decorators";
+import { Helper } from '../utils/helper';
 
 export class Transform {
     position = new Vec2();
