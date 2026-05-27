@@ -70,7 +70,7 @@ export default {
         tagRootAsTps(),
         texturePacker({
             texturePacker: {
-                nameStyle: "relative",
+                nameStyle: "short",
                 removeFileExtension: true,
                 allowRotation: false,
                 allowTrim: false

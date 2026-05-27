@@ -287,7 +287,7 @@ async function buildTexturePack(projectRoot, entryDir, outputDir) {
             tagRootAsTps(),
             texturePacker({
                 texturePacker: {
-                    nameStyle: "relative",
+                    nameStyle: "short",
                     removeFileExtension: true,
                     allowRotation: false,
                     allowTrim: false
