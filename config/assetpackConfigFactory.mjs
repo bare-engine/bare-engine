@@ -3,10 +3,15 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 
+const localRequire = createRequire(import.meta.url);
+const { resolveTexturePackImagesConfig } = localRequire("../scripts/texturePackImagesConfig.cjs");
+
 export async function createAssetPackConfig(options = {}) {
     const projectRoot = path.resolve(options.projectRoot || process.cwd());
     const entry = options.entry || "./texturePackImages";
     const output = options.output || "./public/initial/generated";
+    const projectPackage = readProjectPackage(projectRoot);
+    const texturePackImages = resolveTexturePackImagesConfig(projectPackage, { warn: console.warn });
 
     const { compress } = await importAssetPack(projectRoot, "@assetpack/core/image");
     const { checkExt, createNewAssetAt, swapExt } = await importAssetPack(projectRoot, "@assetpack/core");
@@ -73,7 +78,7 @@ export async function createAssetPackConfig(options = {}) {
             tagRootAsTps(),
             texturePacker({
                 texturePacker: {
-                    nameStyle: "short",
+                    nameStyle: texturePackImages.nameStyle,
                     removeFileExtension: true,
                     allowRotation: false,
                     allowTrim: false
@@ -93,6 +98,11 @@ export async function createAssetPackConfig(options = {}) {
             movePackedFromParent()
         ]
     };
+}
+
+function readProjectPackage(projectRoot) {
+    const packagePath = path.join(projectRoot, "package.json");
+    return fs.existsSync(packagePath) ? JSON.parse(fs.readFileSync(packagePath, "utf8")) : {};
 }
 
 export async function importAssetPack(projectRoot, specifier) {

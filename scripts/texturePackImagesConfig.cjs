@@ -24,6 +24,9 @@ function resolveTexturePackImagesConfig(projectPackage = {}, options = {}) {
     const alwaysInclude = newOptions
         ? readStringArray(newOptions.alwaysInclude, "bareEngine.texturePackImages.alwaysInclude")
         : readStringArray(legacyInclude, "bareEngine.texturePackImagesToInclude");
+    const nameStyle = newOptions
+        ? readString(newOptions.nameStyle, "bareEngine.texturePackImages.nameStyle", "relative")
+        : "relative";
 
     if (!stripUnused && alwaysInclude.length > 0) {
         throw new Error("bareEngine.texturePackImages.alwaysInclude requires bareEngine.texturePackImages.stripUnused to be true.");
@@ -31,7 +34,8 @@ function resolveTexturePackImagesConfig(projectPackage = {}, options = {}) {
 
     return {
         stripUnused,
-        alwaysInclude
+        alwaysInclude,
+        nameStyle
     };
 }
 
@@ -59,6 +63,18 @@ function readStringArray(value, name) {
     return value;
 }
 
+function readString(value, name, defaultValue = "") {
+    if (value === undefined) {
+        return defaultValue;
+    }
+
+    if (typeof value !== "string") {
+        throw new Error(`${name} must be a string.`);
+    }
+
+    return value;
+}
+
 function readObject(value, name) {
     if (!isObject(value)) {
         throw new Error(`${name} must be an object.`);
@@ -73,5 +89,6 @@ function isObject(value) {
 
 module.exports = {
     resolveTexturePackImagesConfig,
-    readStringArray
+    readStringArray,
+    readString
 };
