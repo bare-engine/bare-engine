@@ -1128,7 +1128,13 @@ export class Scene implements SceneI
         this.events.clear();
         this.Clear();
         this.RestartClasses();
+        await this.OnRestart();
         await this.Start();
+    }
+
+    async OnRestart(): Promise<void>
+    {
+        // FOR OVERRIDE
     }
 
     RestartClasses()
