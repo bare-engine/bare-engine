@@ -1294,15 +1294,16 @@ export class PluginHandler
       {
         var isControlDown = keyboardController.IsKeyDown("control");
           const obj = isControlDown ? this.CheckClickDeepChild(ev) : this.CheckClickGameObject(ev);
+            
+        // REMOVE OUTLINE SHADER FOR LAST SELECTED OBJECT
+        if (this.lastRightClickedObject)
+        {
+            this.lastRightClickedObject.RemoveShader(OutlineShader);
+        }
+        
           if (obj)
           {
             plugin.TraceObject(obj);
-            
-            // REMOVE OUTLINE SHADER FOR LAST SELECTED OBJECT
-            if (this.lastRightClickedObject)
-            {
-                this.lastRightClickedObject.RemoveShader(OutlineShader);
-            }
 
             // ENABLE OUTLINE SHADER FOR SELECTED OBJECT
             obj.AddShader(OutlineShader, { color: [0.867, 0.631, 0.071, 1.0], width: 8.0 });
