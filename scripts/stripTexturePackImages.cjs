@@ -116,8 +116,30 @@ function collectSettingsDataEntityKeys(settingsDataPath, references) {
         for (const key of Object.keys(data.entities || {})) {
             addTextureReference(references, key);
         }
+        collectTextureFields(data, references);
     } catch (error) {
         console.warn(`[assets] Could not read ${settingsDataPath}: ${error.message}`);
+    }
+}
+
+function collectTextureFields(value, references) {
+    if (!value || typeof value !== "object") {
+        return;
+    }
+
+    if (Array.isArray(value)) {
+        for (const item of value) {
+            collectTextureFields(item, references);
+        }
+        return;
+    }
+
+    for (const [key, childValue] of Object.entries(value)) {
+        if (key === "texture" && typeof childValue === "string") {
+            addTextureReference(references, childValue);
+        }
+
+        collectTextureFields(childValue, references);
     }
 }
 
