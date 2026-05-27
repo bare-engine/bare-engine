@@ -8,5 +8,6 @@ const globalHowler = globalThis as typeof globalThis & {
 
 export const Howl = globalHowler.Howl;
 export const Howler = globalHowler.Howler;
+export type Howl = InstanceType<typeof Howl>;
 export type { HowlOptions } from "./howler.core.js";
 export default Howler;
