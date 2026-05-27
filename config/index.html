@@ -4,7 +4,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     
     <title>%BARE_TITLE%</title>
-      
+
+    <!-- js:bootstrap -->
+
+    <script>
+      (function() {
+        function getCurrentLevelAssetUrl() {
+            var levelStr = "";
+            var firstLevelLoad = %BARE_FIRST_LEVEL_LOAD%;
+
+            try {
+                levelStr = localStorage.getItem("currentLevelStr") || "";
+            } catch (error) {
+                levelStr = "";
+            }
+
+            levelStr = (levelStr || "").trim() || firstLevelLoad;
+            levelStr = (levelStr || "").trim();
+            levelStr = levelStr.replace(/\\/g, "/").replace(/^\/+/, "").replace(/\.json$/i, "");
+
+            if (!levelStr) return "";
+
+            var parts = levelStr.split("/");
+            for (var i = 0; i < parts.length; i++) {
+                if (!parts[i] || parts[i] === "." || parts[i] === "..") {
+                    return "";
+                }
+
+                parts[i] = encodeURIComponent(parts[i]);
+            }
+
+            return "./data/levels/" + parts.join("/") + ".json";
+        }
+
+        var url = getCurrentLevelAssetUrl();
+        if (url) {
+            var link = document.createElement("link");
+            link.dataset.initialAsset = "true";
+            link.rel = "preload";
+            link.href = url;
+            link.as = "fetch";
+            link.crossOrigin = "";
+            link.onload = function() { this.dataset.loaded = "true"; };
+            link.onerror = function() { this.dataset.loaded = "true"; };
+            document.head.appendChild(link);
+        }
+      })();
+    </script>
+
     <style>
       :root {
           --sat: env(safe-area-inset-top);
@@ -195,71 +242,17 @@
 
   <script>
     var centerText = document.getElementById('loading-text');
-    
+
     window.destroyTextFunc = function() {
         if (centerText) {
             centerText.remove();
         }
     };
-    
+
 
     (function() {
-      function getCurrentLevelAssetUrl() {
-          var levelStr = "";
-          var firstLevelLoad = %BARE_FIRST_LEVEL_LOAD%;
-
-          try {
-              levelStr = localStorage.getItem("currentLevelStr") || "";
-          } catch (error) {
-              levelStr = "";
-          }
-
-          levelStr = (levelStr || "").trim() || firstLevelLoad;
-          levelStr = (levelStr || "").trim();
-          levelStr = levelStr.replace(/\\/g, "/").replace(/^\/+/, "").replace(/\.json$/i, "");
-
-          if (!levelStr) return "";
-
-          var parts = levelStr.split("/");
-          for (var i = 0; i < parts.length; i++) {
-              if (!parts[i] || parts[i] === "." || parts[i] === "..") {
-                  return "";
-              }
-
-              parts[i] = encodeURIComponent(parts[i]);
-          }
-
-          return "./data/levels/" + parts.join("/") + ".json";
-      }
-
-      function addCurrentLevelAsset() {
-          var url = getCurrentLevelAssetUrl();
-          if (!url) return;
-
-          var existing = Array.prototype.some.call(
-              document.body.querySelectorAll('[data-initial-asset]'),
-              function(asset) {
-                  return (asset.getAttribute("src") || asset.getAttribute("href") || asset.src || asset.href) === url;
-              }
-          );
-
-          if (existing) return;
-
-          var link = document.createElement("link");
-          link.dataset.initialAsset = "true";
-          link.rel = "preload";
-          link.href = url;
-          link.as = "fetch";
-          link.crossOrigin = "";
-          link.onload = function() { this.dataset.loaded = "true"; };
-          link.onerror = function() { this.dataset.loaded = "true"; };
-          document.body.appendChild(link);
-      }
-
-      addCurrentLevelAsset();
-
-      // Scan the <body> for all tracked initial assets
-      var head = document.body;
+      // Scan the document for all tracked initial assets
+      var head = document.documentElement;
       var assets = Array.prototype.slice.call(
           head.querySelectorAll('[data-initial-asset]')
       );
@@ -288,7 +281,16 @@
 
               assetsObj[fileName] = asset;
 
-              if (fileName.endsWith(".json")) {
+              if (asset.tagName === 'LINK' && asset.getAttribute('as') === 'image') {
+                  // <link rel="preload" as="image"> is not a TexImageSource — create a real Image
+                  // from the same URL so it hits the preload cache and arrives instantly
+                  jsonPromises.push(new Promise(function(resolve) {
+                      var img = new Image();
+                      img.onload = function() { assetsObj[fileName] = img; resolve(); };
+                      img.onerror = function() { resolve(); };
+                      img.src = url;
+                  }));
+              } else if (fileName.endsWith(".json")) {
                   jsonPromises.push(
                       fetch(url)
                           .then(r => {
@@ -353,6 +355,5 @@
 
 
   </script>
-  <!-- js:bootstrap -->
 
 </html>

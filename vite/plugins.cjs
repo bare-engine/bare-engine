@@ -604,7 +604,7 @@ function injectInitialAssets(html, folder) {
             if (filePath.endsWith(".js")) {
                 tags += `<script data-initial-asset="true" src="${url}" async onload="this.dataset.loaded='true'" onerror="this.dataset.loaded='true'"></script>\n`;
             } else if (/\.(png|jpe?g|gif|webp|svg)$/i.test(filePath)) {
-                tags += `<img data-initial-asset="true" src="${url}" style="display:none;" onload="this.dataset.loaded='true'" onerror="this.dataset.loaded='true'">\n`;
+                tags += `<link data-initial-asset="true" rel="preload" href="${url}" as="image" onload="this.dataset.loaded='true'" onerror="this.dataset.loaded='true'">\n`;
             } else if (filePath.endsWith(".json")) {
                 tags += `<link data-initial-asset="true" rel="preload" href="${url}" as="fetch" crossorigin onload="this.dataset.loaded='true'" onerror="this.dataset.loaded='true'">\n`;
             } else {
@@ -613,7 +613,7 @@ function injectInitialAssets(html, folder) {
         }
     }
 
-    return html.replace(/<body>/, `<body>\n${tags}`);
+    return html.replace(/<\/head>/, `${tags}</head>`);
 }
 
 function generateLayers(jsonPath, outputPath) {
