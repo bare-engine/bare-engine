@@ -1,8 +1,5 @@
-#!/usr/bin/env node
-
 const fs = require("node:fs");
 const path = require("node:path");
-const { createRequire } = require("node:module");
 const { pathToFileURL } = require("node:url");
 const {
     readStringArray,
@@ -222,136 +219,23 @@ function normalizeTextureKey(value) {
 }
 
 async function buildTexturePack(projectRoot, entryDir, outputDir) {
-    const { AssetPack } = await importProjectPackage(projectRoot, "@assetpack/core");
-    const { compress } = await importProjectPackage(projectRoot, "@assetpack/core/image");
-    const { checkExt, createNewAssetAt, swapExt } = await importProjectPackage(projectRoot, "@assetpack/core");
-    const { texturePacker } = await importProjectPackage(projectRoot, "@assetpack/core/texture-packer");
-
-    const textureJsonToWebp = () => ({
-        name: "texture-json-webp",
-        test: (asset) => asset.allMetaData?.tps && checkExt(asset.path, ".json"),
-        transform: async (asset) => {
-            const json = JSON.parse(asset.buffer.toString());
-            if (!json?.meta?.image) {
-                return [asset];
-            }
-
-            const nextJson = JSON.parse(JSON.stringify(json));
-            nextJson.meta.image = swapExt(nextJson.meta.image, ".webp");
-
-            const nextAsset = createNewAssetAt(asset, asset.filename);
-            nextAsset.buffer = Buffer.from(JSON.stringify(nextJson, null, 2));
-
-            return [nextAsset];
-        }
-    });
-
-    const tagRootAsTps = () => ({
-        name: "tag-root-tps",
-        test: (asset) => asset.isFolder && asset.rootAsset === asset,
-        transform: async (asset) => {
-            asset.metaData.tps = true;
-            return [asset];
-        }
-    });
-
-    const movePackedFromParent = () => ({
-        name: "move-packed-from-parent",
-        finish: async (_root, _options, pipeSystem) => {
-            const parentDir = path.dirname(pipeSystem.outputPath);
-            const rootName = "texturePackImages";
-
-            if (!fs.existsSync(parentDir)) {
-                return;
-            }
-
-            for (const entry of fs.readdirSync(parentDir)) {
-                if (!entry.startsWith(rootName)) {
-                    continue;
-                }
-
-                moveFileSync(
-                    path.join(parentDir, entry),
-                    path.join(pipeSystem.outputPath, entry)
-                );
-            }
-        }
-    });
-
-    const assetpack = new AssetPack({
+    const configFactoryPath = path.join(__dirname, "../config/assetpackConfigFactory.mjs");
+    const { createAssetPackConfig, importAssetPack } = await import(pathToFileURL(configFactoryPath).href);
+    const { AssetPack } = await importAssetPack(projectRoot, "@assetpack/core");
+    const config = await createAssetPackConfig({
+        projectRoot,
         entry: entryDir,
-        output: outputDir,
-        cache: false,
-        ignore: ["*.png", "**/*"],
-        pipes: [
-            tagRootAsTps(),
-            texturePacker({
-                texturePacker: {
-                    nameStyle: "short",
-                    removeFileExtension: true,
-                    allowRotation: false,
-                    allowTrim: false
-                },
-                resolutionOptions: {
-                    resolutions: { default: 1 },
-                    maximumTextureSize: 4096
-                }
-            }),
-            compress({
-                png: "skip",
-                webp: {
-                    lossless: true
-                }
-            }),
-            textureJsonToWebp(),
-            movePackedFromParent()
-        ]
+        output: outputDir
     });
 
+    const assetpack = new AssetPack(config);
     await assetpack.run();
-}
-
-async function importProjectPackage(projectRoot, specifier) {
-    const projectRequire = createRequire(path.join(projectRoot, "package.json"));
-
-    try {
-        return await import(pathToFileURL(projectRequire.resolve(specifier)).href);
-    } catch (error) {
-        if (error.code !== "MODULE_NOT_FOUND" && error.code !== "ERR_PACKAGE_PATH_NOT_EXPORTED") {
-            throw error;
-        }
-    }
-
-    try {
-        return await import(specifier);
-    } catch (error) {
-        throw new Error(
-            `Could not load ${specifier}. Install @assetpack/core in this project before using stripTexturePackImages.`,
-            { cause: error }
-        );
-    }
 }
 
 function removeGeneratedTexturePack(outputDir) {
     fs.rmSync(path.join(outputDir, "texturePackImages.json"), { force: true });
     fs.rmSync(path.join(outputDir, "texturePackImages.webp"), { force: true });
     fs.rmSync(path.join(outputDir, "texturePackImages.png"), { force: true });
-}
-
-function moveFileSync(from, to) {
-    fs.mkdirSync(path.dirname(to), { recursive: true });
-    fs.rmSync(to, { force: true });
-
-    try {
-        fs.renameSync(from, to);
-    } catch (error) {
-        if (error.code !== "EXDEV") {
-            throw error;
-        }
-
-        fs.copyFileSync(from, to);
-        fs.rmSync(from, { force: true });
-    }
 }
 
 function getFilesRecursive(dir) {

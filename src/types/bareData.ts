@@ -43,8 +43,7 @@ export const defaultSettingsData: SettingsData = {
     }
   },
   saveVars: {
-    GameObject: ["position", "children", "components"],
-    PhysicsObjectBare: ["scale"]
+    GameObject: ["position", "children", "components"]
   },
   settings: {
     gridEnabled: false,
