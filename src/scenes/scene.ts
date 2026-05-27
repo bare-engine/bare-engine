@@ -21,7 +21,7 @@ import type { TweenController } from "../controllers/tweenController";
 import type { CameraHandler } from "../handlers/cameraHandler";
 import type { LevelHandler } from "../handlers/levelHandler";
 
-/*Bare.camera.SetPosition(bare.width * .5, bare.height * .5);
+/*Bare.camera.SetPosition(bareEngine.width * .5, bareEngine.height * .5);
 Bare.sound.Play()
 Bare.physics.SetGravity(0, 0);
 Bare.sopiro.SetFriction(0);
@@ -79,28 +79,8 @@ export class Scene implements SceneI
 
     sceneOptions: SceneOptions;
 
+    // MOVE OUT? HAS SaveData REFERENCE - TODO
     get currentLevelStr(): string { return SaveData.currentLevelStr; }
-
-    get width(): int { return rapid.width; }
-    get height(): int { return rapid.height; }
-    get texture(): TextureManager { return rapid.texture; }
-
-
-    get drawCircle(): typeof rapid.drawCircle {
-        return rapid.drawCircle.bind(rapid);
-    }
-    get drawLine(): typeof rapid.drawLine {
-        return rapid.drawLine.bind(rapid);
-    }
-    get drawGraphic(): typeof rapid.drawGraphic {
-        return rapid.drawGraphic.bind(rapid);
-    }
-    get drawRect(): typeof rapid.drawRect {
-        return rapid.drawRect.bind(rapid);
-    }
-    get drawSprite(): typeof rapid.drawSprite {
-        return rapid.drawSprite.bind(rapid);
-    }
 
     // get drawMask(): (type: MaskType, cb: () => void) => void { return rapid.drawMask.bind(rapid); }
     // get clearMask(): () => void { return rapid.clearMask.bind(rapid); }

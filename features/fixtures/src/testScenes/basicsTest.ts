@@ -7,11 +7,11 @@ export class BasicsTest extends Scene
     OnStart(): void
     {
         this.cog = this.AddGameObject({ name: "cog", texture: "NONE" })
-            .SetPosition(bare.width * 0.5, bare.height * 0.5)
+            .SetPosition(bareEngine.width * 0.5, bareEngine.height * 0.5)
             .CenterPivot();
 
-        assert(this.cog.x === bare.width * 0.5, "basic object should be centered on x");
-        assert(this.cog.y === bare.height * 0.5, "basic object should be centered on y");
+        assert(this.cog.x === bareEngine.width * 0.5, "basic object should be centered on x");
+        assert(this.cog.y === bareEngine.height * 0.5, "basic object should be centered on y");
     }
 
     OnUpdate(): void

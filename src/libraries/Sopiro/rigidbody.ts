@@ -286,7 +286,7 @@ export abstract class RigidBody extends GameObject
     }
 
     // ALL THESE REFRESHES MAKE SOPIRO PHYSICS REMOVE AND ADD THE RIGIDBODY FROM THE WORLD
-    // THAT'S SOME WORK, SO GENERALLY BETTER TO bare.AddGameObject(rigidbody) AFTER SETTING ALL THESE
+    // THAT'S SOME WORK, SO GENERALLY BETTER TO this.scene.AddGameObject(rigidbody) AFTER SETTING ALL THESE
     // TO PREVENT THAT
 
     override SetPosition(x: number, y: number): this

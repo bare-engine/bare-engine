@@ -94,17 +94,17 @@ export class CameraHandler {
 
   ResetForStart()
   {
-    this.dimensions.width = bare.width;
-    this.dimensions.height = bare.height;
+    this.dimensions.width = bareEngine.width;
+    this.dimensions.height = bareEngine.height;
 
-    //this.bounds = { x: 0, y: 0, width: bare.width, height: bare.height };
+    //this.bounds = { x: 0, y: 0, width: bareEngine.width, height: bareEngine.height };
 
     this.zoomFit = 1;
     this.zoom = 1;
     this.scaleMode = CameraScaleMode.Cover;
 
-    this.target.x = bare.width / 2;
-    this.target.y = bare.height / 2;
+    this.target.x = bareEngine.width / 2;
+    this.target.y = bareEngine.height / 2;
 
     this.position.x = this.target.x;
     this.position.y = this.target.y;
@@ -167,7 +167,7 @@ export class CameraHandler {
 
   SetBoundsToScreen() 
   {
-    this.SetBounds({ x: 0, y: 0, width: bare.width, height: bare.height });
+    this.SetBounds({ x: 0, y: 0, width: bareEngine.width, height: bareEngine.height });
   }
 
   SetBoundsToLevel() 
@@ -247,7 +247,7 @@ export class CameraHandler {
     if (this.dimensions.width == 0 || this.dimensions.height == 0)
         return;
     
-    //if (this.dimensions.width == bare.width && this.dimensions.height == bare.height)
+    //if (this.dimensions.width == bareEngine.width && this.dimensions.height == bareEngine.height)
     //    return;
 
     //if (this.position.x == 0 && this.position.y == 0 && this.zoom == 1)

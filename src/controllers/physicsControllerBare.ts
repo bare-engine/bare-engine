@@ -27,7 +27,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
   {
     super(scene);
 
-    this.setDimensions(0, 0, bare.width, bare.height);
+    this.setDimensions(0, 0, bareEngine.width, bareEngine.height);
     bareEngine.RegisterGameObjectPool(PhysicsObjectBare, 10);
   }
   

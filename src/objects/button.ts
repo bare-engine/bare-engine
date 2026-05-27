@@ -35,14 +35,14 @@ export class Button extends GameObject
         const buttonColor = this.buttonColor;
         buttonColor.a = this.buttonColor.a * ((inheritedColor?.a ?? 255)/255);
 
-        bare.drawRect({
+        bareEngine.drawRect({
             width: this.width,
             height: this.height,
             color: buttonColor,
             position: new Vec2(-this.pivot.x, -this.pivot.y),
         });
 
-        bare.drawSprite({
+        bareEngine.drawSprite({
             texture: this.text,
             color: inheritedColor,
             position: new Vec2(this.marge - this.pivot.x, this.height / 2),

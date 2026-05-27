@@ -93,7 +93,7 @@ export class ResizableComponent extends BaseComponent
     const mouse = mouseController.world.position;
     const hoveredHitbox = hitboxController.GetCurrentHitboxHover();
     const hoveringThis = hoveredHitbox?.parent === this.go;
-    const zoom = bare.GetCameraZoom();
+    const zoom = this.scene.GetCameraZoom();
 
     const fromCenter = keyboardController.IsKeyDown('alt');
     const keepAspect = keyboardController.IsKeyDown('shift');
@@ -298,7 +298,7 @@ export class ResizableComponent extends BaseComponent
 
     const color = Color.fromHex('#dda112');
     color.a = 210;
-    const zoom = bare.GetCameraZoom();
+    const zoom = this.scene.GetCameraZoom();
     const width = 3 / zoom;
     const cornerLength = 12 / zoom;
 
