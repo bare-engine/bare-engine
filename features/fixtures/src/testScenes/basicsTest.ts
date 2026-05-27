@@ -6,7 +6,7 @@ export class BasicsTest extends Scene
 
     OnStart(): void
     {
-        this.cog = b.AddGameObject({ name: "cog", texture: "NONE" })
+        this.cog = bScene.AddGameObject({ name: "cog", texture: "NONE" })
             .SetPosition(bare.width * 0.5, bare.height * 0.5)
             .CenterPivot();
 

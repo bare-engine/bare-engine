@@ -265,7 +265,7 @@ function createControllerProxyTransformer(program) {
                         const name = n.text;
                         const canRewriteScene = extendsSceneDeep || hasScene || extendsSceneCarrier;
 
-                        if (name === "b") {
+                        if (name === "bScene") {
                         if (extendsSceneDeep) {
                             return factory.createThis();
                         }
