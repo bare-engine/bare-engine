@@ -723,9 +723,10 @@ export class Scene implements SceneI
             {
                 var entity: Entity;
 
-                if (typeof input === "string" && input.startsWith("/"))
+                if (typeof input === "string" && input.includes("/"))
                 {
-                    // PATH STRING - SET UP A BASIC ENTITY
+                    // PATH STRING - SET UP A BASIC ENTITY USING PROVIDED STRING - SPLITTING INTO NAME AND IMAGE PATH
+                    // CAN ALSO PREPEND / EG: this.AddGameObject('/player') TO PREVENT CONSTRUCTING FROM ENTITY 'PLAYER', GETTING THE IMAGE INSTEAD
                     var path = input;
                     var split = path.split("/");
                     var imagePath = split.slice(0, split.length - 1).join("/");
@@ -776,17 +777,6 @@ export class Scene implements SceneI
         // NOTIFY
         globalEvents.emit(BareEvent.game_objectAdded, { gameObject: gameObject, layer: parent });
         this.events.emit(BareEvent.game_objectAdded, { gameObject: gameObject, layer: parent });
-
-        return gameObject;
-    }
-
-    // STILL NEEDED?
-    public AddGameObjectFromImagePath(path:string, parent: int | string | GameObject = "objects"): GameObject
-    {
-        if (!path.startsWith("/"))
-            path = "/" + path; // NEEDS A SLASH IN FRONT FOR ADDGAMEOBJECT() TO RECOGNIZE IT'S A PATH
-
-        var gameObject = this.AddGameObject(path, parent);
 
         return gameObject;
     }
