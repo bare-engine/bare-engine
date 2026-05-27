@@ -4,39 +4,39 @@ import { assetsHandler } from "../handlers/assetsHandler";
 import { Color, IParticleOptions, ParticleEmitter, ParticleShape, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
-import { InspectorButton, Save } from "../utils/decorators";
+import { InspectorButton, InspectorField, Save } from "../utils/decorators";
 
 export class ParticleComponent extends BaseComponent
 {
     public emitter: ParticleEmitter;
     
-    @Save
+    @InspectorField
     private position: any = {x: 0, y: 0};
 
-    @Save
+    @InspectorField
     private life: number = 1;
 
-    @Save
+    @InspectorField
     private texture: string = "";
 
-    @Save
+    @InspectorField
     private origin: any;
 
-    @Save
+    @InspectorField
     private emitRate: number = 0;
 
-    @Save
+    @InspectorField
     private localSpace: boolean = false;
 
-    @Save
+    @InspectorField
     private emitShape: string = "POINT";
 
-    @Save
+    @InspectorField
     private emitRadius: number = 0;
 
-    @Save
-    private animation: any;
-
+    @InspectorField
+    private animation: Record<string, any> = {};
+    
     constructor(scene: Scene)
     {
         super(scene);
