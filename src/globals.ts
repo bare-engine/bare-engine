@@ -50,6 +50,7 @@ declare global
     function trace(message: any, ...optionalParams: any[]): void;
 
     function wait(seconds: number, persistent?: boolean): Promise<void>;
+    function waitFrame(frames?: number, persistent?: boolean): Promise<void>;
     function cancelWaits(): void;
 
     function assert(condition: boolean, message?: string): void;
@@ -82,6 +83,19 @@ window.wait = (seconds: number, persistent = false): Promise<void> => {
                 resolve(); 
             // ELSE... WE DON'T RESOLVE AND TIME OUT WILL STAY SUSPENDED UNTIL GC CLEANS IT UP (DOES IT?? TODO)
         }, seconds * 1000);
+    });
+};
+window.waitFrame = (frames: number = 1, persistent = false): Promise<void> => {
+    const gen = _waitGen;
+    return new Promise(resolve => {
+        const tick = (remaining: number) => {
+            requestAnimationFrame(() => {
+                if (!persistent && _waitGen !== gen) return;
+                if (remaining <= 1) resolve();
+                else tick(remaining - 1);
+            });
+        };
+        tick(frames);
     });
 };
 window.cancelWaits = (): void => { _waitGen++; };
