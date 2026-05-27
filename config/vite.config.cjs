@@ -14,6 +14,7 @@ const {
     stripUnusedMethodsPlugin,
     readProjectPackage
 } = require("../vite/plugins.cjs");
+const { resolveTexturePackImagesConfig } = require("../scripts/texturePackImagesConfig.cjs");
 
 module.exports = ({ mode }) => {
     const projectRoot = process.cwd();
@@ -22,9 +23,7 @@ module.exports = ({ mode }) => {
     const buildIndexPath = ensureLocalBuildIndex(projectRoot, engineIndexPath);
     const projectPackage = readProjectPackage(projectRoot);
     const stripOptions = projectPackage.bareEngine?.stripUnusedMethods;
-    const stripTexturePackImages = projectPackage.bareEngine?.stripTexturePackImages
-        ?? projectPackage.bare?.stripTexturePackImages
-        ?? false;
+    const texturePackImages = resolveTexturePackImagesConfig(projectPackage, { warn: console.warn });
 
     return {
         root: projectRoot,
@@ -56,7 +55,7 @@ module.exports = ({ mode }) => {
                 projectRoot,
                 editorHtmlPath: path.resolve(__dirname, "editor.html")
             }),
-            ...(!isDev && stripTexturePackImages === true ? [bareStripTexturePackImagesPlugin({ projectRoot })] : []),
+            ...(!isDev && texturePackImages.stripUnused ? [bareStripTexturePackImagesPlugin({ projectRoot, texturePackImages })] : []),
             bareTexturePackImagesPlugin({
                 projectRoot,
                 runOnStart: false
