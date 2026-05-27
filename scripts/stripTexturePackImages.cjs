@@ -4,6 +4,10 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { createRequire } = require("node:module");
 const { pathToFileURL } = require("node:url");
+const {
+    readStringArray,
+    resolveTexturePackImagesConfig
+} = require("./texturePackImagesConfig.cjs");
 
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"]);
 
@@ -53,13 +57,9 @@ async function stripTexturePackImages(options = {}) {
 
 function collectTextureReferences(projectRoot, options = {}) {
     const references = new Set();
-    const projectPackage = readProjectPackage(projectRoot);
-    const texturePackImagesToInclude = options.texturePackImagesToInclude
-        || projectPackage.bareEngine?.texturePackImagesToInclude
-        || projectPackage.bare?.texturePackImagesToInclude
-        || [];
+    const alwaysInclude = resolveAlwaysInclude(projectRoot, options);
 
-    for (const textureName of texturePackImagesToInclude) {
+    for (const textureName of alwaysInclude) {
         addTextureReference(references, textureName);
     }
 
@@ -73,6 +73,23 @@ function collectTextureReferences(projectRoot, options = {}) {
     );
 
     return references;
+}
+
+function resolveAlwaysInclude(projectRoot, options = {}) {
+    if (options.texturePackImages?.alwaysInclude !== undefined) {
+        return readStringArray(options.texturePackImages.alwaysInclude, "texturePackImages.alwaysInclude");
+    }
+
+    if (options.alwaysInclude !== undefined) {
+        return readStringArray(options.alwaysInclude, "alwaysInclude");
+    }
+
+    if (options.texturePackImagesToInclude !== undefined) {
+        return readStringArray(options.texturePackImagesToInclude, "texturePackImagesToInclude");
+    }
+
+    const projectPackage = readProjectPackage(projectRoot);
+    return resolveTexturePackImagesConfig(projectPackage, { warn: console.warn }).alwaysInclude;
 }
 
 function readProjectPackage(projectRoot) {
@@ -99,8 +116,30 @@ function collectSettingsDataEntityKeys(settingsDataPath, references) {
         for (const key of Object.keys(data.entities || {})) {
             addTextureReference(references, key);
         }
+        collectTextureFields(data, references);
     } catch (error) {
         console.warn(`[assets] Could not read ${settingsDataPath}: ${error.message}`);
+    }
+}
+
+function collectTextureFields(value, references) {
+    if (!value || typeof value !== "object") {
+        return;
+    }
+
+    if (Array.isArray(value)) {
+        for (const item of value) {
+            collectTextureFields(item, references);
+        }
+        return;
+    }
+
+    for (const [key, childValue] of Object.entries(value)) {
+        if (key === "texture" && typeof childValue === "string") {
+            addTextureReference(references, childValue);
+        }
+
+        collectTextureFields(childValue, references);
     }
 }
 

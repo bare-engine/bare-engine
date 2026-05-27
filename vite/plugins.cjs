@@ -164,7 +164,7 @@ function bareHtmlPlugin(options = {}) {
     const backgroundColor = htmlOptions.backgroundColor || "rgb(255, 255, 255)";
     const textColor = htmlOptions.textColor || "rgb(0, 0, 0)";
     const loadingTextStyle = htmlOptions.showLoading === false ? "display: none;" : "";
-    const firstLevelLoad = resolveFirstLevelLoad(projectRoot, projectPackage.bareEngine?.firstLevelLoad);
+    const firstLevelLoad = resolveFirstLevelLoad(projectPackage.bareEngine?.firstLevelLoad);
 
     return {
         name: "bare:html",
@@ -205,7 +205,7 @@ function bareHtmlPlugin(options = {}) {
     };
 }
 
-function resolveFirstLevelLoad(projectRoot, value) {
+function resolveFirstLevelLoad(value) {
     if (typeof value !== "string") {
         return "";
     }
@@ -213,12 +213,6 @@ function resolveFirstLevelLoad(projectRoot, value) {
     const levelName = value.trim().replace(/\\/g, "/").replace(/^\/+/, "").replace(/\.json$/i, "");
     if (!levelName || levelName.split("/").some(part => !part || part === "." || part === "..")) {
         console.warn(`[bare:html] Ignoring invalid bareEngine.firstLevelLoad: ${JSON.stringify(value)}`);
-        return "";
-    }
-
-    const levelPath = path.join(projectRoot, "public/data/levels", `${levelName}.json`);
-    if (!fs.existsSync(levelPath)) {
-        console.warn(`[bare:html] bareEngine.firstLevelLoad "${levelName}" not found at ${levelPath}`);
         return "";
     }
 
@@ -610,7 +604,7 @@ function injectInitialAssets(html, folder) {
             if (filePath.endsWith(".js")) {
                 tags += `<script data-initial-asset="true" src="${url}" async onload="this.dataset.loaded='true'" onerror="this.dataset.loaded='true'"></script>\n`;
             } else if (/\.(png|jpe?g|gif|webp|svg)$/i.test(filePath)) {
-                tags += `<img data-initial-asset="true" src="${url}" style="display:none;" onload="this.dataset.loaded='true'" onerror="this.dataset.loaded='true'">\n`;
+                tags += `<link data-initial-asset="true" rel="preload" href="${url}" as="image" onload="this.dataset.loaded='true'" onerror="this.dataset.loaded='true'">\n`;
             } else if (filePath.endsWith(".json")) {
                 tags += `<link data-initial-asset="true" rel="preload" href="${url}" as="fetch" crossorigin onload="this.dataset.loaded='true'" onerror="this.dataset.loaded='true'">\n`;
             } else {
@@ -619,7 +613,7 @@ function injectInitialAssets(html, folder) {
         }
     }
 
-    return html.replace(/<body>/, `<body>\n${tags}`);
+    return html.replace(/<\/head>/, `${tags}</head>`);
 }
 
 function generateLayers(jsonPath, outputPath) {

@@ -15,6 +15,7 @@
     "scripts/analyze.cjs",
     "scripts/buildAssets.cjs",
     "scripts/stripTexturePackImages.cjs",
+    "scripts/texturePackImagesConfig.cjs",
     "src",
     "vite",
     "LICENSE",
