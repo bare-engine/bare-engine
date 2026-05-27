@@ -36,13 +36,13 @@ export interface ButtonEntry
 export interface FieldEntry
 {
     name: string;
-    type: "input" | "dropdown";
+    type: "input" | "dropdown" | "object";
 }
 
 export interface InspectorFieldData
 {
     name: string;
-    type: "input" | "dropdown";
+    type: "input" | "dropdown" | "object";
     current: any;
     values?: any[];
     locked?: boolean;
@@ -259,6 +259,13 @@ function isInspectorFieldDescriptor(value: any): boolean
         );
 }
 
+function isInspectorObjectField(value: any): boolean
+{
+    return value !== null
+        && typeof value === "object"
+        && !Array.isArray(value);
+}
+
 /** Returns all editor fields registered on a component instance. */
 export function getInspectorFields(component: any): InspectorFieldData[]
 {
@@ -276,7 +283,9 @@ export function getInspectorFields(component: any): InspectorFieldData[]
 
         return {
             name: labels[entry.name] ?? entry.name,
-            type: descriptor.values !== undefined ? "dropdown" : entry.type,
+            type: descriptor.values !== undefined
+                ? "dropdown"
+                : (!isDescriptor && isInspectorObjectField(value) ? "object" : entry.type),
             current: isDescriptor
                 ? descriptor.current ?? (typeof descriptor.get === "function" ? descriptor.get() : undefined)
                 : value,
