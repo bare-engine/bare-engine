@@ -496,12 +496,13 @@ export class Rapid {
         if (shaders.length === 0) {
             throw new Error("applyFilters: shaders array must not be empty.");
         }
-
+        const maxPadding = Math.max(...shaders.map(s=>s.padding))
+        const paddingOffset = maxPadding / 2
         // source.width/height already reflects the region size (not the full base texture).
         // drawSprite uses the region UV, so only the region pixels are rendered into the RT.
         // The output RT contains the "baked" region content — no region metadata needed.
-        const width = source.width;
-        const height = source.height;
+        const width = source.width + maxPadding;
+        const height = source.height + maxPadding;
 
         // Ensure both ping-pong RTs exist and match the source size (grow-only: no GPU
         // reallocation unless size exceeds the previous maximum)
@@ -526,14 +527,27 @@ export class Rapid {
             // Draw the full source (or previous pass output) as a full-RT quad at (0,0).
             // The projection is already set to (0, w, h, 0) by enterRenderTexture.
 
-            this.drawSprite({ texture: inputTex, shader: shaders[i] });
+            // We can't let `drawsprite` handle the padding offset because `renderTexture` has a limited size.
+            // Render from the top left corner the image will render outside the `renderTexture`.
+            // We need to render the image in the center of the `renderTexture`.
+            this.drawSprite({ 
+                texture: inputTex,
+                shader: shaders[i],
+                offsetX: paddingOffset,
+                offsetY: paddingOffset,
+                padding: maxPadding
+            });
 
             this.leaveRenderTexture();
 
             inputTex = outputRT;
+
             rtIndex++;
         }
         this.matrixStack.restore()
+
+        inputTex.offsetX = -paddingOffset
+        inputTex.offsetY = -paddingOffset
 
         return inputTex as RenderTexture;
     }
