@@ -189,7 +189,61 @@
     
 
     (function() {
-      // Scan the <head> for all tracked initial assets
+      function getCurrentLevelAssetUrl() {
+          var levelStr = "";
+          var firstLevelLoad = "";
+
+          try {
+              levelStr = localStorage.getItem("currentLevelStr") || "";
+          } catch (error) {
+              levelStr = "";
+          }
+
+          levelStr = (levelStr || "").trim() || firstLevelLoad;
+          levelStr = (levelStr || "").trim();
+          levelStr = levelStr.replace(/\\/g, "/").replace(/^\/+/, "").replace(/\.json$/i, "");
+
+          if (!levelStr) return "";
+
+          var parts = levelStr.split("/");
+          for (var i = 0; i < parts.length; i++) {
+              if (!parts[i] || parts[i] === "." || parts[i] === "..") {
+                  return "";
+              }
+
+              parts[i] = encodeURIComponent(parts[i]);
+          }
+
+          return "./data/levels/" + parts.join("/") + ".json";
+      }
+
+      function addCurrentLevelAsset() {
+          var url = getCurrentLevelAssetUrl();
+          if (!url) return;
+
+          var existing = Array.prototype.some.call(
+              document.body.querySelectorAll('[data-initial-asset]'),
+              function(asset) {
+                  return (asset.getAttribute("src") || asset.getAttribute("href") || asset.src || asset.href) === url;
+              }
+          );
+
+          if (existing) return;
+
+          var link = document.createElement("link");
+          link.dataset.initialAsset = "true";
+          link.rel = "preload";
+          link.href = url;
+          link.as = "fetch";
+          link.crossOrigin = "";
+          link.onload = function() { this.dataset.loaded = "true"; };
+          link.onerror = function() { this.dataset.loaded = "true"; };
+          document.body.appendChild(link);
+      }
+
+      addCurrentLevelAsset();
+
+      // Scan the <body> for all tracked initial assets
       var head = document.body;
       var assets = Array.prototype.slice.call(
           head.querySelectorAll('[data-initial-asset]')
@@ -219,9 +273,21 @@
 
               if (fileName.endsWith(".json")) {
                   jsonPromises.push(
-                      fetch(url).then(r => r.json()).then(data => {
-                          assetsObj[fileName] = data;   // attach parsed JSON
-                      })
+                      fetch(url)
+                          .then(r => {
+                              if (!r.ok) {
+                                  throw new Error(r.status + " " + r.statusText);
+                              }
+
+                              return r.json();
+                          })
+                          .then(data => {
+                              assetsObj[fileName] = data;   // attach parsed JSON
+                          })
+                          .catch(error => {
+                              delete assetsObj[fileName];
+                              console.warn("Initial JSON asset failed to load:", url, error);
+                          })
                   );
               }
           });

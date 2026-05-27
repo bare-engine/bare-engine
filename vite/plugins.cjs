@@ -164,6 +164,7 @@ function bareHtmlPlugin(options = {}) {
     const backgroundColor = htmlOptions.backgroundColor || "rgb(255, 255, 255)";
     const textColor = htmlOptions.textColor || "rgb(0, 0, 0)";
     const loadingTextStyle = htmlOptions.showLoading === false ? "display: none;" : "";
+    const firstLevelLoad = resolveFirstLevelLoad(projectRoot, projectPackage.bareEngine?.firstLevelLoad);
 
     return {
         name: "bare:html",
@@ -197,10 +198,31 @@ function bareHtmlPlugin(options = {}) {
                     .replace(/%BARE_BACKGROUND_COLOR%/g, backgroundColor)
                     .replace(/%BARE_TEXT_COLOR%/g, textColor)
                     .replace(/%BARE_LOADING_TEXT_STYLE%/g, loadingTextStyle)
+                    .replace(/%BARE_FIRST_LEVEL_LOAD%/g, JSON.stringify(firstLevelLoad))
                     .replace("<!-- js:bootstrap -->", '<script type="module" src="/src/game.ts"></script>');
             }
         }
     };
+}
+
+function resolveFirstLevelLoad(projectRoot, value) {
+    if (typeof value !== "string") {
+        return "";
+    }
+
+    const levelName = value.trim().replace(/\\/g, "/").replace(/^\/+/, "").replace(/\.json$/i, "");
+    if (!levelName || levelName.split("/").some(part => !part || part === "." || part === "..")) {
+        console.warn(`[bare:html] Ignoring invalid bareEngine.firstLevelLoad: ${JSON.stringify(value)}`);
+        return "";
+    }
+
+    const levelPath = path.join(projectRoot, "public/data/levels", `${levelName}.json`);
+    if (!fs.existsSync(levelPath)) {
+        console.warn(`[bare:html] bareEngine.firstLevelLoad "${levelName}" not found at ${levelPath}`);
+        return "";
+    }
+
+    return levelName;
 }
 
 function bareInitialAssetsPlugin(options = {}) {

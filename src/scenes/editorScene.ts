@@ -9,7 +9,7 @@ import { cameraHandler } from "../handlers/cameraHandler";
 import { EditorControlsHandler } from "../handlers/editorControlsHandler";
 import { EditorUIHandler } from "../handlers/editorUIHandler";
 import { FileDropHandler } from "../handlers/fileDropHandler";
-import { levelHandler } from "../handlers/levelHandler";
+import { LevelHandler, levelHandler } from "../handlers/levelHandler";
 import { SaveDataHandler } from "../handlers/SaveDataHandler";
 import { SettingsHandler } from "../handlers/settingsHandler";
 import { Color, Texture, Vec2 } from "../libraries/new-rapid-render";
@@ -107,6 +107,7 @@ export class EditorScene extends Scene
         
         // CLEAR LEVEL CACHE SO IT'S NOT USED FOR LEVEL LOAD
         // INSTEAD, THE LEVEL FROM DISK GETS LOADED
+        LevelHandler.ClearLevelCache();
         SaveData.levelCache.clear();
         SaveDataHandler.Save();
         

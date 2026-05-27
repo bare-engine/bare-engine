@@ -7,7 +7,7 @@ import { EventArgs } from "./libraries/mitt";
 import { Color, CustomGlShader, TextureManager, Vec2 } from "./libraries/new-rapid-render";
 import { GameObject } from "./objects/gameObject";
 import { Scene } from "./scenes/scene";
-import { BareEvent, BareEventPayload, BareOptions, CanvasPosition, CanvasScale, Events, GameObjectClass, SceneClass } from "./types/bareTypes";
+import { BareEvent, BareEventPayload, BareOptions, CanvasPosition, CanvasScale, Events, GameObjectClass, LevelData, SceneClass } from "./types/bareTypes";
 import { Helper } from "./utils/helper";
 import { getSaveFields } from "./utils/decorators";
 
@@ -39,7 +39,9 @@ export class BareEngine
     public componentDefaulValues: Record<string, Record<string, any>> = {};
 
     private mouseDownOnLeave: boolean = false;
-
+    
+    public preloadedLevels: Map<string, LevelData>;
+    
     public registeredClasses: Record<string, any> = {};
     public shaders: Record<string, CustomGlShader> = {};
 
@@ -228,18 +230,28 @@ export class BareEngine
             {
                 const json = window.initialAssets[name];
 
-                if (!json.frames || !json.meta || !json.meta.image)
-                    continue; // SKIP, NOT AN ATLAS
+                if (json.entitiesByLayer)
+                {
+                    //LEVEL
+                    if (!this.preloadedLevels)
+                        this.preloadedLevels = new Map<string, LevelData>();
+                    
+                    this.preloadedLevels.set(name.split('.')[0], json);
+                }
+                else
+                if (json.frames && json.meta && json.meta.image)
+                {
+                    // ATLAS
+                    const imgName = json.meta.image;
+                    const img = window.initialAssets[imgName];
+                    const tex = rapid.texture.create(img, {key: "initial/generated/" + imgName});
+                    assetsHandler.ProcessAtlas(json, tex);
 
-                const imgName = json.meta.image;
-                const img = window.initialAssets[imgName];
-                const tex = rapid.texture.create(img, {key: "initial/generated/" + imgName});
-                assetsHandler.ProcessAtlas(json, tex);
+                    // ATLAS IS PROCESSED AND ADDED ANIMATIONS POTENTIALLY,
+                    // MORE ANIMATION DATA LIKE FPS AND LOOP CAN BE SET LATER IN ENTITY SETTINGS PROCESS()
 
-                // ATLAS IS PROCESSED AND ADDED ANIMATIONS POTENTIALLY,
-                // MORE ANIMATION DATA LIKE FPS AND LOOP CAN BE SET LATER IN ENTITY SETTINGS PROCESS()
-
-                entriesIgnore.add(imgName); // PREVENT ADDING ATLAS TO TEXTURES BELOW
+                    entriesIgnore.add(imgName); // PREVENT ADDING ATLAS TO TEXTURES BELOW
+                }
             }
         }
         

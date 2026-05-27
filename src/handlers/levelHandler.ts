@@ -12,11 +12,10 @@ import { Helper } from "../utils/helper";
 import { assetsHandler } from "./assetsHandler";
 import { SettingsHandler } from "./settingsHandler";
 
-
-var levelCache: Map<string, LevelData> = new Map();
-
 export class LevelHandler
 {
+    static levelCache: Map<string, LevelData> = new Map();
+    
     currentLevel: LevelData;
     
     public scene: Scene;
@@ -25,6 +24,12 @@ export class LevelHandler
     constructor(scene: Scene)
     {
         this.scene = scene;
+
+        if (bareEngine.preloadedLevels)
+        {
+            LevelHandler.levelCache = new Map(bareEngine.preloadedLevels);
+            bareEngine.preloadedLevels = null;
+        }
 
         defaultSettingsData.saveVars.GameObject.push("save");
 
@@ -56,16 +61,16 @@ export class LevelHandler
         }
         else
         {
-            if (levelCache.has(levelStr))
+            if (LevelHandler.levelCache.has(levelStr))
             {
-                level = levelCache.get(levelStr)!;
+                level = LevelHandler.levelCache.get(levelStr)!;
             }
             else
             {
                 try
                 {
                     level = await Helper.loadJSON<LevelData>(`${bareEngine.levelPath}/${levelStr}.json`);
-                    levelCache.set(levelStr, level);
+                    LevelHandler.levelCache.set(levelStr, level);
                 }
                 catch (error)
                 {
@@ -876,17 +881,15 @@ export class LevelHandler
             rapid.drawRect({ width: this.currentLevel.dimensions.width, height: this.currentLevel.dimensions.height, color: this.backgroundColor });
     }
 
-    ClearLevelCache()
-    {
-        levelCache = new Map();
-    }
-
     Clear()
     {
-        this.ClearLevelCache();
-        
         this.backgroundColor = null;
         this.currentLevel = null;
+    }
+
+    static ClearLevelCache()
+    {
+        LevelHandler.levelCache = new Map();
     }
 }
 
