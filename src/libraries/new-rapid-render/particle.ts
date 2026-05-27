@@ -238,7 +238,7 @@ export class Particle {
         const originY = this.options.origin ? this.options.origin.y : 0.5;
 
         if (originX !== 0 || originY !== 0) {
-            ms.translate(-originX * this.texture.width, -originY * this.texture.height);
+            ms.translate(-originX * this.texture.rawWidth, -originY * this.texture.rawHeight);
         }
 
         //this.rapid.drawSprite({ texture: this.texture, color });
