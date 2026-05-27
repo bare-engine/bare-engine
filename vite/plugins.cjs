@@ -5,6 +5,7 @@ const { parse: acornParse } = require("acorn");
 const ts = require("./projectRequire")("typescript");
 const createControllerProxyTransformer = require("./controllerProxyTransformer");
 const createGameObjectNameTransformer = require("./gameObjectNameTransformer");
+const { stripTexturePackImages } = require("../scripts/stripTexturePackImages.cjs");
 
 function bareShaderRawPlugin() {
     return {
@@ -462,6 +463,58 @@ function bareTexturePackImagesPlugin(options = {}) {
     };
 }
 
+function bareStripTexturePackImagesPlugin(options = {}) {
+    const projectRoot = options.projectRoot || process.cwd();
+    const tempRoot = options.tempRoot || path.join(projectRoot, "node_modules/.bare-engine/stripTexturePackImages");
+    const tempDir = path.join(tempRoot, "input");
+    const tempOutputDir = path.join(tempRoot, "output");
+    let outDir = "";
+    let result = null;
+
+    return {
+        name: "bare:strip-texture-pack-images",
+        apply: "build",
+        configResolved(config) {
+            outDir = config.build.outDir;
+        },
+        async buildStart() {
+            fs.rmSync(tempRoot, { recursive: true, force: true });
+            result = await stripTexturePackImages({
+                ...options,
+                projectRoot,
+                tempDir,
+                outputDir: tempOutputDir
+            });
+        },
+        closeBundle() {
+            if (result?.skipped) {
+                fs.rmSync(tempRoot, { recursive: true, force: true });
+                return;
+            }
+
+            const outputDir = path.join(outDir, "initial/generated");
+            removeTexturePackOutput(outputDir);
+
+            if (result?.kept > 0 && fs.existsSync(tempOutputDir)) {
+                fs.mkdirSync(outputDir, { recursive: true });
+                for (const entry of fs.readdirSync(tempOutputDir)) {
+                    if (entry.startsWith("texturePackImages.")) {
+                        fs.copyFileSync(path.join(tempOutputDir, entry), path.join(outputDir, entry));
+                    }
+                }
+            }
+
+            fs.rmSync(tempRoot, { recursive: true, force: true });
+        }
+    };
+}
+
+function removeTexturePackOutput(outputDir) {
+    fs.rmSync(path.join(outputDir, "texturePackImages.json"), { force: true });
+    fs.rmSync(path.join(outputDir, "texturePackImages.webp"), { force: true });
+    fs.rmSync(path.join(outputDir, "texturePackImages.png"), { force: true });
+}
+
 function emitTransformedTs(filePath, code, compilerOptions) {
     const normalizedTarget = normalize(filePath);
     const host = ts.createCompilerHost(compilerOptions);
@@ -815,6 +868,7 @@ module.exports = {
     bareIgnoreLevelJsonHotUpdatesPlugin,
     bareInitialAssetsPlugin,
     bareShaderRawPlugin,
+    bareStripTexturePackImagesPlugin,
     bareTexturePackImagesPlugin,
     bareTypeScriptTransformPlugin,
     stripUnusedMethodsPlugin,

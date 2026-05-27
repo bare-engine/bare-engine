@@ -8,6 +8,7 @@ const {
     bareIgnoreLevelJsonHotUpdatesPlugin,
     bareInitialAssetsPlugin,
     bareShaderRawPlugin,
+    bareStripTexturePackImagesPlugin,
     bareTexturePackImagesPlugin,
     bareTypeScriptTransformPlugin,
     stripUnusedMethodsPlugin,
@@ -21,6 +22,9 @@ module.exports = ({ mode }) => {
     const buildIndexPath = ensureLocalBuildIndex(projectRoot, engineIndexPath);
     const projectPackage = readProjectPackage(projectRoot);
     const stripOptions = projectPackage.bareEngine?.stripUnusedMethods;
+    const stripTexturePackImages = projectPackage.bareEngine?.stripTexturePackImages
+        ?? projectPackage.bare?.stripTexturePackImages
+        ?? false;
 
     return {
         root: projectRoot,
@@ -52,6 +56,7 @@ module.exports = ({ mode }) => {
                 projectRoot,
                 editorHtmlPath: path.resolve(__dirname, "editor.html")
             }),
+            ...(!isDev && stripTexturePackImages === true ? [bareStripTexturePackImagesPlugin({ projectRoot })] : []),
             bareTexturePackImagesPlugin({
                 projectRoot,
                 runOnStart: false
