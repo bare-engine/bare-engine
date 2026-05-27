@@ -1,5 +1,5 @@
 /*export const BareClasses = {
-  PhysicsControllerBare,
+  ArcadePhysicsController,
   ArcadeObject,
   ComponentController,
 };*/
@@ -21,8 +21,8 @@ export { KeyboardController, keyboardController } from "./controllers/keyboardCo
 export { MouseController, mouseController } from "./controllers/mouseController";
 export { ObjectController, objectController } from "./controllers/objectController";
 export { ParticleController, particleController } from "./controllers/particleController";
-export { PhysicsControllerBare, physicsControllerBare } from "./controllers/physicsControllerBare";
-export { PhysicsControllerSopiro } from "./controllers/physicsControllerSopiro";
+export { ArcadePhysicsController, arcadePhysicsController } from "./controllers/arcadePhysicsController";
+export { SopiroPhysicsController } from "./controllers/sopiroPhysicsController";
 export { SceneController, sceneController } from "./controllers/sceneController";
 export { TweenController, tweenController, TweenTo } from "./controllers/tweenController";
 

@@ -8,7 +8,7 @@ const allControllerNames = new Set([
     "mouseController",
     "objectController",
     "particleController",
-    "physicsControllerBare",
+    "arcadePhysicsController",
     "physicsControllerSopiro",
     "tweenController",
     "cameraHandler",

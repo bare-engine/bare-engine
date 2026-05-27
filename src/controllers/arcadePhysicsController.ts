@@ -8,7 +8,7 @@ import { BareEvent, BlockedState } from "../types/bareTypes";
 import { RegisterController } from "../globals";
 import { PhysicsControllerBase } from "./physicsControllerBase";
 
-export class PhysicsControllerBare extends PhysicsControllerBase
+export class ArcadePhysicsController extends PhysicsControllerBase
 {
   public objects: ArcadeObject[] = [];
 
@@ -1212,5 +1212,5 @@ export class PhysicsControllerBare extends PhysicsControllerBase
   }
 }
 
-export var physicsControllerBare:PhysicsControllerBare;
-RegisterController(PhysicsControllerBare);
+export var arcadePhysicsController:ArcadePhysicsController;
+RegisterController(ArcadePhysicsController);

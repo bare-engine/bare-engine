@@ -11,7 +11,7 @@ import { BareEvent } from "../types/bareTypes";
 import { GameObject } from "../objects/gameObject";
 import { RegisterController } from "../globals";
 
-export class PhysicsControllerSopiro extends PhysicsControllerBase
+export class SopiroPhysicsController extends PhysicsControllerBase
 {
 	private world: World;
 	public collisionsEnabled: boolean = true;
@@ -164,5 +164,5 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 	}
 }
 
-export var physicsControllerSopiro:PhysicsControllerSopiro;
-RegisterController(PhysicsControllerSopiro);
+export var physicsControllerSopiro:SopiroPhysicsController;
+RegisterController(SopiroPhysicsController);

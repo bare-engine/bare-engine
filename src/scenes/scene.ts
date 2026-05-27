@@ -1,7 +1,7 @@
 import { controllerNames, SetControllerReferencesOnScene } from "../globals";
 import { ObjectController } from "../controllers/objectController";
-import { PhysicsControllerBare } from "../controllers/physicsControllerBare";
-import { PhysicsControllerSopiro } from "../controllers/physicsControllerSopiro";
+import { ArcadePhysicsController } from "../controllers/arcadePhysicsController";
+import { SopiroPhysicsController } from "../controllers/sopiroPhysicsController";
 import { sceneController } from "../controllers/sceneController";
 import { globalEvents } from "../globals";
 import { SettingsHandler } from "../handlers/settingsHandler";
@@ -61,8 +61,8 @@ export class Scene implements SceneI
     public hitboxController: HitboxController;
     public tweenController: TweenController; 
     public componentController: ComponentController; 
-    public physicsControllerBare: PhysicsControllerBare; 
-    public physicsControllerSopiro: PhysicsControllerSopiro; 
+    public arcadePhysicsController: ArcadePhysicsController; 
+    public physicsControllerSopiro: SopiroPhysicsController; 
     public particleController: ParticleController; 
     public levelHandler: LevelHandler; 
     public cameraHandler: CameraHandler; 
@@ -867,13 +867,13 @@ export class Scene implements SceneI
         this.events.emit(BareEvent.scene_update, deltaTime);
         this.OnUpdate(deltaTime);
         
-        this.physicsControllerBare?.Update(deltaTime);
+        this.arcadePhysicsController?.Update(deltaTime);
         this.physicsControllerSopiro?.Update(deltaTime);
     }
 
     FixedUpdate(fixedDeltaTime: number): void
     {
-        this.physicsControllerBare?.FixedUpdate(fixedDeltaTime);
+        this.arcadePhysicsController?.FixedUpdate(fixedDeltaTime);
         this.physicsControllerSopiro?.FixedUpdate(fixedDeltaTime);
 
         this.componentController?.FixedUpdate(fixedDeltaTime);
@@ -922,7 +922,7 @@ export class Scene implements SceneI
 
         this.componentController?.Render();
         this.objectController.Render();
-        this.physicsControllerBare?.Render();
+        this.arcadePhysicsController?.Render();
         this.physicsControllerSopiro?.Render();
         this.particleController?.Render();
         this.hitboxController?.Render();

@@ -168,7 +168,7 @@ export class ArcadeObject extends GameObject
     
     SetVelocity(velocity: Vec2): ArcadeObject
     {
-        /* @ AddClass(PhysicsControllerBare) */
+        /* @ AddClass(ArcadePhysicsController) */
         
         this.velocity.x = velocity.x;
         this.velocity.y = velocity.y;
@@ -178,7 +178,7 @@ export class ArcadeObject extends GameObject
 
     SetVelocityXY(x: number, y: number): ArcadeObject
     {
-        /* @ AddClass(PhysicsControllerBare) */
+        /* @ AddClass(ArcadePhysicsController) */
         
         this.velocity.x = x;
         this.velocity.y = y;
