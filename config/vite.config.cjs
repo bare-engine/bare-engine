@@ -58,7 +58,7 @@ module.exports = ({ mode }) => {
             ...(!isDev && texturePackImages.stripUnused ? [bareStripTexturePackImagesPlugin({ projectRoot, texturePackImages })] : []),
             bareTexturePackImagesPlugin({
                 projectRoot,
-                runOnStart: false
+                runOnStart: true
             }),
             ...(!isDev && stripOptions !== false ? [stripUnusedMethodsPlugin(typeof stripOptions === "object" ? stripOptions : {})] : [])
         ],
