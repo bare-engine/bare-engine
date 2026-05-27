@@ -70,14 +70,14 @@ class AssetsHandler
 
     GetFullImagePath(path: string): string
     {
-        return `${bareEngine.imagePath}/${path}.webp`;
+        return `${bare.imagePath}/${path}.webp`;
     }
 
     async LoadAtlas(atlasPath: string): Promise<void>
     {
         var promises = [];
-        promises.push(Helper.loadJSON<Atlas>(`${bareEngine.imagePath}/${atlasPath}.json`));
-        promises.push(bareEngine.texture.load(`${bareEngine.imagePath}/${atlasPath}.webp`)); // DON'T HARDCODE WEBP, TODO
+        promises.push(Helper.loadJSON<Atlas>(`${bare.imagePath}/${atlasPath}.json`));
+        promises.push(bare.texture.load(`${bare.imagePath}/${atlasPath}.webp`)); // DON'T HARDCODE WEBP, TODO
 
         const [json, img] = await Promise.all(promises);
 

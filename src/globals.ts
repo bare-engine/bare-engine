@@ -21,7 +21,7 @@ declare global
 {
     type int = number;
 
-    var bareEngine:BareEngine;
+    var bare:BareEngine;
 
     var textureNotFoundString:string;
 

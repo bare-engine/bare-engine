@@ -94,8 +94,8 @@ export class CameraHandler {
 
   ResetForStart()
   {
-    this.dimensions.width = bareEngine.width;
-    this.dimensions.height = bareEngine.height;
+    this.dimensions.width = bare.width;
+    this.dimensions.height = bare.height;
 
     //this.bounds = { x: 0, y: 0, width: bareEngine.width, height: bareEngine.height };
 
@@ -103,8 +103,8 @@ export class CameraHandler {
     this.zoom = 1;
     this.scaleMode = CameraScaleMode.Cover;
 
-    this.target.x = bareEngine.width / 2;
-    this.target.y = bareEngine.height / 2;
+    this.target.x = bare.width / 2;
+    this.target.y = bare.height / 2;
 
     this.position.x = this.target.x;
     this.position.y = this.target.y;
@@ -167,7 +167,7 @@ export class CameraHandler {
 
   SetBoundsToScreen() 
   {
-    this.SetBounds({ x: 0, y: 0, width: bareEngine.width, height: bareEngine.height });
+    this.SetBounds({ x: 0, y: 0, width: bare.width, height: bare.height });
   }
 
   SetBoundsToLevel() 
@@ -263,7 +263,7 @@ export class CameraHandler {
 
     const hasBounds = this.bounds.width > 0 && this.bounds.height > 0;
 
-    if (!bareEngine.levelEditorOpen && hasBounds)
+    if (!bare.levelEditorOpen && hasBounds)
     {
         const bx = this.bounds.x;
         const by = this.bounds.y;
@@ -331,7 +331,7 @@ export class CameraHandler {
   StartShakeXY(shakeX: number = 5, shakeY: number = 5, seconds: number = 0.3, decay: boolean = true)
   {
     this.shakeActive = true;
-    this.shakeStartMs = bareEngine.time;
+    this.shakeStartMs = bare.time;
     this.shakeDurationMs = Math.max(0, seconds * 1000);
     this.shakeIntensityX = Math.max(0, shakeX);
     this.shakeIntensityY = Math.max(0, shakeY);
@@ -357,7 +357,7 @@ export class CameraHandler {
     if (!this.shakeActive || this.shakeDurationMs <= 0 || (this.shakeIntensityX <= 0 && this.shakeIntensityY <= 0))
       return new Vec2(0, 0);
 
-    const elapsed = Math.max(0, bareEngine.time - this.shakeStartMs);
+    const elapsed = Math.max(0, bare.time - this.shakeStartMs);
     if (elapsed >= this.shakeDurationMs)
     {
       this.StopShake();

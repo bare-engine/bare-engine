@@ -46,7 +46,7 @@ export class EntitiesTest extends Scene
 
     OnAwake(): void
     {
-        bareEngine.AddClass(FruitObject);
+        bare.AddClass(FruitObject);
     }
 
     OnStart(): void

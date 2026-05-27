@@ -47,7 +47,7 @@ export class ComponentsTest extends Scene
 
     OnAwake(): void
     {
-        bareEngine.AddClass(WaveComponent);
+        bare.AddClass(WaveComponent);
     }
 
     OnStart(): void

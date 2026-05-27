@@ -33,7 +33,7 @@ export class BareEngine
 
     public dummyGameObject: GameObject; // JUST USED FOR DEFAULT VALUES AND DUMMY CONSTRUCTION
     
-    get levelEditorOpen(): boolean { return bareEngine.gameMode == GameMode.Editor; }
+    get levelEditorOpen(): boolean { return bare.gameMode == GameMode.Editor; }
     
     public componentClasses: Record<string, any> = {};
     public componentDefaulValues: Record<string, Record<string, any>> = {};
@@ -192,9 +192,9 @@ export class BareEngine
         this.ImplementInitialTextures();
         this.ResizeCanvas(this.resolution);
 
-        window.bareEngine = this;
+        window.bare = this;
         
-        bareEngine.RegisterGameObjectPool(GameObject, options.gameObjectPoolSize);
+        bare.RegisterGameObjectPool(GameObject, options.gameObjectPoolSize);
 
         globalEvents.emit(BareEvent.game_awake);
 
@@ -428,12 +428,12 @@ export class BareEngine
     async LoadFont(name: string, url?: string)
     {
         // SET FIRST LOADED FONT AS DEFAULT
-        bareEngine.defaultFont ||= name;
+        bare.defaultFont ||= name;
 
         if (!url)
             url = `${name}.ttf`; // DEFAULTING TO TTF FONT WHEN NO URL SPECIFIED
 
-        const font = new FontFace(name, `url(${bareEngine.fontPath}/${url})`);
+        const font = new FontFace(name, `url(${bare.fontPath}/${url})`);
         await font.load();
         (document.fonts as any).add(font); // NEEDS 'as any' FOR LINUX
     }
@@ -445,7 +445,7 @@ export class BareEngine
     {
         const className = Helper.GetNameFromClass(_class);
 
-        if (bareEngine.registeredClasses[className])
+        if (bare.registeredClasses[className])
         {
             //console.warn(`Module ${className} is already registered`);
             return;
@@ -461,9 +461,9 @@ export class BareEngine
         // GAMEOBJECT
         if (_class.prototype instanceof GameObject || _class === GameObject)
         {
-            bareEngine.RegisterGameObjectPool(_class, 1);
+            bare.RegisterGameObjectPool(_class, 1);
 
-            bareEngine.registeredClasses[className] = _class;
+            bare.registeredClasses[className] = _class;
             return;
         }
 
@@ -484,7 +484,7 @@ export class BareEngine
     RegisterComponent(componentClass: any)
     {
         var className = Helper.GetNameFromClass(componentClass);
-        bareEngine.componentClasses[className] = componentClass;
+        bare.componentClasses[className] = componentClass;
 
         // FIND DEFAULT VALUES - DUPLICATE CODE FROM SerializeComponent - TODO
         var component = new componentClass();
@@ -499,7 +499,7 @@ export class BareEngine
             const paramValue = component[paramName as keyof typeof component] as any; // SHOULD BE STRING, NUMBER OR BOOLEAN
             defaulValues[paramName] = paramValue;
         }
-        bareEngine.componentDefaulValues[className] = defaulValues;
+        bare.componentDefaulValues[className] = defaulValues;
     }
 
 
@@ -527,7 +527,7 @@ export class BareEngine
         if (!this.IsFirstTouch(event))
             return;
 
-        bareEngine.SendEvent(BareEvent.pointer_down, {mouseX: event.clientX, mouseY: event.clientY, event: event, isLeftButton: event.button == 0});
+        bare.SendEvent(BareEvent.pointer_down, {mouseX: event.clientX, mouseY: event.clientY, event: event, isLeftButton: event.button == 0});
             
         event.preventDefault();
     }
@@ -537,7 +537,7 @@ export class BareEngine
         if (!this.IsFirstTouch(event))
             return;
         
-        bareEngine.SendEvent(BareEvent.pointer_up, {mouseX: event.clientX, mouseY: event.clientY, event: event, isLeftButton: event.button == 0});
+        bare.SendEvent(BareEvent.pointer_up, {mouseX: event.clientX, mouseY: event.clientY, event: event, isLeftButton: event.button == 0});
 
         event.preventDefault();
     }
@@ -547,14 +547,14 @@ export class BareEngine
         if (!this.IsFirstTouch(event))
             return;
 
-        bareEngine.SendEvent(BareEvent.pointer_move, {mouseX: event.clientX, mouseY: event.clientY, event: event, isLeftButton: event.button == 0});
+        bare.SendEvent(BareEvent.pointer_move, {mouseX: event.clientX, mouseY: event.clientY, event: event, isLeftButton: event.button == 0});
 
         event.preventDefault();
     }
 
     DoubleClick(event: MouseEvent)
     {
-        bareEngine.SendEvent(BareEvent.pointer_doubleClick, {mouseX: event.clientX, mouseY: event.clientY, event: event});
+        bare.SendEvent(BareEvent.pointer_doubleClick, {mouseX: event.clientX, mouseY: event.clientY, event: event});
     }
 
     IsFirstTouch(event:PointerEvent): boolean

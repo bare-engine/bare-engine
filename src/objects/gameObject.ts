@@ -210,7 +210,7 @@ export class GameObject
             return componentController.AddComponent(this, arg, ...args);
         else
         {
-            console.error("ComponentController not registered. Call bareEngine.AddClass(ComponentController) at Awake() of your game.");
+            console.error("ComponentController not registered. Call bare.AddClass(ComponentController) at Awake() of your game.");
             return (typeof arg === "function" ? new arg(this.scene, ...args) : arg);
         }
     }
@@ -223,7 +223,7 @@ export class GameObject
             return componentController.GetComponent(this, componentClass);
         else
         {
-            console.error("ComponentController not registered. Call bareEngine.AddClass(ComponentController) at OnAwake() of your game.");
+            console.error("ComponentController not registered. Call bare.AddClass(ComponentController) at OnAwake() of your game.");
             return null;
         }
     }
@@ -242,7 +242,7 @@ export class GameObject
             return componentController.RemoveComponent(this, arg);
         else
         {
-            console.error("ComponentController not registered. Call bareEngine.AddClass(ComponentController) at Awake() of your game.");
+            console.error("ComponentController not registered. Call bare.AddClass(ComponentController) at Awake() of your game.");
             return false;
         }
     }
@@ -381,7 +381,7 @@ export class GameObject
     /** @virtual */
     Render(inheritedColor?: Color)
     {
-        if (bareEngine.levelEditorOpen)
+        if (bare.levelEditorOpen)
         {
             if (!this.visibleInEditor)
                 return;

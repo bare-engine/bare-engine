@@ -28,8 +28,8 @@ export class EditorUIScene extends Scene
         this.editorButton.y = this.height * position.y;
 
         var scale = 1;
-        if (bareEngine.resolution && bareEngine.resolution.width != undefined && bareEngine.resolution.height != undefined)
-            scale = bareEngine.resolution.width * .001736;
+        if (bare.resolution && bare.resolution.width != undefined && bare.resolution.height != undefined)
+            scale = bare.resolution.width * .001736;
         
         this.editorButton.SetScale(scale);
         

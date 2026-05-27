@@ -110,8 +110,8 @@ export class SceneController
 
         await sceneInstance.Awake(payload); // WILL ENABLE THE SCENE AGAIN TOO
 
-        bareEngine.SendEvent(BareEvent.scene_added, { scene: sceneInstance });
-        bareEngine.SendEvent(BareEvent.scene_changed, { scene: sceneInstance, type: "added" });
+        bare.SendEvent(BareEvent.scene_added, { scene: sceneInstance });
+        bare.SendEvent(BareEvent.scene_changed, { scene: sceneInstance, type: "added" });
 
         return sceneInstance;
     }

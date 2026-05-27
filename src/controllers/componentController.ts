@@ -104,13 +104,13 @@ export class ComponentController
         // IF IT'S A componentClass, MAKE SURE IT'S REGISTERED
         // EG: AnimationComponent
         if (typeof arg === "function")
-            bareEngine.AddClass(arg);
+            bare.AddClass(arg);
 
         const component: C = (typeof arg === "function") ? new arg(go.scene, ...args) : arg;
 
         // Check class-level @Run decorator
         const runModes: number[] | undefined = (component.constructor as any)[RUN_MODES_KEY];
-        const runsInCurrentMode = runModes?.includes(bareEngine.gameMode) ?? false;
+        const runsInCurrentMode = runModes?.includes(bare.gameMode) ?? false;
         
         if (runModes && !runsInCurrentMode)
             return null;
@@ -139,7 +139,7 @@ export class ComponentController
 
         component.enabled = false;
 
-        const shouldActivate = (runsInCurrentMode || bareEngine.gameMode == GameMode.Game);
+        const shouldActivate = (runsInCurrentMode || bare.gameMode == GameMode.Game);
         if (shouldActivate)
         {
             component.enabled = true;

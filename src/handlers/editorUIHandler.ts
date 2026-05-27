@@ -618,7 +618,7 @@ export class EditorUIHandler {
         //const layerName = layerElement.id;
         //this.FlashObjectsInLayer(layerName);
 
-        bareEngine.SendEvent(BareEvent.editor_layerSelected, { layerName: layerElement.id });
+        bare.SendEvent(BareEvent.editor_layerSelected, { layerName: layerElement.id });
     }
 
     public SelectLayerItemByInt(layerI: int): void {

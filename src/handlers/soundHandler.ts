@@ -17,7 +17,7 @@ class SoundHandler
 
   public registerSound(id: string, src: string): void
   {
-    this.soundPaths.set(id, `${bareEngine.soundPath}/${src}`);
+    this.soundPaths.set(id, `${bare.soundPath}/${src}`);
   }
 
   public getSound(id: string): Howl | undefined

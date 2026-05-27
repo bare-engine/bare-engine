@@ -7,7 +7,7 @@ export class TweensTest extends Scene
 
     OnStart(): void
     {
-        this.deadline = bareEngine.time + 1000;
+        this.deadline = bare.time + 1000;
         const heart = this.AddGameObject({ name: "heart", texture: "NONE" }).CenterPivot();
 
         TweenTo(heart, 0.02, {
@@ -23,7 +23,7 @@ export class TweensTest extends Scene
 
     OnUpdate(): void
     {
-        if (!this.completed && bareEngine.time > this.deadline)
+        if (!this.completed && bare.time > this.deadline)
         {
             assert(false, "TweenTo did not complete");
         }

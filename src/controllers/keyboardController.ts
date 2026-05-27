@@ -39,10 +39,10 @@ export class KeyboardController
             if (!this.keysPressed.has(key))
             {
                 this.keysPressed.add(key);
-                bareEngine.SendEvent(BareEvent.key_pressed, { key: key, allKeys: Array.from(this.keysPressed) });
+                bare.SendEvent(BareEvent.key_pressed, { key: key, allKeys: Array.from(this.keysPressed) });
             }
 
-            bareEngine.SendEvent(BareEvent.key_down, { key: key, allKeys: Array.from(this.keysPressed) });
+            bare.SendEvent(BareEvent.key_down, { key: key, allKeys: Array.from(this.keysPressed) });
 
             event.preventDefault();
         });
@@ -57,7 +57,7 @@ export class KeyboardController
             this.keysPressed.delete(key);
             this.keysJustPressed.delete(key);
 
-            bareEngine.SendEvent(BareEvent.key_released, { key: key, allKeys: Array.from(this.keysPressed) });
+            bare.SendEvent(BareEvent.key_released, { key: key, allKeys: Array.from(this.keysPressed) });
         });
 
         // Handle window focus/blur to reset keys

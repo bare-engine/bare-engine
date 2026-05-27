@@ -25,10 +25,10 @@ export class LevelHandler
     {
         this.scene = scene;
 
-        if (bareEngine.preloadedLevels)
+        if (bare.preloadedLevels)
         {
-            LevelHandler.levelCache = new Map(bareEngine.preloadedLevels);
-            bareEngine.preloadedLevels = null;
+            LevelHandler.levelCache = new Map(bare.preloadedLevels);
+            bare.preloadedLevels = null;
         }
 
         defaultSettingsData.saveVars.GameObject.push("save");
@@ -69,7 +69,7 @@ export class LevelHandler
             {
                 try
                 {
-                    level = await Helper.loadJSON<LevelData>(`${bareEngine.levelPath}/${levelStr}.json`);
+                    level = await Helper.loadJSON<LevelData>(`${bare.levelPath}/${levelStr}.json`);
                     LevelHandler.levelCache.set(levelStr, level);
                 }
                 catch (error)
@@ -153,7 +153,7 @@ export class LevelHandler
         this.scene.doRender = true;
         this.scene.PostLoadLevel(level, persistenObjUIDs);
         
-        bareEngine.SendEvent(BareEvent.level_loaded, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
+        bare.SendEvent(BareEvent.level_loaded, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
 
         return level;
     }
@@ -201,7 +201,7 @@ export class LevelHandler
         if (level.backgroundColor)
         {
             //this.backgroundColor = Color.fromHex(level.backgroundColor); // CAUSES FLASH ON LEVEL SWITCH AND NOT USEFUL FOR DEMO
-            bareEngine.SetBackgroundColor(Color.fromHex(level.backgroundColor));
+            bare.SetBackgroundColor(Color.fromHex(level.backgroundColor));
         }
 
         // LOAD ALL TEXTURES
@@ -233,7 +233,7 @@ export class LevelHandler
 
     async LoadSettingsData(settingsDataName: string): Promise<void>
     {
-        var settingsData = await Helper.loadJSON<SettingsData>(`${bareEngine.dataPath}/${settingsDataName}.json`);
+        var settingsData = await Helper.loadJSON<SettingsData>(`${bare.dataPath}/${settingsDataName}.json`);
         
         // 
         //this.scene.settingsHandler = new SettingsHandler(this.scene);
@@ -284,13 +284,13 @@ export class LevelHandler
     async SaveLevel()
     {
         //events.emit(BareEvent.level_preSave, {levelStr: SaveData.currentLevelStr});
-        bareEngine.SendEvent(BareEvent.level_preSave, {levelStr: SaveData.currentLevelStr});
+        bare.SendEvent(BareEvent.level_preSave, {levelStr: SaveData.currentLevelStr});
         
         const level = this.currentLevel;
         this.SerializeLevel(level);
 
         //events.emit(BareEvent.level_postSave, {levelStr: SaveData.currentLevelStr, level: level});
-        bareEngine.SendEvent(BareEvent.level_postSave, {levelStr: SaveData.currentLevelStr, level: level});
+        bare.SendEvent(BareEvent.level_postSave, {levelStr: SaveData.currentLevelStr, level: level});
 
         return level;
     }
@@ -345,7 +345,7 @@ export class LevelHandler
         // GET VARS TO SAVE
         var varsToSave: string[] = [];
 
-        if (bareEngine.gameMode == GameMode.Game && !forceAllEntityVars)
+        if (bare.gameMode == GameMode.Game && !forceAllEntityVars)
         {
             var saveVars = this.scene.settingsData.saveVars;
             if (saveVars) // WILL ALWAYS BE THERE REALLY
@@ -383,7 +383,7 @@ export class LevelHandler
             }
         }
         else
-        if (bareEngine.gameMode == GameMode.Editor || forceAllEntityVars)
+        if (bare.gameMode == GameMode.Editor || forceAllEntityVars)
         {
             varsToSave = entityVars.slice();
             //varsToSave.splice(varsToSave.indexOf("position"), 1);
@@ -434,7 +434,7 @@ export class LevelHandler
                 if (comp.save || forceAllEntityVars)
                 {
                     var compData = this.SerializeComponent(comp);
-                    var name = bareEngine.GetComponentNameFromClassName(comp.constructor.name);
+                    var name = bare.GetComponentNameFromClassName(comp.constructor.name);
                     comps[name] = compData;
                 }
             }
@@ -605,7 +605,7 @@ export class LevelHandler
         var specialCompare:Record<string, (currentValue, origValue) => boolean> = {};
         var specialValue:Record<string, (currentValue) => any> = {};
 
-        if (bareEngine.gameMode == GameMode.Game)
+        if (bare.gameMode == GameMode.Game)
         {
             var saveVars = this.scene.settingsData.saveVars;
             if (saveVars) // WILL ALWAYS BE THERE REALLY
@@ -628,7 +628,7 @@ export class LevelHandler
             }
         }
         else
-        if (bareEngine.gameMode == GameMode.Editor)
+        if (bare.gameMode == GameMode.Editor)
         {
             varsToSave = entityVars.slice();
             //varsToSave.splice(varsToSave.indexOf("position"), 1);
@@ -843,7 +843,7 @@ export class LevelHandler
             constructorVarNames = (component as any).__paramNames || Helper.GetConstructorParamNames(component.constructor);
         
         var className = Helper.GetNameFromClass(component.constructor);
-        var defaultValues = bareEngine.componentDefaulValues[className];
+        var defaultValues = bare.componentDefaulValues[className];
 
         // GET VALUE FROM EACH KEY OF CONSTRUCTOR PARAMS
         for (let i = 0; i < constructorVarNames.length; i++)

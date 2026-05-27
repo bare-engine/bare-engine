@@ -84,7 +84,7 @@ export class EditorScene extends Scene
         // COULD SEND ALONG THE PAYLOAD (CONTAINING settingsHandler) TO SCENE CONTRUCTOR, BUT NOT SURE IF THAT WILL PLAY WELL WITH EditorSceneAwakePayload
         // WILL CREATE MORE CONTRAINTS TO ALIGN WITH CONSTRUCTOR ARG TYPE
 
-        bareEngine.gameMode = GameMode.Editor;
+        bare.gameMode = GameMode.Editor;
         
         this.backgroundColorOrig = rapid.backgroundColor;
         
@@ -92,7 +92,7 @@ export class EditorScene extends Scene
         if (levelPathOrData == '')
         {
             levelNameOrData = SaveData.currentLevelStr;
-            levelPathOrData = `${bareEngine.levelPath}/${levelNameOrData}.json`;
+            levelPathOrData = `${bare.levelPath}/${levelNameOrData}.json`;
         }
         
         if (typeof levelPathOrData == 'string')
@@ -113,12 +113,12 @@ export class EditorScene extends Scene
         
         var level = await this.LoadLevel(levelNameOrData);
 
-        bareEngine.gameMode = GameMode.Editor; // JUST SET TO GAME IN OnClear()
+        bare.gameMode = GameMode.Editor; // JUST SET TO GAME IN OnClear()
         if (!this.opened)
-            this.gameResolution = bareEngine.resolution;
+            this.gameResolution = bare.resolution;
 
         if (this.gameResolution)
-            bareEngine.SetResolution();
+            bare.SetResolution();
 
         this.saveLevelCallback = saveLevelCallback.bind(this);
 
@@ -175,7 +175,7 @@ export class EditorScene extends Scene
 
         rapid.backgroundColor = Color.fromHex('#3b3b3f');
 
-        bareEngine.SendEvent(BareEvent.editor_opened, {settingsDataName: this.settingsData.name || 'levelEditor', levelName: level.isData ? "data" : SaveData.currentLevelStr});
+        bare.SendEvent(BareEvent.editor_opened, {settingsDataName: this.settingsData.name || 'levelEditor', levelName: level.isData ? "data" : SaveData.currentLevelStr});
     }
 
     OnClear(): void
@@ -183,12 +183,12 @@ export class EditorScene extends Scene
         if (this.opened) // CHECKING, SINCE THIS ALSO RUNS ON INIT WHEN CALLING LoadLevel()
         {
             this.opened = false;
-            bareEngine.gameMode = GameMode.Game; // SETTING IT IN BARE.START() NOW, BUT ALSO KINDA MAKES SENSE HERE
+            bare.gameMode = GameMode.Game; // SETTING IT IN BARE.START() NOW, BUT ALSO KINDA MAKES SENSE HERE
             
             if (this.gameResolution)
-                bareEngine.SetResolution(this.gameResolution);
+                bare.SetResolution(this.gameResolution);
 
-            bareEngine.SendEvent(BareEvent.editor_closed, {settingsDataName: this.settingsData.name || 'levelEditor', levelName: SaveData.currentLevelStr});
+            bare.SendEvent(BareEvent.editor_closed, {settingsDataName: this.settingsData.name || 'levelEditor', levelName: SaveData.currentLevelStr});
         }
         
         rapid.backgroundColor = this.backgroundColorOrig;
@@ -215,7 +215,7 @@ export class EditorScene extends Scene
 
     async Toggle(settingsHandler: SettingsHandler, levelPathOrData: string | LevelData = '', saveLevelCallback: () => Promise<LevelData> = this.SaveLevel)
     {
-        if (this.settingsHandler == settingsHandler && bareEngine.gameMode == GameMode.Editor)
+        if (this.settingsHandler == settingsHandler && bare.gameMode == GameMode.Editor)
         {
             await this.Close();
             return;
@@ -268,7 +268,7 @@ export class EditorScene extends Scene
             // JSON FILE DROPPED, SHOULD BE IN ${this.levelPath}/, BUT CAN STILL BE IN SUBDIRECTORY
             // SO LOOKING THROUGH ALL THE SUBDIRECTORIES TO FIND DROPPED FILE AND ITS PATH, JUST SO IT CAN BE LOADED BACK FROM DISK LATER
             // ASSUMING ALL LEVEL FILE NAMES ARE UNIQUE
-            var files = await Helper.GetFilesInFolder(`${bareEngine.levelPath}/`, true);
+            var files = await Helper.GetFilesInFolder(`${bare.levelPath}/`, true);
             var filePath = '';
             for (var i = 0; i < files.length; i++)
             {
@@ -280,7 +280,7 @@ export class EditorScene extends Scene
             }
 
             const levelData = await Helper.loadJSONFile<LevelData>(file);
-            const subDir = filePath.replace(bareEngine.levelPath + "/", "").replace(".json", "");
+            const subDir = filePath.replace(bare.levelPath + "/", "").replace(".json", "");
             levelData.name = subDir;
 
             //levelController.LoadLevel(levelData);
@@ -452,7 +452,7 @@ export class EditorScene extends Scene
             gameObject.tapHitbox ??= new Hitbox(gameObject, 0);
             gameObject.tapHitbox.shouldReleaseOnTop = false;
             gameObject.tapHitbox.OnPress = (_levelEntiy: GameObject, event: PointerEvent) => {
-                if (bareEngine.MouseIsOnEditor(event))
+                if (bare.MouseIsOnEditor(event))
                     return;
 
                 this.editorControlsHandler.StartDrag(gameObject);
@@ -520,7 +520,7 @@ export class EditorScene extends Scene
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                path: bareEngine.dataPath,
+                path: bare.dataPath,
                 settingsData: newRawData,
                 skipReload: true
             })

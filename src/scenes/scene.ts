@@ -116,8 +116,8 @@ export class Scene implements SceneI
         this.persistent = options.persistent ?? false;
         this.secret = options.secret ?? false;
 
-        bareEngine.AddClass(GameObject);
-        bareEngine.AddClass(ObjectController);
+        bare.AddClass(GameObject);
+        bare.AddClass(ObjectController);
         //bareEngine.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT, NOT ALWAYS NEEDED - TODO
 
         SetControllerReferencesOnScene(this);
@@ -435,7 +435,7 @@ export class Scene implements SceneI
             for (const component in v)
             {
                 const className = Helper.CapitalizeFirstLetter(component) + "Component";
-                var ComponentClass = bareEngine.componentClasses[className];
+                var ComponentClass = bare.componentClasses[className];
                 if (!ComponentClass)
                 {
                     console.error('Component class not found: ' + className + '. Add it with bareEngine.AddClass(' + Helper.CapitalizeFirstLetter(component) + 'Component);');
@@ -533,11 +533,11 @@ export class Scene implements SceneI
     GetDummpyDataFromEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsHandler.Get(), options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true }): {entity: Entity, gameObject: GameObject}
     {
         var entityConstructed = this.ConstructEntity(nameOrEntity, settingsData, options);
-        bareEngine.dummyGameObject.ResetValues();
-        bareEngine.dummyGameObject.InitTexture(MakePath(entityConstructed.imagePath!, entityConstructed.name)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
-        this.ApplyEntityToGameObject(entityConstructed, bareEngine.dummyGameObject);
+        bare.dummyGameObject.ResetValues();
+        bare.dummyGameObject.InitTexture(MakePath(entityConstructed.imagePath!, entityConstructed.name)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
+        this.ApplyEntityToGameObject(entityConstructed, bare.dummyGameObject);
 
-        return {entity: entityConstructed, gameObject: bareEngine.dummyGameObject};
+        return {entity: entityConstructed, gameObject: bare.dummyGameObject};
     }
 
     // STILL RETURNS SOME ENTITY VALUES AS undefined, EG imagePath, SHOULD BE "". TODO
@@ -559,11 +559,11 @@ export class Scene implements SceneI
 
             if (entityConstructed.baseClass == "GameObject")
             {
-                gameObject = bareEngine.dummyGameObject;
+                gameObject = bare.dummyGameObject;
             }
             else
             {
-                const pool = bareEngine.gameObjectPools.get(entityConstructed.baseClass);
+                const pool = bare.gameObjectPools.get(entityConstructed.baseClass);
                 if (pool)
                     gameObject = pool.Grab();
                 else
@@ -639,11 +639,11 @@ export class Scene implements SceneI
 
         if (entityConstructed.baseClass == "GameObject")
         {
-            gameObject = bareEngine.dummyGameObject;
+            gameObject = bare.dummyGameObject;
         }
         else
         {
-            const pool = bareEngine.gameObjectPools.get(entityConstructed.baseClass);
+            const pool = bare.gameObjectPools.get(entityConstructed.baseClass);
             if (pool)
                 gameObject = pool.Grab();
             else
@@ -685,7 +685,7 @@ export class Scene implements SceneI
             if (!input)
             {
                 // DEFAULT GAMEOBJECT
-                gameObject = bareEngine.GetObjectFromPool("GameObject", this);
+                gameObject = bare.GetObjectFromPool("GameObject", this);
                 gameObject.pooled = true;
                 gameObject.name = "pooledGameObject";
             }
@@ -693,7 +693,7 @@ export class Scene implements SceneI
             if (typeof input === "function")
             {
                 // GameObjectClass CASE, INSTANTIATE FROM POOL IF IT EXISTS
-                const pool = bareEngine.gameObjectPools.get(input.name);
+                const pool = bare.gameObjectPools.get(input.name);
                 if (pool)
                     gameObject = pool.Grab();
                 else
@@ -714,7 +714,7 @@ export class Scene implements SceneI
             if (input instanceof Texture)
             {
                 // TEXTURE
-                gameObject = bareEngine.GetObjectFromPool("GameObject", this);
+                gameObject = bare.GetObjectFromPool("GameObject", this);
                 gameObject.SetTexture(input);
                 gameObject.pooled = true;
                 gameObject.name = input.texturePath || "PooledGameObjectFromTexture";
@@ -739,7 +739,7 @@ export class Scene implements SceneI
                     entity = this.ConstructEntity(input);
                 }
 
-                gameObject = bareEngine.GetObjectFromPool(entity.baseClass!, this);
+                gameObject = bare.GetObjectFromPool(entity.baseClass!, this);
                 gameObject.Init(MakePathForEntity(entity));
                 //if (entity.texture != "NONE")
                 //    delete entity.texture; // TEXTURE HAS BEEN HANDLED ABOVE WITH Init()
@@ -841,7 +841,7 @@ export class Scene implements SceneI
             if (wasPooled)
             {
                 const className = this.GetContructorName(gameObject);
-                const pool = bareEngine.gameObjectPools.get(className);
+                const pool = bare.gameObjectPools.get(className);
                 if (pool)
                     pool.Release(gameObject);
             }
@@ -860,7 +860,7 @@ export class Scene implements SceneI
         this.hitboxController?.Update();
         this.OnPreUpdate(deltaTime); // NOT QUITE PRE-UPDATE HUH, BUT HERE JUST FOR EditorControlsHandler ATM, SO IT DRAGS OBJECTS AT POSITION AND AFTER THEY CAN BE SNAPPED TO OTHER POSITION
         this.objectController.Update(deltaTime);
-        this.tweenController?.Update(bareEngine.time);
+        this.tweenController?.Update(bare.time);
         this.componentController?.Update(deltaTime);
         this.particleController?.Update(deltaTime);
 

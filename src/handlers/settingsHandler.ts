@@ -160,7 +160,7 @@ export class SettingsHandler
 
                             var entityBaseName = prefix + "_*";
                             var entity = this.scene.ConstructEntity(entityBaseName, settings, options);
-                            var files = await Helper.GetFilesInFolder(`${bareEngine.imagePath}/` + imagePath);
+                            var files = await Helper.GetFilesInFolder(`${bare.imagePath}/` + imagePath);
 
                             // TURN ENTRIES INTO ARRAY
                             categoryData.entries = [];
@@ -235,13 +235,13 @@ export class SettingsHandler
         {
             for (const [className, saveVars] of Object.entries(settings.saveVars))
             {
-                if (!bareEngine.registeredClasses[className])
+                if (!bare.registeredClasses[className])
                 {
                     console.warn(`Class ${className} is not registered.\nAdd it in scene with: bareEngine.AddClass(${className})`);
                     continue;
                 }
 
-                var cls = bareEngine.registeredClasses[className];
+                var cls = bare.registeredClasses[className];
                 var parentClasses = Helper.GetParentClasses(cls);
 
                 for (var classNameParent of parentClasses)

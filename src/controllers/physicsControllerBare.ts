@@ -27,8 +27,8 @@ export class PhysicsControllerBare extends PhysicsControllerBase
   {
     super(scene);
 
-    this.setDimensions(0, 0, bareEngine.width, bareEngine.height);
-    bareEngine.RegisterGameObjectPool(PhysicsObjectBare, 10);
+    this.setDimensions(0, 0, bare.width, bare.height);
+    bare.RegisterGameObjectPool(PhysicsObjectBare, 10);
   }
   
   // GETS CALLED BY EXTENDED CLASS (PhysicsControllerBase), ON BareEvent.game_objectAdded
@@ -78,7 +78,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 
   override FixedUpdate(fixedDeltaTime: number = 0): void
   {
-		if (bareEngine.levelEditorOpen)
+		if (bare.levelEditorOpen)
       return;
 
     for (const obj of this.objects)

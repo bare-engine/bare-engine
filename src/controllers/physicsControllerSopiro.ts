@@ -29,9 +29,9 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 	{  
 		this.scene.events.on(BareEvent.physics_refreshBody, this.RefreshBody.bind(this));
 
-		bareEngine.RegisterGameObjectPool(Polygon, 1);
-		bareEngine.RegisterGameObjectPool(Box, 1);
-		bareEngine.RegisterGameObjectPool(Circle, 1);
+		bare.RegisterGameObjectPool(Polygon, 1);
+		bare.RegisterGameObjectPool(Box, 1);
+		bare.RegisterGameObjectPool(Circle, 1);
 
 		super.Start();
 	}
@@ -63,7 +63,7 @@ export class PhysicsControllerSopiro extends PhysicsControllerBase
 
     override FixedUpdate(fixedDeltaTime: number): void
     {
-		if (bareEngine.levelEditorOpen) return;
+		if (bare.levelEditorOpen) return;
 
         Settings.dt = fixedDeltaTime;
         Settings.inv_dt = 1 / fixedDeltaTime;

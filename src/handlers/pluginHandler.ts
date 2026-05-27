@@ -51,7 +51,7 @@ window.__GAME_DEBUG_API__ = {
             return false;
         }
 
-      var compClass = bareEngine.componentClasses[Helper.CapitalizeFirstLetter(compName) + "Component"];
+      var compClass = bare.componentClasses[Helper.CapitalizeFirstLetter(compName) + "Component"];
       var comp = scene.componentController.GetComponent(obj, compClass);
       if (!comp)
         {
@@ -114,7 +114,7 @@ window.__GAME_DEBUG_API__ = {
 
     if (typeof levelPathOrData === 'string')
     {
-        levelPathOrData = bareEngine.levelPath + "/" + levelPathOrData + ".json"
+        levelPathOrData = bare.levelPath + "/" + levelPathOrData + ".json"
     }
     
     var scene = sceneController.GetMainScene(false); // WILL NOT ALWAYS FIND CORRECT ONE? TODO, CACHE IT, OR SEND IT ALONG
@@ -159,19 +159,19 @@ window.__GAME_DEBUG_API__ = {
   },
 
   async GetLevelFiles() {
-    if (!bareEngine)
+    if (!bare)
       return [];
     
-    var l = await Helper.GetFilesInFolder(`${bareEngine.levelPath}/`, false);
+    var l = await Helper.GetFilesInFolder(`${bare.levelPath}/`, false);
     return l;
   },
 
   async GetLevelData(levelStr: string): Promise<LevelData> {
-     return await Helper.loadJSON<LevelData>(`${bareEngine.levelPath}/${levelStr}.json`);
+     return await Helper.loadJSON<LevelData>(`${bare.levelPath}/${levelStr}.json`);
   },
 
   getBaseClassValues() {
-    var values = Object.keys(bareEngine.registeredClasses);
+    var values = Object.keys(bare.registeredClasses);
     return values;
   },
 
@@ -180,7 +180,7 @@ window.__GAME_DEBUG_API__ = {
     var info:Record<string, string> = {};
     info.baseClass = "The GameObject class this entity will assign.\nAdd it with bareEngine.AddClass(CustomGameObjectClass); to make it appear in the dropdown.";
     info.baseEntity = "The entity this entity will inherit from.";
-    info.imagePath = `Where to find the image. Looks in bareEngine.imagePath: ${bareEngine.imagePath}/[imagePath]`;
+    info.imagePath = `Where to find the image. Looks in bareEngine.imagePath: ${bare.imagePath}/[imagePath]`;
     info.texture = "The texture to use for the entity. Overrides entity.name, which is used as the default texture name.";
     info.pivot = "The pivot point of the entity. 0,0 is the top left corner. Can also supply percentual values.";
     info.hitbox = "Hitbox defined as x1,x2,y1,y2, not x/y/width/height. Can supply percentual values. Can also supply a string to use a pre-defined hitbox, eg: FULL";
@@ -196,8 +196,8 @@ window.__GAME_DEBUG_API__ = {
         }
     };
 
-    for (var className in bareEngine.registeredClasses)
-        addDescriptions(className, getInspectorFieldDescriptions(bareEngine.registeredClasses[className]));
+    for (var className in bare.registeredClasses)
+        addDescriptions(className, getInspectorFieldDescriptions(bare.registeredClasses[className]));
 
     // FOR COMPONENTS, NOT WORKING YET
     /*for (var componentClassName in bareEngine.componentClasses)
@@ -511,7 +511,7 @@ window.__GAME_DEBUG_API__ = {
 
         // GET parentClassNames, TO CHECK IF GROUP IS NOT IN HERE
         // THEN LOCK THE WHOLE GROUP, EG: RigidBody, PhysicsObjectBare
-        var cls = bareEngine.registeredClasses[baseClass];
+        var cls = bare.registeredClasses[baseClass];
         var parentClassNames = Helper.GetParentClasses(cls);
         parentClassNames.push(baseClass);
 
@@ -777,7 +777,7 @@ window.__GAME_DEBUG_API__ = {
         {
             for (let compName in props.components)
             {
-                var compClass = bareEngine.componentClasses[Helper.CapitalizeFirstLetter(compName) + "Component"];
+                var compClass = bare.componentClasses[Helper.CapitalizeFirstLetter(compName) + "Component"];
                 var comp = o.scene.componentController.GetComponent(o, compClass);
 
                 if (comp)
@@ -785,7 +785,7 @@ window.__GAME_DEBUG_API__ = {
                     // WE APPLY THE COMPONENTS VALUES FROM THE PLUGIN TO THE ONES INGAME
                     // BUT ALSO CALL OnRemoved() AND Added() AROUND IT, TO RESET THE COMPONENT AND LET THE NEW VALUES BE REPROCESSED IN Added()/OnAdded()
                    
-                    if (bareEngine.gameMode == GameMode.Game)
+                    if (bare.gameMode == GameMode.Game)
                         comp.OnRemoved?.();
 
                     var compData:Record<string, Scalar> = props.components[compName];
@@ -800,7 +800,7 @@ window.__GAME_DEBUG_API__ = {
                         comp[compProp] = compData[compProp];
                     }
 
-                    if (bareEngine.gameMode == GameMode.Game)
+                    if (bare.gameMode == GameMode.Game)
                         comp.Added(comp.go); // CALLS OnAdded() AS WELL
                 }
                 else
@@ -903,12 +903,12 @@ window.__GAME_DEBUG_API__ = {
         const o = plugin.GetCurrentScene().objectController.GetObjectById(id);
         if (!o) return false;
 
-        var compRef = bareEngine.componentClasses[Helper.CapitalizeFirstLetter(comp) + "Component"];
+        var compRef = bare.componentClasses[Helper.CapitalizeFirstLetter(comp) + "Component"];
         o.RemoveComponent(compRef);
     },
 
     getAllComponentNames():string[] {
-        return Object.keys(bareEngine.componentClasses).map(c =>
+        return Object.keys(bare.componentClasses).map(c =>
             Helper.DecapitalizeFirstLetter(
                 c.replace(/Component$/, "")
             )
@@ -965,7 +965,7 @@ window.__GAME_DEBUG_API__ = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            path: bareEngine.dataPath,
+            path: bare.dataPath,
             settingsData: newRawData,
             skipReload: true
         })
@@ -1022,7 +1022,7 @@ window.__GAME_DEBUG_API__ = {
   async createLevel(levelName: string) {
       try {
           var levelData: LevelData = { name: levelName, dimensions: { width: 800, height: 600 }, entitiesByLayer: {} };
-          var path = `${bareEngine.levelPath}/${levelName}.json`;
+          var path = `${bare.levelPath}/${levelName}.json`;
           const res = await fetch('/api/create-level', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1044,7 +1044,7 @@ window.__GAME_DEBUG_API__ = {
 
   async removeLevel(levelName: string) {
       try {
-          var path = `${bareEngine.levelPath}/${levelName}.json`;
+          var path = `${bare.levelPath}/${levelName}.json`;
           const res = await fetch('/api/remove-level', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1107,11 +1107,11 @@ window.__GAME_DEBUG_API__ = {
                 data.backgroundColor = changes.backgroundColor;
             }
 
-            var oldPath = `${bareEngine.levelPath}/${levelName}.json`;
+            var oldPath = `${bare.levelPath}/${levelName}.json`;
 
             if (changes.name && changes.name !== levelName) {
                 data.name = changes.name;
-                var newPath = `${bareEngine.levelPath}/${changes.name}.json`;
+                var newPath = `${bare.levelPath}/${changes.name}.json`;
                 await fetch('/api/save-level', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1274,7 +1274,7 @@ export class PluginHandler
         });*/
 
         // RESTART
-        this.AddDebugAction("Restart Game", () => bareEngine.Restart());
+        this.AddDebugAction("Restart Game", () => bare.Restart());
         //this.AddDebugAction("Restart Level", () => sceneController.Get(LevelScene).RestartLevel()); //
         this.AddDebugAction("Clear Save Data", () => SaveDataHandler.Clear());
         this.AddDebugBreak();
@@ -1287,7 +1287,7 @@ export class PluginHandler
 
     private OnRightClickPointerDown = async (ev: PointerEvent) =>
     {
-      if (bareEngine.levelEditorOpen)
+      if (bare.levelEditorOpen)
           return;
 
       if (ev.button === 2)
@@ -1324,7 +1324,7 @@ export class PluginHandler
               var openObjectsTab = obj.scene.settingsData.selectionEnabled !== false;
               this.SelectObjectInPlugin(obj.uniqueID, openObjectsTab, parentIds);
 
-              var mouseWorldAtClick = obj.scene.ScreenToWorldPos(bareEngine.GetCanvasScreenPosition(ev.clientX, ev.clientY));
+              var mouseWorldAtClick = obj.scene.ScreenToWorldPos(bare.GetCanvasScreenPosition(ev.clientX, ev.clientY));
               var mouseLocalAtClick = obj.parent ? obj.parent.ToLocal(mouseWorldAtClick) : mouseWorldAtClick;
 
               this.draggedObjData = {
@@ -1401,7 +1401,7 @@ export class PluginHandler
                     continue;
 
                 var objRect = obj.GetBoundsWithChildren()
-                var p = bareEngine.GetCanvasScreenPosition(ev.clientX, ev.clientY);
+                var p = bare.GetCanvasScreenPosition(ev.clientX, ev.clientY);
                 var pWorld = scene.ScreenToWorldPos(p);
 
                 if (!foundObj)
@@ -1427,7 +1427,7 @@ export class PluginHandler
             var scene = scenes[i];
             var objs = scene.objectController.GetAllObjects();
         
-            var p = bareEngine.GetCanvasScreenPosition(ev.clientX, ev.clientY);
+            var p = bare.GetCanvasScreenPosition(ev.clientX, ev.clientY);
             var pWorld = scene.ScreenToWorldPos(p);
 
             for (var j in objs)
@@ -1728,7 +1728,7 @@ export class PluginHandler
                     continue;
 
                 var fullCompName = Helper.CapitalizeFirstLetter(compName) + 'Component';
-                var compCls = bareEngine.componentClasses[fullCompName];
+                var compCls = bare.componentClasses[fullCompName];
                 if (!compCls)
                     continue;
 
@@ -1760,7 +1760,7 @@ export class PluginHandler
     GetAllPossibleEntityKeys(baseClass: string): string[]
     {
         // GET ALL POSSIBLE KEYS, FROM CLASS AND INHEREITED CLASSES
-        var cls = bareEngine.registeredClasses[baseClass];
+        var cls = bare.registeredClasses[baseClass];
         var parentClassNames = Helper.GetParentClasses(cls);
         parentClassNames.push(baseClass);
 
@@ -1814,7 +1814,7 @@ export class PluginHandler
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    path: bareEngine.dataPath,
+                    path: bare.dataPath,
                     settingsData: newData,
                     skipReload: true
                 })

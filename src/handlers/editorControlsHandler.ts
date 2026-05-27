@@ -471,7 +471,7 @@ export class EditorControlsHandler {
         if (this.MouseIsOnEditor(ev))
             return;
 
-        const screen = bareEngine.GetCanvasScreenPosition(ev.clientX, ev.clientY);
+        const screen = bare.GetCanvasScreenPosition(ev.clientX, ev.clientY);
         const before = cameraHandler.ScreenToWorld(screen.x, screen.y);
 
         const zoomStep = 1.2; // EXPONENTIAL ZOOM FOR CONSISTENT FEEL AT ALL SCALES
@@ -598,7 +598,7 @@ export class EditorControlsHandler {
     }
 
     MouseIsOnEditor(event: PointerEvent | WheelEvent): boolean {
-        return bareEngine.MouseIsOnEditor(event);
+        return bare.MouseIsOnEditor(event);
     }
 
     // SNAPS EDITOR PLACEMENT TO THE GRID.

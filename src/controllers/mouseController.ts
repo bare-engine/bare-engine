@@ -81,7 +81,7 @@ export class MouseController
         if (!this.scene.started)
             return;
         
-        const screenPosition = bareEngine.GetCanvasScreenPosition(mouseX, mouseY);
+        const screenPosition = bare.GetCanvasScreenPosition(mouseX, mouseY);
 
         this.screen.positionPrev.x = this.screen.position.x;
         this.screen.positionPrev.y = this.screen.position.y;
@@ -131,7 +131,7 @@ export class MouseController
         if (!this.scene.started)
             return;
         
-        const screenPosition = bareEngine.GetCanvasScreenPosition(mouseX, mouseY);
+        const screenPosition = bare.GetCanvasScreenPosition(mouseX, mouseY);
 
         if (event.button == 2)
             this.rightMouseIsDown = false;
@@ -159,7 +159,7 @@ export class MouseController
         if (!this.scene.started)
             return;
         
-        const screenPosition = bareEngine.GetCanvasScreenPosition(mouseX, mouseY);
+        const screenPosition = bare.GetCanvasScreenPosition(mouseX, mouseY);
         
         this.screen.positionPrev.x = this.screen.position.x;
         this.screen.positionPrev.y = this.screen.position.y;

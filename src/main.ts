@@ -27,7 +27,7 @@ function GetBareOptions(options?: BareOptions): BareOptions
         showEditorButton: undefined,
         debugKeys: [
             {e: () => window.debug = !window.debug},
-            {r: () => bareEngine.Restart()},
+            {r: () => bare.Restart()},
             {l: () => sceneController.GetLevelScene()?.levelHandler.RestartLevel()},
         ],
     }, ...options };
@@ -38,8 +38,8 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
     // DEFAULTS + OVERRIDE OPTIONS
     options = GetBareOptions(options);
 
-    if (__DEV__ && window.bareEngine) {
-        window.bareEngine.Restart(gameClass, options);
+    if (__DEV__ && window.bare) {
+        window.bare.Restart(gameClass, options);
         return;
     }
 
@@ -153,7 +153,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
             }, { passive: false });
 
             var preventTouchDefault = (ev: TouchEvent) => {
-                if (bareEngine.MouseIsOnEditor(ev as any))
+                if (bare.MouseIsOnEditor(ev as any))
                     return;
 
                 if (ev.type === 'touchstart')
@@ -169,7 +169,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
             
             // PREVENT SCROLLING WITH KEYBOARD KEYS OR MOUSE WHEEL
             var preventScrollCheck = (ev:MouseEvent | WheelEvent | KeyboardEvent)=>{
-                if (!(ev instanceof KeyboardEvent) && !bareEngine.MouseIsOnEditor(ev as any))
+                if (!(ev instanceof KeyboardEvent) && !bare.MouseIsOnEditor(ev as any))
                     ev.preventDefault();
             };
             window.addEventListener("keydown", function(ev:KeyboardEvent) {
@@ -198,7 +198,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
                 if (window.isLocalhost)
                     return; // CAN BE ANNOYING TO LOSE GAME FOCUS DURING DEVELOPEMENT, SO DISABLING IT HERE 
 
-                if (bareEngine.levelEditorOpen)
+                if (bare.levelEditorOpen)
                     return;
 
                 globalEvents.emit(BareEvent.game_focusChange, window.hasFocus);
@@ -247,7 +247,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
 
             // START!
             var start = async () => {
-                window.bareEngine = new BareEngine(gameClass, options);
+                window.bare = new BareEngine(gameClass, options);
             };
 
             var testGetElementById = document.getElementById('editor-overlay');

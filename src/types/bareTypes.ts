@@ -512,13 +512,13 @@ export class Shader implements IShader
         var name = this.constructor.name;
         
         // IF THIS CustomGlShader IS NOT CACHED YET, CREATE IT
-        if (!bareEngine.shaders[name])
+        if (!bare.shaders[name])
         {
-            bareEngine.shaders[name] = new CustomGlShader(rapid, vs, fs);
+            bare.shaders[name] = new CustomGlShader(rapid, vs, fs);
         }
 
         // USE THE CACHED SHADER - SAVES SOME SHADER COMPILATION TIME
-        this.shader = bareEngine.shaders[name];
+        this.shader = bare.shaders[name];
     }
 
     update?(gameObject?: GameObject): boolean;

@@ -39,7 +39,7 @@ export class HitboxController
 
 	Start(): void
 	{
-        bareEngine.SetCursor('inherit');
+        bare.SetCursor('inherit');
 
         this.scene.events.on(BareEvent.pointer_down, this.PointerDown.bind(this));
         this.scene.events.on(BareEvent.pointer_up, this.PointerUp.bind(this));
@@ -283,7 +283,7 @@ export class HitboxController
         var obj: GameObject | null = hitbox.parent;
         while (obj)
         {
-            if (!obj.visible && !bareEngine.levelEditorOpen)
+            if (!obj.visible && !bare.levelEditorOpen)
                 return false;
 
             if (!obj.visibleInEditor)
@@ -383,7 +383,7 @@ export class HitboxController
         this.currentHitboxHoverPath = newHoverPath;
         this.currentHitboxHover = newHoverPath.length > 0 ? newHoverPath[newHoverPath.length - 1] : null;
 
-        bareEngine.SetCursor(this.currentHitboxHover ? 'pointer' : 'inherit');
+        bare.SetCursor(this.currentHitboxHover ? 'pointer' : 'inherit');
     }
 
     private GetAllObjectsWithChildren(): GameObject[]
@@ -476,7 +476,7 @@ export class HitboxController
     {
         this.currentHitboxHover = null;
         this.currentHitboxHoverPath = [];
-        bareEngine.SetCursor('inherit');
+        bare.SetCursor('inherit');
     }
 
     AssignButton<T extends GameObject>(gameObject: T, onPress: (go: T, ...args: any[]) => any): Hitbox;
