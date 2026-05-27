@@ -1,7 +1,7 @@
 import { assetsHandler } from "../handlers/assetsHandler";
 import { SettingsHandler } from "../handlers/settingsHandler";
 import { levelHandler } from "../handlers/levelHandler";
-import { PhysicsObjectBare } from "../objects/physicsObjectBare";
+import { ArcadeObject } from "../objects/arcadeObject";
 import { AwakePayload, LevelData, SettingsData } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
 import { MakePath, MakePathForEntity } from "../globals";
@@ -62,7 +62,7 @@ export class HitboxScene extends EditorScene
         var texture = await assetsHandler.GetTexturePromise(MakePath(entityConstructedFromSettingsData.imagePath!, objectName));
 
         // CONSTRUCT ENTITY FROM HITBODATA AND APPLY TO DUMMY GAMEOBJECT, SO WE CAN GET THE RESULTING PIVOT
-        var obj = new PhysicsObjectBare(this);
+        var obj = new ArcadeObject(this);
         obj.InitTexture(MakePathForEntity(entityConstructedFromSettingsData));
         this.ApplyEntityToGameObject(entityConstructedFromSettingsData, obj);
         var pivot = obj.pivot;
@@ -165,7 +165,7 @@ export class HitboxScene extends EditorScene
         };
 
         // CONSTRUCT ENTITY FROM INITIAL ENTITY DATA, SO WE GET THE RESULTING ORIGNAL VARS
-        var obj = PhysicsObjectBare.GetDummpyDataFromEntity(this, mainEntity.name, { propsToIgnoreInEntity: ["pivot", "hitbox", "pivotBasedOnHitbox"] }).gameObject; // NOT SEARCHING IN ENTITY DATA, SO WE GET THE ORIGNAL VARS
+        var obj = ArcadeObject.GetDummpyDataFromEntity(this, mainEntity.name, { propsToIgnoreInEntity: ["pivot", "hitbox", "pivotBasedOnHitbox"] }).gameObject; // NOT SEARCHING IN ENTITY DATA, SO WE GET THE ORIGNAL VARS
         var pivotOrig = obj.pivot;
         var pivotOrigRounded = { x: Math.round(pivotOrig.x), y: Math.round(pivotOrig.y) };
         var hitboxOrig = (obj as any).physicsHitbox ? (obj as any).physicsHitbox?.rectangle : {x: 0, y: 0, width: 0, height: 0};

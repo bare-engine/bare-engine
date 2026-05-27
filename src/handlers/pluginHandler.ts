@@ -3,7 +3,7 @@ import { sceneController } from "../controllers/sceneController";
 import { GameMode, globalEvents } from "../globals";
 import { Color, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
-import { PhysicsObjectBare } from "../objects/physicsObjectBare";
+import { ArcadeObject } from "../objects/arcadeObject";
 import { EditorScene } from "../scenes/editorScene";
 import { EditorUIScene } from "../scenes/editorUIScene";
 import { EntityScene } from "../scenes/entityScene";
@@ -510,7 +510,7 @@ window.__GAME_DEBUG_API__ = {
         var varsPluginHideApplied: EntityVarsNestedEntry[] = [];
 
         // GET parentClassNames, TO CHECK IF GROUP IS NOT IN HERE
-        // THEN LOCK THE WHOLE GROUP, EG: RigidBody, PhysicsObjectBare
+        // THEN LOCK THE WHOLE GROUP, EG: RigidBody, ArcadeObject
         var cls = bare.registeredClasses[baseClass];
         var parentClassNames = Helper.GetParentClasses(cls);
         parentClassNames.push(baseClass);
@@ -1300,7 +1300,7 @@ export class PluginHandler
         {
             this.lastRightClickedObject.RemoveShader(OutlineShader);
         }
-        
+
           if (obj)
           {
             plugin.TraceObject(obj);
@@ -1374,7 +1374,7 @@ export class PluginHandler
         var ref = data.obj.parent ? data.obj.parent.ToLocal(worldPos) : worldPos;
         data.obj.SetPosition(ref.x + data.offset.x, ref.y + data.offset.y);
         
-        if (data.obj instanceof PhysicsObjectBare)
+        if (data.obj instanceof ArcadeObject)
             data.obj.ResetVelocity();
 
         //var worldPos = data.obj.scene.ScreenToWorldPos(new Vec2(mouseX, mouseY));

@@ -3,14 +3,14 @@ import { Vec2 } from "../libraries/new-rapid-render";
 import { QuadTree, QuadTreeItem } from "../libraries/quadTree";
 import type { Scene } from "../scenes/scene";
 import { GameObject } from "../objects/gameObject";
-import { PhysicsObjectBare } from "../objects/physicsObjectBare";
+import { ArcadeObject } from "../objects/arcadeObject";
 import { BareEvent, BlockedState } from "../types/bareTypes";
 import { RegisterController } from "../globals";
 import { PhysicsControllerBase } from "./physicsControllerBase";
 
 export class PhysicsControllerBare extends PhysicsControllerBase
 {
-  public objects: PhysicsObjectBare[] = [];
+  public objects: ArcadeObject[] = [];
 
   private x: number = 0;
   private y: number = 0;
@@ -19,7 +19,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
   
   public activeCollisions: Set<string> = new Set();
   private currentFrameCollisions: Set<string> = new Set();
-  public OnPreCollisionResolve: ((obj1: PhysicsObjectBare, obj2: PhysicsObjectBare) => boolean) | null = null;
+  public OnPreCollisionResolve: ((obj1: ArcadeObject, obj2: ArcadeObject) => boolean) | null = null;
   private broadPhaseMaxItems: number = 8;
   private broadPhaseMaxLevels: number = 6;
 
@@ -28,20 +28,20 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     super(scene);
 
     this.setDimensions(0, 0, bare.width, bare.height);
-    bare.RegisterGameObjectPool(PhysicsObjectBare, 10);
+    bare.RegisterGameObjectPool(ArcadeObject, 10);
   }
   
   // GETS CALLED BY EXTENDED CLASS (PhysicsControllerBase), ON BareEvent.game_objectAdded
   override Add(object: GameObject): void
   {
-    if (object instanceof PhysicsObjectBare && !object.parent) // SHOULD BE PhysicsObjectBare AND NOT A CHILD
+    if (object instanceof ArcadeObject && !object.parent) // SHOULD BE ArcadeObject AND NOT A CHILD
       this.objects.push(object);
   }
 
   // GETS CALLED BY EXTENDED CLASS (PhysicsControllerBase), ON BareEvent.game_objectRemoved
-  override Remove(object: PhysicsObjectBare): void
+  override Remove(object: ArcadeObject): void
   {
-      if (object instanceof PhysicsObjectBare && !object.parent)
+      if (object instanceof ArcadeObject && !object.parent)
       {
         this.removeAllCollidingObjectReferences(object);
 
@@ -149,7 +149,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     this.CheckCollisionEnd();
   }
 
-  private handleBoundaryCollisions(obj: PhysicsObjectBare): void
+  private handleBoundaryCollisions(obj: ArcadeObject): void
   {
   if (obj.static) return;
   if (!obj.stayInBounds) return;
@@ -370,7 +370,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     }
   }
 
-  private addCollidingObjects(object1: PhysicsObjectBare, object2: PhysicsObjectBare): void
+  private addCollidingObjects(object1: ArcadeObject, object2: ArcadeObject): void
   {
       if (!object1.collidingObjects.includes(object2)) {
           object1.collidingObjects.push(object2);
@@ -381,7 +381,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
       }
   }
 
-  private removeCollidingObjects(object1: PhysicsObjectBare, object2: PhysicsObjectBare): void
+  private removeCollidingObjects(object1: ArcadeObject, object2: ArcadeObject): void
   {
       const object1Index = object1.collidingObjects.indexOf(object2);
       if (object1Index > -1) {
@@ -394,7 +394,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
       }
   }
 
-  private removeAllCollidingObjectReferences(object: PhysicsObjectBare): void
+  private removeAllCollidingObjectReferences(object: ArcadeObject): void
   {
       for (const collidingObject of object.collidingObjects) {
           const index = collidingObject.collidingObjects.indexOf(object);
@@ -413,10 +413,10 @@ export class PhysicsControllerBare extends PhysicsControllerBase
       }
   }
 
-  private getBroadPhasePairs(): { p1: PhysicsObjectBare; p2: PhysicsObjectBare }[]
+  private getBroadPhasePairs(): { p1: ArcadeObject; p2: ArcadeObject }[]
   {
-    const entries: QuadTreeItem<PhysicsObjectBare>[] = [];
-    const objectIndexes = new Map<PhysicsObjectBare, number>();
+    const entries: QuadTreeItem<ArcadeObject>[] = [];
+    const objectIndexes = new Map<ArcadeObject, number>();
     const collisionObjects = this.getCollisionObjects();
     const bounds = this.getBroadPhaseBounds(entries, objectIndexes, collisionObjects);
 
@@ -424,13 +424,13 @@ export class PhysicsControllerBare extends PhysicsControllerBase
       return [];
     }
 
-    const tree = new QuadTree<PhysicsObjectBare>(bounds, this.broadPhaseMaxItems, this.broadPhaseMaxLevels);
+    const tree = new QuadTree<ArcadeObject>(bounds, this.broadPhaseMaxItems, this.broadPhaseMaxLevels);
 
     for (const entry of entries) {
       tree.insert(entry);
     }
 
-    const pairs: { p1: PhysicsObjectBare; p2: PhysicsObjectBare }[] = [];
+    const pairs: { p1: ArcadeObject; p2: ArcadeObject }[] = [];
     const pairKeys = new Set<string>();
 
     for (const entry of entries) {
@@ -468,12 +468,12 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     return pairs;
   }
 
-  private getCollisionObjects(): PhysicsObjectBare[]
+  private getCollisionObjects(): ArcadeObject[]
   {
-    const collisionObjects: PhysicsObjectBare[] = [];
-    const seen = new Set<PhysicsObjectBare>();
+    const collisionObjects: ArcadeObject[] = [];
+    const seen = new Set<ArcadeObject>();
 
-    const addPhysicsObject = (obj: PhysicsObjectBare): void => {
+    const addPhysicsObject = (obj: ArcadeObject): void => {
       if (seen.has(obj)) {
         return;
       }
@@ -484,7 +484,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
 
     const collectChildren = (obj: GameObject): void => {
       for (const child of obj.children) {
-        if (child instanceof PhysicsObjectBare) {
+        if (child instanceof ArcadeObject) {
           addPhysicsObject(child);
         }
 
@@ -495,7 +495,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     const sceneObjects = this.scene.objectController?.GetAllObjects?.() ?? [];
 
     for (const obj of sceneObjects) {
-      if (obj instanceof PhysicsObjectBare) {
+      if (obj instanceof ArcadeObject) {
         addPhysicsObject(obj);
       }
 
@@ -503,7 +503,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     }
 
     for (const obj of this.objects) {
-      if (obj instanceof PhysicsObjectBare) {
+      if (obj instanceof ArcadeObject) {
         addPhysicsObject(obj);
       }
 
@@ -513,7 +513,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     return collisionObjects;
   }
 
-  private shouldSkipInternalCollision(obj1: PhysicsObjectBare, obj2: PhysicsObjectBare): boolean
+  private shouldSkipInternalCollision(obj1: ArcadeObject, obj2: ArcadeObject): boolean
   {
     if (this.isAncestorOf(obj1, obj2) || this.isAncestorOf(obj2, obj1)) {
       return true;
@@ -540,12 +540,12 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     return false;
   }
 
-  private getPhysicsOwner(obj: GameObject): PhysicsObjectBare | null
+  private getPhysicsOwner(obj: GameObject): ArcadeObject | null
   {
     let current = obj.parent;
 
     while (current) {
-      if (current instanceof PhysicsObjectBare) {
+      if (current instanceof ArcadeObject) {
         return current;
       }
 
@@ -555,19 +555,19 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     return null;
   }
 
-  private getCollisionKey(obj1: PhysicsObjectBare, obj2: PhysicsObjectBare): string
+  private getCollisionKey(obj1: ArcadeObject, obj2: ArcadeObject): string
   {
     return obj1.uniqueID < obj2.uniqueID
       ? `${obj1.uniqueID}##${obj2.uniqueID}`
       : `${obj2.uniqueID}##${obj1.uniqueID}`;
   }
 
-  private getVelocityMagnitudeSquared(obj: PhysicsObjectBare): number
+  private getVelocityMagnitudeSquared(obj: ArcadeObject): number
   {
     return obj.velocity.x * obj.velocity.x + obj.velocity.y * obj.velocity.y;
   }
 
-  private getBroadPhaseBounds(entries: QuadTreeItem<PhysicsObjectBare>[], objectIndexes: Map<PhysicsObjectBare, number>, collisionObjects: PhysicsObjectBare[]): Rectangle
+  private getBroadPhaseBounds(entries: QuadTreeItem<ArcadeObject>[], objectIndexes: Map<ArcadeObject, number>, collisionObjects: ArcadeObject[]): Rectangle
   {
     let left = this.x;
     let top = this.y;
@@ -597,7 +597,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     return { x: left, y: top, width, height };
   }
 
-  private getObjectBounds(obj: PhysicsObjectBare): Rectangle | null
+  private getObjectBounds(obj: ArcadeObject): Rectangle | null
   {
     if (!obj.physicsHitbox?.active) {
       return null;
@@ -627,7 +627,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     return this.getWorldHitboxRect(obj);
   }
 
-  private getWorldHitboxRect(obj: PhysicsObjectBare): Rectangle | null
+  private getWorldHitboxRect(obj: ArcadeObject): Rectangle | null
   {
     const rect = obj.physicsHitbox.rectangle;
 
@@ -671,7 +671,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     };
   }
 
-  private getWorldCircle(obj: PhysicsObjectBare): { x: number; y: number; radius: number } | null
+  private getWorldCircle(obj: ArcadeObject): { x: number; y: number; radius: number } | null
   {
     const radius = obj.physicsHitbox.radius || 0;
 
@@ -697,7 +697,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     };
   }
 
-  private checkCircleRectCollision(circle: PhysicsObjectBare, obj: PhysicsObjectBare): {
+  private checkCircleRectCollision(circle: ArcadeObject, obj: ArcadeObject): {
       collision: boolean;
       dx: number;
       dy: number;
@@ -807,7 +807,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
   
   
   
-  private checkRectRectCollision(obj1: PhysicsObjectBare, obj2: PhysicsObjectBare): {
+  private checkRectRectCollision(obj1: ArcadeObject, obj2: ArcadeObject): {
     collision: boolean;
     dx: number;
     dy: number;
@@ -900,9 +900,9 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     );
   }
 
-  GetCollidingObjectsAgainst(obj: PhysicsObjectBare): PhysicsObjectBare[]
+  GetCollidingObjectsAgainst(obj: ArcadeObject): ArcadeObject[]
   {
-    var collidingObjects: PhysicsObjectBare[] = [];
+    var collidingObjects: ArcadeObject[] = [];
     const collisionObjects = this.getCollisionObjects();
 
     for (let i = 0; i < collisionObjects.length; i++)
@@ -924,12 +924,12 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     return collidingObjects;
   }
   
-  CheckCollision(obj1: PhysicsObjectBare, obj2: PhysicsObjectBare): boolean
+  CheckCollision(obj1: ArcadeObject, obj2: ArcadeObject): boolean
   {
     return this.GetCollisionInfo(obj1, obj2).collision;
   }
 
-  GetCollisionInfo(obj1: PhysicsObjectBare, obj2: PhysicsObjectBare): {collision: boolean, dx: number, dy: number, distance: number, angle: number}
+  GetCollisionInfo(obj1: ArcadeObject, obj2: ArcadeObject): {collision: boolean, dx: number, dy: number, distance: number, angle: number}
   {
     if (obj1.physicsHitbox.type === HitboxType.Rectangle && obj2.physicsHitbox.type === HitboxType.Rectangle) {
       return this.checkRectRectCollision(obj1, obj2);
@@ -962,7 +962,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
   }
 
   // object1 IS ALWAYS THE OBJECT WITH THE HIGHEST VELOCITY
-  HandleCollision(object1: PhysicsObjectBare, object2: PhysicsObjectBare, emitEvents: boolean = true)
+  HandleCollision(object1: ArcadeObject, object2: ArcadeObject, emitEvents: boolean = true)
   {
       // Create a unique key for this collision pair
       const collisionKey = this.getCollisionKey(object1, object2);
@@ -1018,19 +1018,19 @@ export class PhysicsControllerBare extends PhysicsControllerBase
           this.removeCollidingObjects(object1, object2);
           object1.OnCollisionEnd(object2);
           object2.OnCollisionEnd(object1);
-          events.emit(BareEvent.collision_end, object1 as PhysicsObjectBare, object2 as PhysicsObjectBare);
+          events.emit(BareEvent.collision_end, object1 as ArcadeObject, object2 as ArcadeObject);
         }
 
         this.activeCollisions.delete(collisionKey);
       }
   }
 
-  private addBlockedState(obj: PhysicsObjectBare, state: BlockedState): void
+  private addBlockedState(obj: ArcadeObject, state: BlockedState): void
   {
     obj.blocked |= state;
   }
 
-  private applyBlockedStatesFromNormal(obj1: PhysicsObjectBare, obj2: PhysicsObjectBare, nx: number, ny: number): void
+  private applyBlockedStatesFromNormal(obj1: ArcadeObject, obj2: ArcadeObject, nx: number, ny: number): void
   {
     const eps = 1e-6;
 
@@ -1052,8 +1052,8 @@ export class PhysicsControllerBare extends PhysicsControllerBase
   }
 
   private getCollisionNormal(
-    obj1: PhysicsObjectBare,
-    obj2: PhysicsObjectBare,
+    obj1: ArcadeObject,
+    obj2: ArcadeObject,
     collisionInfo: { dx: number; dy: number; distance: number; angle: number }
   ): { nx: number; ny: number }
   {
@@ -1103,8 +1103,8 @@ export class PhysicsControllerBare extends PhysicsControllerBase
   }
 
   private ResolveSolidCollision(
-    obj1: PhysicsObjectBare,
-    obj2: PhysicsObjectBare,
+    obj1: ArcadeObject,
+    obj2: ArcadeObject,
     collisionInfo: { dx: number; dy: number; distance: number; angle: number }
   ): { xAddObj1: number; yAddObj1: number; xAddObj2: number; yAddObj2: number; nx: number; ny: number } | null
   {
@@ -1168,7 +1168,7 @@ export class PhysicsControllerBare extends PhysicsControllerBase
     return { xAddObj1, yAddObj1, xAddObj2, yAddObj2, nx, ny };
   }
 
-	GetObjectAtPoint(position: Vec2, ignoredObject?: PhysicsObjectBare): PhysicsObjectBare | null
+	GetObjectAtPoint(position: Vec2, ignoredObject?: ArcadeObject): ArcadeObject | null
 	{
     const collisionObjects = this.getCollisionObjects();
 

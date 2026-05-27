@@ -4,7 +4,7 @@ import { mouseController } from "../controllers/mouseController";
 import { objectController } from "../controllers/objectController";
 import { Color, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
-import { PhysicsObjectBare } from "../objects/physicsObjectBare";
+import { ArcadeObject } from "../objects/arcadeObject";
 import { EditorScene } from "../scenes/editorScene";
 import { OutlineShader } from "../shaders/outlineShader";
 import { BareEvent, BareEventPayload, Entity, Rectangle } from "../types/bareTypes";
@@ -49,7 +49,7 @@ export class EditorControlsHandler {
             EditorControlsHandler.copiedObjectCached = [];
         }
 
-        this.currentPreviewEntity = new PhysicsObjectBare(this.scene, '', -100, -100);
+        this.currentPreviewEntity = new ArcadeObject(this.scene, '', -100, -100);
         this.currentPreviewEntity.name = 'currentPreviewEntity';
         this.currentPreviewEntity.customName = 'ignoreInPlugin';
         this.SetCurrentPreviewActive(false);//
@@ -612,7 +612,7 @@ export class EditorControlsHandler {
             if (obj.texture && obj.texture.width > 0 && obj.texture.height > 0)
                 return { x: 0, y: 0, width: obj.texture.width, height: obj.texture.height };
 
-            const hitboxRect = (obj as PhysicsObjectBare).physicsHitbox?.rectangle;
+            const hitboxRect = (obj as ArcadeObject).physicsHitbox?.rectangle;
             if (hitboxRect && hitboxRect.width > 0 && hitboxRect.height > 0)
                 return hitboxRect;
 

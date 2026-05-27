@@ -223,13 +223,13 @@ export class SettingsHandler
         // EG:
         // "saveVars": {
         //      "GameObject": ["name", "position"],
-        //      "PhysicsObjectBare": ["mass"]
+        //      "ArcadeObject": ["mass"]
         // },
         //
         // BECOMES:
         // "saveVars": {
         //      "GameObject": ["name", "position"],
-        //      "PhysicsObjectBare": ["name", "position", "mass"] // <--
+        //      "ArcadeObject": ["name", "position", "mass"] // <--
         // }
         if (settings.saveVars)
         {
@@ -447,7 +447,7 @@ export class SettingsHandler
 
             // ANYTHING WITH A HITBOX IS A PHYSICS OBJECT
             //if ((entity.hitbox || entity.physicsRadius) && entity.baseClass == "GameObject") 
-            //    entity.baseClass = "PhysicsObjectBare";
+            //    entity.baseClass = "ArcadeObject";
 
             // BIT OF A HACK TO MAKE SURE SOPIRO RIGIDBODIES HAVE A CENTER PIVOT
             // PUT HERE TO LET THE EDITOR PREVIEW ALSO INHERIT IT

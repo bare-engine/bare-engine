@@ -3,7 +3,7 @@ import { assetsHandler } from "../handlers/assetsHandler";
 import { SettingsHandler } from "../handlers/settingsHandler";
 import { Color, RenderTexture, Vec2 } from "../libraries/new-rapid-render";
 import { TextObject } from "../objects/textObject";
-import { PhysicsObjectBare } from "../objects/physicsObjectBare";
+import { ArcadeObject } from "../objects/arcadeObject";
 import { EditorScene } from "./editorScene";
 import { levelHandler } from "../handlers/levelHandler";
 import { AwakePayload, Entity, entityVars, LevelData, Rectangle, SettingsData, Size } from "../types/bareTypes";
@@ -164,7 +164,7 @@ export class EntityScene extends EditorScene
         //obj.y += obj.pivot.y;
 
         // COLLISION RECT
-        /*if (obj instanceof PhysicsObjectBare)
+        /*if (obj instanceof ArcadeObject)
         {
             var hitbox = obj.physicsHitbox.rectangle;
             var collisionRectEntity:Entity = {

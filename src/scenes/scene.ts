@@ -8,7 +8,7 @@ import { SettingsHandler } from "../handlers/settingsHandler";
 import mitt from "../libraries/mitt";
 import { Color, RenderTexture, Texture, TextureManager, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
-import { PhysicsObjectBare } from "../objects/physicsObjectBare";
+import { ArcadeObject } from "../objects/arcadeObject";
 import { defaultSettingsData } from "../types/bareData";
 import { AwakePayload, BareEvent, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LayerInfo, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
@@ -118,7 +118,7 @@ export class Scene implements SceneI
 
         bare.AddClass(GameObject);
         bare.AddClass(ObjectController);
-        //bareEngine.AddClass(PhysicsObjectBare); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT, NOT ALWAYS NEEDED - TODO
+        //bareEngine.AddClass(ArcadeObject); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT, NOT ALWAYS NEEDED - TODO
 
         SetControllerReferencesOnScene(this);
     }
@@ -304,7 +304,7 @@ export class Scene implements SceneI
 
                     // ANYTHING WITH A HITBOX IS A PHYSICS OBJECT
                     //if ((entityArg.hitbox || entityArg.physicsRadius) && entityArg.baseClass == "GameObject") 
-                    //    entityArg.baseClass = "PhysicsObjectBare";
+                    //    entityArg.baseClass = "ArcadeObject";
                     
                     // BIT OF A HACK TO MAKE SURE SOPIRO RIGIDBODIES HAVE A CENTER PIVOT
                     // PUT HERE TO LET THE EDITOR PREVIEW ALSO INHERIT IT

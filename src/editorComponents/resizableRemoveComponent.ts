@@ -3,7 +3,7 @@ import { mouseController } from '../controllers/mouseController';
 import { objectController } from '../controllers/objectController';
 import { GameMode } from '../globals';
 import { GameObject } from '../objects/gameObject';
-import { PhysicsObjectBare } from '../objects/physicsObjectBare';
+import { ArcadeObject } from '../objects/arcadeObject';
 import { Run } from '../utils/decorators';
 import { Helper } from '../utils/helper';
 import { PivotComponent } from './pivotComponent';
@@ -18,7 +18,7 @@ export class ResizableRemoveComponent extends BaseComponent
 
     // CONSTRUCT ENTITY FROM INITIAL ENTITY DATA, SO WE GET THE RESULTING ORIGNAL VARS
     var mainObj = objectController.GetAllObjects().find((o: GameObject) => o.customName == "main")!;
-    var obj = PhysicsObjectBare.GetDummpyDataFromEntity(this.scene, mainObj.name, { propsToIgnoreInEntity: ["hitbox"] }).gameObject; // NOT SEARCHING IN ENTITY DATA, SO WE GET THE ORIGNAL VARS
+    var obj = ArcadeObject.GetDummpyDataFromEntity(this.scene, mainObj.name, { propsToIgnoreInEntity: ["hitbox"] }).gameObject; // NOT SEARCHING IN ENTITY DATA, SO WE GET THE ORIGNAL VARS
     var hitboxOrig = (obj as any).physicsHitbox ? (obj as any).physicsHitbox?.rectangle : {x: 0, y: 0, width: 0, height: 0};
 
     var entityBare = {name: "collisionRect",

@@ -3,7 +3,7 @@ import { hitboxController } from "../controllers/hitboxController";
 import { mouseController } from "../controllers/mouseController";
 import { GameObject } from "../objects/gameObject";
 import { objectController } from "../controllers/objectController";
-import { PhysicsObjectBare } from "../objects/physicsObjectBare";
+import { ArcadeObject } from "../objects/arcadeObject";
 import { Scene } from "../scenes/scene";
 import { Save } from "../utils/decorators";
 
@@ -38,7 +38,7 @@ export class PositionPivotComponent extends BaseComponent
             
             var entity = { name: this.objName, hitbox: hitbox };
             var origEntity = this.scene.ConstructEntity(entity);
-            var obj = new PhysicsObjectBare(this.scene);
+            var obj = new ArcadeObject(this.scene);
             this.scene.ApplyEntityToGameObject(origEntity, obj);
             var pivotPosOrig = obj.pivot;
             

@@ -6,7 +6,7 @@ import { Entity } from "../types/bareTypes";
 import { keyboardController } from "../controllers/keyboardController";
 import { hitboxController } from "../controllers/hitboxController";
 import { mouseController } from "../controllers/mouseController";
-import { PhysicsObjectBare } from "../objects/physicsObjectBare";
+import { ArcadeObject } from "../objects/arcadeObject";
 import { objectController } from "../controllers/objectController";
 import { GameMode } from "../globals";
 import { Color } from "../libraries/new-rapid-render";
@@ -88,7 +88,7 @@ export class PivotComponent extends BaseComponent
 
                 //delete entity.components;//
 
-                var obj = new PhysicsObjectBare(this.scene);
+                var obj = new ArcadeObject(this.scene);
                 this.scene.ApplyEntityToGameObject(entity, obj);
                 var pivotPosOrig = obj.pivot;
                 
@@ -146,7 +146,7 @@ export class PivotComponent extends BaseComponent
         //let entity = { name: this.objName, hitbox: hitbox };
         var entity = objectController.GetObjectByName(this.objName)!.entity!;
         entity = { ...entity, hitbox: hitbox };
-        var obj = PhysicsObjectBare.GetDummpyDataFromEntity(this.scene, entity).gameObject;
+        var obj = ArcadeObject.GetDummpyDataFromEntity(this.scene, entity).gameObject;
         var pivotPosOrig = obj.pivot;
         
         if (pivotPosOrig)

@@ -614,7 +614,7 @@ export class LevelHandler
 
                 if (saveVars[constructorName])
                 {
-                    varsToSave = saveVars[constructorName]; // MERGE THIS WITH defaultEntityData.saveVars!["GameObject"]? TODO
+                    varsToSave = saveVars[constructorName]; // MERGE THIS WITH defaultSettingsData.saveVars!["GameObject"]? TODO
                 }
                 else
                 {

@@ -6,7 +6,7 @@ import { MakePathForEntity } from "../globals";
 import { GameObject } from "./gameObject";
 import { InspectorField } from "../utils/decorators";
 
-export class PhysicsObjectBare extends GameObject
+export class ArcadeObject extends GameObject
 {
     public isPhysicsObject = true;
     
@@ -21,9 +21,9 @@ export class PhysicsObjectBare extends GameObject
     @InspectorField stayInBounds: boolean = true;
     
     blocked:BlockedState = BlockedState.None;
-    collidingObjects: PhysicsObjectBare[] = [];
+    collidingObjects: ArcadeObject[] = [];
 
-    static dummyPhysicsObjectBare: PhysicsObjectBare = new PhysicsObjectBare();
+    static dummyPhysicsObjectBare: ArcadeObject = new ArcadeObject();
     
     constructor(scene: Scene | null = null, texturePath: string = "", x: number = 0, y: number = 0)
     {
@@ -166,7 +166,7 @@ export class PhysicsObjectBare extends GameObject
         this.events.emit(BareEvent.collision_end, collidingObject, null);
     }
     
-    SetVelocity(velocity: Vec2): PhysicsObjectBare
+    SetVelocity(velocity: Vec2): ArcadeObject
     {
         /* @ AddClass(PhysicsControllerBare) */
         
@@ -176,7 +176,7 @@ export class PhysicsObjectBare extends GameObject
         return this;
     }
 
-    SetVelocityXY(x: number, y: number): PhysicsObjectBare
+    SetVelocityXY(x: number, y: number): ArcadeObject
     {
         /* @ AddClass(PhysicsControllerBare) */
         
@@ -202,7 +202,7 @@ export class PhysicsObjectBare extends GameObject
         this.velocity.y = 0;
     }
 
-    override ResetValues(): PhysicsObjectBare
+    override ResetValues(): ArcadeObject
     {
         super.ResetValues();
 
@@ -235,11 +235,11 @@ export class PhysicsObjectBare extends GameObject
     static GetDummpyDataFromEntity(scene: Scene, nameOrEntity: string | Entity, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true }): {entity: Entity, gameObject: GameObject}
     {
         var entityConstructed = scene.ConstructEntity(nameOrEntity, scene.settingsHandler.Get(), options);
-        PhysicsObjectBare.dummyPhysicsObjectBare.scene = scene;
-        PhysicsObjectBare.dummyPhysicsObjectBare.ResetValues();
-        PhysicsObjectBare.dummyPhysicsObjectBare.InitTexture(MakePathForEntity(entityConstructed)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
-        scene.ApplyEntityToGameObject(entityConstructed, PhysicsObjectBare.dummyPhysicsObjectBare);
+        ArcadeObject.dummyPhysicsObjectBare.scene = scene;
+        ArcadeObject.dummyPhysicsObjectBare.ResetValues();
+        ArcadeObject.dummyPhysicsObjectBare.InitTexture(MakePathForEntity(entityConstructed)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
+        scene.ApplyEntityToGameObject(entityConstructed, ArcadeObject.dummyPhysicsObjectBare);
 
-        return {entity: entityConstructed, gameObject: PhysicsObjectBare.dummyPhysicsObjectBare};
+        return {entity: entityConstructed, gameObject: ArcadeObject.dummyPhysicsObjectBare};
     }
 }

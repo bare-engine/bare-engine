@@ -145,7 +145,7 @@ export interface Entity
   stayInBounds?: boolean;
 
   physicsRect?: Size;
-  physicsRadius?: number; // ALSO GETS USED BY physicsObjectBare. TODO: GIVE BETTER NAME
+  physicsRadius?: number; // ALSO GETS USED BY ArcadeObject. TODO: GIVE BETTER NAME
   mass?: number;
   drag?: number;
   restitution?: number;
@@ -201,7 +201,7 @@ export var entityVarsNestedRecord: Record<string, string[]> =
       "tags",
       "customData",
   ],
-  "PhysicsObjectBare": [
+  "ArcadeObject": [
       "drag",
       "restitution",
       "pivotBasedOnHitbox",
