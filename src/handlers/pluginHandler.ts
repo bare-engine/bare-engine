@@ -67,21 +67,10 @@ window.__GAME_DEBUG_API__ = {
       var objs = sceneController.GetAllSceneObjects();
       let selected: any = objs.find(o => o.uniqueID === uid);
 
-      plugin.TraceObject(selected);
+        plugin.HandleClickObject(selected);
 
-      // CLEAR OUTLINE SHADERS ON ALL (across all scenes)
-      for (const o of objs)
-      {
-          if (o.customName === 'ignoreInPlugin') continue;
-          if (!o.visible || !o.visibleInEditor) continue;
-
-          o.RemoveShader(OutlineShader);
-      }
-
-      if (!selected) return false;
-
-      // ADD TO SELECTED
-      selected.AddShader(OutlineShader, { color: [0.867, 0.631, 0.071, 1.0], width: 8.0 });
+      if (!selected)
+        return false;
 
       return true;
   },
@@ -1285,6 +1274,25 @@ export class PluginHandler
         this.AddDebugBreak();
     }
 
+    HandleClickObject(obj: GameObject)
+    {
+        // REMOVE OUTLINE SHADER FOR LAST SELECTED OBJECT
+        if (this.lastRightClickedObject)
+        {
+            this.lastRightClickedObject.RemoveShader(OutlineShader);
+        }
+
+        if (obj)
+        {
+            plugin.TraceObject(obj);
+
+            // ENABLE OUTLINE SHADER FOR SELECTED OBJECT
+            obj.AddShader(OutlineShader, { color: [0.867, 0.631, 0.071, 1.0], width: 8.0 });
+
+            this.lastRightClickedObject = obj;
+        }
+    }
+
     private OnRightClickPointerDown = async (ev: PointerEvent) =>
     {
       if (bare.levelEditorOpen)
@@ -1294,24 +1302,11 @@ export class PluginHandler
       {
         var isControlDown = keyboardController.IsKeyDown("control");
           const obj = isControlDown ? this.CheckClickDeepChild(ev) : this.CheckClickGameObject(ev);
-            
-        // REMOVE OUTLINE SHADER FOR LAST SELECTED OBJECT
-        if (this.lastRightClickedObject)
-        {
-            this.lastRightClickedObject.RemoveShader(OutlineShader);
-        }
-
+        
+          plugin.HandleClickObject(obj);
+          
           if (obj)
           {
-            plugin.TraceObject(obj);
-
-            // ENABLE OUTLINE SHADER FOR SELECTED OBJECT
-            obj.AddShader(OutlineShader, { color: [0.867, 0.631, 0.071, 1.0], width: 8.0 });
-
-            this.lastRightClickedObject = obj;
-
-              plugin.TraceObject(obj);
-
               var parentIds = [];
               if (isControlDown)
               {
