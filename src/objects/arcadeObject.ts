@@ -14,7 +14,7 @@ export class ArcadeObject extends GameObject
 
     @InspectorField static: boolean = false;
     @InspectorField collide: boolean = true;
-    @InspectorField sensor:boolean = false;
+    @InspectorField sensor:boolean = false; // IF TRUE, WILL NOT RESPECT stayInBounds
     @InspectorField velocity: Vec2 = new Vec2(0, 0);
     @InspectorField drag: number = 0//.15;
     @InspectorField restitution: number = 0//.8;

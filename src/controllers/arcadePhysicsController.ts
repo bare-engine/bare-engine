@@ -152,6 +152,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
   private handleBoundaryCollisions(obj: ArcadeObject): void
   {
   if (obj.static) return;
+  if (obj.sensor) return;
   if (!obj.stayInBounds) return;
 
   const boundsLeft = this.x ?? 0;
