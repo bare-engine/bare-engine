@@ -75,7 +75,6 @@ export class Scene implements SceneI
     doRender: boolean = true;
 
     layerInfos: Record<int, LayerInfo> = {};
-    layerNames: string[];
 
     sceneOptions: SceneOptions;
 
@@ -212,8 +211,7 @@ export class Scene implements SceneI
             const { showInEditor } = layerInfo;
             data.layersInfo[layerName] = { ...storedInfo, ...(showInEditor === undefined ? {} : { showInEditor }), ...(layerInfo.doSave === undefined ? {} : { doSave: layerInfo.doSave }) };
         }
-        this.layerNames = data.layers.slice();
-
+        
         // ASSIGN LAYER DATA TO layerInfos
         /*if (data.uiLayers)
         {
@@ -239,6 +237,11 @@ export class Scene implements SceneI
         }*/
     }
     
+    get layerNames(): string[]
+    {
+        return this.settingsData.layers;
+    }
+
     HideLoadingText()
     {
         rapid.canvas.style.display = "block";

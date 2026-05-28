@@ -274,6 +274,13 @@ interface AnimationDataInfo
   imagePath?: string;
 }
 
+export interface LayersInfo
+{
+  showInEditor?: boolean;
+  doSave?: boolean;
+  collidesWith?: string[];
+}
+
 export interface SettingsData
 {
   name?: string;
@@ -282,7 +289,7 @@ export interface SettingsData
   entities?: Record<string, Entity>;
   tilesheets?: Array<Entity>;
   layers?: Array<string>;
-  layersInfo?: Record<string, any>;
+  layersInfo?: Record<string, LayersInfo>;
   presets?: Record<string, any>;
   saveVars?: Record<string, Array<string>>
   animations?: Record<string, AnimationDataInfo>

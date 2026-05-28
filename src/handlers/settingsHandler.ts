@@ -481,23 +481,6 @@ export class SettingsHandler
             return entity
         }
 
-        function mergeComponents(comp1: any, comp2: any):Record<string, Record<string, any>>
-        {
-            const merged = { ...comp1 };
-            
-            if (comp2) {
-                for (const [key, value] of Object.entries(comp2)) {
-                    if (merged[key] && typeof value === 'object' && !Array.isArray(value)) {
-                        merged[key] = { ...merged[key], ...value };
-                    } else {
-                        merged[key] = value;
-                    }
-                }
-            }
-            
-            return merged;
-        }
-
         // RECURSIVELY EXTEND DATA
         var baseEntity = entity.baseEntity;
         while (baseEntity)
