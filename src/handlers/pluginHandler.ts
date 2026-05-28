@@ -339,6 +339,21 @@ window.__GAME_DEBUG_API__ = {
     var data = plugin.GetCurrentScene().levelHandler.SerializeObjectFully(o, true) as any;
     AddExtraPropsToData(data, o);
     
+    // ROUND NUMBERS
+    var maxDecimals = 3;
+    var maxTotalNumbers = 5;
+    for (var propName in data)
+    {
+        var isNumber = !isNaN(parseInt(data[propName]));
+        if (isNumber)
+        {
+            var value = parseFloat(data[propName]);
+            var wholeNumberDigits = Math.trunc(Math.abs(value)).toString().length;
+            var decimalPlaces = Math.max(0, Math.min(maxDecimals, maxTotalNumbers - wholeNumberDigits));
+            data[propName] = parseFloat(value.toFixed(decimalPlaces));
+        }
+    }
+
     return data;
 
     var serializeChildren = (children: GameObject[]) => {
@@ -427,12 +442,12 @@ window.__GAME_DEBUG_API__ = {
         "baseClass",
         "imagePath",
         "texture",
+        "pivot",
         "alpha",
         "visible",
         "scale",
         "rotation",
         "hitbox",
-        "pivot",
     ];
     var limitNumber = 5;
 
