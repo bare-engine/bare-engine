@@ -72,6 +72,169 @@ function bareTypeScriptTransformPlugin(options = {}) {
     };
 }
 
+function bareAutoRegisterComponentsPlugin(options = {}) {
+    const projectRoot = options.projectRoot || process.cwd();
+    const componentsDir = path.resolve(options.componentsDir || path.join(projectRoot, "src/components"));
+    const srcDir = normalize(path.resolve(projectRoot, "src"));
+    let components = [];
+
+    return {
+        name: "bare:auto-register-components",
+        enforce: "pre",
+        buildStart() {
+            components = scanComponents(componentsDir);
+            if (fs.existsSync(componentsDir)) {
+                this.addWatchFile(componentsDir);
+            }
+            for (const component of components) {
+                this.addWatchFile(component.filePath);
+            }
+        },
+        configureServer(server) {
+            if (!fs.existsSync(componentsDir)) {
+                return;
+            }
+            server.watcher.add(componentsDir);
+        },
+        transform(code, id) {
+            const filePath = cleanId(id);
+            if (!/\.[cm]?[jt]sx?$/.test(filePath) || /\.d\.ts$/.test(filePath)) {
+                return null;
+            }
+            if (!normalize(path.resolve(filePath)).startsWith(`${srcDir}/`)) {
+                return null;
+            }
+
+            const target = code.match(/\b(?:[A-Za-z_$][\w$]*\.)?StartBare\s*\(\s*([A-Za-z_$][\w$]*)/);
+            if (!target) {
+                return null;
+            }
+
+            components = scanComponents(componentsDir);
+            const registrations = components.filter(component =>
+                normalize(component.filePath) !== normalize(filePath)
+                && !new RegExp(`\\bbare\\.AddClass\\s*\\(\\s*${component.name}\\s*\\)`).test(code)
+            );
+            if (registrations.length === 0) {
+                return null;
+            }
+
+            let result = code;
+            const statements = registrations.map(component => `bare.AddClass(${component.name});`);
+            result = addStatementsToOnAwake(result, target[1], statements, filePath);
+            if (result === code) {
+                return null;
+            }
+
+            const imports = registrations
+                .filter(component => !hasImportBinding(code, component.name))
+                .map(component => `import { ${component.name} } from "${toImportPath(filePath, component.filePath)}";`);
+
+            return {
+                code: `${imports.join("\n")}${imports.length ? "\n" : ""}${result}`,
+                map: null
+            };
+        }
+    };
+}
+
+function scanComponents(componentsDir) {
+    if (!fs.existsSync(componentsDir)) {
+        return [];
+    }
+
+    const found = [];
+    for (const filePath of getFilesRecursive(componentsDir)) {
+        if (!/\.[cm]?[jt]sx?$/.test(filePath) || /\.d\.ts$/.test(filePath)) {
+            continue;
+        }
+
+        const source = fs.readFileSync(filePath, "utf8");
+        const classRegex = /export\s+class\s+([A-Za-z_$][\w$]*)(?:\s+extends\s+([^{\n]+))?/g;
+        let match;
+        while ((match = classRegex.exec(source)) !== null) {
+            const [, name, base = ""] = match;
+            if (name.endsWith("Component") || base.includes("Component") || base.includes("BaseComponent")) {
+                found.push({ name, filePath });
+            }
+        }
+    }
+
+    return found;
+}
+
+function addStatementsToOnAwake(code, className, statements, filePath) {
+    const classIndex = code.search(new RegExp(`\\bclass\\s+${className}\\b`));
+    if (classIndex < 0) {
+        return code;
+    }
+
+    const classOpen = code.indexOf("{", classIndex);
+    const classClose = findMatchingBrace(code, classOpen);
+    if (classOpen < 0 || classClose < 0) {
+        return code;
+    }
+
+    const classBody = code.slice(classOpen + 1, classClose);
+    const awakeMatch = /\bOnAwake\s*\([^)]*\)\s*(?::[^{]+)?\{/.exec(classBody);
+    const indent = detectIndent(code, classOpen);
+
+    if (!awakeMatch) {
+        const returnType = /\.[cm]?tsx?$/.test(filePath) ? ": void" : "";
+        const method = `\n${indent}    OnAwake()${returnType}\n${indent}    {\n${indent}        ${statements.join(`\n${indent}        `)}\n${indent}    }\n`;
+        return `${code.slice(0, classClose)}${method}${code.slice(classClose)}`;
+    }
+
+    const awakeOpen = classOpen + 1 + awakeMatch.index + awakeMatch[0].length - 1;
+    return `${code.slice(0, awakeOpen + 1)}\n${indent}        ${statements.join(`\n${indent}        `)}${code.slice(awakeOpen + 1)}`;
+}
+
+function findMatchingBrace(code, openIndex) {
+    if (openIndex < 0) {
+        return -1;
+    }
+
+    let depth = 0;
+    for (let i = openIndex; i < code.length; i++) {
+        if (code[i] === "{") {
+            depth++;
+        } else if (code[i] === "}") {
+            depth--;
+            if (depth === 0) {
+                return i;
+            }
+        }
+    }
+
+    return -1;
+}
+
+function detectIndent(code, index) {
+    const lineStart = code.lastIndexOf("\n", index) + 1;
+    const match = /^[ \t]*/.exec(code.slice(lineStart, index));
+    return match ? match[0] : "";
+}
+
+function hasImportBinding(code, name) {
+    const importRegex = /import\s+[^;]+?from\s+["'][^"']+["']/g;
+    let match;
+    while ((match = importRegex.exec(code)) !== null) {
+        if (new RegExp(`\\b${name}\\b`).test(match[0])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function toImportPath(fromFile, toFile) {
+    let importPath = normalize(path.relative(path.dirname(fromFile), toFile))
+        .replace(/\.[cm]?[jt]sx?$/, "");
+    if (!importPath.startsWith(".")) {
+        importPath = `./${importPath}`;
+    }
+    return importPath;
+}
+
 function bareFullReloadPlugin(options = {}) {
     const roots = (options.roots || [
         path.resolve(__dirname, "../src")
@@ -877,6 +1040,7 @@ function stripUnusedMethodsPlugin(options = {}) {
 }
 
 module.exports = {
+    bareAutoRegisterComponentsPlugin,
     bareEditorAndApiPlugin,
     bareGeneratedLayersPlugin,
     bareFullReloadPlugin,
