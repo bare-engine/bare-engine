@@ -547,7 +547,7 @@ export class BareEngine
         if (!this.IsFirstTouch(event))
             return;
 
-        bare.SendEvent(BareEvent.pointer_move, {mouseX: event.clientX, mouseY: event.clientY, event: event, isLeftButton: event.button == 0});
+        bare.SendEvent(BareEvent.pointer_move, {mouseX: event.clientX, mouseY: event.clientY, movedX: event.movementX, movedY: event.movementY, event: event, isLeftButton: event.button == 0});
 
         event.preventDefault();
     }

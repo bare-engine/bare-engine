@@ -381,7 +381,7 @@ const eventDefs = {
 
   pointer_down: ev<{ mouseX: number; mouseY: number; event: PointerEvent; isLeftButton: boolean }>(),
   pointer_up: ev<{ mouseX: number; mouseY: number; event: PointerEvent; isLeftButton: boolean }>(),
-  pointer_move: ev<{ mouseX: number; mouseY: number; event: PointerEvent; isLeftButton: boolean }>(),
+  pointer_move: ev<{ mouseX: number; mouseY: number; movedX: number; movedY: number; event: PointerEvent; isLeftButton: boolean }>(),
   pointer_doubleClick: ev<{ mouseX: number; mouseY: number; event: MouseEvent }>(),
 
   key_pressed: ev<{ key: string; allKeys: Array<string> }>(),

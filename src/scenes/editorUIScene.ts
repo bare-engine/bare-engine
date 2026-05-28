@@ -24,8 +24,8 @@ export class EditorUIScene extends Scene
         this.editorButton.buttonColor.a = 180;
 
         this.editorButton.SetPivot(position.x, position.y);
-        this.editorButton.x = this.width * position.x;
-        this.editorButton.y = this.height * position.y;
+        this.editorButton.x = bare.width * position.x;
+        this.editorButton.y = bare.height * position.y;
 
         var scale = 1;
         if (bare.resolution && bare.resolution.width != undefined && bare.resolution.height != undefined)
