@@ -1,4 +1,4 @@
-import { BaseComponent } from "../controllers/componentController";
+import { Component } from "../controllers/componentController";
 import { hitboxController } from "../controllers/hitboxController";
 import { mouseController } from "../controllers/mouseController";
 import { GameObject } from "../objects/gameObject";
@@ -7,7 +7,7 @@ import { ArcadeObject } from "../objects/arcadeObject";
 import { Scene } from "../scenes/scene";
 import { Save } from "../utils/decorators";
 
-export class PositionPivotComponent extends BaseComponent
+export class PositionPivotComponent extends Component
 {
     @Save
     objName:string = "";

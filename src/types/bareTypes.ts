@@ -444,7 +444,7 @@ export interface Pipes {
   componentController_OnLevelChanged: (payload: { uids: string[] }) => void;
 }
 
-export interface Component<T extends GameObject = GameObject> 
+export interface IComponent<T extends GameObject = GameObject> 
 {
     enabled?: boolean;
     go: T; 

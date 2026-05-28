@@ -14,7 +14,7 @@ export { TextObject } from "./objects/textObject";
 export { Scene } from "./scenes/scene";
 
 // Controllers
-export { BaseComponent, ComponentController, componentController } from "./controllers/componentController";
+export { Component, ComponentController, componentController } from "./controllers/componentController";
 export { HitboxController, hitboxController } from "./controllers/hitboxController";
 export type { ButtonHandlers } from "./controllers/hitboxController";
 export { KeyboardController, keyboardController } from "./controllers/keyboardController";
@@ -80,7 +80,7 @@ export type {
   Atlas,
   AtlasFrame,
   BareScreen,
-  Component,
+  IComponent,
   Entity,
   FrameRect,
   GameObjectClass,

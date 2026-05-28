@@ -1,4 +1,4 @@
-import { BaseComponent, Save, Scene } from "bare-engine";
+import { Component, Save, Scene } from "bare-engine";
 
 export class SaveComponentTest extends Scene
 {
@@ -18,7 +18,7 @@ export class SaveComponentTest extends Scene
     }
 }
 
-export class TestSaveComponent extends BaseComponent
+export class TestSaveComponent extends Component
 {
     private valueNoSave:string = "test";
 
@@ -35,7 +35,7 @@ export class TestSaveComponent extends BaseComponent
     }
 }
 
-export class TestNoSaveComponent extends BaseComponent
+export class TestNoSaveComponent extends Component
 {
     
 }

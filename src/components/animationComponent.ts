@@ -1,4 +1,4 @@
-import { BaseComponent } from "../controllers/componentController";
+import { Component } from "../controllers/componentController";
 import { assetsHandler } from "../handlers/assetsHandler";
 import mitt, { Emitter } from "../libraries/mitt";
 import { AnimationData } from "../types/bareTypes";
@@ -69,7 +69,7 @@ export type AnimationEventPayload = {
     looped: { animation: AnimationData }
 }
 
-export class AnimationComponent extends BaseComponent
+export class AnimationComponent extends Component
 {
     currentAnimation: AnimationData;
 

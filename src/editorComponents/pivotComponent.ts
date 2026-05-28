@@ -1,6 +1,6 @@
 import { ResizableComponent } from "./resizableComponent";
 import { Helper } from "../utils/helper";
-import { BaseComponent, componentController } from "../controllers/componentController";
+import { Component, componentController } from "../controllers/componentController";
 import { GameObject } from "../objects/gameObject";
 import { Entity } from "../types/bareTypes";
 import { keyboardController } from "../controllers/keyboardController";
@@ -14,7 +14,7 @@ import { Scene } from "../scenes/scene";
 import { Run, Save } from "../utils/decorators";
 
 @Run(GameMode.Editor)
-export class PivotComponent extends BaseComponent
+export class PivotComponent extends Component
 {
     @Save
     objName:string = "";

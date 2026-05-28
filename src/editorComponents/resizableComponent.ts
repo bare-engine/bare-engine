@@ -1,4 +1,4 @@
-import { BaseComponent } from '../controllers/componentController';
+import { Component } from '../controllers/componentController';
 import { hitboxController } from '../controllers/hitboxController';
 import { keyboardController } from '../controllers/keyboardController';
 import { mouseController } from '../controllers/mouseController';
@@ -33,7 +33,7 @@ type ResizeRect = {
 };
 
 @Run(GameMode.Editor)
-export class ResizableComponent extends BaseComponent
+export class ResizableComponent extends Component
 {
   minSize = 0;
   resizing = false;

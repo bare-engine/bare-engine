@@ -2,7 +2,7 @@ import { assetsHandler } from "../handlers/assetsHandler";
 import mitt from "../libraries/mitt";
 import { Color, CustomGlShader, MaskType, MatrixStack, Texture, Vec2 } from "../libraries/new-rapid-render";
 import type { Scene } from "../scenes/scene";
-import type { Component, Ctor, Events, IShader, Rectangle, Shader } from "../types/bareTypes";
+import type { IComponent, Ctor, Events, IShader, Rectangle, Shader } from "../types/bareTypes";
 import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';
 import { Hitbox } from '../types/hitbox';
 import { getOwnInspectorFieldNames } from "../utils/decorators";
@@ -199,10 +199,10 @@ export class GameObject
     }
 
     // CAN SUPPY A CLASS OR INSTANCE OF COMPONENT
-    AddComponent<T extends Component<this>>(componentClass: Ctor<T>): T;
-    AddComponent<T extends Component<this>>(componentClass: Ctor<T>, ...args: any[]): T;
-    AddComponent<T extends Component<this>>(componentInstance: T): T;
-    AddComponent<T extends Component<this>>(arg: Ctor<T> | T, ...args: any[]): T
+    AddComponent<T extends IComponent<this>>(componentClass: Ctor<T>): T;
+    AddComponent<T extends IComponent<this>>(componentClass: Ctor<T>, ...args: any[]): T;
+    AddComponent<T extends IComponent<this>>(componentInstance: T): T;
+    AddComponent<T extends IComponent<this>>(arg: Ctor<T> | T, ...args: any[]): T
     {
         var componentController = this.scene.Get("componentController"); // NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
 
@@ -215,7 +215,7 @@ export class GameObject
         }
     }
 
-    GetComponent<T extends Component<any>>(componentClass: Ctor<T>): T | null
+    GetComponent<T extends IComponent<any>>(componentClass: Ctor<T>): T | null
     {
         var componentController = this.scene.Get("componentController");
 
@@ -228,13 +228,13 @@ export class GameObject
         }
     }
 
-    get components(): Array<Component<this>> { 
+    get components(): Array<IComponent<this>> { 
         return this.scene.Get("componentController").GetComponentsFrom(this); 
     }
     
-    RemoveComponent<T extends Component<this>>(componentClass: Ctor<T>): boolean;
-    RemoveComponent<T extends Component<this>>(componentInstance: T): boolean;
-    RemoveComponent<T extends Component<this>>(arg: Ctor<T> | T): boolean
+    RemoveComponent<T extends IComponent<this>>(componentClass: Ctor<T>): boolean;
+    RemoveComponent<T extends IComponent<this>>(componentInstance: T): boolean;
+    RemoveComponent<T extends IComponent<this>>(arg: Ctor<T> | T): boolean
     {
         var componentController = this.scene.Get("componentController");
 

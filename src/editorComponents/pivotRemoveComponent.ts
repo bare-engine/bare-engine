@@ -1,4 +1,4 @@
-import { BaseComponent } from "../controllers/componentController";
+import { Component } from "../controllers/componentController";
 import { mouseController } from "../controllers/mouseController";
 import { objectController } from "../controllers/objectController";
 import { GameMode } from "../globals";
@@ -9,7 +9,7 @@ import { Helper } from "../utils/helper";
 import { Run } from "../utils/decorators";
 
 @Run(GameMode.Editor)
-export class PivotRemoveComponent extends BaseComponent
+export class PivotRemoveComponent extends Component
 {
     constructor(scene: Scene)
     {

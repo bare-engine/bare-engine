@@ -1,4 +1,4 @@
-import { BaseComponent, componentController } from '../controllers/componentController';
+import { Component, componentController } from '../controllers/componentController';
 import { mouseController } from '../controllers/mouseController';
 import { objectController } from '../controllers/objectController';
 import { GameMode } from '../globals';
@@ -9,7 +9,7 @@ import { Helper } from '../utils/helper';
 import { PivotComponent } from './pivotComponent';
 
 @Run(GameMode.Editor)
-export class ResizableRemoveComponent extends BaseComponent
+export class ResizableRemoveComponent extends Component
 {
   OnRemoved(): void
   {

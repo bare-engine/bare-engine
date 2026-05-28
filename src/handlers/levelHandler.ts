@@ -5,7 +5,7 @@ import { Color, Texture, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { Scene } from "../scenes/scene";
 import { defaultSettingsData } from "../types/bareData";
-import { BareEvent, BareEventPayload, Component, ConstructEntityOptions, Entity, entityVars, LevelData, SaveData, Scalar, SettingsData } from '../types/bareTypes';
+import { BareEvent, BareEventPayload, IComponent, ConstructEntityOptions, Entity, entityVars, LevelData, SaveData, Scalar, SettingsData } from '../types/bareTypes';
 import { Hitbox } from "../types/hitbox";
 import { getSaveFields } from "../utils/decorators";
 import { Helper } from "../utils/helper";
@@ -427,7 +427,7 @@ export class LevelHandler
             return children;
         };
 
-        customSerialize["components"] = (currentValue:Component[]):Record<string, any> => {
+        customSerialize["components"] = (currentValue:IComponent[]):Record<string, any> => {
             var comps = {}
             for (var comp of currentValue)
             {
@@ -764,7 +764,7 @@ export class LevelHandler
     // }
 
     
-    DiffComponents(components: Component[], origComponents?: Record<string, any>): Record<string, any>
+    DiffComponents(components: IComponent[], origComponents?: Record<string, any>): Record<string, any>
     {
         var serializedCurrentComponents = this.SerializeComponents(components);
         var diff: Record<string, any> = {};
@@ -798,7 +798,7 @@ export class LevelHandler
         return null;
     }
 
-    GetRemovedComponents(components: Component[], origComponents?: Record<string, any>): string[]
+    GetRemovedComponents(components: IComponent[], origComponents?: Record<string, any>): string[]
     {
         // ONLY GOING OVER origComponents, IF NOT IN components, ADD AS REMOVED
         var removed: string[] = [];
@@ -813,7 +813,7 @@ export class LevelHandler
         return removed;
     }
 
-    SerializeComponents(components: Component[], checkSave: boolean = true): Record<string, Record<string, Scalar>>
+    SerializeComponents(components: IComponent[], checkSave: boolean = true): Record<string, Record<string, Scalar>>
     {
         if (!components)
             return null;
@@ -835,7 +835,7 @@ export class LevelHandler
         return componentsRec;
     }
 
-    SerializeComponent(component: Component): Record<string, Scalar>
+    SerializeComponent(component: IComponent): Record<string, Scalar>
     {
         var componentData: Record<string, Scalar> = {};
         var constructorVarNames = getSaveFields(component);

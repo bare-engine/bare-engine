@@ -1,9 +1,9 @@
-import { BaseComponent, componentController } from "../controllers/componentController";
+import { Component, componentController } from "../controllers/componentController";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
 import { InspectorButton, Save } from "../utils/decorators";
 
-export class CollisionEventComponent extends BaseComponent
+export class CollisionEventComponent extends Component
 {
     @Save private object: string = ""; // LEAVE EMPTY TO TRIGGER ON COLLIDE WITH ANYTHING
     @Save private event: string = ""; // THE EVENT THAT NEEDS TO FIRE ON TRIGGER
