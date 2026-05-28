@@ -14,6 +14,7 @@ export { TextObject } from "./objects/textObject";
 export { Scene } from "./scenes/scene";
 
 // Controllers
+export { ArcadePhysicsController, arcadePhysicsController } from "./controllers/arcadePhysicsController";
 export { Component, ComponentController, componentController } from "./controllers/componentController";
 export { HitboxController, hitboxController } from "./controllers/hitboxController";
 export type { ButtonHandlers } from "./controllers/hitboxController";
@@ -21,9 +22,8 @@ export { KeyboardController, keyboardController } from "./controllers/keyboardCo
 export { MouseController, mouseController } from "./controllers/mouseController";
 export { ObjectController, objectController } from "./controllers/objectController";
 export { ParticleController, particleController } from "./controllers/particleController";
-export { ArcadePhysicsController, arcadePhysicsController } from "./controllers/arcadePhysicsController";
-export { SopiroPhysicsController } from "./controllers/sopiroPhysicsController";
 export { SceneController, sceneController } from "./controllers/sceneController";
+export { SopiroPhysicsController } from "./controllers/sopiroPhysicsController";
 export { TweenController, tweenController, TweenTo } from "./controllers/tweenController";
 
 // Handlers
@@ -65,7 +65,8 @@ export { Description, InspectorButton, InspectorField, Label, Locked, Range, Run
 export { Helper } from "./utils/helper";
 
 // Types and constants
-export {
+export
+{
   AnimationData,
   BareEvent,
   CameraScaleMode,
@@ -74,17 +75,14 @@ export {
   CollisionHandlingType,
   Events,
   HitboxType,
-  SaveData,
+  SaveData
 } from "./types/bareTypes";
 export type {
   Atlas,
   AtlasFrame,
-  BareScreen,
-  IComponent,
-  Entity,
+  BareScreen, Entity,
   FrameRect,
-  GameObjectClass,
-  LayerInfo,
+  GameObjectClass, IComponent, LayerInfo,
   LevelData,
   Pipes,
   Position,
@@ -95,7 +93,7 @@ export type {
   SettingsData,
   Size,
   SourceSize,
-  SpriteSourceSize,
+  SpriteSourceSize
 } from "./types/bareTypes";
 
 // Libraries: Sopiro
@@ -146,7 +144,7 @@ export type { HowlOptions } from "./libraries/howler/howler";
 // export type { QuadTreeItem } from "./libraries/quadTree";
 // export { default as GLShader } from "./libraries/new-rapid-render/webgl/glshader";
 // export { Uniform } from "./libraries/new-rapid-render/webgl/uniform";
-export * from "./libraries/new-rapid-render"
+export * from "./libraries/new-rapid-render";
 
 // Libraries: tweenJS
 export { Easing } from "./libraries/tweenJS/Easing";
@@ -160,3 +158,4 @@ export { default as Sequence } from "./libraries/tweenJS/Sequence";
 export { Tween } from "./libraries/tweenJS/Tween";
 export type { UnknownProps } from "./libraries/tweenJS/Tween";
 export { default as VERSION } from "./libraries/tweenJS/Version";
+
