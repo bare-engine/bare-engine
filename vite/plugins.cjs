@@ -72,29 +72,182 @@ function bareTypeScriptTransformPlugin(options = {}) {
     };
 }
 
-function bareAutoRegisterComponentsPlugin(options = {}) {
+const ENGINE_GAMEOBJECT_BASES = new Set([
+    "GameObject",
+    "ArcadeObject",
+    "Button",
+    "TextObject"
+]);
+
+const ENGINE_COMPONENT_BASES = new Set([
+    "Component",
+    "AnimationComponent",
+    "CollisionEventComponent",
+    "ParticleComponent",
+    "PivotComponent",
+    "PivotRemoveComponent",
+    "PositionPivotComponent",
+    "ResizableComponent",
+    "ResizableRemoveComponent"
+]);
+
+function bareAutoRegisterClassesPlugin(options = {}) {
     const projectRoot = options.projectRoot || process.cwd();
-    const componentsDir = path.resolve(options.componentsDir || path.join(projectRoot, "src/components"));
-    const srcDir = normalize(path.resolve(projectRoot, "src"));
-    let components = [];
+    const srcDir = normalize(path.resolve(options.srcDir || path.join(projectRoot, "src")));
+
+    const gameObjectBases = new Set([
+        ...ENGINE_GAMEOBJECT_BASES,
+        ...(options.extraGameObjectBases || [])
+    ]);
+    const componentBases = new Set([
+        ...ENGINE_COMPONENT_BASES,
+        ...(options.extraComponentBases || [])
+    ]);
+
+    // className -> { filePath, base, exported }
+    const classMap = new Map();
+    // normalized filePath -> Set<className>
+    const fileClasses = new Map();
+    let serverRef = null;
+    let startBareFile = null;
+
+    function parseClasses(source) {
+        const classRegex = /\b(export\s+)?(?:abstract\s+)?class\s+([A-Za-z_$][\w$]*)(?:\s*<[^>]*>)?(?:\s+extends\s+([A-Za-z_$][\w$]*))?/g;
+        const out = [];
+        let m;
+        while ((m = classRegex.exec(source)) !== null) {
+            out.push({ name: m[2], base: m[3] || "", exported: !!m[1] });
+        }
+        return out;
+    }
+
+    function scanFile(filePath) {
+        filePath = normalize(filePath);
+        let source;
+        try {
+            source = fs.readFileSync(filePath, "utf8");
+        } catch {
+            unscanFile(filePath);
+            return false;
+        }
+
+        const found = parseClasses(source);
+        const prevNames = fileClasses.get(filePath) || new Set();
+        const nextNames = new Set();
+
+        let changed = false;
+        for (const cls of found) {
+            nextNames.add(cls.name);
+            const prev = classMap.get(cls.name);
+            if (!prev || prev.filePath !== filePath || prev.base !== cls.base || prev.exported !== cls.exported) {
+                changed = true;
+            }
+            classMap.set(cls.name, { filePath, base: cls.base, exported: cls.exported });
+        }
+        for (const oldName of prevNames) {
+            if (!nextNames.has(oldName)) {
+                const existing = classMap.get(oldName);
+                if (existing && existing.filePath === filePath) {
+                    classMap.delete(oldName);
+                }
+                changed = true;
+            }
+        }
+
+        if (nextNames.size === 0) {
+            fileClasses.delete(filePath);
+        } else {
+            fileClasses.set(filePath, nextNames);
+        }
+
+        return changed;
+    }
+
+    function unscanFile(filePath) {
+        filePath = normalize(filePath);
+        const names = fileClasses.get(filePath);
+        if (!names) return false;
+        for (const name of names) {
+            const existing = classMap.get(name);
+            if (existing && existing.filePath === filePath) {
+                classMap.delete(name);
+            }
+        }
+        fileClasses.delete(filePath);
+        return true;
+    }
+
+    function scanAll() {
+        if (!fs.existsSync(srcDir)) return;
+        for (const filePath of getFilesRecursive(srcDir)) {
+            const norm = normalize(filePath);
+            if (!/\.[cm]?[jt]sx?$/.test(norm) || /\.d\.ts$/.test(norm)) continue;
+            scanFile(norm);
+        }
+    }
+
+    function resolveKind(name) {
+        const visited = new Set();
+        let current = name;
+        while (current && !visited.has(current)) {
+            visited.add(current);
+            const info = classMap.get(current);
+            const base = info ? info.base : null;
+            if (!base) return null;
+            if (componentBases.has(base)) return "component";
+            if (gameObjectBases.has(base)) return "gameobject";
+            current = base;
+        }
+        return null;
+    }
+
+    function getRegisteredClasses() {
+        const out = [];
+        for (const [name, info] of classMap) {
+            if (!info.exported) continue;
+            const kind = resolveKind(name);
+            if (!kind) continue;
+            out.push({ name, filePath: info.filePath, kind });
+        }
+        out.sort((a, b) => a.name.localeCompare(b.name));
+        return out;
+    }
+
+    function invalidateStartBareModule() {
+        if (!serverRef || !startBareFile) return;
+        const mods = serverRef.moduleGraph.getModulesByFile(startBareFile);
+        if (!mods || mods.size === 0) return;
+        for (const mod of mods) {
+            serverRef.moduleGraph.invalidateModule(mod);
+        }
+        serverRef.ws.send({ type: "full-reload", path: "*" });
+    }
+
+    function onWatcherEvent(filePath, kind) {
+        filePath = normalize(path.resolve(filePath));
+        if (!filePath.startsWith(`${srcDir}/`)) return;
+        if (!/\.[cm]?[jt]sx?$/.test(filePath) || /\.d\.ts$/.test(filePath)) return;
+
+        const changed = kind === "unlink" ? unscanFile(filePath) : scanFile(filePath);
+        if (changed) {
+            invalidateStartBareModule();
+        }
+    }
 
     return {
-        name: "bare:auto-register-components",
+        name: "bare:auto-register-classes",
         enforce: "pre",
         buildStart() {
-            components = scanComponents(componentsDir);
-            if (fs.existsSync(componentsDir)) {
-                this.addWatchFile(componentsDir);
-            }
-            for (const component of components) {
-                this.addWatchFile(component.filePath);
-            }
+            scanAll();
         },
         configureServer(server) {
-            if (!fs.existsSync(componentsDir)) {
-                return;
+            serverRef = server;
+            if (fs.existsSync(srcDir)) {
+                server.watcher.add(srcDir);
             }
-            server.watcher.add(componentsDir);
+            server.watcher.on("add", (p) => onWatcherEvent(p, "add"));
+            server.watcher.on("change", (p) => onWatcherEvent(p, "change"));
+            server.watcher.on("unlink", (p) => onWatcherEvent(p, "unlink"));
         },
         transform(code, id) {
             const filePath = cleanId(id);
@@ -110,25 +263,28 @@ function bareAutoRegisterComponentsPlugin(options = {}) {
                 return null;
             }
 
-            components = scanComponents(componentsDir);
-            const registrations = components.filter(component =>
-                normalize(component.filePath) !== normalize(filePath)
-                && !new RegExp(`\\bbare\\.AddClass\\s*\\(\\s*${component.name}\\s*\\)`).test(code)
+            startBareFile = normalize(path.resolve(filePath));
+
+            // Make sure this file's class info is fresh (catches edits to the StartBare file itself)
+            scanFile(startBareFile);
+
+            const registrations = getRegisteredClasses().filter(c =>
+                normalize(c.filePath) !== normalize(filePath)
+                && !new RegExp(`\\bbare\\.AddClass\\s*\\(\\s*${c.name}\\s*\\)`).test(code)
             );
             if (registrations.length === 0) {
                 return null;
             }
 
-            let result = code;
-            const statements = registrations.map(component => `bare.AddClass(${component.name});`);
-            result = addStatementsToOnAwake(result, target[1], statements, filePath);
+            const statements = registrations.map(c => `bare.AddClass(${c.name});`);
+            const result = addStatementsToOnAwake(code, target[1], statements, filePath);
             if (result === code) {
                 return null;
             }
 
             const imports = registrations
-                .filter(component => !hasImportBinding(code, component.name))
-                .map(component => `import { ${component.name} } from "${toImportPath(filePath, component.filePath)}";`);
+                .filter(c => !hasImportBinding(code, c.name))
+                .map(c => `import { ${c.name} } from "${toImportPath(filePath, c.filePath)}";`);
 
             return {
                 code: `${imports.join("\n")}${imports.length ? "\n" : ""}${result}`,
@@ -136,31 +292,6 @@ function bareAutoRegisterComponentsPlugin(options = {}) {
             };
         }
     };
-}
-
-function scanComponents(componentsDir) {
-    if (!fs.existsSync(componentsDir)) {
-        return [];
-    }
-
-    const found = [];
-    for (const filePath of getFilesRecursive(componentsDir)) {
-        if (!/\.[cm]?[jt]sx?$/.test(filePath) || /\.d\.ts$/.test(filePath)) {
-            continue;
-        }
-
-        const source = fs.readFileSync(filePath, "utf8");
-        const classRegex = /export\s+class\s+([A-Za-z_$][\w$]*)(?:\s+extends\s+([^{\n]+))?/g;
-        let match;
-        while ((match = classRegex.exec(source)) !== null) {
-            const [, name, base = ""] = match;
-            if (name.endsWith("Component") || base.includes("Component") || base.includes("BaseComponent")) {
-                found.push({ name, filePath });
-            }
-        }
-    }
-
-    return found;
 }
 
 function addStatementsToOnAwake(code, className, statements, filePath) {
@@ -1040,7 +1171,7 @@ function stripUnusedMethodsPlugin(options = {}) {
 }
 
 module.exports = {
-    bareAutoRegisterComponentsPlugin,
+    bareAutoRegisterClassesPlugin,
     bareEditorAndApiPlugin,
     bareGeneratedLayersPlugin,
     bareFullReloadPlugin,

@@ -1,7 +1,7 @@
 const path = require("node:path");
 const fs = require("node:fs");
 const {
-    bareAutoRegisterComponentsPlugin,
+    bareAutoRegisterClassesPlugin,
     bareEditorAndApiPlugin,
     bareFullReloadPlugin,
     bareGeneratedLayersPlugin,
@@ -24,7 +24,8 @@ module.exports = ({ mode }) => {
     const buildIndexPath = ensureLocalBuildIndex(projectRoot, engineIndexPath);
     const projectPackage = readProjectPackage(projectRoot);
     const stripOptions = projectPackage.bareEngine?.stripUnusedMethods;
-    const autoRegisterComponents = projectPackage.bareEngine?.autoRegisterComponents !== false;
+    const autoRegisterClasses = projectPackage.bareEngine?.autoRegisterClasses !== false
+        && projectPackage.bareEngine?.autoRegisterComponents !== false;
     const texturePackImages = resolveTexturePackImagesConfig(projectPackage, { warn: console.warn });
 
     return {
@@ -40,7 +41,7 @@ module.exports = ({ mode }) => {
         plugins: [
             bareFilterSettingsDataWarningPlugin(),
             bareShaderRawPlugin(),
-            ...(autoRegisterComponents ? [bareAutoRegisterComponentsPlugin({ projectRoot })] : []),
+            ...(autoRegisterClasses ? [bareAutoRegisterClassesPlugin({ projectRoot })] : []),
             bareTypeScriptTransformPlugin({
                 projectRoot,
                 useTypeChecker: false
