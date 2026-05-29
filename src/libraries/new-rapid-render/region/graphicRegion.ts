@@ -17,7 +17,7 @@ import MaskFsShaderSource from "../shader/mask.frag";
 const VERTEX_STRIDE = 20;
 
 export class GraphicRegion extends Region {
-    private vertexBuffer: WebglBufferArray;
+    private vertexBuffer!: WebglBufferArray;
     private vertexCount: number = 0;
 
     matrixIndex: number = -1
@@ -25,12 +25,13 @@ export class GraphicRegion extends Region {
 
     texture?: Texture
 
-    maskShader: GLShader
+    maskShader!: GLShader
     KEY = "Graphic"
 
     constructor(rapid: Rapid) {
         super(rapid);
 
+        this.createBuffer()
         this.createDefaultShader()
     }
 

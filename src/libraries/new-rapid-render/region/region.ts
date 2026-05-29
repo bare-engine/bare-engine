@@ -25,9 +25,6 @@ export class Region {
         this.gl = rapid.gl;
         this.maxTextureUnits = rapid.maxTextureUnits;
         this.matrixStore = rapid.matrix;
-
-        this.createBuffer()
-        this.createDefaultShader()
     }
 
     protected createBuffer(){

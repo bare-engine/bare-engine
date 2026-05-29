@@ -750,9 +750,9 @@ class TextTexture extends Texture {
      */
     public update(): void {
         const ctx = this.ctx;
-        const fontSize = this._style.fontSize;
-        const fontWeight = this._style.fontWeight;
-        const fontFamily = this._style.fontFamily;
+        const fontSize = this._style.fontSize!;
+        const fontWeight = this._style.fontWeight!;
+        const fontFamily = this._style.fontFamily!;
         const font = `${fontWeight} ${fontSize}px ${fontFamily}`;
         const dpr = this.render.dpr
         ctx.font = font;
@@ -760,13 +760,20 @@ class TextTexture extends Texture {
         const lines = this._text.split('\n');
         let maxWidth = 0;
         let totalHeight = 0;
-        const lineHeight = this._style.lineHeight ?? fontSize * 1.2;
+
+        ctx.textBaseline = "alphabetic";
+        const textMetrics = ctx.measureText(lines[0]);
+        
+        const lineHeight = textMetrics.fontBoundingBoxAscent
+        const lineGap = textMetrics.fontBoundingBoxDescent
 
         for (const line of lines) {
             const metrics = ctx.measureText(line);
             if (metrics.width > maxWidth) maxWidth = metrics.width;
-            totalHeight += lineHeight;
+            totalHeight += lineHeight + lineGap;
         }
+
+        totalHeight -= lineGap;
 
         const padding = (this._style.strokeThickness || 0) * 2;
         const logicalWidth = Math.ceil(maxWidth + padding) || 1;
@@ -792,11 +799,6 @@ class TextTexture extends Texture {
         let y = padding / 2;
         for (const line of lines) {
             let x = padding / 2;
-            if (this._style.align === "center") {
-                x = logicalWidth / 2;
-            } else if (this._style.align === "right") {
-                x = logicalWidth - padding / 2;
-            }
 
             if (this._style.stroke && this._style.strokeThickness! > 0) {
                 ctx.lineWidth = this._style.strokeThickness!;
@@ -809,10 +811,10 @@ class TextTexture extends Texture {
                 ctx.fillText(line, x, y);
             }
 
-            y += lineHeight;
+            y += lineHeight + lineGap;
         }
-        
-        this.base.updateSource(this.render.gl, this.canvas, this.options);
+
+        this.base?.updateSource(this.render.gl, this.canvas, this.options);
         this.setRegion(0, 0, this.canvas.width, this.canvas.height);
     }
 }

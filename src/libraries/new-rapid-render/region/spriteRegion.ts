@@ -23,8 +23,8 @@ const INSTANCE_STRIDE = 48;
 const QUAD_VERTICES = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
 
 export class SpriteRegion extends Region {
-    private instanceBuffer: WebglBufferArray;
-    private quadBuffer: WebglBufferArray;
+    private instanceBuffer!: WebglBufferArray;
+    private quadBuffer!: WebglBufferArray;
     private instanceCount: number = 0;
     private localSpriteMatrix = new Float32Array(6);
     private worldSpriteMatrix = new Float32Array(6);
@@ -34,6 +34,8 @@ export class SpriteRegion extends Region {
     constructor(rapid: Rapid) {
         super(rapid);
 
+        this.createBuffer()
+        this.createDefaultShader()
     }
 
     createBuffer(){
