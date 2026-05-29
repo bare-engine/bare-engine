@@ -112,11 +112,20 @@ function bareAutoRegisterClassesPlugin(options = {}) {
     let startBareFile = null;
 
     function parseClasses(source) {
-        const classRegex = /\b(export\s+)?(?:abstract\s+)?class\s+([A-Za-z_$][\w$]*)(?:\s*<[^>]*>)?(?:\s+extends\s+([A-Za-z_$][\w$]*))?/g;
+        // Optionally capture a leading decorator block (any number of decorators,
+        // each possibly with arguments) so we can tell whether @InspectorBaseClass
+        // is applied to the class.
+        const classRegex = /((?:@[A-Za-z_$][\w$]*(?:\s*\([^)]*\))?\s+)*)(export\s+)?(?:abstract\s+)?class\s+([A-Za-z_$][\w$]*)(?:\s*<[^>]*>)?(?:\s+extends\s+([A-Za-z_$][\w$]*))?/g;
         const out = [];
         let m;
         while ((m = classRegex.exec(source)) !== null) {
-            out.push({ name: m[2], base: m[3] || "", exported: !!m[1] });
+            const decorators = m[1] || "";
+            out.push({
+                name: m[3],
+                base: m[4] || "",
+                exported: !!m[2],
+                inspectorBase: /@InspectorBaseClass\b/.test(decorators)
+            });
         }
         return out;
     }
@@ -139,10 +148,10 @@ function bareAutoRegisterClassesPlugin(options = {}) {
         for (const cls of found) {
             nextNames.add(cls.name);
             const prev = classMap.get(cls.name);
-            if (!prev || prev.filePath !== filePath || prev.base !== cls.base || prev.exported !== cls.exported) {
+            if (!prev || prev.filePath !== filePath || prev.base !== cls.base || prev.exported !== cls.exported || prev.inspectorBase !== cls.inspectorBase) {
                 changed = true;
             }
-            classMap.set(cls.name, { filePath, base: cls.base, exported: cls.exported });
+            classMap.set(cls.name, { filePath, base: cls.base, exported: cls.exported, inspectorBase: cls.inspectorBase });
         }
         for (const oldName of prevNames) {
             if (!nextNames.has(oldName)) {
@@ -207,6 +216,8 @@ function bareAutoRegisterClassesPlugin(options = {}) {
             if (!info.exported) continue;
             const kind = resolveKind(name);
             if (!kind) continue;
+            // GameObjects must opt in via @InspectorBaseClass; components register regardless.
+            if (kind === "gameobject" && !info.inspectorBase) continue;
             out.push({ name, filePath: info.filePath, kind });
         }
         out.sort((a, b) => a.name.localeCompare(b.name));
