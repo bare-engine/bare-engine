@@ -63,11 +63,11 @@
     "@cucumber/cucumber": "^12.8.2",
     "@types/node": "^25.1.0",
     "typescript": "^5.9.3",
-    "vite": "^6.4.2",
-    "vite-plugin-entry-shaking": "^0.5.2"
+    "vite": "^6.4.2"
   },
   "dependencies": {
     "selenium-webdriver": "^4.43.0",
-    "vite-bundle-visualizer": "^1.2.1"
+    "vite-bundle-visualizer": "^1.2.1",
+    "vite-plugin-entry-shaking": "^0.5.2"
   }
 }
