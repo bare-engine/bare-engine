@@ -274,13 +274,33 @@ export class BareEngine
         var prevHeight = rapid.height;
 
         var viewportSize = this.GetViewportSize();
-        var gameWidth = resolution?.width ?? viewportSize.width;
-        var gameHeight = resolution?.height ?? viewportSize.height;
 
-        var scale = this.CalculateResolutionScale(resolution, gameWidth, gameHeight);
-        var cssWidth = gameWidth * scale;
-        var cssHeight = gameHeight * scale;
-        this.resolutionScale = scale;
+        var gameWidth: number;
+        var gameHeight: number;
+        var cssWidth: number;
+        var cssHeight: number;
+
+        if (resolution?.pixelScale)
+        {
+            // FIT TO WINDOW, BUT RENDER AT A LOWER LOGIC RESOLUTION SO EVERYTHING APPEARS pixelScale× BIGGER.
+            // CSS STAYS THE FULL VIEWPORT, AND (IN CanvasItem SCALE MODE) THE DRAWING BUFFER STAYS HIGH-RES,
+            // SO MOVEMENT REMAINS SUB-PIXEL SMOOTH (NO JITTER).
+            gameWidth = Math.round(viewportSize.width / resolution.pixelScale);
+            gameHeight = Math.round(viewportSize.height / resolution.pixelScale);
+            cssWidth = viewportSize.width;
+            cssHeight = viewportSize.height;
+            this.resolutionScale = resolution.pixelScale;
+        }
+        else
+        {
+            gameWidth = resolution?.width ?? viewportSize.width;
+            gameHeight = resolution?.height ?? viewportSize.height;
+
+            var scale = this.CalculateResolutionScale(resolution, gameWidth, gameHeight);
+            cssWidth = gameWidth * scale;
+            cssHeight = gameHeight * scale;
+            this.resolutionScale = scale;
+        }
 
         rapid.resize(
             gameWidth, gameHeight, // LOGIC SIZE

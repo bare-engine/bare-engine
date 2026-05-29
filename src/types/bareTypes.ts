@@ -21,13 +21,16 @@ export type BareOptions =
   scaleMode?: CanvasScaleMode;
 };
 
-export type ResolutionOptions = 
+export type ResolutionOptions =
 {
-  width: number;
-  height: number;
+  width?: number;
+  height?: number;
   scale?: number | CanvasScale;
   position?: CanvasPosition;
   integerScale?: boolean;
+  // FIT-TO-WINDOW, BUT RENDER AT A LOWER LOGIC RESOLUTION SO EVERYTHING APPEARS pixelScale× BIGGER.
+  // CSS SIZE STAYS THE FULL VIEWPORT (NO LETTERBOXING). TAKES PRECEDENCE OVER width/height/scale.
+  pixelScale?: number;
 }
 
 export enum CanvasPosition
