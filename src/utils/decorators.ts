@@ -166,6 +166,12 @@ export function InspectorField(targetOrType: any, propertyKey?: string): any
     }
 }
 
+// @InspectorBaseClass
+export function InspectorBaseClass(_target: Function): void
+{
+    return;
+}
+
 export function getOwnInspectorFieldNames(classOrPrototype: any): string[]
 {
     const proto = typeof classOrPrototype === "function" ? classOrPrototype.prototype : classOrPrototype;
