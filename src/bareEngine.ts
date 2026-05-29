@@ -334,6 +334,16 @@ export class BareEngine
         return rapid.physicsToLogic(devicePixel);
     }
 
+    // CONVERTS A CSS-PIXEL DELTA (E.G. event.movementX/Y) TO LOGIC UNITS.
+    // ACCOUNTS FOR pixelScale / resolution.scale / dpr, SO MOVEMENT MATCHES WORLD POSITIONS.
+    GetCanvasScreenDelta(deltaX: number, deltaY: number): Vec2
+    {
+        const cssDelta = new Vec2(deltaX, deltaY);
+        const devicePixel = rapid.cssToDevicePixel(cssDelta);
+
+        return rapid.physicsToLogic(devicePixel);
+    }
+
     private CalculateResolutionScale(resolution: BareOptions['resolution'], gameWidth: number, gameHeight: number): number
     {
         if (!resolution)
@@ -547,8 +557,9 @@ export class BareEngine
         if (!this.IsFirstTouch(event))
             return;
 
-        bare.SendEvent(BareEvent.pointer_down, {mouseX: event.clientX, mouseY: event.clientY, event: event, isLeftButton: event.button == 0});
-            
+        var pos = this.GetCanvasScreenPosition(event.clientX, event.clientY);
+        bare.SendEvent(BareEvent.pointer_down, {mouseX: pos.x, mouseY: pos.y, event: event, isLeftButton: event.button == 0});
+
         event.preventDefault();
     }
 
@@ -557,7 +568,8 @@ export class BareEngine
         if (!this.IsFirstTouch(event))
             return;
         
-        bare.SendEvent(BareEvent.pointer_up, {mouseX: event.clientX, mouseY: event.clientY, event: event, isLeftButton: event.button == 0});
+        var pos = this.GetCanvasScreenPosition(event.clientX, event.clientY);
+        bare.SendEvent(BareEvent.pointer_up, {mouseX: pos.x, mouseY: pos.y, event: event, isLeftButton: event.button == 0});
 
         event.preventDefault();
     }
@@ -567,14 +579,17 @@ export class BareEngine
         if (!this.IsFirstTouch(event))
             return;
 
-        bare.SendEvent(BareEvent.pointer_move, {mouseX: event.clientX, mouseY: event.clientY, movedX: event.movementX, movedY: event.movementY, event: event, isLeftButton: event.button == 0});
+        var pos = this.GetCanvasScreenPosition(event.clientX, event.clientY);
+        var moved = this.GetCanvasScreenDelta(event.movementX, event.movementY);
+        bare.SendEvent(BareEvent.pointer_move, {mouseX: pos.x, mouseY: pos.y, movedX: moved.x, movedY: moved.y, event: event, isLeftButton: event.button == 0});
 
         event.preventDefault();
     }
 
     DoubleClick(event: MouseEvent)
     {
-        bare.SendEvent(BareEvent.pointer_doubleClick, {mouseX: event.clientX, mouseY: event.clientY, event: event});
+        var pos = this.GetCanvasScreenPosition(event.clientX, event.clientY);
+        bare.SendEvent(BareEvent.pointer_doubleClick, {mouseX: pos.x, mouseY: pos.y, event: event});
     }
 
     IsFirstTouch(event:PointerEvent): boolean
