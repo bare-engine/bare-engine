@@ -151,17 +151,17 @@ export class ArcadeObject extends GameObject
         );
     }
     
-    OnCollisionStart(collidingObject: GameObject)
+    OnCollisionStart(collidingObject: ArcadeObject)
     {
         this.events.emit(BareEvent.collision_start, collidingObject, null);
     }
 
-    OnCollisionUpdate(collidingObject: GameObject)
+    OnCollisionUpdate(collidingObject: ArcadeObject)
     {
         this.events.emit(BareEvent.collision_update, collidingObject, null);
     }
 
-    OnCollisionEnd(collidingObject: GameObject)
+    OnCollisionEnd(collidingObject: ArcadeObject)
     {
         this.events.emit(BareEvent.collision_end, collidingObject, null);
     }

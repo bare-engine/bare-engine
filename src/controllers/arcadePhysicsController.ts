@@ -8,6 +8,26 @@ import { BareEvent, BlockedState } from "../types/bareTypes";
 import { RegisterController } from "../globals";
 import { PhysicsControllerBase } from "./physicsControllerBase";
 
+const arcadePhysicsEventDefs = {
+  collision_start: "collision_start",
+  collision_update: "collision_update",
+  collision_end: "collision_end",
+} as const;
+
+Object.assign(BareEvent, arcadePhysicsEventDefs);
+
+declare module "../types/bareTypes" {
+  interface BareEventExtensions {
+    collision_start: "collision_start";
+    collision_update: "collision_update";
+    collision_end: "collision_end";
+  }
+  // NOTE: the BareCollisionEventPairs augmentation for Arcade lives in
+  // src/arcade.ts (the "bare-engine/arcade" entry) so that importing the
+  // controller type elsewhere doesn't merge ArcadeObject into every project's
+  // collision event payloads.
+}
+
 export class ArcadePhysicsController extends PhysicsControllerBase
 {
   public objects: ArcadeObject[] = [];

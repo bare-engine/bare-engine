@@ -14,7 +14,6 @@ export { TextObject } from "./objects/textObject";
 export { Scene } from "./scenes/scene";
 
 // Controllers
-export { ArcadePhysicsController, arcadePhysicsController } from "./controllers/arcadePhysicsController";
 export { Component, ComponentController, componentController } from "./controllers/componentController";
 export { HitboxController, hitboxController } from "./controllers/hitboxController";
 export type { ButtonHandlers } from "./controllers/hitboxController";
@@ -23,7 +22,6 @@ export { MouseController, mouseController } from "./controllers/mouseController"
 export { ObjectController, objectController } from "./controllers/objectController";
 export { ParticleController, particleController } from "./controllers/particleController";
 export { SceneController, sceneController } from "./controllers/sceneController";
-export { SopiroPhysicsController } from "./controllers/sopiroPhysicsController";
 export { TweenController, tweenController, TweenTo } from "./controllers/tweenController";
 
 // Handlers
@@ -44,7 +42,7 @@ export { CollisionEventComponent } from "./components/collisionEventComponent";
 export { ParticleComponent } from "./components/particleComponent";
 
 // Objects
-export { ArcadeObject } from "./objects/arcadeObject";
+// Arcade physics (ArcadeObject, ArcadePhysicsController) are available from the "bare-engine/arcade" entry.
 
 // Editor
 export { PivotComponent } from "./editorComponents/pivotComponent";
@@ -96,36 +94,7 @@ export type {
   SpriteSourceSize
 } from "./types/bareTypes";
 
-// Libraries: Sopiro
-export * from "./libraries/Sopiro/aabb";
-export * from "./libraries/Sopiro/aabbtree";
-export * from "./libraries/Sopiro/angle";
-export * from "./libraries/Sopiro/box";
-export * from "./libraries/Sopiro/circle";
-export * from "./libraries/Sopiro/constraint";
-export * from "./libraries/Sopiro/contact";
-export * from "./libraries/Sopiro/distance";
-export * from "./libraries/Sopiro/edge";
-export * from "./libraries/Sopiro/grab";
-export * from "./libraries/Sopiro/island";
-export * from "./libraries/Sopiro/joint";
-export * from "./libraries/Sopiro/line";
-export * from "./libraries/Sopiro/math";
-export * from "./libraries/Sopiro/maxdistance";
-export * from "./libraries/Sopiro/motor";
-export * from "./libraries/Sopiro/nsquared";
-export * from "./libraries/Sopiro/polygon";
-export * from "./libraries/Sopiro/polytope";
-export * from "./libraries/Sopiro/prismatic";
-export * from "./libraries/Sopiro/renderer";
-export * from "./libraries/Sopiro/revolute";
-export * from "./libraries/Sopiro/rigidbody";
-export * from "./libraries/Sopiro/settings";
-export * from "./libraries/Sopiro/simplex";
-export * from "./libraries/Sopiro/timer";
-export * from "./libraries/Sopiro/util";
-export * from "./libraries/Sopiro/weld";
-export * from "./libraries/Sopiro/world";
+// Libraries: Sopiro physics are available from the "bare-engine/sopiro" entry.
 
 // Libraries: howler
 export { Howl, Howler } from "./libraries/howler/howler";

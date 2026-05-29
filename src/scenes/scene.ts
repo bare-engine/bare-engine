@@ -1,25 +1,22 @@
-import { controllerNames, SetControllerReferencesOnScene } from "../globals";
-import { ObjectController } from "../controllers/objectController";
-import { ArcadePhysicsController } from "../controllers/arcadePhysicsController";
-import { SopiroPhysicsController } from "../controllers/sopiroPhysicsController";
-import { sceneController } from "../controllers/sceneController";
-import { globalEvents } from "../globals";
-import { SettingsHandler } from "../handlers/settingsHandler";
-import mitt from "../libraries/mitt";
-import { Color, RenderTexture, Texture, TextureManager, Vec2 } from "../libraries/new-rapid-render";
-import { GameObject } from "../objects/gameObject";
-import { ArcadeObject } from "../objects/arcadeObject";
-import { defaultSettingsData } from "../types/bareData";
-import { AwakePayload, BareEvent, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LayerInfo, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
-import { Helper } from "../utils/helper";
-import { MakePath, MakePathForEntity } from "../globals";
+import type { ArcadePhysicsController } from "../controllers/arcadePhysicsController";
 import type { ComponentController } from "../controllers/componentController";
 import type { HitboxController } from "../controllers/hitboxController";
 import type { MouseController } from "../controllers/mouseController";
+import { ObjectController } from "../controllers/objectController";
 import type { ParticleController } from "../controllers/particleController";
+import { sceneController } from "../controllers/sceneController";
+import type { SopiroPhysicsController } from "../controllers/sopiroPhysicsController";
 import type { TweenController } from "../controllers/tweenController";
+import { controllerNames, globalEvents, MakePath, MakePathForEntity, SetControllerReferencesOnScene } from "../globals";
 import type { CameraHandler } from "../handlers/cameraHandler";
 import type { LevelHandler } from "../handlers/levelHandler";
+import { SettingsHandler } from "../handlers/settingsHandler";
+import mitt from "../libraries/mitt";
+import { Color, RenderTexture, Texture, Vec2 } from "../libraries/new-rapid-render";
+import { GameObject } from "../objects/gameObject";
+import { defaultSettingsData } from "../types/bareData";
+import { AwakePayload, BareEvent, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
+import { Helper } from "../utils/helper";
 
 /*Bare.camera.SetPosition(bareEngine.width * .5, bareEngine.height * .5);
 Bare.sound.Play()

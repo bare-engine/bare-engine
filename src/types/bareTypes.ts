@@ -377,10 +377,6 @@ const eventDefs = {
   level_postSave: ev<{ levelStr: string; level: LevelData }>(),
   level_restart: undefined,
 
-  collision_start: ev<[GameObject, GameObject]>(),
-  collision_update: ev<[GameObject, GameObject]>(),
-  collision_end: ev<[GameObject, GameObject]>(),
-
   pointer_down: ev<{ mouseX: number; mouseY: number; event: PointerEvent; isLeftButton: boolean }>(),
   pointer_up: ev<{ mouseX: number; mouseY: number; event: PointerEvent; isLeftButton: boolean }>(),
   pointer_move: ev<{ mouseX: number; mouseY: number; movedX: number; movedY: number; event: PointerEvent; isLeftButton: boolean }>(),
@@ -411,8 +407,17 @@ export const BareEvent = baseBareEvent as typeof baseBareEvent & BareEventExtens
 type EventPayloads<T> = { [K in keyof T]: T[K] extends undefined ? void : NonNullable<T[K]> };
 
 export interface BareUserEvents {}
+export interface BareCollisionEventPairs {}
+
+type BareCollisionEventPayload = BareCollisionEventPairs[keyof BareCollisionEventPairs];
+type BareCollisionEvents = [BareCollisionEventPayload] extends [never] ? {} : {
+  collision_start: BareCollisionEventPayload;
+  collision_update: BareCollisionEventPayload;
+  collision_end: BareCollisionEventPayload;
+};
+
 export type BareEventPayload =
-  EventPayloads<typeof eventDefs> & BareUserEvents;
+  EventPayloads<typeof eventDefs> & BareCollisionEvents & BareUserEvents;
 
 // Events must be the merged type
 export type Events = BareEventPayload & Record<string, any>;

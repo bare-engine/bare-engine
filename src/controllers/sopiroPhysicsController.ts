@@ -11,6 +11,26 @@ import { BareEvent } from "../types/bareTypes";
 import { GameObject } from "../objects/gameObject";
 import { RegisterController } from "../globals";
 
+const sopiroPhysicsEventDefs = {
+	collision_start: "collision_start",
+	collision_update: "collision_update",
+	collision_end: "collision_end",
+} as const;
+
+Object.assign(BareEvent, sopiroPhysicsEventDefs);
+
+declare module "../types/bareTypes" {
+	interface BareEventExtensions {
+		collision_start: "collision_start";
+		collision_update: "collision_update";
+		collision_end: "collision_end";
+	}
+	// NOTE: the BareCollisionEventPairs augmentation for Sopiro lives in
+	// src/sopiro.ts (the "bare-engine/sopiro" entry) so that scene.ts's
+	// `import type { SopiroPhysicsController }` doesn't merge RigidBody into
+	// every project's collision event payloads.
+}
+
 export class SopiroPhysicsController extends PhysicsControllerBase
 {
 	private world: World;
