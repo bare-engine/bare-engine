@@ -39,6 +39,14 @@
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./arcade": {
+      "types": "./src/arcade.ts",
+      "default": "./src/arcade.ts"
+    },
+    "./sopiro": {
+      "types": "./src/sopiro.ts",
+      "default": "./src/sopiro.ts"
+    },
     "./config": "./config/index.cjs",
     "./config/vite.config": "./config/vite.config.cjs",
     "./config/vite.config.cjs": "./config/vite.config.cjs",
@@ -55,7 +63,8 @@
     "@cucumber/cucumber": "^12.8.2",
     "@types/node": "^25.1.0",
     "typescript": "^5.9.3",
-    "vite": "^6.3.5"
+    "vite": "^6.4.2",
+    "vite-plugin-entry-shaking": "^0.5.2"
   },
   "dependencies": {
     "selenium-webdriver": "^4.43.0",

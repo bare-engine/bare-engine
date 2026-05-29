@@ -1,5 +1,6 @@
 const path = require("node:path");
 const fs = require("node:fs");
+const entryShaking = require("vite-plugin-entry-shaking");
 const {
     bareAutoRegisterClassesPlugin,
     bareEditorAndApiPlugin,
@@ -40,6 +41,13 @@ module.exports = ({ mode }) => {
         },
         plugins: [
             bareFilterSettingsDataWarningPlugin(),
+            entryShaking.default({
+                targets: [
+                    path.resolve(__dirname, "../src/index.ts"),
+                    path.resolve(__dirname, "../src/arcade.ts"),
+                    path.resolve(__dirname, "../src/sopiro.ts")
+                ]
+            }),
             bareShaderRawPlugin(),
             ...(autoRegisterClasses ? [bareAutoRegisterClassesPlugin({ projectRoot })] : []),
             bareTypeScriptTransformPlugin({
