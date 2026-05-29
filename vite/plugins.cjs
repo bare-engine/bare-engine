@@ -94,6 +94,7 @@ const ENGINE_COMPONENT_BASES = new Set([
 function bareAutoRegisterClassesPlugin(options = {}) {
     const projectRoot = options.projectRoot || process.cwd();
     const srcDir = normalize(path.resolve(options.srcDir || path.join(projectRoot, "src")));
+    const settingsDataPath = normalize(path.resolve(path.join(projectRoot, "public/data/settingsData.json")));
 
     const gameObjectBases = new Set([
         ...ENGINE_GAMEOBJECT_BASES,
@@ -210,8 +211,40 @@ function bareAutoRegisterClassesPlugin(options = {}) {
         return null;
     }
 
+    // Collect component class names referenced by the project's settingsData.json.
+    // Each entity may declare a `components` map whose keys are component names
+    // (e.g. "shoot"), which the engine resolves to `<Capitalized>Component`
+    // (e.g. "ShootComponent") at runtime.
+    function getSettingsComponentClassNames() {
+        const names = new Set();
+        let raw;
+        try {
+            raw = fs.readFileSync(settingsDataPath, "utf8");
+        } catch {
+            return names;
+        }
+        let data;
+        try {
+            data = JSON.parse(raw);
+        } catch {
+            return names;
+        }
+        for (const group of [data.entities, data.baseEntities]) {
+            if (!group || typeof group !== "object") continue;
+            for (const entityName in group) {
+                const components = group[entityName] && group[entityName].components;
+                if (!components || typeof components !== "object") continue;
+                for (const componentKey in components) {
+                    names.add(componentKey.charAt(0).toUpperCase() + componentKey.slice(1) + "Component");
+                }
+            }
+        }
+        return names;
+    }
+
     function getRegisteredClasses() {
         const out = [];
+        const seen = new Set();
         for (const [name, info] of classMap) {
             if (!info.exported) continue;
             const kind = resolveKind(name);
@@ -219,6 +252,18 @@ function bareAutoRegisterClassesPlugin(options = {}) {
             // GameObjects must opt in via @InspectorBaseClass; components register regardless.
             if (kind === "gameobject" && !info.inspectorBase) continue;
             out.push({ name, filePath: info.filePath, kind });
+            seen.add(name);
+        }
+        // Register components referenced by settingsData.json that the code scan
+        // didn't already classify as components (e.g. their base class chain
+        // doesn't resolve to Component). They still must exist and be exported so
+        // we can import them by name.
+        for (const className of getSettingsComponentClassNames()) {
+            if (seen.has(className)) continue;
+            const info = classMap.get(className);
+            if (!info || !info.exported) continue;
+            out.push({ name: className, filePath: info.filePath, kind: "component" });
+            seen.add(className);
         }
         out.sort((a, b) => a.name.localeCompare(b.name));
         return out;
@@ -236,6 +281,12 @@ function bareAutoRegisterClassesPlugin(options = {}) {
 
     function onWatcherEvent(filePath, kind) {
         filePath = normalize(path.resolve(filePath));
+        if (filePath === settingsDataPath) {
+            // Adding/removing a component in settingsData can change which classes
+            // get registered, so re-run registration on the StartBare module.
+            invalidateStartBareModule();
+            return;
+        }
         if (!filePath.startsWith(`${srcDir}/`)) return;
         if (!/\.[cm]?[jt]sx?$/.test(filePath) || /\.d\.ts$/.test(filePath)) return;
 
@@ -256,6 +307,7 @@ function bareAutoRegisterClassesPlugin(options = {}) {
             if (fs.existsSync(srcDir)) {
                 server.watcher.add(srcDir);
             }
+            server.watcher.add(settingsDataPath);
             server.watcher.on("add", (p) => onWatcherEvent(p, "add"));
             server.watcher.on("change", (p) => onWatcherEvent(p, "change"));
             server.watcher.on("unlink", (p) => onWatcherEvent(p, "unlink"));
