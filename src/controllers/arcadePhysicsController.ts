@@ -209,6 +209,12 @@ export class ArcadePhysicsController extends PhysicsControllerBase
   if (obj.sensor) return;
   if (!obj.stayInBounds) return;
 
+  // Use the same scaled world AABB as object-vs-object collisions so the
+  // hitbox reacts to walls at its real (scaled) size. Boundary collisions
+  // only run for root objects, so the AABB shifts linearly with obj.x/obj.y.
+  const bounds = this.getObjectBounds(obj);
+  if (!bounds) return;
+
   const boundsLeft = this.x ?? 0;
   const boundsTop = this.y ?? 0;
   const boundsRight = boundsLeft + (this.width ?? 0);
@@ -220,27 +226,10 @@ export class ArcadePhysicsController extends PhysicsControllerBase
   // Small padding to avoid jitter on exact boundary
   const eps = 1e-4;
 
-  // Compute extents around obj.x/obj.y
-  let left = obj.x, right = obj.x, top = obj.y, bottom = obj.y;
-
-  if (obj.physicsHitbox.type === HitboxType.Circle) {
-    const r = obj.physicsHitbox.radius || 0;
-    left = obj.x - r;
-    right = obj.x + r;
-    top = obj.y - r;
-    bottom = obj.y + r;
-  } else if (obj.physicsHitbox.type === HitboxType.Rectangle) {
-    const rect = obj.physicsHitbox.rectangle;
-    const rx = (rect?.x ?? 0) - (obj.pivot?.x ?? 0);
-    const ry = (rect?.y ?? 0) - (obj.pivot?.y ?? 0);
-    const rw = rect?.width ?? 0;
-    const rh = rect?.height ?? 0;
-
-    left = obj.x + rx;
-    right = left + rw;
-    top = obj.y + ry;
-    bottom = top + rh;
-  }
+  let left = bounds.x;
+  let right = bounds.x + bounds.width;
+  let top = bounds.y;
+  let bottom = bounds.y + bounds.height;
 
   // Helpers to shift obj so the hitbox aligns with boundary
   const shiftX = (dx: number) => { obj.x += dx; };
@@ -773,11 +762,22 @@ export class ArcadePhysicsController extends PhysicsControllerBase
       };
     }
 
+    // Scale the hitbox offset and pivot by the object's scale, matching the
+    // engine's GetBounds() convention (gameObject.ts). Computing both edges and
+    // taking the min keeps the AABB correct under negative scale (flips).
+    const sx = obj.totalScaleX;
+    const sy = obj.totalScaleY;
+
+    const x0 = obj.x + (rect.x - obj.pivot.x) * sx;
+    const x1 = obj.x + (rect.x + rect.width - obj.pivot.x) * sx;
+    const y0 = obj.y + (rect.y - obj.pivot.y) * sy;
+    const y1 = obj.y + (rect.y + rect.height - obj.pivot.y) * sy;
+
     return {
-      x: obj.x - obj.pivot.x + rect.x,
-      y: obj.y - obj.pivot.y + rect.y,
-      width: Math.abs(rect.width * obj.totalScaleX),
-      height: Math.abs(rect.height * obj.totalScaleY)
+      x: Math.min(x0, x1),
+      y: Math.min(y0, y1),
+      width: Math.abs(rect.width * sx),
+      height: Math.abs(rect.height * sy)
     };
   }
 
