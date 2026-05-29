@@ -255,15 +255,19 @@ function bareAutoRegisterClassesPlugin(options = {}) {
             seen.add(name);
         }
         // Register components referenced by settingsData.json that the code scan
-        // didn't already classify as components (e.g. their base class chain
-        // doesn't resolve to Component). They still must exist and be exported so
-        // we can import them by name.
+        // didn't already pick up. A project component must exist and be exported so
+        // we can import it by path; an engine component (e.g. ParticleComponent) is
+        // imported from the "bare-engine" package instead.
         for (const className of getSettingsComponentClassNames()) {
             if (seen.has(className)) continue;
             const info = classMap.get(className);
-            if (!info || !info.exported) continue;
-            out.push({ name: className, filePath: info.filePath, kind: "component" });
-            seen.add(className);
+            if (info && info.exported) {
+                out.push({ name: className, filePath: info.filePath, kind: "component" });
+                seen.add(className);
+            } else if (ENGINE_COMPONENT_BASES.has(className)) {
+                out.push({ name: className, pkg: "bare-engine", kind: "component" });
+                seen.add(className);
+            }
         }
         out.sort((a, b) => a.name.localeCompare(b.name));
         return out;
@@ -332,7 +336,7 @@ function bareAutoRegisterClassesPlugin(options = {}) {
             scanFile(startBareFile);
 
             const registrations = getRegisteredClasses().filter(c =>
-                normalize(c.filePath) !== normalize(filePath)
+                (!c.filePath || normalize(c.filePath) !== normalize(filePath))
                 && !new RegExp(`\\bbare\\.AddClass\\s*\\(\\s*${c.name}\\s*\\)`).test(code)
             );
             if (registrations.length === 0) {
@@ -347,7 +351,7 @@ function bareAutoRegisterClassesPlugin(options = {}) {
 
             const imports = registrations
                 .filter(c => !hasImportBinding(code, c.name))
-                .map(c => `import { ${c.name} } from "${toImportPath(filePath, c.filePath)}";`);
+                .map(c => `import { ${c.name} } from "${c.pkg || toImportPath(filePath, c.filePath)}";`);
 
             return {
                 code: `${imports.join("\n")}${imports.length ? "\n" : ""}${result}`,
