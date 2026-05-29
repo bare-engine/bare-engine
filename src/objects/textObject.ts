@@ -40,7 +40,7 @@ export class TextObject extends GameObject
         this.SetNameBasedOnText(text);
     }
 
-    override SetPivot(x: number, y: number):GameObject
+    override SetPivot(x: number, y: number): this
     {
         super.SetPivot(x, y);
         

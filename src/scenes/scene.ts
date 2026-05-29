@@ -611,7 +611,7 @@ export class Scene implements SceneI
     }
 
     // INPUT CAN BE: ENTITY / ENTITY NAME / GAMEOBJECT / CLASS TO INSTANTIATE / TEXTURE
-    AddGameObject(input?: Entity | string | GameObject | GameObjectClass | Texture, parent: int | string | GameObject = "objects"): GameObject
+    AddGameObject<T extends GameObject = GameObject>(input?: Entity | string | GameObject | GameObjectClass | Texture, parent: int | string | GameObject = "objects"): T
     {
         if (!this.settingsHandler)
         {
@@ -718,7 +718,7 @@ export class Scene implements SceneI
         globalEvents.emit(BareEvent.game_objectAdded, { gameObject: gameObject, layer: parent });
         this.events.emit(BareEvent.game_objectAdded, { gameObject: gameObject, layer: parent });
 
-        return gameObject;
+        return gameObject as T;
     }
 
     RemoveGameObject(gameObject: GameObject, parent?: int | GameObject, clear:boolean = true)

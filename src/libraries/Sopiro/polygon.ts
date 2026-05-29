@@ -23,7 +23,7 @@ export class Polygon extends RigidBody
 
     }
 
-    override ResetValues(): Polygon
+    override ResetValues(): this
     {
         super.ResetValues();
         this.vertices = [];

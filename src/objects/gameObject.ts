@@ -304,7 +304,7 @@ export class GameObject
         return tex;
     }
 
-    SetTexture(texture:Texture): GameObject
+    SetTexture(texture:Texture): this
     {
         if (!texture)
             console.error("SetTexture has supplied an invalid texture: " + texture);
@@ -991,7 +991,7 @@ export class GameObject
         );
     }
 
-    SetPosition(x: number, y: number): GameObject
+    SetPosition(x: number, y: number): this
     {
         if (Number.isNaN(x) || Number.isNaN(y))
             trace('isNaN SetPosition')
@@ -1001,7 +1001,7 @@ export class GameObject
         return this;
     }
 
-    SetScale(scale: number): GameObject
+    SetScale(scale: number): this
     {
         this.transform.scale.x = scale
         this.transform.scale.y = scale
@@ -1009,7 +1009,7 @@ export class GameObject
         return this;
     }
 
-    SetScaleXY(x: number, y: number): GameObject
+    SetScaleXY(x: number, y: number): this
     {
         this.transform.scale.x = x;
         this.transform.scale.y = y;
@@ -1017,14 +1017,14 @@ export class GameObject
         return this;
     }
 
-    SetScaleToReachDimensions(width: number, height: number): GameObject
+    SetScaleToReachDimensions(width: number, height: number): this
     {
         this.SetScaleXY(width / this.texture!.width, height / this.texture!.height);
         return this;
     }
 
     // CAN PASS IN PERCENTAGES TOO
-    SetPivot(x: number, y: number): GameObject
+    SetPivot(x: number, y: number): this
     {
         if (!this.texture)
         {
@@ -1064,7 +1064,7 @@ export class GameObject
         return this;
     }
 
-    SetPivotWhileKeepingPosition(x: number, y: number): GameObject
+    SetPivotWhileKeepingPosition(x: number, y: number): this
     {
         const oldPivot = new Vec2(this.pivot.x, this.pivot.y);
         this.SetPivot(x, y);
@@ -1073,7 +1073,7 @@ export class GameObject
         return this;
     }
 
-    SetColor(color: Color | string): GameObject
+    SetColor(color: Color | string): this
     {
         if(typeof color === 'string')
             this.color = Color.fromHex(color);
@@ -1083,7 +1083,7 @@ export class GameObject
         return this;
     }
 
-    SetInnerScale(scale: number): GameObject
+    SetInnerScale(scale: number): this
     {
         this.innerTransform.scale.x = scale;
         this.innerTransform.scale.y = scale;
@@ -1091,13 +1091,13 @@ export class GameObject
         return this;
     }
 
-    SetRotation(rotation: number): GameObject
+    SetRotation(rotation: number): this
     {
         this.rotation = rotation;
         return this;
     }
 
-    CenterPivot(): GameObject
+    CenterPivot(): this
     {
         return this.SetPivot(.5, .5);
     }
@@ -1283,7 +1283,7 @@ export class GameObject
         return null;
     }
 
-    ResetValues(): GameObject
+    ResetValues(): this
     {
         //this.onDestroy?.bind(this);
         //this.onDestroy = null;

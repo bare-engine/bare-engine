@@ -91,7 +91,7 @@ export abstract class RigidBody extends GameObject
         return tex;
     }
 
-    override ResetValues(): RigidBody
+    override ResetValues(): this
     {
         super.ResetValues();
 
@@ -297,7 +297,7 @@ export abstract class RigidBody extends GameObject
         return this;
     }
 
-    override SetScale(scale: number): GameObject
+    override SetScale(scale: number): this
     {
         super.SetScale(scale);
         this.RefreshBody();
@@ -305,7 +305,7 @@ export abstract class RigidBody extends GameObject
         return this;
     }
 
-    override SetScaleXY(x: number, y: number): GameObject
+    override SetScaleXY(x: number, y: number): this
     {
         super.SetScaleXY(x, y);
         this.RefreshBody();

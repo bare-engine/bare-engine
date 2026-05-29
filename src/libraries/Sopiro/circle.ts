@@ -31,7 +31,7 @@ export class Circle extends RigidBody
         }
     }
 
-    override ResetValues(): Circle
+    override ResetValues(): this
     {
         super.ResetValues();
         this.radius = 0;

@@ -426,11 +426,11 @@ export class EditorScene extends Scene
         return level;
     }
 
-    override AddGameObject(entityLevel: Entity | string, parent: int | string | GameObject = "objects"): GameObject
+    override AddGameObject<T extends GameObject = GameObject>(entityLevel: Entity | string, parent: int | string | GameObject = "objects"): T
     {
         if (entityLevel instanceof GameObject || entityLevel instanceof Texture)
         {
-            return super.AddGameObject(entityLevel, parent); //
+            return super.AddGameObject<T>(entityLevel, parent); //
         }
         
         var entity = this.ConstructEntity(entityLevel);
@@ -442,7 +442,7 @@ export class EditorScene extends Scene
 
         //entity.components = {}; // DON'T WANT TO LOAD COMPONENTS IN EDITOR
 
-        var gameObject = super.AddGameObject(entity, parent);
+        var gameObject = super.AddGameObject<T>(entity, parent);
 
         //gameObject.physicsHitbox.rectangle = {x: 0, y: 0, width: 0, height: 0};
 

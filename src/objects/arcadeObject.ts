@@ -33,7 +33,7 @@ export class ArcadeObject extends GameObject
             this.physicsHitbox.rectangle = {x: 0, y: 0, width: this.texture!.width, height: this.texture!.height};
     }
 
-    override SetTexture(texture:Texture): GameObject
+    override SetTexture(texture:Texture): this
     {
         if (this.physicsHitbox && this.physicsHitbox.rectangle.x == 0 && this.physicsHitbox.rectangle.y == 0 && this.physicsHitbox.rectangle.width == 0 && this.physicsHitbox.rectangle.height == 0)
             this.physicsHitbox.rectangle = {x: 0, y: 0, width: texture!.width, height: texture!.height};
@@ -202,7 +202,7 @@ export class ArcadeObject extends GameObject
         this.velocity.y = 0;
     }
 
-    override ResetValues(): ArcadeObject
+    override ResetValues(): this
     {
         super.ResetValues();
 

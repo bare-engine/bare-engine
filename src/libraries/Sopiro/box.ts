@@ -20,7 +20,7 @@ export class Box extends Polygon
         this.phyHeight = height;
     }
 
-    override ResetValues(): Box
+    override ResetValues(): this
     {
         super.ResetValues();
         this.phyWidth = 0;
