@@ -629,15 +629,15 @@ export class BareEngine
     
     RegisterGameObjectPool(cls: GameObjectClass, defaultPoolSize: number = 10): void
     {
-        const name = cls.name.startsWith("_") ? cls.name.substring(1) : cls.name;
+        const className = Helper.GetNameFromClass(cls);
 
-        if (this.gameObjectPools.has(name))
+        if (this.gameObjectPools.has(className))
         {
             // SET DIFFERENT defaultPoolSize?
             return;
         }
 
-        this.gameObjectPools.set(name, new PoolHandler(() => new cls(null), defaultPoolSize));// NOT ON SCENE YET - SCENE PROP WILL GET SET IN GetObjectFromPool()
+        this.gameObjectPools.set(className, new PoolHandler(() => new cls(null), defaultPoolSize));// NOT ON SCENE YET - SCENE PROP WILL GET SET IN GetObjectFromPool()
     }
 
     GetObjectFromPool(objectName: string, scene: Scene): GameObject
