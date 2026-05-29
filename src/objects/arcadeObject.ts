@@ -19,6 +19,7 @@ export class ArcadeObject extends GameObject
     @InspectorField drag: number = 0//.15;
     @InspectorField restitution: number = 0//.8;
     @InspectorField stayInBounds: boolean = true;
+    @InspectorField removeOnOutOfBounds: boolean = false;
     
     blocked:BlockedState = BlockedState.None;
     collidingObjects: ArcadeObject[] = [];
@@ -212,6 +213,9 @@ export class ArcadeObject extends GameObject
         this.drag = 0//.07;
         this.restitution = 0//.8;
         this.blocked = BlockedState.None;
+        this.stayInBounds = true;
+        this.removeOnOutOfBounds = false;
+
         if (this.collidingObjects)
             this.collidingObjects.length = 0;
 

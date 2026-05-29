@@ -143,6 +143,7 @@ export interface Entity
   sensor?: boolean;
   static?: boolean;
   stayInBounds?: boolean;
+  removeOnOutOfBounds?: boolean;
 
   physicsRect?: Size;
   physicsRadius?: number; // ALSO GETS USED BY ArcadeObject. TODO: GIVE BETTER NAME
@@ -208,6 +209,8 @@ export var entityVarsNestedRecord: Record<string, string[]> =
       "hitbox",
       "hitboxType",
       "physicsRadius",
+      "stayInBounds",
+      "removeOnOutOfBounds",
   ],
   "Rigidbody": [
       "drag",

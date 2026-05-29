@@ -103,6 +103,8 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 		if (bare.levelEditorOpen)
       return;
 
+    let objectsToRemove: ArcadeObject[] | null = null;
+
     for (const obj of this.objects)
     {
       if (obj.parent) {
@@ -148,6 +150,11 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         // Resolve boundary impacts after integration so the final velocity matches contact state.
         this.handleBoundaryCollisions(obj);
       }
+
+      if (obj.removeOnOutOfBounds && this.isEntirelyOutOfBounds(obj))
+      {
+        (objectsToRemove ??= []).push(obj);
+      }
       // Check if object stopped moving
       /*let hadCollision = false;
       for (const key of this.activeCollisions) {
@@ -158,17 +165,42 @@ export class ArcadePhysicsController extends PhysicsControllerBase
       }*/
     }
 
+    if (objectsToRemove)
+    {
+      for (const obj of objectsToRemove)
+        obj.Remove();
+    }
+
     if (this.collisionsEnabled) {
       this.currentFrameCollisions.clear();
       this.handleObjectCollisions();
     }
-  } 
+  }
   
   override Update(deltaTime: number = 0): void
   {
     // Collision-end cleanup is here at Update() so gameplay OnUpdate()
     // can still observe contacts that happened during this render frame
     this.CheckCollisionEnd();
+  }
+
+  // True when the object's hitbox no longer overlaps the world bounds at all (entirely off screen).
+  private isEntirelyOutOfBounds(obj: ArcadeObject): boolean
+  {
+    const bounds = this.getObjectBounds(obj);
+    if (!bounds) return false;
+
+    const left = bounds.x;
+    const right = bounds.x + bounds.width;
+    const top = bounds.y;
+    const bottom = bounds.y + bounds.height;
+
+    const boundsLeft = this.x;
+    const boundsTop = this.y;
+    const boundsRight = this.x + this.width;
+    const boundsBottom = this.y + this.height;
+
+    return right < boundsLeft || left > boundsRight || bottom < boundsTop || top > boundsBottom;
   }
 
   private handleBoundaryCollisions(obj: ArcadeObject): void
