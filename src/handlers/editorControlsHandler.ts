@@ -379,9 +379,9 @@ export class EditorControlsHandler {
     {
         const selectedLayer = document.querySelector('.selected-layer');
         const layerName = selectedLayer?.id;
-        const layer = Object.values(this.scene.layerInfos).find(layer => layer.name == layerName)!;
+        const layerInfo = this.scene.settingsData.layersInfo[layerName];
 
-        return layer?.layerI;
+        return layerInfo?.layerI;
     }
 
     SelectGameObjectsInRect(rect: Rectangle = {x: 0, y: 0, width: 0, height: 0})
@@ -544,7 +544,8 @@ export class EditorControlsHandler {
     {
         this.ClearSelection();
 
-        const selectedLayerI = Object.values(this.scene.layerInfos).find(layer => layer.name == layerName)!.layerI;
+        const layerInfo = this.scene.settingsData.layersInfo[layerName];
+        const selectedLayerI = layerInfo.layerI;
 
         hitboxController.SetExclusiveLayer(selectedLayerI);
         

@@ -1,6 +1,6 @@
-import { BaseComponent, Scene, TweenTo, componentController } from "bare-engine";
+import { Component, Scene, TweenTo, componentController } from "bare-engine";
 
-class WaveComponent extends BaseComponent
+class WaveComponent extends Component
 {
     scene: Scene;
     countDown = 0;

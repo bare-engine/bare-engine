@@ -1,6 +1,6 @@
 import { assetsHandler } from "./assetsHandler";
 import { defaultSettingsData } from "../types/bareData";
-import { Entity, SettingsData } from "../types/bareTypes";
+import { CollisionHandlingType, Entity, LayerInfo, SettingsData } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
 import { Scene } from "../scenes/scene";
 
@@ -326,6 +326,37 @@ export class SettingsHandler
             {
                 var entity = settings.entities[entityName];
                 this.ConstructEntity(entity, settings, options);
+            }
+        }
+
+        // PROCESS LAYER INFO - ADDS DEFAULTS
+        {
+            settings.layersInfo ??= {};
+            settings.layers ??= ["objects"];
+
+            // LAYERS AR SHOULD ALWAYS INCLUDE "objects", SINCE IT'S A DEFAULT LAYER ARGUMENT
+            // IF IT DOESN'T EXIST, IT WILL BE ADDED AT THE FRONT
+            if (!settings.layers.includes("objects"))
+            {
+                settings.layers.unshift("objects");
+            }
+
+            // SET DEFAULTS
+            for (var j = 0; j < settings.layers.length; j++)
+            {
+                const layerName = settings.layers[j].toLowerCase();
+                const currentLayerInfo = settings.layersInfo[layerName] ?? {};
+
+                const newLayerInfo:LayerInfo = {
+                    name: layerName,
+                    layerI: j,
+                    showInEditor: true,
+                    doSave: true,
+                    pointerCollisionType: CollisionHandlingType.POINT,
+                    ...currentLayerInfo // OVERRIDES ABOVE
+                };
+                
+                settings.layersInfo[layerName] = newLayerInfo;
             }
         }
 

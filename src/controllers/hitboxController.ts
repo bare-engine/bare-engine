@@ -118,7 +118,8 @@ export class HitboxController
         const mouse = mouseController.world.position;
         var foundHover = false;
 
-        var l = Object.keys(this.scene.layerInfos).length;
+        var layersSettings = this.scene.settingsData.layers;
+        var l = layersSettings.length;
         for (var i = 0; i < layers.length; i++)
         {
             const layer = i;
@@ -129,7 +130,9 @@ export class HitboxController
             if (this.exclusiveLayers.length > 0 && !this.exclusiveLayers.includes(layer))
                 continue;
 
-            var layerCollisionHandlingType = this.scene.layerInfos[i].pointerCollisionType ?? CollisionHandlingType.POINT;
+            var layerName = layersSettings[layer];
+            var layerInfo = this.scene.settingsData.layersInfo[layerName];
+            var layerCollisionHandlingType = layerInfo.pointerCollisionType;
 
             var objs = layers[i];
             var fullBreak = false;

@@ -299,9 +299,11 @@ export class LevelHandler
     SerializeLevel(level: LevelData)
     {
         var gameLayers = objectController.GetLayers();
+        var layersSettings = this.scene.settingsData.layers;
         for (var i = 0; i < gameLayers.length; i++)
         {
-            var layerInfo = this.scene.layerInfos[i];
+            var layerName = layersSettings[i];
+            var layerInfo = this.scene.settingsData.layersInfo[layerName];
 
             // SHOULD BE A SAVEABLE LAYER
             if (!layerInfo.doSave)

@@ -543,6 +543,7 @@ export class EditorUIHandler {
             this.PersistLayerVisibility(layerName, show);
     }
 
+    // THIS SHOULD NOT BE BAKED INTO SETTINGS DATA - TODO: IN LOCALHOST
     private UpdateLayerInfo(layerName: string, show: boolean)
     {
         this.data.layersInfo ??= {};
@@ -553,7 +554,10 @@ export class EditorUIHandler {
         this.data.layersInfo[layerName] = { ...existingInfo, showInEditor: show };
 
         if (layerIndex !== -1)
-            this.scene.layerInfos[layerIndex] = { ...this.scene.layerInfos[layerIndex], showInEditor: show };
+        {
+            const layerInfo = this.scene.settingsData.layersInfo[layerName];
+           layerInfo[layerIndex] = { ...layerInfo[layerIndex], showInEditor: show };
+        }
     }
 
     private async PersistLayerVisibility(layerName: string, show: boolean)
@@ -622,8 +626,15 @@ export class EditorUIHandler {
     }
 
     public SelectLayerItemByInt(layerI: int): void {
-        const layerName = this.scene.layerInfos[layerI].name;
-        var layerElement = document.getElementById(layerName)!;
+        var layerName = this.scene.layerNames[layerI];
+
+        if (!layerName)
+            return;
+
+        var layerElement = document.getElementById(layerName);
+        if (!layerElement)
+            return;
+
         this.SelectLayerItem(layerElement);
     }
 

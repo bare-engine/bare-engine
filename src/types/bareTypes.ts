@@ -274,12 +274,6 @@ interface AnimationDataInfo
   imagePath?: string;
 }
 
-export interface LayersInfo
-{
-  showInEditor?: boolean;
-  doSave?: boolean;
-  collidesWith?: string[];
-}
 
 export interface SettingsData
 {
@@ -289,7 +283,7 @@ export interface SettingsData
   entities?: Record<string, Entity>;
   tilesheets?: Array<Entity>;
   layers?: Array<string>;
-  layersInfo?: Record<string, LayersInfo>;
+  layersInfo?: Record<string, Partial<LayerInfo>>; // Partial, SINCE I'LL BE ASSIGNING MORE KEYS TO IT DURING PROCESSING
   presets?: Record<string, any>;
   saveVars?: Record<string, Array<string>>
   animations?: Record<string, AnimationDataInfo>
@@ -344,6 +338,7 @@ export interface LayerInfo {
   doSave?: boolean;
   pointerCollisionType?:CollisionHandlingType;
   showInEditor?: boolean;
+  collidesWith?: string[];
 }
 
 export enum CollisionHandlingType

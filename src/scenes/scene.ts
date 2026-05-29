@@ -74,8 +74,6 @@ export class Scene implements SceneI
     isPaused: boolean = false;//
     doRender: boolean = true;
 
-    layerInfos: Record<int, LayerInfo> = {};
-
     sceneOptions: SceneOptions;
 
     // MOVE OUT? HAS SaveData REFERENCE - TODO
@@ -130,9 +128,6 @@ export class Scene implements SceneI
 
         await this.settingsHandler.Process(payload?.settingsHandler?.GetRaw() || this.sceneOptions.settingsData);//this.settingsData
 
-        this.ApplyLayerInfoToSettings(this.settingsData);
-        //this.layerNames = this.settingsData.layers.slice();
-
         var classes = controllerNames;
         for (let i = 0; i < classes.length; i++)
         {
@@ -180,61 +175,6 @@ export class Scene implements SceneI
         // FOR OVERRIDE
 
         // OPTIONAL TO OVERRIDE AS ASYNC - TO LOAD SOME MORE ASSETS BEFORE THE LOADING SCREEN DISAPPEARS
-    }
-
-    // SEPARATE THIS OUT? TODO, PUT IN SETTINGS HANDLER PROCESS?
-    private ApplyLayerInfoToSettings(data: SettingsData)
-    {
-        // SET UP NEW LAYER INFOS
-        this.layerInfos = {};
-        data.layersInfo ??= {};
-        
-        for (var j = 0; j < data.layers.length; j++)
-        {
-            const layerName = data.layers[j].toLowerCase();
-            const storedInfo = data.layersInfo[layerName] ?? {};
-            const layerInfo = {
-                name: layerName,
-                layerI: j,
-                ...storedInfo
-            } as LayerInfo;
-            
-            if (layerInfo.doSave === undefined)
-                layerInfo.doSave = true;
-
-            if (layerInfo.showInEditor === undefined)
-                layerInfo.showInEditor = true;
-
-            this.layerInfos[j] = layerInfo;
-
-            // only persist data that belongs in settingsdata
-            const { showInEditor } = layerInfo;
-            data.layersInfo[layerName] = { ...storedInfo, ...(showInEditor === undefined ? {} : { showInEditor }), ...(layerInfo.doSave === undefined ? {} : { doSave: layerInfo.doSave }) };
-        }
-        
-        // ASSIGN LAYER DATA TO layerInfos
-        /*if (data.uiLayers)
-        {
-            for (var j = 0; j < data.uiLayers.length; j++)
-            {
-                const layerName = data.uiLayers[j];
-                const storedInfo = data.layersInfo[layerName] ?? {};
-                const layerInfo = {
-                    name: layerName,
-                    layerI: j,
-                    ...storedInfo
-                } as LayerInfo;
-
-                if (layerInfo.showInEditor === undefined)
-                    layerInfo.showInEditor = true;
-
-                this.layerInfos[UI_LAYER + j] = layerInfo;
-
-                // only persist data that belongs in settingsdata
-                const { showInEditor } = layerInfo;
-                data.layersInfo[layerName] = { ...storedInfo, ...(showInEditor === undefined ? {} : { showInEditor }) };
-            }
-        }*/
     }
     
     get layerNames(): string[]
