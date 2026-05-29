@@ -27,6 +27,8 @@ export class SettingsHandler
     {
         var settings = this.clone(raw);
 
+        var layerObjectsIsSetByUser = settings.layers?.includes("objects");
+
         // SET DEFAULTS - WILL FILL IN ANY VALUE IN settings WITH VALUES FROM defaultSettingsData THAT'S NOT PRESENT
         for (const key of Object.keys(defaultSettingsData) as (keyof SettingsData)[])
         {
@@ -40,7 +42,10 @@ export class SettingsHandler
                 {
                     if (!rawValue.includes(item))
                     {
-                        rawValue.push(item);
+                        if (key == "layers") // HACK FOR LAYERS, WANT default "objects" ENTRY AT START
+                            rawValue.unshift(item);
+                        else
+                            rawValue.push(item);
                     }
                 }
             }
@@ -331,15 +336,7 @@ export class SettingsHandler
 
         // PROCESS LAYER INFO - ADDS DEFAULTS
         {
-            settings.layersInfo ??= {};
-            settings.layers ??= ["objects"];
-
-            // LAYERS AR SHOULD ALWAYS INCLUDE "objects", SINCE IT'S A DEFAULT LAYER ARGUMENT
-            // IF IT DOESN'T EXIST, IT WILL BE ADDED AT THE FRONT
-            if (!settings.layers.includes("objects"))
-            {
-                settings.layers.unshift("objects");
-            }
+            var anyCollidesWithSetByUser = false;
 
             // SET DEFAULTS
             for (var j = 0; j < settings.layers.length; j++)
@@ -357,6 +354,15 @@ export class SettingsHandler
                 };
                 
                 settings.layersInfo[layerName] = newLayerInfo;
+
+                if (currentLayerInfo.collidesWith)
+                    anyCollidesWithSetByUser = true;
+            }
+
+            // IF OBJECTS LAYER WAS NOT SET AND NO COLLIDES-WITH, DEFAULT TO OBJECTS <-> OBJECTS COLLISION
+            if (!layerObjectsIsSetByUser && !anyCollidesWithSetByUser)
+            {
+                settings.layersInfo["objects"].collidesWith = ["objects"];
             }
         }
 

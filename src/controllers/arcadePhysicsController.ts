@@ -27,6 +27,8 @@ export class ArcadePhysicsController extends PhysicsControllerBase
   {
     super(scene);
 
+    bare.AddClass(ArcadeObject);
+
     this.setDimensions(0, 0, bare.width, bare.height);
     bare.RegisterGameObjectPool(ArcadeObject, 10);
   }
@@ -451,6 +453,10 @@ export class ArcadePhysicsController extends PhysicsControllerBase
           continue;
         }
 
+        if (!this.canObjectsCollideByLayer(obj1, obj2)) {
+          continue;
+        }
+
         const key = this.getCollisionKey(obj1, obj2);
         if (pairKeys.has(key)) {
           continue;
@@ -467,6 +473,57 @@ export class ArcadePhysicsController extends PhysicsControllerBase
     }
 
     return pairs;
+  }
+
+  private hasLayerCollisionRules(): boolean
+  {
+    const layersInfo = this.scene.settingsData.layersInfo;
+    if (!layersInfo) {
+      return false;
+    }
+
+    return Object.values(layersInfo).some(info => Array.isArray(info?.collidesWith));
+  }
+
+  private canObjectsCollideByLayer(obj1: ArcadeObject, obj2: ArcadeObject): boolean
+  {
+    if (!this.hasLayerCollisionRules()) {
+      return true;
+    }
+
+    const layer1 = this.getCollisionLayerName(obj1);
+    const layer2 = this.getCollisionLayerName(obj2);
+
+    if (!layer1 || !layer2) {
+      return false;
+    }
+
+    return this.layerAllowsCollision(layer1, layer2) || this.layerAllowsCollision(layer2, layer1);
+  }
+
+  private getCollisionLayerName(obj: GameObject): string | null
+  {
+    let root = obj;
+    while (root.parent) {
+      root = root.parent;
+    }
+
+    const layerIndex = this.scene.objectController.GetObjectLayer(root);
+    if (layerIndex === -1) {
+      return null;
+    }
+
+    return this.scene.settingsData.layers?.[layerIndex]?.toLowerCase() ?? null;
+  }
+
+  private layerAllowsCollision(layerName: string, otherLayerName: string): boolean
+  {
+    const collidesWith = this.scene.settingsData.layersInfo?.[layerName]?.collidesWith;
+    if (!Array.isArray(collidesWith)) {
+      return false;
+    }
+
+    return collidesWith.some(name => name.toLowerCase() === otherLayerName);
   }
 
   private getCollisionObjects(): ArcadeObject[]
@@ -916,6 +973,9 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         if (this.shouldSkipInternalCollision(obj, otherObj))
             continue;
 
+        if (!this.canObjectsCollideByLayer(obj, otherObj))
+            continue;
+
         if (this.CheckCollision(obj, otherObj))
         {
             collidingObjects.push(otherObj);
@@ -927,6 +987,10 @@ export class ArcadePhysicsController extends PhysicsControllerBase
   
   CheckCollision(obj1: ArcadeObject, obj2: ArcadeObject): boolean
   {
+    if (!this.canObjectsCollideByLayer(obj1, obj2)) {
+      return false;
+    }
+
     return this.GetCollisionInfo(obj1, obj2).collision;
   }
 
