@@ -86,8 +86,21 @@ export class CameraHandler {
 
     if (prevWidth == this.dimensions.width && prevHeight == this.dimensions.height)
     {
+      // Camera is tracking the screen size: keep it centered the same way it was
+      // by shifting the center by half the size delta. A default-centered camera
+      // stays centered (oldW/2 -> newW/2); an intentionally offset camera keeps
+      // its offset. Without this the view stays centered on the old screen center
+      // while the world/physics bounds move to 0..newW, so bounds look shifted.
+      const dx = (newWidth - this.dimensions.width) / 2;
+      const dy = (newHeight - this.dimensions.height) / 2;
+
       this.dimensions.width = newWidth;
       this.dimensions.height = newHeight;
+
+      this.target.x += dx;
+      this.target.y += dy;
+      this.position.x += dx;
+      this.position.y += dy;
     }
     this.CalculateZoomFit();
   }

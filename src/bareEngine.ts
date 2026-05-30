@@ -309,7 +309,7 @@ export class BareEngine
 
         this.PositionCanvas(resolution, cssWidth, cssHeight);
 
-        globalEvents.emit(BareEvent.game_resize, { prevWidth: prevWidth, prevHeight: prevHeight, newWidth: gameWidth, newHeight: gameHeight });
+        this.SendEvent(BareEvent.game_resize, { prevWidth: prevWidth, prevHeight: prevHeight, newWidth: gameWidth, newHeight: gameHeight });
 
         // PERSIST UI LAYOUT
         sceneController.OnResize(prevWidth, prevHeight, gameWidth, gameHeight);
