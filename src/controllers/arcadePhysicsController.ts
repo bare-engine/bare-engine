@@ -703,7 +703,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
     }
 
     if (obj.physicsHitbox.type === HitboxType.Circle) {
-      const radius = obj.physicsHitbox.radius || 0;
+      const radius = obj.physicsHitbox.GetRadius();
 
       if (radius <= 0) {
         return null;
@@ -724,6 +724,16 @@ export class ArcadePhysicsController extends PhysicsControllerBase
     }
 
     return this.getWorldHitboxRect(obj);
+  }
+
+  GetObjectHitboxRadius(obj: ArcadeObject): number
+  {
+    if (obj.physicsHitbox.radius)
+      return obj.physicsHitbox.radius;
+    if (obj.physicsHitbox.rectangle)
+      return Math.min(obj.physicsHitbox.rectangle.width, obj.physicsHitbox.rectangle.height)
+    
+    return 0;
   }
 
   private getWorldHitboxRect(obj: ArcadeObject): Rectangle | null
@@ -783,7 +793,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
   private getWorldCircle(obj: ArcadeObject): { x: number; y: number; radius: number } | null
   {
-    const radius = obj.physicsHitbox.radius || 0;
+    const radius = obj.physicsHitbox.GetRadius();
 
     if (radius <= 0) {
       return null;

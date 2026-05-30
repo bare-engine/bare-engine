@@ -32,9 +32,9 @@ export class ArcadeObject extends GameObject
     hitboxType = {
         // physicsHitbox.type is a numeric HitboxType; map it to/from its key name so the
         // dropdown value matches the options.
-        get: () => HitboxType[this.physicsHitbox.type].toLowerCase() ?? "rectangle",
-        set: (type: string) => this.physicsHitbox.type = HitboxType[Helper.CapitalizeFirstLetter(type) as keyof typeof HitboxType],
-        values: () => ["rectangle", "circle"]
+        get: () => HitboxType[this.physicsHitbox.type] ?? "Rectangle",
+        set: (type: string) => this.physicsHitbox.type = HitboxType[type as keyof typeof HitboxType],
+        values: () => ["Rectangle", "Circle"]
     };
 
     get physicsRadius(): number

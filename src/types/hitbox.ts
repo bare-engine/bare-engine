@@ -44,4 +44,15 @@ export class Hitbox
     {
         this.parent = parent;
     }
+
+    GetRadius():number
+    {
+        if (this.radius)
+            return this.radius;
+
+        if (this.rectangle)
+            return Math.min(this.rectangle.width, this.rectangle.height)/2
+        
+        return 0;
+    }
 }

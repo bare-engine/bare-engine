@@ -211,7 +211,8 @@ export class HitboxController
             hitbox.circleOffset.x + parent.pivot.x,
             hitbox.circleOffset.y + parent.pivot.y
         );
-        const localEdge = new Vec2(localCenter.x + hitbox.radius, localCenter.y);
+        const radius = hitbox.GetRadius();
+        const localEdge = new Vec2(localCenter.x + radius, localCenter.y);
 
         const worldCenter = parent.ToGlobal(localCenter);
         const worldEdge = parent.ToGlobal(localEdge);
