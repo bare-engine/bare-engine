@@ -4,6 +4,7 @@ const BUTTON_METADATA_KEY = "__editorButtons__";
 const FIELD_METADATA_KEY = "__editorFields__";
 const LOCKED_METADATA_KEY = "__lockedFields__";
 const RANGE_METADATA_KEY = "__fieldRanges__";
+const DECIMAL_METADATA_KEY = "__fieldDecimals__";
 const LABEL_METADATA_KEY = "__fieldLabels__";
 const DESCRIPTION_METADATA_KEY = "__fieldDescriptions__";
 const RUN_MODES_KEY = "__runModes__";
@@ -47,6 +48,7 @@ export interface InspectorFieldData
     values?: any[];
     locked?: boolean;
     range?: InspectorRangeData;
+    decimals?: number;
     description?: string;
 }
 
@@ -135,10 +137,41 @@ export function InspectorButton(targetOrOptions: any, propertyKey?: string): any
     };
 }
 
-/** Returns all editor buttons registered on the component class. */
+/** Returns the prototype chain (parent-first), stopping before Object.prototype. */
+function prototypeChain(proto: any): any[]
+{
+    const chain: any[] = [];
+    for (let p = proto; p && p !== Object.prototype; p = Object.getPrototypeOf(p))
+        chain.push(p);
+    return chain.reverse();
+}
+
+/** Returns all editor buttons registered on the component class and its ancestors. */
 export function getButtons(componentClass: any): { label: string; methodKey: string; callback: () => void }[]
 {
-    const entries: ButtonEntry[] = componentClass.prototype[BUTTON_METADATA_KEY] || [];
+    const entries: ButtonEntry[] = [];
+    const indexByKey = new Map<string, number>();
+
+    // WALK PARENT-FIRST SO INHERITED BUTTONS ARE INCLUDED; A CHILD WITH THE SAME SOURCE OVERRIDES THE PARENT
+    for (const proto of prototypeChain(componentClass.prototype))
+    {
+        if (!Object.prototype.hasOwnProperty.call(proto, BUTTON_METADATA_KEY))
+            continue;
+
+        for (const entry of (proto[BUTTON_METADATA_KEY] as ButtonEntry[]))
+        {
+            const key = entry.sourceKey ?? entry.methodKey;
+            const existing = indexByKey.get(key);
+            if (existing !== undefined)
+                entries[existing] = entry;
+            else
+            {
+                indexByKey.set(key, entries.length);
+                entries.push(entry);
+            }
+        }
+    }
+
     return entries.map(e => ({
         label: e.label,
         methodKey: e.methodKey,
@@ -216,6 +249,16 @@ export function Range(min?: number, max?: number): (target: any, propertyKey: st
     };
 }
 
+export function Decimal(places: number): (target: any, propertyKey: string) => void
+{
+    return function (target: any, propertyKey: string): void
+    {
+        const decimals: Record<string, number> = target[DECIMAL_METADATA_KEY] || {};
+        decimals[propertyKey] = places;
+        target[DECIMAL_METADATA_KEY] = decimals;
+    };
+}
+
 export function Label(label: string): (target: any, propertyKey: string) => void
 {
     return function (target: any, propertyKey: string): void
@@ -272,20 +315,60 @@ function isInspectorObjectField(value: any): boolean
         && !Array.isArray(value);
 }
 
-/** Returns all editor fields registered on a component instance. */
+/** Returns all editor fields registered on a component instance and its ancestor classes. */
 export function getInspectorFields(component: any): InspectorFieldData[]
 {
-    const entries: FieldEntry[] = component.constructor.prototype[FIELD_METADATA_KEY] || [];
-    const lockedFields: string[] = component.constructor.prototype[LOCKED_METADATA_KEY] || [];
-    const ranges: Record<string, InspectorRangeData> = component.constructor.prototype[RANGE_METADATA_KEY] || {};
-    const labels: Record<string, string> = component.constructor.prototype[LABEL_METADATA_KEY] || {};
-    const descriptions: Record<string, string> = component.constructor.prototype[DESCRIPTION_METADATA_KEY] || {};
+    // AGGREGATE METADATA ACROSS THE WHOLE PROTOTYPE CHAIN (parent-first) SO INHERITED @InspectorField FIELDS ARE INCLUDED.
+    // Each class declares its own metadata array/record (see addField etc.), which would otherwise shadow ancestors'.
+    const entries: FieldEntry[] = [];
+    const indexByName = new Map<string, number>();
+    const lockedFields: string[] = [];
+    const ranges: Record<string, InspectorRangeData> = {};
+    const decimals: Record<string, number> = {};
+    const labels: Record<string, string> = {};
+    const descriptions: Record<string, string> = {};
+
+    for (const proto of prototypeChain(component.constructor.prototype))
+    {
+        if (Object.prototype.hasOwnProperty.call(proto, FIELD_METADATA_KEY))
+        {
+            for (const entry of (proto[FIELD_METADATA_KEY] as FieldEntry[]))
+            {
+                const existing = indexByName.get(entry.name);
+                if (existing !== undefined)
+                    entries[existing] = entry; // CHILD OVERRIDES PARENT, KEEPING PARENT'S POSITION
+                else
+                {
+                    indexByName.set(entry.name, entries.length);
+                    entries.push(entry);
+                }
+            }
+        }
+        if (Object.prototype.hasOwnProperty.call(proto, LOCKED_METADATA_KEY))
+            lockedFields.push(...(proto[LOCKED_METADATA_KEY] as string[]));
+        if (Object.prototype.hasOwnProperty.call(proto, RANGE_METADATA_KEY))
+            Object.assign(ranges, proto[RANGE_METADATA_KEY]);
+        if (Object.prototype.hasOwnProperty.call(proto, DECIMAL_METADATA_KEY))
+            Object.assign(decimals, proto[DECIMAL_METADATA_KEY]);
+        if (Object.prototype.hasOwnProperty.call(proto, LABEL_METADATA_KEY))
+            Object.assign(labels, proto[LABEL_METADATA_KEY]);
+        if (Object.prototype.hasOwnProperty.call(proto, DESCRIPTION_METADATA_KEY))
+            Object.assign(descriptions, proto[DESCRIPTION_METADATA_KEY]);
+    }
 
     return entries.map(entry =>
     {
         const value = getFieldValue(component, entry);
         const isDescriptor = isInspectorFieldDescriptor(value);
         const descriptor = isDescriptor ? value : {};
+
+        const range = ranges[entry.name];
+
+        // A @Range(0, 1) field defaults to 2 decimals (integer steps would be useless on a 0..1 range);
+        // an explicit @Decimal always wins.
+        let resolvedDecimals = decimals[entry.name];
+        if (resolvedDecimals === undefined && range && range.min === 0 && range.max === 1)
+            resolvedDecimals = 2;
 
         return {
             name: labels[entry.name] ?? entry.name,
@@ -297,23 +380,63 @@ export function getInspectorFields(component: any): InspectorFieldData[]
                 : value,
             values: typeof descriptor.values === "function" ? descriptor.values() : descriptor.values,
             locked: lockedFields.includes(entry.name),
-            range: ranges[entry.name],
+            range: range,
+            decimals: resolvedDecimals,
             description: descriptions[entry.name],
         };
     });
 }
 
+/** Returns the names of every @InspectorField registered on the instance's class and its ancestors. */
+export function getInspectorFieldNames(component: any): string[]
+{
+    const proto = typeof component === "function" ? component.prototype : component.constructor.prototype;
+    const names = new Set<string>();
+    for (const p of prototypeChain(proto))
+    {
+        if (Object.prototype.hasOwnProperty.call(p, FIELD_METADATA_KEY))
+            for (const e of (p[FIELD_METADATA_KEY] as FieldEntry[]))
+                names.add(e.name);
+    }
+    return [...names];
+}
+
+/** Finds an inspector field entry (matching by name or label) anywhere in the prototype chain. */
+function findInspectorFieldEntry(component: any, fieldName: string): FieldEntry | undefined
+{
+    for (const proto of prototypeChain(component.constructor.prototype))
+    {
+        const entries: FieldEntry[] = Object.prototype.hasOwnProperty.call(proto, FIELD_METADATA_KEY)
+            ? proto[FIELD_METADATA_KEY] : [];
+        const labels: Record<string, string> = Object.prototype.hasOwnProperty.call(proto, LABEL_METADATA_KEY)
+            ? proto[LABEL_METADATA_KEY] : {};
+        const entry = entries.find(e => e.name === fieldName || labels[e.name] === fieldName);
+        if (entry)
+            return entry;
+    }
+    return undefined;
+}
+
+function isInspectorFieldLocked(component: any, fieldName: string): boolean
+{
+    for (const proto of prototypeChain(component.constructor.prototype))
+    {
+        const lockedFields: string[] = Object.prototype.hasOwnProperty.call(proto, LOCKED_METADATA_KEY)
+            ? proto[LOCKED_METADATA_KEY] : [];
+        if (lockedFields.includes(fieldName))
+            return true;
+    }
+    return false;
+}
+
 export async function applyInspectorField(component: any, fieldName: string, value: any): Promise<boolean>
 {
-    const entries: FieldEntry[] = component.constructor.prototype[FIELD_METADATA_KEY] || [];
-    const labels: Record<string, string> = component.constructor.prototype[LABEL_METADATA_KEY] || {};
-    const entry = entries.find(e => e.name === fieldName || labels[e.name] === fieldName);
+    const entry = findInspectorFieldEntry(component, fieldName);
 
     if (!entry)
         return false;
 
-    const lockedFields: string[] = component.constructor.prototype[LOCKED_METADATA_KEY] || [];
-    if (lockedFields.includes(entry.name))
+    if (isInspectorFieldLocked(component, entry.name))
         return true;
 
     const fieldValue = getFieldValue(component, entry);

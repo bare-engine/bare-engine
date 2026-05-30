@@ -17,6 +17,7 @@ import { GameObject } from "../objects/gameObject";
 import { defaultSettingsData } from "../types/bareData";
 import { AwakePayload, BareEvent, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
+import { getInspectorFieldNames } from "../utils/decorators";
 
 /*Bare.camera.SetPosition(bareEngine.width * .5, bareEngine.height * .5);
 Bare.sound.Play()
@@ -433,6 +434,8 @@ export class Scene implements SceneI
             entity.components = val;
         }
 
+        const inspectorFieldNames = new Set(getInspectorFieldNames(obj));
+
         for (const key in entity) {
             if (key == "components" && !addComponents)
                 continue;
@@ -448,6 +451,22 @@ export class Scene implements SceneI
             if (special) {
                 special(obj, value);
                 continue;
+            }
+
+            // @InspectorField descriptors hold a { get, set, values } object on the instance.
+            // Route through the descriptor's setter so we don't clobber that object (which would
+            // drop the dropdown values / getter and downgrade the field to a plain input).
+            if (inspectorFieldNames.has(key))
+            {
+                const descriptor = obj[key];
+                if (descriptor && typeof descriptor === "object"
+                    && (typeof descriptor.set === "function" || typeof descriptor.onChange === "function"))
+                {
+                    (descriptor.set || descriptor.onChange).call(obj, value);
+                    continue;
+                }
+                // otherwise it's an accessor-based @InspectorField (e.g. `set alpha()`); fall through to
+                // the normal assignment below, which invokes that accessor.
             }
 
             // detect XY struct
@@ -553,9 +572,15 @@ export class Scene implements SceneI
         {
             const key = (varName as keyof GameObject);
             const currentValue = gameObject[key];
-            
+
             var value = currentValue;
 
+            // @InspectorField descriptor objects ({ get, set, (values) }) expose their value via get()/current,
+            // so the default is that resolved value. eg: used for hitboxType
+            
+            if (currentValue && typeof currentValue === "object" && (typeof (currentValue as any).get === "function"))
+                value = (currentValue as any).get();
+            else
             if (value instanceof Vec2)
                 value = { x: value.x, y: value.y };
             else

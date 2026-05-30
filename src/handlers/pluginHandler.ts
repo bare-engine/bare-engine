@@ -62,6 +62,20 @@ window.__GAME_DEBUG_API__ = {
       comp[methodName]();
   },
 
+  clickedObjectButton(uid: string, methodName: string)
+  {
+        const scene = plugin.GetCurrentScene();
+
+      var obj = scene.objectController.GetObjectById(uid);
+      if (!obj)
+        {
+            console.error("Object not found");
+            return false;
+        }
+
+      (obj as any)[methodName]();
+  },
+
   selectedObject(uid: string)
   {
       var objs = sceneController.GetAllSceneObjects();
@@ -298,7 +312,7 @@ window.__GAME_DEBUG_API__ = {
 
     var obj = entityScene.objectController.GetObjectByName(name);
     if (obj)
-        plugin.AddComponentInspectorData(entityWithLog, obj);
+        plugin.AddInspectorDataToObject(entityWithLog, obj, true);
     
     return entityWithLog;
   },
@@ -325,7 +339,7 @@ window.__GAME_DEBUG_API__ = {
         data.innerScaleY = o.innerScale.y;
         data.persistent = o.persistent;
 
-        plugin.AddComponentInspectorData(data, o);
+        plugin.AddInspectorDataToObject(data, o);
 
         if (data.children)
         {
@@ -721,6 +735,17 @@ window.__GAME_DEBUG_API__ = {
         
         if (!o)
             return false;
+
+        // APPLY @InspectorField DECORATED FIELDS DECLARED ON THE OBJECT ITSELF
+        // applyInspectorField is a no-op (returns false) for props that aren't registered inspector fields,
+        // so the explicit transform/prop handling below is unaffected.
+        for (let prop in props)
+        {
+            if (prop.startsWith("__"))
+                continue;
+
+            await applyInspectorField(o, prop, props[prop]);
+        }
 
         // APPLY PROPS TO OBJECT
         if (props.customName !== undefined) o.customName = props.customName;
@@ -1727,8 +1752,21 @@ export class PluginHandler
         return newEntity;
     }
 
-    AddComponentInspectorData(data: any, o: GameObject): void
+    // onlyFieldsInData: only enrich @InspectorField info for fields that are actually present in `data`
+    // (used by the entity/gotoEntity path, whose data only carries the entity's own keys).
+    AddInspectorDataToObject(data: any, o: GameObject, onlyFieldsInData: boolean = false): void
     {
+        // ADD DATA FOR @InspectorButton AND @InspectorField DECORATORS ON THE OBJECT ITSELF
+        var objButtons = getButtons(o.constructor as any);
+        if (objButtons.length > 0)
+            data.__buttons = objButtons.map(b => ({ label: b.label, method: b.methodKey }));
+
+        var objFields = getInspectorFields(o);
+        if (onlyFieldsInData)
+            objFields = objFields.filter(f => Object.prototype.hasOwnProperty.call(data, f.name));
+        if (objFields.length > 0)
+            data.__fields = objFields;
+
         // ADD DATA FOR @InspectorButton AND @InspectorField DECORATORS
         if (data.components)
         {
@@ -1763,7 +1801,7 @@ export class PluginHandler
             {
                 var child = o.children[i];
                 if (child)
-                    this.AddComponentInspectorData(data.children[i], child);
+                    this.AddInspectorDataToObject(data.children[i], child, onlyFieldsInData);
             }
         }
     }

@@ -5,7 +5,7 @@ import type { Scene } from "../scenes/scene";
 import type { IComponent, Ctor, Events, IShader, Rectangle, Shader } from "../types/bareTypes";
 import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';
 import { Hitbox } from '../types/hitbox';
-import { getOwnInspectorFieldNames } from "../utils/decorators";
+import { Decimal, getOwnInspectorFieldNames, InspectorField, Range } from "../utils/decorators";
 import { Helper } from '../utils/helper';
 
 export class Transform {
@@ -762,6 +762,8 @@ export class GameObject
         this.pivot.y = value;
     }
 
+    @InspectorField
+    @Range(0, 1)
     set alpha(value: number)
     {
         value = Math.min(Math.max(value, 0), 1);
