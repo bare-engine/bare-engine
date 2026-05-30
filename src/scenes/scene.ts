@@ -571,29 +571,38 @@ export class Scene implements SceneI
         for (var varName of entityVarsCopy)
         {
             const key = (varName as keyof GameObject);
-            const currentValue = gameObject[key];
+            var serializedValue;
 
-            var value = currentValue;
+            var objValue = gameObject[key];
 
-            // @InspectorField descriptor objects ({ get, set, (values) }) expose their value via get()/current,
-            // so the default is that resolved value. eg: used for hitboxType
-            
-            if (currentValue && typeof currentValue === "object" && (typeof (currentValue as any).get === "function"))
-                value = (currentValue as any).get();
+            if (customSerialize[varName] && objValue)
+                serializedValue = customSerialize[varName](objValue);
             else
-            if (value instanceof Vec2)
-                value = { x: value.x, y: value.y };
-            else
-            if (customSerialize[varName] && currentValue)
-                value = customSerialize[varName](currentValue);
+                serializedValue = this.GetSerializedValueFromObject(gameObject, key);
 
-            entityConstructed[varName] = value;
+            entityConstructed[varName] = serializedValue;
         }
 
         if (!entityConstructed.hitbox)
             entityConstructed.hitbox = { x1: 0, y1: 0, x2: 0, y2: 0 };
 
         return entityConstructed;
+    }
+
+    GetSerializedValueFromObject(gameObject: GameObject, field: string): any
+    {
+        var objValue = gameObject[field];
+        var serializedValue;
+
+        if (objValue && typeof objValue === "object" && (typeof (objValue as any).get === "function")) //eg: hitboxType
+            serializedValue = (objValue as any).get();
+        else
+        if (objValue instanceof Vec2)
+            serializedValue = { x: objValue.x, y: objValue.y };
+        else
+            serializedValue = objValue;
+
+        return serializedValue;
     }
 
     GetAppliedEntityWithDefaultValues(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true }): Entity

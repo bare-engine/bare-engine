@@ -446,17 +446,16 @@ export class LevelHandler
         for (var varName of varsToSave)
         {
             const key = (varName as keyof GameObject);
-            const currentValue = obj[key];
-            
-            var value = currentValue;
+            var serializedValue;
 
-            if (customSerialize[varName] && currentValue)
-                value = customSerialize[varName](currentValue);
+            var objValue = obj[key];
 
-            if (value instanceof Vec2)
-                value = { x: value.x, y: value.y };
+            if (customSerialize[varName] && objValue)
+                serializedValue = customSerialize[varName](objValue);
+            else
+                serializedValue = this.scene.GetSerializedValueFromObject(obj, key);
 
-            entity[varName] = value;
+            entity[varName] = serializedValue;
         }
 
         return entity;
