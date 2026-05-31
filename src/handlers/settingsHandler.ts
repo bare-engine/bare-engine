@@ -388,9 +388,10 @@ export class SettingsHandler
                 var animationFrames = this.ProcessNumberedNames(animDataInfo.frames, animDataInfo.imagePath ?? "") ?? existingAnimation?.frames; // FALLBACK TO ANIMATION FRAMES SET BEFORE IN JSON
                 var framesPerSecond = (animDataInfo.framesPerSecond ?? defaultSettingsData.defaultAnimationFramesPerSecond);
                 var loop = animDataInfo.loop;
+                var removeOnComplete = animDataInfo.removeOnComplete ?? false;
                 
                 // WILL ALSO OVERRIDE PREVIOUSLY SET ANIMATION IN JSON FROM 'initial' FOLDER
-                assetsHandler.AddAnimation(animName, animationFrames, framesPerSecond, loop);
+                assetsHandler.AddAnimation(animName, animationFrames, framesPerSecond, loop, removeOnComplete);
             }
         }
     }

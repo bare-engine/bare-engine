@@ -206,6 +206,8 @@ export var entityVarsNestedRecord: Record<string, string[]> =
       "customData",
   ],
   "ArcadeObject": [
+      "static",
+      "sensor",
       "drag",
       "restitution",
       "pivotBasedOnHitbox",
@@ -272,11 +274,14 @@ export interface Category
   showLabels?: boolean;
 }
 
+// ADDING ANYTHING TO THIS IS REALLY STUPID:
+// ADD TO ProcessAnimations, AddAnimation, AnimationData (+clone), 
 interface AnimationDataInfo
 {
   frames?: Array<string>;
   framesPerSecond?: number;
   loop?: boolean;
+  removeOnComplete?: boolean;
   imagePath?: string;
 }
 
@@ -556,22 +561,24 @@ export class AnimationData
   frames: string[];
   framesPerSecond: number;
   loop: boolean;
+  removeOnComplete: boolean;
 
   currentFrame:int = 0;
   currentFrameTime:number = 0;
 
   texturesLoaded: boolean = false;
 
-  constructor(animName: string, animFrames: string[], framesPerSecond: number, loop: boolean)
+  constructor(animName: string, animFrames: string[], framesPerSecond: number, loop: boolean, removeOnComplete: boolean)
   {
     this.name = animName;
     this.frames = animFrames;
     this.framesPerSecond = framesPerSecond;
     this.loop = loop;
+    this.removeOnComplete = removeOnComplete;
   }
   
   clone(): AnimationData {                  // NOT CLONING THE FRAMES, ASSUMED TO STAY UNTOUCHED
-    return new AnimationData(this.name, this.frames, this.framesPerSecond, this.loop);
+    return new AnimationData(this.name, this.frames, this.framesPerSecond, this.loop, this.removeOnComplete);
   }
 }
 

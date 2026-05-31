@@ -2,7 +2,7 @@ import { Component } from "../controllers/componentController";
 import { assetsHandler } from "../handlers/assetsHandler";
 import mitt, { Emitter } from "../libraries/mitt";
 import { AnimationData } from "../types/bareTypes";
-import { Description, InspectorButton, InspectorField, Range } from "../utils/decorators";
+import { InspectorField, Range } from "../utils/decorators";
 
 // THIS COMPONENT JUST HANDLES PLAYING/PAUSING OF ANIMATIONS
 // THERE IS NO METHOD TO REGISTER ANIMATIONS HERE, THAT HAPPENS AUTOMATICALLY WHEN YOU SUFFIX YOUR IMAGE NAME WITH "_00", "_01", "_03"...
@@ -106,7 +106,7 @@ export class AnimationComponent extends Component
         get: () => this.currentAnimation?.framesPerSecond ?? 0,
         set: (fps:int) => {if (this.currentAnimation) this.currentAnimation.framesPerSecond = fps}
     };
-
+    
     OnAdded(): void
     {
         this.events = mitt<AnimationEventPayload>();
@@ -261,6 +261,11 @@ export class AnimationComponent extends Component
         if (this.callbacks.has(this.currentAnimation.name))
         {
             this.callbacks.get(this.currentAnimation.name)!(this);
+        }
+
+        if (this.currentAnimation.removeOnComplete)
+        {
+            this.go.Remove();
         }
     }
 

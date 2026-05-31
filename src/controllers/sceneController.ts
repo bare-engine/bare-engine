@@ -154,13 +154,14 @@ export class SceneController
             if (!scene.persistent)
             {
                 scene.events.clear();
-                scene.Clear();
+                scene.Clear(false);
             }
         }
         for (var scene of sceneController.currentScenes)
         {
             if (!scene.persistent)
             {
+                scene.RestartClasses();
                 scene.Start();
             }
         }

@@ -267,7 +267,7 @@ export class Helper
         return Math.atan2(dy,dx) * 180 / Math.PI;
     };
 
-    static PointTowards(direction:number, distance:number):Vec2
+    static PointTowards(direction:number, distance:number = 1):Vec2
     {
         var p = new Vec2();
         p.x = -Math.cos(direction * Math.PI / 180) * distance;
@@ -275,7 +275,7 @@ export class Helper
         return p;
     };
 
-    static PointTowardsFrom(from:Vec2, direction:number, distance:number)
+    static PointTowardsFrom(from:Vec2, direction:number, distance:number = 1)
     {
         //return Helper.pointTowards(direction,distance).add(from);
         var p = Helper.PointTowards(direction, distance);
