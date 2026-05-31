@@ -126,6 +126,9 @@ export class BareEngine
                 baseTexture!.setFilterMode(rapid.gl, options.textureFilter);
         }
 
+        if (options.backgroundColor !== undefined)
+            this.SetBackgroundColor(options.backgroundColor);
+
         if (options.antiAlias !== undefined)
             rapid.setAntialias(options.antiAlias);
 

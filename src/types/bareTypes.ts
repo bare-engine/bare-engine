@@ -1,11 +1,12 @@
 import type { Scene } from "../scenes/scene";
 import { GameObject } from "../objects/gameObject";
-import { CanvasScaleMode, CustomGlShader, TextureFilterMode } from "../libraries/new-rapid-render";
+import { CanvasScaleMode, Color, CustomGlShader, TextureFilterMode } from "../libraries/new-rapid-render";
 
 export type Scalar = (number | string | boolean);
 
 export type BareOptions = 
 {
+  backgroundColor?: Color;
   resolution?: ResolutionOptions,
   antiAlias?: boolean;
   textureFilter?: TextureFilterMode;
