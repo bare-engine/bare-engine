@@ -985,6 +985,12 @@ function generateLayers(jsonPath, outputPath) {
     try {
         const data = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
         const layers = data.layers || [];
+        // Mirror SettingsHandler.Process(): the engine prepends the default
+        // "objects" layer at runtime, so the generated indices must account for
+        // it or AddGameObject(name, Layer.X) lands one layer off.
+        if (!layers.includes("objects")) {
+            layers.unshift("objects");
+        }
         const layerEntries = layers
             .map((name, index) => `  ${toConstantCase(name)}: ${index},`)
             .join("\n");
