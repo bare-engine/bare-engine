@@ -212,9 +212,7 @@ export class LevelHandler
             var entities = level.entitiesByLayer[layerName];
             for(var levelEntity of entities)
             {
-                var layerNameLowerCase = layerName.toLowerCase();
-                var layer = this.scene.layerNames.indexOf(layerNameLowerCase);
-                var gameObject = this.scene.AddGameObject(levelEntity, layer);
+                var gameObject = this.scene.AddGameObject(levelEntity, layerName);
 
                 // WHEN IN EDITOR, WE WANT TO USE levelEntity
                 // BUT IT'S KIND OF MESSED UP AND CONSTRUCTED BY ABOVE NOW

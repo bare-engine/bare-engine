@@ -554,7 +554,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
       return null;
     }
 
-    return this.scene.settingsData.layers?.[layerIndex]?.toLowerCase() ?? null;
+    return this.scene.settingsData.layers?.[layerIndex] ?? null;
   }
 
   private layerAllowsCollision(layerName: string, otherLayerName: string): boolean
@@ -564,7 +564,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
       return false;
     }
 
-    return collidesWith.some(name => name.toLowerCase() === otherLayerName);
+    return collidesWith.some(name => (name === otherLayerName));
   }
 
   private getCollisionObjects(): ArcadeObject[]

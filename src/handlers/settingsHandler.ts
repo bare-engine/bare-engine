@@ -352,7 +352,7 @@ export class SettingsHandler
                     pointerCollisionType: CollisionHandlingType.POINT,
                     ...currentLayerInfo // OVERRIDES ABOVE
                 };
-                
+
                 settings.layersInfo[layerName] = newLayerInfo;
 
                 if (currentLayerInfo.collidesWith)
