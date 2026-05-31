@@ -55,6 +55,7 @@ export { EditorUIScene } from "./scenes/editorUIScene";
 export { uiScene } from "./scenes/uiScene";
 
 // Shaders and utils
+export { Shader } from "./types/bareTypes";
 export { FlashShader } from "./shaders/flashShader";
 export { OutlineShader } from "./shaders/outlineShader";
 export { defaultSettingsData } from "./types/bareData";

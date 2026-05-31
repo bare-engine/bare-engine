@@ -519,7 +519,7 @@ export interface SceneI
 export interface IShader
 {
     shader: CustomGlShader;
-    update?(): boolean;
+    update?(): boolean | void;
 }
 
 export class Shader implements IShader
@@ -540,7 +540,7 @@ export class Shader implements IShader
         this.shader = bare.shaders[name];
     }
 
-    update?(gameObject?: GameObject): boolean;
+    update?(gameObject?: GameObject): boolean | void;
 }
 
 export type SceneOptions = {

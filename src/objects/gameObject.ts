@@ -2,7 +2,7 @@ import { assetsHandler } from "../handlers/assetsHandler";
 import mitt from "../libraries/mitt";
 import { Color, CustomGlShader, MaskType, MatrixStack, Texture, Vec2 } from "../libraries/new-rapid-render";
 import type { Scene } from "../scenes/scene";
-import type { IComponent, Ctor, Events, IShader, Rectangle, Shader } from "../types/bareTypes";
+import type { Ctor, Events, IComponent, Rectangle, Shader } from "../types/bareTypes";
 import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';
 import { Hitbox } from '../types/hitbox';
 import { getOwnInspectorFieldNames, InspectorField, Range } from "../utils/decorators";
