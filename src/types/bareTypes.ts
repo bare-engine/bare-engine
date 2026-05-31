@@ -1,6 +1,6 @@
 import type { Scene } from "../scenes/scene";
 import { GameObject } from "../objects/gameObject";
-import { CanvasScaleMode, Color, CustomGlShader, TextureFilterMode } from "../libraries/new-rapid-render";
+import { CanvasScaleMode, Color, CustomGlShader, TextureFilterMode, UniformValue } from "../libraries/new-rapid-render";
 
 export type Scalar = (number | string | boolean);
 
@@ -516,13 +516,7 @@ export interface SceneI
     //Clear?: (full:boolean) => void
 }
 
-export interface IShader
-{
-    shader: CustomGlShader;
-    update?(): boolean | void;
-}
-
-export class Shader implements IShader
+export class Shader
 {
     shader: CustomGlShader;
 
@@ -540,7 +534,12 @@ export class Shader implements IShader
         this.shader = bare.shaders[name];
     }
 
-    update?(gameObject?: GameObject): boolean | void;
+    Update?(gameObject?: GameObject): boolean | void;
+
+    SetUniforms(uniforms: Record<string, UniformValue | WebGLTexture>)
+    {
+        this.shader.setUniforms(uniforms);
+    }
 }
 
 export type SceneOptions = {

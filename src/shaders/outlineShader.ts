@@ -56,14 +56,14 @@ export class OutlineShader extends Shader
         this.color = args.color;
         this.width = args.width;
 
-        this.shader.setUniforms({
+        this.SetUniforms({
             uOutlineColor: this.color,
             uOutlineWidth: this.width,
             uTextureSize: [512.0, 512.0],
         });
     }
 
-    public update(gameObject: GameObject): boolean
+    public Update(gameObject: GameObject): boolean
     {
         if (!gameObject?.texture)
             return false;
@@ -80,7 +80,7 @@ export class OutlineShader extends Shader
         const textureHeight = texture?.height ?? texture?.base?.height ?? 512;
         const padding = this.width / globalScale;
 
-        this.shader.setUniforms({
+        this.SetUniforms({
             uOutlineColor: this.color,
             uTextureSize: [textureWidth + 0.00000001, textureHeight + 0.00000001],
             uOutlineWidth: this.width * lpscale / globalScale // pixel size

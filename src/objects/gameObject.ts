@@ -397,9 +397,9 @@ export class GameObject
         {
             var shader = this.shaders[i];
 
-            if (shader.update)
+            if (shader.Update)
             {
-                var remove = shader.update(this);
+                var remove = shader.Update(this);
                 if (remove)
                     this.shaders.splice(i, 1);
             }

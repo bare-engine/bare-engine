@@ -31,19 +31,19 @@ export class FlashShader extends Shader
         this.fadeStartTime =  Date.now() + args.fadePreDuration,
         this.fadeDuration = args.duration;
         
-        this.shader.setUniforms({
+        this.SetUniforms({
             uFlashTime: 0.0
         });
     }
 
-    public update(): boolean
+    public Update(): boolean
     {
         const currentTime = Date.now();
         const elapsed = Math.max(0, currentTime - this.fadeStartTime);
         const progress = Math.min(elapsed / this.fadeDuration, 1.0);
         
         const easeOut = 1 - Math.pow(1 - progress, 2);
-        this.shader.setUniforms({ uFlashTime: easeOut });
+        this.SetUniforms({ uFlashTime: easeOut });
         
         if (progress >= 1.0)
             return true;
