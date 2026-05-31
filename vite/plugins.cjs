@@ -714,9 +714,10 @@ function bareEditorAndApiPlugin(options = {}) {
                 }
 
                 if (req.method === "POST" && requestUrl.pathname === "/api/create-component") {
-                    readJson(req, res, ({ name }) => {
+                    readJson(req, res, ({ name, attach }) => {
                         const className = toComponentClassName(name);
                         const fileBase = className.charAt(0).toLowerCase() + className.slice(1);
+                        const componentName = className.replace(/Component$/, "").replace(/^./, c => c.toLowerCase());
                         const componentsDir = path.join(projectRoot, "src", "components");
                         const fullPath = path.join(componentsDir, `${fileBase}.ts`);
                         if (fs.existsSync(fullPath)) {
@@ -726,13 +727,32 @@ function bareEditorAndApiPlugin(options = {}) {
                         }
                         fs.mkdirSync(componentsDir, { recursive: true });
                         fs.writeFileSync(fullPath, componentTemplate(className));
-                        // The bare:auto-register-classes plugin watches src/ and will pick up
-                        // the new component, inject bare.AddClass(...) and trigger a reload.
+                        // Write the import + bare.AddClass(...) into the StartBare file's OnAwake
+                        // so the registration is visible in source. The bare:auto-register transform
+                        // skips any class already AddClass'd in code, so this never double-registers.
+                        const registered = writeAddClassToStartBareFile(
+                            findStartBareFile(path.join(projectRoot, "src")),
+                            className,
+                            fullPath
+                        );
+                        // Attach the component to the entity in settingsData.json here (server-side)
+                        // so the write can't be interrupted by the hot-restart the file writes trigger.
+                        let attached = false;
+                        if (attach && attach.entity) {
+                            attached = attachComponentToEntity(projectRoot, {
+                                entity: String(attach.entity),
+                                isBase: !!attach.isBase,
+                                childPath: Array.isArray(attach.childPath) ? attach.childPath : [],
+                                componentName
+                            });
+                        }
                         return {
                             success: true,
                             message: `Component created at ${fullPath}`,
                             className,
-                            name: className.replace(/Component$/, "").replace(/^./, c => c.toLowerCase())
+                            registered,
+                            attached,
+                            name: componentName
                         };
                     });
                     return;
@@ -1091,6 +1111,93 @@ function toComponentClassName(name) {
         throw new Error("Invalid component name");
     }
     return `${base.charAt(0).toUpperCase()}${base.slice(1)}Component`;
+}
+
+// Add the component (by its decapitalized name) to an entity's `components` map in
+// settingsData.json, walking childPath into nested children if given.
+function attachComponentToEntity(projectRoot, { entity, isBase, childPath, componentName }) {
+    const settingsPath = path.join(projectRoot, "public", "data", "settingsData.json");
+    if (!fs.existsSync(settingsPath)) {
+        return false;
+    }
+    let data;
+    try {
+        data = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+    } catch {
+        return false;
+    }
+    const group = isBase ? data.baseEntities : data.entities;
+    let target = group && group[entity];
+    if (!target) {
+        return false;
+    }
+    for (const index of childPath) {
+        const children = Array.isArray(target.children) ? target.children : null;
+        target = children && children[index];
+        if (!target) {
+            return false;
+        }
+    }
+    target.components = target.components || {};
+    if (target.components[componentName] === undefined) {
+        target.components[componentName] = {};
+    }
+    writeFormattedJsonFile(settingsPath, data);
+    return true;
+}
+
+const START_BARE_REGEX = /\b(?:[A-Za-z_$][\w$]*\.)?StartBare\s*\(\s*([A-Za-z_$][\w$]*)/;
+
+function findStartBareFile(srcDir) {
+    if (!srcDir || !fs.existsSync(srcDir)) {
+        return null;
+    }
+    for (const filePath of getFilesRecursive(srcDir)) {
+        if (!/\.[cm]?[jt]sx?$/.test(filePath) || /\.d\.ts$/.test(filePath)) {
+            continue;
+        }
+        let code;
+        try {
+            code = fs.readFileSync(filePath, "utf8");
+        } catch {
+            continue;
+        }
+        if (START_BARE_REGEX.test(code)) {
+            return filePath;
+        }
+    }
+    return null;
+}
+
+// Insert `import { X } from "..."` + `bare.AddClass(X);` (in the StartBare scene's
+// OnAwake) into the StartBare source file, so registration is visible/editable in code.
+// Reuses the same OnAwake/import helpers as the auto-register transform.
+function writeAddClassToStartBareFile(startBareFile, className, componentFilePath) {
+    if (!startBareFile) {
+        return false;
+    }
+    let code;
+    try {
+        code = fs.readFileSync(startBareFile, "utf8");
+    } catch {
+        return false;
+    }
+    const target = code.match(START_BARE_REGEX);
+    if (!target) {
+        return false;
+    }
+    if (new RegExp(`\\bbare\\.AddClass\\s*\\(\\s*${className}\\s*\\)`).test(code)) {
+        return true;
+    }
+    const withStatement = addStatementsToOnAwake(code, target[1], [`bare.AddClass(${className});`], startBareFile);
+    if (withStatement === code) {
+        return false;
+    }
+    const result = hasImportBinding(code, className)
+        ? withStatement
+        : `import { ${className} } from "${toImportPath(startBareFile, componentFilePath)}";\n${withStatement}`;
+    fs.writeFileSync(startBareFile, result);
+    return true;
 }
 
 function componentTemplate(className) {

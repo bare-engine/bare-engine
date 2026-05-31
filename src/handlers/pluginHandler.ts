@@ -1048,12 +1048,12 @@ window.__GAME_DEBUG_API__ = {
     window.postMessage({ __fromGame: true, type: "refreshScenes" }, "*");
   },
 
-  async createComponent(name: string) {
+  async createComponent(name: string, attach?: any) {
       try {
           const res = await fetch('/api/create-component', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name })
+          body: JSON.stringify({ name, attach })
         });
         const json = await res.json().catch(() => null);
 
