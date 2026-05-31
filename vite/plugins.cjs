@@ -111,6 +111,9 @@ function bareAutoRegisterClassesPlugin(options = {}) {
     const fileClasses = new Map();
     let serverRef = null;
     let startBareFile = null;
+    // Signature of the component class names referenced by settingsData.json, so a
+    // save that doesn't change which components are referenced skips the reload.
+    let settingsComponentSignature = null;
 
     function parseClasses(source) {
         // Optionally capture a leading decorator block (any number of decorators,
@@ -242,6 +245,10 @@ function bareAutoRegisterClassesPlugin(options = {}) {
         return names;
     }
 
+    function computeSettingsComponentSignature() {
+        return [...getSettingsComponentClassNames()].sort().join(",");
+    }
+
     function getRegisteredClasses() {
         const out = [];
         const seen = new Set();
@@ -286,8 +293,15 @@ function bareAutoRegisterClassesPlugin(options = {}) {
     function onWatcherEvent(filePath, kind) {
         filePath = normalize(path.resolve(filePath));
         if (filePath === settingsDataPath) {
-            // Adding/removing a component in settingsData can change which classes
-            // get registered, so re-run registration on the StartBare module.
+            // Only adding/removing a referenced component changes which classes get
+            // registered. Editing anything else in settingsData (positions, values,
+            // layers, ...) leaves registration identical, so skip the reload to avoid
+            // disrupting every save made from the editor.
+            const signature = computeSettingsComponentSignature();
+            if (signature === settingsComponentSignature) {
+                return;
+            }
+            settingsComponentSignature = signature;
             invalidateStartBareModule();
             return;
         }
@@ -308,6 +322,7 @@ function bareAutoRegisterClassesPlugin(options = {}) {
         },
         configureServer(server) {
             serverRef = server;
+            settingsComponentSignature = computeSettingsComponentSignature();
             if (fs.existsSync(srcDir)) {
                 server.watcher.add(srcDir);
             }
