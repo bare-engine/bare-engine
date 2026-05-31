@@ -100,7 +100,7 @@ export class ArcadeObject extends GameObject
                 //entity.hitbox = rect; // CHANGE IN DATA, SO DOESN'T PROCESS NEXT TIME (?)
                 this.physicsHitbox.rectangle = rect;
 
-                if (entity.hitboxType == "circle")
+                if (entity.hitboxType == "Circle")
                 {
                     this.physicsHitbox.type = HitboxType.Circle;
                     this.physicsHitbox.radius = (entity.hitboxRadius || Math.max(rect.width, rect.height) / 2);
@@ -141,7 +141,7 @@ export class ArcadeObject extends GameObject
         }
 
         // APPLY CIRCLE HITBOX TYPE EVEN WITHOUT AN EXPLICIT HITBOX
-        if (entity.hitboxType == "circle" && !entity.hitbox)
+        if (entity.hitboxType == "Circle" && !entity.hitbox)
         {
             this.WhenTextureLoaded(() => {
                 this.physicsHitbox.type = HitboxType.Circle;
