@@ -1048,6 +1048,25 @@ window.__GAME_DEBUG_API__ = {
     window.postMessage({ __fromGame: true, type: "refreshScenes" }, "*");
   },
 
+  async createComponent(name: string) {
+      try {
+          const res = await fetch('/api/create-component', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        });
+        const json = await res.json().catch(() => null);
+
+        // THE VITE DEV SERVER WRITES THE COMPONENT FILE TO src/components/ AND THE
+        // bare:auto-register-classes PLUGIN PICKS IT UP, INJECTS bare.AddClass(...)
+        // AND TRIGGERS A FULL RELOAD - SO NOTHING ELSE TO DO HERE
+        return { ok: res.ok, response: json };
+      } catch (error: any) {
+        console.error('Failed to create component', error);
+        return { ok: false, error: error?.message ?? String(error) };
+      }
+  },
+
   async createLevel(levelName: string) {
       try {
           var levelData: LevelData = { name: levelName, dimensions: { width: 800, height: 600 }, entitiesByLayer: {} };

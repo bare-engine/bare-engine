@@ -713,6 +713,31 @@ function bareEditorAndApiPlugin(options = {}) {
                     return;
                 }
 
+                if (req.method === "POST" && requestUrl.pathname === "/api/create-component") {
+                    readJson(req, res, ({ name }) => {
+                        const className = toComponentClassName(name);
+                        const fileBase = className.charAt(0).toLowerCase() + className.slice(1);
+                        const componentsDir = path.join(projectRoot, "src", "components");
+                        const fullPath = path.join(componentsDir, `${fileBase}.ts`);
+                        if (fs.existsSync(fullPath)) {
+                            const error = new Error(`Component already exists: ${fileBase}.ts`);
+                            error.statusCode = 409;
+                            throw error;
+                        }
+                        fs.mkdirSync(componentsDir, { recursive: true });
+                        fs.writeFileSync(fullPath, componentTemplate(className));
+                        // The bare:auto-register-classes plugin watches src/ and will pick up
+                        // the new component, inject bare.AddClass(...) and trigger a reload.
+                        return {
+                            success: true,
+                            message: `Component created at ${fullPath}`,
+                            className,
+                            name: className.replace(/Component$/, "").replace(/^./, c => c.toLowerCase())
+                        };
+                    });
+                    return;
+                }
+
                 if (req.method === "POST" && requestUrl.pathname === "/api/save-entity-data") {
                     readJson(req, res, ({ settingsData, path: customPath, skipReload }) => {
                         if (!settingsData) {
@@ -1054,6 +1079,31 @@ function writeFormattedJsonFile(filePath, data) {
         match => match.replace(/\n\s*/g, " ").replace("[ ", "[").replace(" ]", "]")
     );
     fs.writeFileSync(filePath, json);
+}
+
+function toComponentClassName(name) {
+    // Strip whitespace and any character that isn't valid in an identifier, then
+    // drop a trailing "Component" (any case) so "Foo", "foo" and "FooComponent"
+    // all resolve to the same FooComponent class.
+    const cleaned = String(name || "").replace(/\s+/g, "").replace(/[^A-Za-z0-9_$]/g, "");
+    const base = cleaned.replace(/component$/i, "") || cleaned;
+    if (!base || !/^[A-Za-z_$]/.test(base)) {
+        throw new Error("Invalid component name");
+    }
+    return `${base.charAt(0).toUpperCase()}${base.slice(1)}Component`;
+}
+
+function componentTemplate(className) {
+    return `import { Component } from "bare-engine";
+
+export class ${className} extends Component
+{
+    OnAdded(): void
+    {
+
+    }
+}
+`;
 }
 
 function assertSafePath(value) {
