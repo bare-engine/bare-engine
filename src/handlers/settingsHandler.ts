@@ -483,7 +483,7 @@ export class SettingsHandler
             }
 
             // ANYTHING WITH A HITBOX IS A PHYSICS OBJECT
-            //if ((entity.hitbox || entity.physicsRadius) && entity.baseClass == "GameObject") 
+            //if ((entity.hitbox || entity.hitboxRadius) && entity.baseClass == "GameObject") 
             //    entity.baseClass = "ArcadeObject";
 
             // BIT OF A HACK TO MAKE SURE SOPIRO RIGIDBODIES HAVE A CENTER PIVOT

@@ -41,7 +41,7 @@ export class Polygon extends RigidBody
         this.SetVertices(valueVec);
     }
 
-    set physicsRect(value: { width: number, height: number })
+    set rigidbodyRect(value: { width: number, height: number })
     {
         this.SetPhysicsDimensions(value.width, value.height);
     }

@@ -148,8 +148,8 @@ export interface Entity
   stayInBounds?: boolean;
   removeOnOutOfBounds?: boolean;
 
-  physicsRect?: Size;
-  physicsRadius?: number; // ALSO GETS USED BY ArcadeObject. TODO: GIVE BETTER NAME
+  rigidbodyRect?: Size;
+  hitboxRadius?: number; // SHARED BY ARCADEOBJECT AND RIGIDBODY
   mass?: number;
   drag?: number;
   restitution?: number;
@@ -211,7 +211,7 @@ export var entityVarsNestedRecord: Record<string, string[]> =
       "pivotBasedOnHitbox",
       "hitbox",
       "hitboxType",
-      "physicsRadius",
+      "hitboxRadius",
       "stayInBounds",
       "removeOnOutOfBounds",
   ],
@@ -219,8 +219,8 @@ export var entityVarsNestedRecord: Record<string, string[]> =
       "drag",
       "mass",
       "restitution",
-      "physicsRect",
-      "physicsRadius",
+      "rigidbodyRect",
+      "hitboxRadius",
       "polygonVertices",
   ]
 }

@@ -244,7 +244,7 @@ export class Scene implements SceneI
                     }
 
                     // ANYTHING WITH A HITBOX IS A PHYSICS OBJECT
-                    //if ((entityArg.hitbox || entityArg.physicsRadius) && entityArg.baseClass == "GameObject") 
+                    //if ((entityArg.hitbox || entityArg.hitboxRadius) && entityArg.baseClass == "GameObject") 
                     //    entityArg.baseClass = "ArcadeObject";
                     
                     // BIT OF A HACK TO MAKE SURE SOPIRO RIGIDBODIES HAVE A CENTER PIVOT

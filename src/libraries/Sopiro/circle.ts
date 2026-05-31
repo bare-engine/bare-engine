@@ -42,15 +42,15 @@ export class Circle extends RigidBody
     
     override OnApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
     {
-        if (!entity.physicsRadius)
+        if (!entity.hitboxRadius)
         {
-            entity.physicsRadius = Math.min(this.texture.width, this.texture.height) * .5;
+            entity.hitboxRadius = Math.min(this.texture.width, this.texture.height) * .5;
         }
 
         super.OnApplyEntityVarsToGameObject(entity, obj);
     }
 
-    set physicsRadius(radius: number)
+    set hitboxRadius(radius: number)
     {
         this.radius = radius;
         this.area = Math.PI * this.radius * this.radius;
