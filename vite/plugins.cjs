@@ -282,12 +282,17 @@ function bareAutoRegisterClassesPlugin(options = {}) {
 
     function invalidateStartBareModule() {
         if (!serverRef || !startBareFile) return;
+
+        // Clear the StartBare file's cached transform so the next time it's loaded the
+        // auto-register transform re-runs and injects bare.AddClass for the new component.
+        // We deliberately do NOT trigger a reload/restart here - the registration is
+        // picked up on the next natural reload/restart of the game.
         const mods = serverRef.moduleGraph.getModulesByFile(startBareFile);
-        if (!mods || mods.size === 0) return;
-        for (const mod of mods) {
-            serverRef.moduleGraph.invalidateModule(mod);
+        if (mods) {
+            for (const mod of mods) {
+                serverRef.moduleGraph.invalidateModule(mod);
+            }
         }
-        serverRef.ws.send({ type: "full-reload", path: "*" });
     }
 
     function onWatcherEvent(filePath, kind) {
@@ -347,7 +352,10 @@ function bareAutoRegisterClassesPlugin(options = {}) {
 
             startBareFile = normalize(path.resolve(filePath));
 
-            // Make sure this file's class info is fresh (catches edits to the StartBare file itself)
+            // Rescan the src tree so the class map matches what's on disk right now -
+            // makes registration independent of watcher event ordering. Also catches
+            // edits to the StartBare file itself.
+            scanAll();
             scanFile(startBareFile);
 
             const registrations = getRegisteredClasses().filter(c =>
@@ -727,16 +735,10 @@ function bareEditorAndApiPlugin(options = {}) {
                         }
                         fs.mkdirSync(componentsDir, { recursive: true });
                         fs.writeFileSync(fullPath, componentTemplate(className));
-                        // Write the import + bare.AddClass(...) into the StartBare file's OnAwake
-                        // so the registration is visible in source. The bare:auto-register transform
-                        // skips any class already AddClass'd in code, so this never double-registers.
-                        const registered = writeAddClassToStartBareFile(
-                            findStartBareFile(path.join(projectRoot, "src")),
-                            className,
-                            fullPath
-                        );
+                        // No need to write bare.AddClass anywhere: the bare:auto-register-classes
+                        // plugin scans the new file and injects it in-memory on the next compile.
                         // Attach the component to the entity in settingsData.json here (server-side)
-                        // so the write can't be interrupted by the hot-restart the file writes trigger.
+                        // so the write can't be interrupted by the hot-restart the file write triggers.
                         let attached = false;
                         if (attach && attach.entity) {
                             attached = attachComponentToEntity(projectRoot, {
@@ -750,7 +752,6 @@ function bareEditorAndApiPlugin(options = {}) {
                             success: true,
                             message: `Component created at ${fullPath}`,
                             className,
-                            registered,
                             attached,
                             name: componentName
                         };
@@ -1143,60 +1144,6 @@ function attachComponentToEntity(projectRoot, { entity, isBase, childPath, compo
         target.components[componentName] = {};
     }
     writeFormattedJsonFile(settingsPath, data);
-    return true;
-}
-
-const START_BARE_REGEX = /\b(?:[A-Za-z_$][\w$]*\.)?StartBare\s*\(\s*([A-Za-z_$][\w$]*)/;
-
-function findStartBareFile(srcDir) {
-    if (!srcDir || !fs.existsSync(srcDir)) {
-        return null;
-    }
-    for (const filePath of getFilesRecursive(srcDir)) {
-        if (!/\.[cm]?[jt]sx?$/.test(filePath) || /\.d\.ts$/.test(filePath)) {
-            continue;
-        }
-        let code;
-        try {
-            code = fs.readFileSync(filePath, "utf8");
-        } catch {
-            continue;
-        }
-        if (START_BARE_REGEX.test(code)) {
-            return filePath;
-        }
-    }
-    return null;
-}
-
-// Insert `import { X } from "..."` + `bare.AddClass(X);` (in the StartBare scene's
-// OnAwake) into the StartBare source file, so registration is visible/editable in code.
-// Reuses the same OnAwake/import helpers as the auto-register transform.
-function writeAddClassToStartBareFile(startBareFile, className, componentFilePath) {
-    if (!startBareFile) {
-        return false;
-    }
-    let code;
-    try {
-        code = fs.readFileSync(startBareFile, "utf8");
-    } catch {
-        return false;
-    }
-    const target = code.match(START_BARE_REGEX);
-    if (!target) {
-        return false;
-    }
-    if (new RegExp(`\\bbare\\.AddClass\\s*\\(\\s*${className}\\s*\\)`).test(code)) {
-        return true;
-    }
-    const withStatement = addStatementsToOnAwake(code, target[1], [`bare.AddClass(${className});`], startBareFile);
-    if (withStatement === code) {
-        return false;
-    }
-    const result = hasImportBinding(code, className)
-        ? withStatement
-        : `import { ${className} } from "${toImportPath(startBareFile, componentFilePath)}";\n${withStatement}`;
-    fs.writeFileSync(startBareFile, result);
     return true;
 }
 
