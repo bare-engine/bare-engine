@@ -697,20 +697,37 @@ export class Scene implements SceneI
             {
                 var entity: Entity;
 
-                if (typeof input === "string" && input.includes("/"))
+                if (typeof input === "string")
                 {
-                    // PATH STRING - SET UP A BASIC ENTITY USING PROVIDED STRING - SPLITTING INTO NAME AND IMAGE PATH
-                    // CAN ALSO PREPEND / EG: this.AddGameObject('/player') TO PREVENT CONSTRUCTING FROM ENTITY 'PLAYER', GETTING THE IMAGE INSTEAD
-                    var path = input;
-                    var split = path.split("/");
-                    var imagePath = split.slice(0, split.length - 1).join("/");
-                    var name = split[split.length - 1];
+                    if (input.includes("/"))
+                    {
+                        // PATH STRING - SET UP A BASIC ENTITY USING PROVIDED STRING - SPLITTING INTO NAME AND IMAGE PATH
+                        // CAN ALSO PREPEND / EG: this.AddGameObject('/player') TO PREVENT CONSTRUCTING FROM ENTITY 'PLAYER', GETTING THE IMAGE INSTEAD
+                        var path = input;
+                        var split = path.split("/");
+                        var imagePath = split.slice(0, split.length - 1).join("/");
+                        var name = split[split.length - 1];
 
-                    entity = {imagePath: imagePath, name:name, baseClass: "GameObject"};
+                        entity = {imagePath: imagePath, name:name, baseClass: "GameObject"};
+                    }
+                    else
+                    if (input.startsWith("-"))
+                    {
+                        // STRING INPUT, MARKED WITH -, EG: -exlosion
+                        // PREVENT A TEXTURE LOOKUP FOR THIS NAME, HANDY FOR OBJECTS THAT WILL HAVE AN ANIMATION COMPONENT
+                        var name = input.substring(1);
+                        entity = this.ConstructEntity(name);
+                        entity.texture = "NONE";
+                    }
+                    else
+                    {
+                        // ENTITY NAME AS INPUT - CONSTRUCT IT
+                        entity = this.ConstructEntity(input);
+                    }
                 }
                 else
                 {
-                    // ENTITY OR ENTITY NAME - CONSTRUCT IT - TO GET ALL DATA TO APPLY TO GAMEOBJECT BELOW
+                    // ENTITY ITSELF AS INPUT - CONSTRUCT IT - TO GET ALL DATA TO APPLY TO GAMEOBJECT BELOW
                     entity = this.ConstructEntity(input);
                 }
 
