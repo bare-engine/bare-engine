@@ -9,7 +9,7 @@ const allControllerNames = new Set([
     "objectController",
     "particleController",
     "arcadePhysicsController",
-    "physicsControllerSopiro",
+    "sopiroPhysicsController",
     "tweenController",
     "cameraHandler",
     "levelHandler",

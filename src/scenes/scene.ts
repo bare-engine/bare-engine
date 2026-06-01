@@ -60,7 +60,7 @@ export class Scene implements SceneI
     public tweenController: TweenController; 
     public componentController: ComponentController; 
     public arcadePhysicsController: ArcadePhysicsController; 
-    public physicsControllerSopiro: SopiroPhysicsController; 
+    public sopiroPhysicsController: SopiroPhysicsController; 
     public particleController: ParticleController; 
     public levelHandler: LevelHandler; 
     public cameraHandler: CameraHandler; 
@@ -849,13 +849,13 @@ export class Scene implements SceneI
         this.OnUpdate(deltaTime);
         
         this.arcadePhysicsController?.Update(deltaTime);
-        this.physicsControllerSopiro?.Update(deltaTime);
+        this.sopiroPhysicsController?.Update(deltaTime);
     }
 
     FixedUpdate(fixedDeltaTime: number): void
     {
         this.arcadePhysicsController?.FixedUpdate(fixedDeltaTime);
-        this.physicsControllerSopiro?.FixedUpdate(fixedDeltaTime);
+        this.sopiroPhysicsController?.FixedUpdate(fixedDeltaTime);
 
         this.componentController?.FixedUpdate(fixedDeltaTime);
 
@@ -904,7 +904,7 @@ export class Scene implements SceneI
         this.componentController?.Render();
         this.objectController.Render();
         this.arcadePhysicsController?.Render();
-        this.physicsControllerSopiro?.Render();
+        this.sopiroPhysicsController?.Render();
         this.particleController?.Render();
         this.hitboxController?.Render();
 

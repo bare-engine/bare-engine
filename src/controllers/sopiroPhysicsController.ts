@@ -184,5 +184,5 @@ export class SopiroPhysicsController extends PhysicsControllerBase
 	}
 }
 
-export var physicsControllerSopiro:SopiroPhysicsController;
+export var sopiroPhysicsController:SopiroPhysicsController;
 RegisterController(SopiroPhysicsController);

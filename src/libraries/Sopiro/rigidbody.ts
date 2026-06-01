@@ -319,7 +319,7 @@ export abstract class RigidBody extends GameObject
 		
         if (this.type == Type.Static)
             globalEvents.emit(BareEvent.physics_refreshBody, this);
-            //physicsControllerSopiro.RefreshBody(this); // CALLING UP
+            //sopiroPhysicsController.RefreshBody(this); // CALLING UP
     }
     
     /*override set position(value: Vec2)
