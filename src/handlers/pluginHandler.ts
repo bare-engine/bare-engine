@@ -1052,6 +1052,19 @@ window.__GAME_DEBUG_API__ = {
   },
 
   async createComponent(name: string, attach?: any) {
+      // Arm a one-shot: the recompile this triggers restarts the game back to the main
+      // scene, so when it restarts, ask the panel to re-open the entity we were editing.
+      // Done as the same flow as clicking the entity in the list, so the panel re-syncs.
+      if (plugin.lastEntity)
+      {
+          globalEvents.persistent.once(BareEvent.game_started, () => {
+              if (plugin.lastEntity && !sceneController.Get(EntityScene))
+              {
+                  window.postMessage({ __fromGame: true, type: "gotoEntity", name: plugin.lastEntity.name, isBase: plugin.lastEntity.isBase }, "*");
+              }
+          });
+      }
+
       try {
           const res = await fetch('/api/create-component', {
           method: 'POST',
@@ -1245,17 +1258,6 @@ export class PluginHandler
     {
         this.openEditorButtonPosition = editorButtonPosition;;
 
-        globalEvents.persistent.on(BareEvent.game_started, () => {
-            // After a recompile the game restarts back to the main scene. If we were
-            // editing an entity, ask the panel to re-open it - same as clicking the entity
-            // in the panel's list. The panel calls gotoEntity itself and populates from the
-            // return value, so the panel stays in sync (a direct gotoEntity here wouldn't).
-            if (plugin.lastEntity && !sceneController.Get(EntityScene))
-            {
-                window.postMessage({ __fromGame: true, type: "gotoEntity", name: plugin.lastEntity.name, isBase: plugin.lastEntity.isBase }, "*");
-            }
-        });
-        
         // HIDE OR SHOW EditorUIScene
         // SHOWS WHEN NO PLUGIN/CONNECTION
         // HIDES WHEN THERE IS - CAN PRESS THE BUTTON IN THE PLUGIN
