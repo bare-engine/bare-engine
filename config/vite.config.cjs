@@ -40,6 +40,7 @@ module.exports = ({ mode }) => {
             extensions: [".ts", ".js", ".json"]
         },
         plugins: [
+            bareTerminalTitlePlugin(projectPackage.bareEngine?.index?.title || projectPackage.name),
             bareFilterSettingsDataWarningPlugin(),
             entryShaking.default({
                 targets: [
@@ -126,6 +127,21 @@ function ensureLocalBuildIndex(projectRoot, engineIndexPath) {
     }
 
     return outputPath;
+}
+
+function bareTerminalTitlePlugin(title) {
+    return {
+        name: "bare:terminal-title",
+        apply: "serve",
+        configureServer() {
+            if (!title || !process.stdout.isTTY) {
+                return;
+            }
+
+            // OSC escape sequence: set the terminal/console window title.
+            process.stdout.write(`\x1b]0;${title}\x07`);
+        }
+    };
 }
 
 function bareFilterSettingsDataWarningPlugin() {
