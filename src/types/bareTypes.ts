@@ -471,7 +471,7 @@ export interface IComponent<T extends GameObject = GameObject>
     hasAdded: boolean;
 
     Added?(go: T): void
-    OnAdded?(): void;
+    OnAdded?(go: T): void;
     OnStart?(): void
     Removed?(): void
     OnRemoved?(): void

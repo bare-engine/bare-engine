@@ -21,7 +21,7 @@ export abstract class Component<T extends GameObject = GameObject> implements IC
     Added(go: T): void
     {
         this.go = go;
-        this.OnAdded?.();
+        this.OnAdded?.(go);
     }
 
     Removed(): void
@@ -30,7 +30,7 @@ export abstract class Component<T extends GameObject = GameObject> implements IC
             this.OnRemoved?.();
     }
 
-    OnAdded?(): void;
+    OnAdded?(go: T): void;
     OnRemoved?(): void;
     OnStart?(): void;
     OnEnable?(): void;
