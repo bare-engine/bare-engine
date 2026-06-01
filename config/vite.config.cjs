@@ -14,7 +14,8 @@ const {
     bareTexturePackImagesPlugin,
     bareTypeScriptTransformPlugin,
     stripUnusedMethodsPlugin,
-    readProjectPackage
+    readProjectPackage,
+    withTransformSourcemap
 } = require("../vite/plugins.cjs");
 const { resolveTexturePackImagesConfig } = require("../scripts/texturePackImagesConfig.cjs");
 
@@ -42,13 +43,13 @@ module.exports = ({ mode }) => {
         plugins: [
             bareTerminalTitlePlugin(projectPackage.bareEngine?.index?.title || projectPackage.name),
             bareFilterSettingsDataWarningPlugin(),
-            entryShaking.default({
+            ...withTransformSourcemap(entryShaking.default({
                 targets: [
                     path.resolve(__dirname, "../src/index.ts"),
                     path.resolve(__dirname, "../src/arcade.ts"),
                     path.resolve(__dirname, "../src/sopiro.ts")
                 ]
-            }),
+            })),
             bareShaderRawPlugin(),
             ...(autoRegisterClasses ? [bareAutoRegisterClassesPlugin({ projectRoot })] : []),
             bareTypeScriptTransformPlugin({

@@ -2,6 +2,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
 const { parse: acornParse } = require("acorn");
+const MagicString = require("magic-string");
 const ts = require("./projectRequire")("typescript");
 const createControllerProxyTransformer = require("./controllerProxyTransformer");
 const createGameObjectNameTransformer = require("./gameObjectNameTransformer");
@@ -367,8 +368,8 @@ function bareAutoRegisterClassesPlugin(options = {}) {
             }
 
             const statements = registrations.map(c => `bare.AddClass(${c.name});`);
-            const result = addStatementsToOnAwake(code, target[1], statements, filePath);
-            if (result === code) {
+            const insertion = computeOnAwakeInsertion(code, target[1], statements, filePath);
+            if (!insertion) {
                 return null;
             }
 
@@ -376,24 +377,39 @@ function bareAutoRegisterClassesPlugin(options = {}) {
                 .filter(c => !hasImportBinding(code, c.name))
                 .map(c => `import { ${c.name} } from "${c.pkg || toImportPath(filePath, c.filePath)}";`);
 
+            // Apply edits through MagicString so we emit a real sourcemap. Returning
+            // map: null here would tell Vite the edit didn't move any lines, but the
+            // prepended imports shift every following line - that mismatch is what
+            // throws off breakpoints/stepping in the browser devtools.
+            const ms = new MagicString(code);
+            ms.appendLeft(insertion.offset, insertion.text);
+            if (imports.length) {
+                ms.prepend(`${imports.join("\n")}\n`);
+            }
+
             return {
-                code: `${imports.join("\n")}${imports.length ? "\n" : ""}${result}`,
-                map: null
+                code: ms.toString(),
+                map: ms.generateMap({ source: filePath, includeContent: true, hires: true })
             };
         }
     };
 }
 
-function addStatementsToOnAwake(code, className, statements, filePath) {
+// Locate where bare.AddClass statements should be inserted and return the edit as
+// an { offset, text } descriptor (an absolute offset into `code` plus the text to
+// insert there). Returning a descriptor instead of a spliced string lets the caller
+// apply it with MagicString and keep an accurate sourcemap. Returns null when the
+// target class can't be found.
+function computeOnAwakeInsertion(code, className, statements, filePath) {
     const classIndex = code.search(new RegExp(`\\bclass\\s+${className}\\b`));
     if (classIndex < 0) {
-        return code;
+        return null;
     }
 
     const classOpen = code.indexOf("{", classIndex);
     const classClose = findMatchingBrace(code, classOpen);
     if (classOpen < 0 || classClose < 0) {
-        return code;
+        return null;
     }
 
     const classBody = code.slice(classOpen + 1, classClose);
@@ -403,11 +419,14 @@ function addStatementsToOnAwake(code, className, statements, filePath) {
     if (!awakeMatch) {
         const returnType = /\.[cm]?tsx?$/.test(filePath) ? ": void" : "";
         const method = `\n${indent}    OnAwake()${returnType}\n${indent}    {\n${indent}        ${statements.join(`\n${indent}        `)}\n${indent}    }\n`;
-        return `${code.slice(0, classClose)}${method}${code.slice(classClose)}`;
+        return { offset: classClose, text: method };
     }
 
     const awakeOpen = classOpen + 1 + awakeMatch.index + awakeMatch[0].length - 1;
-    return `${code.slice(0, awakeOpen + 1)}\n${indent}        ${statements.join(`\n${indent}        `)}${code.slice(awakeOpen + 1)}`;
+    return {
+        offset: awakeOpen + 1,
+        text: `\n${indent}        ${statements.join(`\n${indent}        `)}`
+    };
 }
 
 function findMatchingBrace(code, openIndex) {
@@ -1362,6 +1381,66 @@ function stripUnusedMethodsPlugin(options = {}) {
     };
 }
 
+// Wrap the `transform` hook of one or more plugins so that, when the hook returns
+// changed code without a sourcemap (a bare string, or { code } with no map), we
+// attach a real map describing the edit. Vite otherwise assumes such a transform
+// didn't move any lines and chains an identity map - which is wrong whenever the
+// plugin inserts/removes lines (e.g. vite-plugin-entry-shaking expands a barrel
+// import into many lines), shifting every following line and throwing off
+// breakpoints/stepping in the browser devtools.
+function withTransformSourcemap(plugins) {
+    const list = Array.isArray(plugins) ? plugins : [plugins];
+    for (const plugin of list) {
+        if (!plugin || typeof plugin.transform !== "function") {
+            continue;
+        }
+        const innerTransform = plugin.transform;
+        plugin.transform = async function (code, id, options) {
+            const result = await innerTransform.call(this, code, id, options);
+            if (result == null) {
+                return result;
+            }
+            const newCode = typeof result === "string" ? result : result.code;
+            const existingMap = typeof result === "string" ? undefined : result.map;
+            if (existingMap || typeof newCode !== "string" || newCode === code) {
+                return result;
+            }
+            return { code: newCode, map: buildLineShiftMap(code, newCode, id) };
+        };
+    }
+    return list;
+}
+
+// Build a sourcemap for an edit known only by its before/after text. We collapse
+// the change to a single replaced span (everything between the common prefix and
+// common suffix) and apply it through MagicString, which then maps the untouched
+// prefix and suffix - in particular the whole body below an expanded import block -
+// back to their exact original positions.
+function buildLineShiftMap(original, next, id) {
+    const minLen = Math.min(original.length, next.length);
+    let start = 0;
+    while (start < minLen && original[start] === next[start]) {
+        start++;
+    }
+    let end = 0;
+    while (end < minLen - start
+        && original[original.length - 1 - end] === next[next.length - 1 - end]) {
+        end++;
+    }
+
+    const originalEnd = original.length - end;
+    const replacement = next.slice(start, next.length - end);
+
+    const ms = new MagicString(original);
+    if (originalEnd > start) {
+        ms.overwrite(start, originalEnd, replacement);
+    } else if (replacement) {
+        ms.appendLeft(start, replacement);
+    }
+
+    return ms.generateMap({ source: id, includeContent: true, hires: true });
+}
+
 module.exports = {
     bareAutoRegisterClassesPlugin,
     bareEditorAndApiPlugin,
@@ -1375,6 +1454,7 @@ module.exports = {
     bareTexturePackImagesPlugin,
     bareTypeScriptTransformPlugin,
     stripUnusedMethodsPlugin,
-    readProjectPackage
+    readProjectPackage,
+    withTransformSourcemap
 };
 
