@@ -1363,34 +1363,27 @@ function stripUnusedMethodsPlugin(options = {}) {
     };
 }
 
-// Wrap the `transform` hook of one or more plugins so that, when the hook returns
-// changed code without a sourcemap (a bare string, or { code } with no map), we
-// attach a real map describing the edit. Vite otherwise assumes such a transform
-// didn't move any lines and chains an identity map - which is wrong whenever the
-// plugin inserts/removes lines (e.g. vite-plugin-entry-shaking expands a barrel
-// import into many lines), shifting every following line and throwing off
-// breakpoints/stepping in the browser devtools.
+// Wrap the `transform` hook of the given plugins so that, when a hook returns
+// changed code as a bare string (no sourcemap), we attach a real map describing
+// the edit. Vite otherwise assumes such a transform didn't move any lines and
+// chains an identity map - which is wrong whenever the plugin inserts/removes
+// lines (e.g. vite-plugin-entry-shaking expands a barrel import into many lines),
+// shifting every following line and throwing off breakpoints in the devtools.
 function withTransformSourcemap(plugins) {
-    const list = Array.isArray(plugins) ? plugins : [plugins];
-    for (const plugin of list) {
-        if (!plugin || typeof plugin.transform !== "function") {
+    for (const plugin of plugins) {
+        if (typeof plugin.transform !== "function") {
             continue;
         }
         const innerTransform = plugin.transform;
-        plugin.transform = async function (code, id, options) {
-            const result = await innerTransform.call(this, code, id, options);
-            if (result == null) {
-                return result;
-            }
-            const newCode = typeof result === "string" ? result : result.code;
-            const existingMap = typeof result === "string" ? undefined : result.map;
-            if (existingMap || typeof newCode !== "string" || newCode === code) {
-                return result;
+        plugin.transform = async function (code, id) {
+            const newCode = await innerTransform.call(this, code, id);
+            if (typeof newCode !== "string" || newCode === code) {
+                return newCode;
             }
             return { code: newCode, map: buildLineShiftMap(code, newCode, id) };
         };
     }
-    return list;
+    return plugins;
 }
 
 // Build a sourcemap for an edit known only by its before/after text. We collapse
