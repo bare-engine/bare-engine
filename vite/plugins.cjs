@@ -368,8 +368,8 @@ function bareAutoRegisterClassesPlugin(options = {}) {
             }
 
             const statements = registrations.map(c => `bare.AddClass(${c.name});`);
-            const insertion = computeOnAwakeInsertion(code, target[1], statements, filePath);
-            if (!insertion) {
+            const result = addStatementsToOnAwake(code, target[1], statements, filePath);
+            if (result === code) {
                 return null;
             }
 
@@ -377,39 +377,24 @@ function bareAutoRegisterClassesPlugin(options = {}) {
                 .filter(c => !hasImportBinding(code, c.name))
                 .map(c => `import { ${c.name} } from "${c.pkg || toImportPath(filePath, c.filePath)}";`);
 
-            // Apply edits through MagicString so we emit a real sourcemap. Returning
-            // map: null here would tell Vite the edit didn't move any lines, but the
-            // prepended imports shift every following line - that mismatch is what
-            // throws off breakpoints/stepping in the browser devtools.
-            const ms = new MagicString(code);
-            ms.appendLeft(insertion.offset, insertion.text);
-            if (imports.length) {
-                ms.prepend(`${imports.join("\n")}\n`);
-            }
-
             return {
-                code: ms.toString(),
-                map: ms.generateMap({ source: filePath, includeContent: true, hires: true })
+                code: `${imports.join("\n")}${imports.length ? "\n" : ""}${result}`,
+                map: null
             };
         }
     };
 }
 
-// Locate where bare.AddClass statements should be inserted and return the edit as
-// an { offset, text } descriptor (an absolute offset into `code` plus the text to
-// insert there). Returning a descriptor instead of a spliced string lets the caller
-// apply it with MagicString and keep an accurate sourcemap. Returns null when the
-// target class can't be found.
-function computeOnAwakeInsertion(code, className, statements, filePath) {
+function addStatementsToOnAwake(code, className, statements, filePath) {
     const classIndex = code.search(new RegExp(`\\bclass\\s+${className}\\b`));
     if (classIndex < 0) {
-        return null;
+        return code;
     }
 
     const classOpen = code.indexOf("{", classIndex);
     const classClose = findMatchingBrace(code, classOpen);
     if (classOpen < 0 || classClose < 0) {
-        return null;
+        return code;
     }
 
     const classBody = code.slice(classOpen + 1, classClose);
@@ -419,14 +404,11 @@ function computeOnAwakeInsertion(code, className, statements, filePath) {
     if (!awakeMatch) {
         const returnType = /\.[cm]?tsx?$/.test(filePath) ? ": void" : "";
         const method = `\n${indent}    OnAwake()${returnType}\n${indent}    {\n${indent}        ${statements.join(`\n${indent}        `)}\n${indent}    }\n`;
-        return { offset: classClose, text: method };
+        return `${code.slice(0, classClose)}${method}${code.slice(classClose)}`;
     }
 
     const awakeOpen = classOpen + 1 + awakeMatch.index + awakeMatch[0].length - 1;
-    return {
-        offset: awakeOpen + 1,
-        text: `\n${indent}        ${statements.join(`\n${indent}        `)}`
-    };
+    return `${code.slice(0, awakeOpen + 1)}\n${indent}        ${statements.join(`\n${indent}        `)}${code.slice(awakeOpen + 1)}`;
 }
 
 function findMatchingBrace(code, openIndex) {
