@@ -248,7 +248,7 @@ export class LevelHandler
 
     }
 
-    CreatePromiseLevelTextures(level: LevelData)
+    CreatePromiseLevelTextures(level: LevelData): Promise<Texture>[]
     {
         var promisesAr: Array<Promise<Texture>> = [];
         var texturesFound = new Set<string>();
@@ -275,6 +275,8 @@ export class LevelHandler
             var entities = level.entitiesByLayer[layerName];
             entities.forEach(collectTextures);
         }
+
+        promisesAr.push(...this.scene.CreatePromiseLevelTextures(level));
 
         return promisesAr;
     }
