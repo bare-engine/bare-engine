@@ -205,7 +205,7 @@ export class LevelHandler
         }
 
         // LOAD ALL TEXTURES
-        await Promise.all(this.CreatePromiseLevelTextures(level));
+        await Promise.all(this.LoadLevelTextures(level));
 
         // CREATE ALL OBJECTS
         for (var layerName in level.entitiesByLayer) {
@@ -248,7 +248,7 @@ export class LevelHandler
 
     }
 
-    CreatePromiseLevelTextures(level: LevelData): Promise<Texture>[]
+    LoadLevelTextures(level: LevelData): Promise<Texture>[]
     {
         var promisesAr: Array<Promise<Texture>> = [];
         var texturesFound = new Set<string>();
@@ -271,12 +271,18 @@ export class LevelHandler
             }
         };
 
-        for (var layerName in level.entitiesByLayer) {
+        // COLLECT TEXTURES FROM ENTITY IN LEVEL
+        for (var layerName in level.entitiesByLayer)
+        {
             var entities = level.entitiesByLayer[layerName];
-            entities.forEach(collectTextures);
+            for (var i = 0; i < entities.length; i++)
+            {
+                collectTextures(entities[i]);
+            }
         }
 
-        promisesAr.push(...this.scene.CreatePromiseLevelTextures(level));
+        // COLLECT ADDITIONAL TEXTURES - CAN BE OVERRIDEN IN USER SPACE
+        promisesAr.push(...this.scene.OnLoadLevelTextures(level));
 
         return promisesAr;
     }

@@ -1029,7 +1029,7 @@ export class Scene implements SceneI
     }
 
     // OVERRIDE THIS TO LOAD SOME MORE TEXTURES DURING LEVEL LOAD
-    CreatePromiseLevelTextures(level: LevelData): Promise<Texture>[]
+    OnLoadLevelTextures(level: LevelData): Promise<Texture>[]
     {
         return [];
     }
