@@ -1471,7 +1471,7 @@ export class PluginHandler
                 if (obj.customName == 'ignoreInPlugin')
                     continue;
 
-                if (!obj.visible || !obj.visibleInEditor)
+                if (!obj.visible || !obj.visibleInEditor || obj.alpha == 0)
                     continue;
 
                 var objRect = obj.GetBoundsWithChildren()

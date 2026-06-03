@@ -1,9 +1,3 @@
-/*export const BareClasses = {
-  ArcadePhysicsController,
-  ArcadeObject,
-  ComponentController,
-};*/
-
 // Core
 export { BareEngine } from "./bareEngine";
 export { GameMode, globalEvents } from "./globals";
@@ -41,9 +35,6 @@ export type { AnimationEventPayload as AnimationEvents } from "./components/anim
 export { CollisionEventComponent } from "./components/collisionEventComponent";
 export { ParticleComponent } from "./components/particleComponent";
 
-// Objects
-// Arcade physics (ArcadeObject, ArcadePhysicsController) are available from the "bare-engine/arcade" entry.
-
 // Editor
 export { PivotComponent } from "./editorComponents/pivotComponent";
 export { PivotRemoveComponent } from "./editorComponents/pivotRemoveComponent";
@@ -74,7 +65,8 @@ export
   CollisionHandlingType,
   Events,
   HitboxType,
-  SaveData
+  SaveData,
+  BlockedState,
 } from "./types/bareTypes";
 export type {
   Atlas,
@@ -95,7 +87,8 @@ export type {
   SpriteSourceSize
 } from "./types/bareTypes";
 
-// Libraries: Sopiro physics are available from the "bare-engine/sopiro" entry.
+// Arcade physics (ArcadeObject, ArcadePhysicsController) are available at "bare-engine/arcade"
+// Sopiro physics (RigidBody, SopiroPhysicsController) are available at "bare-engine/sopiro"
 
 // Libraries: howler
 export { Howl, Howler } from "./libraries/howler/howler";

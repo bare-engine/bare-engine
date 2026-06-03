@@ -136,7 +136,6 @@ export class LevelHandler
 
         this.scene.Clear(false);
         
-        await this.scene.OnPreLoadLevel(levelInput || SaveData.currentLevelStr);
         this.scene.doRender = false;
 
         var level: LevelData;
@@ -203,6 +202,8 @@ export class LevelHandler
             //this.backgroundColor = Color.fromHex(level.backgroundColor); // CAUSES FLASH ON LEVEL SWITCH AND NOT USEFUL FOR DEMO
             bare.SetBackgroundColor(Color.fromHex(level.backgroundColor));
         }
+
+        await this.scene.OnPreLoadLevel(level);
 
         // LOAD ALL TEXTURES
         await Promise.all(this.LoadLevelTextures(level));
@@ -271,7 +272,7 @@ export class LevelHandler
             }
         };
 
-        // COLLECT TEXTURES FROM ENTITY IN LEVEL
+        // COLLECT TEXTURES FOR EACH ENTITY IN LEVEL
         for (var layerName in level.entitiesByLayer)
         {
             var entities = level.entitiesByLayer[layerName];
