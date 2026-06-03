@@ -624,33 +624,6 @@ function bareInitialAssetsPlugin(options = {}) {
     };
 }
 
-function bareGeneratedLayersPlugin(options = {}) {
-    const projectRoot = options.projectRoot || process.cwd();
-    const jsonPath = options.jsonPath || path.join(projectRoot, "public/data/settingsData.json");
-    const outputPath = options.outputPath || path.join(projectRoot, "src/generated/layers.ts");
-
-    return {
-        name: "bare:generated-layers",
-        buildStart() {
-            generateLayers(jsonPath, outputPath);
-            if (fs.existsSync(jsonPath)) {
-                this.addWatchFile(jsonPath);
-            }
-        },
-        configureServer(server) {
-            generateLayers(jsonPath, outputPath);
-            if (fs.existsSync(jsonPath)) {
-                server.watcher.add(jsonPath);
-            }
-            server.watcher.on("change", (filePath) => {
-                if (normalize(filePath) === normalize(jsonPath)) {
-                    generateLayers(jsonPath, outputPath);
-                }
-            });
-        }
-    };
-}
-
 function bareEditorAndApiPlugin(options = {}) {
     const projectRoot = options.projectRoot || process.cwd();
     const editorHtmlPath = options.editorHtmlPath || path.resolve(__dirname, "../config/editor.html");
@@ -1039,42 +1012,6 @@ function injectInitialAssets(html, folder) {
     return html.replace(/<\/head>/, `${tags}</head>`);
 }
 
-function generateLayers(jsonPath, outputPath) {
-    if (!fs.existsSync(jsonPath)) {
-        return;
-    }
-
-    try {
-        const data = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
-        const layers = data.layers || [];
-        // Mirror SettingsHandler.Process(): the engine prepends the default
-        // "objects" layer at runtime, so the generated indices must account for
-        // it or AddGameObject(name, Layer.X) lands one layer off.
-        if (!layers.includes("objects")) {
-            layers.unshift("objects");
-        }
-        const layerEntries = layers
-            .map((name, index) => `  ${toConstantCase(name)}: ${index},`)
-            .join("\n");
-        const output = `// Auto-generated from settingsData.json - DO NOT EDIT
-export const Layer = {
-${layerEntries}
-} as const;
-
-export type Layer = typeof Layer[keyof typeof Layer];
-`;
-
-        fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-        const existing = fs.existsSync(outputPath) ? fs.readFileSync(outputPath, "utf8") : "";
-        if (existing !== output) {
-            fs.writeFileSync(outputPath, output);
-            console.log(`Generated layers.ts with ${layers.length} layers`);
-        }
-    } catch (error) {
-        console.error("Error generating layers:", error);
-    }
-}
-
 function readJson(req, res, onBody) {
     let body = "";
     req.on("data", chunk => {
@@ -1239,10 +1176,6 @@ function readTsconfig(tsconfigPath) {
 function findTsconfig(projectRoot) {
     const tsconfigPath = path.join(projectRoot, "tsconfig.json");
     return fs.existsSync(tsconfigPath) ? tsconfigPath : path.resolve(__dirname, "../config/tsconfig.base.json");
-}
-
-function toConstantCase(str) {
-    return str.replace(/([a-z])([A-Z])/g, "$1_$2").toUpperCase();
 }
 
 function escapeHtml(value) {
@@ -1416,10 +1349,245 @@ function buildLineShiftMap(original, next, id) {
     return ms.generateMap({ source: id, includeContent: true, hires: true });
 }
 
+const ASSET_IMAGE_EXTENSIONS = new Set([".webp", ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".svg"]);
+const ASSET_SOUND_EXTENSIONS = new Set([".mp3", ".wav", ".ogg", ".m4a", ".flac", ".aac"]);
+const ASSET_FONT_EXTENSIONS = new Set([".ttf", ".otf", ".woff", ".woff2"]);
+const ASSET_LEVEL_EXTENSIONS = new Set([".json"]);
+
+// Generates src/generated/assets.ts, giving the project typed enum-like constants
+// for every public asset and every named definition in settingsData.json, eg:
+//   Asset.Image.HUD_COIN  Asset.Sound.COIN  Asset.Font.QILKA_BOLD  Asset.Level.LEVEL
+//   Data.Entity.PLAYER    Data.Animation.PLAYER_IDLE                Data.Layer.OBJECTS
+function bareGeneratedAssetsPlugin(options = {}) {
+    const projectRoot = options.projectRoot || process.cwd();
+    const outputPath = options.outputPath || path.join(projectRoot, "src/generated/assets.ts");
+    const settingsPath = path.join(projectRoot, "public/data/settingsData.json");
+    const watchDirs = [
+        path.join(projectRoot, "public/images"),
+        path.join(projectRoot, "public/sounds"),
+        path.join(projectRoot, "public/fonts"),
+        path.join(projectRoot, "public/data/levels")
+    ];
+
+    return {
+        name: "bare:generated-assets",
+        buildStart() {
+            generateAssets(projectRoot, outputPath);
+            if (fs.existsSync(settingsPath)) {
+                this.addWatchFile(settingsPath);
+            }
+        },
+        configureServer(server) {
+            generateAssets(projectRoot, outputPath);
+
+            for (const target of [settingsPath, ...watchDirs]) {
+                if (fs.existsSync(target)) {
+                    server.watcher.add(target);
+                }
+            }
+
+            const outputNorm = normalize(outputPath);
+            const sources = [normalize(settingsPath), ...watchDirs.map(normalize)];
+            const regenerate = (filePath) => {
+                const norm = normalize(filePath);
+                if (norm === outputNorm) {
+                    return; // never react to our own output
+                }
+                const isSource = sources.some(src => norm === src || norm.startsWith(src + "/"));
+                if (isSource) {
+                    generateAssets(projectRoot, outputPath);
+                }
+            };
+
+            server.watcher.on("add", regenerate);
+            server.watcher.on("unlink", regenerate);
+            server.watcher.on("change", regenerate);
+        }
+    };
+}
+
+function generateAssets(projectRoot, outputPath) {
+    try {
+        const publicDir = path.join(projectRoot, "public");
+
+        const images = collectAssetFiles(path.join(publicDir, "images"), ASSET_IMAGE_EXTENSIONS);
+        const sounds = collectAssetFiles(path.join(publicDir, "sounds"), ASSET_SOUND_EXTENSIONS);
+        const fonts = collectAssetFiles(path.join(publicDir, "fonts"), ASSET_FONT_EXTENSIONS);
+        const levels = collectAssetFiles(path.join(publicDir, "data/levels"), ASSET_LEVEL_EXTENSIONS);
+
+        // Images/sounds/levels are referenced by their path relative to their root
+        // folder without extension (eg "player/player_idle", "coin", "level"), matching
+        // how the engine resolves textures, sounds and levels. Fonts use the bare name,
+        // matching LoadFont(name) which appends the extension itself.
+        const imageEntries = dedupeAssetEntries(images, file => file.relNoExt);
+        const soundEntries = dedupeAssetEntries(sounds, file => file.relNoExt);
+        const fontEntries = dedupeAssetEntries(fonts, file => file.base);
+        const levelEntries = dedupeAssetEntries(levels, file => file.relNoExt);
+
+        let entityDefs = {};
+        let animations = [];
+        let layers = [];
+        const settingsPath = path.join(publicDir, "data/settingsData.json");
+        if (fs.existsSync(settingsPath)) {
+            const data = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+            entityDefs = data.entities || {};
+            animations = Object.keys(data.animations || {});
+            layers = (data.layers || []).slice();
+            // Mirror SettingsHandler.Process(): the engine prepends the default
+            // "objects" layer at runtime, so the indices here must account for it.
+            if (!layers.includes("objects")) {
+                layers.unshift("objects");
+            }
+        }
+
+        // Entities with an animation component get a leading "-" in their value.
+        const entityEntries = dedupeNamedEntries(
+            Object.keys(entityDefs),
+            name => (entityDefs[name] && entityDefs[name].components && entityDefs[name].components.animation ? `-${name}` : name)
+        );
+        const animationEntries = dedupeNamedEntries(animations);
+        const layerEntries = layers.map((name, index) => ({ key: toEnumKey(name), value: index }));
+
+        const output = buildAssetsFile({
+            Asset: {
+                Image: imageEntries,
+                Sound: soundEntries,
+                Font: fontEntries,
+                Level: levelEntries
+            },
+            Data: {
+                Entity: entityEntries,
+                Animation: animationEntries,
+                Layer: layerEntries
+            }
+        });
+
+        fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+        const existing = fs.existsSync(outputPath) ? fs.readFileSync(outputPath, "utf8") : "";
+        if (existing !== output) {
+            fs.writeFileSync(outputPath, output);
+            console.log(`Generated assets.ts (${imageEntries.length} images, ${soundEntries.length} sounds, ${fontEntries.length} fonts, ${levelEntries.length} levels, ${entityEntries.length} entities, ${animationEntries.length} animations, ${layerEntries.length} layers)`);
+        }
+    } catch (error) {
+        console.error("Error generating assets.ts:", error);
+    }
+}
+
+// Recursively collect files with one of the given extensions, returning the
+// base name (without extension) and the path relative to dir (without extension).
+function collectAssetFiles(dir, extensions) {
+    const results = [];
+    if (!fs.existsSync(dir)) {
+        return results;
+    }
+
+    const walk = (current) => {
+        for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+            const full = path.join(current, entry.name);
+            if (entry.isDirectory()) {
+                walk(full);
+                continue;
+            }
+            const ext = path.extname(entry.name).toLowerCase();
+            if (!extensions.has(ext)) {
+                continue;
+            }
+            const rel = normalize(path.relative(dir, full));
+            results.push({
+                base: path.basename(entry.name, path.extname(entry.name)),
+                relNoExt: rel.slice(0, rel.length - path.extname(entry.name).length)
+            });
+        }
+    };
+
+    walk(dir);
+    results.sort((a, b) => a.relNoExt.localeCompare(b.relNoExt));
+    return results;
+}
+
+// Build { key, value } entries from collected files. The key is the CONSTANT_CASE
+// base name; if two files share a base name the colliding ones fall back to the
+// full relative path so every key stays unique.
+function dedupeAssetEntries(files, valueFn) {
+    const baseCount = {};
+    for (const file of files) {
+        const key = toEnumKey(file.base);
+        baseCount[key] = (baseCount[key] || 0) + 1;
+    }
+
+    const used = new Set();
+    return files.map(file => {
+        let key = toEnumKey(file.base);
+        if (baseCount[key] > 1) {
+            key = toEnumKey(file.relNoExt);
+        }
+        let unique = key;
+        let suffix = 2;
+        while (used.has(unique)) {
+            unique = `${key}_${suffix++}`;
+        }
+        used.add(unique);
+        return { key: unique, value: valueFn(file) };
+    });
+}
+
+// Build { key, value } entries from settingsData names. The key derives from the
+// name; the value defaults to the name but can be remapped via valueFn.
+function dedupeNamedEntries(names, valueFn = name => name) {
+    const used = new Set();
+    return names.map(name => {
+        const key = toEnumKey(name);
+        let unique = key;
+        let suffix = 2;
+        while (used.has(unique)) {
+            unique = `${key}_${suffix++}`;
+        }
+        used.add(unique);
+        return { key: unique, value: valueFn(name) };
+    });
+}
+
+// camelCase / kebab-case / nested/paths -> CONSTANT_CASE, eg:
+//   hudCoin -> HUD_COIN, Qilka-Bold -> QILKA_BOLD, player/player_idle -> PLAYER_PLAYER_IDLE
+function toEnumKey(value) {
+    return String(value)
+        .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+        .replace(/[^A-Za-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        .toUpperCase();
+}
+
+function buildAssetsFile(groups) {
+    const renderGroup = (name, entries) => {
+        if (entries.length === 0) {
+            return `    ${name}: {},`;
+        }
+        const inner = entries
+            .map(entry => `        ${entry.key}: ${typeof entry.value === "number" ? entry.value : JSON.stringify(entry.value)},`)
+            .join("\n");
+        return `    ${name}: {\n${inner}\n    },`;
+    };
+
+    const renderNamespace = (name, sections) => {
+        const body = Object.entries(sections)
+            .map(([section, entries]) => renderGroup(section, entries))
+            .join("\n");
+        return `export const ${name} = {\n${body}\n} as const;`;
+    };
+
+    return `// Auto-generated from public assets and settingsData.json - DO NOT EDIT.
+// Regenerated by the bare:generated-assets Vite plugin.
+
+${renderNamespace("Asset", groups.Asset)}
+
+${renderNamespace("Data", groups.Data)}
+`;
+}
+
 module.exports = {
     bareAutoRegisterClassesPlugin,
     bareEditorAndApiPlugin,
-    bareGeneratedLayersPlugin,
+    bareGeneratedAssetsPlugin,
     bareFullReloadPlugin,
     bareHtmlPlugin,
     bareIgnoreLevelJsonHotUpdatesPlugin,

@@ -5,7 +5,7 @@ const {
     bareAutoRegisterClassesPlugin,
     bareEditorAndApiPlugin,
     bareFullReloadPlugin,
-    bareGeneratedLayersPlugin,
+    bareGeneratedAssetsPlugin,
     bareHtmlPlugin,
     bareIgnoreLevelJsonHotUpdatesPlugin,
     bareInitialAssetsPlugin,
@@ -64,7 +64,7 @@ module.exports = ({ mode }) => {
             }),
             bareIndexOutputPlugin(),
             bareInitialAssetsPlugin({ projectRoot }),
-            bareGeneratedLayersPlugin({ projectRoot }),
+            bareGeneratedAssetsPlugin({ projectRoot }),
             bareEditorAndApiPlugin({
                 projectRoot,
                 editorHtmlPath: path.resolve(__dirname, "editor.html")
@@ -82,7 +82,7 @@ module.exports = ({ mode }) => {
                 ignored: [
                     "**/node_modules/**",
                     "**/dist/**",
-                    "**/src/_bareTypes/layer.ts"
+                    "**/src/generated/assets.ts"
                 ]
             }
         },
