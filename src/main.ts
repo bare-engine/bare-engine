@@ -195,9 +195,6 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
             const focusOverlay = document.getElementById('focusOverlay') as HTMLElement;
 
             var updateFocus = () => {
-                if (window.isLocalhost)
-                    return; // CAN BE ANNOYING TO LOSE GAME FOCUS DURING DEVELOPEMENT, SO DISABLING IT HERE 
-
                 if (bare.levelEditorOpen)
                     return;
 
@@ -234,16 +231,21 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
                 updateFocus();
             });*/
 
-            // Canvas-level focus/blur for Firefox compatibility
-            rapid.canvas.addEventListener('focus', function() {
-                window.hasFocus = true;
-                updateFocus();
-            });
+            // NO FOCUS EVENTS FOR MOBILE OR LOCALHOST
+            // SINCE SOMETIMES THEY FIRE ON MOBILE
+            // ALSO CAN BE ANNOYING TO LOSE GAME FOCUS DURING DEVELOPEMENT
+            if (!isMobile && !window.isLocalhost)
+            {
+                rapid.canvas.addEventListener('focus', function() {
+                    window.hasFocus = true;
+                    updateFocus();
+                });
 
-            rapid.canvas.addEventListener('blur', function() {
-                window.hasFocus = false;
-                updateFocus();
-            });
+                rapid.canvas.addEventListener('blur', function() {
+                    window.hasFocus = false;
+                    updateFocus();
+                });
+            }
 
             // START!
             var start = async () => {
