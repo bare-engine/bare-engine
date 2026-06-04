@@ -115,7 +115,11 @@ class AssetsHandler
             let fw = frame.frame.w;
             let fh = frame.frame.h;
 
-            tx.isRotated = frame.rotated;
+            if (frame.rotated) {
+                [fh, fw] = [fw, fh]
+            }
+            tx.isRotated = frame.rotated
+
             tx.setRegion(fx, fy, fw, fh);
 
             tx.sourceSize = frame.sourceSize;
