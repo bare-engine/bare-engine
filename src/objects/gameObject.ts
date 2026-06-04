@@ -520,10 +520,7 @@ export class GameObject
 
         if (this.shaders.length > 0)
         {
-            const glShaders = this.shaders
-                .map(shader => shader instanceof CustomGlShader ? shader : shader.shader)
-                .filter((shader): shader is CustomGlShader => shader instanceof CustomGlShader);
-
+            const glShaders = this.shaders.map(shader => shader.shader);
             texture = rapid.applyFilters(this.texture, glShaders);
         }
 

@@ -82,10 +82,11 @@ export class OutlineShader extends Shader
 
         this.SetUniforms({
             uOutlineColor: this.color,
-            uTextureSize: [textureWidth + 0.00000001, textureHeight + 0.00000001],
+            uTextureSize: [textureWidth, textureHeight],
             uOutlineWidth: this.width * lpscale / globalScale // pixel size
         });
-        this.shader.setPadding(padding); // pixel size
+        
+        this.SetPadding(padding); // pixel size
 
         return false;
     }

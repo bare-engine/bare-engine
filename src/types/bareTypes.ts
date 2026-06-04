@@ -540,6 +540,11 @@ export class Shader
     {
         this.shader.setUniforms(uniforms);
     }
+
+    SetPadding(paddingPixels: number)
+    {
+        this.shader.setPadding(paddingPixels);
+    }
 }
 
 export type SceneOptions = {
