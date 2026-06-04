@@ -331,20 +331,34 @@ export class BareEngine
     GetCanvasScreenPosition(clientX: number, clientY: number): Vec2
     {
         const rect = rapid.canvas.getBoundingClientRect();
-        const cssPixel = new Vec2(clientX - rect.left, clientY - rect.top);
-        const devicePixel = rapid.cssToDevicePixel(cssPixel);
+        const scale = this.GetCanvasCssToLogicScale(rect);
 
-        return rapid.physicsToLogic(devicePixel);
+        return new Vec2(
+            (clientX - rect.left) * scale.x,
+            (clientY - rect.top) * scale.y
+        );
+
+        // BEFORE: 
+        // return rapid.physicsToLogic(devicePixel);
+        // BUT THAT DOESNT WORK IF CSS PIXEL INPUT DOES NOT MATCH RAPID’S STORED CSS SIZE
     }
 
     // CONVERTS A CSS-PIXEL DELTA (E.G. event.movementX/Y) TO LOGIC UNITS.
     // ACCOUNTS FOR pixelScale / resolution.scale / dpr, SO MOVEMENT MATCHES WORLD POSITIONS.
     GetCanvasScreenDelta(deltaX: number, deltaY: number): Vec2
     {
-        const cssDelta = new Vec2(deltaX, deltaY);
-        const devicePixel = rapid.cssToDevicePixel(cssDelta);
+        const rect = rapid.canvas.getBoundingClientRect();
+        const scale = this.GetCanvasCssToLogicScale(rect);
 
-        return rapid.physicsToLogic(devicePixel);
+        return new Vec2(deltaX * scale.x, deltaY * scale.y);
+    }
+
+    private GetCanvasCssToLogicScale(rect: DOMRect): Vec2
+    {
+        return new Vec2(
+            rapid.width / (rect.width || rapid.canvas.clientWidth || rapid.width),
+            rapid.height / (rect.height || rapid.canvas.clientHeight || rapid.height)
+        );
     }
 
     private CalculateResolutionScale(resolution: BareOptions['resolution'], gameWidth: number, gameHeight: number): number

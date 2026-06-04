@@ -56,6 +56,9 @@ export class CameraHandler {
     //events.persistent.on(BareEvent.gameStarted, () => this.ResetForStart());
 
     this.scene.events.persistent.on(BareEvent.level_loaded, ({ level }) => {
+      if (this.scene.UI)
+        return; //
+
       const dims: Size = level.dimensions;
       this.SetBounds({ x: 0, y: 0, width: dims.width, height: dims.height });
       //this.SetDimensions(dims.width,  dims.height );

@@ -1459,10 +1459,12 @@ export class PluginHandler
         //var objs = this.GetCurrentScene().objectController.GetAllObjects();
         var foundObj:GameObject | null = null;
         var scenes = sceneController.GetAllScenes();
+        var p = bare.GetCanvasScreenPosition(ev.clientX, ev.clientY);
         for (var i = scenes.length - 1; i >= 0; i--)
         {
             var scene = scenes[i];
             var objs = scene.objectController.GetAllObjects();
+            var pWorld = scene.ScreenToWorldPos(p);
             
             for (var j in objs)
             {
@@ -1474,16 +1476,15 @@ export class PluginHandler
                 if (!obj.visible || !obj.visibleInEditor || obj.alpha == 0)
                     continue;
 
-                var objRect = obj.GetBoundsWithChildren()
-                var p = bare.GetCanvasScreenPosition(ev.clientX, ev.clientY);
-                var pWorld = scene.ScreenToWorldPos(p);
-
                 if (!foundObj)
-                if (Helper.IsPointInRectangle(pWorld, objRect))
                 {
-                    foundObj = obj;
+                    var objRect = obj.GetBoundsWithChildren();
+                    if (Helper.IsPointInRectangle(pWorld, objRect))
+                    {
+                        foundObj = obj;
 
-                    //break;
+                        //break;
+                    }
                 }
             }
         }
@@ -1496,12 +1497,12 @@ export class PluginHandler
         //var objs = this.GetCurrentScene().objectController.GetAllObjects();
 
         var scenes = sceneController.GetAllScenes();
+        var p = bare.GetCanvasScreenPosition(ev.clientX, ev.clientY);
         for (var i = scenes.length - 1; i >= 0; i--)
         {
             var scene = scenes[i];
             var objs = scene.objectController.GetAllObjects();
         
-            var p = bare.GetCanvasScreenPosition(ev.clientX, ev.clientY);
             var pWorld = scene.ScreenToWorldPos(p);
 
             for (var j in objs)
