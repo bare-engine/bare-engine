@@ -1,9 +1,4 @@
 import { sceneController } from "../controllers/sceneController";
-import { PivotComponent } from "../editorComponents/pivotComponent";
-import { PivotRemoveComponent } from "../editorComponents/pivotRemoveComponent";
-import { PositionPivotComponent } from "../editorComponents/positionPivotComponent";
-import { ResizableComponent } from "../editorComponents/resizableComponent";
-import { ResizableRemoveComponent } from "../editorComponents/resizableRemoveComponent";
 import { GameMode, globalEvents } from "../globals";
 import { cameraHandler } from "../handlers/cameraHandler";
 import { EditorControlsHandler } from "../handlers/editorControlsHandler";
@@ -507,6 +502,8 @@ export class EditorScene extends Scene
     {
         //if (globalThis.plugin)
         //    globalThis.plugin.FilterSettingsDataDefaults(newRawData);
+
+        this.settingsHandler.FilterSettingsDataDefaults(newRawData);
 
         await this.OnPreSaveEntityData(newRawData);
 

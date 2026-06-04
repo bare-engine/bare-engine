@@ -340,7 +340,8 @@ export class BareEngine
 
         // BEFORE: 
         // return rapid.physicsToLogic(devicePixel);
-        // BUT THAT DOESNT WORK IF CSS PIXEL INPUT DOES NOT MATCH RAPID’S STORED CSS SIZE
+        // BUT THAT DOESNT WORK IF CSS PIXEL INPUT DOES NOT MATCH RAPID'S STORED CSS SIZE
+        // WAS A PROBLEM WITH UI SCENE RIGHT CLICK
     }
 
     // CONVERTS A CSS-PIXEL DELTA (E.G. event.movementX/Y) TO LOGIC UNITS.

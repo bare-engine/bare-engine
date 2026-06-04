@@ -624,4 +624,53 @@ export class SettingsHandler
     {
         return JSON.parse(JSON.stringify(data));
     }
+
+    FilterSettingsDataDefaults(settingsData: SettingsData)
+    {
+        // UNDO DEFAULT ADDITIONS TO ANY AND ANY_ENTITY AGAIN, DON'T WANT TO SAVE THEM
+        // THIS IS ALSO ADDED AT getEntityData
+        //if (entityScene.objectName == "ANY" || entityScene.objectName == "ANY_ENTITY")
+        //if (entityScene.isBase)
+
+        //
+        if (settingsData.baseEntities.ANY == defaultSettingsData.baseEntities.ANY)
+        {
+            delete settingsData.baseEntities.ANY;
+        }
+        else
+        if (settingsData.baseEntities.ANY)
+        {
+            var anyKeys = Object.keys(defaultSettingsData.baseEntities.ANY);
+            for (var key of anyKeys)
+            {
+                if (settingsData.baseEntities.ANY[key] == defaultSettingsData.baseEntities.ANY[key]) // IF SAME AS DEFAULT
+                    delete settingsData.baseEntities.ANY[key];
+            }
+
+            if (Object.keys(settingsData.baseEntities.ANY).length == 0)
+                delete settingsData.baseEntities.ANY;
+        }
+
+        //
+        if (settingsData.baseEntities.ANY_ENTITY == defaultSettingsData.baseEntities.ANY_ENTITY)
+        {
+            delete settingsData.baseEntities.ANY_ENTITY;
+        }
+        else
+        if (settingsData.baseEntities.ANY_ENTITY)
+        {
+            var anyEntityKeys = Object.keys(defaultSettingsData.baseEntities.ANY_ENTITY);
+            for (var key of anyEntityKeys)
+            {
+                if (settingsData.baseEntities.ANY_ENTITY[key] == defaultSettingsData.baseEntities.ANY_ENTITY[key])
+                    delete settingsData.baseEntities.ANY_ENTITY[key];
+            }
+
+            if (Object.keys(settingsData.baseEntities.ANY_ENTITY).length == 0)
+                delete settingsData.baseEntities.ANY_ENTITY;
+        }
+        
+        // SHOULD NEVER BE ANYTHING IN NONE, JUST DELETE IT
+        delete settingsData.baseEntities.NONE;
+    }
 }
