@@ -1425,12 +1425,14 @@ function generateAssets(projectRoot, outputPath) {
         const levelEntries = dedupeAssetEntries(levels, file => file.relNoExt);
 
         let entityDefs = {};
+        let baseEntityDefs = {};
         let animations = [];
         let layers = [];
         const settingsPath = path.join(publicDir, "data/settingsData.json");
         if (fs.existsSync(settingsPath)) {
             const data = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
             entityDefs = data.entities || {};
+            baseEntityDefs = data.baseEntities || {};
             animations = Object.keys(data.animations || {});
             layers = (data.layers || []).slice();
             // Mirror SettingsHandler.Process(): the engine prepends the default
@@ -1441,10 +1443,10 @@ function generateAssets(projectRoot, outputPath) {
         }
 
         // Entities with an animation component get a leading "-" in their value.
-        const entityEntries = dedupeNamedEntries(
-            Object.keys(entityDefs),
-            name => (entityDefs[name] && entityDefs[name].components && entityDefs[name].components.animation ? `-${name}` : name)
-        );
+        const animationPrefixed = defs => name =>
+            (defs[name] && defs[name].components && defs[name].components.animation ? `-${name}` : name);
+        const entityEntries = dedupeNamedEntries(Object.keys(entityDefs), animationPrefixed(entityDefs));
+        const baseEntityEntries = dedupeNamedEntries(Object.keys(baseEntityDefs), animationPrefixed(baseEntityDefs));
         const animationEntries = dedupeNamedEntries(animations);
         const layerEntries = layers.map((name, index) => ({ key: toEnumKey(name), value: index }));
 
@@ -1457,6 +1459,7 @@ function generateAssets(projectRoot, outputPath) {
             },
             Data: {
                 Entity: entityEntries,
+                BaseEntity: baseEntityEntries,
                 Animation: animationEntries,
                 Layer: layerEntries
             }
@@ -1466,7 +1469,7 @@ function generateAssets(projectRoot, outputPath) {
         const existing = fs.existsSync(outputPath) ? fs.readFileSync(outputPath, "utf8") : "";
         if (existing !== output) {
             fs.writeFileSync(outputPath, output);
-            console.log(`Generated assets.ts (${imageEntries.length} images, ${soundEntries.length} sounds, ${fontEntries.length} fonts, ${levelEntries.length} levels, ${entityEntries.length} entities, ${animationEntries.length} animations, ${layerEntries.length} layers)`);
+            console.log(`Generated assets.ts (${imageEntries.length} images, ${soundEntries.length} sounds, ${fontEntries.length} fonts, ${levelEntries.length} levels, ${entityEntries.length} entities, ${baseEntityEntries.length} base entities, ${animationEntries.length} animations, ${layerEntries.length} layers)`);
         }
     } catch (error) {
         console.error("Error generating assets.ts:", error);
