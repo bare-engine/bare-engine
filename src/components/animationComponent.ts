@@ -133,6 +133,11 @@ export class AnimationComponent extends Component
     // PLAY DESIRED ANIMATION - WILL STREAM IN FRAMES IF NECESSARY, AWAIT THE METHOD TO WAIT FOR THIS
     async Play(animationName: string = "", animationNameOrSingleCallback: string | (() => void) = ""): Promise<void>
     {
+        // IN CASE A Data.Animation.XXX IS SUPPLIED, 
+        // REMOVE THE NAME PREFIX. EG: "buffalo_run" -> "run"
+        if (animationName.startsWith(`${this.go.name}_`))
+            animationName = animationName.slice(this.go.name.length + 1);
+
         var fullAnimationName = this.go.name + (animationName == "" ? "" : "_" + animationName);
 
         if (!assetsHandler.GetAnimation(fullAnimationName))
