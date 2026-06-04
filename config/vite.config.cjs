@@ -9,6 +9,7 @@ const {
     bareHtmlPlugin,
     bareIgnoreLevelJsonHotUpdatesPlugin,
     bareInitialAssetsPlugin,
+    bareInlineGeneratedAssetsPlugin,
     bareShaderRawPlugin,
     bareStripTexturePackImagesPlugin,
     bareTexturePackImagesPlugin,
@@ -65,6 +66,7 @@ module.exports = ({ mode }) => {
             bareIndexOutputPlugin(),
             bareInitialAssetsPlugin({ projectRoot }),
             bareGeneratedAssetsPlugin({ projectRoot }),
+            ...(!isDev ? [bareInlineGeneratedAssetsPlugin({ projectRoot })] : []),
             bareEditorAndApiPlugin({
                 projectRoot,
                 editorHtmlPath: path.resolve(__dirname, "editor.html")

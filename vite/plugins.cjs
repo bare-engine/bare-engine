@@ -1411,6 +1411,235 @@ function bareGeneratedAssetsPlugin(options = {}) {
     };
 }
 
+function bareInlineGeneratedAssetsPlugin(options = {}) {
+    const projectRoot = options.projectRoot || process.cwd();
+    const generatedPath = normalize(path.resolve(options.outputPath || path.join(projectRoot, "src/generated/assets.ts")));
+    let generatedValues = null;
+
+    function loadGeneratedValues() {
+        if (!fs.existsSync(generatedPath)) {
+            generatedValues = null;
+            return;
+        }
+
+        const source = fs.readFileSync(generatedPath, "utf8");
+        generatedValues = {
+            Asset: flattenGeneratedAssetObject(extractGeneratedConstObject(source, "Asset")),
+            Data: flattenGeneratedAssetObject(extractGeneratedConstObject(source, "Data"))
+        };
+    }
+
+    return {
+        name: "bare:inline-generated-assets",
+        apply: "build",
+        buildStart() {
+            loadGeneratedValues();
+        },
+        transform(code, id) {
+            const filePath = cleanId(id);
+            const normalizedFilePath = normalize(path.resolve(filePath));
+            if (normalizedFilePath === generatedPath) {
+                return null;
+            }
+            if (!/\.[cm]?[jt]sx?$/.test(filePath) || /\.d\.ts$/.test(filePath)) {
+                return null;
+            }
+
+            if (!generatedValues) {
+                loadGeneratedValues();
+            }
+            if (!generatedValues) {
+                return null;
+            }
+
+            const sourceFile = ts.createSourceFile(filePath, code, ts.ScriptTarget.Latest, true);
+            const importedRoots = new Map();
+            const namespaceImports = new Set();
+            const importRanges = [];
+
+            for (const statement of sourceFile.statements) {
+                if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) {
+                    continue;
+                }
+                if (!isGeneratedAssetsImport(filePath, statement.moduleSpecifier.text, generatedPath)) {
+                    continue;
+                }
+
+                importRanges.push(getStatementRemovalRange(code, statement));
+
+                const clause = statement.importClause;
+                if (!clause) {
+                    continue;
+                }
+                const bindings = clause.namedBindings;
+                if (bindings && ts.isNamespaceImport(bindings)) {
+                    namespaceImports.add(bindings.name.text);
+                } else if (bindings && ts.isNamedImports(bindings)) {
+                    for (const element of bindings.elements) {
+                        const importedName = (element.propertyName || element.name).text;
+                        if (importedName === "Asset" || importedName === "Data") {
+                            importedRoots.set(element.name.text, importedName);
+                        }
+                    }
+                }
+            }
+
+            const ms = new MagicString(code);
+
+            function visit(node) {
+                if (ts.isPropertyAccessExpression(node)) {
+                    const replacement = getGeneratedAssetReplacement(node, sourceFile, importedRoots, namespaceImports, generatedValues);
+                    if (replacement !== null) {
+                        ms.overwrite(node.getStart(sourceFile), node.getEnd(), replacement);
+                        return;
+                    }
+                }
+                ts.forEachChild(node, visit);
+            }
+
+            visit(sourceFile);
+
+            for (let i = importRanges.length - 1; i >= 0; i--) {
+                ms.remove(importRanges[i].start, importRanges[i].end);
+            }
+
+            const next = ms.toString();
+            if (next === code) {
+                return null;
+            }
+
+            return {
+                code: next,
+                map: ms.generateMap({ source: id, includeContent: true, hires: true })
+            };
+        }
+    };
+}
+
+function extractGeneratedConstObject(source, name) {
+    const constIndex = source.indexOf(`export const ${name}`);
+    if (constIndex < 0) {
+        return {};
+    }
+
+    const objectStart = source.indexOf("{", constIndex);
+    const objectEnd = findMatchingBrace(source, objectStart);
+    if (objectStart < 0 || objectEnd < 0) {
+        return {};
+    }
+
+    const objectSource = source.slice(objectStart, objectEnd + 1);
+    try {
+        return Function(`"use strict"; return (${objectSource});`)();
+    } catch {
+        return {};
+    }
+}
+
+function flattenGeneratedAssetObject(value) {
+    const out = new Map();
+    if (!value || typeof value !== "object") {
+        return out;
+    }
+
+    for (const [sectionName, section] of Object.entries(value)) {
+        if (!section || typeof section !== "object") {
+            continue;
+        }
+        for (const [key, entryValue] of Object.entries(section)) {
+            out.set(`${sectionName}.${key}`, entryValue);
+        }
+    }
+
+    return out;
+}
+
+function isGeneratedAssetsImport(fromFile, importPath, generatedPath) {
+    if (!importPath.startsWith(".")) {
+        return false;
+    }
+
+    const resolved = normalize(path.resolve(path.dirname(fromFile), importPath));
+    return stripKnownScriptExtension(resolved) === stripKnownScriptExtension(generatedPath);
+}
+
+function stripKnownScriptExtension(filePath) {
+    return normalize(filePath).replace(/\.[cm]?[jt]sx?$/, "");
+}
+
+function getStatementRemovalRange(code, statement) {
+    let start = statement.getFullStart();
+    let end = statement.end;
+
+    if (code[end] === "\r" && code[end + 1] === "\n") {
+        end += 2;
+    } else if (code[end] === "\n") {
+        end += 1;
+    }
+
+    return { start, end };
+}
+
+function getGeneratedAssetReplacement(node, sourceFile, importedRoots, namespaceImports, generatedValues) {
+    const chain = getPropertyAccessChain(node);
+    if (!chain) {
+        return null;
+    }
+
+    let rootName = "";
+    let sectionName = "";
+    let keyName = "";
+
+    if (chain.length === 3 && importedRoots.has(chain[0])) {
+        rootName = importedRoots.get(chain[0]);
+        sectionName = chain[1];
+        keyName = chain[2];
+    } else if (chain.length === 4 && namespaceImports.has(chain[0]) && (chain[1] === "Asset" || chain[1] === "Data")) {
+        rootName = chain[1];
+        sectionName = chain[2];
+        keyName = chain[3];
+    } else if (chain.length === 4 && chain[0] === "Bare" && (chain[1] === "Asset" || chain[1] === "Data")) {
+        rootName = chain[1];
+        sectionName = chain[2];
+        keyName = chain[3];
+    } else {
+        return null;
+    }
+
+    const rootValues = generatedValues[rootName];
+    if (!rootValues) {
+        return null;
+    }
+
+    const mapKey = `${sectionName}.${keyName}`;
+    if (!rootValues.has(mapKey)) {
+        return null;
+    }
+
+    return toInlineLiteral(rootValues.get(mapKey));
+}
+
+function getPropertyAccessChain(node) {
+    const chain = [];
+    let current = node;
+
+    while (ts.isPropertyAccessExpression(current)) {
+        chain.unshift(current.name.text);
+        current = current.expression;
+    }
+
+    if (!ts.isIdentifier(current)) {
+        return null;
+    }
+
+    chain.unshift(current.text);
+    return chain;
+}
+
+function toInlineLiteral(value) {
+    return typeof value === "number" ? String(value) : JSON.stringify(value);
+}
+
 function generateAssets(projectRoot, outputPath) {
     try {
         const publicDir = path.join(projectRoot, "public");
@@ -1670,6 +1899,7 @@ module.exports = {
     bareAutoRegisterClassesPlugin,
     bareEditorAndApiPlugin,
     bareGeneratedAssetsPlugin,
+    bareInlineGeneratedAssetsPlugin,
     bareFullReloadPlugin,
     bareHtmlPlugin,
     bareIgnoreLevelJsonHotUpdatesPlugin,
