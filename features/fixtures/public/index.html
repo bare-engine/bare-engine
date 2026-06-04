@@ -248,11 +248,20 @@
       var assets = Array.prototype.slice.call(
           head.querySelectorAll('[data-initial-asset]')
       );
+
+      function getInitialAssetKey(url) {
+          var cleanUrl = (url || '').split(/[?#]/)[0].replace(/\\/g, '/');
+          var index = cleanUrl.indexOf('initial/');
+          if (index !== -1) {
+              return decodeURIComponent(cleanUrl.slice(index));
+          }
+
+          return decodeURIComponent(cleanUrl.split('/').pop());
+      }
       
       var assetsLinkValue = assets.map(function(asset) {
             var link = (asset.src || asset.href);
-            var end = link.split('/').pop();
-            return end;
+            return getInitialAssetKey(link);
       })
       console.log("Initial assets found: ", assetsLinkValue);
 
@@ -267,7 +276,7 @@
 
           assets.forEach(function(asset) {
               var url = asset.src || asset.href;
-              var fileName = decodeURIComponent(url.split('/').pop());
+              var fileName = getInitialAssetKey(url);
 
               assetsObj[fileName] = asset;
 

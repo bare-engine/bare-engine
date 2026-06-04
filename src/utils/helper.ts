@@ -409,4 +409,9 @@ export class Helper
     {
         return _class.name.replace(/^_/, '').replace(/\d+$/, '');
     }
+
+    static RemoveExtension(path: string): string
+    {
+        return path.replace(/\.[^/.]+$/, "");
+    }
 }

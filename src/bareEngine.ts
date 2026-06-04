@@ -220,18 +220,18 @@ export class BareEngine
         
         this.SendEvent(BareEvent.game_started);
     }
-    
+
     ImplementInitialTextures()
     {
         var entries = Object.entries(window.initialAssets);
         var entriesIgnore = new Set<string>();
 
-        for (const [name, asset] of entries)
+        for (const [path, asset] of entries)
         {
             // FIND JSON WITH MATCHING WEBP, THEN ADD AS SPRITESHEET
-            if (name.endsWith(".json"))
+            if (path.endsWith(".json"))
             {
-                const json = window.initialAssets[name];
+                const json = asset;
 
                 if (json.entitiesByLayer)
                 {
@@ -239,21 +239,21 @@ export class BareEngine
                     if (!this.preloadedLevels)
                         this.preloadedLevels = new Map<string, LevelData>();
                     
-                    this.preloadedLevels.set(name.split('.')[0], json);
+                    this.preloadedLevels.set(Helper.RemoveExtension(path), json);
                 }
                 else
                 if (json.frames && json.meta && json.meta.image)
                 {
-                    // ATLAS
-                    const imgName = json.meta.image;
-                    const img = window.initialAssets[imgName];
-                    const tex = rapid.texture.create(img, {key: "initial/generated/" + imgName});
+                    // ATLAS - FIND IMAGE BASED ON JSON ATLAS
+                    const jsonImagePath = path.replace(/[^/]+$/, json.meta.image);
+                    const img = window.initialAssets[jsonImagePath];
+                    const tex = rapid.texture.create(img, {key: jsonImagePath});
                     assetsHandler.ProcessAtlas(json, tex);
 
                     // ATLAS IS PROCESSED AND ADDED ANIMATIONS POTENTIALLY,
                     // MORE ANIMATION DATA LIKE FPS AND LOOP CAN BE SET LATER IN ENTITY SETTINGS PROCESS()
 
-                    entriesIgnore.add(imgName); // PREVENT ADDING ATLAS TO TEXTURES BELOW
+                    entriesIgnore.add(jsonImagePath); // PREVENT ADDING ATLAS TO TEXTURES BELOW
                 }
             }
         }
@@ -266,7 +266,7 @@ export class BareEngine
             // ADD REGULAR TEXTURE
             //var texture = rapid.textures.addImageFromSource(asset);
             var texture = rapid.texture.create(asset);
-            var nameMinusExt = name.split('.')[0];
+            var nameMinusExt = Helper.RemoveExtension(name);
             assetsHandler.AddTexture(nameMinusExt, texture);
         }
     }
