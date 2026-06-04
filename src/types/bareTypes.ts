@@ -300,7 +300,7 @@ export interface SettingsData
   saveVars?: Record<string, Array<string>>
   animations?: Record<string, AnimationDataInfo>
   showUI?: boolean,
-  settings?: {gridEnabled?: boolean, gridSize?: int, minimized?: boolean},
+  settings?: {gridEnabled?: boolean, gridSize?: int},
   selectionEnabled?: boolean,
   defaultAnimationFramesPerSecond?: number,
   gravity?: number,
@@ -506,6 +506,8 @@ export class SaveData
   
   static soundEnabled: boolean = true;
   static musicEnabled: boolean = true;
+  
+  static minimized: boolean = false; // REALLY ONLY FOR EDITOR - NEVER NEEDED IN PROD
 }
 
 // TODO

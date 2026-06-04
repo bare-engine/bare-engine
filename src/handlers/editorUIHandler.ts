@@ -6,6 +6,7 @@ import { EditorScene } from '../scenes/editorScene';
 import { objectController } from '../controllers/objectController';
 import { Color, RenderTexture, Texture, TextureFilterMode } from '../libraries/new-rapid-render';
 import { MakePath, MakePathForEntity } from '../globals';
+import { SaveDataHandler } from './SaveDataHandler';
 
 /*
     BUILD SETUP/CONTROLS UI
@@ -681,11 +682,8 @@ export class EditorUIHandler {
             this.SetMinimize(!this.isMinimized);
 
             // SAVE MINIMIZED
-            const updatedRaw = await this.scene.settingsHandler.UpdateRaw((raw) => {
-                raw.settings ??= {};
-                raw.settings.minimized = this.isMinimized;
-            });
-            this.scene.SaveEntityData(updatedRaw);
+            SaveData.minimized = this.isMinimized;
+            SaveDataHandler.Save();
         }, { signal });
 
         var me = this;
@@ -753,7 +751,7 @@ export class EditorUIHandler {
                 me.SyncSettingsUI();
 
                 const updatedRaw = await this.scene.settingsHandler.UpdateRaw((raw) => {
-                    raw.settings ??= {gridEnabled: false, gridSize: 64, minimized: false};//
+                    raw.settings ??= {gridEnabled: false, gridSize: 64}; //
                     raw.settings.gridSize = newGridSize;
                 });
                 this.scene.SaveEntityData(updatedRaw);
@@ -806,9 +804,8 @@ export class EditorUIHandler {
 
         // SAVE
         const updatedRaw = await this.scene.settingsHandler.UpdateRaw((raw) => {
-            raw.settings ??= {gridEnabled: false, gridSize: 64, minimized: false};
+            raw.settings ??= {gridEnabled: false, gridSize: 64};
             raw.settings.gridEnabled = this.settings.gridEnabled;
-            raw.settings.minimized = this.settings.minimized;
         });
         this.scene.SaveEntityData(updatedRaw);
     }
@@ -817,7 +814,7 @@ export class EditorUIHandler {
     {
         var gridEnabled = this.settings.gridEnabled;
         var gridSize = this.settings.gridSize;
-        var minimized = this.settings.minimized;
+        var minimized = SaveData.minimized;
 
         if (this.gridToggleEl)
             this.gridToggleEl.classList.toggle('active', gridEnabled);

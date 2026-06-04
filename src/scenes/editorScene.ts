@@ -45,6 +45,9 @@ export class EditorScene extends Scene
 
     async OnStart(payload?: EditorSceneAwakePayload): Promise<void>
     {
+        // LOADING, JUST FOR MINIMIZED FIELD
+        SaveDataHandler.Load();
+
         if (__DEV__)
             this.RegisterEditorComponents(); // JUST FOR PLUGIN - ENTITY EDITOR
 
@@ -151,7 +154,7 @@ export class EditorScene extends Scene
         // HANDLE CAMERA POSITION
         var dims:Size = this.currentLevel.dimensions;
         var s = Math.max(dims.width / rapid.width, dims.height / rapid.height);
-        var shouldFrameNextToSidebar = this.settingsData.showUI !== false && this.settingsData.settings?.minimized !== true;
+        var shouldFrameNextToSidebar = this.settingsData.showUI !== false && SaveData.minimized !== true;
 
         if (shouldFrameNextToSidebar)
         {
