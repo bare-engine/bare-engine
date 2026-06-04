@@ -576,8 +576,13 @@ export class BareEngine
             return;
 
         var pos = this.GetCanvasScreenPosition(event.clientX, event.clientY);
-        bare.SendEvent(BareEvent.pointer_down, {mouseX: pos.x, mouseY: pos.y, event: event, isLeftButton: event.button == 0});
+        var isLeftButton = (event.button == 0);
 
+        bare.SendEvent(BareEvent.pointer_down_any, {mouseX: pos.x, mouseY: pos.y, event: event, isLeftButton: isLeftButton});
+
+        if (isLeftButton)
+            bare.SendEvent(BareEvent.pointer_down, {mouseX: pos.x, mouseY: pos.y, event: event});
+        
         event.preventDefault();
     }
 
@@ -587,7 +592,12 @@ export class BareEngine
             return;
         
         var pos = this.GetCanvasScreenPosition(event.clientX, event.clientY);
-        bare.SendEvent(BareEvent.pointer_up, {mouseX: pos.x, mouseY: pos.y, event: event, isLeftButton: event.button == 0});
+        var isLeftButton = (event.button == 0);
+
+        bare.SendEvent(BareEvent.pointer_up_any, {mouseX: pos.x, mouseY: pos.y, event: event, isLeftButton: isLeftButton});
+        
+        if (isLeftButton)
+            bare.SendEvent(BareEvent.pointer_up, {mouseX: pos.x, mouseY: pos.y, event: event });
 
         event.preventDefault();
     }

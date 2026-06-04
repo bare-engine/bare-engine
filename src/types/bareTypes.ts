@@ -389,8 +389,10 @@ const eventDefs = {
   level_postSave: ev<{ levelStr: string; level: LevelData }>(),
   level_restart: undefined,
 
-  pointer_down: ev<{ mouseX: number; mouseY: number; event: PointerEvent; isLeftButton: boolean }>(),
-  pointer_up: ev<{ mouseX: number; mouseY: number; event: PointerEvent; isLeftButton: boolean }>(),
+  pointer_down: ev<{ mouseX: number; mouseY: number; event: PointerEvent }>(),
+  pointer_down_any: ev<{ mouseX: number; mouseY: number; event: PointerEvent; isLeftButton: boolean }>(),
+  pointer_up: ev<{ mouseX: number; mouseY: number; event: PointerEvent }>(),
+  pointer_up_any: ev<{ mouseX: number; mouseY: number; event: PointerEvent; isLeftButton: boolean }>(),
   pointer_move: ev<{ mouseX: number; mouseY: number; movedX: number; movedY: number; event: PointerEvent; isLeftButton: boolean }>(),
   pointer_doubleClick: ev<{ mouseX: number; mouseY: number; event: MouseEvent }>(),
 
@@ -506,7 +508,7 @@ export class SaveData
   
   static soundEnabled: boolean = true;
   static musicEnabled: boolean = true;
-  
+
   static minimized: boolean = false; // REALLY ONLY FOR EDITOR - NEVER NEEDED IN PROD
 }
 

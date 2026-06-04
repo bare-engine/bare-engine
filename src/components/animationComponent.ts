@@ -9,10 +9,10 @@ import { InspectorField, Range } from "../utils/decorators";
 // THIS WORKS FOR IMAGES IN /texturePackImages
 
 // A SIMPLE ANIMATION CAN BE ATTACHED TO A GAMEOBJECT LIKE THIS:
-// var buttonPressObj = uiScene.AddGameObject("buttonPress");
+// var buttonPressObj = uiScene.AddGameObject("-buffalo"); // - IS THERE TO PREVENT IT FROM DOING A TEXTURE LOOKUP
 // buttonPressObj.AddComponent(AnimationComponent);
-// HERE THERE ARE 2 IMAGE FILES: "buttonPress_00" AND "buttonPress_01" IN /texturePackImages
-// IT WILL AUTO-PLAY
+// THEN YOU COULD HAVE 2 IMAGE FILES: "buffalo_00" AND "buffalo_01" IN /texturePackImages(PRELOADED) OR public/images (STREAMED)
+// IT WILL AUTO-PLAY THESE
 
 // ANIMATIONS CAN ALSO BE REGISTERED IN settingsData.json OR THE BE SUPPLIED AS AN ARGUMENT TO A SCENE
 // EG. FROM DEMO:
@@ -44,16 +44,14 @@ import { InspectorField, Range } from "../utils/decorators";
 
 // THE IDEA WITH THIS IS THAT ANIMATIONS STAYS SEPARATED IN DATA, AND ARE NOT DEFINED SOMEWHERE IN CODE
 // MAYBE I WILL ADD METHOD LATER FOR THIS THOUGH, SETTING ANIMATIONS AND SPEED. LET'S SEE
-// ACTUALLY I SHOULD, SO YOU COULD SETUP YOUR OWN ANIMATIONS WITH RENDERTEXTURES OR SOMETHING
+// (ACTUALLY I SHOULD, SO YOU COULD SETUP YOUR OWN ANIMATIONS WITH RENDERTEXTURES OR SOMETHING - TODO)
 
 // TO PLAY AN ANIMATION YOU GIVE IT THE NAME THAT'S SET AFTER THE _, SO FOR "buffalo_run", IT'S JUST "run"
-// var buffalo = this.AddGameObject("buffalo");
+// var buffalo = this.AddGameObject("-buffalo");
 // var animComponent = buffalo.AddComponent(AnimationComponent);
 // animComponent.Play("run"); // HERE
 
-// (THE FULL ANIMATION NAME IS FOUND BY CONCATENATING THE ENTITY NAME WITH THE ANIMATION NAME: "buffalo" + "_" + "run")
-
-// CURRENTLY this.AddGameObject("buffalo"); WILL GIVE AN ERROR SAYING IT CAN'T FIND "buffalo.wepb" BUT YOU CAN IGNORE THAT
+// (THE FULL ANIMATION NAME IS FOUND BY COMBINING THE ENTITY NAME WITH THE ANIMATION NAME: "buffalo" + "_" + "run")
 
 export const AnimationEvent = {
   frameChanged: "frame_changed",
@@ -135,6 +133,9 @@ export class AnimationComponent extends Component
     {
         // IN CASE A Data.Animation.XXX IS SUPPLIED, 
         // REMOVE THE NAME PREFIX. EG: "buffalo_run" -> "run"
+        // IT WANTS ONLY "run", SINCE THIS SYSTEM WAS DESIGNED WITH ONLY STRINGS IN MIND
+        // AND IT TAKES THE "buffalo_" PART FROM THE GAMEOBJECT NAME
+        // IF Data.Animation.XXX WOULD BECOME THE STANDARD, THAT'S NOT REALLY NECESSARY ANYMORE
         if (animationName.startsWith(`${this.go.name}_`))
             animationName = animationName.slice(this.go.name.length + 1);
 
