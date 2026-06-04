@@ -7,6 +7,10 @@ const ts = require("./projectRequire")("typescript");
 const createControllerProxyTransformer = require("./controllerProxyTransformer");
 const createGameObjectNameTransformer = require("./gameObjectNameTransformer");
 const { stripTexturePackImages } = require("../scripts/stripTexturePackImages.cjs");
+const emojiMappingEmojiToName = require("./emojiMappingEmojiToName.json");
+
+const EMOJI_KEYS_BY_LENGTH = Object.keys(emojiMappingEmojiToName)
+    .sort((a, b) => b.length - a.length);
 
 function bareShaderRawPlugin() {
     return {
@@ -1363,6 +1367,7 @@ function bareGeneratedAssetsPlugin(options = {}) {
     const outputPath = options.outputPath || path.join(projectRoot, "src/generated/assets.ts");
     const settingsPath = path.join(projectRoot, "public/data/settingsData.json");
     const watchDirs = [
+        path.join(projectRoot, "public/initial"),
         path.join(projectRoot, "public/images"),
         path.join(projectRoot, "public/sounds"),
         path.join(projectRoot, "public/fonts"),
@@ -1411,6 +1416,7 @@ function generateAssets(projectRoot, outputPath) {
         const publicDir = path.join(projectRoot, "public");
 
         const images = collectAssetFiles(path.join(publicDir, "images"), ASSET_IMAGE_EXTENSIONS);
+        const initialImages = collectInitialImageEntries(path.join(publicDir, "initial"));
         const sounds = collectAssetFiles(path.join(publicDir, "sounds"), ASSET_SOUND_EXTENSIONS);
         const fonts = collectAssetFiles(path.join(publicDir, "fonts"), ASSET_FONT_EXTENSIONS);
         const levels = collectAssetFiles(path.join(publicDir, "data/levels"), ASSET_LEVEL_EXTENSIONS);
@@ -1419,7 +1425,7 @@ function generateAssets(projectRoot, outputPath) {
         // folder without extension (eg "player/player_idle", "coin", "level"), matching
         // how the engine resolves textures, sounds and levels. Fonts use the bare name,
         // matching LoadFont(name) which appends the extension itself.
-        const imageEntries = dedupeAssetEntries(images, file => file.relNoExt);
+        const imageEntries = dedupeAssetEntries([...images, ...initialImages], file => file.relNoExt);
         const soundEntries = dedupeAssetEntries(sounds, file => file.relNoExt);
         const fontEntries = dedupeAssetEntries(fonts, file => file.base);
         const levelEntries = dedupeAssetEntries(levels, file => file.relNoExt);
@@ -1442,11 +1448,8 @@ function generateAssets(projectRoot, outputPath) {
             }
         }
 
-        // Entities with an animation component get a leading "-" in their value.
-        const animationPrefixed = defs => name =>
-            (defs[name] && defs[name].components && defs[name].components.animation ? `-${name}` : name);
-        const entityEntries = dedupeNamedEntries(Object.keys(entityDefs), animationPrefixed(entityDefs));
-        const baseEntityEntries = dedupeNamedEntries(Object.keys(baseEntityDefs), animationPrefixed(baseEntityDefs));
+        const entityEntries = dedupeNamedEntries(Object.keys(entityDefs));
+        const baseEntityEntries = dedupeNamedEntries(Object.keys(baseEntityDefs));
         const animationEntries = dedupeNamedEntries(animations);
         const layerEntries = layers.map((name, index) => ({ key: toEnumKey(name), value: index }));
 
@@ -1508,6 +1511,63 @@ function collectAssetFiles(dir, extensions) {
     return results;
 }
 
+function collectInitialImageEntries(initialDir) {
+    const images = collectAssetFiles(initialDir, ASSET_IMAGE_EXTENSIONS);
+    const atlasData = collectInitialAtlasEntries(initialDir);
+    const regularImages = images.filter(file => !atlasData.atlasImageRelNoExt.has(file.relNoExt));
+
+    return [...regularImages, ...atlasData.frameEntries]
+        .sort((a, b) => a.relNoExt.localeCompare(b.relNoExt));
+}
+
+function collectInitialAtlasEntries(initialDir) {
+    const atlasImageRelNoExt = new Set();
+    const frameEntries = [];
+
+    if (!fs.existsSync(initialDir)) {
+        return { atlasImageRelNoExt, frameEntries };
+    }
+
+    for (const filePath of getFilesRecursive(initialDir)) {
+        if (path.extname(filePath).toLowerCase() !== ".json") {
+            continue;
+        }
+
+        let json;
+        try {
+            json = JSON.parse(fs.readFileSync(filePath, "utf8"));
+        } catch {
+            continue;
+        }
+
+        if (!json.frames || !json.meta || !json.meta.image) {
+            continue;
+        }
+
+        const relJsonPath = normalize(path.relative(initialDir, filePath));
+        const atlasImageRel = normalize(path.posix.join(path.posix.dirname(relJsonPath), json.meta.image));
+        atlasImageRelNoExt.add(removePathExtension(atlasImageRel));
+
+        for (const frameName of Object.keys(json.frames)) {
+            const relNoExt = frameName.split(".")[0];
+            if (!relNoExt) {
+                continue;
+            }
+            frameEntries.push({
+                base: path.posix.basename(relNoExt),
+                relNoExt
+            });
+        }
+    }
+
+    return { atlasImageRelNoExt, frameEntries };
+}
+
+function removePathExtension(value) {
+    const ext = path.posix.extname(value);
+    return ext ? value.slice(0, -ext.length) : value;
+}
+
 // Build { key, value } entries from collected files. The key is the CONSTANT_CASE
 // base name; if two files share a base name the colliding ones fall back to the
 // full relative path so every key stays unique.
@@ -1553,11 +1613,22 @@ function dedupeNamedEntries(names, valueFn = name => name) {
 // camelCase / kebab-case / nested/paths -> CONSTANT_CASE, eg:
 //   hudCoin -> HUD_COIN, Qilka-Bold -> QILKA_BOLD, player/player_idle -> PLAYER_PLAYER_IDLE
 function toEnumKey(value) {
-    return String(value)
+    return replaceEmojiWithNames(String(value))
         .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
         .replace(/[^A-Za-z0-9]+/g, "_")
         .replace(/^_+|_+$/g, "")
         .toUpperCase();
+}
+
+function replaceEmojiWithNames(value) {
+    let result = value;
+    for (const emoji of EMOJI_KEYS_BY_LENGTH) {
+        if (!result.includes(emoji)) {
+            continue;
+        }
+        result = result.split(emoji).join(` emoji_${emojiMappingEmojiToName[emoji]} `);
+    }
+    return result;
 }
 
 function buildAssetsFile(groups) {
@@ -1578,12 +1649,20 @@ function buildAssetsFile(groups) {
         return `export const ${name} = {\n${body}\n} as const;`;
     };
 
-    return `// Auto-generated from public assets and settingsData.json - DO NOT EDIT.
-// Regenerated by the bare:generated-assets Vite plugin.
+    return `// Generated by bare:generated-assets Vite plugin - DO NOT EDIT.
+
+import { Bare } from "bare-engine";
 
 ${renderNamespace("Asset", groups.Asset)}
 
 ${renderNamespace("Data", groups.Data)}
+
+Bare.data.entities = Object.values(Data.Entity);
+Bare.data.baseEntities = Object.values(Data.BaseEntity);
+Bare.assets.images = Object.values(Asset.Image);
+Bare.assets.sounds = Object.values(Asset.Sound);
+Bare.assets.fonts = Object.values(Asset.Font);
+Bare.assets.levels = Object.values(Asset.Level);
 `;
 }
 

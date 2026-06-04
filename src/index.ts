@@ -1,5 +1,6 @@
 // Core
 export { BareEngine } from "./bareEngine";
+export { Bare } from "./types/bare";
 export { GameMode, globalEvents } from "./globals";
 export { MakePath, StartBare } from "./main";
 export { Button } from "./objects/button";

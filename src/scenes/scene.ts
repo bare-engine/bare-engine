@@ -18,6 +18,7 @@ import { defaultSettingsData } from "../types/bareData";
 import { AwakePayload, BareEvent, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
 import { getInspectorFieldNames } from "../utils/decorators";
+import { Bare } from "../types/bare";
 
 /*Bare.camera.SetPosition(bareEngine.width * .5, bareEngine.height * .5);
 Bare.sound.Play()
@@ -699,29 +700,56 @@ export class Scene implements SceneI
 
                 if (typeof input === "string")
                 {
-                    if (input.includes("/"))
-                    {
-                        // PATH STRING - SET UP A BASIC ENTITY USING PROVIDED STRING - SPLITTING INTO NAME AND IMAGE PATH
-                        // CAN ALSO PREPEND / EG: this.AddGameObject('/player') TO PREVENT CONSTRUCTING FROM ENTITY 'PLAYER', GETTING THE IMAGE INSTEAD
-                        var path = input;
+                    // STRING INPUT
+
+                    var processPathInput = (path: string) => {
                         var split = path.split("/");
                         var imagePath = split.slice(0, split.length - 1).join("/");
                         var name = split[split.length - 1];
 
                         entity = {imagePath: imagePath, name:name, baseClass: "GameObject"};
                     }
-                    else
-                    if (input.startsWith("-"))
+
+                    if (input.includes("/"))
                     {
-                        // STRING INPUT, MARKED WITH -, EG: -exlosion
-                        // PREVENT A TEXTURE LOOKUP FOR THIS NAME, HANDY FOR OBJECTS THAT WILL HAVE AN ANIMATION COMPONENT
-                        var name = input.substring(1);
-                        entity = this.ConstructEntity(name);
-                        entity.texture = "NONE";
+                        // PATH STRING - SET UP A BASIC ENTITY USING PROVIDED STRING - SPLITTING INTO NAME AND IMAGE PATH
+                        // CAN ALSO PREPEND / EG: this.AddGameObject('/player') TO PREVENT CONSTRUCTING FROM ENTITY 'PLAYER', GETTING THE IMAGE INSTEAD
+                        
+                        // USAGE OF / OVERIDES ANY :XXX - YOU ARE DEFINING A PATH, NOTHING ELSE
+                        if (input.includes(":"))
+                            input = input.split(":")[0];
+                            
+                        processPathInput(input);
+                    }
+                    else
+                    if (input.includes(":"))
+                    {
+                        // CAN PROBABLY JUST REMOVE THIS - UNNECESSARY COMPLEXITY - TODO
+                        // ENTITY IS DEFAULT, IMAGE CAN BE SET WITH /, NAME GETS HANDLED ALREADY BELOW
+
+                        var name = input.split(":")[0];
+                        var type = input.split(":")[1];
+
+                        switch (type)
+                        {
+                            case "image": // OR TEXTURE?
+                                processPathInput(name);
+                            break;
+                            case "entity":
+                                // NOT REALLY NEEDED, SINCE IT'S DEFAULT, BUT NICE AND VERBOSE
+                                entity = this.ConstructEntity(name); 
+                            break;
+                            case "name":
+                                // EXPLICITLY PREVENT A TEXTURE LOOKUP FOR THIS NAME
+                                // HANDY FOR OBJECTS THAT WILL HAVE AN ANIMATION COMPONENT
+                                entity = this.ConstructEntity(name);
+                                entity.texture = "NONE";
+                            break;
+                        }
                     }
                     else
                     {
-                        // ENTITY NAME AS INPUT - CONSTRUCT IT
+                        // DEFAULT - ENTITY NAME AS INPUT - CONSTRUCT IT
                         entity = this.ConstructEntity(input);
                     }
                 }
@@ -731,10 +759,21 @@ export class Scene implements SceneI
                     entity = this.ConstructEntity(input);
                 }
 
+                if (Bare.assets.images.length > 0)
+                {
+                    var hasEntityImage = Bare.assets.images.includes(entity.texture) || Bare.assets.images.includes(entity.name);
+                    if (!hasEntityImage)
+                    {
+                        entity.texture = "NONE";
+                    }
+                }
+
                 gameObject = bare.GetObjectFromPool(entity.baseClass!, this);
                 gameObject.Init(MakePathForEntity(entity));
+
                 //if (entity.texture != "NONE")
                 //    delete entity.texture; // TEXTURE HAS BEEN HANDLED ABOVE WITH Init()
+
                 this.ApplyEntityToGameObject(entity, gameObject);
             }
 
@@ -770,6 +809,14 @@ export class Scene implements SceneI
         this.events.emit(BareEvent.game_objectAdded, { gameObject: gameObject, layer: parent });
 
         return gameObject as T;
+    }
+
+    AddGameObjectFromImage(image: string, parent?: int | GameObject)
+    {
+        if (!image.startsWith("/"))
+            image = "/" + image;
+
+        return this.AddGameObject(image, parent) as GameObject;
     }
 
     RemoveGameObject(gameObject: GameObject, parent?: int | GameObject, clear:boolean = true)
