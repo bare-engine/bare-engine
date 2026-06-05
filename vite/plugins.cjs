@@ -1367,12 +1367,20 @@ function bareGeneratedAssetsPlugin(options = {}) {
     const outputPath = options.outputPath || path.join(projectRoot, "src/generated/assets.ts");
     const entryPath = options.entryPath || path.join(projectRoot, "src/game.ts");
     const settingsPath = path.join(projectRoot, "public/data/settingsData.json");
+    // Extra image globs (relative to public, eg "demos/**/images/**") pull images that
+    // live outside public/images into Asset.Image, each keyed/valued by its name relative
+    // to its images folder. This is a bit of a hack - it exists so the showcase/demos
+    // project, which scatters images across per-demo folders, can work; normal projects
+    // keep everything under public/images and never set this.
+    const imageGlobs = Array.isArray(options.imageGlobs) ? options.imageGlobs : [];
+    const publicDir = path.join(projectRoot, "public");
     const watchDirs = [
         path.join(projectRoot, "public/initial"),
         path.join(projectRoot, "public/images"),
         path.join(projectRoot, "public/sounds"),
         path.join(projectRoot, "public/fonts"),
-        path.join(projectRoot, "public/data/levels")
+        path.join(projectRoot, "public/data/levels"),
+        ...imageGlobs.map(glob => path.join(publicDir, globStaticPrefix(glob)))
     ];
 
     let importSpecifier = normalize(path.relative(path.dirname(entryPath), outputPath)).replace(/\.[cm]?[jt]sx?$/, "");
@@ -1388,7 +1396,7 @@ function bareGeneratedAssetsPlugin(options = {}) {
             isServe = config.command === "serve";
         },
         buildStart() {
-            generateAssets(projectRoot, outputPath);
+            generateAssets(projectRoot, outputPath, imageGlobs);
             if (fs.existsSync(settingsPath)) {
                 this.addWatchFile(settingsPath);
             }
@@ -1409,7 +1417,7 @@ function bareGeneratedAssetsPlugin(options = {}) {
             return { code: ms.toString(), map: ms.generateMap({ source: id, includeContent: true, hires: true }) };
         },
         configureServer(server) {
-            generateAssets(projectRoot, outputPath);
+            generateAssets(projectRoot, outputPath, imageGlobs);
 
             for (const target of [settingsPath, ...watchDirs]) {
                 if (fs.existsSync(target)) {
@@ -1426,7 +1434,7 @@ function bareGeneratedAssetsPlugin(options = {}) {
                 }
                 const isSource = sources.some(src => norm === src || norm.startsWith(src + "/"));
                 if (isSource) {
-                    generateAssets(projectRoot, outputPath);
+                    generateAssets(projectRoot, outputPath, imageGlobs);
                 }
             };
 
@@ -1666,7 +1674,7 @@ function toInlineLiteral(value) {
     return typeof value === "number" ? String(value) : JSON.stringify(value);
 }
 
-function generateAssets(projectRoot, outputPath) {
+function generateAssets(projectRoot, outputPath, imageGlobs = []) {
     try {
         const publicDir = path.join(projectRoot, "public");
 
@@ -1680,7 +1688,10 @@ function generateAssets(projectRoot, outputPath) {
         // folder without extension (eg "player/player_idle", "coin", "level"), matching
         // how the engine resolves textures, sounds and levels. Fonts use the bare name,
         // matching LoadFont(name) which appends the extension itself.
-        const imageEntries = dedupeAssetEntries([...images, ...initialImages], file => file.relNoExt);
+        const standardImageEntries = dedupeAssetEntries([...images, ...initialImages], file => file.relNoExt);
+        // Glob-matched images (eg from public/demos/**/images) join the same Image map,
+        // keyed/valued by their name relative to their images folder.
+        const imageEntries = appendGlobImageEntries(standardImageEntries, collectGlobImageEntries(publicDir, imageGlobs));
         const soundEntries = dedupeAssetEntries(sounds, file => file.relNoExt);
         const fontEntries = dedupeAssetEntries(fonts, file => file.base);
         const levelEntries = dedupeAssetEntries(levels, file => file.relNoExt);
@@ -1852,6 +1863,103 @@ function dedupeAssetEntries(files, valueFn) {
 // settingsData names key off the name directly.
 function dedupeNamedEntries(names) {
     return toUniqueEntries(names, toEnumKey, name => name);
+}
+
+// Collect every image under publicDir whose path (relative to public) matches one
+// of the given globs. Each is keyed/valued by its path relative to the nearest
+// "images" folder (just like public/images), since that is the name the engine
+// resolves textures by, eg "demos/basics/images/coin" -> "coin".
+function collectGlobImageEntries(publicDir, globs) {
+    if (!Array.isArray(globs) || globs.length === 0 || !fs.existsSync(publicDir)) {
+        return [];
+    }
+
+    const matchers = globs.map(globToRegExp);
+    const results = [];
+    for (const filePath of getFilesRecursive(publicDir)) {
+        if (!ASSET_IMAGE_EXTENSIONS.has(path.extname(filePath).toLowerCase())) {
+            continue;
+        }
+        const rel = normalize(path.relative(publicDir, filePath));
+        if (!matchers.some(re => re.test(rel))) {
+            continue;
+        }
+        const value = relativeToImagesRoot(removePathExtension(rel));
+        results.push({ keyBase: toEnumKey(value), value });
+    }
+
+    results.sort((a, b) => a.value.localeCompare(b.value));
+    return results;
+}
+
+// Drop everything up to and including the last "images" path segment, so an image
+// resolves by the same name the engine uses, eg "demos/foo/images/sub/coin" -> "sub/coin".
+function relativeToImagesRoot(relNoExt) {
+    const segments = relNoExt.split("/");
+    const lastImagesIndex = segments.lastIndexOf("images");
+    return lastImagesIndex === -1 ? relNoExt : segments.slice(lastImagesIndex + 1).join("/");
+}
+
+// Append glob images to the standard image entries, skipping any value already
+// present and giving colliding keys a numeric suffix.
+function appendGlobImageEntries(standardEntries, globEntries) {
+    const usedKeys = new Set(standardEntries.map(entry => entry.key));
+    const usedValues = new Set(standardEntries.map(entry => entry.value));
+    const merged = standardEntries.slice();
+
+    for (const entry of globEntries) {
+        if (usedValues.has(entry.value)) {
+            continue;
+        }
+        let key = entry.keyBase || "IMAGE";
+        let suffix = 2;
+        while (usedKeys.has(key)) {
+            key = `${entry.keyBase}_${suffix++}`;
+        }
+        usedKeys.add(key);
+        usedValues.add(entry.value);
+        merged.push({ key, value: entry.value });
+    }
+
+    return merged;
+}
+
+// Minimal glob -> RegExp over forward-slash paths. Supports ** (any depth, also
+// matching zero segments), * (within a segment) and ? (single char).
+function globToRegExp(glob) {
+    let source = "^";
+    for (let i = 0; i < glob.length; i++) {
+        const char = glob[i];
+        if (char === "*") {
+            if (glob[i + 1] === "*") {
+                i++;
+                if (glob[i + 1] === "/") {
+                    i++;
+                    source += "(?:[^/]+/)*"; // **/ -> zero or more directories
+                } else {
+                    source += ".*"; // trailing ** -> anything, including slashes
+                }
+            } else {
+                source += "[^/]*";
+            }
+        } else if (char === "?") {
+            source += "[^/]";
+        } else if (/[.+^${}()|[\]\\]/.test(char)) {
+            source += `\\${char}`;
+        } else {
+            source += char;
+        }
+    }
+    return new RegExp(`${source}$`);
+}
+
+// The literal directory prefix of a glob, before the first wildcard, eg
+// "demos/**/images/**" -> "demos". Used to pick a folder to watch.
+function globStaticPrefix(glob) {
+    const wildcardIndex = glob.search(/[*?]/);
+    const staticPart = wildcardIndex === -1 ? glob : glob.slice(0, wildcardIndex);
+    const lastSlash = staticPart.lastIndexOf("/");
+    return lastSlash === -1 ? "" : staticPart.slice(0, lastSlash);
 }
 
 // camelCase / kebab-case / nested/paths -> CONSTANT_CASE, eg:

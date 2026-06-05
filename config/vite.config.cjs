@@ -65,7 +65,7 @@ module.exports = ({ mode }) => {
             }),
             bareIndexOutputPlugin(),
             bareInitialAssetsPlugin({ projectRoot }),
-            bareGeneratedAssetsPlugin({ projectRoot }),
+            bareGeneratedAssetsPlugin({ projectRoot, imageGlobs: projectPackage.bareEngine?.imageGlobs }),
             ...(!isDev ? [bareInlineGeneratedAssetsPlugin({ projectRoot })] : []),
             bareEditorAndApiPlugin({
                 projectRoot,
