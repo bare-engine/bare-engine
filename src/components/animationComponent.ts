@@ -2,7 +2,7 @@ import { Component } from "../controllers/componentController";
 import { assetsHandler } from "../handlers/assetsHandler";
 import mitt, { Emitter } from "../libraries/mitt";
 import { AnimationData } from "../types/bareTypes";
-import { InspectorField, Range } from "../utils/decorators";
+import { Dropdown, InspectorField, Range } from "../utils/decorators";
 
 // THIS COMPONENT JUST HANDLES PLAYING/PAUSING OF ANIMATIONS
 // THERE IS NO METHOD TO REGISTER ANIMATIONS HERE, THAT HAPPENS AUTOMATICALLY WHEN YOU SUFFIX YOUR IMAGE NAME WITH "_00", "_01", "_03"...
@@ -85,10 +85,10 @@ export class AnimationComponent extends Component
     };
 
     @InspectorField
+    @Dropdown(function (this: AnimationComponent) { return this.allAnimationNamesForObject; })
     current = {
         get: () => this.currentAnimation?.name.replace(`${this.go.name}_`, "") ?? "",
         set: (name: string) => this.Play(name),
-        values: () => this.allAnimationNamesForObject // MAKES IT A DROPDOWN
     };
 
     @InspectorField

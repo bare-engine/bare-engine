@@ -454,7 +454,7 @@ export class Scene implements SceneI
                 continue;
             }
 
-            // @InspectorField descriptors hold a { get, set, values } object on the instance.
+            // @InspectorField descriptors hold a { get, set } object on the instance.
             // Route through the descriptor's setter so we don't clobber that object (which would
             // drop the dropdown values / getter and downgrade the field to a plain input).
             if (inspectorFieldNames.has(key))

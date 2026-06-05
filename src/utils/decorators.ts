@@ -4,6 +4,7 @@ const BUTTON_METADATA_KEY = "__editorButtons__";
 const FIELD_METADATA_KEY = "__editorFields__";
 const LOCKED_METADATA_KEY = "__lockedFields__";
 const RANGE_METADATA_KEY = "__fieldRanges__";
+const DROPDOWN_METADATA_KEY = "__fieldDropdowns__";
 const DECIMAL_METADATA_KEY = "__fieldDecimals__";
 const LABEL_METADATA_KEY = "__fieldLabels__";
 const DESCRIPTION_METADATA_KEY = "__fieldDescriptions__";
@@ -57,6 +58,8 @@ export interface InspectorRangeData
     min?: number;
     max?: number;
 }
+
+export type InspectorDropdownValues = any[] | (() => any[]);
 
 export interface InspectorButtonOptions
 {
@@ -184,6 +187,9 @@ function addField(proto: object, name: string): void
     const fields: FieldEntry[] = Object.prototype.hasOwnProperty.call(proto, FIELD_METADATA_KEY)
         ? (proto as any)[FIELD_METADATA_KEY]
         : [];
+    if (fields.some(field => field.name === name))
+        return;
+
     fields.push({ name, type: "input" });
     (proto as any)[FIELD_METADATA_KEY] = fields;
 }
@@ -249,6 +255,16 @@ export function Range(min?: number, max?: number): (target: any, propertyKey: st
     };
 }
 
+export function Dropdown(values: InspectorDropdownValues): (target: any, propertyKey: string) => void
+{
+    return function (target: any, propertyKey: string): void
+    {
+        const dropdowns: Record<string, InspectorDropdownValues> = target[DROPDOWN_METADATA_KEY] || {};
+        dropdowns[propertyKey] = values;
+        target[DROPDOWN_METADATA_KEY] = dropdowns;
+    };
+}
+
 export function Decimal(places: number): (target: any, propertyKey: string) => void
 {
     return function (target: any, propertyKey: string): void
@@ -304,7 +320,6 @@ function isInspectorFieldDescriptor(value: any): boolean
             || "get" in value
             || "set" in value
             || "onChange" in value
-            || "values" in value
         );
 }
 
@@ -313,6 +328,14 @@ function isInspectorObjectField(value: any): boolean
     return value !== null
         && typeof value === "object"
         && !Array.isArray(value);
+}
+
+function resolveDropdownValues(component: any, values: InspectorDropdownValues | undefined): any[] | undefined
+{
+    if (typeof values === "function")
+        return values.call(component);
+
+    return values;
 }
 
 /** Returns all editor fields registered on a component instance and its ancestor classes. */
@@ -324,6 +347,7 @@ export function getInspectorFields(component: any): InspectorFieldData[]
     const indexByName = new Map<string, number>();
     const lockedFields: string[] = [];
     const ranges: Record<string, InspectorRangeData> = {};
+    const dropdowns: Record<string, InspectorDropdownValues> = {};
     const decimals: Record<string, number> = {};
     const labels: Record<string, string> = {};
     const descriptions: Record<string, string> = {};
@@ -348,6 +372,8 @@ export function getInspectorFields(component: any): InspectorFieldData[]
             lockedFields.push(...(proto[LOCKED_METADATA_KEY] as string[]));
         if (Object.prototype.hasOwnProperty.call(proto, RANGE_METADATA_KEY))
             Object.assign(ranges, proto[RANGE_METADATA_KEY]);
+        if (Object.prototype.hasOwnProperty.call(proto, DROPDOWN_METADATA_KEY))
+            Object.assign(dropdowns, proto[DROPDOWN_METADATA_KEY]);
         if (Object.prototype.hasOwnProperty.call(proto, DECIMAL_METADATA_KEY))
             Object.assign(decimals, proto[DECIMAL_METADATA_KEY]);
         if (Object.prototype.hasOwnProperty.call(proto, LABEL_METADATA_KEY))
@@ -361,6 +387,7 @@ export function getInspectorFields(component: any): InspectorFieldData[]
         const value = getFieldValue(component, entry);
         const isDescriptor = isInspectorFieldDescriptor(value);
         const descriptor = isDescriptor ? value : {};
+        const dropdownValues = resolveDropdownValues(component, dropdowns[entry.name]);
 
         const range = ranges[entry.name];
 
@@ -372,13 +399,13 @@ export function getInspectorFields(component: any): InspectorFieldData[]
 
         return {
             name: labels[entry.name] ?? entry.name,
-            type: descriptor.values !== undefined
+            type: dropdownValues !== undefined
                 ? "dropdown"
                 : (!isDescriptor && isInspectorObjectField(value) ? "object" : entry.type),
             current: isDescriptor
                 ? descriptor.current ?? (typeof descriptor.get === "function" ? descriptor.get() : undefined)
                 : value,
-            values: typeof descriptor.values === "function" ? descriptor.values() : descriptor.values,
+            values: dropdownValues,
             locked: lockedFields.includes(entry.name),
             range: range,
             decimals: resolvedDecimals,

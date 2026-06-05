@@ -4,7 +4,7 @@ import { Hitbox } from "../types/hitbox";
 import { Scene } from "../scenes/scene";
 import { MakePathForEntity } from "../globals";
 import { GameObject } from "./gameObject";
-import { InspectorField } from "../utils/decorators";
+import { Dropdown, InspectorField } from "../utils/decorators";
 import { Helper } from "../utils/helper";
 
 export class ArcadeObject extends GameObject
@@ -29,12 +29,12 @@ export class ArcadeObject extends GameObject
 
     // ENTITY VALUES ON OBJECT
     @InspectorField
+    @Dropdown(["Rectangle", "Circle"])
     hitboxType = {
         // physicsHitbox.type is a numeric HitboxType; map it to/from its key name so the
         // dropdown value matches the options.
         get: () => HitboxType[this.physicsHitbox.type] ?? "Rectangle",
         set: (type: string) => this.physicsHitbox.type = HitboxType[type as keyof typeof HitboxType],
-        values: () => ["Rectangle", "Circle"]
     };
 
     get hitboxRadius(): number
