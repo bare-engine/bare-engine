@@ -3,6 +3,7 @@ import { defaultSettingsData } from "../types/bareData";
 import { CollisionHandlingType, Entity, LayerInfo, SettingsData } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
 import { Scene } from "../scenes/scene";
+import { Bare } from "../types/bare";
 
 // SettingsHandler KEEPS TRACK OF RAW AND PROCESSED SETTINGS
 // BIT CLUMSY TO HAVE THEM BOTH, BUT HAVING ONLY ONE WOULD MEAN I'D HAVE TO UNDO THE CHANGES THAT HAPPEN IN PROCESS()
@@ -342,9 +343,27 @@ export class SettingsHandler
                 if (!entity.texture)
                 {
                     var componentKeys = Object.keys(entity.components || {});
-                    if (componentKeys.includes("animation"))
+                    if (componentKeys.includes("animation") && !Bare.assets.images.includes(entityName))
                     {
                         entity.texture = "NONE";
+
+                        // IF ENTITY HAS ANIMATION, TAKE FIRST FRAME AS TEXTURE
+                        // IF ENTITY HAS imagePath, AND animationData SHARES IT, COULD REMOVE THAT. NOT SURE IF NEEDED - TODO?
+                        var anims = Bare.data.animations;
+                        if (anims.includes(entityName))
+                        {
+                            var animationData = assetsHandler.GetAnimation(entityName);
+                            entity.texture = animationData.frames[0];
+                        }
+                        else
+                        {
+                            var firstMatchingAnimName = anims.find(x => x.startsWith(entityName + "_"));
+                            if (firstMatchingAnimName)
+                            {
+                                var animationData = assetsHandler.GetAnimation(firstMatchingAnimName);
+                                entity.texture = animationData.frames[0];
+                            }
+                        }
                     }
                 }
             }
