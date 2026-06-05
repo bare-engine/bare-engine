@@ -744,7 +744,7 @@ export class Scene implements SceneI
 
                 // CHECK IF IMAGE THAT THIS ENTITY WILL USE IS AVAILABLE
                 // IF NOT, SET IT TO NONE - TO PREVENT A FAILED IMAGE REQUEST
-                // THIS IS ONLY CHECKED FOR DEV, FOR PRODUCTION Bare.assets.images.length = 0 ALWAYS SINCE Assets.ts IS NOT INCLUDED
+                // THIS IS ONLY CHECKED FOR DEV, FOR PRODUCTION Bare.assets.images.length = 0 ALWAYS SINCE assets.ts IS NOT INCLUDED
                 if (Bare.assets.images.length > 0 && entity.texture != "NONE")
                 {
                     var hasEntityImage = false;
@@ -763,7 +763,7 @@ export class Scene implements SceneI
                     {
                         entity.texture = "NONE";
                         console.warn(`Could not find image for entity: ${entity.name}\n
-This is fine for dev, but for production you need to provide an exsiting image name for this entity. Or you get a  failed image request.\n
+This is fine for dev, but for production you need to provide an exsiting image name for this entity. Or you get a failed image request.\n
 Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("-${entity.name}")`);
                     }
                 }

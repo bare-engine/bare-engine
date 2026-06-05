@@ -1483,6 +1483,9 @@ function bareInlineGeneratedAssetsPlugin(options = {}) {
             const namespaceImports = new Set();
             const importRanges = [];
 
+            // Collect Asset / Data imported from the generated module, then inline
+            // their references to literals and drop the (now unused) import so the
+            // generated module is left out of the production bundle.
             for (const statement of sourceFile.statements) {
                 if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) {
                     continue;
@@ -1554,14 +1557,15 @@ function extractGeneratedConstObject(source, name) {
         return {};
     }
 
-    const objectSource = source.slice(objectStart, objectEnd + 1);
     try {
-        return Function(`"use strict"; return (${objectSource});`)();
+        return Function(`"use strict"; return (${source.slice(objectStart, objectEnd + 1)});`)();
     } catch {
         return {};
     }
 }
 
+// Flatten to a lookup keyed by the path after the root, eg:
+//   Image.CAT -> "cat" (typed map entry)   Images -> ["cat"] (plural "all" list)
 function flattenGeneratedAssetObject(value) {
     const out = new Map();
     if (!value || typeof value !== "object") {
@@ -1569,11 +1573,12 @@ function flattenGeneratedAssetObject(value) {
     }
 
     for (const [sectionName, section] of Object.entries(value)) {
-        if (!section || typeof section !== "object") {
-            continue;
-        }
-        for (const [key, entryValue] of Object.entries(section)) {
-            out.set(`${sectionName}.${key}`, entryValue);
+        if (Array.isArray(section)) {
+            out.set(sectionName, section);
+        } else if (section && typeof section === "object") {
+            for (const [key, entryValue] of Object.entries(section)) {
+                out.set(`${sectionName}.${key}`, entryValue);
+            }
         }
     }
 
@@ -1586,11 +1591,7 @@ function isGeneratedAssetsImport(fromFile, importPath, generatedPath) {
     }
 
     const resolved = normalize(path.resolve(path.dirname(fromFile), importPath));
-    return stripKnownScriptExtension(resolved) === stripKnownScriptExtension(generatedPath);
-}
-
-function stripKnownScriptExtension(filePath) {
-    return normalize(filePath).replace(/\.[cm]?[jt]sx?$/, "");
+    return resolved.replace(/\.[cm]?[jt]sx?$/, "") === generatedPath.replace(/\.[cm]?[jt]sx?$/, "");
 }
 
 function getStatementRemovalRange(code, statement) {
@@ -1612,23 +1613,22 @@ function getGeneratedAssetReplacement(node, sourceFile, importedRoots, namespace
         return null;
     }
 
+    // Resolve root (Asset/Data) and the path after it: [Section, KEY] for a specific
+    // value (Asset.Image.CAT) or [Plural] for the whole list (Asset.Images).
     let rootName = "";
-    let sectionName = "";
-    let keyName = "";
+    let rest = null;
 
-    if (chain.length === 3 && importedRoots.has(chain[0])) {
+    if (importedRoots.has(chain[0])) {
         rootName = importedRoots.get(chain[0]);
-        sectionName = chain[1];
-        keyName = chain[2];
-    } else if (chain.length === 4 && namespaceImports.has(chain[0]) && (chain[1] === "Asset" || chain[1] === "Data")) {
+        rest = chain.slice(1);
+    } else if (namespaceImports.has(chain[0]) && (chain[1] === "Asset" || chain[1] === "Data")) {
         rootName = chain[1];
-        sectionName = chain[2];
-        keyName = chain[3];
-    } else if (chain.length === 4 && chain[0] === "Bare" && (chain[1] === "Asset" || chain[1] === "Data")) {
-        rootName = chain[1];
-        sectionName = chain[2];
-        keyName = chain[3];
+        rest = chain.slice(2);
     } else {
+        return null;
+    }
+
+    if (!rest || rest.length === 0) {
         return null;
     }
 
@@ -1637,7 +1637,7 @@ function getGeneratedAssetReplacement(node, sourceFile, importedRoots, namespace
         return null;
     }
 
-    const mapKey = `${sectionName}.${keyName}`;
+    const mapKey = rest.join(".");
     if (!rootValues.has(mapKey)) {
         return null;
     }
@@ -1876,19 +1876,23 @@ function replaceEmojiWithNames(value) {
 }
 
 function buildAssetsFile(groups) {
+    const renderValue = value => typeof value === "number" ? value : JSON.stringify(value);
+    // Image -> Images, BaseEntity -> BaseEntities. The plural holds every value of
+    // the group, so Asset.Images is the "get all" counterpart of Asset.Image.X.
+    const pluralName = section => section.endsWith("y") ? `${section.slice(0, -1)}ies` : `${section}s`;
+
     const renderGroup = (name, entries) => {
         if (entries.length === 0) {
             return `    ${name}: {},`;
         }
-        const inner = entries
-            .map(entry => `        ${entry.key}: ${typeof entry.value === "number" ? entry.value : JSON.stringify(entry.value)},`)
-            .join("\n");
+        const inner = entries.map(entry => `        ${entry.key}: ${renderValue(entry.value)},`).join("\n");
         return `    ${name}: {\n${inner}\n    },`;
     };
 
     const renderNamespace = (name, sections) => {
         const body = Object.entries(sections)
-            .map(([section, entries]) => renderGroup(section, entries))
+            .map(([section, entries]) =>
+                `${renderGroup(section, entries)}\n    ${pluralName(section)}: [${entries.map(entry => renderValue(entry.value)).join(", ")}],`)
             .join("\n");
         return `export const ${name} = {\n${body}\n} as const;`;
     };
@@ -1901,13 +1905,16 @@ ${renderNamespace("Asset", groups.Asset)}
 
 ${renderNamespace("Data", groups.Data)}
 
-Bare.data.entities = Object.values(Data.Entity);
-Bare.data.baseEntities = Object.values(Data.BaseEntity);
-Bare.data.animations = Object.values(Data.Animation);
+// Bridge the lists into the engine's Bare registry, which engine code reads at
+// runtime. Object.values returns a mutable string[], avoiding the readonly type of
+// the \`as const\` arrays.
 Bare.assets.images = Object.values(Asset.Image);
 Bare.assets.sounds = Object.values(Asset.Sound);
 Bare.assets.fonts = Object.values(Asset.Font);
 Bare.assets.levels = Object.values(Asset.Level);
+Bare.data.entities = Object.values(Data.Entity);
+Bare.data.baseEntities = Object.values(Data.BaseEntity);
+Bare.data.animations = Object.values(Data.Animation);
 `;
 }
 
