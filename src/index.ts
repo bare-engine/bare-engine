@@ -74,7 +74,7 @@ export type {
   AtlasFrame,
   BareScreen, Entity,
   FrameRect,
-  GameObjectClass, IComponent, LayerInfo,
+  GameObjectClass, LayerInfo,
   LevelData,
   Pipes,
   Position,

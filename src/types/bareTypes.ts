@@ -1,5 +1,5 @@
 import type { Scene } from "../scenes/scene";
-import { GameObject } from "../objects/gameObject";
+import type { GameObject } from "../objects/gameObject";
 import { CanvasScaleMode, Color, CustomGlShader, TextureFilterMode, UniformValue } from "../libraries/new-rapid-render";
 
 export type Scalar = (number | string | boolean);
@@ -463,32 +463,6 @@ export interface Pipes {
   componentController_Render: () => void;
   componentController_PostRender: () => void;
   componentController_OnLevelChanged: (payload: { uids: string[] }) => void;
-}
-
-export interface IComponent<T extends GameObject = GameObject> 
-{
-    enabled?: boolean;
-    go: T; 
-    save: boolean; // IF FALSE, DOES NOT SERIALIZE
-    hasAdded: boolean;
-
-    Added?(go: T): void
-    OnAdded?(go: T): void;
-    OnStart?(): void
-    Removed?(): void
-    OnRemoved?(): void
-    OnEnable?(): void
-    OnDisable?(): void
-    OnCollisionStart?(collidingObject: GameObject): void
-    OnCollisionUpdate?(collidingObject: GameObject): void
-    OnCollisionEnd?(collidingObject: GameObject): void
-    OnPreRender?(): void
-    OnRender?(): void
-    OnPostRender?(): void
-    OnUpdate?(dt: number): void
-    OnFixedUpdate?(fixedDt: number): void
-    OnPreSaveLevel?(): void // IN CASE RELATED OBJECT IS PERSISTENT
-    OnLevelChanged?(): void // IN CASE RELATED OBJECT IS PERSISTENT
 }
 
 export interface BareScreen
