@@ -275,6 +275,21 @@ export function Decimal(places: number): (target: any, propertyKey: string) => v
     };
 }
 
+// @Int or @Int()
+export function Int(target: any, propertyKey: string): void;
+export function Int(): (target: any, propertyKey: string) => void;
+export function Int(target?: any, propertyKey?: string): any
+{
+    const apply = Decimal(0);
+    if (typeof propertyKey === "string")
+    {
+        apply(target, propertyKey);
+        return;
+    }
+
+    return apply;
+}
+
 export function Label(label: string): (target: any, propertyKey: string) => void
 {
     return function (target: any, propertyKey: string): void

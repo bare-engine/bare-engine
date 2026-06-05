@@ -2,7 +2,7 @@ import { Component } from "../controllers/componentController";
 import { assetsHandler } from "../handlers/assetsHandler";
 import mitt, { Emitter } from "../libraries/mitt";
 import { AnimationData } from "../types/bareTypes";
-import { Dropdown, InspectorField, Range } from "../utils/decorators";
+import { Decimal, Dropdown, InspectorField, Int, Range } from "../utils/decorators";
 
 // THIS COMPONENT JUST HANDLES PLAYING/PAUSING OF ANIMATIONS
 // THERE IS NO METHOD TO REGISTER ANIMATIONS HERE, THAT HAPPENS AUTOMATICALLY WHEN YOU SUFFIX YOUR IMAGE NAME WITH "_00", "_01", "_03"...
@@ -93,6 +93,7 @@ export class AnimationComponent extends Component
 
     @InspectorField
     @Range(0, Infinity)
+    @Int
     frame = {
         get: () => this.currentAnimation?.currentFrame ?? 0,
         set: (frame:int) => this.GotoFrame(frame % (this.currentAnimation?.frames.length ?? 0))
@@ -100,6 +101,7 @@ export class AnimationComponent extends Component
 
     @InspectorField
     @Range(0, Infinity)
+    @Int
     framesPerSecond = {
         get: () => this.currentAnimation?.framesPerSecond ?? 0,
         set: (fps:int) => {if (this.currentAnimation) this.currentAnimation.framesPerSecond = fps}
