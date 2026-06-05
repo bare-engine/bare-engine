@@ -61,9 +61,9 @@ export class EditorControlsHandler {
 
     init()
     {
-        this.scene.events.on(BareEvent.pointer_down, this.PointerDown.bind(this));
+        this.scene.events.on(BareEvent.pointer_down_any, this.AnyPointerDown.bind(this));
         this.scene.events.on(BareEvent.pointer_move, this.PointerMove.bind(this));
-        this.scene.events.on(BareEvent.pointer_up, this.PointerUp.bind(this));
+        this.scene.events.on(BareEvent.pointer_up_any, this.AnyPointerUp.bind(this));
         this.scene.events.on(BareEvent.pointer_doubleClick, this.DoubleClick.bind(this));
         //this.scene.events.on(BareEvent.game_postRender, this.PostRender.bind(this));
         this.scene.events.on(BareEvent.key_pressed, this.KeyPressed.bind(this));
@@ -153,7 +153,7 @@ export class EditorControlsHandler {
         }
     }
 
-    private PointerDown({ mouseX, mouseY, event, isLeftButton }: BareEventPayload['pointer_down']): void {
+    private AnyPointerDown({ mouseX, mouseY, event, isLeftButton }: BareEventPayload['pointer_down_any']): void {
         if (this.MouseIsOnEditor(event))
             return;
 
@@ -319,7 +319,7 @@ export class EditorControlsHandler {
         }
     }
 
-    private PointerUp({ mouseX, mouseY, event, isLeftButton }: BareEventPayload['pointer_up']): void
+    private AnyPointerUp({ mouseX, mouseY, event, isLeftButton }: BareEventPayload['pointer_up_any']): void
     {
         if (!this.scene.opened)
             return;

@@ -1409,7 +1409,7 @@ export class PluginHandler
 
               const updateDraggedObjectBound = this.UpdateDraggedObject.bind(this);
               obj.scene.events.on(BareEvent.scene_update, updateDraggedObjectBound);
-              obj.scene.events.once(BareEvent.pointer_up, () => obj.scene.events.off(BareEvent.scene_update, updateDraggedObjectBound));
+              obj.scene.events.once(BareEvent.pointer_up_any, () => obj.scene.events.off(BareEvent.scene_update, updateDraggedObjectBound));
           }
       }
 
