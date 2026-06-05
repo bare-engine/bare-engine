@@ -1365,6 +1365,7 @@ const ASSET_LEVEL_EXTENSIONS = new Set([".json"]);
 function bareGeneratedAssetsPlugin(options = {}) {
     const projectRoot = options.projectRoot || process.cwd();
     const outputPath = options.outputPath || path.join(projectRoot, "src/generated/assets.ts");
+    const entryPath = options.entryPath || path.join(projectRoot, "src/game.ts");
     const settingsPath = path.join(projectRoot, "public/data/settingsData.json");
     const watchDirs = [
         path.join(projectRoot, "public/initial"),
@@ -1374,13 +1375,38 @@ function bareGeneratedAssetsPlugin(options = {}) {
         path.join(projectRoot, "public/data/levels")
     ];
 
+    let importSpecifier = normalize(path.relative(path.dirname(entryPath), outputPath)).replace(/\.[cm]?[jt]sx?$/, "");
+    if (!importSpecifier.startsWith(".")) {
+        importSpecifier = `./${importSpecifier}`;
+    }
+    const entryNorm = normalize(path.resolve(entryPath));
+    let isServe = false;
+
     return {
         name: "bare:generated-assets",
+        configResolved(config) {
+            isServe = config.command === "serve";
+        },
         buildStart() {
             generateAssets(projectRoot, outputPath);
             if (fs.existsSync(settingsPath)) {
                 this.addWatchFile(settingsPath);
             }
+        },
+        // The generated module registers Bare.assets.* / Bare.data.* on import. Those
+        // are only read in dev (prod inlines everything to literals), so inject the
+        // side-effect import into the entry module in-memory rather than touching the
+        // project's source file.
+        transform(code, id) {
+            if (!isServe || normalize(path.resolve(cleanId(id))) !== entryNorm) {
+                return null;
+            }
+            if (/generated\/assets(?:\.[a-z]+)?['"]/.test(code)) {
+                return null; // already imported
+            }
+            const ms = new MagicString(code);
+            ms.prepend(`import '${importSpecifier}';\n`);
+            return { code: ms.toString(), map: ms.generateMap({ source: id, includeContent: true, hires: true }) };
         },
         configureServer(server) {
             generateAssets(projectRoot, outputPath);
@@ -1797,46 +1823,35 @@ function removePathExtension(value) {
     return ext ? value.slice(0, -ext.length) : value;
 }
 
-// Build { key, value } entries from collected files. The key is the CONSTANT_CASE
-// base name; if two files share a base name the colliding ones fall back to the
-// full relative path so every key stays unique.
-function dedupeAssetEntries(files, valueFn) {
-    const baseCount = {};
-    for (const file of files) {
-        const key = toEnumKey(file.base);
-        baseCount[key] = (baseCount[key] || 0) + 1;
-    }
-
+// Build { key, value } entries, giving any colliding key a numeric suffix.
+function toUniqueEntries(items, keyFn, valueFn) {
     const used = new Set();
-    return files.map(file => {
-        let key = toEnumKey(file.base);
-        if (baseCount[key] > 1) {
-            key = toEnumKey(file.relNoExt);
-        }
-        let unique = key;
+    return items.map(item => {
+        const base = keyFn(item);
+        let key = base;
         let suffix = 2;
-        while (used.has(unique)) {
-            unique = `${key}_${suffix++}`;
+        while (used.has(key)) {
+            key = `${base}_${suffix++}`;
         }
-        used.add(unique);
-        return { key: unique, value: valueFn(file) };
+        used.add(key);
+        return { key, value: valueFn(item) };
     });
 }
 
-// Build { key, value } entries from settingsData names. The key derives from the
-// name; the value defaults to the name but can be remapped via valueFn.
-function dedupeNamedEntries(names, valueFn = name => name) {
-    const used = new Set();
-    return names.map(name => {
-        const key = toEnumKey(name);
-        let unique = key;
-        let suffix = 2;
-        while (used.has(unique)) {
-            unique = `${key}_${suffix++}`;
-        }
-        used.add(unique);
-        return { key: unique, value: valueFn(name) };
-    });
+// Asset files key off their CONSTANT_CASE base name, falling back to the full
+// relative path when two files share a base name.
+function dedupeAssetEntries(files, valueFn) {
+    const baseCount = {};
+    for (const file of files) {
+        baseCount[toEnumKey(file.base)] = (baseCount[toEnumKey(file.base)] || 0) + 1;
+    }
+    const keyFn = file => baseCount[toEnumKey(file.base)] > 1 ? toEnumKey(file.relNoExt) : toEnumKey(file.base);
+    return toUniqueEntries(files, keyFn, valueFn);
+}
+
+// settingsData names key off the name directly.
+function dedupeNamedEntries(names) {
+    return toUniqueEntries(names, toEnumKey, name => name);
 }
 
 // camelCase / kebab-case / nested/paths -> CONSTANT_CASE, eg:
