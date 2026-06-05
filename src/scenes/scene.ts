@@ -722,30 +722,13 @@ export class Scene implements SceneI
                         processPathInput(input);
                     }
                     else
-                    if (input.includes(":"))
+                    if (input.startsWith("-"))
                     {
-                        // CAN PROBABLY JUST REMOVE THIS - UNNECESSARY COMPLEXITY - TODO
-                        // ENTITY IS DEFAULT, IMAGE CAN BE SET WITH /, NAME GETS HANDLED ALREADY BELOW
-
-                        var name = input.split(":")[0];
-                        var type = input.split(":")[1];
-
-                        switch (type)
-                        {
-                            case "image": // OR TEXTURE?
-                                processPathInput(name);
-                            break;
-                            case "entity":
-                                // NOT REALLY NEEDED, SINCE IT'S DEFAULT, BUT NICE AND VERBOSE
-                                entity = this.ConstructEntity(name); 
-                            break;
-                            case "name":
-                                // EXPLICITLY PREVENT A TEXTURE LOOKUP FOR THIS NAME
-                                // HANDY FOR OBJECTS THAT WILL HAVE AN ANIMATION COMPONENT
-                                entity = this.ConstructEntity(name);
-                                entity.texture = "NONE";
-                            break;
-                        }
+                        // STRING INPUT, MARKED WITH -, EG: -exlosion
+                        // PREVENT A TEXTURE LOOKUP FOR THIS NAME, HANDY FOR OBJECTS THAT WILL HAVE AN ANIMATION COMPONENT
+                        var name = input.substring(1);
+                        entity = this.ConstructEntity(name);
+                        entity.texture = "NONE";
                     }
                     else
                     {
@@ -759,12 +742,13 @@ export class Scene implements SceneI
                     entity = this.ConstructEntity(input);
                 }
 
-                if (Bare.assets.images.length > 0)
+                if (Bare.assets.images.length > 0 && !entity.texture)
                 {
                     var hasEntityImage = Bare.assets.images.includes(entity.texture) || Bare.assets.images.includes(entity.name);
                     if (!hasEntityImage)
                     {
                         entity.texture = "NONE";
+                        console.warn(`Could not find image for entity: ${entity.name}\nPrepend it with - to prevent an image lookup, eg: -${entity.name}`);
                     }
                 }
 

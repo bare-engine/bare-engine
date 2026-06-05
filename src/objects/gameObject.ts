@@ -280,7 +280,7 @@ export class GameObject
 
     async InitTexture(texturePath: string):Promise<Texture>
     {
-        if (texturePath == "NONE")
+        if (texturePath.split("/").includes("NONE"))
             return;
 
         const cached = assetsHandler.GetTexture(texturePath);

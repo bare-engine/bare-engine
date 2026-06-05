@@ -411,12 +411,10 @@ export class HitboxController
         return allObjects;
     }
 
-    private PointerDown({ mouseX, mouseY, event, isLeftButton }: BareEventPayload['pointer_down']): void
+    private PointerDown({ mouseX, mouseY, event }: BareEventPayload['pointer_down']): void
     {
-        if (!isLeftButton)
-            return;
-
         this.Update();
+        
         this.currentHitboxDown = this.currentHitboxHover;
         this.currentHitboxDown?.OnPress?.(this.currentHitboxDown.parent, event);
 

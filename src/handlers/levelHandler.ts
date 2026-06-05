@@ -256,12 +256,16 @@ export class LevelHandler
 
         var collectTextures = (entity: any) => {
             var entityConstructed = this.scene.ConstructEntity(entity);
-            var fullPath = MakePathForEntity(entityConstructed);
 
-            if (!texturesFound.has(fullPath) && !assetsHandler.HasTexture(fullPath))
+            if (entityConstructed.texture != "NONE")
             {
-                promisesAr.push(assetsHandler.GetTexturePromise(fullPath));
-                texturesFound.add(fullPath);
+                var fullPath = MakePathForEntity(entityConstructed);
+
+                if (!texturesFound.has(fullPath) && !assetsHandler.HasTexture(fullPath))
+                {
+                    promisesAr.push(assetsHandler.GetTexturePromise(fullPath));
+                    texturesFound.add(fullPath);
+                }
             }
 
             // ALSO PRELOAD CHILDREN TEXTURES

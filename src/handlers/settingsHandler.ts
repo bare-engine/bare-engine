@@ -263,10 +263,10 @@ export class SettingsHandler
             }
         }
 
-        // ENTITIES - CONSTRUCT THEM ALL, FOR FASTER LOOKUP LATER
-        // CAN BECOME HEAVY, WILL NOT ALWAYS BE NECESSARY - CAN ADD FLAG
-        if (settings.entities)
+        // CONSTRUCT ENTITY BASES
+        if (settings.baseEntities)
         {
+            // PREPARE ENTITY BASES - SETTING name AND baseEntity
             for (var entityBaseName in settings.baseEntities)
             {
                 var entityBase = settings.baseEntities[entityBaseName];
@@ -281,25 +281,7 @@ export class SettingsHandler
                     entityBase.baseEntity = "ANY";
                 }
             }
-
-            for (var entityName in settings.entities)
-            {
-                // ENTITY - IF EXTEND DATA NOT SET, DEFAULT TO ANY_ENTITY BASE
-                if (entityName == "NONE")
-                    continue;
-
-                var entity = settings.entities[entityName];
-                if (!entity.baseEntity)
-                {
-                    entity.baseEntity = "ANY_ENTITY";
-                }
-            }
-
-            /*if (globalThis.plugin)
-            {
-                globalThis.plugin.ProcessSettingsData(settings);
-            }*/
-
+            
             // CONSTRUCT ALL ENTITY BASES
             for (var entityBaseName in settings.baseEntities)
             {
@@ -325,12 +307,46 @@ export class SettingsHandler
                     entityBase.baseClass = "GameObject";
                 }*/
             }
+        }
 
-            // CONSTRUCT ALL ENTITIES
+        // ENTITIES - CONSTRUCT THEM ALL, FOR FASTER LOOKUP LATER
+        // CAN BECOME HEAVY, WILL NOT ALWAYS BE NECESSARY - CAN ADD FLAG
+        if (settings.entities)
+        {
             for (var entityName in settings.entities)
             {
+                // ENTITY - IF EXTEND DATA NOT SET, DEFAULT TO ANY_ENTITY BASE
+                if (entityName == "NONE")
+                    continue;
+
+                var entity = settings.entities[entityName];
+                if (!entity.baseEntity)
+                {
+                    entity.baseEntity = "ANY_ENTITY";
+                }
+            }
+
+            /*if (globalThis.plugin)
+            {
+                globalThis.plugin.ProcessSettingsData(settings);
+            }*/
+
+            for (var entityName in settings.entities)
+            {
+                // CONSTRUCT
                 var entity = settings.entities[entityName];
                 this.ConstructEntity(entity, settings, options);
+
+                // SET ENTITY WITH ANIMATION TO TEXTURE NONE
+                // SINCE ITS NAME IS NOT USED FOR TEXTURE LOOKUP, BUT FOR ANIMATION LOOKUP
+                if (!entity.texture)
+                {
+                    var componentKeys = Object.keys(entity.components || {});
+                    if (componentKeys.includes("animation"))
+                    {
+                        entity.texture = "NONE";
+                    }
+                }
             }
         }
 
