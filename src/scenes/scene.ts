@@ -745,7 +745,7 @@ export class Scene implements SceneI
                 // CHECK IF IMAGE THAT THIS ENTITY WILL USE IS AVAILABLE
                 // IF NOT, SET IT TO NONE - TO PREVENT A FAILED IMAGE REQUEST
                 // THIS IS ONLY CHECKED FOR DEV, FOR PRODUCTION Bare.assets.images.length = 0 ALWAYS SINCE assets.ts IS NOT INCLUDED
-                if (Bare.assets.images.length > 0 && entity.texture != "NONE")
+                if (Bare.assets.images.length > 0 && entity.texture != "NONE" && entity.texture != "placeHolder")
                 {
                     var hasEntityImage = false;
 

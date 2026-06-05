@@ -260,16 +260,20 @@ export class BareEngine
         
         for (const [path, asset] of entries)
         {
-            var name = path.split('/').pop();
+            // KEEPING THE RELATIVE PATH HERE, SO THAT IF YOU CHANGE YOUR MIND
+            // ABOUT LOADING AN IMAGE FROM CACHE TO STREAMING, YOU WILL ALREADY HAVE RELATIVE PATH 
+            // IN YOUR CODE. IT'S REQUIRED FOR STREAMING. DOESN'T HAVE TO FOR CACHED. BUT DO IT FOR THIS REASON
+            // EG: YOU NOW HAVE TO GET 🦋 WITH AddGameObject('folder/🦋') FROM THE INITIAL FOLDER (DEMO)
+            var pathUnderInitial = path.replace("initial/", "");
 
-            if (!name.endsWith('.webp')) continue;
+            if (!pathUnderInitial.endsWith('.webp')) continue;
             if (entriesIgnore.has(path)) continue;
             
             // ADD REGULAR TEXTURE
             //var texture = rapid.textures.addImageFromSource(asset);
             var texture = rapid.texture.create(asset);
-            var nameMinusExt = Helper.RemoveExtension(name);
-            assetsHandler.AddTexture(nameMinusExt, texture);
+            var pathUnderInitialMinusExt = Helper.RemoveExtension(pathUnderInitial);
+            assetsHandler.AddTexture(pathUnderInitialMinusExt, texture);
         }
     }
 
