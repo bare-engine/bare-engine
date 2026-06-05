@@ -258,10 +258,12 @@ export class BareEngine
             }
         }
         
-        for (const [name, asset] of entries)
+        for (const [path, asset] of entries)
         {
+            var name = path.split('/').pop();
+
             if (!name.endsWith('.webp')) continue;
-            if (entriesIgnore.has(name)) continue;
+            if (entriesIgnore.has(path)) continue;
             
             // ADD REGULAR TEXTURE
             //var texture = rapid.textures.addImageFromSource(asset);
