@@ -1903,6 +1903,7 @@ ${renderNamespace("Data", groups.Data)}
 
 Bare.data.entities = Object.values(Data.Entity);
 Bare.data.baseEntities = Object.values(Data.BaseEntity);
+Bare.data.animations = Object.values(Data.Animation);
 Bare.assets.images = Object.values(Asset.Image);
 Bare.assets.sounds = Object.values(Asset.Sound);
 Bare.assets.fonts = Object.values(Asset.Font);

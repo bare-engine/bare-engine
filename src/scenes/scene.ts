@@ -745,7 +745,7 @@ export class Scene implements SceneI
                 // CHECK IF IMAGE THAT THIS ENTITY WILL USE IS AVAILABLE
                 // IF NOT, SET IT TO NONE - TO PREVENT A FAILED IMAGE REQUEST
                 // THIS IS ONLY CHECKED FOR DEV, FOR PRODUCTION Bare.assets.images.length = 0 ALWAYS SINCE Assets.ts IS NOT INCLUDED
-                if (Bare.assets.images.length > 0)
+                if (Bare.assets.images.length > 0 && entity.texture != "NONE")
                 {
                     var hasEntityImage = false;
 
@@ -769,12 +769,12 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
                 }
 
                 gameObject = bare.GetObjectFromPool(entity.baseClass!, this);
-                gameObject.Init(MakePathForEntity(entity));
+                gameObject.Init(MakePathForEntity(entity)); // LOADS TEXTURE TOO
 
                 //if (entity.texture != "NONE")
                 //    delete entity.texture; // TEXTURE HAS BEEN HANDLED ABOVE WITH Init()
 
-                this.ApplyEntityToGameObject(entity, gameObject);
+                this.ApplyEntityToGameObject(entity, gameObject); // SOING THIS AFTER TEXTURE LOAD, SO % PIVOT CAN BE SET CORRECTLY
             }
 
             gameObject.scene = this;
