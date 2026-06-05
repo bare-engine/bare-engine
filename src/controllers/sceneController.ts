@@ -135,6 +135,11 @@ export class SceneController
             targetScene.Clear();
             this.currentScenes.splice(targetIndex, 1);
 
+            // NOT USING bare.SendEvent TO EMIT THIS TO ALL SCENES, JUST RELEVENT FOR ONE BEING REMOVED
+            // BUT PROBABLY WILL NEVER LISTEN TO THIS? ONLY GLOBALLY - TODO, REMOVE?
+            targetScene.events.emit(BareEvent.scene_removed, { scene: targetScene });
+            targetScene.events.emit(BareEvent.scene_changed, { scene: targetScene, type: "removed" });
+
             globalEvents.emit(BareEvent.scene_removed, { scene: targetScene });
             globalEvents.emit(BareEvent.scene_changed, { scene: targetScene, type: "removed" });
 
