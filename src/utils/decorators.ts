@@ -255,6 +255,9 @@ export function Range(min?: number, max?: number): (target: any, propertyKey: st
     };
 }
 
+// EG: @Dropdown(Bare.data.entities)
+// OR: @Dropdown(() => new Array(1,2,3))
+// OR: @Dropdown(function (this: AnimationComponent) { return this.allAnimationNamesForObject; })
 export function Dropdown(values: InspectorDropdownValues): (target: any, propertyKey: string) => void
 {
     return function (target: any, propertyKey: string): void
