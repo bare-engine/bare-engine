@@ -45,9 +45,6 @@ export class EditorScene extends Scene
 
     async OnStart(payload?: EditorSceneAwakePayload): Promise<void>
     {
-        // LOADING, JUST FOR MINIMIZED FIELD
-        SaveDataHandler.Load();
-
         if (__DEV__)
             this.RegisterEditorComponents(); // JUST FOR PLUGIN - ENTITY EDITOR
 
