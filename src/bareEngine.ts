@@ -1,15 +1,15 @@
 import { sceneController } from "./controllers/sceneController";
-import { PluginHandler } from "./handlers/pluginHandler";
 import { GameMode, globalEvents } from "./globals";
 import { assetsHandler } from "./handlers/assetsHandler";
+import { PluginHandler } from "./handlers/pluginHandler";
 import { PoolHandler } from "./handlers/poolHandler";
 import { EventArgs } from "./libraries/mitt";
 import { Color, CustomGlShader, TextureManager, Vec2 } from "./libraries/new-rapid-render";
 import { GameObject } from "./objects/gameObject";
 import { Scene } from "./scenes/scene";
-import { BareEvent, BareEventPayload, BareOptions, CanvasPosition, CanvasScale, Events, GameObjectClass, LevelData, SceneClass } from "./types/bareTypes";
-import { Helper } from "./utils/helper";
+import { BareEvent, BareOptions, CanvasPosition, CanvasScale, Events, GameObjectClass, LevelData, SceneClass } from "./types/bareTypes";
 import { getSaveFields } from "./utils/decorators";
+import { Helper } from "./utils/helper";
 
 export class BareEngine
 {
@@ -175,7 +175,7 @@ export class BareEngine
     }
 
     // SEPARATE METHOD TO MAKE ASYNC
-    async Init(sceneClass: SceneClass, options?: BareOptions) 
+    private async Init(sceneClass: SceneClass, options?: BareOptions) 
     {
         this.ApplyOptions(options);
 
@@ -324,7 +324,7 @@ export class BareEngine
         sceneController.OnResize(prevWidth, prevHeight, gameWidth, gameHeight);
     }
 
-    private GetViewportSize(): { width: number, height: number }
+    GetViewportSize(): { width: number, height: number }
     {
         var visualViewport = window.visualViewport;
 
@@ -390,7 +390,7 @@ export class BareEngine
         return resolution.scale;
     }
 
-    private PositionCanvas(resolution: BareOptions['resolution'], cssWidth: number, cssHeight: number)
+    PositionCanvas(resolution: BareOptions['resolution'], cssWidth: number, cssHeight: number)
     {
         var position = resolution?.position ?? CanvasPosition.TopLeft;
 
@@ -557,7 +557,7 @@ export class BareEngine
     }
 
 
-    PointerEnter(event: PointerEvent)
+    private PointerEnter(event: PointerEvent)
     {
         if (this.mouseDownOnLeave)
         if (!(event.buttons & 1))
@@ -568,12 +568,12 @@ export class BareEngine
         this.mouseDownOnLeave = false;
     }
 
-    PointerLeave(event: PointerEvent)
+    private PointerLeave(event: PointerEvent)
     {
         this.mouseDownOnLeave = (event.buttons & 1) == 1;
     }
 
-    PointerDown(event: PointerEvent)
+    private PointerDown(event: PointerEvent)
     {
         if (this.MouseIsOnEditor(event))
             return;
@@ -592,7 +592,7 @@ export class BareEngine
         event.preventDefault();
     }
 
-    PointerUp(event: PointerEvent)
+    private PointerUp(event: PointerEvent)
     {
         if (!this.IsFirstTouch(event))
             return;
@@ -608,7 +608,7 @@ export class BareEngine
         event.preventDefault();
     }
 
-    PointerMove(event: PointerEvent)
+    private PointerMove(event: PointerEvent)
     {
         if (!this.IsFirstTouch(event))
             return;
@@ -620,13 +620,13 @@ export class BareEngine
         event.preventDefault();
     }
 
-    DoubleClick(event: MouseEvent)
+    private DoubleClick(event: MouseEvent)
     {
         var pos = this.GetCanvasScreenPosition(event.clientX, event.clientY);
         bare.SendEvent(BareEvent.pointer_doubleClick, {mouseX: pos.x, mouseY: pos.y, event: event});
     }
 
-    IsFirstTouch(event:PointerEvent): boolean
+    private IsFirstTouch(event:PointerEvent): boolean
     {
         if (event.pointerType == 'mouse')
             return true;
@@ -639,6 +639,7 @@ export class BareEngine
         rapid.canvas.style.cursor = cursorStr;
     }
 
+    // NEEDS TO BE HERE? TODO
     MouseIsOnEditor(event: PointerEvent | WheelEvent): boolean
     {
         if (!this.levelEditorOpen)

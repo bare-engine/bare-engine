@@ -25,12 +25,12 @@ export class TweenController
         //this.scene.events.on(BareEvent.game_clear, () => this.Deactivate());
     }
 
-    GameObjectRemoved(obj: GameObject)
+    private GameObjectRemoved(obj: GameObject)
     {
         this.RemoveTweensFrom(obj);
     }
     
-    OnFocusChange(hasFocus: boolean)
+    private OnFocusChange(hasFocus: boolean)
     {
         for (let i = 0; i < this.tweens.length; i++)
         {
@@ -311,6 +311,7 @@ export class TweenController
         }
     }
 
+    // MAKE A finish() METHOD ON TWEEN ITSELF - TODO
     FinishTweensFrom(obj: any)
     {
         var tweens = this.GetTweensFrom(obj);

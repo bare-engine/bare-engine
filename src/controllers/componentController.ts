@@ -71,6 +71,7 @@ export class ComponentController
         this.scene.events.on(BareEvent.level_preSave, this.OnPreSaveLevel.bind(this));
     }
 
+    // PROBALY SHOULD JUST LISTEN TO BareEvent.level_loaded? TODO
     public PostLoadLevel(persistenObjUIDs:string[] = []): void
     {
         // CALL ONLEVELCHANGED ON PERSISTENT OBJECTS
@@ -407,7 +408,7 @@ export class ComponentController
         }
     }
 
-    OnCollisionStart(initiatingObject: GameObject, collidingObject: GameObject)
+    private OnCollisionStart(initiatingObject: GameObject, collidingObject: GameObject)
     {
         const entries = this.componentsByGameObject.entries()
         for (const [, components] of entries)
@@ -423,7 +424,7 @@ export class ComponentController
         }
     }
 
-    OnCollisionUpdate(initiatingObject: GameObject, collidingObject: GameObject)
+    private OnCollisionUpdate(initiatingObject: GameObject, collidingObject: GameObject)
     {
         const entries = this.componentsByGameObject.entries()
         for (const [, components] of entries)
@@ -439,7 +440,7 @@ export class ComponentController
         }
     }
 
-    OnCollisionEnd(initiatingObject: GameObject, collidingObject: GameObject)
+    private OnCollisionEnd(initiatingObject: GameObject, collidingObject: GameObject)
     {
         const entries = this.componentsByGameObject.entries()
         for (const [, components] of entries)

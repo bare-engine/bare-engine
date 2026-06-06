@@ -133,6 +133,12 @@ export class CameraHandler {
     this.StopShake();
   }
 
+  SetZoom(zoom: number) 
+  {
+    this.zoom = zoom;
+    this.CalculateZoomFit();
+  }
+
   // center position
   SetPosition(x: number, y: number)
   {
