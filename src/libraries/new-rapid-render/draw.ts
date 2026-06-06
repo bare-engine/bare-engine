@@ -136,7 +136,11 @@ export const drawSpriteRaw = (rapid: Rapid, options: ISpriteOptions): void => {
 };
 
 export const drawSprite = (rapid: Rapid, options: ISpriteOptions): void => {
-    withOptionsTransform(rapid, options, options.texture.rawWidth, options.texture.rawHeight, () => {
+    // Resolve `origin` against the scale-aware logical size (width/height), not the raw
+    // pixel region (rawWidth/rawHeight). They differ when texture.scale !== 1 (e.g. a
+    // TextTexture renders at dpr resolution with scale = 1/dpr), which otherwise offsets
+    // the sprite by a factor of dpr and breaks centering.
+    withOptionsTransform(rapid, options, options.texture.width, options.texture.height, () => {
         drawSpriteRaw(rapid, options);
     });
 };
