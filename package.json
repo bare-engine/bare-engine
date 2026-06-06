@@ -66,6 +66,8 @@
     "vite": "^6.4.2"
   },
   "dependencies": {
+    "acorn": "^8.15.0",
+    "magic-string": "^0.30.21",
     "selenium-webdriver": "^4.43.0",
     "vite-bundle-visualizer": "^1.2.1",
     "vite-plugin-entry-shaking": "^0.5.2"
