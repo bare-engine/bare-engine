@@ -4,7 +4,7 @@ import { Hitbox } from "../types/hitbox";
 import { Scene } from "../scenes/scene";
 import { MakePathForEntity } from "../globals";
 import { GameObject } from "./gameObject";
-import { Dropdown, InspectorField } from "../utils/decorators";
+import { Dropdown, InspectorField, Int } from "../utils/decorators";
 import { Helper } from "../utils/helper";
 
 export class ArcadeObject extends GameObject
@@ -37,6 +37,8 @@ export class ArcadeObject extends GameObject
         set: (type: string) => this.physicsHitbox.type = HitboxType[type as keyof typeof HitboxType],
     };
 
+    @InspectorField
+    @Int
     get hitboxRadius(): number
     {
         return this.physicsHitbox?.radius || 0;
