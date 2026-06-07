@@ -20,4 +20,7 @@ Build for Web:
     <li><a href="https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb">Chrome Extension</a> - Get the extension</li>
     <li><a href="https://github.com/bare-engine/bare-showcase">Bare Showcase</a> - Explore the engine's features</li>
     <li><a href="https://github.com/bare-engine/bare-demos">Bare Demos</a> - Explore game examples</li>
+    <li><a href="https://github.com/bare-engine/bare-template#getting-around">Documention</a> - Learn more</li>
 </ol>
+
+
