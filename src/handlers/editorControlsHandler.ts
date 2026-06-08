@@ -62,8 +62,10 @@ export class EditorControlsHandler {
     init()
     {
         this.scene.events.on(BareEvent.pointer_down_any, this.AnyPointerDown.bind(this));
+        this.scene.events.on(BareEvent.pointer_down, this.PointerDown.bind(this));
         this.scene.events.on(BareEvent.pointer_move, this.PointerMove.bind(this));
         this.scene.events.on(BareEvent.pointer_up_any, this.AnyPointerUp.bind(this));
+        this.scene.events.on(BareEvent.pointer_up, this.PointerUp.bind(this));
         this.scene.events.on(BareEvent.pointer_doubleClick, this.DoubleClick.bind(this));
         //this.scene.events.on(BareEvent.game_postRender, this.PostRender.bind(this));
         this.scene.events.on(BareEvent.key_pressed, this.KeyPressed.bind(this));
@@ -154,6 +156,55 @@ export class EditorControlsHandler {
     }
 
     private AnyPointerDown({ mouseX, mouseY, event, isLeftButton }: BareEventPayload['pointer_down_any']): void {
+        if (isLeftButton)
+            return;
+
+        if (this.MouseIsOnEditor(event))
+            return;
+
+        if (!this.scene.opened)
+            return;
+
+        if (!this.active)
+            return;
+
+        if (this.draggingObject)
+        {
+            return;
+        }
+
+        var isRightButton = (event.button == 2);
+        if (isRightButton)
+        {
+            var hover = hitboxController.GetCurrentHitboxHover();
+            if (hover)
+            {
+                // ALSO REMOVE OTHER SELECTED ENTITIES
+                var draggedEntityIsSelected = this.selectedObjects.includes(hover.parent);
+                if (draggedEntityIsSelected)
+                {
+                    this.RemoveSelectedObjects();
+                }
+                else
+                {
+                    this.scene.RemoveGameObject(hover.parent);
+                }
+
+                hitboxController.ResetCurrentHover();
+    
+                this.actionThisFrame = 'objRemoval';
+            }
+            else
+            {
+                if (this.currentPreviewEntity)
+                {
+                    this.SetCurrentPreviewActive(false);
+                }
+            }
+        }
+    }
+
+    private PointerDown({ mouseX, mouseY, event }: BareEventPayload['pointer_down']): void {
         if (this.MouseIsOnEditor(event))
             return;
 
@@ -170,50 +221,15 @@ export class EditorControlsHandler {
 
         const layer = this.GetSelectedLayer();
 
-        if (isLeftButton)
+        if (this.currentPreviewActive && this.currentPreviewEntity.visible)
         {
-            if (this.currentPreviewActive && this.currentPreviewEntity.visible)
-            {
-                const altDown = keyboardController.IsKeyDown("alt");
-                this.SetEditorPosition(this.currentPreviewEntity, mouseController.world.position.x, mouseController.world.position.y, altDown);
-                this.PlaceCurrentPreviewObject(layer);
-                this.lastMultiPlaceGridKey = this.GetCurrentPreviewPlacementKey(layer);
-            }
-        }
-        else
-        {
-            var isRightButton = (event.button == 2);
-            if (isRightButton)
-            {
-                var hover = hitboxController.GetCurrentHitboxHover();
-                if (hover)
-                {
-                    // ALSO REMOVE OTHER SELECTED ENTITIES
-                    var draggedEntityIsSelected = this.selectedObjects.includes(hover.parent);
-                    if (draggedEntityIsSelected)
-                    {
-                        this.RemoveSelectedObjects();
-                    }
-                    else
-                    {
-                        this.scene.RemoveGameObject(hover.parent);
-                    }
-
-                    hitboxController.ResetCurrentHover();
-        
-                    this.actionThisFrame = 'objRemoval';
-                }
-                else
-                {
-                    if (this.currentPreviewEntity)
-                    {
-                        this.SetCurrentPreviewActive(false);
-                    }
-                }
-            }
+            const altDown = keyboardController.IsKeyDown("alt");
+            this.SetEditorPosition(this.currentPreviewEntity, mouseController.world.position.x, mouseController.world.position.y, altDown);
+            this.PlaceCurrentPreviewObject(layer);
+            this.lastMultiPlaceGridKey = this.GetCurrentPreviewPlacementKey(layer);
         }
         
-        if (isLeftButton && this.actionThisFrame == '' && this.scene.settingsData.selectionEnabled !== false)
+        if (this.actionThisFrame == '' && this.scene.settingsData.selectionEnabled !== false)
         {
             var w = mouseController.world.position.x - mouseController.world.positionOnDown.x;
             var h = mouseController.world.position.y - mouseController.world.positionOnDown.y;
@@ -320,6 +336,19 @@ export class EditorControlsHandler {
     }
 
     private AnyPointerUp({ mouseX, mouseY, event, isLeftButton }: BareEventPayload['pointer_up_any']): void
+    {
+        if (isLeftButton || event.button != 2)
+            return;
+
+        this.HandlePointerUp(event);
+    }
+
+    private PointerUp({ mouseX, mouseY, event }: BareEventPayload['pointer_up']): void
+    {
+        this.HandlePointerUp(event);
+    }
+
+    private HandlePointerUp(event: PointerEvent): void
     {
         if (!this.scene.opened)
             return;
