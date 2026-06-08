@@ -365,7 +365,7 @@ export class Scene implements SceneI
     private specialMap: Record<string, (obj: GameObject, value: any) => void> =
     {
         pivot: (o, v) => o.SetPivot(v.x, v.y), // SETPIVOT DOES SOME EXTRA WORK FOR PERCENTAGES, SO CUSTOM MAPPING
-        texture: (o, v) => v != "NONE" && o.InitTexture(v), // PROCESS CUSTOM TEXTURE NAME
+        texture: (o, v) => v && v != "NONE" && o.InitTexture(v), // PROCESS CUSTOM TEXTURE NAME
         color: (o, v) => o.SetColor(v), // PROCESS THE HEX COLOR STRING
         children: (o, v) => {
             for (const childEntity of v)
@@ -745,7 +745,7 @@ export class Scene implements SceneI
                 // CHECK IF IMAGE THAT THIS ENTITY WILL USE IS AVAILABLE
                 // IF NOT, SET IT TO NONE - TO PREVENT A FAILED IMAGE REQUEST
                 // THIS IS ONLY CHECKED FOR DEV, FOR PRODUCTION Bare.assets.images.length = 0 ALWAYS SINCE assets.ts IS NOT INCLUDED
-                if (Bare.assets.images.length > 0 && entity.texture != "NONE" && entity.texture != "placeHolder")
+                if (Bare.assets.images.length > 0 && entity.texture != "NONE" && entity.texture != "placeHolder" && entity.texture)
                 {
                     var hasEntityImage = false;
 

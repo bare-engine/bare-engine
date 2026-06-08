@@ -59,8 +59,10 @@ export class MouseController
         
         // MOVED HERE FROM Start(), SINCE IT NEEDS TO BE THE FIRST POINTER EVENT THAT FIRES
         this.scene.events.persistent.on(BareEvent.pointer_down, this.PointerDown.bind(this));
+        this.scene.events.persistent.on(BareEvent.pointer_down_any, this.PointerDownAny.bind(this));
         this.scene.events.persistent.on(BareEvent.pointer_move, this.PointerMove.bind(this));
         this.scene.events.persistent.on(BareEvent.pointer_up, this.PointerUp.bind(this));
+        this.scene.events.persistent.on(BareEvent.pointer_up_any, this.PointerUpAny.bind(this));
     }
 
     Start()
@@ -76,33 +78,13 @@ export class MouseController
         }
     }
 
-    PointerDown({ mouseX, mouseY, event }: BareEventPayload['pointer_down']): void
+    PointerDownAny({ mouseX, mouseY, event }: BareEventPayload['pointer_down_any']): void
     {
         if (!this.scene.started)
             return;
         
         const screenPosition = new Vec2(mouseX, mouseY);
-
-        this.screen.positionPrev.x = this.screen.position.x;
-        this.screen.positionPrev.y = this.screen.position.y;
-
-        this.screen.position.x = screenPosition.x;
-        this.screen.position.y = screenPosition.y;
-
-        this.SetMousePosition(this.screen.position.x, this.screen.position.y);
-
-        if (event.button == 0)
-        {
-            this.world.positionOnDown.x = this.world.position.x;
-            this.world.positionOnDown.y = this.world.position.y;
-
-            this.screen.positionOnDown.x = this.screen.position.x;
-            this.screen.positionOnDown.y = this.screen.position.y;
-
-            this.mouseFramesDown = 0;
-            this.mouseIsDown = true;
-        }
-
+        
         if (event.button == 1)
         {
             this.middleMouseIsDown = true;
@@ -126,7 +108,32 @@ export class MouseController
         }
     }
 
-    PointerUp({ mouseX, mouseY, event }: BareEventPayload['pointer_up']): void
+    PointerDown({ mouseX, mouseY, event }: BareEventPayload['pointer_down']): void
+    {
+        if (!this.scene.started)
+            return;
+        
+        const screenPosition = new Vec2(mouseX, mouseY);
+
+        this.screen.positionPrev.x = this.screen.position.x;
+        this.screen.positionPrev.y = this.screen.position.y;
+
+        this.screen.position.x = screenPosition.x;
+        this.screen.position.y = screenPosition.y;
+
+        this.SetMousePosition(this.screen.position.x, this.screen.position.y);
+
+        this.world.positionOnDown.x = this.world.position.x;
+        this.world.positionOnDown.y = this.world.position.y;
+
+        this.screen.positionOnDown.x = this.screen.position.x;
+        this.screen.positionOnDown.y = this.screen.position.y;
+
+        this.mouseFramesDown = 0;
+        this.mouseIsDown = true;
+    }
+
+    PointerUpAny({ mouseX, mouseY, event }: BareEventPayload['pointer_up_any']): void
     {
         if (!this.scene.started)
             return;
@@ -138,9 +145,16 @@ export class MouseController
 
         if (event.button == 1)
             this.middleMouseIsDown = false;
+    }
 
-        if (event.button == 0)
-            this.mouseIsDown = false;
+    PointerUp({ mouseX, mouseY, event }: BareEventPayload['pointer_up']): void
+    {
+        if (!this.scene.started)
+            return;
+        
+        const screenPosition = new Vec2(mouseX, mouseY);
+
+        this.mouseIsDown = false;
 
         this.screen.positionPrev.x = this.screen.position.x;
         this.screen.positionPrev.y = this.screen.position.y;

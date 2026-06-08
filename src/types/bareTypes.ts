@@ -293,7 +293,7 @@ export interface SettingsData
   categories?: Record<string, Category>;
   baseEntities?: Record<string, Entity>;
   entities?: Record<string, Entity>;
-  tilesheets?: Array<Entity>;
+  tilesheets?: Array<Entity>;//
   layers?: Array<string>;
   layersInfo?: Record<string, Partial<LayerInfo>>; // Partial, SINCE I'LL BE ASSIGNING MORE KEYS TO IT DURING PROCESSING
   presets?: Record<string, any>;

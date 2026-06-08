@@ -1327,9 +1327,11 @@ export class GameObject
         return this;
     }
 
-    AddShader<T extends Shader, TArgs extends any[]>(shaderClass: new (...args: TArgs) => T, ...args: TArgs): T
+    AddShader<T extends Shader, TArgs extends any[]>(shaderClass: new (...args: TArgs) => T, ...args: TArgs): T;
+    AddShader<T extends Shader>(shaderInstance: T): T;
+    AddShader<T extends Shader, TArgs extends any[]>(arg: (new (...args: TArgs) => T) | T, ...args: TArgs): T
     {
-        var shaderInst = new shaderClass(...args);
+        var shaderInst = typeof arg === "function" ? new arg(...args) : arg;
         this.shaders.push(shaderInst);
 
         return shaderInst;

@@ -15,6 +15,11 @@ const allControllerNames = new Set([
     "levelHandler",
 ]);
 
+const controllerImportSources = new Map([
+    ["arcadePhysicsController", "bare-engine/arcade"],
+    ["sopiroPhysicsController", "bare-engine/sopiro"],
+]);
+
 const externalClassInfoMap = collectClassInfoFromDirs([
     path.resolve(process.cwd(), "../BareEngine/src"),
     path.resolve(process.cwd(), "node_modules/bare-engine/src"),
@@ -511,7 +516,7 @@ function addControllerImports(sourceFile, controllerNames, factory) {
                     )
                 ])
             ),
-            factory.createStringLiteral("bare-engine")
+            factory.createStringLiteral(controllerImportSources.get(controllerName) || "bare-engine")
         ));
 
         refs.push(factory.createExpressionStatement(
