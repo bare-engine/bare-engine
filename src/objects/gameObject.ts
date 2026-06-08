@@ -230,7 +230,12 @@ export class GameObject
     }
 
     get components(): Array<Component<this>> { 
-        return this.scene.Get("componentController").GetComponentsFrom(this); 
+        var componentController = this.scene.Get("componentController"); // NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
+
+        if (componentController)
+            return componentController.GetComponentsFrom(this); 
+
+        return new Array<Component<this>>();
     }
     
     RemoveComponent<T extends Component<this>>(componentClass: Ctor<T>): boolean;
