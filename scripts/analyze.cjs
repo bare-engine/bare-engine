@@ -56,42 +56,49 @@ function applyWebpackStyling(htmlPath) {
         .replace("--text-color: #edf2f4;", "--text-color: #1a1a1a;");
 
     // 2. Color per source category. The visualizer only hues root's direct
-    //    children, and our tree wraps the real folders under
-    //    root > bundle > <abs path> nodes, so everything ends up one color.
-    //    Instead: take the "category level" to be the children of the node with
-    //    the most children (the source folder, e.g. .../src with its 14
-    //    folders), give every node at that depth a distinct hue (so sibling
-    //    path roots like the howler bundle get their own colors too), and grade
-    //    light (category header) -> saturated (leaf) within each category.
+    //    children, but our tree wraps the real folders under a prefix of
+    //    structural nodes (root > bundle > <abs path> > <pkg root> > folders),
+    //    and that prefix is a different depth per project. So: treat the prefix
+    //    as a "wrapper region" -- root, the bundle(s), and any path-segment node
+    //    (name has a separator) that still has children -- then the category is
+    //    the first non-wrapper node on each branch. Every node inherits its
+    //    category's hue, graded light (header) -> saturated (leaf) by depth
+    //    within the category. Wrappers themselves stay neutral grey.
+    const categoryColorJs = [
+        "colorParentMap.set(root, COLOR_BASE); ",
+        "const __all = []; (function __r(n){ __all.push(n); (n.children || []).forEach(__r); })(root); ",
+        "const __nm = (n) => (n && n.data && n.data.name) || ''; ",
+        "const __bs = String.fromCharCode(92); ",
+        "const __sep = (n) => { const s = __nm(n); return s.indexOf('/') >= 0 || s.indexOf(':') >= 0 || s.indexOf(__bs) >= 0; }; ",
+        "const __dir = (c) => c.children && c.children.length > 0; ",
+        "const __pkgRoot = (c) => __dir(c) && c.children.every((gc) => __sep(gc)); ",
+        "const __wrap = new Set(); (function __mark(n){ __wrap.add(n); (n.children || []).forEach((c) => { if ((n === root) || (__sep(c) && __dir(c)) || __pkgRoot(c)) __mark(c); }); })(root); ",
+        "const __catOf = (n) => { let g = n; while (g && g.parent && !__wrap.has(g.parent)) g = g.parent; return (g && !__wrap.has(g)) ? g : null; }; ",
+        "const __cats = __all.filter((n) => __catOf(n) === n); ",
+        "__cats.forEach((c, id) => { colorParentMap.set(c, hsl(360 * id / Math.max(1, __cats.length), 0.5, 0.85).toString()); });"
+    ].join("");
+
     html = html
-        // Walk the tree once, find the category depth, hue each category node.
-        .replace(
-            "colorParentMap.set(root, COLOR_BASE);",
-            "colorParentMap.set(root, COLOR_BASE); "
-                + "const __all = []; (function __rec(n){ __all.push(n); (n.children || []).forEach(__rec); })(root); "
-                + "let __gr = root; for (const __n of __all) { const __cn = __n.children ? __n.children.length : 0; if (__cn > (__gr.children ? __gr.children.length : 0)) __gr = __n; } "
-                + "const __catDepth = __gr.depth + 1;"
-        )
+        // Build the wrapper region and assign one hue per category.
+        .replace("colorParentMap.set(root, COLOR_BASE);", categoryColorJs)
+        // The visualizer's per-child coloring is now redundant; drop it.
         .replace(
             /const colorScale = sequential\(\[0, root\.children\.length\], \(n\) => hsl\(360 \* n, 0\.3, 0\.85\)\);\s*root\.children\.forEach\(\(c, id\) => \{\s*colorParentMap\.set\(c, colorScale\(id\)\.toString\(\)\);\s*\}\);/,
-            "const __cats = __all.filter((n) => n.depth === __catDepth); "
-                + "__cats.forEach((c, id) => { colorParentMap.set(c, hsl(360 * id / Math.max(1, __cats.length), 0.5, 0.85).toString()); });"
+            ""
         )
-        // Ramp lightness relative to the category level, not the absolute root.
+        // Lightness ramps with depth *within* a category (clamped at 4 levels).
         .replace(
             "const lightScale = linear().domain([0, root.height]).range([0.9, 0.3]);",
-            "const lightScale = linear().domain([0, Math.max(1, root.height - __catDepth)]).range([0.85, 0.55]);"
+            "const lightScale = linear().domain([0, 4]).range([0.85, 0.55]);"
         )
-        // Resolve each node to its category (its ancestor at the category
-        // depth); shallower structural wrappers fall back to grey.
+        // Resolve each node to its category; wrappers fall back to grey.
         .replace(
             /const parents = node\.ancestors\(\);\s*const colorStr = parents\.length === 1\s*\? colorParentMap\.get\(parents\[0\]\)\s*: colorParentMap\.get\(parents\[parents\.length - 2\]\);/,
-            "let __group = null, __a = node; while (__a) { if (__a.depth === __catDepth) { __group = __a; break; } __a = __a.parent; } "
-                + "const colorStr = __group ? colorParentMap.get(__group) : COLOR_BASE;"
+            "const __g = __catOf(node); const colorStr = __g ? colorParentMap.get(__g) : COLOR_BASE;"
         )
         .replace(
             "hslColor.l = lightScale(node.depth);",
-            "hslColor.l = lightScale(Math.max(0, node.depth - __catDepth));"
+            "hslColor.l = lightScale(Math.min(4, __g ? (node.depth - __g.depth) : 0));"
         )
         // Selection outline needs to be visible on a light background.
         .replace('stroke: selected ? "#fff"', 'stroke: selected ? "#333"');
