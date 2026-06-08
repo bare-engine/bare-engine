@@ -75,7 +75,13 @@ function applyWebpackStyling(htmlPath) {
         "const __wrap = new Set(); (function __mark(n){ __wrap.add(n); (n.children || []).forEach((c) => { if ((n === root) || (__sep(c) && __dir(c)) || __pkgRoot(c)) __mark(c); }); })(root); ",
         "const __catOf = (n) => { let g = n; while (g && g.parent && !__wrap.has(g.parent)) g = g.parent; return (g && !__wrap.has(g)) ? g : null; }; ",
         "const __cats = __all.filter((n) => __catOf(n) === n); ",
-        "__cats.forEach((c, id) => { colorParentMap.set(c, hsl(360 * id / Math.max(1, __cats.length), 0.5, 0.85).toString()); });"
+        // Rank categories by size: the largest folders get distinct vivid
+        // hues, the smallest converge toward one calm neutral tone, graded
+        // evenly by rank so a single huge category can't grey out everything.
+        "const __sorted = __cats.slice().sort((a, b) => (b.value || 0) - (a.value || 0)); ",
+        "const __rank = new Map(); __sorted.forEach((n, r) => __rank.set(n, r)); ",
+        "const __n1 = Math.max(1, __cats.length - 1); const __ch = 215; ",
+        "__cats.forEach((c, id) => { const __t = 1 - __rank.get(c) / __n1; const __hd = 360 * id / Math.max(1, __cats.length); const __h = __ch + (__hd - __ch) * __t; const __s = 0.12 + 0.45 * __t; colorParentMap.set(c, hsl(__h, __s, 0.85).toString()); });"
     ].join("");
 
     html = html
