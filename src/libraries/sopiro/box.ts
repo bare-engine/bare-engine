@@ -33,10 +33,10 @@ export class Box extends Polygon
     {
         if (!entity.rigidbodyRect)
         {
-            entity.rigidbodyRect = {width: this.texture.width, height: this.texture.height};
+            this.WhenTextureLoaded(() => {
+                entity.rigidbodyRect = {width: this.texture.width, height: this.texture.height};
+            });
         }
-
-        super.OnApplyEntityVarsToGameObject(entity, obj);
     }
 
     override set rigidbodyRect(value: { width: number, height: number })

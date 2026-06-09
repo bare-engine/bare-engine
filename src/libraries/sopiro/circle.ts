@@ -44,10 +44,10 @@ export class Circle extends RigidBody
     {
         if (!entity.hitboxRadius)
         {
-            entity.hitboxRadius = Math.min(this.texture.width, this.texture.height) * .5;
+            this.WhenTextureLoaded(() => {
+                entity.hitboxRadius = Math.min(this.texture.width, this.texture.height) * .5;    
+            });
         }
-
-        super.OnApplyEntityVarsToGameObject(entity, obj);
     }
 
     set hitboxRadius(radius: number)
