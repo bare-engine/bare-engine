@@ -1,38 +1,38 @@
-import type { RigidBody } from "./libraries/Sopiro/rigidbody";
+import type { RigidBody } from "./libraries/sopiro/rigidbody";
 
 // Controller
 export { SopiroPhysicsController } from "./controllers/sopiroPhysicsController";
 
 // Libraries: Sopiro
-export * from "./libraries/Sopiro/aabb";
-export * from "./libraries/Sopiro/aabbtree";
-export * from "./libraries/Sopiro/angle";
-export * from "./libraries/Sopiro/box";
-export * from "./libraries/Sopiro/circle";
-export * from "./libraries/Sopiro/constraint";
-export * from "./libraries/Sopiro/contact";
-export * from "./libraries/Sopiro/distance";
-export * from "./libraries/Sopiro/edge";
-export * from "./libraries/Sopiro/grab";
-export * from "./libraries/Sopiro/island";
-export * from "./libraries/Sopiro/joint";
-export * from "./libraries/Sopiro/line";
-export * from "./libraries/Sopiro/math";
-export * from "./libraries/Sopiro/maxdistance";
-export * from "./libraries/Sopiro/motor";
-export * from "./libraries/Sopiro/nsquared";
-export * from "./libraries/Sopiro/polygon";
-export * from "./libraries/Sopiro/polytope";
-export * from "./libraries/Sopiro/prismatic";
-export * from "./libraries/Sopiro/renderer";
-export * from "./libraries/Sopiro/revolute";
-export * from "./libraries/Sopiro/rigidbody";
-export * from "./libraries/Sopiro/settings";
-export * from "./libraries/Sopiro/simplex";
-export * from "./libraries/Sopiro/timer";
-export * from "./libraries/Sopiro/util";
-export * from "./libraries/Sopiro/weld";
-export * from "./libraries/Sopiro/world";
+export * from "./libraries/sopiro/aabb";
+export * from "./libraries/sopiro/aabbtree";
+export * from "./libraries/sopiro/angle";
+export * from "./libraries/sopiro/box";
+export * from "./libraries/sopiro/circle";
+export * from "./libraries/sopiro/constraint";
+export * from "./libraries/sopiro/contact";
+export * from "./libraries/sopiro/distance";
+export * from "./libraries/sopiro/edge";
+export * from "./libraries/sopiro/grab";
+export * from "./libraries/sopiro/island";
+export * from "./libraries/sopiro/joint";
+export * from "./libraries/sopiro/line";
+export * from "./libraries/sopiro/math";
+export * from "./libraries/sopiro/maxdistance";
+export * from "./libraries/sopiro/motor";
+export * from "./libraries/sopiro/nsquared";
+export * from "./libraries/sopiro/polygon";
+export * from "./libraries/sopiro/polytope";
+export * from "./libraries/sopiro/prismatic";
+export * from "./libraries/sopiro/renderer";
+export * from "./libraries/sopiro/revolute";
+export * from "./libraries/sopiro/rigidbody";
+export * from "./libraries/sopiro/settings";
+export * from "./libraries/sopiro/simplex";
+export * from "./libraries/sopiro/timer";
+export * from "./libraries/sopiro/util";
+export * from "./libraries/sopiro/weld";
+export * from "./libraries/sopiro/world";
 
 // Collision pair typing — only merged into the global union when a project
 // opts into Sopiro physics by importing from "bare-engine/sopiro". Kept out of

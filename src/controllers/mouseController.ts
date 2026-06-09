@@ -138,8 +138,6 @@ export class MouseController
         if (!this.scene.started)
             return;
         
-        const screenPosition = new Vec2(mouseX, mouseY);
-
         if (event.button == 2)
             this.rightMouseIsDown = false;
 

@@ -9,7 +9,6 @@ import { GrabJoint } from "./grab";
 import { AABBTree } from "./aabbtree";
 import { AABB, containsAABB, createAABB, toRigidBody } from "./aabb";
 import { Vec2 } from "../new-rapid-render";
-import { getCollisionPairsNSquared } from "./nsquared";
 import { Renderer } from "./renderer";
 import { Color } from "../new-rapid-render";
 import type { Scene } from "../../scenes/scene";

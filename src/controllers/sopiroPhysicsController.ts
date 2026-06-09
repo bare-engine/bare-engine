@@ -1,15 +1,9 @@
-import { Box } from "../libraries/Sopiro/box";
-import { Circle } from "../libraries/Sopiro/circle";
-import { Polygon } from "../libraries/Sopiro/polygon";
-import { RigidBody } from "../libraries/Sopiro/rigidbody";
-import { Settings } from "../libraries/Sopiro/settings";
-import { World } from "../libraries/Sopiro/world";
-import { PhysicsControllerBase } from "./physicsControllerBase";
-import type { Scene } from "../scenes/scene";
-import * as Util from "../libraries/Sopiro/util";
-import { BareEvent } from "../types/bareTypes";
+import { Box } from "../libraries/sopiro/box";
+import { RegisterController, Scene } from "../globals";
 import { GameObject } from "../objects/gameObject";
-import { RegisterController } from "../globals";
+import { World, RigidBody, Settings, Polygon, Circle, make_pair_natural} from "../sopiro";
+import { BareEvent } from "../types/bareTypes";
+import { PhysicsControllerBase } from "./physicsControllerBase";
 
 const sopiroPhysicsEventDefs = {
 	collision_start: "collision_start",
@@ -149,7 +143,7 @@ export class SopiroPhysicsController extends PhysicsControllerBase
 				idB = temp;
 			}
 
-			const key = Util.make_pair_natural(idA, idB);
+			const key = make_pair_natural(idA, idB);
 			currentCollisions.add(key);
 
 			if (!this.activeCollisions.has(key))
