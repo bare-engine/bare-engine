@@ -33,9 +33,7 @@ export class Box extends Polygon
     {
         if (!entity.rigidbodyRect)
         {
-            this.WhenTextureLoaded(() => {
-                entity.rigidbodyRect = {width: this.texture.width, height: this.texture.height};
-            });
+            entity.rigidbodyRect = {width: this.texture.width, height: this.texture.height};
         }
     }
 
