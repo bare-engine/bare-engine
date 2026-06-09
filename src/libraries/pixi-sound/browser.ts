@@ -1,0 +1,33 @@
+import {
+    Filterable,
+    filters,
+    htmlaudio,
+    Sound,
+    sound,
+    soundAsset,
+    SoundLibrary,
+    SoundSprite,
+    utils,
+    webaudio
+} from './index';
+
+Object.defineProperties(sound,
+    {
+        Filterable: { get() { return Filterable; } },
+        filters: { get() { return filters; } },
+        htmlaudio: { get() { return htmlaudio; } },
+        Sound: { get() { return Sound; } },
+        SoundLibrary: { get() { return SoundLibrary; } },
+        SoundSprite: { get() { return SoundSprite; } },
+        utils: { get() { return utils; } },
+        webaudio: { get() { return webaudio; } },
+        sound: { get() { return sound; } },
+        soundAsset: { get() { return soundAsset; } },
+    });
+
+/**
+ * For browser bundle, we'll wrap everything in a single default export.
+ * For the ESM/CJS bundles we export everything as named.
+ * @ignore
+ */
+export default sound;

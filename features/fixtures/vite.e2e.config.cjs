@@ -37,7 +37,7 @@ module.exports = {
         sourcemap: false,
         minify: false,
         commonjsOptions: {
-            include: [/node_modules/, /src[\\/]libraries[\\/]howler[\\/]howler\.core\.js/]
+            include: [/node_modules/]
         },
         lib: {
             entry: path.resolve(fixtureRoot, "src/game.ts"),

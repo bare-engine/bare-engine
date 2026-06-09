@@ -91,10 +91,6 @@ export type {
 // Arcade physics (ArcadeObject, ArcadePhysicsController) are available at "bare-engine/arcade"
 // Sopiro physics (RigidBody, SopiroPhysicsController) are available at "bare-engine/sopiro"
 
-// Libraries: howler
-export { Howl, Howler } from "./libraries/howler/howler";
-export type { HowlOptions } from "./libraries/howler/howler";
-
 // Libraries: rapid-render
 // export * from "./libraries/new-rapid-render/interface";
 // export * from "./libraries/new-rapid-render/math";

@@ -99,7 +99,7 @@ module.exports = ({ mode }) => {
             minify: "esbuild",
             target: "es2020",
             commonjsOptions: {
-                include: [/node_modules/, /src[\\/]libraries[\\/]howler[\\/]howler\.core\.js/]
+                include: [/node_modules/]
             },
             rollupOptions: {
                 input: {

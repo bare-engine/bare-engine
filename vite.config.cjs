@@ -14,7 +14,7 @@ module.exports = {
         emptyOutDir: true,
         sourcemap: true,
         commonjsOptions: {
-            include: [/node_modules/, /src[\\/]libraries[\\/]howler[\\/]howler\.core\.js/]
+            include: [/node_modules/]
         },
         lib: {
             entry: "src/index.ts",
