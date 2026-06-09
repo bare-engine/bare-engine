@@ -1,48 +1,41 @@
-import { sound as pixiSound } from '../libraries/pixi-sound';
-import type { IMediaInstance, Options as PixiSoundOptions, PlayOptions, Sound } from '../libraries/pixi-sound';
+import { actx, makeSound, type SoundJsSound } from '../libraries/soundjs';
 import { SaveData, BareEvent } from '../types/bareTypes';
 import { Helper } from '../utils/helper';
 import { globalEvents } from '../globals';
 
-export type SoundOptions = Partial<Omit<PixiSoundOptions, 'url' | 'preload'> & PixiPlayOptions> & {
+export type SoundOptions = {
   src?: string | string[];
+  volume?: number;
+  loop?: boolean;
+  rate?: number;
+  speed?: number;
+  start?: number;
   html5?: boolean;
   preload?: boolean | 'metadata';
   autoplay?: boolean;
-  rate?: number;
+  autoPlay?: boolean;
   mute?: boolean;
-};
-
-type PixiPlayOptions = Omit<PlayOptions, 'volume' | 'speed'> & {
-  volume?: number;
-  speed?: number;
+  muted?: boolean;
+  singleInstance?: boolean;
+  complete?: (sound: SoundJsSound) => void;
+  loaded?: (sound: SoundJsSound) => void;
 };
 
 class SoundHandler
 {
-  private sounds: Map<string, Sound> = new Map();
+  private sounds: Map<string, SoundJsSound> = new Map();
   private soundPaths: Map<string, string> = new Map();
-  private useLegacyAudio: boolean = false;
-
-  public get usePixiSoundLegacy(): boolean
-  {
-    return this.useLegacyAudio;
-  }
-
-  public set usePixiSoundLegacy(value: boolean)
-  {
-    this.useLegacyAudio = value;
-    pixiSound.useLegacy = value;
-  }
+  private pendingPlays: Map<string, SoundOptions[]> = new Map();
+  private useHtml5Audio: boolean = false;
 
   public get useHowlerHTML5(): boolean
   {
-    return this.usePixiSoundLegacy;
+    return this.useHtml5Audio;
   }
 
   public set useHowlerHTML5(value: boolean)
   {
-    this.usePixiSoundLegacy = value;
+    this.useHtml5Audio = value;
   }
 
   public init(): void
@@ -50,9 +43,9 @@ class SoundHandler
     globalEvents.on(BareEvent.game_focusChange, (hasFocus) =>
     {
       if (hasFocus)
-        pixiSound.unmuteAll();
+        actx.resume();
       else
-        pixiSound.muteAll();
+        actx.suspend();
     });
   }
 
@@ -61,27 +54,25 @@ class SoundHandler
     this.soundPaths.set(id, `${bare.soundPath}/${src}`);
   }
 
-  public getSound(id: string): Sound | undefined
+  public getSound(id: string): SoundJsSound | undefined
   {
     return this.sounds.get(id);
   }
 
-  public async playMusic(id: string, options: SoundOptions = {}): Promise<Sound>
+  public async playMusic(id: string, options: SoundOptions = {}): Promise<SoundJsSound>
   {
     return this.loadSound(id, options);
   }
 
-  public playSound(id: string, options: SoundOptions = {}): Sound | null
+  public playSound(id: string, options: SoundOptions = {}): SoundJsSound | null
   {
     if (!SaveData.soundEnabled)
       return null;
 
     const sound = this.loadSound(id, options);
 
-    if (options.volume !== undefined)
-      sound.volume = options.volume;
-
-    sound.play(this.getPlayOptions(options));
+    this.applyOptions(sound, options);
+    this.playLoadedSound(id, sound, options);
 
     return sound;
   }
@@ -92,16 +83,16 @@ class SoundHandler
       return;
 
     const sound = this.loadSound(id, options);
+    const playbackRate = playRandomPitch
+      ? Helper.RandomRange(.9, 1.1)
+      : this.getPlaybackRate(options);
+    const playOptions = { ...options, volume, speed: playbackRate };
 
-    if (playRandomPitch)
-      sound.speed = Helper.RandomRange(.9, 1.1);
-    else if (options.rate !== undefined)
-      sound.speed = options.rate;
-    else if (options.speed !== undefined)
-      sound.speed = options.speed;
-
+    this.applyOptions(sound, playOptions);
     sound.volume = volume;
-    sound.play(this.getPlayOptions(options));
+    sound.playbackRate = playbackRate;
+
+    this.playLoadedSound(id, sound, playOptions);
   }
 
   public async PlayPitchedSound(id: string, options: SoundOptions = {}, volume = 1, playRandomPitch: boolean = true): Promise<void>
@@ -109,28 +100,31 @@ class SoundHandler
     this.playPitchedSound(id, options, volume, playRandomPitch);
   }
 
-  public loadSound(id: string, options: SoundOptions = {}): Sound
+  public loadSound(id: string, options: SoundOptions = {}): SoundJsSound
   {
     let sound = this.sounds.get(id);
 
     if (sound)
       return sound;
 
-    if (pixiSound.exists(id))
-    {
-      sound = pixiSound.find(id);
-      this.sounds.set(id, sound);
+    const src = this.getOptionSource(options) ?? this.getSoundPath(id);
+    sound = makeSound(
+      src,
+      () =>
+      {
+        options.loaded?.(sound!);
+        this.flushPendingPlays(id, sound!);
+      },
+      true,
+      undefined,
+      (source, error) => console.error(`Audio could not be loaded: ${source}`, error)
+    );
 
-      return sound;
-    }
-
-    const src = this.getSoundPath(id);
-    sound = pixiSound.add(id, this.getSoundOptions(src, options));
-
-    if (options.mute !== undefined)
-      sound.muted = options.mute;
-
+    this.applyOptions(sound, options);
     this.sounds.set(id, sound);
+
+    if (options.autoplay || options.autoPlay)
+      this.playLoadedSound(id, sound, options);
 
     return sound;
   }
@@ -142,8 +136,6 @@ class SoundHandler
     if (src)
       return src;
 
-    //console.error("No sound path found for", id);
-
     const fallbackFileName = `${id}.mp3`;
     this.registerSound(id, fallbackFileName);
 
@@ -154,8 +146,11 @@ class SoundHandler
   {
     const sound = this.sounds.get(id);
 
-    if (sound)
-      sound.stop();
+    if (!sound)
+      return;
+
+    sound.pause();
+    sound.startOffset = 0;
   }
 
   public setVolume(id: string, volume: number): void
@@ -168,50 +163,90 @@ class SoundHandler
 
   public stopAll(): void
   {
-    this.sounds.forEach((sound) => sound.stop());
+    this.sounds.forEach((sound) =>
+    {
+      sound.pause();
+      sound.startOffset = 0;
+    });
   }
 
-  private getSoundOptions(src: string, options: SoundOptions): PixiSoundOptions
+  private applyOptions(sound: SoundJsSound, options: SoundOptions): void
   {
-    if (options.html5 !== undefined)
-      this.usePixiSoundLegacy = options.html5;
-    else
-      pixiSound.useLegacy = this.usePixiSoundLegacy;
+    if (options.volume !== undefined)
+      sound.volume = options.volume;
 
-    const { autoplay, html5, mute, preload, rate, src: optionSrc, ...pixiOptions } = options;
-    const soundOptions: PixiSoundOptions = {
-      ...pixiOptions,
-      url: optionSrc ?? src,
+    if (options.loop !== undefined)
+      sound.loop = options.loop;
+
+    sound.playbackRate = this.getPlaybackRate(options);
+  }
+
+  private getPlaybackRate(options: SoundOptions): number
+  {
+    return options.speed ?? options.rate ?? 1;
+  }
+
+  private playLoadedSound(id: string, sound: SoundJsSound, options: SoundOptions): void
+  {
+    const play = () =>
+    {
+      if (options.start !== undefined)
+        sound.playFrom(options.start);
+      else
+        sound.play();
+
+      this.attachCompleteHandler(sound, options);
     };
 
-    const autoPlay = options.autoPlay ?? autoplay;
-    const playbackSpeed = options.speed ?? rate;
-
-    if (autoPlay !== undefined) soundOptions.autoPlay = autoPlay;
-    if (preload !== undefined) soundOptions.preload = preload === true;
-    if (playbackSpeed !== undefined) soundOptions.speed = playbackSpeed;
-
-    return soundOptions;
+    if (sound.hasLoaded || sound.buffer)
+      play();
+    else
+      this.queuePlay(id, options);
   }
 
-  private getPlayOptions(options: SoundOptions): PixiPlayOptions
+  private queuePlay(id: string, options: SoundOptions): void
   {
-    const { autoPlay, autoplay, complete, end, filters, loaded, loop, muted, rate, singleInstance, speed, sprite, start } = options;
-    const playOptions: PixiPlayOptions = {};
-    const playbackSpeed = speed ?? rate;
+    const pending = this.pendingPlays.get(id) ?? [];
 
-    if (complete !== undefined) playOptions.complete = complete;
-    if (end !== undefined) playOptions.end = end;
-    if (filters !== undefined) playOptions.filters = filters;
-    if (loaded !== undefined) playOptions.loaded = loaded;
-    if (loop !== undefined) playOptions.loop = loop;
-    if (muted !== undefined) playOptions.muted = muted;
-    if (singleInstance !== undefined) playOptions.singleInstance = singleInstance;
-    if (playbackSpeed !== undefined) playOptions.speed = playbackSpeed;
-    if (sprite !== undefined) playOptions.sprite = sprite;
-    if (start !== undefined) playOptions.start = start;
+    pending.push({ ...options });
+    this.pendingPlays.set(id, pending);
+  }
 
-    return playOptions;
+  private flushPendingPlays(id: string, sound: SoundJsSound): void
+  {
+    const pending = this.pendingPlays.get(id);
+
+    if (!pending)
+      return;
+
+    this.pendingPlays.delete(id);
+    pending.forEach((options) =>
+    {
+      this.applyOptions(sound, options);
+
+      if (options.start !== undefined)
+        sound.playFrom(options.start);
+      else
+        sound.play();
+
+      this.attachCompleteHandler(sound, options);
+    });
+  }
+
+  private attachCompleteHandler(sound: SoundJsSound, options: SoundOptions): void
+  {
+    if (!options.complete || sound.loop || !sound.soundNode)
+      return;
+
+    sound.soundNode.addEventListener('ended', () => options.complete?.(sound), { once: true });
+  }
+
+  private getOptionSource(options: SoundOptions): string | undefined
+  {
+    if (typeof options.src === 'string')
+      return options.src;
+
+    return options.src?.[0];
   }
 }
 
