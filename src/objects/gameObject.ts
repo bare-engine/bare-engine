@@ -761,8 +761,8 @@ export class GameObject
         this.pivot.y = value;
     }
 
-    @InspectorField
-    @Range(0, 1)
+    //@InspectorField
+    //@Range(0, 1)
     set alpha(value: number)
     {
         value = Math.min(Math.max(value, 0), 1);
