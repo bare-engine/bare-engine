@@ -298,12 +298,7 @@ export class GameObject
 
         this.texturePromise = assetsHandler.GetTexturePromise(texturePath);
         const tex = await this.texturePromise;
-
-        // IF TEXTURE WAS SET DURING THE AWAIT, WE KEEP THAT ONE
-        // EG: HAPPENS FOR OBJECT WITH ANIMATION, WILL NOT FIND TEXTURE AND RETURN redPixelTexture HERE
-        //     BUT TEXTURE HAS ALREADY BEEN SET BY ANIMATION Play()
-        //if (!this.texture) 
-            this.SetTexture(tex);
+        this.SetTexture(tex);
 
         this.texturePromise = null;
 
