@@ -6,7 +6,9 @@ export { MakePath, StartBare } from "./main";
 export { Button } from "./objects/button";
 export { GameObject } from "./objects/gameObject";
 export { TextObject } from "./objects/textObject";
+
 export { Scene } from "./scenes/scene";
+export { SoundJsSound } from "./libraries/soundjs/index";
 
 // Controllers
 export { Component, ComponentController, componentController } from "./controllers/componentController";
