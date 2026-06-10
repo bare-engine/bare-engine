@@ -218,7 +218,7 @@ export var entityVarsNestedRecord: Record<string, string[]> =
       "stayInBounds",
       "removeOnOutOfBounds",
   ],
-  "Rigidbody": [
+  "RigidBody": [
       "drag",
       "mass",
       "restitution",

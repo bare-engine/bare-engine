@@ -96,7 +96,19 @@ export class EntityScene extends EditorScene
     override OnClear(): void
     {
         if (this.opened)
+        {
             window.debug = this.degugAtStart;
+
+            // UNDO THE showUI / selectionEnabled OVERRIDES WE SET AT OnStart()
+            // OTHERWISE THE LEVEL EDITOR (WHICH SHARES THIS HANDLER) OPENS WITH ITS UI HIDDEN
+            // ONLY WHEN opened, SINCE OnClear ALSO RUNS DURING INIT (LoadLevel), WHERE WE STILL NEED THE OVERRIDE
+            var settings = this.lastPayload?.settingsHandler?.Get();
+            if (settings)
+            {
+                delete settings.showUI;
+                delete settings.selectionEnabled;
+            }
+        }
 
         super.OnClear();
     }

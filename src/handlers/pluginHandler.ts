@@ -258,11 +258,13 @@ window.__GAME_DEBUG_API__ = {
     {
         return;
     }*/
+
+    const sceneMain = sceneController.GetMainScene();
     
-    sceneController.Remove(EditorScene); // WILL REMOVE LEVEL EDITOR IF EXISTS
+    if (!sceneController.Get(EntityScene))
+        sceneController.Remove(EditorScene); // WILL REMOVE LEVEL EDITOR IF EXISTS
 
     plugin.notifyLeaveEntity = false;
-    const sceneMain = sceneController.GetMainScene();
     var entityScene = await sceneController.Add(EntityScene, {name: name, isBase: isBase, settingsHandler: sceneMain.settingsHandler});
     //sceneController.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
     plugin.notifyLeaveEntity = true;
@@ -639,6 +641,9 @@ window.__GAME_DEBUG_API__ = {
 
     async setEntityField(name: string, props: Record<string, any>, childPath: number[], save:boolean = false)
     {
+        if (!save)
+            return;
+        
         let entityScene = sceneController.Get(EntityScene);
 
         var rawSettingsData = entityScene.settingsHandler.GetRaw();
