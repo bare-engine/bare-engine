@@ -1128,14 +1128,19 @@ export class GameObject
     }*/
 
     // Convert a point from this object's child space to world space.
-    ToGlobal(localPoint: Vec2 = new Vec2()): Vec2
+    // Pass includeInnerTransform to convert from texture space instead (the space the sprite is rendered in).
+    ToGlobal(localPoint: Vec2 = new Vec2(), includeInnerTransform: boolean = false): Vec2
     {
         const m = rapid.matrixStack;
         m.save();
         m.identity();
-        
+
         this.buildAncestorMatrix(m);
         this.applyTransform(m, this.transform);
+
+        if (includeInnerTransform)
+            this.applyTransform(m, this.innerTransform);
+
         m.translate(-this.pivot.x, -this.pivot.y);
         
         const {x, y} = m.localToWorld(localPoint.x, localPoint.y);
@@ -1335,6 +1340,11 @@ export class GameObject
         this.shaders.push(shaderInst);
 
         return shaderInst;
+    }
+
+    HasShader<T extends Shader>(shaderClass: new (...args: any[]) => T): boolean
+    {
+        return this.shaders.some(shader => shader instanceof shaderClass);
     }
 
     RemoveShader<T extends Shader>(shaderClass: new (...args: any[]) => T): T | null

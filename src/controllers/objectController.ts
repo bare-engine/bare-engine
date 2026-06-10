@@ -178,7 +178,7 @@ export class ObjectController
 
     GetAllObjects(): Array<GameObject>
     {
-        return this.layers.flat();
+        return this.layers.flat();//REVERSE IT?
     }
 
     GetObjectById(id: string, searchChildren: boolean = true): GameObject | null

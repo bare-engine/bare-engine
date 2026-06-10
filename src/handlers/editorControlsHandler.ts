@@ -481,7 +481,8 @@ export class EditorControlsHandler {
             if (this.selectedObjects.includes(obj))
                 continue;
             
-            obj.AddShader(OutlineShader, { color: [0.867, 0.631, 0.071, 1.0], width: 8.0 });
+            if (!obj.HasShader(OutlineShader))
+                obj.AddShader(OutlineShader, { color: [0.867, 0.631, 0.071, 1.0], width: 8.0 });
 
             //obj.color = Color.fromHex('#707070ff');
             this.selectedObjects.push(obj);
@@ -617,6 +618,7 @@ export class EditorControlsHandler {
         this.currentPreviewEntity.ResetValues();
         this.currentPreviewEntity.Init(MakePathForEntity(entityCopy));
         this.currentPreviewEntity.alpha = 0.5;
+        this.currentPreviewEntity.customName = 'ignoreInPlugin';
 
         this.SetCurrentPreviewActive(true);
 
@@ -624,6 +626,8 @@ export class EditorControlsHandler {
             // WILL END UP SETTING THE PIVOT CORRECTLY
             this.scene.ApplyEntityToGameObject(entityCopy, this.currentPreviewEntity);
             this.SetCurrentPreviewActive(true); // COULD HAVE BEEN SET TO VISIBLE FALSE ABOVE
+            this.currentPreviewEntity.alpha = 0.5;
+            this.currentPreviewEntity.customName = 'ignoreInPlugin';
         });
     }
 

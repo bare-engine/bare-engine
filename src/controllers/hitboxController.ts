@@ -199,7 +199,7 @@ export class HitboxController
             hitbox.circleOffset.x + parent.pivot.x,
             hitbox.circleOffset.y + parent.pivot.y
         );
-        const worldCenter = parent.ToGlobal(localCenter);
+        const worldCenter = parent.ToGlobal(localCenter, true);
 
         return worldCenter;
     }
@@ -214,8 +214,8 @@ export class HitboxController
         const radius = hitbox.GetRadius();
         const localEdge = new Vec2(localCenter.x + radius, localCenter.y);
 
-        const worldCenter = parent.ToGlobal(localCenter);
-        const worldEdge = parent.ToGlobal(localEdge);
+        const worldCenter = parent.ToGlobal(localCenter, true);
+        const worldEdge = parent.ToGlobal(localEdge, true);
 
         return Helper.Distance(worldCenter, worldEdge);
     }
@@ -225,10 +225,10 @@ export class HitboxController
         const rect = hitbox.rectangle;
         const parent = hitbox.parent;
 
-        const topLeft = parent.ToGlobal(new Vec2(rect.x, rect.y));
-        const topRight = parent.ToGlobal(new Vec2(rect.x + rect.width, rect.y));
-        const bottomRight = parent.ToGlobal(new Vec2(rect.x + rect.width, rect.y + rect.height));
-        const bottomLeft = parent.ToGlobal(new Vec2(rect.x, rect.y + rect.height));
+        const topLeft = parent.ToGlobal(new Vec2(rect.x, rect.y), true);
+        const topRight = parent.ToGlobal(new Vec2(rect.x + rect.width, rect.y), true);
+        const bottomRight = parent.ToGlobal(new Vec2(rect.x + rect.width, rect.y + rect.height), true);
+        const bottomLeft = parent.ToGlobal(new Vec2(rect.x, rect.y + rect.height), true);
 
         const minX = Math.min(topLeft.x, topRight.x, bottomRight.x, bottomLeft.x);
         const minY = Math.min(topLeft.y, topRight.y, bottomRight.y, bottomLeft.y);
@@ -481,13 +481,22 @@ export class HitboxController
         bare.SetCursor('inherit');
     }
 
+    // HITBOX RECTS LIVE IN TEXTURE SPACE (UNSCALED) - SCALE/INNERSCALE GET APPLIED WHEN CONVERTING TO WORLD SPACE
+    private GetLocalHitboxRect(gameObject: GameObject)
+    {
+        if (gameObject.texture)
+            return { x1: 0, y1: 0, x2: gameObject.texture.width, y2: gameObject.texture.height };
+
+        return { x1: 0, y1: 0, x2: gameObject.width, y2: gameObject.height };
+    }
+
     AssignButton<T extends GameObject>(gameObject: T, onPress: (go: T, ...args: any[]) => any): Hitbox;
     AssignButton(gameObject: GameObject, onPress: AnyPress): Hitbox;
     AssignButton(gameObject: GameObject, handlers: ButtonHandlers<any>): Hitbox;
     AssignButton(gameObject: GameObject, arg: any): Hitbox
     {
         const handlers: ButtonHandlers<any> = (typeof arg === "function" ? { OnPress: arg } : arg);
-        var rect = { x1: 0, y1: 0, x2: gameObject.width, y2: gameObject.height };
+        var rect = this.GetLocalHitboxRect(gameObject);
         const hitbox = new Hitbox(gameObject, rect);
 
         hitbox.OnPress   = (...a: any[]) => handlers.OnPress?.(gameObject, ...a);
@@ -522,7 +531,7 @@ export class HitboxController
 
     AssignCallback(gameobject: GameObject, type: "OnPress" | "OnRelease" | "OnEnter" | "OnLeave", callback: AnyPress): void
     {
-        var rect = {x1: 0, y1: 0, x2: gameobject.width, y2: gameobject.height};
+        var rect = this.GetLocalHitboxRect(gameobject);
         const hitbox = gameobject.tapHitbox ?? new Hitbox(gameobject, rect);
         hitbox[type] = callback;
         gameobject.tapHitbox = hitbox;

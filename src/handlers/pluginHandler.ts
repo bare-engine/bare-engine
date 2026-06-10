@@ -140,6 +140,7 @@ window.__GAME_DEBUG_API__ = {
 
   getAllScenes() {
     var scenes = sceneController.GetAllScenes();
+    scenes = scenes.filter(s => s.enabled); // DON'T SHOW DISABLED SCENES IN PLUGIN
     var sceneStrings = scenes.map(s => s.constructor.name);
 
     sceneStrings = sceneStrings.reverse(); // 
@@ -258,6 +259,8 @@ window.__GAME_DEBUG_API__ = {
         return;
     }*/
     
+    sceneController.Remove(EditorScene); // WILL REMOVE LEVEL EDITOR IF EXISTS
+
     plugin.notifyLeaveEntity = false;
     const sceneMain = sceneController.GetMainScene();
     var entityScene = await sceneController.Add(EntityScene, {name: name, isBase: isBase, settingsHandler: sceneMain.settingsHandler});
@@ -1354,6 +1357,13 @@ export class PluginHandler
 
     HandleClickObject(obj: GameObject)
     {
+        var editorScene = sceneController.Get(EditorScene);
+        if (editorScene)
+        {
+            editorScene.editorControlsHandler.SelectGameObjects([obj]);
+            return;
+        }
+
         // REMOVE OUTLINE SHADER FOR LAST SELECTED OBJECT
         if (this.lastRightClickedObject)
         {
@@ -1365,7 +1375,8 @@ export class PluginHandler
             plugin.TraceObject(obj);
 
             // ENABLE OUTLINE SHADER FOR SELECTED OBJECT
-            obj.AddShader(OutlineShader, { color: [0.867, 0.631, 0.071, 1.0], width: 8.0 });
+            if (!obj.HasShader(OutlineShader))
+                obj.AddShader(OutlineShader, { color: [0.867, 0.631, 0.071, 1.0], width: 8.0 });
 
             this.lastRightClickedObject = obj;
         }
@@ -1463,10 +1474,10 @@ export class PluginHandler
         for (var i = scenes.length - 1; i >= 0; i--)
         {
             var scene = scenes[i];
-            var objs = scene.objectController.GetAllObjects();
+            var objs = scene.objectController.GetLayers().slice().reverse().flat();
             var pWorld = scene.ScreenToWorldPos(p);
             
-            for (var j in objs)
+            for (var j = objs.length - 1; j >= 0; j--)
             {
                 var obj = objs[j];
 
@@ -1481,6 +1492,7 @@ export class PluginHandler
                     var objRect = obj.GetBoundsWithChildren();
                     if (Helper.IsPointInRectangle(pWorld, objRect))
                     {
+                        return obj;
                         foundObj = obj;
 
                         //break;
