@@ -7,6 +7,7 @@ import { objectController } from '../controllers/objectController';
 import { Color, RenderTexture, Texture, TextureFilterMode } from '../libraries/new-rapid-render';
 import { MakePath, MakePathForEntity } from '../globals';
 import { SaveDataHandler } from './SaveDataHandler';
+import { EditorUIHintHandler } from './editorUIHintHandler';
 
 /*
     BUILD SETUP/CONTROLS UI
@@ -23,6 +24,7 @@ export class EditorUIHandler {
     private isMinimized: boolean = false;
     private lastMinimize: number = 0;
     public scene: EditorScene;
+    public editorUIHintHandler: EditorUIHintHandler;
 
     private data: SettingsData;
     private gridToggleEl: HTMLElement | null = null;
@@ -35,6 +37,7 @@ export class EditorUIHandler {
 
     constructor(scene: EditorScene) {
         this.scene = scene;
+        this.editorUIHintHandler = new EditorUIHintHandler(scene);
     }
 
     private ApplyTextureBackgroundStyle(element: HTMLElement, texture: Texture): void {
@@ -664,6 +667,8 @@ export class EditorUIHandler {
         this.abortController = new AbortController();
         const signal = this.abortController.signal;
 
+        this.editorUIHintHandler.Setup();
+
         // EDITOR BUTTON
         const editorButton = document.getElementById('close-editor-btn') as HTMLButtonElement;
         editorButton.addEventListener('click', (event: MouseEvent) => {
@@ -885,6 +890,7 @@ export class EditorUIHandler {
         this.SetMinimize(false);
 
         this.abortController.abort();
+        this.editorUIHintHandler.Clear();
 
         const editorOverlay = document.getElementById('editor-overlay') as HTMLElement;
         

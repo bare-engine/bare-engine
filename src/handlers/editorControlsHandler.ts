@@ -600,6 +600,10 @@ export class EditorControlsHandler {
         this.currentPreviewActive = active;
         this.currentPreviewEntity.visible = active;
         this.currentPreviewEntity.visibleInEditor = active;
+
+        // STAMP MODE WHILE A PREVIEW ENTITY IS SELECTED, EDIT MODE OTHERWISE
+        // OPTIONAL CHAINING SINCE THIS ALSO RUNS IN OUR CONSTRUCTOR, BEFORE editorUIHandler EXISTS
+        this.scene.editorUIHandler?.editorUIHintHandler?.SetMode(active ? 'stamp' : 'edit');
     }
 
     SetCurrentPreviewEntity(entity: Entity | null)
