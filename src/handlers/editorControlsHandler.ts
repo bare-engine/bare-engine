@@ -394,8 +394,8 @@ export class EditorControlsHandler {
             
             if (!this.currentPreviewActive || obj.name != this.currentPreviewEntity.name) // DOUBLE CLICK FIRST TIME OR DIFFERENT OBJECT
             {
-                const entity = this.scene.ConstructEntity(obj.name);
-                this.SetCurrentPreviewEntity(entity);
+                //const entity = this.scene.ConstructEntity(obj.name);
+                this.SetCurrentPreviewEntity(obj.entity);
             }
             else
             {
@@ -721,7 +721,7 @@ export class EditorControlsHandler {
 
     private PlaceCurrentPreviewObject(layer: int): GameObject
     {
-        const obj = this.scene.AddGameObjectAtPosition(this.currentPreviewEntity.x, this.currentPreviewEntity.y, this.currentPreviewEntity.name, layer);
+        const obj = this.scene.AddGameObjectAtPosition(this.currentPreviewEntity.x, this.currentPreviewEntity.y, this.currentPreviewEntity.entity, layer);
         const multiSelect = keyboardController.IsKeyDown("shift");
 
         if (!multiSelect)
