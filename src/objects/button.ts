@@ -27,7 +27,7 @@ export class Button extends GameObject
         
         //this.text = new BareText({text: options.text, fontSize: 22, fontFamily: 'monospace', color: '#fff'});
         this.text = rapid.texture.createTextTexture({text:options.text, baseline: 'middle',fontSize: 22, fontFamily: 'monospace', fill: '#fff'});
-        scene.hitboxController.AssignButton(this, options);
+        scene.hitbox.AssignButton(this, options);
     }
 
     override RenderTransformed(inheritedColor?: Color): void

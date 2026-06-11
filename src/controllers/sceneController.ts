@@ -44,14 +44,14 @@ export class SceneController
                 scene.Update(deltaTime);
 
                 // DEACTIVATE HITBOXCONTROLLERS BELOW
-                if (!foundHitboxHover && scene.hitboxController?.GetCurrentHover())
+                if (!foundHitboxHover && scene.hitbox?.GetCurrentHover())
                 {
                     for (var j = i - 1; j >= 0; j--)
                     {
                         var scene = this.currentScenes[j];
                         if (scene.started && scene.enabled && !scene.paused)
-                            if (scene.hitboxController)
-                                scene.hitboxController.preventUpdateOneFrame = true
+                            if (scene.hitbox)
+                                scene.hitbox.preventUpdateOneFrame = true
                     }
 
                     foundHitboxHover = true;
@@ -244,29 +244,29 @@ export class SceneController
 
     // DOESN'T WORK ATM FOR PHYSICS OBJECTS, WOULD ALSO NEED TO MOVE
     // ALSO DOESN'T ALTER SCALE, SO OBJECT CAN CHANGE SIZE WHEN COMING FROM A ZOOMED-IN SCENE FOR EXAMPLE. HAVE TO HANDLY THIS YOURSELF IF NEEDED
-    // EG LIKE: this.go.SetScale(previousScene.cameraHandler.GetZoom());
+    // EG LIKE: this.go.SetScale(previousScene.camera.GetZoom());
     MoveGameObjectTo(gameObject: GameObject, scene: UIScene)
     {
         if (gameObject.scene != scene)
         {
             // MOVE BETWEEN objectControllers
-            gameObject.scene.objectController.Remove(gameObject);
-            scene.objectController.Add(gameObject);
+            gameObject.scene.object.Remove(gameObject);
+            scene.object.Add(gameObject);
 
             // MOVE BETWEEN tweenControllers
-            var tweens = gameObject.scene.tweenController.GetAllFrom(gameObject);
-            gameObject.scene.tweenController.RemoveAllFrom(gameObject);
+            var tweens = gameObject.scene.tween.GetAllFrom(gameObject);
+            gameObject.scene.tween.RemoveAllFrom(gameObject);
             for (var tween of tweens)
             {
-                scene.tweenController.Add(tween);
+                scene.tween.Add(tween);
             }
 
             // MOVE BETWEEN componentControllers
-            var components = gameObject.scene.componentController.GetAllFrom(gameObject);
-            gameObject.scene.componentController.RemoveAllFrom(gameObject);
+            var components = gameObject.scene.component.GetAllFrom(gameObject);
+            gameObject.scene.component.RemoveAllFrom(gameObject);
             for (var component of components)
             {
-                scene.componentController.AddComponent(gameObject, component);
+                scene.component.AddComponent(gameObject, component);
             }
 
 
@@ -299,7 +299,7 @@ export class SceneController
     GetAllObjects()
     {
         return this.currentScenes
-            .map(scene => scene.objectController)
+            .map(scene => scene.object)
             .flatMap(controller => controller.GetLayers().flat());
     }
 

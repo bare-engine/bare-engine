@@ -549,7 +549,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
       root = root.parent;
     }
 
-    const layerIndex = this.scene.objectController.GetLayerOf(root);
+    const layerIndex = this.scene.object.GetLayerOf(root);
     if (layerIndex === -1) {
       return null;
     }
@@ -591,7 +591,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
       }
     };
 
-    const sceneObjects = this.scene.objectController?.GetAll?.() ?? [];
+    const sceneObjects = this.scene.object?.GetAll?.() ?? [];
 
     for (const obj of sceneObjects) {
       if (obj instanceof ArcadeObject) {

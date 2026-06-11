@@ -205,7 +205,7 @@ export class GameObject
     AddComponent<T extends Component<this>>(componentInstance: T): T;
     AddComponent<T extends Component<this>>(arg: Ctor<T> | T, ...args: any[]): T
     {
-        var componentController = this.scene.Get("componentController"); // NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
+        var componentController = this.scene.Get("component"); // NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
 
         if (componentController)
             return componentController.AddComponent(this, arg, ...args);
@@ -218,7 +218,7 @@ export class GameObject
 
     GetComponent<T extends Component<any>>(componentClass: Ctor<T>): T | null
     {
-        var componentController = this.scene.Get("componentController");
+        var componentController = this.scene.Get("component");
 
         if (componentController)
             return componentController.Get(this, componentClass);
@@ -230,7 +230,7 @@ export class GameObject
     }
 
     get components(): Array<Component<this>> { 
-        var componentController = this.scene.Get("componentController"); // NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
+        var componentController = this.scene.Get("component"); // NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
 
         if (componentController)
             return componentController.GetAllFrom(this); 
@@ -242,7 +242,7 @@ export class GameObject
     RemoveComponent<T extends Component<this>>(componentInstance: T): boolean;
     RemoveComponent<T extends Component<this>>(arg: Ctor<T> | T): boolean
     {
-        var componentController = this.scene.Get("componentController");
+        var componentController = this.scene.Get("component");
 
         if (componentController)
             return componentController.RemoveComponent(this, arg);
@@ -1182,7 +1182,7 @@ export class GameObject
         }
         else
         {
-            this.scene.objectController.BringToFront(this);
+            this.scene.object.BringToFront(this);
         }
     }
 
@@ -1199,7 +1199,7 @@ export class GameObject
         }
         else
         {
-            this.scene.objectController.BringToBack(this);
+            this.scene.object.BringToBack(this);
         }
     }
 

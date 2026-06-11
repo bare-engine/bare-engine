@@ -136,7 +136,7 @@ export class BareEngine
 
     // ANYTHING THAT CALLS bare.[module]. EG bare.object
     // GETS TRANSFORMERD BY controllerProxyTransformer.js
-    // INTO EG: this.scene.objectController. GETTING THE INSTANCE IN SCENE
+    // INTO EG: this.scene.object. GETTING THE INSTANCE IN SCENE
 
     // SCENE MODULES
     events:Emitter<Events>;

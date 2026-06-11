@@ -143,7 +143,7 @@ export class HitboxScene extends EditorScene
         levelHandler.Serialize(level);
 
         // GET HITBOX AND PIVOT
-        var objs = this.objectController.GetLayer(0).slice();
+        var objs = this.object.GetLayer(0).slice();
         objs.splice(objs.findIndex(o => o.name === "currentPreviewEntity"), 1);
 
         var mainEntity = objs[0].entity;

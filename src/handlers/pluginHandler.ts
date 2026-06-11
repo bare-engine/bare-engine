@@ -44,7 +44,7 @@ window.__GAME_DEBUG_API__ = {
   {
         const scene = plugin.GetCurrentScene();
 
-      var obj = scene.objectController.GetById(uid);
+      var obj = scene.object.GetById(uid);
       if (!obj)
         {
             console.error("Object not found");
@@ -52,7 +52,7 @@ window.__GAME_DEBUG_API__ = {
         }
 
       var compClass = bare.componentClasses[Helper.CapitalizeFirstLetter(compName) + "Component"];
-      var comp = scene.componentController.Get(obj, compClass);
+      var comp = scene.component.Get(obj, compClass);
       if (!comp)
         {
             console.error("Component not found");
@@ -66,7 +66,7 @@ window.__GAME_DEBUG_API__ = {
   {
         const scene = plugin.GetCurrentScene();
 
-      var obj = scene.objectController.GetById(uid);
+      var obj = scene.object.GetById(uid);
       if (!obj)
         {
             console.error("Object not found");
@@ -151,7 +151,7 @@ window.__GAME_DEBUG_API__ = {
   getAllObjects() {
     const scene = plugin.GetCurrentScene();
 
-    return scene.objectController
+    return scene.object
                 .GetLayers()
                 .flat()
                 .filter(o => o.customName !== 'ignoreInPlugin')
@@ -318,7 +318,7 @@ window.__GAME_DEBUG_API__ = {
     //var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(entityWithLog, scene.settingsData, {fillPresets: false});
     //levelEntityWithDefaultValues.name = name;
 
-    var obj = entityScene.objectController.GetByName(name);
+    var obj = entityScene.object.GetByName(name);
     if (obj)
         plugin.AddInspectorDataToObject(entityWithLog, obj, true);
 
@@ -327,7 +327,7 @@ window.__GAME_DEBUG_API__ = {
 
   getObject(id: string) {
     var scene = plugin.GetCurrentScene();
-    const o = scene.objectController.GetById(id);
+    const o = scene.object.GetById(id);
 
     if (!o)
         return null;
@@ -358,7 +358,7 @@ window.__GAME_DEBUG_API__ = {
         }
     }
 
-    var data = plugin.GetCurrentScene().levelHandler.SerializeObjectFully(o, true) as any;
+    var data = plugin.GetCurrentScene().level.SerializeObjectFully(o, true) as any;
     AddExtraPropsToData(data, o);
     
     // ROUND NUMBERS
@@ -425,8 +425,8 @@ window.__GAME_DEBUG_API__ = {
 
         // COMPONENTS
         {
-            let comps = o.scene.componentController.GetAllFrom(o);
-            let components = o.scene.levelHandler.SerializeComponents(comps, false);
+            let comps = o.scene.component.GetAllFrom(o);
+            let components = o.scene.level.SerializeComponents(comps, false);
 
             for (var c of comps)
             {
@@ -740,9 +740,9 @@ window.__GAME_DEBUG_API__ = {
         
         var idIsInt = !isNaN(parseInt(id));
         if (idIsInt)
-            o = plugin.GetCurrentScene().objectController.GetById(id); // OBJECT - EG id = 0
+            o = plugin.GetCurrentScene().object.GetById(id); // OBJECT - EG id = 0
         else
-            o = plugin.GetCurrentScene().objectController.GetByName(id); // ENTITY - EG id = "player"
+            o = plugin.GetCurrentScene().object.GetByName(id); // ENTITY - EG id = "player"
         
         if (!o)
             return false;
@@ -818,7 +818,7 @@ window.__GAME_DEBUG_API__ = {
             for (let compName in props.components)
             {
                 var compClass = bare.componentClasses[Helper.CapitalizeFirstLetter(compName) + "Component"];
-                var comp = o.scene.componentController.Get(o, compClass);
+                var comp = o.scene.component.Get(o, compClass);
 
                 if (comp)
                 {
@@ -931,7 +931,7 @@ window.__GAME_DEBUG_API__ = {
 
     removeObject(id: string) {
         const scene = plugin.GetCurrentScene();
-        const root = scene.objectController.GetById(id);
+        const root = scene.object.GetById(id);
         if (!root) return false;
 
         root.Remove();
@@ -940,7 +940,7 @@ window.__GAME_DEBUG_API__ = {
     },
 
     removeComponent(id: string, comp: string) {
-        const o = plugin.GetCurrentScene().objectController.GetById(id);
+        const o = plugin.GetCurrentScene().object.GetById(id);
         if (!o) return false;
 
         var compRef = bare.componentClasses[Helper.CapitalizeFirstLetter(comp) + "Component"];
@@ -1141,7 +1141,7 @@ window.__GAME_DEBUG_API__ = {
         
     async updateLevelData(changes: { name?: string, width?: number, height?: number, backgroundColor?: string }) {
         try {
-            var levelHandler = sceneController.GetLevelScene().levelHandler;
+            var levelHandler = sceneController.GetLevelScene().level;
             var data = levelHandler.currentLevel;
             levelHandler.Serialize(data);
 
@@ -1166,7 +1166,7 @@ window.__GAME_DEBUG_API__ = {
 
     async saveLevelData(levelName: string, changes: { name?: string, width?: number, height?: number, backgroundColor?: string }) {
         try {
-            var levelHandler = sceneController.GetLevelScene().levelHandler;
+            var levelHandler = sceneController.GetLevelScene().level;
             var data = levelHandler.currentLevel;
             levelHandler.Serialize(data);
 
@@ -1438,15 +1438,15 @@ export class PluginHandler
         var data = this.draggedObjData;
 
         var scene = this.GetCurrentScene();
-        var mouseX = scene.mouseController.screen.position.x;
-        var mouseY = scene.mouseController.screen.position.y;
+        var mouseX = scene.mouse.screen.position.x;
+        var mouseY = scene.mouse.screen.position.y;
 
-        //mouseX = data.obj.scene.mouseController.screen.position.x;
-        //mouseY = data.obj.scene.mouseController.screen.position.y;
+        //mouseX = data.obj.scene.mouse.screen.position.x;
+        //mouseY = data.obj.scene.mouse.screen.position.y;
 
         if (!this.draggedObjData.hasMovedAwayEnough)
         {
-            var mouseScreen = data.obj.scene.mouseController.screen;
+            var mouseScreen = data.obj.scene.mouse.screen;
             var dist = Helper.Distance(mouseScreen.position, mouseScreen.positionOnRightDown);
             if (dist > 10)
             {
@@ -1472,14 +1472,14 @@ export class PluginHandler
 
     CheckClickGameObject(ev: PointerEvent): GameObject | null
     {
-        //var objs = this.GetCurrentScene().objectController.GetAll();
+        //var objs = this.GetCurrentScene().object.GetAll();
         var foundObj:GameObject | null = null;
         var scenes = sceneController.GetAll();
         var p = bare.GetCanvasScreenPosition(ev.clientX, ev.clientY);
         for (var i = scenes.length - 1; i >= 0; i--)
         {
             var scene = scenes[i];
-            var objs = scene.objectController.GetLayers().slice().reverse().flat();
+            var objs = scene.object.GetLayers().slice().reverse().flat();
             var pWorld = scene.ScreenToWorldPos(p);
             
             for (var j = objs.length - 1; j >= 0; j--)
@@ -1511,14 +1511,14 @@ export class PluginHandler
 
     CheckClickDeepChild(ev: PointerEvent): GameObject | null
     {
-        //var objs = this.GetCurrentScene().objectController.GetAll();
+        //var objs = this.GetCurrentScene().object.GetAll();
 
         var scenes = sceneController.GetAll();
         var p = bare.GetCanvasScreenPosition(ev.clientX, ev.clientY);
         for (var i = scenes.length - 1; i >= 0; i--)
         {
             var scene = scenes[i];
-            var objs = scene.objectController.GetAll();
+            var objs = scene.object.GetAll();
         
             var pWorld = scene.ScreenToWorldPos(p);
 
@@ -1795,7 +1795,7 @@ export class PluginHandler
                 if (buttons.length > 0)
                     (compData as any).__buttons = buttons.map(b => ({ label: b.label, method: b.methodKey }));
 
-                var comp = o.scene.componentController.Get(o, compCls);
+                var comp = o.scene.component.Get(o, compCls);
                 if (comp)
                 {
                     var fields = getInspectorFields(comp);

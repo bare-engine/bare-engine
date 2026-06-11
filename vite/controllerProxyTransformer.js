@@ -42,6 +42,25 @@ const bareModuleControllerNames = new Map([
     ["camera", "cameraHandler"],
 ]);
 
+// controller name -> Scene field it lives on (scene.tween, scene.level, ...).
+// Controller names stay the source-side rewrite triggers; the short field name is the emit target.
+const controllerSceneFieldNames = new Map(
+    Array.from(bareModuleControllerNames, ([short, long]) => [long, short])
+);
+
+function sceneFieldNameFor(controllerName) {
+    return controllerSceneFieldNames.get(controllerName) || controllerName;
+}
+
+// Accepts either a controller name or a Scene field name; returns the controller name.
+function toControllerName(name, registeredControllers) {
+    if (registeredControllers.has(name)) {
+        return name;
+    }
+    const long = bareModuleControllerNames.get(name);
+    return long && registeredControllers.has(long) ? long : null;
+}
+
 const externalClassInfoMap = collectClassInfoFromDirs([
     path.resolve(process.cwd(), "../BareEngine/src"),
     path.resolve(process.cwd(), "node_modules/bare-engine/src"),
@@ -114,7 +133,7 @@ function createControllerProxyTransformer(program) {
                     if (argType && argType.getProperty("scene")) {
                         const tweenControllerAccess = factory.createPropertyAccessExpression(
                             factory.createPropertyAccessExpression(firstArg, "scene"),
-                            "tweenController"
+                            "tween"
                         );
                         const newCallee = factory.createPropertyAccessExpression(
                             tweenControllerAccess,
@@ -247,23 +266,23 @@ function createControllerProxyTransformer(program) {
 
                     let tweenControllerAccess;
                     if (hasScene) {
-                        // firstArg.scene.tweenController
+                        // firstArg.scene.tween
                         tweenControllerAccess = factory.createPropertyAccessExpression(
                             factory.createPropertyAccessExpression(firstArg, "scene"),
-                            "tweenController"
+                            "tween"
                         );
                     } else if (extendsSceneDeep) {
-                        // this.tweenController
+                        // this.tween
                         tweenControllerAccess = factory.createPropertyAccessExpression(
                             factory.createThis(),
-                            "tweenController"
+                            "tween"
                         );
                     } else {
-                        // this.scene.tweenController
+                        // this.scene.tween
                         needsScene = true;
                         tweenControllerAccess = factory.createPropertyAccessExpression(
                             createThisScene(),
-                            "tweenController"
+                            "tween"
                         );
                     }
 
@@ -329,17 +348,21 @@ function createControllerProxyTransformer(program) {
                                     if (usedControllers) {
                                         usedControllers.add(controllerName);
                                     }
+                                    // the bare.<module> name doubles as the Scene field name
                                     if (extendsSceneDeep) {
-                                        return createThisProperty(controllerName);
+                                        return createThisProperty(n.name.text);
                                     }
                                     needsScene = true;
-                                    return createThisSceneProperty(controllerName);
+                                    return createThisSceneProperty(n.name.text);
                                 }
                             }
                         }
 
                         const propName = n.name && ts.isIdentifier(n.name) ? n.name.text : null;
-                        if (propName && registeredControllers.has(propName)) {
+                        const propControllerName = propName
+                            ? toControllerName(propName, registeredControllers)
+                            : null;
+                        if (propControllerName) {
                             const target = n.expression;
                             const isThis = ts.isThis(target);
                             const isThisScene =
@@ -349,7 +372,7 @@ function createControllerProxyTransformer(program) {
 
                             if (isThis || isThisScene) {
                                 if (usedControllers) {
-                                    usedControllers.add(propName);
+                                    usedControllers.add(propControllerName);
                                 }
                             }
                         }
@@ -383,11 +406,11 @@ function createControllerProxyTransformer(program) {
                                 usedControllers.add(name);
                             }
                             if (extendsSceneDeep) {
-                                return createThisProperty(name);
+                                return createThisProperty(sceneFieldNameFor(name));
                             }
                             if (canRewriteScene) {
                                 needsScene = true;
-                                return createThisSceneProperty(name);
+                                return createThisSceneProperty(sceneFieldNameFor(name));
                             }
                         }
 
@@ -905,7 +928,10 @@ function collectControllerUsageByClassFromDirs(dirs, controllerNames) {
                     }
                     if (ts.isPropertyAccessExpression(n)) {
                         const propName = n.name && ts.isIdentifier(n.name) ? n.name.text : null;
-                        if (propName && controllerNames.has(propName)) {
+                        const propControllerName = propName
+                            ? toControllerName(propName, controllerNames)
+                            : null;
+                        if (propControllerName) {
                             const target = n.expression;
                             const isThis = ts.isThis(target);
                             const isThisScene =
@@ -913,7 +939,7 @@ function collectControllerUsageByClassFromDirs(dirs, controllerNames) {
                                 && ts.isThis(target.expression)
                                 && target.name.text === "scene";
                             if (isThis || isThisScene) {
-                                usedControllers.add(propName);
+                                usedControllers.add(propControllerName);
                             }
                         }
                     }

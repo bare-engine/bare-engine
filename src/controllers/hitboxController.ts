@@ -59,7 +59,7 @@ export class HitboxController
         if (isMobile && !mouseController.IsDown())
             return;
 
-        this.HandleUpdate(this.scene.objectController.GetLayers());
+        this.HandleUpdate(this.scene.object.GetLayers());
     }
 
     Render()
@@ -393,7 +393,7 @@ export class HitboxController
     private GetAllObjectsWithChildren(): GameObject[]
     {
         var allObjects: GameObject[] = [];
-        var objs = this.scene.objectController.GetAll();
+        var objs = this.scene.object.GetAll();
 
         const collect = (obj: GameObject) => {
             allObjects.push(obj);

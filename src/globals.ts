@@ -105,10 +105,25 @@ window.cancelWaits = (): void => { _waitGen++; };
 
 export const controllerNames: string[] = [];
 
+// SCENE FIELD NAMES FOR THE BUILT-IN CONTROLLERS (scene.tween, scene.level, ...)
+// CUSTOM CONTROLLERS FALL BACK TO THE DERIVED lowerFirst(className) NAME
+const controllerFieldNames: Record<string, string> = {
+    ObjectController: "object",
+    MouseController: "mouse",
+    HitboxController: "hitbox",
+    TweenController: "tween",
+    ComponentController: "component",
+    ArcadePhysicsController: "arcade",
+    SopiroPhysicsController: "sopiro",
+    ParticleController: "particle",
+    LevelHandler: "level",
+    CameraHandler: "camera",
+};
+
 export function RegisterController(controllerClass: new (...args: any[]) => any): void
 {
     const name = controllerClass.name.replace(/^_/, "");
-    const controllerName = name.charAt(0).toLowerCase() + name.slice(1);
+    const controllerName = controllerFieldNames[name] || name.charAt(0).toLowerCase() + name.slice(1);
 
     const classKey = controllerName + "Class";
     (globalThis as any)[classKey] = controllerClass;

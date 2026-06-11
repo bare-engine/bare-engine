@@ -9,7 +9,7 @@ export class SaveComponentTest extends Scene
         obj.AddComponent(TestSaveComponent, "testChanged");
         obj.AddComponent(TestNoSaveComponent).save = false;
 
-        var entity = this.levelHandler.SerializeObject(obj);
+        var entity = this.level.SerializeObject(obj);
 
         assert(entity.components.testSave.valueNoSave === undefined, "test value should not be saved");
         assert(entity.components.testSave.valueSave == "test", "testSave value should be saved");

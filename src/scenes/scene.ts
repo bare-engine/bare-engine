@@ -35,17 +35,17 @@ export class Scene implements SceneI
 
     public isLevel: boolean = false;
 
-    public objectController: ObjectController;
+    public object: ObjectController;
 
-    public mouseController: MouseController;
-    public hitboxController: HitboxController;
-    public tweenController: TweenController; 
-    public componentController: ComponentController; 
-    public arcadePhysicsController: ArcadePhysicsController; 
-    public sopiroPhysicsController: SopiroPhysicsController; 
-    public particleController: ParticleController; 
-    public levelHandler: LevelHandler; 
-    public cameraHandler: CameraHandler; 
+    public mouse: MouseController;
+    public hitbox: HitboxController;
+    public tween: TweenController;
+    public component: ComponentController;
+    public arcade: ArcadePhysicsController;
+    public sopiro: SopiroPhysicsController;
+    public particle: ParticleController;
+    public level: LevelHandler;
+    public camera: CameraHandler;
 
     public settingsHandler: SettingsHandler = new SettingsHandler(this); // COULD ALSO MAKE THIS WORK LIKE CONTROLLERS ABOVE
     
@@ -617,7 +617,7 @@ export class Scene implements SceneI
         // ADDING FALSE TO PREVENT COMPONENTS CREATION...
         this.ApplyEntityToGameObject(entityConstructed, gameObject, false);
 
-        var entity = this.levelHandler.SerializeObjectFully(gameObject);
+        var entity = this.level.SerializeObjectFully(gameObject);
 
         // ... BUT ADDING IT BACK TO THE ENITY HERE, SO IT'S NOT LOST
         if (entityConstructed.components)
@@ -778,7 +778,7 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
                 if (typeof layer === "string" && (!this.layerNames || !this.layerNames.includes(layer)))
                     layer = 0;
 
-                this.objectController.Add(gameObject, layer);
+                this.object.Add(gameObject, layer);
             }
 
             gameObject.OnAwake();
@@ -826,12 +826,12 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
             {
                 // REMOVING FROM LAYER
                 var layer = parent;
-                removed = this.objectController.Remove(gameObject, layer);
+                removed = this.object.Remove(gameObject, layer);
             }
         }
         else
         {
-            removed = this.objectController.Remove(gameObject);
+            removed = this.object.Remove(gameObject);
         }
         
         if (!removed)
@@ -865,27 +865,27 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
 
     Update(deltaTime: number): void
     {
-        this.mouseController?.Update(deltaTime);
-        this.hitboxController?.Update();
+        this.mouse?.Update(deltaTime);
+        this.hitbox?.Update();
         this.OnPreUpdate(deltaTime); // NOT QUITE PRE-UPDATE HUH, BUT HERE JUST FOR EditorControlsHandler ATM, SO IT DRAGS OBJECTS AT POSITION AND AFTER THEY CAN BE SNAPPED TO OTHER POSITION
-        this.objectController.Update(deltaTime);
-        this.tweenController?.Update(bare.time);
-        this.componentController?.Update(deltaTime);
-        this.particleController?.Update(deltaTime);
+        this.object.Update(deltaTime);
+        this.tween?.Update(bare.time);
+        this.component?.Update(deltaTime);
+        this.particle?.Update(deltaTime);
 
         this.events.emit(BareEvent.scene_update, deltaTime);
         this.OnUpdate(deltaTime);
         
-        this.arcadePhysicsController?.Update(deltaTime);
-        this.sopiroPhysicsController?.Update(deltaTime);
+        this.arcade?.Update(deltaTime);
+        this.sopiro?.Update(deltaTime);
     }
 
     FixedUpdate(fixedDeltaTime: number): void
     {
-        this.arcadePhysicsController?.FixedUpdate(fixedDeltaTime);
-        this.sopiroPhysicsController?.FixedUpdate(fixedDeltaTime);
+        this.arcade?.FixedUpdate(fixedDeltaTime);
+        this.sopiro?.FixedUpdate(fixedDeltaTime);
 
-        this.componentController?.FixedUpdate(fixedDeltaTime);
+        this.component?.FixedUpdate(fixedDeltaTime);
 
         this.OnFixedUpdate(fixedDeltaTime);
     }
@@ -920,26 +920,26 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
         rapid.matrixStack.save();
 
         if (!this.UI)
-            this.cameraHandler?.SetTransform();
+            this.camera?.SetTransform();
 
-        this.levelHandler?.PreRender();
+        this.level?.PreRender();
 
         this.OnPreRender();
 
-        this.componentController?.PreRender();
-        this.objectController.PreRender();
+        this.component?.PreRender();
+        this.object.PreRender();
 
-        this.componentController?.Render();
-        this.objectController.Render();
-        this.arcadePhysicsController?.Render();
-        this.sopiroPhysicsController?.Render();
-        this.particleController?.Render();
-        this.hitboxController?.Render();
+        this.component?.Render();
+        this.object.Render();
+        this.arcade?.Render();
+        this.sopiro?.Render();
+        this.particle?.Render();
+        this.hitbox?.Render();
 
         this.OnRender();
 
-        this.componentController?.PostRender();
-        this.objectController.PostRender();
+        this.component?.PostRender();
+        this.object.PostRender();
 
         this.OnPostRender();
 
@@ -1009,10 +1009,10 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
 
     ScreenToWorld(x:number, y:number)
     {
-        if (this.cameraHandler)
+        if (this.camera)
         {
             // THE CAMERA IS SET TO THIS SCENE EXCLUSIVELY
-            return this.cameraHandler?.ScreenToWorld(x, y);
+            return this.camera?.ScreenToWorld(x, y);
         }
         else
         {
@@ -1022,10 +1022,10 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
 
     WorldToScreen(x: number, y: number)
     {
-        if (this.cameraHandler)
+        if (this.camera)
         {
             // THE CAMERA IS SET TO THIS SCENE EXCLUSIVELY
-            return this.cameraHandler?.WorldToScreen(x, y);
+            return this.camera?.WorldToScreen(x, y);
         }
         else
         {
@@ -1035,10 +1035,10 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
 
     GetCameraZoom(): number 
     {
-        if (this.cameraHandler)
+        if (this.camera)
         {
             // THE CAMERA IS SET TO THIS SCENE EXCLUSIVELY
-            return this.cameraHandler?.GetZoom();
+            return this.camera?.GetZoom();
         }
         else
         {
@@ -1071,7 +1071,7 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
     {
         this.isLevel = true;
 
-        this.componentController?.PostLoadLevel(persistenObjUIDs);
+        this.component?.PostLoadLevel(persistenObjUIDs);
         this.OnPostLoadLevel(level, persistenObjUIDs);
     }
     
@@ -1082,7 +1082,7 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
 
     GetAllComponentsFrom(obj:GameObject):any[]
     {
-        return this.componentController?.GetAllFrom(obj);
+        return this.component?.GetAllFrom(obj);
     }
 
     Resize(prevWidth: number, prevHeight: number, newWidth: number, newHeight: number)
@@ -1090,7 +1090,7 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
         if (this.resize)
         {
             // RESIZE UI
-            var objs = this.objectController.GetAll();
+            var objs = this.object.GetAll();
             for (var i = 0; i < objs.length; i++)
             {
                 var obj = objs[i];
@@ -1098,7 +1098,7 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
             }
         }
 
-        this.cameraHandler?.OnResize(prevWidth, prevHeight, newWidth, newHeight);
+        this.camera?.OnResize(prevWidth, prevHeight, newWidth, newHeight);
         this.OnResize(prevWidth, prevHeight, newWidth, newHeight);
     }
 
@@ -1171,25 +1171,25 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
     OnPointerDown(gameObject: GameObject, callback: any)
     {
         /* @ AddClass(HitboxController) */
-        this.hitboxController.OnPointerDown(gameObject, callback);
+        this.hitbox.OnPointerDown(gameObject, callback);
     }
 
     OnPointerUp(gameObject: GameObject, callback: any)
     {
         /* @ AddClass(HitboxController) */
-        this.hitboxController.OnPointerUp(gameObject, callback);
+        this.hitbox.OnPointerUp(gameObject, callback);
     }
 
     OnPointerEnter(gameObject: GameObject, callback: any)
     {
         /* @ AddClass(HitboxController) */
-        this.hitboxController.OnPointerEnter(gameObject, callback);
+        this.hitbox.OnPointerEnter(gameObject, callback);
     }
 
     OnPointerLeave(gameObject: GameObject, callback: any)
     {
         /* @ AddClass(HitboxController) */
-        this.hitboxController.OnPointerLeave(gameObject, callback);
+        this.hitbox.OnPointerLeave(gameObject, callback);
     }
 
     // HELPER
@@ -1231,14 +1231,14 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
     get currentLevel(): LevelData
     {
         /* @ AddClass(levelHandler) */
-        return this.levelHandler?.currentLevel;
+        return this.level?.currentLevel;
     }
 
     async LoadLevel(levelInput: string | LevelData = ""): Promise<LevelData>
     {
         /* @ AddClass(levelHandler) */
 
-        return await this.levelHandler?.Load(levelInput);
+        return await this.level?.Load(levelInput);
     }
 }
 

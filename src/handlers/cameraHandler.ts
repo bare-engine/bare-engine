@@ -194,7 +194,7 @@ export class CameraHandler {
 
   SetBoundsToLevel() 
   {
-    var levelHandler = this.scene.Get("levelHandler");
+    var levelHandler = this.scene.Get("level");
     if (!levelHandler)
       return;
 
@@ -204,7 +204,7 @@ export class CameraHandler {
   
   SetDimensionsToLevel() 
   {
-    var levelHandler = this.scene.Get("levelHandler");
+    var levelHandler = this.scene.Get("level");
     if (!levelHandler)
       return;
 
