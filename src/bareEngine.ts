@@ -16,7 +16,7 @@ import { PluginHandler } from "./handlers/pluginHandler";
 import { PoolHandler } from "./handlers/poolHandler";
 import { SaveDataHandler } from "./handlers/SaveDataHandler";
 import { SoundHandler } from "./handlers/soundHandler";
-import { EventArgs } from "./libraries/mitt";
+import { Emitter, EventArgs } from "./libraries/mitt";
 import { Color, CustomGlShader, TextureManager, Vec2 } from "./libraries/new-rapid-render";
 import { GameObject } from "./objects/gameObject";
 import { EditorScene } from "./scenes/editorScene";
@@ -131,9 +131,11 @@ export class BareEngine
     pool:Map<string, PoolHandler<GameObject>> = this.gameObjectPools;
     ui:UIScene = uiScene; // PROXY - LAZILY CREATES THE UI SCENE ON FIRST USE
     
+    get globalEvents(): Emitter<Events> { return globalEvents; }
     get editor(): EditorScene { return sceneController.GetAllScenes().find(scene => scene.constructor.name == "EditorScene") as any; }
 
     // SCENE MODULES
+    events:Emitter<Events>;
     object:ObjectController;
     component:ComponentController;
     mouse:MouseController;

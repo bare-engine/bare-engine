@@ -272,6 +272,16 @@ function createControllerProxyTransformer(program) {
                             && n.name
                             && ts.isIdentifier(n.name)
                         ) {
+                            if (n.name.text === "events") {
+                                if (extendsSceneDeep) {
+                                    return createThisProperty("events");
+                                }
+                                if (hasScene || extendsSceneCarrier) {
+                                    needsScene = true;
+                                    return createThisSceneProperty("events");
+                                }
+                            }
+
                             const controllerName = bareModuleControllerNames.get(n.name.text);
                             if (controllerName && registeredControllers.has(controllerName)) {
                                 const canRewriteScene = extendsSceneDeep || hasScene || extendsSceneCarrier;

@@ -39,7 +39,7 @@ declare global
     var destroyTextFunc:Function | null;
 
     var bScene: Scene;
-    var events: Emitter<Events>;
+    var events: Emitter<Events>; // bare.events... -> this.scene.bare.events...
     
     var whitePixelTexture:Texture;
     var redPixelTexture:Texture;
