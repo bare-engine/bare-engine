@@ -44,7 +44,7 @@ export class SceneController
                 scene.Update(deltaTime);
 
                 // DEACTIVATE HITBOXCONTROLLERS BELOW
-                if (!foundHitboxHover && scene.hitboxController?.GetCurrentHitboxHover())
+                if (!foundHitboxHover && scene.hitboxController?.GetCurrentHover())
                 {
                     for (var j = i - 1; j >= 0; j--)
                     {
@@ -106,7 +106,7 @@ export class SceneController
         this.currentScenes.splice(iInsert, 0, sceneInstance);
 
         if (sceneInstance.sceneOptions.solo)
-            this.DisableAllScenes();
+            this.DisableAll();
 
         await sceneInstance.Awake(payload); // WILL ENABLE THE SCENE AGAIN TOO
 
@@ -144,7 +144,7 @@ export class SceneController
             globalEvents.emit(BareEvent.scene_changed, { scene: targetScene, type: "removed" });
 
             if (targetScene.sceneOptions.solo)
-                this.EnableAllScenes();
+                this.EnableAll();
         }
         else
         {
@@ -245,7 +245,7 @@ export class SceneController
     // DOESN'T WORK ATM FOR PHYSICS OBJECTS, WOULD ALSO NEED TO MOVE
     // ALSO DOESN'T ALTER SCALE, SO OBJECT CAN CHANGE SIZE WHEN COMING FROM A ZOOMED-IN SCENE FOR EXAMPLE. HAVE TO HANDLY THIS YOURSELF IF NEEDED
     // EG LIKE: this.go.SetScale(previousScene.cameraHandler.GetZoom());
-    MoveGameObjectToScene(gameObject: GameObject, scene: UIScene)
+    MoveGameObjectTo(gameObject: GameObject, scene: UIScene)
     {
         if (gameObject.scene != scene)
         {
@@ -254,16 +254,16 @@ export class SceneController
             scene.objectController.Add(gameObject);
 
             // MOVE BETWEEN tweenControllers
-            var tweens = gameObject.scene.tweenController.GetTweensFrom(gameObject);
-            gameObject.scene.tweenController.RemoveTweensFrom(gameObject);
+            var tweens = gameObject.scene.tweenController.GetAllFrom(gameObject);
+            gameObject.scene.tweenController.RemoveAllFrom(gameObject);
             for (var tween of tweens)
             {
                 scene.tweenController.Add(tween);
             }
 
             // MOVE BETWEEN componentControllers
-            var components = gameObject.scene.componentController.GetComponentsFrom(gameObject);
-            gameObject.scene.componentController.RemoveComponentsFrom(gameObject);
+            var components = gameObject.scene.componentController.GetAllFrom(gameObject);
+            gameObject.scene.componentController.RemoveAllFrom(gameObject);
             for (var component of components)
             {
                 scene.componentController.AddComponent(gameObject, component);
@@ -291,12 +291,12 @@ export class SceneController
         return this.currentScenes.find(current => current instanceof sceneClass) as T;
     }
 
-    GetAllScenes(includeIgnored: boolean = false): Scene[]
+    GetAll(includeIgnored: boolean = false): Scene[]
     {
         return this.currentScenes.filter(current => includeIgnored || !current.secret);
     }
 
-    GetAllSceneObjects()
+    GetAllObjects()
     {
         return this.currentScenes
             .map(scene => scene.objectController)
@@ -320,7 +320,7 @@ export class SceneController
         return this.GetLevelScene(checkEnabled) || this.currentScenes[0];
     }
 
-    DisableAllScenes()
+    DisableAll()
     {
         for (var scene of this.currentScenes)
         {
@@ -328,7 +328,7 @@ export class SceneController
         }
     }
 
-    EnableAllScenes()
+    EnableAll()
     {
         for (var scene of this.currentScenes)
         {

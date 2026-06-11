@@ -27,7 +27,7 @@ export class TweenController
 
     private GameObjectRemoved(obj: GameObject)
     {
-        this.RemoveTweensFrom(obj);
+        this.RemoveAllFrom(obj);
     }
     
     private OnFocusChange(hasFocus: boolean)
@@ -42,7 +42,7 @@ export class TweenController
     }
 
     // COULD PUT ALL SPRING VALUES IN AN OPTIONS OBJECT - TODO
-    TweenShake(object: any, property: string, duration: number, initalMove:number = -1, decay: number = 6, frequency: number = 4, phase: number = 0.075, amplitude: number = 40, overwrite: boolean = true): TweenWithPromise
+    Shake(object: any, property: string, duration: number, initalMove:number = -1, decay: number = 6, frequency: number = 4, phase: number = 0.075, amplitude: number = 40, overwrite: boolean = true): TweenWithPromise
     {
         var elasticOut = (amount: number) => { 
             if (amount === 0) {
@@ -59,10 +59,10 @@ export class TweenController
         var props:any = {ease: elasticOut }
         props[property] = 0;
         
-        return this.TweenTo(object, duration, props, overwrite);
+        return this.To(object, duration, props, overwrite);
     }
 
-    TweenTo(object: any, seconds: number, props: any, overwrite: boolean = true): TweenWithPromise
+    To(object: any, seconds: number, props: any, overwrite: boolean = true): TweenWithPromise
     {
         //if (object.name && object.name == "sparkPickup")
         //    trace(4)
@@ -82,7 +82,7 @@ export class TweenController
             'persistent'
         ]);
 
-        const normalizedProps = this.NormalizeTweenProps(props);
+        const normalizedProps = this.NormalizeProps(props);
         for (const configProp of configProps)
             delete normalizedProps[configProp];
 
@@ -178,7 +178,7 @@ export class TweenController
         return (tween as TweenWithPromise);
     }
 
-    private NormalizeTweenProps(props: any): any
+    private NormalizeProps(props: any): any
     {
         const normalizedProps: any = {};
 
@@ -194,29 +194,24 @@ export class TweenController
                 target = target[pathPart];
             }
 
-            target[path[path.length - 1]] = this.NormalizeTweenValue(props[key]);
+            target[path[path.length - 1]] = this.NormalizeValue(props[key]);
         }
 
         return normalizedProps;
     }
 
-    private NormalizeTweenValue(value: any): any
+    private NormalizeValue(value: any): any
     {
         if (typeof value === 'string' && (value.startsWith('+=') || value.startsWith('-=')))
             return value[0] + value.slice(2);
 
         if (Array.isArray(value))
-            return value.map(item => this.NormalizeTweenValue(item));
+            return value.map(item => this.NormalizeValue(item));
 
         if (value && typeof value === 'object')
-            return this.NormalizeTweenProps(value);
+            return this.NormalizeProps(value);
 
         return value;
-    }
-
-    AddTween(object:any):Tween
-    {
-        return this.Add(new Tween(object));
     }
 
     Add(tween:Tween):Tween
@@ -246,7 +241,7 @@ export class TweenController
 
     SetTimer(seconds: number, onComplete: () => void)
     {
-        this.AddTween(this).to({}, seconds * 1000)
+        this.Add(new Tween(this)).to({}, seconds * 1000)
             .onComplete(onComplete)
             .start();
     }
@@ -258,7 +253,7 @@ export class TweenController
             this.tweens.splice(i, 1);
     }
 
-    RemoveTweensFrom(obj: any)
+    RemoveAllFrom(obj: any)
     {
         for (var i = this.tweens.length - 1; i >= 0; i--)
         {
@@ -269,7 +264,7 @@ export class TweenController
         }
     }
 
-    GetTweensFrom(obj: any)
+    GetAllFrom(obj: any)
     {
         return this.tweens.filter(t => t.object == obj);
     }
@@ -294,7 +289,7 @@ export class TweenController
         }
     }
 
-    FinishAllTweens()
+    FinishAll()
     {
         while (this.tweens.length > 0)
         {
@@ -312,9 +307,9 @@ export class TweenController
     }
 
     // MAKE A finish() METHOD ON TWEEN ITSELF - TODO
-    FinishTweensFrom(obj: any)
+    FinishAllFrom(obj: any)
     {
-        var tweens = this.GetTweensFrom(obj);
+        var tweens = this.GetAllFrom(obj);
 
         while (tweens.length > 0)
         {
@@ -326,7 +321,7 @@ export class TweenController
 
     RemoveTimers()
     {
-        this.RemoveTweensFrom(this);
+        this.RemoveAllFrom(this);
     }
 
     Clear(includingPersistent: boolean = true)
@@ -348,8 +343,8 @@ export class TweenController
 // EG: await TweenTo(this.go, 1, { scale: 0 }).promise
 export function TweenTo(object: any, seconds: number, props: any, overwrite: boolean = true, scene: Scene | null = null): TweenWithPromise
 {
-    // IT NEVER ACTUALLY GETS HERE, controllerProxyTransformer TRANSFORMS IT INTO scene.tweenController.TweenTo
-    return scene['tweenController'].TweenTo(object, seconds, props, overwrite);
+    // IT NEVER ACTUALLY GETS HERE, controllerProxyTransformer TRANSFORMS IT INTO scene.tweenController.To
+    return scene['tweenController'].To(object, seconds, props, overwrite);
 }
 
 export var tweenController:TweenController;

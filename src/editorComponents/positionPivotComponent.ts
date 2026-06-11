@@ -27,7 +27,7 @@ export class PositionPivotComponent extends Component
 
     OnUpdate(deltaTime: number): void 
     {
-        if (mouseController.IsMouseDown() && hitboxController.GetCurrentHitboxHover() == this.go.tapHitbox)
+        if (mouseController.IsDown() && hitboxController.GetCurrentHover() == this.go.tapHitbox)
         {
             var hitbox = {
                 x1: this.go.position!.x,
@@ -42,7 +42,7 @@ export class PositionPivotComponent extends Component
             this.scene.ApplyEntityToGameObject(origEntity, obj);
             var pivotPosOrig = obj.pivot;
             
-            var pivotObj = objectController.GetObjectByName(this.pivotName)!;
+            var pivotObj = objectController.GetByName(this.pivotName)!;
             if (pivotPosOrig)
             {
                 pivotObj.SetPosition(pivotPosOrig.x, pivotPosOrig.y);

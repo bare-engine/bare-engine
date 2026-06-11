@@ -118,7 +118,7 @@ function createControllerProxyTransformer(program) {
                         );
                         const newCallee = factory.createPropertyAccessExpression(
                             tweenControllerAccess,
-                            "TweenTo"
+                            "To"
                         );
                         return factory.updateCallExpression(
                             callNode,
@@ -269,7 +269,7 @@ function createControllerProxyTransformer(program) {
 
                     const newCallee = factory.createPropertyAccessExpression(
                         tweenControllerAccess,
-                        "TweenTo"
+                        "To"
                     );
 
                     return factory.updateCallExpression(

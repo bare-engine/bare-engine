@@ -28,7 +28,7 @@ function GetBareOptions(options?: BareOptions): BareOptions
         debugKeys: [
             {e: () => window.debug = !window.debug},
             {r: () => bare.Restart()},
-            {l: () => sceneController.GetLevelScene()?.levelHandler.RestartLevel()},
+            {l: () => sceneController.GetLevelScene()?.levelHandler.Restart()},
         ],
     }, ...options };
 }

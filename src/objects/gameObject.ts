@@ -221,7 +221,7 @@ export class GameObject
         var componentController = this.scene.Get("componentController");
 
         if (componentController)
-            return componentController.GetComponent(this, componentClass);
+            return componentController.Get(this, componentClass);
         else
         {
             console.error("ComponentController not registered. Call bare.AddClass(ComponentController) at OnAwake() of your game.");
@@ -233,7 +233,7 @@ export class GameObject
         var componentController = this.scene.Get("componentController"); // NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
 
         if (componentController)
-            return componentController.GetComponentsFrom(this); 
+            return componentController.GetAllFrom(this); 
 
         return new Array<Component<this>>();
     }

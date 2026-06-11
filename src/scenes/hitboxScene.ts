@@ -140,7 +140,7 @@ export class HitboxScene extends EditorScene
     {
         // SERIALIZE, TODO, NOT REALLY NEEDED, JUST FOR THE RETURN
         var level = this.currentLevel;
-        levelHandler.SerializeLevel(level);
+        levelHandler.Serialize(level);
 
         // GET HITBOX AND PIVOT
         var objs = this.objectController.GetLayer(0).slice();

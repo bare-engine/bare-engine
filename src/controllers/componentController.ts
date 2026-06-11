@@ -66,7 +66,7 @@ export class ComponentController
         this.scene.events.on(BareEvent.collision_update, this.OnCollisionUpdate.bind(this));
         this.scene.events.on(BareEvent.collision_end, this.OnCollisionEnd.bind(this));
 
-        this.scene.events.on(BareEvent.game_objectRemoved, this.RemoveComponentsFrom.bind(this));
+        this.scene.events.on(BareEvent.game_objectRemoved, this.RemoveAllFrom.bind(this));
 
         this.scene.events.on(BareEvent.level_preSave, this.OnPreSaveLevel.bind(this));
     }
@@ -78,7 +78,7 @@ export class ComponentController
         for (var i = 0; i < persistenObjUIDs.length; i++)
         {
             let uid = persistenObjUIDs[i]; 
-            var comps = this.GetAllComponentsFromUID(uid); // CHECKING WITH UID IN CASE OBJECT WAS MANUALLY REMOVED, THEN THIS WILL FIND NO COMPONENTS
+            var comps = this.GetAllFromUID(uid); // CHECKING WITH UID IN CASE OBJECT WAS MANUALLY REMOVED, THEN THIS WILL FIND NO COMPONENTS
             for (var k = 0; k < comps.length; k++)
             {
                 var comp = comps[k];
@@ -161,7 +161,7 @@ export class ComponentController
         return component;
     }
     
-    GetComponent<T extends Component>(go: GameObject, componentType: Ctor<T>): T | null
+    Get<T extends Component>(go: GameObject, componentType: Ctor<T>): T | null
     {
         const components = this.componentsByGameObject.get(go.uniqueID);
         if (!components) return null;
@@ -170,17 +170,17 @@ export class ComponentController
         return (component as T) ?? null;
     }
 
-    HasComponent<T extends Component>(go: GameObject, componentType: Ctor<T>): boolean
+    Has<T extends Component>(go: GameObject, componentType: Ctor<T>): boolean
     {
-        return this.GetComponent<T>(go, componentType) != null;
+        return this.Get<T>(go, componentType) != null;
     }
 
-    GetComponentsByType<ComponentType extends Component<any>>(componentType: Ctor<ComponentType>): ComponentType[]
+    GetAllByType<ComponentType extends Component<any>>(componentType: Ctor<ComponentType>): ComponentType[]
     {
         return this.componentsByType.get(componentType) as unknown as ComponentType[]
     }
 
-    GetComponentsFrom(object: GameObject): Component<any>[]
+    GetAllFrom(object: GameObject): Component<any>[]
     {
         var comps = this.componentsByGameObject.get(object.uniqueID);
         if (!comps)
@@ -189,7 +189,7 @@ export class ComponentController
         return this.componentsByGameObject.get(object.uniqueID)!;
     }
 
-    GetAllComponentsFromUID(uniqueID: string): Component<any>[]
+    GetAllFromUID(uniqueID: string): Component<any>[]
     {
         var components = this.componentsByGameObject.get(uniqueID);
         if (!components)
@@ -198,9 +198,9 @@ export class ComponentController
         return components;
     }
 
-    MoveComponent<T extends Component>(from: GameObject, to: GameObject, componentType: Ctor<T>): T | null
+    Move<T extends Component>(from: GameObject, to: GameObject, componentType: Ctor<T>): T | null
     {
-        const componentFrom = this.GetComponent(from, componentType);
+        const componentFrom = this.Get(from, componentType);
 
         if (componentFrom)
         {
@@ -258,7 +258,7 @@ export class ComponentController
         return true;
     }
 
-    RemoveComponentsFrom(object: GameObject, ignoring: any[] = [])
+    RemoveAllFrom(object: GameObject, ignoring: any[] = [])
     {
         // Direct O(1) lookup by uniqueID instead of iterating all components
         const components = this.componentsByGameObject.get(object.uniqueID);
@@ -297,7 +297,7 @@ export class ComponentController
             this.componentsByGameObject.delete(object.uniqueID);
     }
 
-    RemoveAllComponents(includingPersistent: boolean = true)
+    RemoveAll(includingPersistent: boolean = true)
     {
         if (includingPersistent)
         {
@@ -337,9 +337,9 @@ export class ComponentController
         this.queuedForStart = this.queuedForStart.filter(c => c.go.persistent);
     }
 
-    EnableComponent<T extends Component>(obj: GameObject, componentType: Ctor<T>)
+    Enable<T extends Component>(obj: GameObject, componentType: Ctor<T>)
     {
-        const component = this.GetComponent(obj, componentType);
+        const component = this.Get(obj, componentType);
         if (component)
         {
             component.enabled = true;
@@ -347,9 +347,9 @@ export class ComponentController
         }
     }
 
-    DisableComponent<T extends Component>(obj: GameObject, componentType: Ctor<T>)
+    Disable<T extends Component>(obj: GameObject, componentType: Ctor<T>)
     {
-        const component = this.GetComponent(obj, componentType);
+        const component = this.Get(obj, componentType);
         if (component)
         {
             component.enabled = false; // OR COULD BE SET IN BASE COMPONENT METHOD
@@ -357,7 +357,7 @@ export class ComponentController
         }
     }
 
-    EnableAllComponentsFromObject(obj: GameObject)
+    EnableAllFromObject(obj: GameObject)
     {
         const entries = this.componentsByGameObject.entries()
         for (const [, components] of entries)
@@ -376,7 +376,7 @@ export class ComponentController
         }
     }
 
-    DisableAllComponentsFromObject(obj: GameObject)
+    DisableAllFromObject(obj: GameObject)
     {
         const entries = this.componentsByGameObject.entries()
         for (const [, components] of entries)
@@ -506,7 +506,7 @@ export class ComponentController
 
     CallMethodOnComponentsOfObject<T extends keyof Component<any>>(methodName: T, object: GameObject, ...args: any[]): void
     {
-        var allCompsObject = this.GetComponentsFrom(object);
+        var allCompsObject = this.GetAllFrom(object);
 
         // GET THE FINAL COMPONENT HERE ALREADY, SINCE FIRING A METHOD CAN CHANGE THE PROPERTIES OF OTHER COMPONENTS
         // EG, DISABLING IT, PREVENTING IT FROM BEING CALLED NEXT
@@ -524,7 +524,7 @@ export class ComponentController
 
     Clear(includingPersistent: boolean = true)
     {
-        this.RemoveAllComponents(includingPersistent);
+        this.RemoveAll(includingPersistent);
     }
 }
 

@@ -91,7 +91,7 @@ export class ResizableComponent extends Component
     if (!this.go.tapHitbox) return;
 
     const mouse = mouseController.world.position;
-    const hoveredHitbox = hitboxController.GetCurrentHitboxHover();
+    const hoveredHitbox = hitboxController.GetCurrentHover();
     const hoveringThis = hoveredHitbox?.parent === this.go;
     const zoom = this.scene.GetCameraZoom();
 
@@ -105,9 +105,9 @@ export class ResizableComponent extends Component
     const bottom = this.go.y + this.goHeight;
 
     // ================= PRESS =================
-    if (mouseController.IsMousePressed())
+    if (mouseController.IsPressed())
     {
-      const hovered = hitboxController.GetCurrentHitboxHover();
+      const hovered = hitboxController.GetCurrentHover();
       const hoveredGo = hovered?.parent;
       const edgeCandidate = (hoveredGo === this.go || hovered == null) ? this.getEdge(mouse, left, top, right, bottom, zoom) : null;
 
@@ -170,7 +170,7 @@ export class ResizableComponent extends Component
     }
 
     // ================= FREE RESIZE THRESHOLD =================
-    if (mouseController.IsMouseDown() && this.freeResizePending && !this.resizing)
+    if (mouseController.IsDown() && this.freeResizePending && !this.resizing)
     {
       const dx = mouse.x - this.freeStartPos.x;
       const dy = mouse.y - this.freeStartPos.y;
@@ -186,7 +186,7 @@ export class ResizableComponent extends Component
     }
 
     // ================= DRAG =================
-    if (mouseController.IsMouseDown() && this.resizing)
+    if (mouseController.IsDown() && this.resizing)
     {
       // --- FREE RESIZE MODE ---
       if (this.freeResize)
@@ -223,7 +223,7 @@ export class ResizableComponent extends Component
     }
 
     // ================= RELEASE =================
-    if (!mouseController.IsMouseDown())
+    if (!mouseController.IsDown())
     {
       if (this.resizing)
       {
@@ -272,7 +272,7 @@ export class ResizableComponent extends Component
     } else {
       this.go.tapHitbox.active = true;
 
-      const hovered = hitboxController.GetCurrentHitboxHover();
+      const hovered = hitboxController.GetCurrentHover();
       if (hovered == null)
         bare.SetCursor('inherit');
 

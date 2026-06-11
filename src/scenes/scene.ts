@@ -31,7 +31,7 @@ export class Scene implements SceneI
     public persistent: boolean = false;
     public UI: boolean = false;
     public resize: boolean = false;
-    public secret: boolean = false; // WILL MAKE THE SCENE NOT INCLUDE IN GetAllScenes() - USED FOR PLUGIN ATM
+    public secret: boolean = false; // WILL MAKE THE SCENE NOT INCLUDE IN GetAll() - USED FOR PLUGIN ATM
 
     public isLevel: boolean = false;
 
@@ -1082,7 +1082,7 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
 
     GetAllComponentsFrom(obj:GameObject):any[]
     {
-        return this.componentController?.GetComponentsFrom(obj);
+        return this.componentController?.GetAllFrom(obj);
     }
 
     Resize(prevWidth: number, prevHeight: number, newWidth: number, newHeight: number)
@@ -1090,7 +1090,7 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
         if (this.resize)
         {
             // RESIZE UI
-            var objs = this.objectController.GetAllObjects();
+            var objs = this.objectController.GetAll();
             for (var i = 0; i < objs.length; i++)
             {
                 var obj = objs[i];
@@ -1238,7 +1238,7 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
     {
         /* @ AddClass(levelHandler) */
 
-        return await this.levelHandler?.LoadLevel(levelInput);
+        return await this.levelHandler?.Load(levelInput);
     }
 }
 

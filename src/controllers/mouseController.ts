@@ -47,9 +47,9 @@ export class MouseController
     static lastMouseX: number = -10000;
     static lastMouseY: number = -10000;
 
-    IsMouseDown(): boolean { return this.mouseIsDown; }
-    IsMiddleMouseDown(): boolean { return this.middleMouseIsDown; }
-    IsRightMouseDown(): boolean { return this.rightMouseIsDown; }
+    IsDown(): boolean { return this.mouseIsDown; }
+    IsMiddleDown(): boolean { return this.middleMouseIsDown; }
+    IsRightDown(): boolean { return this.rightMouseIsDown; }
 
     public scene: Scene;
 
@@ -74,7 +74,7 @@ export class MouseController
         {
             this.screen.position.x = MouseController.lastMouseX;
             this.screen.position.y = MouseController.lastMouseY;
-            this.SetMousePosition(MouseController.lastMouseX, MouseController.lastMouseY);
+            this.SetPosition(MouseController.lastMouseX, MouseController.lastMouseY);
         }
     }
 
@@ -121,7 +121,7 @@ export class MouseController
         this.screen.position.x = screenPosition.x;
         this.screen.position.y = screenPosition.y;
 
-        this.SetMousePosition(this.screen.position.x, this.screen.position.y);
+        this.SetPosition(this.screen.position.x, this.screen.position.y);
 
         this.world.positionOnDown.x = this.world.position.x;
         this.world.positionOnDown.y = this.world.position.y;
@@ -163,7 +163,7 @@ export class MouseController
         MouseController.lastMouseX = screenPosition.x;
         MouseController.lastMouseY = screenPosition.y;
 
-        this.SetMousePosition(this.screen.position.x, this.screen.position.y);
+        this.SetPosition(this.screen.position.x, this.screen.position.y);
     }
 
     PointerMove({ mouseX, mouseY, event }: BareEventPayload['pointer_move'])
@@ -182,7 +182,7 @@ export class MouseController
         MouseController.lastMouseX = screenPosition.x;
         MouseController.lastMouseY = screenPosition.y;
 
-        this.SetMousePosition(this.screen.position.x, this.screen.position.y);
+        this.SetPosition(this.screen.position.x, this.screen.position.y);
     }
 
     IsMoving()
@@ -190,12 +190,12 @@ export class MouseController
         return this.mouseSpeed > 0;
     }
 
-    IsMousePressed(): boolean
+    IsPressed(): boolean
     {
         return this.mouseIsDown && this.mouseFramesDown == 1;
     }
 
-    SetMousePosition(x:number, y:number)
+    SetPosition(x:number, y:number)
     {
         const worldPos = this.scene.ScreenToWorld(x, y);
         this.world.position.x = worldPos.x;

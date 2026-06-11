@@ -132,7 +132,7 @@ export class BareEngine
     ui:UIScene = uiScene; // PROXY - LAZILY CREATES THE UI SCENE ON FIRST USE
     
     get globalEvents(): Emitter<Events> { return globalEvents; }
-    get editor(): EditorScene { return sceneController.GetAllScenes().find(scene => scene.constructor.name == "EditorScene") as any; }
+    get editor(): EditorScene { return sceneController.GetAll().find(scene => scene.constructor.name == "EditorScene") as any; }
 
     // ANYTHING THAT CALLS bare.[module]. EG bare.object
     // GETS TRANSFORMERD BY controllerProxyTransformer.js
@@ -731,7 +731,7 @@ export class BareEngine
         globalEvents.emit(type, ...event);
 
         // SEND LOCALLY - TO ACTIVE SCENES
-        var scenes = sceneController.GetAllScenes(true);
+        var scenes = sceneController.GetAll(true);
         for (var scene of scenes)
         {
             if (!scene.enabled || scene.paused) // HERE TO PREVENT INPUT ON DISABLED SCENES, FOR ONE

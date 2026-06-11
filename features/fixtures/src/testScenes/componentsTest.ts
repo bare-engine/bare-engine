@@ -54,11 +54,11 @@ export class ComponentsTest extends Scene
     {
         const slow = this.AddGameObject("wavingHand");
         const fast = this.AddGameObject("wavingHand");
-        const fastWave = componentController.GetComponent(fast, WaveComponent)!;
+        const fastWave = componentController.Get(fast, WaveComponent)!;
 
         fastWave.frequency = 2;
 
-        assert(componentController.GetComponent(slow, WaveComponent)?.frequency === 1, "entity data should add a component with constructor args");
+        assert(componentController.Get(slow, WaveComponent)?.frequency === 1, "entity data should add a component with constructor args");
         assert(fastWave.frequency === 2, "component properties should be mutable at runtime");
     }
 }

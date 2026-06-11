@@ -158,7 +158,7 @@ export class ObjectController
         return this.GetLayer(layerI);
     }
 
-    GetObjectLayer(obj: GameObject): int
+    GetLayerOf(obj: GameObject): int
     {
         for (let i = 0; i < this.layers.length; i++)
         {
@@ -176,12 +176,12 @@ export class ObjectController
         return this.layers;
     }
 
-    GetAllObjects(): Array<GameObject>
+    GetAll(): Array<GameObject>
     {
         return this.layers.flat();//REVERSE IT?
     }
 
-    GetObjectById(id: string, searchChildren: boolean = true): GameObject | null
+    GetById(id: string, searchChildren: boolean = true): GameObject | null
     {
         // LOOK THROUGH ALL LAYER FOR OBJECT - CHEAP
         for (let i = 0; i < this.layers.length; i++)
@@ -231,7 +231,7 @@ export class ObjectController
         return null;
     }
 
-    GetObjectByName(name: string): GameObject | null
+    GetByName(name: string): GameObject | null
     {
         for (let i = 0; i < this.layers.length; i++)
         {
@@ -247,7 +247,7 @@ export class ObjectController
         return null;
     }
 
-    GetObjectByCustomName(customName: string): GameObject | null
+    GetByCustomName(customName: string): GameObject | null
     {
         for (let i = 0; i < this.layers.length; i++)
         {

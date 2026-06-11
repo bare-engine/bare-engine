@@ -102,7 +102,7 @@ export class EditorScene extends Scene
         
         // CLEAR LEVEL CACHE SO IT'S NOT USED FOR LEVEL LOAD
         // INSTEAD, THE LEVEL FROM DISK GETS LOADED
-        LevelHandler.ClearLevelCache();
+        LevelHandler.ClearCache();
         SaveData.levelCache.clear();
         SaveDataHandler.Save();
         
@@ -195,14 +195,14 @@ export class EditorScene extends Scene
     async Close()
     {
         sceneController.Remove(EditorScene); // CALLS ONCLEAR
-        sceneController.EnableAllScenes(); // COULD ENABLE SCENES THAT WERE PREVIOUSLY DISABLED - TODO
+        sceneController.EnableAll(); // COULD ENABLE SCENES THAT WERE PREVIOUSLY DISABLED - TODO
 
         var level = sceneController.GetLevelScene();
 
         if (level)
         {                   
             //SaveData.levelCache.clear();
-            await level.levelHandler.RestartLevel();
+            await level.levelHandler.Restart();
         }
         else
             sceneController.Restart(); // CAN GET HERE WHEN LOADED LEVEL FROM PLUGIN, BUT LAST GAME SCENE DOESN'T LOAD LEVEL
@@ -381,7 +381,7 @@ export class EditorScene extends Scene
         var level = this.currentLevel;
         var levelPath = this.currentLevelPath;
     
-        levelHandler.SerializeLevel(level);
+        levelHandler.Serialize(level);
             
         if (!window.isLocalhost)
         {

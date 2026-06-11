@@ -56,7 +56,7 @@ export class HitboxController
         if (!this.active)
             return;
 
-        if (isMobile && !mouseController.IsMouseDown())
+        if (isMobile && !mouseController.IsDown())
             return;
 
         this.HandleUpdate(this.scene.objectController.GetLayers());
@@ -89,8 +89,8 @@ export class HitboxController
 
             if (hitbox.type == HitboxType.Circle)
             {
-                const center = this.GetHitboxCircleCenter(hitbox);
-                const radius = this.GetHitboxRadius(hitbox);
+                const center = this.GetCircleCenter(hitbox);
+                const radius = this.GetRadius(hitbox);
                 
                 rapid.drawCircle({
                     radius,
@@ -101,7 +101,7 @@ export class HitboxController
             }
             else if (hitbox.type == HitboxType.Rectangle)
             {
-                const rect = this.GetHitboxRect(hitbox);
+                const rect = this.GetRect(hitbox);
                 
                 rapid.drawRect({
                     width: rect.width,
@@ -146,10 +146,10 @@ export class HitboxController
 
                 if (layerCollisionHandlingType == CollisionHandlingType.POINT)
                 {
-                    const hitbox = this.GetTopHitboxInObject(obj, mouse);
+                    const hitbox = this.GetTopInObject(obj, mouse);
                     if (hitbox)
                     {
-                        this.SetHoverHitbox(hitbox);
+                        this.SetHover(hitbox);
                         foundHover = true;
                         fullBreak = true;
                         break;
@@ -157,11 +157,11 @@ export class HitboxController
                 }
                 else if (layerCollisionHandlingType == CollisionHandlingType.RADIUS)
                 {
-                    const hitboxes = this.GetHitboxesInObject(obj, mouse);
+                    const hitboxes = this.GetAllInObject(obj, mouse);
                     for (var k = 0; k < hitboxes.length; k++)
                     {
                         const hitbox = hitboxes[k];
-                        const center = this.GetHitboxCenter(hitbox);
+                        const center = this.GetCenter(hitbox);
                         const distToHitboxSqr = Helper.DistanceNoSqr(mouse, center);
 
                         if (distToHitboxSqr < closestDistSqr)
@@ -178,7 +178,7 @@ export class HitboxController
 
             if (layerCollisionHandlingType == CollisionHandlingType.RADIUS && curClosestHitbox)
             {
-                this.SetHoverHitbox(curClosestHitbox);
+                this.SetHover(curClosestHitbox);
                 foundHover = true;
             }
 
@@ -188,11 +188,11 @@ export class HitboxController
 
         if (!foundHover)
         {
-            this.SetHoverHitbox(null);
+            this.SetHover(null);
         }
     }
 
-    private GetHitboxCircleCenter(hitbox: Hitbox): Vec2
+    private GetCircleCenter(hitbox: Hitbox): Vec2
     {
         const parent = hitbox.parent;
         const localCenter = new Vec2(
@@ -204,7 +204,7 @@ export class HitboxController
         return worldCenter;
     }
 
-    private GetHitboxRadius(hitbox: Hitbox): number
+    private GetRadius(hitbox: Hitbox): number
     {
         const parent = hitbox.parent;
         const localCenter = new Vec2(
@@ -220,7 +220,7 @@ export class HitboxController
         return Helper.Distance(worldCenter, worldEdge);
     }
 
-    private GetHitboxRect(hitbox: Hitbox)
+    private GetRect(hitbox: Hitbox)
     {
         const rect = hitbox.rectangle;
         const parent = hitbox.parent;
@@ -245,30 +245,30 @@ export class HitboxController
         };
     }
 
-    private GetHitboxCenter(hitbox: Hitbox): Vec2
+    private GetCenter(hitbox: Hitbox): Vec2
     {
         if (hitbox.type === HitboxType.Circle)
         {
-            return this.GetHitboxCircleCenter(hitbox);
+            return this.GetCircleCenter(hitbox);
         }
 
-        const rect = this.GetHitboxRect(hitbox);
+        const rect = this.GetRect(hitbox);
         return new Vec2(rect.x1 + rect.width / 2, rect.y1 + rect.height / 2);
     }
 
-    private IsPointInsideHitbox(hitbox: Hitbox, point: Vec2): boolean
+    private IsPointInside(hitbox: Hitbox, point: Vec2): boolean
     {
         if (hitbox.type === HitboxType.Circle)
         {
-            const center = this.GetHitboxCircleCenter(hitbox);
-            const radius = this.GetHitboxRadius(hitbox);
+            const center = this.GetCircleCenter(hitbox);
+            const radius = this.GetRadius(hitbox);
             const distSqr = Helper.DistanceNoSqr(point, center);
 
             return distSqr < radius * radius;
         } 
         else if (hitbox.type === HitboxType.Rectangle)
         {
-            const rect = this.GetHitboxRect(hitbox);
+            const rect = this.GetRect(hitbox);
             
             return point.x >= rect.x1 && 
                    point.x <= rect.x2 &&
@@ -279,7 +279,7 @@ export class HitboxController
         return false;
     }
 
-    private IsHitboxTouchable(hitbox: Hitbox | null): hitbox is Hitbox
+    private IsTouchable(hitbox: Hitbox | null): hitbox is Hitbox
     {
         if (!hitbox?.active)
             return false;
@@ -299,23 +299,23 @@ export class HitboxController
         return true;
     }
 
-    private GetTopHitboxInObject(obj: GameObject, point: Vec2): Hitbox | null
+    private GetTopInObject(obj: GameObject, point: Vec2): Hitbox | null
     {
         for (var i = obj.children.length - 1; i >= 0; i--)
         {
-            const childHitbox = this.GetTopHitboxInObject(obj.children[i], point);
+            const childHitbox = this.GetTopInObject(obj.children[i], point);
             if (childHitbox)
                 return childHitbox;
         }
 
         const hitbox = obj.tapHitbox;
-        if (!this.IsHitboxTouchable(hitbox))
+        if (!this.IsTouchable(hitbox))
             return null;
 
-        return this.IsPointInsideHitbox(hitbox, point) ? hitbox : null;
+        return this.IsPointInside(hitbox, point) ? hitbox : null;
     }
 
-    private GetHitboxesInObject(obj: GameObject, point: Vec2): Hitbox[]
+    private GetAllInObject(obj: GameObject, point: Vec2): Hitbox[]
     {
         var hitboxes: Hitbox[] = [];
 
@@ -326,7 +326,7 @@ export class HitboxController
             }
 
             const hitbox = current.tapHitbox;
-            if (this.IsHitboxTouchable(hitbox) && this.IsPointInsideHitbox(hitbox, point))
+            if (this.IsTouchable(hitbox) && this.IsPointInside(hitbox, point))
             {
                 hitboxes.push(hitbox);
             }
@@ -347,7 +347,7 @@ export class HitboxController
 
         while (obj)
         {
-            if (this.IsHitboxTouchable(obj.tapHitbox))
+            if (this.IsTouchable(obj.tapHitbox))
             {
                 path.unshift(obj.tapHitbox);
             }
@@ -358,7 +358,7 @@ export class HitboxController
         return path;
     }
 
-    private SetHoverHitbox(hitbox: Hitbox | null): void
+    private SetHover(hitbox: Hitbox | null): void
     {
         const newHoverPath = this.BuildHoverPath(hitbox);
         var commonPathLength = 0;
@@ -393,7 +393,7 @@ export class HitboxController
     private GetAllObjectsWithChildren(): GameObject[]
     {
         var allObjects: GameObject[] = [];
-        var objs = this.scene.objectController.GetAllObjects();
+        var objs = this.scene.objectController.GetAll();
 
         const collect = (obj: GameObject) => {
             allObjects.push(obj);
@@ -435,7 +435,7 @@ export class HitboxController
         {
             if (this.currentHitboxHover)
             {
-                this.SetHoverHitbox(null);
+                this.SetHover(null);
             }
         }
 
@@ -464,12 +464,12 @@ export class HitboxController
         this.exclusiveLayers.length = 0;
     }
 
-    GetCurrentHitboxHover(): Hitbox | null
+    GetCurrentHover(): Hitbox | null
     {
         return this.currentHitboxHover;
     }
 
-    GetCurrentHitboxDown(): Hitbox | null
+    GetCurrentDown(): Hitbox | null
     {
         return this.currentHitboxDown;
     }
@@ -482,7 +482,7 @@ export class HitboxController
     }
 
     // HITBOX RECTS LIVE IN TEXTURE SPACE (UNSCALED) - SCALE/INNERSCALE GET APPLIED WHEN CONVERTING TO WORLD SPACE
-    private GetLocalHitboxRect(gameObject: GameObject)
+    private GetLocalRect(gameObject: GameObject)
     {
         if (gameObject.texture)
             return { x1: 0, y1: 0, x2: gameObject.texture.width, y2: gameObject.texture.height };
@@ -496,7 +496,7 @@ export class HitboxController
     AssignButton(gameObject: GameObject, arg: any): Hitbox
     {
         const handlers: ButtonHandlers<any> = (typeof arg === "function" ? { OnPress: arg } : arg);
-        var rect = this.GetLocalHitboxRect(gameObject);
+        var rect = this.GetLocalRect(gameObject);
         const hitbox = new Hitbox(gameObject, rect);
 
         hitbox.OnPress   = (...a: any[]) => handlers.OnPress?.(gameObject, ...a);
@@ -531,7 +531,7 @@ export class HitboxController
 
     AssignCallback(gameobject: GameObject, type: "OnPress" | "OnRelease" | "OnEnter" | "OnLeave", callback: AnyPress): void
     {
-        var rect = this.GetLocalHitboxRect(gameobject);
+        var rect = this.GetLocalRect(gameobject);
         const hitbox = gameobject.tapHitbox ?? new Hitbox(gameobject, rect);
         hitbox[type] = callback;
         gameobject.tapHitbox = hitbox;

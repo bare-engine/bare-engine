@@ -50,7 +50,7 @@ export class LevelHandler
         return objectController.GetLayerByName("objects");
     }
 
-    async LoadLevelData(levelStr: string): Promise<LevelData>
+    async LoadData(levelStr: string): Promise<LevelData>
     {
         var level: LevelData;
 
@@ -83,20 +83,25 @@ export class LevelHandler
         return level;
     }
 
-    async LoadCurrentLevel(): Promise<LevelData>
+    async LoadCurrent(): Promise<LevelData>
     {
         if (SaveData.currentLevelStr == '')
             return; // NO CURRENT LEVEL
 
-        return this.LoadLevel(SaveData.currentLevelStr);
+        return this.Load(SaveData.currentLevelStr);
     }
 
-    async RestartLevel(): Promise<LevelData>
+    async RestartCurrent(): Promise<LevelData>
     {
-        return this.LoadCurrentLevel();
+        return this.LoadCurrent();
     }
 
-    async LoadLevel(levelInput: string | LevelData = ""):Promise<LevelData>
+    Restart()
+    {
+        
+    }
+
+    async Load(levelInput: string | LevelData = ""):Promise<LevelData>
     {
         // WHEN IN PRODUCTION, WE DON'T LOAD LEVELS FROM DISK INITIALLY
         // BUT ONCE PLAYER EDITS IT IN LEVEL EDITOR, IT'S LOADED FROM CACHE (SINCE IN PROD WE CAN'T SAVE EDITS TO DISK)
@@ -142,7 +147,7 @@ export class LevelHandler
         var level: LevelData;
         try
         {
-            level = await this.LoadLevelOnly(levelInput || SaveData.currentLevelStr); // IF NO LEVEL SUPPLIED, RELOAD CURRENT LEVEL
+            level = await this.LoadOnly(levelInput || SaveData.currentLevelStr); // IF NO LEVEL SUPPLIED, RELOAD CURRENT LEVEL
         }
         catch (error: any)
         {
@@ -158,7 +163,7 @@ export class LevelHandler
         return level;
     }
 
-    async LoadLevelOnly(levelInput: string | LevelData): Promise<LevelData>
+    async LoadOnly(levelInput: string | LevelData): Promise<LevelData>
     {
         var level: LevelData;
         var levelStr: string = "";
@@ -166,7 +171,7 @@ export class LevelHandler
         if (typeof levelInput === 'string')
         {
             // LEVEL NAME
-            level = await this.LoadLevelData(levelInput);
+            level = await this.LoadData(levelInput);
             level.name = levelInput; // SETTING THE NAME HERE, SO WE CAN USE IT LATER WHEN SAVING
             levelStr = levelInput;
             //SaveData.currentLevelStr = levelStr;
@@ -207,7 +212,7 @@ export class LevelHandler
         await this.scene.OnPreLoadLevel(level);
 
         // LOAD ALL TEXTURES
-        await Promise.all(this.LoadLevelTextures(level));
+        await Promise.all(this.LoadTextures(level));
 
         // CREATE ALL OBJECTS
         for (var layerName in level.entitiesByLayer) {
@@ -219,7 +224,7 @@ export class LevelHandler
                 // WHEN IN EDITOR, WE WANT TO USE levelEntity
                 // BUT IT'S KIND OF MESSED UP AND CONSTRUCTED BY ABOVE NOW
                 // SO HERE WE ALIGN IT AGAIN TO ITS CHILDREN
-                //this.AssignLevelEntityToChildren(gameObject, levelEntity);
+                //this.AssignEntityToChildren(gameObject, levelEntity);
                 
                 gameObject.levelEntity = levelEntity;
                 gameObject.save = true;
@@ -250,7 +255,7 @@ export class LevelHandler
 
     }
 
-    LoadLevelTextures(level: LevelData): Promise<Texture>[]
+    LoadTextures(level: LevelData): Promise<Texture>[]
     {
         var promisesAr: Array<Promise<Texture>> = [];
         var texturesFound = new Set<string>();
@@ -293,13 +298,13 @@ export class LevelHandler
         return promisesAr;
     }
 
-    async SaveLevel()
+    async Save()
     {
         //events.emit(BareEvent.level_preSave, {levelStr: SaveData.currentLevelStr});
         bare.SendEvent(BareEvent.level_preSave, {levelStr: SaveData.currentLevelStr});
         
         const level = this.currentLevel;
-        this.SerializeLevel(level);
+        this.Serialize(level);
 
         //events.emit(BareEvent.level_postSave, {levelStr: SaveData.currentLevelStr, level: level});
         bare.SendEvent(BareEvent.level_postSave, {levelStr: SaveData.currentLevelStr, level: level});
@@ -308,7 +313,7 @@ export class LevelHandler
     }
 
     // THIS JUST REPOPULATES THE entitiesByLayer OF THE LEVEL
-    SerializeLevel(level: LevelData)
+    Serialize(level: LevelData)
     {
         var gameLayers = objectController.GetLayers();
         var layersSettings = this.scene.settingsData.layers;
@@ -879,12 +884,12 @@ export class LevelHandler
         return componentData;
     }
 
-    AssignLevelEntityToChildren(gameObject: GameObject, levelEntity: Entity)
+    AssignEntityToChildren(gameObject: GameObject, levelEntity: Entity)
     {
         for (var i = 0; i < gameObject.children.length; i++)
         {
             gameObject.children[i].entity = levelEntity.children[i];
-            this.AssignLevelEntityToChildren(gameObject.children[i], levelEntity.children[i]);
+            this.AssignEntityToChildren(gameObject.children[i], levelEntity.children[i]);
         }
     }
 
@@ -900,7 +905,7 @@ export class LevelHandler
         this.currentLevel = null;
     }
 
-    static ClearLevelCache()
+    static ClearCache()
     {
         LevelHandler.levelCache = new Map();
     }

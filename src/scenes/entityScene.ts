@@ -161,8 +161,8 @@ export class EntityScene extends EditorScene
 
     override OnUpdate(deltaTime: number): void
     {
-        /*var pivotObj = this.objectController.GetObjectByName("dot");
-        var mainObj = this.objectController.GetObjectByName(this.objectName);
+        /*var pivotObj = this.objectController.GetByName("dot");
+        var mainObj = this.objectController.GetByName(this.objectName);
         var tl = mainObj.GetTopLeftPosition();
         pivotObj.SetPosition(tl.x + mainObj.pivot.x * mainObj.totalScaleX, tl.y + mainObj.pivot.y * mainObj.totalScaleY);*/
     }
@@ -171,7 +171,7 @@ export class EntityScene extends EditorScene
     {
         var ret = await super.Open(levelPathOrData, saveLevelCallback, settingsHandler);
 
-        var obj = this.objectController.GetObjectByName(this.objectName);
+        var obj = this.objectController.GetByName(this.objectName);
         //obj.x += obj.pivot.x;
         //obj.y += obj.pivot.y;
 
@@ -234,7 +234,7 @@ export class EntityScene extends EditorScene
     async SaveEntityDataToSettingsData(): Promise<LevelData>
     {
         return;
-        var obj = this.objectController.GetObjectByName(this.objectName);
+        var obj = this.objectController.GetByName(this.objectName);
         
         var entityFromSettingsData:Entity;
         if (this.isBase)
@@ -328,7 +328,7 @@ export class EntityScene extends EditorScene
         return this.currentLevel;
 
         var origPivot = obj.pivot;
-        var currentPivot = this.objectController.GetObjectByName("dot")!.position;
+        var currentPivot = this.objectController.GetByName("dot")!.position;
 
         var madeChangeToEntity = false;
 
@@ -362,9 +362,9 @@ export class EntityScene extends EditorScene
 
         // SERIALIZE, TODO, NOT REALLY NEEDED, JUST FOR THE RETURN
         /*var level = this.currentLevel;
-        //levelHandler.SerializeLevel(level);
+        //levelHandler.Serialize(level);
 
-        var obj = this.objectController.GetObjectByName(this.objectName);
+        var obj = this.objectController.GetByName(this.objectName);
         var entity = levelHandler.SerializeObject(obj, {propsToIgnoreInEntity: entityVars, fillPresets: true});
         delete entity.name;
         delete entity.position;

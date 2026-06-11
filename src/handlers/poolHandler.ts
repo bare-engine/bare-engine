@@ -6,12 +6,12 @@ export class PoolHandler<T> {
     constructor(factory: () => T, defaultPoolSize: number = 10) {
         this.factory = factory;
         this.defaultPoolSize = defaultPoolSize;
-        this.CreatePool(this.defaultPoolSize);
+        this.Create(this.defaultPoolSize);
     }
 
     Grab(): T {
         if (this.pool.length === 0) {
-            this.CreatePool(this.defaultPoolSize || 1); // DON'T USE this.defaultPoolSize HERE, OTHER VAR? TODO
+            this.Create(this.defaultPoolSize || 1); // DON'T USE this.defaultPoolSize HERE, OTHER VAR? TODO
         }
         return this.pool.pop()!;
     }
@@ -20,18 +20,18 @@ export class PoolHandler<T> {
         this.pool.push(obj);
     }
 
-    CreatePool(num: number): void {
+    Create(num: number): void {
         for (let i = 0; i < num; i++) {
             const obj = this.factory();
             this.pool.push(obj);
         }
     }
 
-    GetPoolSize(): number {
+    GetSize(): number {
         return this.pool.length;
     }
 
-    GetPool(): Array<T> {
+    GetAll(): Array<T> {
         return this.pool;
     }
 

@@ -40,7 +40,7 @@ export class EditorUIScene extends Scene
     {
         this.editorButton.visible = false;
         
-        for (var scene of sceneController.GetAllScenes())
+        for (var scene of sceneController.GetAll())
         {
             if (scene.isLevel)
             {
@@ -59,7 +59,7 @@ export class EditorUIScene extends Scene
             return;
         }
 
-        for (var scene of sceneController.GetAllScenes())
+        for (var scene of sceneController.GetAll())
         {
             // HARDCODED THESE FOR NOW - NEEDED SO MOUSE IS NOT LOCKED TO DOWN AFTER CLICKING THIS BUTTON
             // HITBOX CONTROLLER FOR GOOD MEASURE TOO
@@ -68,7 +68,7 @@ export class EditorUIScene extends Scene
             scene.mouseController?.Reset();
         }
         
-        //sceneController.DisableAllScenes();
+        //sceneController.DisableAll();
         sceneController.Add(EditorScene);
     }
 }

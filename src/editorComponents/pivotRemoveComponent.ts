@@ -18,11 +18,11 @@ export class PivotRemoveComponent extends Component
     
     OnRemoved()
     {
-        if (!mouseController.IsRightMouseDown())
+        if (!mouseController.IsRightDown())
         return; // TO PREVENT THIS FROM HAPPENING WHEN CLOSING EDITOR, ONLY WANT TO RECREATE WHEN USER RIGHT CLICKS
 
         // CONSTRUCT ENTITY FROM INITIAL ENTITY DATA, SO WE GET THE RESULTING ORIGNAL VARS
-        var mainObj = objectController.GetAllObjects().find((o: GameObject) => o.customName == "main")!;
+        var mainObj = objectController.GetAll().find((o: GameObject) => o.customName == "main")!;
         var obj = ArcadeObject.GetDummpyDataFromEntity(this.scene, mainObj.name, { propsToIgnoreInEntity: ["pivot"] }).gameObject; // NOT SEARCHING IN ENTITY DATA, SO WE GET THE ORIGNAL VARS
         var pivotOrig = obj.pivot;
 

@@ -93,7 +93,7 @@ export class EditorControlsHandler {
         // SELECT ALL
         if (allKeys[0] == 'control' && allKeys[1] == 'a')
         {
-            this.SelectGameObjects(objectController.GetAllObjects());
+            this.SelectGameObjects(objectController.GetAll());
         }
         // CUT
         if (allKeys[0] == 'control' && allKeys[1] == 'x')
@@ -176,7 +176,7 @@ export class EditorControlsHandler {
         var isRightButton = (event.button == 2);
         if (isRightButton)
         {
-            var hover = hitboxController.GetCurrentHitboxHover();
+            var hover = hitboxController.GetCurrentHover();
             if (hover)
             {
                 // ALSO REMOVE OTHER SELECTED ENTITIES
@@ -307,7 +307,7 @@ export class EditorControlsHandler {
         if (!this.active)
             return;
 
-        if (mouseController.IsMiddleMouseDown()) {
+        if (mouseController.IsMiddleDown()) {
             var deltaMovedMiddleMouse = mouseController.screen.position.subtract(mouseController.screen.positionPrev);
             var zoom = cameraHandler.GetZoom();
             cameraHandler.AddPosition(-deltaMovedMiddleMouse.x /zoom, -deltaMovedMiddleMouse.y / zoom);
@@ -387,7 +387,7 @@ export class EditorControlsHandler {
         if (multiSelect)
             return;
 
-        var hitbox = hitboxController.GetCurrentHitboxHover();
+        var hitbox = hitboxController.GetCurrentHover();
         if (hitbox)
         {
             var obj = hitbox.parent;
@@ -424,7 +424,7 @@ export class EditorControlsHandler {
             var objs = objectController.GetLayerByName(layerName);
 
             if (keyboardController.IsKeyDown("control"))
-                objs = objectController.GetAllObjects();
+                objs = objectController.GetAll();
 
             for (var i = objs.length - 1; i >= 0; i--)
             {
@@ -542,7 +542,7 @@ export class EditorControlsHandler {
         {
             if (keyboardController.IsKeyDown("control") && !this.currentPreviewActive)
             {
-                var layerOfObj = objectController.GetObjectLayer(obj);
+                var layerOfObj = objectController.GetLayerOf(obj);
                 this.scene.editorUIHandler.SelectLayerItemByInt(layerOfObj);
                 
                 hitboxController.ClearExclusiveLayers();
@@ -777,7 +777,7 @@ export class EditorControlsHandler {
 
     private PlaceCurrentPreviewObjectOnNewGridSquare(ignoreGrid: boolean): void
     {
-        if (!mouseController.IsMouseDown())
+        if (!mouseController.IsDown())
         {
             this.lastMultiPlaceGridKey = null;
             this.firstMultiPlacedObject = null;
@@ -850,9 +850,9 @@ export class EditorControlsHandler {
             }
         }
         
-        if (!mouseController.IsRightMouseDown())
+        if (!mouseController.IsRightDown())
             if (this.currentPreviewActive)
-                this.currentPreviewEntity.visibleInEditor = !(hitboxController.GetCurrentHitboxHover() && !keyboardController.IsKeyDown("control"));
+                this.currentPreviewEntity.visibleInEditor = !(hitboxController.GetCurrentHover() && !keyboardController.IsKeyDown("control"));
 
         // Calculate preview position
         const previewX = mouseController.world.position.x;
@@ -862,8 +862,8 @@ export class EditorControlsHandler {
         this.PlaceCurrentPreviewObjectOnNewGridSquare(altDown);
 
         var distMouseMoved = Helper.Distance(mouseController.world.position, mouseController.world.positionOnDown);
-        if (mouseController.IsRightMouseDown() && distMouseMoved > 5) {
-            var hover = hitboxController.GetCurrentHitboxHover();
+        if (mouseController.IsRightDown() && distMouseMoved > 5) {
+            var hover = hitboxController.GetCurrentHover();
             if (hover) {
                 this.scene.RemoveGameObject(hover.parent);
                 hitboxController.ResetCurrentHover();
