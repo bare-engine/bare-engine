@@ -148,9 +148,9 @@ export class EditorUIHintHandler {
     private GetHintsForMode(mode: EditorMode): string[] {
         let hints = this.hintsPerMode[mode];
 
-        // MULTI PLACE ONLY WORKS WHEN THE GRID IS ON
-        if (mode == 'stamp' && !this.scene.settingsData?.settings?.gridEnabled)
-            hints = hints.filter(hint => hint != 'shift: place multiple');
+        // GRID HINTS ONLY APPLY WHEN THE GRID IS ON
+        if (!this.scene.settingsData?.settings?.gridEnabled)
+            hints = hints.filter(hint => hint != 'alt: disable grid' && hint != 'shift: place multiple');
 
         return hints;
     }
