@@ -1,7 +1,15 @@
 import { Box } from "../libraries/sopiro/box";
 import { RegisterController, Scene } from "../globals";
 import { GameObject } from "../objects/gameObject";
-import { World, RigidBody, Settings, Polygon, Circle, make_pair_natural} from "../sopiro";
+// IMPORT FROM THE INDIVIDUAL FILES, NOT THE "../sopiro" BARREL - THE BARREL HOLDS THE
+// BareCollisionEventPairs AUGMENTATION, AND IMPORTING IT HERE WOULD PULL RigidBody INTO
+// EVERY PROJECT'S COLLISION EVENT PAYLOADS VIA scene.ts -> THIS FILE
+import { World } from "../libraries/sopiro/world";
+import { RigidBody } from "../libraries/sopiro/rigidbody";
+import { Settings } from "../libraries/sopiro/settings";
+import { Polygon } from "../libraries/sopiro/polygon";
+import { Circle } from "../libraries/sopiro/circle";
+import { make_pair_natural } from "../libraries/sopiro/util";
 import { BareEvent } from "../types/bareTypes";
 import { PhysicsControllerBase } from "./physicsControllerBase";
 

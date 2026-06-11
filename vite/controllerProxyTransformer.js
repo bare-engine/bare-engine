@@ -20,6 +20,14 @@ const controllerImportSources = new Map([
     ["sopiroPhysicsController", "bare-engine/sopiro"],
 ]);
 
+// bare.<module> global shorthands (unassigned BareEngine fields) and the bare-engine export they resolve to.
+// Rewritten to an auto-injected import so the module isn't tree-shaken out of project builds.
+const bareGlobalModuleImports = new Map([
+    ["sound", "soundHandler"],
+    ["keyboard", "keyboardController"],
+    ["storage", "SaveDataHandler"],
+]);
+
 // bare.<module> shorthands (BareEngine scene module fields) and the scene controller they proxy
 const bareModuleControllerNames = new Map([
     ["object", "objectController"],
@@ -124,10 +132,37 @@ function createControllerProxyTransformer(program) {
             }
 
             const usedControllersInSource = new Set();
+            const usedGlobalModulesInSource = new Set();
+
+            // bare.sound / bare.keyboard / bare.storage -> __Bare_soundHandler / ... (imported from bare-engine)
+            function maybeRewriteBareGlobalModule(n) {
+                if (!isProjectSource) {
+                    return null;
+                }
+                if (!ts.isPropertyAccessExpression(n)) {
+                    return null;
+                }
+                if (!ts.isIdentifier(n.expression) || n.expression.text !== "bare") {
+                    return null;
+                }
+                if (!n.name || !ts.isIdentifier(n.name)) {
+                    return null;
+                }
+                const exportName = bareGlobalModuleImports.get(n.name.text);
+                if (!exportName) {
+                    return null;
+                }
+                usedGlobalModulesInSource.add(exportName);
+                return factory.createIdentifier(`__Bare_${exportName}`);
+            }
 
             function visit(node) {
                 if (ts.isClassDeclaration(node) || ts.isClassExpression(node)) {
                     return transformClass(node);
+                }
+                const rewrittenGlobalModule = maybeRewriteBareGlobalModule(node);
+                if (rewrittenGlobalModule) {
+                    return rewrittenGlobalModule;
                 }
                 if (ts.isCallExpression(node)) {
                     const updated = maybeTransformTweenToCallTopLevel(node);
@@ -264,6 +299,11 @@ function createControllerProxyTransformer(program) {
                     }
                     if (ts.isPropertyAccessExpression(n)) {
                         maybeCollectFromDirectiveMap(n);
+
+                        const rewrittenGlobalModule = maybeRewriteBareGlobalModule(n);
+                        if (rewrittenGlobalModule) {
+                            return rewrittenGlobalModule;
+                        }
 
                         // bare.mouse / bare.camera / ... -> this.mouseController / this.scene.cameraHandler / ...
                         if (
@@ -532,7 +572,8 @@ function createControllerProxyTransformer(program) {
             }
 
             const transformed = ts.visitNode(sourceFile, visit);
-            return addControllerImports(transformed, usedControllersInSource, factory);
+            const withControllerImports = addControllerImports(transformed, usedControllersInSource, factory);
+            return addGlobalModuleImports(withControllerImports, usedGlobalModulesInSource, factory);
         };
     };
 }
@@ -586,6 +627,36 @@ function addControllerImports(sourceFile, controllerNames, factory) {
     return factory.updateSourceFile(sourceFile, [
         ...imports,
         ...refs,
+        ...sourceFile.statements
+    ]);
+}
+
+function addGlobalModuleImports(sourceFile, exportNames, factory) {
+    if (!exportNames || exportNames.size === 0) {
+        return sourceFile;
+    }
+
+    const imports = [];
+    for (const exportName of Array.from(exportNames).sort()) {
+        imports.push(factory.createImportDeclaration(
+            undefined,
+            factory.createImportClause(
+                false,
+                undefined,
+                factory.createNamedImports([
+                    factory.createImportSpecifier(
+                        false,
+                        factory.createIdentifier(exportName),
+                        factory.createIdentifier(`__Bare_${exportName}`)
+                    )
+                ])
+            ),
+            factory.createStringLiteral("bare-engine")
+        ));
+    }
+
+    return factory.updateSourceFile(sourceFile, [
+        ...imports,
         ...sourceFile.statements
     ]);
 }

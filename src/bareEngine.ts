@@ -125,14 +125,18 @@ export class BareEngine
     // GLOBAL MODULES
     keyboard:KeyboardController;
     sound:SoundHandler;
-    screen:SceneController = sceneController;
-    textures:typeof assetsHandler = assetsHandler;
+    scene:SceneController = sceneController;
+    asset:typeof assetsHandler = assetsHandler;
     storage:typeof SaveDataHandler;
     pool:Map<string, PoolHandler<GameObject>> = this.gameObjectPools;
     ui:UIScene = uiScene; // PROXY - LAZILY CREATES THE UI SCENE ON FIRST USE
     
     get globalEvents(): Emitter<Events> { return globalEvents; }
     get editor(): EditorScene { return sceneController.GetAllScenes().find(scene => scene.constructor.name == "EditorScene") as any; }
+
+    // ANYTHING THAT CALLS bare.[module]. EG bare.object
+    // GETS TRANSFORMERD BY controllerProxyTransformer.js
+    // INTO EG: this.scene.objectController. GETTING THE INSTANCE IN SCENE
 
     // SCENE MODULES
     events:Emitter<Events>;

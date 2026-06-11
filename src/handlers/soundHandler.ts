@@ -30,7 +30,7 @@ export class SoundHandler
 
   constructor()
   {
-    bare.sound = this;
+    globalEvents.persistent.on(BareEvent.game_awake, () => bare.sound = this);
   }
 
   public get useHowlerHTML5(): boolean
