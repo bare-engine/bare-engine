@@ -20,6 +20,20 @@ const controllerImportSources = new Map([
     ["sopiroPhysicsController", "bare-engine/sopiro"],
 ]);
 
+// bare.<module> shorthands (BareEngine scene module fields) and the scene controller they proxy
+const bareModuleControllerNames = new Map([
+    ["object", "objectController"],
+    ["component", "componentController"],
+    ["mouse", "mouseController"],
+    ["tween", "tweenController"],
+    ["particle", "particleController"],
+    ["hitbox", "hitboxController"],
+    ["arcade", "arcadePhysicsController"],
+    ["sopiro", "sopiroPhysicsController"],
+    ["level", "levelHandler"],
+    ["camera", "cameraHandler"],
+]);
+
 const externalClassInfoMap = collectClassInfoFromDirs([
     path.resolve(process.cwd(), "../BareEngine/src"),
     path.resolve(process.cwd(), "node_modules/bare-engine/src"),
@@ -250,6 +264,30 @@ function createControllerProxyTransformer(program) {
                     }
                     if (ts.isPropertyAccessExpression(n)) {
                         maybeCollectFromDirectiveMap(n);
+
+                        // bare.mouse / bare.camera / ... -> this.mouseController / this.scene.cameraHandler / ...
+                        if (
+                            ts.isIdentifier(n.expression)
+                            && n.expression.text === "bare"
+                            && n.name
+                            && ts.isIdentifier(n.name)
+                        ) {
+                            const controllerName = bareModuleControllerNames.get(n.name.text);
+                            if (controllerName && registeredControllers.has(controllerName)) {
+                                const canRewriteScene = extendsSceneDeep || hasScene || extendsSceneCarrier;
+                                if (extendsSceneDeep || canRewriteScene) {
+                                    if (usedControllers) {
+                                        usedControllers.add(controllerName);
+                                    }
+                                    if (extendsSceneDeep) {
+                                        return createThisProperty(controllerName);
+                                    }
+                                    needsScene = true;
+                                    return createThisSceneProperty(controllerName);
+                                }
+                            }
+                        }
+
                         const propName = n.name && ts.isIdentifier(n.name) ? n.name.text : null;
                         if (propName && registeredControllers.has(propName)) {
                             const target = n.expression;

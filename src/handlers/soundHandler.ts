@@ -21,12 +21,17 @@ export type SoundOptions = {
   loaded?: (sound: SoundJsSound) => void;
 };
 
-class SoundHandler
+export class SoundHandler
 {
   private sounds: Map<string, SoundJsSound> = new Map();
   private soundPaths: Map<string, string> = new Map();
   private pendingPlays: Map<string, SoundOptions[]> = new Map();
   private useHtml5Audio: boolean = false;
+
+  constructor()
+  {
+    bare.sound = this;
+  }
 
   public get useHowlerHTML5(): boolean
   {

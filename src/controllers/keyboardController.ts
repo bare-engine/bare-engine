@@ -15,6 +15,8 @@ export class KeyboardController
 
     private setupEventListeners(): void
     {
+        bare.keyboard = this;
+        
         var processKey = (key: string) => {
             var processedkey = key.charAt(0).toLowerCase() + key.slice(1); // LOWERCASE FIRST LETTER
 

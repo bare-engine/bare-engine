@@ -20,25 +20,6 @@ import { Helper } from "../utils/helper";
 import { getInspectorFieldNames } from "../utils/decorators";
 import { Bare } from "../types/bare";
 
-/*Bare.camera.SetPosition(bareEngine.width * .5, bareEngine.height * .5);
-Bare.sound.Play()
-Bare.physics.SetGravity(0, 0);
-Bare.sopiro.SetFriction(0);
-Bare.component.Add();
-Bare.editor.Open();
-Bare.tween.to();
-Bare.level.Load()
-Bare.keyboard.OnPress()
-Bare.mouse.OnClick();
-Bare.object.Add();
-Bare.ui.Add();
-Bare.screen.Goto();
-Bare.particle.Add();
-Bare.hitbox.Assign();
-Bare.textures.Load(); // assetHandler
-Bare.storage.Load(); // saveHandler
-Bare.pool.Add(); // poolHandler */
-
 export class Scene implements SceneI
 {
     //private pipes = matt<Pipes>();

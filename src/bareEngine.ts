@@ -1,12 +1,27 @@
-import { sceneController } from "./controllers/sceneController";
+import type { ArcadePhysicsController } from "./controllers/arcadePhysicsController";
+import type { ComponentController } from "./controllers/componentController";
+import type { HitboxController } from "./controllers/hitboxController";
+import { KeyboardController } from "./controllers/keyboardController";
+import type { MouseController } from "./controllers/mouseController";
+import type { ObjectController } from "./controllers/objectController";
+import type { ParticleController } from "./controllers/particleController";
+import { SceneController, sceneController } from "./controllers/sceneController";
+import type { SopiroPhysicsController } from "./controllers/sopiroPhysicsController";
+import type { TweenController } from "./controllers/tweenController";
 import { GameMode, globalEvents } from "./globals";
 import { assetsHandler } from "./handlers/assetsHandler";
+import type { CameraHandler } from "./handlers/cameraHandler";
+import type { LevelHandler } from "./handlers/levelHandler";
 import { PluginHandler } from "./handlers/pluginHandler";
 import { PoolHandler } from "./handlers/poolHandler";
+import { SaveDataHandler } from "./handlers/SaveDataHandler";
+import { SoundHandler } from "./handlers/soundHandler";
 import { EventArgs } from "./libraries/mitt";
 import { Color, CustomGlShader, TextureManager, Vec2 } from "./libraries/new-rapid-render";
 import { GameObject } from "./objects/gameObject";
+import { EditorScene } from "./scenes/editorScene";
 import { Scene } from "./scenes/scene";
+import { UIScene, uiScene } from "./scenes/uiScene";
 import { BareEvent, BareOptions, CanvasPosition, CanvasScale, Events, GameObjectClass, LevelData, SceneClass } from "./types/bareTypes";
 import { getSaveFields } from "./utils/decorators";
 import { Helper } from "./utils/helper";
@@ -106,6 +121,29 @@ export class BareEngine
     public gameMode:GameMode = GameMode.Game;
 
     public defaultFont:string = "";
+
+    // GLOBAL MODULES
+    keyboard:KeyboardController;
+    sound:SoundHandler;
+    screen:SceneController = sceneController;
+    textures:typeof assetsHandler = assetsHandler;
+    storage:typeof SaveDataHandler;
+    pool:Map<string, PoolHandler<GameObject>> = this.gameObjectPools;
+    ui:UIScene = uiScene; // PROXY - LAZILY CREATES THE UI SCENE ON FIRST USE
+    
+    get editor(): EditorScene { return sceneController.GetAllScenes().find(scene => scene.constructor.name == "EditorScene") as any; }
+
+    // SCENE MODULES
+    object:ObjectController;
+    component:ComponentController;
+    mouse:MouseController;
+    tween:TweenController;
+    particle:ParticleController;
+    hitbox:HitboxController;
+    arcade:ArcadePhysicsController;
+    sopiro:SopiroPhysicsController;
+    level:LevelHandler;
+    camera:CameraHandler;
 
     constructor(sceneClass: SceneClass, options?: BareOptions)
     {

@@ -155,6 +155,8 @@ SaveDataHandler.InitDefaults();
 
 globalEvents.persistent.on(BareEvent.game_awake, () => {
     SaveDataHandler.InitDefaults();
+
+bare.storage = SaveDataHandler;
 });
 
 globalEvents.persistent.on(BareEvent.game_completeClear, () => {
