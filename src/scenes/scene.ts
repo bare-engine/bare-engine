@@ -1131,6 +1131,9 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
         var classes = controllerNames;
         for (let i = 0; i < classes.length; i++)
         {
+            if (classes[i] == "level")
+                continue; // DO NOT RESTART LEVEL
+
             this[classes[i]].Restart?.();
         }
     }

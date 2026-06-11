@@ -91,14 +91,9 @@ export class LevelHandler
         return this.Load(SaveData.currentLevelStr);
     }
 
-    async RestartCurrent(): Promise<LevelData>
+    async Restart(): Promise<LevelData>
     {
         return this.LoadCurrent();
-    }
-
-    Restart()
-    {
-        
     }
 
     async Load(levelInput: string | LevelData = ""):Promise<LevelData>
