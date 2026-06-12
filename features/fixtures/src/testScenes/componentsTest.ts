@@ -1,4 +1,4 @@
-import { Component, Scene, TweenTo, componentController } from "bare-engine";
+import { Component, Scene, TweenTo } from "bare-engine";
 
 class WaveComponent extends Component
 {
@@ -54,11 +54,11 @@ export class ComponentsTest extends Scene
     {
         const slow = this.AddGameObject("wavingHand");
         const fast = this.AddGameObject("wavingHand");
-        const fastWave = componentController.Get(fast, WaveComponent)!;
+        const fastWave = bare.component.Get(fast, WaveComponent)!;
 
         fastWave.frequency = 2;
 
-        assert(componentController.Get(slow, WaveComponent)?.frequency === 1, "entity data should add a component with constructor args");
+        assert(bare.component.Get(slow, WaveComponent)?.frequency === 1, "entity data should add a component with constructor args");
         assert(fastWave.frequency === 2, "component properties should be mutable at runtime");
     }
 }

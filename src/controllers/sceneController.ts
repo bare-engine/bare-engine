@@ -1,4 +1,3 @@
-import { tweenController } from "../controllers/tweenController";
 import { EventArgs } from "../libraries/mitt";
 import { globalEvents } from "../globals";
 import { GameObject } from "../objects/gameObject";
@@ -50,8 +49,13 @@ export class SceneController
                     {
                         var scene = this.currentScenes[j];
                         if (scene.started && scene.enabled && !scene.paused)
-                            if (scene.hitbox)
-                                scene.hitbox.preventUpdateOneFrame = true
+                        {
+                            // LOCAL VAR KEEPS THIS A SOFT HITBOX USAGE FOR THE CONTROLLER PROXY TRANSFORMER
+                            // (A PLAIN scene.hitbox.X DEREF WOULD FORCE HITBOX INTO EVERY BUNDLE)
+                            var hitbox = scene.hitbox;
+                            if (hitbox)
+                                hitbox.preventUpdateOneFrame = true
+                        }
                     }
 
                     foundHitboxHover = true;
@@ -254,21 +258,30 @@ export class SceneController
             scene.object.Add(gameObject);
 
             // MOVE BETWEEN tweenControllers
-            var tweens = gameObject.scene.tween.GetAllFrom(gameObject);
-            gameObject.scene.tween.RemoveAllFrom(gameObject);
-            for (var tween of tweens)
+            var oldTweenController = gameObject.scene.tween;
+            var newTweenController = scene.tween;
+            if (oldTweenController && newTweenController)
             {
-                scene.tween.Add(tween);
+                var tweens = oldTweenController.GetAllFrom(gameObject);
+                oldTweenController.RemoveAllFrom(gameObject);
+                for (var tween of tweens)
+                {
+                    newTweenController.Add(tween);
+                }
             }
 
             // MOVE BETWEEN componentControllers
-            var components = gameObject.scene.component.GetAllFrom(gameObject);
-            gameObject.scene.component.RemoveAllFrom(gameObject);
-            for (var component of components)
+            var oldComponentController = gameObject.scene.component;
+            var newComponentController = scene.component;
+            if (oldComponentController && newComponentController)
             {
-                scene.component.AddComponent(gameObject, component);
+                var components = oldComponentController.GetAllFrom(gameObject);
+                oldComponentController.RemoveAllFrom(gameObject);
+                for (var component of components)
+                {
+                    newComponentController.AddComponent(gameObject, component);
+                }
             }
-
 
             // CONVERT POSITION BETWEEN SCENES, SO IT STAYS THE SAME
             const screenPos = gameObject.scene.WorldToScreen(gameObject.x, gameObject.y);

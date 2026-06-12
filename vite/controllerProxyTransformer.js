@@ -52,6 +52,86 @@ function sceneFieldNameFor(controllerName) {
     return controllerSceneFieldNames.get(controllerName) || controllerName;
 }
 
+// MODULE FILE (UNDER THE ENGINE src ROOT) FOR EACH SCENE CONTROLLER - USED TO INJECT
+// RELATIVE IMPORTS INTO ENGINE SOURCES THAT HARD-DEPEND ON A CONTROLLER (scene.hitbox.X, ...)
+const controllerModuleSubpaths = new Map([
+    ["objectController", "controllers/objectController"],
+    ["componentController", "controllers/componentController"],
+    ["mouseController", "controllers/mouseController"],
+    ["tweenController", "controllers/tweenController"],
+    ["particleController", "controllers/particleController"],
+    ["hitboxController", "controllers/hitboxController"],
+    ["arcadePhysicsController", "controllers/arcadePhysicsController"],
+    ["sopiroPhysicsController", "controllers/sopiroPhysicsController"],
+    ["levelHandler", "handlers/levelHandler"],
+    ["cameraHandler", "handlers/cameraHandler"],
+]);
+
+function normalizeSlashes(value) {
+    return value.replace(/\\/g, "/");
+}
+
+const engineSrcRoots = (() => {
+    const roots = new Set();
+    const candidates = [
+        path.resolve(process.cwd(), "../BareEngine/src"),
+        path.resolve(process.cwd(), "node_modules/bare-engine/src"),
+    ];
+    for (const candidate of candidates) {
+        try {
+            roots.add(normalizeSlashes(fs.realpathSync(candidate)));
+        } catch (e) {
+            // CANDIDATE DOESN'T EXIST IN THIS SETUP
+        }
+        roots.add(normalizeSlashes(candidate));
+    }
+    return Array.from(roots);
+})();
+
+// RETURNS {root, file} (FORWARD-SLASHED) WHEN THE FILE LIVES UNDER THE ENGINE src ROOT
+function getEngineSrcInfo(fileName) {
+    const file = normalizeSlashes(path.resolve(fileName));
+    const fileLower = file.toLowerCase();
+    for (const root of engineSrcRoots) {
+        if (fileLower.startsWith(root.toLowerCase() + "/")) {
+            return { root, file };
+        }
+    }
+    return null;
+}
+
+// TRUE WHEN A PROPERTY-ACCESS TARGET LOOKS LIKE A SCENE REFERENCE:
+// this, this.scene, gameObject.scene, or a scene-ish identifier (scene, uiScene, bScene, ...).
+// USED TO DETECT CONTROLLER USAGE LIKE scene.hitbox.AssignButton SO THE CONTROLLER
+// IMPORT GETS INJECTED AND THE MODULE SURVIVES TREE-SHAKING.
+function isSceneLikeTarget(target) {
+    if (target.kind === ts.SyntaxKind.ThisKeyword) {
+        return true;
+    }
+    if (ts.isPropertyAccessExpression(target) && target.name && ts.isIdentifier(target.name) && target.name.text === "scene") {
+        return true;
+    }
+    return ts.isIdentifier(target) && /scene$/i.test(target.text);
+}
+
+// A CONTROLLER FIELD ACCESS ONLY COUNTS AS A HARD DEPENDENCY WHEN IT'S DEREFERENCED
+// NON-OPTIONALLY: scene.hitbox.AssignButton(...) COUNTS; OPTIONAL USAGE LIKE
+// scene.hitbox?.Foo() OR PRESENCE CHECKS LIKE if (scene.hitbox) DON'T -
+// THAT'S THE OPT-OUT FOR CODE THAT TOLERATES A MISSING CONTROLLER
+function isHardControllerDeref(n) {
+    const parent = n.parent;
+    if (!parent) {
+        return false;
+    }
+    if ((ts.isPropertyAccessExpression(parent) || ts.isElementAccessExpression(parent)) && parent.expression === n) {
+        return !parent.questionDotToken;
+    }
+    if (ts.isCallExpression(parent) && parent.expression === n) {
+        return !parent.questionDotToken;
+    }
+    return false;
+}
+
 // Accepts either a controller name or a Scene field name; returns the controller name.
 function toControllerName(name, registeredControllers) {
     if (registeredControllers.has(name)) {
@@ -79,9 +159,6 @@ const externalControllerUsageByClass = collectControllerUsageByClassFromDirs(
 );
 
 function createControllerProxyTransformer(program) {
-    const registeredAcrossProgram = program
-        ? collectRegisteredControllersFromProgram(program)
-        : null;
     const classInfoMap = program ? collectClassInfo(program) : new Map();
     if (externalClassInfoMap) {
         for (const [name, info] of externalClassInfoMap) {
@@ -91,7 +168,6 @@ function createControllerProxyTransformer(program) {
         }
     }
     const typeChecker = program ? program.getTypeChecker() : null;
-    const explicitControllerOrder = Array.from(allControllerNames);
     const explicitControllers = allControllerNames;
 
 
@@ -203,7 +279,9 @@ function createControllerProxyTransformer(program) {
             function transformClass(node) {
                 const className = node.name ? node.name.text : null;
                 const isStartBareTarget = className && startBareTargets.has(className);
-                const usedControllers = isProjectSource ? new Set() : null;
+                // COLLECTED FOR ENGINE SOURCES TOO, SO ENGINE-INTERNAL CHAINS LIKE
+                // PluginHandler -> Button -> scene.hitbox KEEP THE CONTROLLER BUNDLED + REGISTERED
+                const usedControllers = new Set();
                 const hasScene = classHasSceneProperty(node);
                 const extendsScene = classExtendsScene(node);
                 const extendsSceneDeep = extendsScene
@@ -241,7 +319,9 @@ function createControllerProxyTransformer(program) {
                         return callNode;
                     }
 
-                    const firstArgIsController = ts.isIdentifier(firstArg)
+                    // CONTROLLER-AS-FIRST-ARG ONLY EXISTS IN ENGINE SOURCES (LEGACY IDENTIFIER STYLE)
+                    const firstArgIsController = !isProjectSource
+                        && ts.isIdentifier(firstArg)
                         && registeredControllers.has(firstArg.text);
 
                     let hasScene = false;
@@ -362,19 +442,8 @@ function createControllerProxyTransformer(program) {
                         const propControllerName = propName
                             ? toControllerName(propName, registeredControllers)
                             : null;
-                        if (propControllerName) {
-                            const target = n.expression;
-                            const isThis = ts.isThis(target);
-                            const isThisScene =
-                                ts.isPropertyAccessExpression(target)
-                                && ts.isThis(target.expression)
-                                && target.name.text === "scene";
-
-                            if (isThis || isThisScene) {
-                                if (usedControllers) {
-                                    usedControllers.add(propControllerName);
-                                }
-                            }
+                        if (propControllerName && isSceneLikeTarget(n.expression) && isHardControllerDeref(n)) {
+                            usedControllers.add(propControllerName);
                         }
                     }
                     if (ts.isIdentifier(n) && isIdentifierReference(n)) {
@@ -401,10 +470,10 @@ function createControllerProxyTransformer(program) {
                             }
                         }
 
-                        if (registeredControllers.has(name)) {
-                            if (usedControllers) {
-                                usedControllers.add(name);
-                            }
+                        // LEGACY IDENTIFIER STYLE (mouseController, cameraHandler, ...):
+                        // ONLY ENGINE SOURCES STILL USE IT - PROJECT CODE USES THE bare.<module> SHORTHANDS,
+                        // SO IDENTIFIERS WITH THESE NAMES IN PROJECT CODE ARE LEFT ALONE (E.G. LOCAL VARIABLES)
+                        if (!isProjectSource && registeredControllers.has(name)) {
                             if (extendsSceneDeep) {
                                 return createThisProperty(sceneFieldNameFor(name));
                             }
@@ -430,7 +499,9 @@ function createControllerProxyTransformer(program) {
                 }
 
                 function maybeCollectFromDirectiveMap(expr) {
-                    if (!usedControllers || !isProjectSource) {
+                    // PROJECT SOURCES ONLY: ENGINE FILES DECLARE THEIR OWN DEPS, AND THE DIRECTIVE'S
+                    // DEFINING FILE WOULD OTHERWISE MATCH ITS OWN WRAPPER BODY (scene.ts OnPointerDown)
+                    if (!isProjectSource) {
                         return;
                     }
                     if (!ts.isPropertyAccessExpression(expr)) {
@@ -441,15 +512,8 @@ function createControllerProxyTransformer(program) {
                     if (!directives || directives.size === 0) {
                         return;
                     }
-                    const target = expr.expression;
-                    const isThis = ts.isThis(target);
-                    const isThisScene =
-                        ts.isPropertyAccessExpression(target)
-                        && ts.isThis(target.expression)
-                        && target.name.text === "scene";
-                    if (!isThis && !isThisScene) {
-                        return;
-                    }
+                    // NO TARGET RESTRICTION: DIRECTIVES ARE EXPLICIT @AddClass ANNOTATIONS ON DISTINCTIVE
+                    // MEMBER NAMES, SO ANY CALL SITE (go.OnPointerDown, scene.OnPointerDown, ...) COUNTS
                     for (const className of directives) {
                         const controllerName = normalizeControllerName(className, registeredControllers);
                         if (controllerName) {
@@ -460,31 +524,8 @@ function createControllerProxyTransformer(program) {
 
                 function transformBlockWithControllerRefs(block) {
                     const newStatements = [];
-                    const introducedControllers = new Set();
 
                     for (const statement of block.statements) {
-                        // Scan for controller refs in this statement before rewriting
-                        function scanControllers(n) {
-                            if (ts.isIdentifier(n) && isIdentifierReference(n) && registeredControllers.has(n.text)) {
-                                if (!introducedControllers.has(n.text)) {
-                                    introducedControllers.add(n.text);
-                                    newStatements.push(
-                                        factory.createExpressionStatement(factory.createIdentifier(n.text))
-                                    );
-                                }
-                            }
-                            if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === "TweenTo") {
-                                if (!introducedControllers.has("TweenTo")) {
-                                    introducedControllers.add("TweenTo");
-                                    newStatements.push(
-                                        factory.createExpressionStatement(factory.createIdentifier("TweenTo"))
-                                    );
-                                }
-                            }
-                            ts.forEachChild(n, scanControllers);
-                        }
-                        scanControllers(statement);
-
                         const updatedStatement = ts.visitEachChild(statement, visitInClass, context);
                         newStatements.push(updatedStatement);
                     }
@@ -595,14 +636,41 @@ function createControllerProxyTransformer(program) {
             }
 
             const transformed = ts.visitNode(sourceFile, visit);
-            const withControllerImports = addControllerImports(transformed, usedControllersInSource, factory);
+            const engineSrcInfo = getEngineSrcInfo(sourceFile.fileName);
+            const withControllerImports = addControllerImports(transformed, usedControllersInSource, factory, engineSrcInfo);
             return addGlobalModuleImports(withControllerImports, usedGlobalModulesInSource, factory);
         };
     };
 }
 
 
-function addControllerImports(sourceFile, controllerNames, factory) {
+// RESOLVES THE IMPORT SPECIFIER FOR AN INJECTED CONTROLLER IMPORT.
+// PROJECT SOURCES IMPORT FROM THE PACKAGE; ENGINE SOURCES IMPORT THE CONTROLLER
+// MODULE DIRECTLY (RELATIVE PATH), SO ENGINE-INTERNAL DEPENDENCIES WORK WITHOUT
+// GOING THROUGH (ENTRY-SHAKEN) PACKAGE ENTRIES. RETURNS null TO SKIP (SELF-IMPORT).
+function resolveControllerImportSource(controllerName, engineSrcInfo) {
+    if (!engineSrcInfo) {
+        return controllerImportSources.get(controllerName) || "bare-engine";
+    }
+
+    const subpath = controllerModuleSubpaths.get(controllerName);
+    if (!subpath) {
+        return null;
+    }
+
+    const target = engineSrcInfo.root + "/" + subpath;
+    if (engineSrcInfo.file.toLowerCase().replace(/\.ts$/, "") === target.toLowerCase()) {
+        return null; // THE FILE IS THE CONTROLLER MODULE ITSELF
+    }
+
+    let rel = path.posix.relative(path.posix.dirname(engineSrcInfo.file), target);
+    if (!rel.startsWith(".")) {
+        rel = "./" + rel;
+    }
+    return rel;
+}
+
+function addControllerImports(sourceFile, controllerNames, factory, engineSrcInfo) {
     if (!controllerNames || controllerNames.size === 0) {
         return sourceFile;
     }
@@ -612,6 +680,11 @@ function addControllerImports(sourceFile, controllerNames, factory) {
     const sortedControllerNames = Array.from(controllerNames).sort();
 
     for (const controllerName of sortedControllerNames) {
+        const importSource = resolveControllerImportSource(controllerName, engineSrcInfo);
+        if (!importSource) {
+            continue;
+        }
+
         const className = controllerNameToClassName(controllerName);
         const localName = `__Bare${className}`;
 
@@ -628,7 +701,7 @@ function addControllerImports(sourceFile, controllerNames, factory) {
                     )
                 ])
             ),
-            factory.createStringLiteral(controllerImportSources.get(controllerName) || "bare-engine")
+            factory.createStringLiteral(importSource)
         ));
 
         refs.push(factory.createExpressionStatement(
@@ -686,19 +759,6 @@ function addGlobalModuleImports(sourceFile, exportNames, factory) {
 
 function controllerNameToClassName(value) {
     return value[0].toUpperCase() + value.slice(1);
-}
-function collectRegisteredControllersFromProgram(program) {
-    const names = new Set();
-    for (const sourceFile of program.getSourceFiles()) {
-        if (sourceFile.isDeclarationFile) {
-            continue;
-        }
-        const fileNames = collectRegisteredControllers(sourceFile);
-        for (const name of fileNames) {
-            names.add(name);
-        }
-    }
-    return names;
 }
 
 function collectClassInfo(program) {
@@ -781,35 +841,6 @@ function listTsFiles(rootDir) {
     return results;
 }
 
-function collectRegisteredControllers(sourceFile) {
-    const names = new Set();
-
-    function collect(node) {
-        if (ts.isCallExpression(node)) {
-            const expression = node.expression;
-            if (ts.isPropertyAccessExpression(expression)) {
-                const isRegisterCall =
-                    ts.isIdentifier(expression.expression)
-                    && expression.expression.text === "BareEngine"
-                    && expression.name.text === "RegisterController";
-
-                if (isRegisterCall && node.arguments.length > 0) {
-                    const firstArg = node.arguments[0];
-                    if (ts.isIdentifier(firstArg)) {
-                        const controllerName = lowerFirst(firstArg.text);
-                        names.add(controllerName);
-                    }
-                }
-            }
-        }
-
-        ts.forEachChild(node, collect);
-    }
-
-    collect(sourceFile);
-    return names;
-}
-
 function lowerFirst(value) {
     if (!value) {
         return value;
@@ -837,9 +868,15 @@ function collectStartBareTargets(sourceFile) {
 }
 
 function isProjectSourceFile(sourceFile) {
+    // Anything under the project root counts as project source (src/, public/demos/, ...),
+    // except dependencies. Engine sources resolve through the node_modules symlink to their
+    // real path outside the project root, so they stay non-project.
     const filePath = path.resolve(sourceFile.fileName);
-    const projectSrc = path.resolve(process.cwd(), "src");
-    return filePath.startsWith(projectSrc + path.sep);
+    const projectRoot = path.resolve(process.cwd());
+    if (!filePath.startsWith(projectRoot + path.sep)) {
+        return false;
+    }
+    return !filePath.includes(path.sep + "node_modules" + path.sep);
 }
 
 function collectAddClassDirectiveMapFromDirs(dirs) {
@@ -931,16 +968,8 @@ function collectControllerUsageByClassFromDirs(dirs, controllerNames) {
                         const propControllerName = propName
                             ? toControllerName(propName, controllerNames)
                             : null;
-                        if (propControllerName) {
-                            const target = n.expression;
-                            const isThis = ts.isThis(target);
-                            const isThisScene =
-                                ts.isPropertyAccessExpression(target)
-                                && ts.isThis(target.expression)
-                                && target.name.text === "scene";
-                            if (isThis || isThisScene) {
-                                usedControllers.add(propControllerName);
-                            }
+                        if (propControllerName && isSceneLikeTarget(n.expression) && isHardControllerDeref(n)) {
+                            usedControllers.add(propControllerName);
                         }
                     }
                     ts.forEachChild(n, walk);

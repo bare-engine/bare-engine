@@ -36,7 +36,6 @@ export class Scene implements SceneI
     public isLevel: boolean = false;
 
     public object: ObjectController;
-
     public mouse: MouseController;
     public hitbox: HitboxController;
     public tween: TweenController;
@@ -617,7 +616,7 @@ export class Scene implements SceneI
         // ADDING FALSE TO PREVENT COMPONENTS CREATION...
         this.ApplyEntityToGameObject(entityConstructed, gameObject, false);
 
-        var entity = this.level.SerializeObjectFully(gameObject);
+        var entity = this.level!.SerializeObjectFully(gameObject); // SOFT (!.) - KEEPS LEVELHANDLER OUT OF BUNDLES THAT DON'T USE LEVELS
 
         // ... BUT ADDING IT BACK TO THE ENITY HERE, SO IT'S NOT LOST
         if (entityConstructed.components)
@@ -1174,25 +1173,25 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
     OnPointerDown(gameObject: GameObject, callback: any)
     {
         /* @ AddClass(HitboxController) */
-        this.hitbox.OnPointerDown(gameObject, callback);
+        this.hitbox?.OnPointerDown(gameObject, callback);
     }
 
     OnPointerUp(gameObject: GameObject, callback: any)
     {
         /* @ AddClass(HitboxController) */
-        this.hitbox.OnPointerUp(gameObject, callback);
+        this.hitbox?.OnPointerUp(gameObject, callback);
     }
 
     OnPointerEnter(gameObject: GameObject, callback: any)
     {
         /* @ AddClass(HitboxController) */
-        this.hitbox.OnPointerEnter(gameObject, callback);
+        this.hitbox?.OnPointerEnter(gameObject, callback);
     }
 
     OnPointerLeave(gameObject: GameObject, callback: any)
     {
         /* @ AddClass(HitboxController) */
-        this.hitbox.OnPointerLeave(gameObject, callback);
+        this.hitbox?.OnPointerLeave(gameObject, callback);
     }
 
     // HELPER

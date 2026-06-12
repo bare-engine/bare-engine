@@ -11,21 +11,24 @@ export { Scene } from "./scenes/scene";
 export { SoundJsSound } from "./libraries/soundjs/index";
 
 // Controllers
-export { Component, ComponentController, componentController } from "./controllers/componentController";
-export { HitboxController, hitboxController } from "./controllers/hitboxController";
+// NOTE: THE PER-SCENE CONTROLLER SINGLETONS (componentController, mouseController, ...) ARE NO
+// LONGER EXPORTED - USE THE bare.<module> SHORTHANDS INSTEAD (bare.component, bare.mouse, ...)
+// keyboardController AND soundHandler STAY EXPORTED: THE CONTROLLER PROXY TRANSFORMER INJECTS
+// IMPORTS OF THEM FOR bare.keyboard / bare.sound
+export { Component, ComponentController } from "./controllers/componentController";
+export { HitboxController } from "./controllers/hitboxController";
 export type { ButtonHandlers } from "./controllers/hitboxController";
 export { KeyboardController, keyboardController } from "./controllers/keyboardController";
-export { MouseController, mouseController } from "./controllers/mouseController";
-export { ObjectController, objectController } from "./controllers/objectController";
-export { ParticleController, particleController } from "./controllers/particleController";
-export { SceneController, sceneController } from "./controllers/sceneController";
-export { TweenController, tweenController, TweenTo } from "./controllers/tweenController";
+export { MouseController } from "./controllers/mouseController";
+export { ObjectController } from "./controllers/objectController";
+export { ParticleController } from "./controllers/particleController";
+export { SceneController } from "./controllers/sceneController";
+export { TweenController, TweenTo } from "./controllers/tweenController";
 
 // Handlers
-export { assetsHandler } from "./handlers/assetsHandler";
-export { cameraHandler, CameraHandler } from "./handlers/cameraHandler";
+export { CameraHandler } from "./handlers/cameraHandler";
 export { FileDropHandler } from "./handlers/fileDropHandler";
-export { LevelHandler, levelHandler } from "./handlers/levelHandler";
+export { LevelHandler } from "./handlers/levelHandler";
 export { plugin, PluginHandler } from "./handlers/pluginHandler";
 export { PoolHandler } from "./handlers/poolHandler";
 export { SaveDataHandler } from "./handlers/SaveDataHandler";

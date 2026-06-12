@@ -1,4 +1,4 @@
-import { Scene, SceneClass, StartBare, sceneController } from "bare-engine";
+import { Scene, SceneClass, StartBare } from "bare-engine";
 import {
     BrowserSceneResult,
     getBrowserSceneResult,
@@ -87,8 +87,8 @@ class MainGame extends Scene
         try
         {
             resetBrowserSceneTest(name);
-            await sceneController.Goto(scene);
-            sceneController.MoveToFront(this);
+            await bare.scene.Goto(scene);
+            bare.scene.MoveToFront(this);
 
             return {
                 name,
