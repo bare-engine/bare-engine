@@ -343,9 +343,8 @@ export class TweenController
 // EG: await TweenTo(this.go, 1, { scale: 0 }).promise
 export function TweenTo(object: any, seconds: number, props: any, overwrite: boolean = true, scene: Scene | null = null): TweenWithPromise
 {
-    // IT NEVER ACTUALLY GETS HERE, controllerProxyTransformer TRANSFORMS IT INTO scene.tween.To
+    // IT NEVER ACTUALLY GETS HERE, controllerProxyTransformer TRANSFORMS IT INTO this.scene.tween.To
     return scene['tween'].To(object, seconds, props, overwrite);
 }
 
-export var tweenController:TweenController;
 RegisterController(TweenController);

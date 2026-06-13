@@ -1,7 +1,4 @@
-import { hitboxController } from "../controllers/hitboxController";
 import { keyboardController } from "../controllers/keyboardController";
-import { mouseController } from "../controllers/mouseController";
-import { objectController } from "../controllers/objectController";
 import { Color, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { ArcadeObject } from "../objects/arcadeObject";
@@ -10,8 +7,6 @@ import { OutlineShader } from "../shaders/outlineShader";
 import { BareEvent, BareEventPayload, Entity, Rectangle } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
 import { MakePath, MakePathForEntity } from "../globals";
-import { cameraHandler } from "./cameraHandler";
-import { levelHandler } from "./levelHandler";
 
 /*
     BUILD CONTROLS INGAME
@@ -88,12 +83,12 @@ export class EditorControlsHandler {
         
         if (allKeys[0] == 'control')
         {
-            hitboxController.ClearExclusiveLayers();
+            bare.hitbox.ClearExclusiveLayers();
         }
         // SELECT ALL
         if (allKeys[0] == 'control' && allKeys[1] == 'a')
         {
-            this.SelectGameObjects(objectController.GetAll());
+            this.SelectGameObjects(bare.object.GetAll());
         }
         // CUT
         if (allKeys[0] == 'control' && allKeys[1] == 'x')
@@ -121,7 +116,7 @@ export class EditorControlsHandler {
                     topLeftCopiedObjects.y = entity.position.y;
             });
 
-            var offset = mouseController.world.position.subtract(topLeftCopiedObjects);
+            var offset = bare.mouse.world.position.subtract(topLeftCopiedObjects);
             //offset = new Vec2(0,0);
             
             var objsCreated: GameObject[] = [];
@@ -150,8 +145,8 @@ export class EditorControlsHandler {
         if (key == 'control')
         {
             const layer = this.GetSelectedLayer();
-            hitboxController.SetExclusiveLayer(layer);
-            hitboxController.ResetCurrentHover(); // DON'T WANT TO STILL HAVE HITBOX HOVERED FROM POTENTIALLY DIFFERENT LAYER 
+            bare.hitbox.SetExclusiveLayer(layer);
+            bare.hitbox.ResetCurrentHover(); // DON'T WANT TO STILL HAVE HITBOX HOVERED FROM POTENTIALLY DIFFERENT LAYER 
         }
     }
 
@@ -176,7 +171,7 @@ export class EditorControlsHandler {
         var isRightButton = (event.button == 2);
         if (isRightButton)
         {
-            var hover = hitboxController.GetCurrentHover();
+            var hover = bare.hitbox.GetCurrentHover();
             if (hover)
             {
                 // ALSO REMOVE OTHER SELECTED ENTITIES
@@ -190,7 +185,7 @@ export class EditorControlsHandler {
                     this.scene.RemoveGameObject(hover.parent);
                 }
 
-                hitboxController.ResetCurrentHover();
+                bare.hitbox.ResetCurrentHover();
     
                 this.actionThisFrame = 'objRemoval';
             }
@@ -224,17 +219,17 @@ export class EditorControlsHandler {
         if (this.currentPreviewActive && this.currentPreviewEntity.visible)
         {
             const altDown = keyboardController.IsKeyDown("alt");
-            this.SetEditorPosition(this.currentPreviewEntity, mouseController.world.position.x, mouseController.world.position.y, altDown);
+            this.SetEditorPosition(this.currentPreviewEntity, bare.mouse.world.position.x, bare.mouse.world.position.y, altDown);
             this.PlaceCurrentPreviewObject(layer);
             this.lastMultiPlaceGridKey = this.GetCurrentPreviewPlacementKey(layer);
         }
         
         if (this.actionThisFrame == '' && this.scene.settingsData.selectionEnabled !== false)
         {
-            var w = mouseController.world.position.x - mouseController.world.positionOnDown.x;
-            var h = mouseController.world.position.y - mouseController.world.positionOnDown.y;
-            var x = mouseController.world.positionOnDown.x;
-            var y = mouseController.world.positionOnDown.y;
+            var w = bare.mouse.world.position.x - bare.mouse.world.positionOnDown.x;
+            var h = bare.mouse.world.position.y - bare.mouse.world.positionOnDown.y;
+            var x = bare.mouse.world.positionOnDown.x;
+            var y = bare.mouse.world.positionOnDown.y;
 
             // MAKE SURE RECT X/Y IS ALWAYS AT TOP LEFT
             if (w < 0)
@@ -253,7 +248,7 @@ export class EditorControlsHandler {
 
     CopySelectedObjects()
     {
-        this.copiedObjects = this.selectedObjects.map(obj => levelHandler.SerializeObject(obj));
+        this.copiedObjects = this.selectedObjects.map(obj => bare.level.SerializeObject(obj));
     }
 
     RemoveSelectedObjects()
@@ -286,8 +281,8 @@ export class EditorControlsHandler {
             anchorObj.x,
             anchorObj.y,
             keyboardController.IsKeyDown("alt"),
-            mouseController.world.position.x,
-            mouseController.world.position.y
+            bare.mouse.world.position.x,
+            bare.mouse.world.position.y
         );
 
         const movedX = snappedPosition.x - anchorObj.x;
@@ -307,16 +302,16 @@ export class EditorControlsHandler {
         if (!this.active)
             return;
 
-        if (mouseController.IsMiddleDown()) {
-            var deltaMovedMiddleMouse = mouseController.screen.position.subtract(mouseController.screen.positionPrev);
-            var zoom = cameraHandler.GetZoom();
-            cameraHandler.AddPosition(-deltaMovedMiddleMouse.x /zoom, -deltaMovedMiddleMouse.y / zoom);
+        if (bare.mouse.IsMiddleDown()) {
+            var deltaMovedMiddleMouse = bare.mouse.screen.position.subtract(bare.mouse.screen.positionPrev);
+            var zoom = bare.camera.GetZoom();
+            bare.camera.AddPosition(-deltaMovedMiddleMouse.x /zoom, -deltaMovedMiddleMouse.y / zoom);
         }
 
-        var w = mouseController.world.position.x - mouseController.world.positionOnDown.x;
-        var h = mouseController.world.position.y - mouseController.world.positionOnDown.y;
-        var x = mouseController.world.positionOnDown.x;
-        var y = mouseController.world.positionOnDown.y;
+        var w = bare.mouse.world.position.x - bare.mouse.world.positionOnDown.x;
+        var h = bare.mouse.world.position.y - bare.mouse.world.positionOnDown.y;
+        var x = bare.mouse.world.positionOnDown.x;
+        var y = bare.mouse.world.positionOnDown.y;
 
         // MAKE SURE RECT X/Y IS ALWAYS AT TOP LEFT
         if (w < 0)
@@ -387,7 +382,7 @@ export class EditorControlsHandler {
         if (multiSelect)
             return;
 
-        var hitbox = hitboxController.GetCurrentHover();
+        var hitbox = bare.hitbox.GetCurrentHover();
         if (hitbox)
         {
             var obj = hitbox.parent;
@@ -421,10 +416,10 @@ export class EditorControlsHandler {
         {
             var selectedLayer = document.querySelector('.selected-layer')!;
             var layerName = selectedLayer.id;
-            var objs = objectController.GetLayerByName(layerName);
+            var objs = bare.object.GetLayerByName(layerName);
 
             if (keyboardController.IsKeyDown("control"))
-                objs = objectController.GetAll();
+                objs = bare.object.GetAll();
 
             for (var i = objs.length - 1; i >= 0; i--)
             {
@@ -502,17 +497,17 @@ export class EditorControlsHandler {
             return;
 
         const screen = bare.GetCanvasScreenPosition(ev.clientX, ev.clientY);
-        const before = cameraHandler.ScreenToWorld(screen.x, screen.y);
+        const before = bare.camera.ScreenToWorld(screen.x, screen.y);
 
         const zoomStep = 1.2; // EXPONENTIAL ZOOM FOR CONSISTENT FEEL AT ALL SCALES
         const scrollDirection = ev.deltaY > 0 ? -1 : 1;
 
-        cameraHandler.zoom *= (scrollDirection > 0 ? zoomStep : 1 / zoomStep);
-        cameraHandler.zoom = Math.max(.08, cameraHandler.zoom); // SO WE DON'T ZOOM OUT TOO MUCH AND LOSE THE CONTENT
+        bare.camera.zoom *= (scrollDirection > 0 ? zoomStep : 1 / zoomStep);
+        bare.camera.zoom = Math.max(.08, bare.camera.zoom); // SO WE DON'T ZOOM OUT TOO MUCH AND LOSE THE CONTENT
 
-        const after = cameraHandler.ScreenToWorld(screen.x, screen.y);
+        const after = bare.camera.ScreenToWorld(screen.x, screen.y);
         // Keep the mouse anchored to the same world position, similar to the zoom behavior in design software and map applications.
-        cameraHandler.AddPosition(before.x - after.x, before.y - after.y);
+        bare.camera.AddPosition(before.x - after.x, before.y - after.y);
         
         ev.preventDefault();
     }
@@ -524,7 +519,7 @@ export class EditorControlsHandler {
             return;
         
         this.draggingObject = obj;
-        this.dragOffset = mouseController.world.position.subtract(obj.position);
+        this.dragOffset = bare.mouse.world.position.subtract(obj.position);
         
         this.actionThisFrame = 'objDrag';
     }
@@ -537,15 +532,15 @@ export class EditorControlsHandler {
             return;
         }
 
-        var distMouseMoved = Helper.Distance(mouseController.world.position, mouseController.world.positionOnDown);
+        var distMouseMoved = Helper.Distance(bare.mouse.world.position, bare.mouse.world.positionOnDown);
         if (distMouseMoved == 0)
         {
             if (keyboardController.IsKeyDown("control") && !this.currentPreviewActive)
             {
-                var layerOfObj = objectController.GetLayerOf(obj);
+                var layerOfObj = bare.object.GetLayerOf(obj);
                 this.scene.editorUIHandler.SelectLayerItemByInt(layerOfObj);
                 
-                hitboxController.ClearExclusiveLayers();
+                bare.hitbox.ClearExclusiveLayers();
             }
 
             if (this.scene.settingsData.showUI !== false)
@@ -562,8 +557,8 @@ export class EditorControlsHandler {
         {
             //var draggingLevelEntityIsOutsideScreen = this.draggingLevelEntity.x < 0 || this.draggingLevelEntity.x > this.editorController.currentLevel.dimensions.width || this.draggingLevelEntity.y < 0 || this.draggingLevelEntity.y > this.editorController.currentLevel.dimensions.height;
             /*if (draggingLevelEntityIsOutsideScreen) {
-                hitboxController.Remove(this.draggingLevelEntity.hitbox!);
-                objectController.Remove(this.draggingLevelEntity);
+                bare.hitbox.Remove(this.draggingLevelEntity.hitbox!);
+                bare.object.Remove(this.draggingLevelEntity);
             }*/
         }
 
@@ -577,10 +572,10 @@ export class EditorControlsHandler {
         const layerInfo = this.scene.settingsData.layersInfo[layerName];
         const selectedLayerI = layerInfo.layerI;
 
-        hitboxController.SetExclusiveLayer(selectedLayerI);
+        bare.hitbox.SetExclusiveLayer(selectedLayerI);
         
         // FADE OUT ALL OTHER LAYERS - PROBLEMS WITH ALPHA BEING ADJUSTED AND SAVED, NEED SEPARATION
-        /*var allLayers = objectController.GetLayers();
+        /*var allLayers = bare.object.GetLayers();
         for (var i = allLayers.length - 1; i >= 0; i--)
         {
             var objs = allLayers[i];
@@ -777,7 +772,7 @@ export class EditorControlsHandler {
 
     private PlaceCurrentPreviewObjectOnNewGridSquare(ignoreGrid: boolean): void
     {
-        if (!mouseController.IsDown())
+        if (!bare.mouse.IsDown())
         {
             this.lastMultiPlaceGridKey = null;
             this.firstMultiPlacedObject = null;
@@ -805,7 +800,7 @@ export class EditorControlsHandler {
 
         var altDown = keyboardController.IsKeyDown("alt");
             
-        if (this.draggingObject && Helper.Distance(mouseController.screen.position, mouseController.screen.positionOnDown) != 0)
+        if (this.draggingObject && Helper.Distance(bare.mouse.screen.position, bare.mouse.screen.positionOnDown) != 0)
         {
             var movedX = 0;
             var movedY = 0;
@@ -813,14 +808,14 @@ export class EditorControlsHandler {
             var origPosY = this.draggingObject.y;
 
             // Calculate the desired position
-            const desiredX = mouseController.world.position.x - this.dragOffset.x;
-            const desiredY = mouseController.world.position.y - this.dragOffset.y;
+            const desiredX = bare.mouse.world.position.x - this.dragOffset.x;
+            const desiredY = bare.mouse.world.position.y - this.dragOffset.y;
 
             const guideX = this.scene.settingsData.editorObjectSnapToPivot === false
-                ? mouseController.world.position.x
+                ? bare.mouse.world.position.x
                 : desiredX;
             const guideY = this.scene.settingsData.editorObjectSnapToPivot === false
-                ? mouseController.world.position.y
+                ? bare.mouse.world.position.y
                 : desiredY;
 
             const position = this.GetGridAlignedPosition(this.draggingObject, desiredX, desiredY, altDown, guideX, guideY);
@@ -850,28 +845,28 @@ export class EditorControlsHandler {
             }
         }
         
-        if (!mouseController.IsRightDown())
+        if (!bare.mouse.IsRightDown())
             if (this.currentPreviewActive)
-                this.currentPreviewEntity.visibleInEditor = !(hitboxController.GetCurrentHover() && !keyboardController.IsKeyDown("control"));
+                this.currentPreviewEntity.visibleInEditor = !(bare.hitbox.GetCurrentHover() && !keyboardController.IsKeyDown("control"));
 
         // Calculate preview position
-        const previewX = mouseController.world.position.x;
-        const previewY = mouseController.world.position.y;
+        const previewX = bare.mouse.world.position.x;
+        const previewY = bare.mouse.world.position.y;
 
         this.SetEditorPosition(this.currentPreviewEntity, previewX, previewY, altDown);
         this.PlaceCurrentPreviewObjectOnNewGridSquare(altDown);
 
-        var distMouseMoved = Helper.Distance(mouseController.world.position, mouseController.world.positionOnDown);
-        if (mouseController.IsRightDown() && distMouseMoved > 5) {
-            var hover = hitboxController.GetCurrentHover();
+        var distMouseMoved = Helper.Distance(bare.mouse.world.position, bare.mouse.world.positionOnDown);
+        if (bare.mouse.IsRightDown() && distMouseMoved > 5) {
+            var hover = bare.hitbox.GetCurrentHover();
             if (hover) {
                 this.scene.RemoveGameObject(hover.parent);
-                hitboxController.ResetCurrentHover();
+                bare.hitbox.ResetCurrentHover();
                 return;
             }
         }
 
-        /*objectController.GetLayer(Layer.worldUI).sort((a, b) => {
+        /*bare.object.GetLayer(Layer.worldUI).sort((a, b) => {
             return a.y - b.y;
         });*/
         
@@ -920,7 +915,7 @@ export class EditorControlsHandler {
 
     OpenEditor()
     {
-        objectController.Add(this.currentPreviewEntity);
+        bare.object.Add(this.currentPreviewEntity);
         this.SetCurrentPreviewActive(false);
         this.currentPreviewEntity.alpha = 0;
     }
@@ -930,7 +925,7 @@ export class EditorControlsHandler {
         // BIT OF A HACK TO PERSIST COPIED OBJECTS - SINCE WE CREATE A NEW INSTANCE OF THIS OBJECT WHEN EDITOR IS OPENED AGAIN
         EditorControlsHandler.copiedObjectCached = this.copiedObjects;
 
-        hitboxController.ClearExclusiveLayers();
-        objectController.Remove(this.currentPreviewEntity);
+        bare.hitbox.ClearExclusiveLayers();
+        bare.object.Remove(this.currentPreviewEntity);
     }
 } 

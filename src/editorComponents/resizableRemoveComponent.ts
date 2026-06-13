@@ -1,6 +1,4 @@
-import { Component, componentController } from '../controllers/componentController';
-import { mouseController } from '../controllers/mouseController';
-import { objectController } from '../controllers/objectController';
+import { Component } from '../controllers/componentController';
 import { GameMode } from '../globals';
 import { GameObject } from '../objects/gameObject';
 import { ArcadeObject } from '../objects/arcadeObject';
@@ -13,11 +11,11 @@ export class ResizableRemoveComponent extends Component
 {
   OnRemoved(): void
   {
-    if (!mouseController.IsRightDown())
+    if (!bare.mouse.IsRightDown())
       return; // TO PREVENT THIS FROM HAPPENING WHEN CLOSING EDITOR, ONLY WANT TO RECREATE WHEN USER RIGHT CLICKS
 
     // CONSTRUCT ENTITY FROM INITIAL ENTITY DATA, SO WE GET THE RESULTING ORIGNAL VARS
-    var mainObj = objectController.GetAll().find((o: GameObject) => o.customName == "main")!;
+    var mainObj = bare.object.GetAll().find((o: GameObject) => o.customName == "main")!;
     var obj = ArcadeObject.GetDummpyDataFromEntity(this.scene, mainObj.name, { propsToIgnoreInEntity: ["hitbox"] }).gameObject; // NOT SEARCHING IN ENTITY DATA, SO WE GET THE ORIGNAL VARS
     var hitboxOrig = (obj as any).physicsHitbox ? (obj as any).physicsHitbox?.rectangle : {x: 0, y: 0, width: 0, height: 0};
 
@@ -48,14 +46,14 @@ export class ResizableRemoveComponent extends Component
     }
 
     // CLEAR pivotBasedOnHitbox
-    //objectController.GetByName(mainObj.name)!.pivotBasedOnHitbox.set(-1, -1);
-    objectController.GetByName(mainObj.name)!.entity.pivotBasedOnHitbox = {x: -1, y: -1};
+    //bare.object.GetByName(mainObj.name)!.pivotBasedOnHitbox.set(-1, -1);
+    bare.object.GetByName(mainObj.name)!.entity.pivotBasedOnHitbox = {x: -1, y: -1};
     
     var gameObject = this.scene.AddGameObject(entityBare, 0);
-    objectController.MoveWithinLayer(gameObject, 2);
+    bare.object.MoveWithinLayer(gameObject, 2);
 
-    var pivotOjb = objectController.GetByName("dot")!;
-    componentController.Get(pivotOjb, PivotComponent)!.UpdateHitboxReferences();
-    componentController.Get(pivotOjb, PivotComponent)!.UpdatePivotOnHitbox();
+    var pivotOjb = bare.object.GetByName("dot")!;
+    bare.component.Get(pivotOjb, PivotComponent)!.UpdateHitboxReferences();
+    bare.component.Get(pivotOjb, PivotComponent)!.UpdatePivotOnHitbox();
   }
 }

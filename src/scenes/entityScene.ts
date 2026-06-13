@@ -1,11 +1,9 @@
-import { cameraHandler } from "../handlers/cameraHandler";
 import { assetsHandler } from "../handlers/assetsHandler";
 import { SettingsHandler } from "../handlers/settingsHandler";
 import { Color, RenderTexture, Vec2 } from "../libraries/new-rapid-render";
 import { TextObject } from "../objects/textObject";
 import { ArcadeObject } from "../objects/arcadeObject";
 import { EditorScene } from "./editorScene";
-import { levelHandler } from "../handlers/levelHandler";
 import { AwakePayload, Entity, entityVars, LevelData, Rectangle, SettingsData, Size } from "../types/bareTypes";
 import { MakePathForEntity } from "../globals";
 
@@ -226,7 +224,7 @@ export class EntityScene extends EditorScene
         var bounds = obj.GetBoundsWithChildren();
         var s = Math.max(bounds.width / rapid.width, bounds.height / rapid.height);
         this.camera.zoom = 1/s * .5;
-        cameraHandler.SetPosition(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+        bare.camera.SetPosition(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
         
         return ret;
     }
@@ -246,7 +244,7 @@ export class EntityScene extends EditorScene
             entityFromSettingsData = this.settingsHandler.GetRaw().entities[this.objectName];
         }
 
-        //var diff = levelHandler.GetChangedValues(obj, entityFromSettingsData);
+        //var diff = bare.level.GetChangedValues(obj, entityFromSettingsData);
 
         var entityFromSettingsDataModified = {...entityFromSettingsData};
 
@@ -257,7 +255,7 @@ export class EntityScene extends EditorScene
             entityFromSettingsDataModified.imagePath = "";
         }
 
-        var fullEntity = levelHandler.SerializeObjectFully(obj);
+        var fullEntity = bare.level.SerializeObjectFully(obj);
         var origEntity = this.GetAppliedEntityWithDefaultValues(entityFromSettingsDataModified);
 
         // UNDO THE TEXTURE/PATH FOR BASE 
@@ -274,7 +272,7 @@ export class EntityScene extends EditorScene
                 origEntity.imagePath = undefined;
         }
 
-        var diffEntity = levelHandler.GetEntitiesDiff(origEntity, fullEntity);
+        var diffEntity = bare.level.GetEntitiesDiff(origEntity, fullEntity);
 
         delete diffEntity.name;
 
@@ -362,10 +360,10 @@ export class EntityScene extends EditorScene
 
         // SERIALIZE, TODO, NOT REALLY NEEDED, JUST FOR THE RETURN
         /*var level = this.currentLevel;
-        //levelHandler.Serialize(level);
+        //bare.level.Serialize(level);
 
         var obj = this.object.GetByName(this.objectName);
-        var entity = levelHandler.SerializeObject(obj, {propsToIgnoreInEntity: entityVars, fillPresets: true});
+        var entity = bare.level.SerializeObject(obj, {propsToIgnoreInEntity: entityVars, fillPresets: true});
         delete entity.name;
         delete entity.position;
         

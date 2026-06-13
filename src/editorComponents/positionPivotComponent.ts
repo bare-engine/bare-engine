@@ -1,8 +1,5 @@
 import { Component } from "../controllers/componentController";
-import { hitboxController } from "../controllers/hitboxController";
-import { mouseController } from "../controllers/mouseController";
 import { GameObject } from "../objects/gameObject";
-import { objectController } from "../controllers/objectController";
 import { ArcadeObject } from "../objects/arcadeObject";
 import { Scene } from "../scenes/scene";
 import { Save } from "../utils/decorators";
@@ -27,7 +24,7 @@ export class PositionPivotComponent extends Component
 
     OnUpdate(deltaTime: number): void 
     {
-        if (mouseController.IsDown() && hitboxController.GetCurrentHover() == this.go.tapHitbox)
+        if (bare.mouse.IsDown() && bare.hitbox.GetCurrentHover() == this.go.tapHitbox)
         {
             var hitbox = {
                 x1: this.go.position!.x,
@@ -42,7 +39,7 @@ export class PositionPivotComponent extends Component
             this.scene.ApplyEntityToGameObject(origEntity, obj);
             var pivotPosOrig = obj.pivot;
             
-            var pivotObj = objectController.GetByName(this.pivotName)!;
+            var pivotObj = bare.object.GetByName(this.pivotName)!;
             if (pivotPosOrig)
             {
                 pivotObj.SetPosition(pivotPosOrig.x, pivotPosOrig.y);

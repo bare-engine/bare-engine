@@ -1,5 +1,4 @@
 
-import { objectController } from "../controllers/objectController";
 import type { Component } from "../controllers/componentController";
 import { GameMode, MakePathForEntity, RegisterController } from "../globals";
 import { Color, Texture, Vec2 } from "../libraries/new-rapid-render";
@@ -47,7 +46,7 @@ export class LevelHandler
 
     get objectsLayer(): GameObject[]
     {
-        return objectController.GetLayerByName("objects");
+        return bare.object.GetLayerByName("objects");
     }
 
     async LoadData(levelStr: string): Promise<LevelData>
@@ -119,7 +118,7 @@ export class LevelHandler
 
         // STORE PERSISTENT OBJECTS, TO CALL ONLEVELCHANGED AFTER LOAD
         var persistenObjUIDs:string[] = [];
-        var gameLayers = objectController.GetLayers();
+        var gameLayers = bare.object.GetLayers();
         for (var i = 0; i < gameLayers.length; i++)
         {
             var layer = gameLayers[i];
@@ -310,7 +309,7 @@ export class LevelHandler
     // THIS JUST REPOPULATES THE entitiesByLayer OF THE LEVEL
     Serialize(level: LevelData)
     {
-        var gameLayers = objectController.GetLayers();
+        var gameLayers = bare.object.GetLayers();
         var layersSettings = this.scene.settingsData.layers;
         for (var i = 0; i < gameLayers.length; i++)
         {
@@ -906,5 +905,4 @@ export class LevelHandler
     }
 }
 
-export var levelHandler:LevelHandler;
 RegisterController(LevelHandler);

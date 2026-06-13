@@ -11,10 +11,6 @@ export { Scene } from "./scenes/scene";
 export { SoundJsSound } from "./libraries/soundjs/index";
 
 // Controllers
-// NOTE: THE PER-SCENE CONTROLLER SINGLETONS (componentController, mouseController, ...) ARE NO
-// LONGER EXPORTED - USE THE bare.<module> SHORTHANDS INSTEAD (bare.component, bare.mouse, ...)
-// keyboardController AND soundHandler STAY EXPORTED: THE CONTROLLER PROXY TRANSFORMER INJECTS
-// IMPORTS OF THEM FOR bare.keyboard / bare.sound
 export { Component, ComponentController } from "./controllers/componentController";
 export { HitboxController } from "./controllers/hitboxController";
 export type { ButtonHandlers } from "./controllers/hitboxController";

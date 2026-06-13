@@ -1339,5 +1339,4 @@ export class ArcadePhysicsController extends PhysicsControllerBase
   }
 }
 
-export var arcadePhysicsController:ArcadePhysicsController;
 RegisterController(ArcadePhysicsController);

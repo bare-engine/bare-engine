@@ -1,7 +1,5 @@
 import { Component } from '../controllers/componentController';
-import { hitboxController } from '../controllers/hitboxController';
 import { keyboardController } from '../controllers/keyboardController';
-import { mouseController } from '../controllers/mouseController';
 import { GameMode } from '../globals';
 import { Color, Vec2 } from '../libraries/new-rapid-render';
 import type { EditorScene } from '../scenes/editorScene';
@@ -90,8 +88,8 @@ export class ResizableComponent extends Component
 
     if (!this.go.tapHitbox) return;
 
-    const mouse = mouseController.world.position;
-    const hoveredHitbox = hitboxController.GetCurrentHover();
+    const mouse = bare.mouse.world.position;
+    const hoveredHitbox = bare.hitbox.GetCurrentHover();
     const hoveringThis = hoveredHitbox?.parent === this.go;
     const zoom = this.scene.GetCameraZoom();
 
@@ -105,9 +103,9 @@ export class ResizableComponent extends Component
     const bottom = this.go.y + this.goHeight;
 
     // ================= PRESS =================
-    if (mouseController.IsPressed())
+    if (bare.mouse.IsPressed())
     {
-      const hovered = hitboxController.GetCurrentHover();
+      const hovered = bare.hitbox.GetCurrentHover();
       const hoveredGo = hovered?.parent;
       const edgeCandidate = (hoveredGo === this.go || hovered == null) ? this.getEdge(mouse, left, top, right, bottom, zoom) : null;
 
@@ -162,7 +160,7 @@ export class ResizableComponent extends Component
           this.dragStartEdge = null;
           this.edge = null;
 
-          this.freeStartPos = mouseController.world.positionOnDown.clone();
+          this.freeStartPos = bare.mouse.world.positionOnDown.clone();
           this.hoverEdge = null;
           return;
         }
@@ -170,7 +168,7 @@ export class ResizableComponent extends Component
     }
 
     // ================= FREE RESIZE THRESHOLD =================
-    if (mouseController.IsDown() && this.freeResizePending && !this.resizing)
+    if (bare.mouse.IsDown() && this.freeResizePending && !this.resizing)
     {
       const dx = mouse.x - this.freeStartPos.x;
       const dy = mouse.y - this.freeStartPos.y;
@@ -186,7 +184,7 @@ export class ResizableComponent extends Component
     }
 
     // ================= DRAG =================
-    if (mouseController.IsDown() && this.resizing)
+    if (bare.mouse.IsDown() && this.resizing)
     {
       // --- FREE RESIZE MODE ---
       if (this.freeResize)
@@ -223,7 +221,7 @@ export class ResizableComponent extends Component
     }
 
     // ================= RELEASE =================
-    if (!mouseController.IsDown())
+    if (!bare.mouse.IsDown())
     {
       if (this.resizing)
       {
@@ -272,7 +270,7 @@ export class ResizableComponent extends Component
     } else {
       this.go.tapHitbox.active = true;
 
-      const hovered = hitboxController.GetCurrentHover();
+      const hovered = bare.hitbox.GetCurrentHover();
       if (hovered == null)
         bare.SetCursor('inherit');
 

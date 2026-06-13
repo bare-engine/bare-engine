@@ -1,13 +1,10 @@
 import { ResizableComponent } from "./resizableComponent";
 import { Helper } from "../utils/helper";
-import { Component, componentController } from "../controllers/componentController";
+import { Component } from "../controllers/componentController";
 import { GameObject } from "../objects/gameObject";
 import { Entity } from "../types/bareTypes";
 import { keyboardController } from "../controllers/keyboardController";
-import { hitboxController } from "../controllers/hitboxController";
-import { mouseController } from "../controllers/mouseController";
 import { ArcadeObject } from "../objects/arcadeObject";
-import { objectController } from "../controllers/objectController";
 import { GameMode } from "../globals";
 import { Color } from "../libraries/new-rapid-render";
 import { Scene } from "../scenes/scene";
@@ -50,14 +47,14 @@ export class PivotComponent extends Component
         }
 
         // IF MOVING THE HITBOX, UPDATE THE PIVOT POSITION
-        const isMovingHitbox = hitboxController.GetCurrentDown() == this.hitboxObj.tapHitbox;
-        if (mouseController.IsDown() && mouseController.IsMoving() && (isMovingHitbox || this.hitboxComp.resizing))
+        const isMovingHitbox = bare.hitbox.GetCurrentDown() == this.hitboxObj.tapHitbox;
+        if (bare.mouse.IsDown() && bare.mouse.IsMoving() && (isMovingHitbox || this.hitboxComp.resizing))
         {
             this.UpdatePivotOnHitbox();
         }
 
         // IF MOVING THE PIVOT, SNAP IT WHERE PIVOT WOULD BE ACCORDING TO CODE (ApplyEntityToGameObject())
-        if (mouseController.IsDown() && hitboxController.GetCurrentDown() == this.go.tapHitbox)
+        if (bare.mouse.IsDown() && bare.hitbox.GetCurrentDown() == this.go.tapHitbox)
         {
             const preventSnap = keyboardController.IsKeyDown('control');
             if (preventSnap)
@@ -78,7 +75,7 @@ export class PivotComponent extends Component
                 // HERE WE REMOVE THE PIVOT PROPERTY, SO IT'S NOT AFFECTED BY THE (PARENT) PIVOT SET IN DATA, ONLY CODE
                 // SO THAT pivotBasedOnHitbox HAS AN EFFECT (ELSE PIVOT OVERRIDES IT)
                 //let entity:Entity = { name: this.objName, hitbox: hitbox, propertiesRemoved: ["pivot"] };
-                var entity = objectController.GetByName(this.objName)!.entity!;
+                var entity = bare.object.GetByName(this.objName)!.entity!;
                 entity = { ...entity, hitbox: hitbox, propertiesRemoved: ["pivot"] };
 
                 if (x != -1 && y != -1)
@@ -101,15 +98,15 @@ export class PivotComponent extends Component
                         this.go.SetPosition(pivotPosOrig.x, pivotPosOrig.y);
 
                         // VERY UGLY, TODO
-                        //objectController.GetByName(this.objName)!.pivotBasedOnHitbox.set(x, y);
-                        objectController.GetByName(this.objName)!.entity!.pivotBasedOnHitbox! = {x: x, y: y};
+                        //bare.object.GetByName(this.objName)!.pivotBasedOnHitbox.set(x, y);
+                        bare.object.GetByName(this.objName)!.entity!.pivotBasedOnHitbox! = {x: x, y: y};
                     }
                 }
             };
 
             // RESET FIRST, THEN SET LATER IN snapToPosition()
-            //objectController.GetByName(this.objName)!.pivotBasedOnHitbox.set(-1, -1);
-            objectController.GetByName(this.objName)!.entity!.pivotBasedOnHitbox! = {x: -1, y: -1};
+            //bare.object.GetByName(this.objName)!.pivotBasedOnHitbox.set(-1, -1);
+            bare.object.GetByName(this.objName)!.entity!.pivotBasedOnHitbox! = {x: -1, y: -1};
             
             snapToPosition(.5, .5);
             snapToPosition(0, 0);
@@ -126,10 +123,10 @@ export class PivotComponent extends Component
 
     UpdateHitboxReferences()
     {
-        this.hitboxObj = objectController.GetByName(this.hitboxName);
+        this.hitboxObj = bare.object.GetByName(this.hitboxName);
 
         if (this.hitboxObj)
-            this.hitboxComp = componentController.Get(this.hitboxObj, ResizableComponent)!;
+            this.hitboxComp = bare.component.Get(this.hitboxObj, ResizableComponent)!;
     }
 
     UpdatePivotOnHitbox()
@@ -144,7 +141,7 @@ export class PivotComponent extends Component
         // CONSTRUCT THE ENTITY FOR GIVEN OBJECT WITH NEW HITBOX, 
         // SO WE CAN GET THE PIVOT THAT COULD BE SET BY DATA OR CODE (BY OVERRIDING ApplyEntityToGameObject())
         //let entity = { name: this.objName, hitbox: hitbox };
-        var entity = objectController.GetByName(this.objName)!.entity!;
+        var entity = bare.object.GetByName(this.objName)!.entity!;
         entity = { ...entity, hitbox: hitbox };
         var obj = ArcadeObject.GetDummpyDataFromEntity(this.scene, entity).gameObject;
         var pivotPosOrig = obj.pivot;

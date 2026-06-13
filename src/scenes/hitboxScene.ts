@@ -1,6 +1,5 @@
 import { assetsHandler } from "../handlers/assetsHandler";
 import { SettingsHandler } from "../handlers/settingsHandler";
-import { levelHandler } from "../handlers/levelHandler";
 import { ArcadeObject } from "../objects/arcadeObject";
 import { AwakePayload, LevelData, SettingsData } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
@@ -140,7 +139,7 @@ export class HitboxScene extends EditorScene
     {
         // SERIALIZE, TODO, NOT REALLY NEEDED, JUST FOR THE RETURN
         var level = this.currentLevel;
-        levelHandler.Serialize(level);
+        bare.level.Serialize(level);
 
         // GET HITBOX AND PIVOT
         var objs = this.object.GetLayer(0).slice();

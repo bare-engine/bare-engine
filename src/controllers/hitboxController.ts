@@ -5,7 +5,6 @@ import { BareEvent, BareEventPayload, CollisionHandlingType, HitboxType } from '
 import { Hitbox } from "../types/hitbox";
 import { Helper } from "../utils/helper";
 import { RegisterController } from "../globals";
-import { mouseController } from "./mouseController";
 
 type AnyPress = (go: any, ...args: any[]) => any;
 
@@ -56,7 +55,7 @@ export class HitboxController
         if (!this.active)
             return;
 
-        if (isMobile && !mouseController.IsDown())
+        if (isMobile && !bare.mouse.IsDown())
             return;
 
         this.HandleUpdate(this.scene.object.GetLayers());
@@ -115,7 +114,7 @@ export class HitboxController
 
     HandleUpdate(layers: GameObject[][])
     {
-        const mouse = mouseController.world.position;
+        const mouse = bare.mouse.world.position;
         var foundHover = false;
 
         var layersSettings = this.scene.settingsData.layers;
@@ -538,5 +537,4 @@ export class HitboxController
     }
 }
 
-export var hitboxController:HitboxController;
 RegisterController(HitboxController);

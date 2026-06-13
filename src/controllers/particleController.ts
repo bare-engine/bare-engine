@@ -126,5 +126,4 @@ export class ParticleController
     }
 }
 
-export var particleController:ParticleController;
 RegisterController(ParticleController);

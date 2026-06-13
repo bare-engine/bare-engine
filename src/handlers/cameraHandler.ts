@@ -402,5 +402,4 @@ export class CameraHandler {
   }
 }
 
-export var cameraHandler:CameraHandler;
 RegisterController(CameraHandler);

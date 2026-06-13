@@ -528,5 +528,4 @@ export class ComponentController
     }
 }
 
-export var componentController:ComponentController;
 RegisterController(ComponentController);

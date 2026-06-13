@@ -1,5 +1,4 @@
 import { Component } from "../controllers/componentController";
-import { particleController } from "../controllers/particleController";
 import { assetsHandler } from "../handlers/assetsHandler";
 import { Color, IParticleOptions, ParticleEmitter, ParticleShape, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
@@ -124,6 +123,6 @@ export class ParticleComponent extends Component
     OnRemoved()
     {
         this.emitter.stop();
-        particleController.Remove(this.emitter);
+        bare.particle.Remove(this.emitter);
     }
 }

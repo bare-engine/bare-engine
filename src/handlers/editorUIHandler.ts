@@ -3,7 +3,6 @@ import { assetsHandler } from "./assetsHandler";
 import { FlashShader } from "../shaders/flashShader";
 import { TweenTo } from "../controllers/tweenController";
 import { EditorScene } from '../scenes/editorScene';
-import { objectController } from '../controllers/objectController';
 import { Color, RenderTexture, Texture, TextureFilterMode } from '../libraries/new-rapid-render';
 import { MakePath, MakePathForEntity } from '../globals';
 import { SaveDataHandler } from './SaveDataHandler';
@@ -536,7 +535,7 @@ export class EditorUIHandler {
         if (button)
             button.innerHTML = show ? this.showIcon : this.hideIcon;
 
-        const objs = objectController.GetLayerByName(layerName);
+        const objs = bare.object.GetLayerByName(layerName);
         objs.forEach((obj) => {
             obj.visibleInEditor = show;
         });
@@ -643,7 +642,7 @@ export class EditorUIHandler {
     }
 
     private FlashObjectsInLayer(layerName: string): void {
-        var objs = objectController.GetLayerByName(layerName);
+        var objs = bare.object.GetLayerByName(layerName);
         for (var obj of objs)
         {
             obj.AddShader(FlashShader, { duration: 600, fadePreDuration: 0 });

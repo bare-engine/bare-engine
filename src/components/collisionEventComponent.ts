@@ -1,4 +1,4 @@
-import { Component, componentController } from "../controllers/componentController";
+import { Component } from "../controllers/componentController";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
 import { InspectorButton, Save } from "../utils/decorators";
@@ -34,7 +34,7 @@ export class CollisionEventComponent extends Component
             }
             else
             {
-                componentController.RemoveComponent(this.go, this);
+                bare.component.RemoveComponent(this.go, this);
             }
         }
     }

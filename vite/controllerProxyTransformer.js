@@ -42,16 +42,6 @@ const bareModuleControllerNames = new Map([
     ["camera", "cameraHandler"],
 ]);
 
-// controller name -> Scene field it lives on (scene.tween, scene.level, ...).
-// Controller names stay the source-side rewrite triggers; the short field name is the emit target.
-const controllerSceneFieldNames = new Map(
-    Array.from(bareModuleControllerNames, ([short, long]) => [long, short])
-);
-
-function sceneFieldNameFor(controllerName) {
-    return controllerSceneFieldNames.get(controllerName) || controllerName;
-}
-
 // MODULE FILE (UNDER THE ENGINE src ROOT) FOR EACH SCENE CONTROLLER - USED TO INJECT
 // RELATIVE IMPORTS INTO ENGINE SOURCES THAT HARD-DEPEND ON A CONTROLLER (scene.hitbox.X, ...)
 const controllerModuleSubpaths = new Map([
@@ -319,13 +309,8 @@ function createControllerProxyTransformer(program) {
                         return callNode;
                     }
 
-                    // CONTROLLER-AS-FIRST-ARG ONLY EXISTS IN ENGINE SOURCES (LEGACY IDENTIFIER STYLE)
-                    const firstArgIsController = !isProjectSource
-                        && ts.isIdentifier(firstArg)
-                        && registeredControllers.has(firstArg.text);
-
                     let hasScene = false;
-                    if (!firstArgIsController && typeChecker) {
+                    if (typeChecker) {
                         const argType = typeChecker.getTypeAtLocation(firstArg);
                         if (argType && argType.getProperty("scene")) {
                             hasScene = true;
@@ -467,19 +452,6 @@ function createControllerProxyTransformer(program) {
                             if (canRewriteScene) {
                                 needsScene = true;
                                 return createThisSceneProperty(name);
-                            }
-                        }
-
-                        // LEGACY IDENTIFIER STYLE (mouseController, cameraHandler, ...):
-                        // ONLY ENGINE SOURCES STILL USE IT - PROJECT CODE USES THE bare.<module> SHORTHANDS,
-                        // SO IDENTIFIERS WITH THESE NAMES IN PROJECT CODE ARE LEFT ALONE (E.G. LOCAL VARIABLES)
-                        if (!isProjectSource && registeredControllers.has(name)) {
-                            if (extendsSceneDeep) {
-                                return createThisProperty(sceneFieldNameFor(name));
-                            }
-                            if (canRewriteScene) {
-                                needsScene = true;
-                                return createThisSceneProperty(sceneFieldNameFor(name));
                             }
                         }
 

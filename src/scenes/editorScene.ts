@@ -1,10 +1,9 @@
 import { sceneController } from "../controllers/sceneController";
 import { GameMode, globalEvents } from "../globals";
-import { cameraHandler } from "../handlers/cameraHandler";
 import { EditorControlsHandler } from "../handlers/editorControlsHandler";
 import { EditorUIHandler } from "../handlers/editorUIHandler";
 import { FileDropHandler } from "../handlers/fileDropHandler";
-import { LevelHandler, levelHandler } from "../handlers/levelHandler";
+import { LevelHandler } from "../handlers/levelHandler";
 import { SaveDataHandler } from "../handlers/SaveDataHandler";
 import { SettingsHandler } from "../handlers/settingsHandler";
 import { Color, Texture, Vec2 } from "../libraries/new-rapid-render";
@@ -48,7 +47,7 @@ export class EditorScene extends Scene
         if (__DEV__)
             this.RegisterEditorComponents(); // JUST FOR PLUGIN - ENTITY EDITOR
 
-        cameraHandler.SetScaleMode(CameraScaleMode.Contain);
+        bare.camera.SetScaleMode(CameraScaleMode.Contain);
 
         this.editorControlsHandler = new EditorControlsHandler(this);
         this.editorUIHandler = new EditorUIHandler(this);
@@ -156,17 +155,17 @@ export class EditorScene extends Scene
         if (shouldFrameNextToSidebar)
         {
             // POSIION CAMERA SO THAT LEVEL SITS A BIT RIGHT, NEXT TO OBJECTS UI
-            cameraHandler.zoom = 1/s * .62; // ZOOM OUT A BIT, TO FIT RIGHT OF ENTITES WINDOW
-            cameraHandler.SetPosition(dims.width * .25, dims.height / 2); // AND CAMERA LEFT A BIT FOR SAME REASON
+            bare.camera.zoom = 1/s * .62; // ZOOM OUT A BIT, TO FIT RIGHT OF ENTITES WINDOW
+            bare.camera.SetPosition(dims.width * .25, dims.height / 2); // AND CAMERA LEFT A BIT FOR SAME REASON
         }
         else
         {
             // CENTER CAMERA, BIT ZOOMED OUT
-            cameraHandler.zoom = 1/s * .85;
-            cameraHandler.SetPosition(dims.width / 2, dims.height / 2);
+            bare.camera.zoom = 1/s * .85;
+            bare.camera.SetPosition(dims.width / 2, dims.height / 2);
         }
 
-        cameraHandler.DisableBounds();
+        bare.camera.DisableBounds();
 
         rapid.backgroundColor = Color.fromHex('#3b3b3f');
 
@@ -381,7 +380,7 @@ export class EditorScene extends Scene
         var level = this.currentLevel;
         var levelPath = this.currentLevelPath;
     
-        levelHandler.Serialize(level);
+        bare.level.Serialize(level);
             
         if (!window.isLocalhost)
         {
