@@ -32,35 +32,13 @@ export class SceneController
 
     Update(deltaTime: number): void
     {
-        // UPDATE FROM TOP TO BOTTOM
-        // MOSTLY SO THAT HITBOXCONTROLLER CAN DEACTIVATE HITBOXCONTROLLERS BELOW ONCE IT DETECTS MOUSE COLLISION
-        var foundHitboxHover = false;
+        // UPDATE FROM TOP TO BOTTOM SO hitbox?.Update() CLAIMS POINTER INPUT 
+        // AND SKIPS REMAINING HITBOX UPDATES
         for (var i = this.currentScenes.length - 1; i >= 0; i--)
         {
             var scene = this.currentScenes[i];
             if (scene.started && scene.enabled && !scene.paused)
-            {
                 scene.Update(deltaTime);
-
-                // DEACTIVATE HITBOXCONTROLLERS BELOW
-                if (!foundHitboxHover && scene.hitbox?.GetCurrentHover())
-                {
-                    for (var j = i - 1; j >= 0; j--)
-                    {
-                        var scene = this.currentScenes[j];
-                        if (scene.started && scene.enabled && !scene.paused)
-                        {
-                            // LOCAL VAR KEEPS THIS A SOFT HITBOX USAGE FOR THE CONTROLLER PROXY TRANSFORMER
-                            // (A PLAIN scene.hitbox.X DEREF WOULD FORCE HITBOX INTO EVERY BUNDLE)
-                            var hitbox = scene.hitbox;
-                            if (hitbox)
-                                hitbox.preventUpdateOneFrame = true
-                        }
-                    }
-
-                    foundHitboxHover = true;
-                }
-            }
         }
     }
     

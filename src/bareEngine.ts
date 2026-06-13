@@ -482,7 +482,6 @@ export class BareEngine
         globalEvents.emit(BareEvent.game_preUpdate, { deltaTime: deltaTime });
 
         sceneController.Update(deltaTime);
-        //objectController.Update(deltaTime);
 
         globalEvents.emit(BareEvent.game_update, { deltaTime: deltaTime });
     }

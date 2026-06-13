@@ -29,7 +29,24 @@ export class HitboxController
 
     public scene: Scene;
 
-    public preventUpdateOneFrame: boolean = false;
+    // CROSS-SCENE POINTER OCCLUSION: THE TOPMOST HITBOXCONTROLLER UNDER THE CURSOR CLAIMS THE
+    // POINTER FOR THE FRAME (SCENES UPDATE TOP-TO-BOTTOM), LOWER ONES SEE IT CLAIMED AND YIELD.
+    // FRAME-STAMPED SO NO PER-FRAME RESET CALL IS NEEDED FROM THE CORE LOOP. THE OWNER IS TRACKED
+    // SO A CONTROLLER NEVER BLOCKS ITS OWN RE-ENTRANT Update (eg PointerDown CALLS Update AGAIN).
+    private static pointerClaimedFrame: int = -1;
+    private static pointerClaimedBy: HitboxController | null = null;
+
+    private PointerClaimedByOther(): boolean
+    {
+        return HitboxController.pointerClaimedFrame === bare.count
+            && HitboxController.pointerClaimedBy !== this;
+    }
+
+    private ClaimPointer(): void
+    {
+        HitboxController.pointerClaimedFrame = bare.count;
+        HitboxController.pointerClaimedBy = this;
+    }
 
     constructor(scene: Scene)
     {
@@ -46,19 +63,24 @@ export class HitboxController
 
     Update(): void
     {
-        if (this.preventUpdateOneFrame)
-        {
-            this.preventUpdateOneFrame = false;
-            return;
-        }
-
         if (!this.active)
             return;
 
         if (isMobile && !bare.mouse.IsDown())
             return;
 
+        // A HIGHER SCENE ALREADY GRABBED THE POINTER THIS FRAME - DROP OUR STALE HOVER AND YIELD.
+        // DON'T TOUCH THE CURSOR: THE CLAIMING SCENE OWNS IT THIS FRAME (eg KEEPS ITS 'pointer').
+        if (this.PointerClaimedByOther())
+        {
+            this.SetHover(null, false);
+            return;
+        }
+
         this.HandleUpdate(this.scene.object.GetLayers());
+
+        if (this.currentHitboxHover)
+            this.ClaimPointer();
     }
 
     Render()
@@ -357,7 +379,7 @@ export class HitboxController
         return path;
     }
 
-    private SetHover(hitbox: Hitbox | null): void
+    private SetHover(hitbox: Hitbox | null, updateCursor: boolean = true): void
     {
         const newHoverPath = this.BuildHoverPath(hitbox);
         var commonPathLength = 0;
@@ -386,7 +408,8 @@ export class HitboxController
         this.currentHitboxHoverPath = newHoverPath;
         this.currentHitboxHover = newHoverPath.length > 0 ? newHoverPath[newHoverPath.length - 1] : null;
 
-        bare.SetCursor(this.currentHitboxHover ? 'pointer' : 'inherit');
+        if (updateCursor)
+            bare.SetCursor(this.currentHitboxHover ? 'pointer' : 'inherit');
     }
 
     private GetAllObjectsWithChildren(): GameObject[]
