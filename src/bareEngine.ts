@@ -489,7 +489,7 @@ export class BareEngine
 
     Render()
     {
-        //rapid.clear();
+        rapid.clear();
         
         rapid.matrixStack.save();
         
