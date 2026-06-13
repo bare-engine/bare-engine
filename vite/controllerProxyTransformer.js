@@ -1,3 +1,31 @@
+// controllerProxyTransformer.js
+//
+// A build-time TypeScript AST transformer (run from the Vite build) that turns the
+// engine's terse `bare.*` authoring sugar into real runtime references, and makes sure
+// the modules backing that sugar survive tree-shaking.
+//
+// WHAT IT REWRITES (per source file):
+//   - bare.<module> scene controllers (bare.tween, bare.mouse, bare.camera, ...) ->
+//     this.<field> when the enclosing class IS a Scene, otherwise this.scene.<field>.
+//     The short module name doubles as the Scene field name (see bareModuleControllerNames).
+//   - bare.sound / bare.keyboard / bare.storage  -> __Bare_<export> identifiers, backed by
+//     an auto-injected `import { <export> } from "bare-engine"` (project sources only).
+//   - bare.events / bScene  -> this.events / this.scene (or this) depending on scene context.
+//   - TweenTo(x, ...)        -> x.scene.tween.To(...) / this.tween.To(...) / this.scene.tween.To(...).
+//
+// SCENE-CONTEXT DETECTION:
+//   To choose between `this.x` and `this.scene.x` it determines whether a class is a Scene,
+//   has a `scene` field, or carries one through inheritance. This is resolved three ways with
+//   fallbacks: a prebuilt classInfoMap, declaration-hierarchy walking, and type-checker
+//   type-hierarchy walking. A class that needs `this.scene` but has none is a build error.
+//
+// TREE-SHAKING PROTECTION:
+//   Every controller a file actually uses (directly, via @AddClass(...) directives, via the
+//   prebuilt cross-class usage scan, or via a hard `scene.hitbox.X` deref) is collected and an
+//   `import { <Class> as __Bare<Class> }` + an Object.defineProperty ref is injected so bundlers
+//   can't drop the module. Project sources import from the package; engine sources import the
+//   controller module by relative path.
+
 const ts = require("./projectRequire")("typescript");
 const fs = require("fs");
 const path = require("path");
