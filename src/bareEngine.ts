@@ -59,61 +59,6 @@ export class BareEngine
     
     public registeredClasses: Record<string, any> = {};
     public shaders: Record<string, CustomGlShader> = {};
-
-    public GetComponentNameFromClassName(componentName: string): string
-    {
-        var res = Helper.DecapitalizeFirstLetter(componentName.replace('Component', ''))
-                        .replace(/\d+$/, '');
-
-        return res;
-    }
-     
-    rootDir: string = "";
-    imageDir: string = "images";
-    levelDir: string = "data/levels";
-    soundDir: string = "sounds";
-    dataDir: string = "data";
-    fontDir: string = "fonts";
-
-    private MakeRootPath(dir: string): string
-    {
-        const rootDir = this.rootDir.replace(/\/+$/, "");
-
-        return rootDir ? `${rootDir}/${dir}` : dir;
-    }
-
-    get imagePath(): string { return this.MakeRootPath(this.imageDir); }
-    get levelPath(): string { return this.MakeRootPath(this.levelDir); }
-    get soundPath(): string { return this.MakeRootPath(this.soundDir); }
-    get dataPath(): string { return this.MakeRootPath(this.dataDir); }
-    get fontPath(): string { return this.MakeRootPath(this.fontDir); }
-
-    get width(): int { return rapid.width; }
-    get height(): int { return rapid.height; }
-    // get textures(): TextureCache { return rapid.textures; }
-    get texture(): TextureManager { return rapid.texture }
-
-    // get renderGraphic(): (options: IGraphicRenderOptions) => void { return rapid.renderGraphic.bind(rapid); }
-    // get renderCircle(): (options: ICircleRenderOptions) => void { return rapid.renderCircle.bind(rapid); }
-    // get renderLine(): (options: IRenderLineOptions) => void { return rapid.renderLine.bind(rapid); }
-    // get renderRect(): (options: IRectRenderOptions) => void { return rapid.renderRect.bind(rapid); }
-    // get renderSprite(): (options: ISpriteRenderOptions) => void { return rapid.renderSprite.bind(rapid); }
-
-    get drawCircle(): typeof rapid.drawCircle {
-        return rapid.drawCircle.bind(rapid);
-    }
-    get drawLine(): typeof rapid.drawLine {
-        return rapid.drawLine.bind(rapid);
-    }
-    get drawGraphic(): typeof rapid.drawGraphic {
-        return rapid.drawGraphic.bind(rapid);
-    }
-    get drawRect(): typeof rapid.drawRect {
-        return rapid.drawRect.bind(rapid);
-    }
-    get drawSprite(): typeof rapid.drawSprite {
-        return rapid.drawSprite.bind(rapid);
-    }
     
     static gameObjectPoolSize: int = 50;
     gameObjectPools: Map<string, PoolHandler<GameObject>> = new Map();
@@ -151,9 +96,48 @@ export class BareEngine
     level:LevelHandler;
     camera:CameraHandler;
 
+    rootDir: string = "";
+    imageDir: string = "images";
+    levelDir: string = "data/levels";
+    soundDir: string = "sounds";
+    dataDir: string = "data";
+    fontDir: string = "fonts";
+
+    get imagePath(): string { return this.MakeRootPath(this.imageDir); }
+    get levelPath(): string { return this.MakeRootPath(this.levelDir); }
+    get soundPath(): string { return this.MakeRootPath(this.soundDir); }
+    get dataPath(): string { return this.MakeRootPath(this.dataDir); }
+    get fontPath(): string { return this.MakeRootPath(this.fontDir); }
+
+    get width(): int { return rapid.width; }
+    get height(): int { return rapid.height; }
+    get texture(): TextureManager { return rapid.texture }
+
+    get drawCircle(): typeof rapid.drawCircle {
+        return rapid.drawCircle.bind(rapid);
+    }
+    get drawLine(): typeof rapid.drawLine {
+        return rapid.drawLine.bind(rapid);
+    }
+    get drawGraphic(): typeof rapid.drawGraphic {
+        return rapid.drawGraphic.bind(rapid);
+    }
+    get drawRect(): typeof rapid.drawRect {
+        return rapid.drawRect.bind(rapid);
+    }
+    get drawSprite(): typeof rapid.drawSprite {
+        return rapid.drawSprite.bind(rapid);
+    }
+
     constructor(sceneClass: SceneClass, options?: BareOptions)
     {
         this.Init(sceneClass, options);
+    }
+
+    private MakeRootPath(dir: string): string
+    {
+        const rootDir = this.rootDir.replace(/\/+$/, "");
+        return rootDir ? `${rootDir}/${dir}` : dir;
     }
 
     private ApplyOptions(options?: BareOptions): void
@@ -505,10 +489,8 @@ export class BareEngine
 
     Render()
     {
-        rapid.clear();//
+        //rapid.clear();
         
-        //rapid.startRender();
-
         rapid.matrixStack.save();
         
         globalEvents.emit(BareEvent.game_preRender);
@@ -520,7 +502,6 @@ export class BareEngine
         
         rapid.flush();
     }
-
 
 
     async LoadFont(name: string, url?: string)
@@ -600,6 +581,11 @@ export class BareEngine
         bare.componentDefaulValues[className] = defaulValues;
     }
 
+    public GetComponentNameFromClassName(componentName: string): string
+    {
+        var res = Helper.DecapitalizeFirstLetter(componentName.replace('Component', '')).replace(/\d+$/, '');
+        return res;
+    }
 
     private PointerEnter(event: PointerEvent)
     {

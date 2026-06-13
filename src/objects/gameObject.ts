@@ -1,12 +1,12 @@
+import type { Component } from "../controllers/componentController";
 import { assetsHandler } from "../handlers/assetsHandler";
 import mitt from "../libraries/mitt";
-import { Color, CustomGlShader, MaskType, MatrixStack, Texture, Vec2 } from "../libraries/new-rapid-render";
-import type { Component } from "../controllers/componentController";
+import { Color, MaskType, MatrixStack, Texture, Vec2 } from "../libraries/new-rapid-render";
 import type { Scene } from "../scenes/scene";
 import type { Ctor, Events, Rectangle, Shader } from "../types/bareTypes";
 import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';
 import { Hitbox } from '../types/hitbox';
-import { getOwnInspectorFieldNames, InspectorField, Range } from "../utils/decorators";
+import { getOwnInspectorFieldNames } from "../utils/decorators";
 import { Helper } from '../utils/helper';
 
 export class Transform {
@@ -79,13 +79,9 @@ export class GameObject
 
     events = mitt<Events>();
 
-    //onDestroy:Function | null = null;
-
     //private cachedChildrenWidth: number = -1;
     //private cachedChildrenHeight: number = -1;
 
-    //levelEditorAlpha: number = 1; // BIT HACKY VAR TO FADE OUT OBJECTS IN EDITOR BUT NOT ADJUST ACTUALY ALPHA VALUES (HAVE TO STAY IN INTACT FOR SAVING)
-    
     constructor(scene: Scene, texturePath: string = "", x:number = 0, y:number = 0)
     {
         GameObject.RegisterGameObject(this.constructor as GameObjectClass);
@@ -1373,9 +1369,4 @@ export class GameObject
 
         this.scene.RemoveGameObject(this, undefined, clear);
     }
-
-	/*Destroy()
-	{
-        // todo
-	}*/
 }

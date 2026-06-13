@@ -22,16 +22,13 @@ import { Bare } from "../types/bare";
 
 export class Scene implements SceneI
 {
-    //private pipes = matt<Pipes>();
-    //private pipes = matt<Pipes>();
-
     public started: boolean = false;
     public enabled: boolean = true;
     public paused: boolean = false;
     public persistent: boolean = false;
     public UI: boolean = false;
     public resize: boolean = false;
-    public secret: boolean = false; // WILL MAKE THE SCENE NOT INCLUDE IN GetAll() - USED FOR PLUGIN ATM
+    public secret: boolean = false; // IF TRUE, WILL MAKE THE SCENE NOT INCLUDE IN bare.scene.GetAll() - USED FOR PLUGIN ATM
 
     public isLevel: boolean = false;
 
@@ -46,7 +43,7 @@ export class Scene implements SceneI
     public level: LevelHandler;
     public camera: CameraHandler;
 
-    public settingsHandler: SettingsHandler = new SettingsHandler(this); // COULD ALSO MAKE THIS WORK LIKE CONTROLLERS ABOVE
+    public settingsHandler: SettingsHandler = new SettingsHandler(this);
     
     get settingsData(): SettingsData { return this.settingsHandler.Get(); }
     
@@ -58,9 +55,8 @@ export class Scene implements SceneI
     // MOVE OUT? HAS SaveData REFERENCE - TODO
     get currentLevelStr(): string { return SaveData.currentLevelStr; }
 
-    // get drawMask(): (type: MaskType, cb: () => void) => void { return rapid.drawMask.bind(rapid); }
-    // get clearMask(): () => void { return rapid.clearMask.bind(rapid); }
-    public events = mitt<Events>(); // private todo
+    public events = mitt<Events>();
+    
     //private pipes = matt<Pipes>();
     
     constructor(sceneOptions: SceneOptions | SettingsData = {settingsData: defaultSettingsData})
@@ -73,7 +69,7 @@ export class Scene implements SceneI
 
         if (isSceneOptions)
         {
-            // IS A SCENEOPTIONS
+            // IS A sceneOptions
             options = sceneOptions as SceneOptions;
         }
         else
@@ -94,8 +90,7 @@ export class Scene implements SceneI
 
         bare.AddClass(GameObject);
         bare.AddClass(ObjectController);
-        //bareEngine.AddClass(ArcadeObject); // ADDING THIS SINCE AN ENTITY COULD HAVE A HITBOX AND BECOME A PHYSICS OBJECT, NOT ALWAYS NEEDED - TODO
-
+        
         SetControllerReferencesOnScene(this);
     }
 
@@ -139,10 +134,6 @@ export class Scene implements SceneI
         {
             this[classes[i]].Start?.();
         }
-
-        //bareEngine.gameMode = GameMode.Game;
-
-        //rapid.backgroundColor = Color.White;
 
         await this.OnStart(payload);
 
@@ -483,17 +474,9 @@ export class Scene implements SceneI
     // STILL RETURNS SOME ENTITY VALUES AS undefined, EG imagePath, SHOULD BE "". TODO
     GetEntityWithDefaultValues(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true }): Entity
     {
-        var entityConstructed:Entity;
-        
-        //if (options.skipConstruct)
-        {
-            //entityConstructed = (typeof nameOrEntity === "string") ? this.settingsHandler.GetRaw().entities[nameOrEntity] : nameOrEntity;
-        }
-        //else
-        {
-            entityConstructed = this.ConstructEntity(nameOrEntity, settingsData, options);
-        }
+        var entityConstructed = this.ConstructEntity(nameOrEntity, settingsData, options);
 
+        // INITIALIZE GAME OBJECT
         {
             var gameObject: GameObject;
 
@@ -1193,21 +1176,6 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
         /* @ AddClass(HitboxController) */
         this.hitbox?.OnPointerLeave(gameObject, callback);
     }
-
-    // HELPER
-    /*CheckExist(propertyName: string): boolean
-    {
-        const classKey = propertyName + "Class";
-        const Ctor = (globalThis as any)[classKey];
-
-        if (!Ctor)
-        {
-            const className = propertyName.charAt(0).toUpperCase() + propertyName.slice(1);
-            throw new Error(`${className} not registered. Call bareEngine.AddClass(${className}) at OnAwake() of your game.`);
-        }
-
-        return true;
-    }*/
 
     CreateClassIfNotExist(propertyName: string, scene:Scene):void
     {
