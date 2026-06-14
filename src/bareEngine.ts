@@ -96,6 +96,8 @@ export class BareEngine
     level:LevelHandler;
     camera:CameraHandler;
 
+    get texture(): TextureManager { return rapid.texture } // UNUSED ATM, REPURPOSE TO ASSETHANDLER? TODO
+    
     rootDir: string = "";
     imageDir: string = "images";
     levelDir: string = "data/levels";
@@ -111,7 +113,6 @@ export class BareEngine
 
     get width(): int { return rapid.width; }
     get height(): int { return rapid.height; }
-    get texture(): TextureManager { return rapid.texture }
 
     get drawCircle(): typeof rapid.drawCircle {
         return rapid.drawCircle.bind(rapid);
