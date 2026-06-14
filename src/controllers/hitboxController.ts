@@ -560,4 +560,5 @@ export class HitboxController
     }
 }
 
+export var hitbox:HitboxController;
 RegisterController(HitboxController);

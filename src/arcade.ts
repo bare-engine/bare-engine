@@ -1,7 +1,7 @@
 import type { ArcadeObject } from "./objects/arcadeObject";
 
 // Controller
-export { ArcadePhysicsController } from "./controllers/arcadePhysicsController";
+export { ArcadePhysicsController, arcade } from "./controllers/arcadePhysicsController";
 
 // Object
 export { ArcadeObject } from "./objects/arcadeObject";

@@ -905,4 +905,5 @@ export class LevelHandler
     }
 }
 
+export var level:LevelHandler;
 RegisterController(LevelHandler);

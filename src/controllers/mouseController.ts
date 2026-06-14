@@ -248,4 +248,5 @@ export class MouseController
     }
 }
 
+export var mouse:MouseController;
 RegisterController(MouseController);

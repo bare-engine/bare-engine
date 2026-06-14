@@ -346,4 +346,5 @@ export class ObjectController
     }
 }
 
+export var object:ObjectController;
 RegisterController(ObjectController);
