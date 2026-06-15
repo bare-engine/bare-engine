@@ -4,10 +4,12 @@ export class Bare
         entities: string[];
         baseEntities: string[];
         animations: string[];
+        layers: int[];
     } = {
         entities: [],
         baseEntities: [],
         animations: [],
+        layers: [],
     };
     public static assets: {
         images: string[];

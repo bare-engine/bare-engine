@@ -2023,6 +2023,7 @@ Bare.assets.levels = Object.values(Asset.Level);
 Bare.data.entities = Object.values(Data.Entity);
 Bare.data.baseEntities = Object.values(Data.BaseEntity);
 Bare.data.animations = Object.values(Data.Animation);
+Bare.data.layers = Object.values(Data.Layer);
 `;
 }
 
