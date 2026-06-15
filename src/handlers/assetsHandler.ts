@@ -10,13 +10,7 @@ class AssetsHandler
 
     private animationData: Map<string, AnimationData> = new Map();
 
-    LoadTexturesBatchAr(texturePaths: string[]): Promise<Texture[]> 
-    {
-        const promises = texturePaths.map(p => this.GetTexturePromise(p));
-        return Promise.all(promises);
-    }
-
-    async GetTexturePromise(texturePath: string = "", isfullPath:boolean = false): Promise<Texture>
+    async LoadTexture(texturePath: string = ""): Promise<Texture>
     {
         const cached = this.GetTexture(texturePath);
         if (cached)
@@ -26,7 +20,7 @@ class AssetsHandler
         if (loadingPromise)
             return loadingPromise;
 
-        const fullPath = (isfullPath ? texturePath : this.GetFullImagePath(texturePath));
+        const fullPath = this.GetFullImagePath(texturePath);
         const texturePromise = rapid.texture.load(fullPath).then(tex => {
             this.AddTexture(texturePath, tex);
             this.loading.delete(texturePath);
@@ -39,6 +33,12 @@ class AssetsHandler
         this.loading.set(texturePath, texturePromise);
 
         return texturePromise;
+    }
+
+    LoadTextureBatch(texturePaths: string[]): Promise<Texture[]> 
+    {
+        const promises = texturePaths.map(p => this.LoadTexture(p));
+        return Promise.all(promises);
     }
 
     AddTexture(texturePath: string, texture: Texture): void

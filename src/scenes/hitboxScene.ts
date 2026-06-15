@@ -58,7 +58,7 @@ export class HitboxScene extends EditorScene
         delete entityConstructedFromSettingsData.components;
         
         // NEED TO LOAD AND AWAIT TEXTURE, TO USE THE DIMENSIONS FOR THE LEVEL, SO THE CAMERA CAN BE PROPERLY SET UP BASED ON IT LATER
-        var texture = await assetsHandler.GetTexturePromise(MakePath(entityConstructedFromSettingsData.imagePath!, objectName));
+        var texture = await assetsHandler.LoadTexture(MakePath(entityConstructedFromSettingsData.imagePath!, objectName));
 
         // CONSTRUCT ENTITY FROM HITBODATA AND APPLY TO DUMMY GAMEOBJECT, SO WE CAN GET THE RESULTING PIVOT
         var obj = new ArcadeObject(this);

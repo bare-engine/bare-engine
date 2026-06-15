@@ -263,7 +263,7 @@ export class LevelHandler
 
                 if (!texturesFound.has(fullPath) && !assetsHandler.HasTexture(fullPath))
                 {
-                    promisesAr.push(assetsHandler.GetTexturePromise(fullPath));
+                    promisesAr.push(assetsHandler.LoadTexture(fullPath));
                     texturesFound.add(fullPath);
                 }
             }

@@ -172,7 +172,7 @@ export class AnimationComponent extends Component
                 var texturePromises = [];
                 for (var i = 0; i < texturesToLoad.length; i++)
                 {
-                    texturePromises.push(assetsHandler.GetTexturePromise(texturesToLoad[i]));
+                    texturePromises.push(assetsHandler.LoadTexture(texturesToLoad[i]));
                 }
                 await Promise.all(texturePromises);
 

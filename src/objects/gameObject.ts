@@ -292,7 +292,7 @@ export class GameObject
             return cached;
         }
 
-        this.texturePromise = assetsHandler.GetTexturePromise(texturePath);
+        this.texturePromise = assetsHandler.LoadTexture(texturePath);
         const tex = await this.texturePromise;
         this.SetTexture(tex);
 

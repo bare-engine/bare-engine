@@ -89,7 +89,7 @@ export class ParticleComponent extends Component
         {
             (async () =>
             {
-                tex = await assetsHandler.GetTexturePromise(this.texture);
+                tex = await assetsHandler.LoadTexture(this.texture);
                 this.emitter.setTexture(tex);
             })();
         }
