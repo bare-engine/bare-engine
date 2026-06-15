@@ -6,17 +6,13 @@ import { globalEvents } from '../globals';
 export type SoundOptions = {
     src?: string | string[];
     volume?: number;
+    pan?: number;
     loop?: boolean;
     rate?: number;
-    speed?: number;
     start?: number;
-    html5?: boolean;
-    preload?: boolean | 'metadata';
+    echo?: boolean | { delay?: number; feedback?: number; filter?: number };
+    reverb?: boolean | { duration?: number; decay?: number; reverse?: boolean };
     autoplay?: boolean;
-    autoPlay?: boolean;
-    mute?: boolean;
-    muted?: boolean;
-    singleInstance?: boolean;
     complete?: (sound: SoundJsSound) => void;
     loaded?: (sound: SoundJsSound) => void;
 };
@@ -26,21 +22,10 @@ export class SoundHandler
     private sounds: Map<string, SoundJsSound> = new Map();
     private soundPaths: Map<string, string> = new Map();
     private pendingPlays: Map<string, SoundOptions[]> = new Map();
-    private useHtml5Audio: boolean = false;
 
     constructor()
     {
         globalEvents.persistent.on(BareEvent.game_awake, () => bare.sound = this);
-    }
-
-    public get useHowlerHTML5(): boolean
-    {
-        return this.useHtml5Audio;
-    }
-
-    public set useHowlerHTML5(value: boolean)
-    {
-        this.useHtml5Audio = value;
     }
 
     public Init(): void
@@ -64,11 +49,6 @@ export class SoundHandler
         return this.sounds.get(id);
     }
 
-    public async PlayMusic(id: string, options: SoundOptions = {}): Promise<SoundJsSound>
-    {
-        return this.Load(id, options);
-    }
-
     public Play(id: string, options: SoundOptions = {}): SoundJsSound | null
     {
         if (!SaveData.soundEnabled)
@@ -76,29 +56,14 @@ export class SoundHandler
 
         const sound = this.Load(id, options);
 
-        this.ApplyOptions(sound, options);
         this.PlayLoaded(id, sound, options);
 
         return sound;
     }
 
-    public PlayPitched(id: string, options: SoundOptions = {}, volume = 1, playRandomPitch: boolean = true): void
+    public PlayWithRandomRate(id: string, randomRange: number = .2, options: SoundOptions = {}): SoundJsSound | null
     {
-        if (!SaveData.soundEnabled)
-            return;
-
-        const sound = this.Load(id, options);
-        const playbackRate = playRandomPitch
-          ? Helper.RandomRange(.9, 1.1)
-          : this.GetPlaybackRate(options);
-        
-          const playOptions = { ...options, volume, speed: playbackRate };
-
-        this.ApplyOptions(sound, playOptions);
-        sound.volume = volume;
-        sound.playbackRate = playbackRate;
-
-        this.PlayLoaded(id, sound, playOptions);
+        return this.Play(id, { ...options, rate: Helper.RandomRange(1 - randomRange*.5, 1 + randomRange*.5) });
     }
 
     public Load(id: string, options: SoundOptions = {}): SoundJsSound
@@ -124,7 +89,7 @@ export class SoundHandler
         this.ApplyOptions(sound, options);
         this.sounds.set(id, sound);
 
-        if (options.autoplay || options.autoPlay)
+        if (options.autoplay)
             this.PlayLoaded(id, sound, options);
 
         return sound;
@@ -147,11 +112,8 @@ export class SoundHandler
     {
         const sound = this.sounds.get(id);
 
-        if (!sound)
-            return;
-
-        sound.pause();
-        sound.startOffset = 0;
+        if (sound)
+            this.StopSound(sound);
     }
 
     public SetVolume(id: string, volume: number): void
@@ -162,13 +124,30 @@ export class SoundHandler
             sound.volume = volume;
     }
 
+    public FadeTo(id: string, endValue: number, durationInSeconds: number): void
+    {
+        this.sounds.get(id)?.fade(endValue, durationInSeconds);
+    }
+
+    public FadeIn(id: string, durationInSeconds: number): void
+    {
+        this.sounds.get(id)?.fadeIn(durationInSeconds);
+    }
+
+    public FadeOut(id: string, durationInSeconds: number): void
+    {
+        this.sounds.get(id)?.fadeOut(durationInSeconds);
+    }
+
     public StopAll(): void
     {
-        this.sounds.forEach((sound) =>
-            {
-                sound.pause();
-                sound.startOffset = 0;
-            });
+        this.sounds.forEach((sound) => this.StopSound(sound));
+    }
+
+    private StopSound(sound: SoundJsSound): void
+    {
+        sound.pause();
+        sound.startOffset = 0;
     }
 
     private ApplyOptions(sound: SoundJsSound, options: SoundOptions): void
@@ -176,33 +155,45 @@ export class SoundHandler
         if (options.volume !== undefined)
             sound.volume = options.volume;
 
+        if (options.pan !== undefined)
+            sound.pan = options.pan;
+
         if (options.loop !== undefined)
             sound.loop = options.loop;
 
-        sound.playbackRate = this.GetPlaybackRate(options);
-    }
+        if (options.echo)
+        {
+            const echo = options.echo === true ? {} : options.echo;
+            sound.setEcho(echo.delay, echo.feedback, echo.filter);
+        }
 
-    private GetPlaybackRate(options: SoundOptions): number
-    {
-        return options.speed ?? options.rate ?? 1;
+        if (options.reverb)
+        {
+            const reverb = options.reverb === true ? {} : options.reverb;
+            sound.setReverb(reverb.duration, reverb.decay, reverb.reverse);
+        }
+
+        sound.playbackRate = (options.rate ?? 1);
     }
 
     private PlayLoaded(id: string, sound: SoundJsSound, options: SoundOptions): void
     {
-        const play = () =>
-        {
-            if (options.start !== undefined)
-                sound.playFrom(options.start);
-            else
-                sound.play();
-
-            this.AttachCompleteHandler(sound, options);
-        };
-
         if (sound.hasLoaded || sound.buffer)
-            play();
+            this.StartPlayback(sound, options);
         else
             this.QueuePlay(id, options);
+    }
+
+    private StartPlayback(sound: SoundJsSound, options: SoundOptions): void
+    {
+        this.ApplyOptions(sound, options);
+
+        if (options.start !== undefined)
+            sound.playFrom(options.start);
+        else
+            sound.play();
+
+        this.AttachCompleteHandler(sound, options);
     }
 
     private QueuePlay(id: string, options: SoundOptions): void
@@ -221,17 +212,7 @@ export class SoundHandler
             return;
 
         this.pendingPlays.delete(id);
-        pending.forEach((options) =>
-            {
-                this.ApplyOptions(sound, options);
-
-                if (options.start !== undefined)
-                    sound.playFrom(options.start);
-                else
-                    sound.play();
-
-                this.AttachCompleteHandler(sound, options);
-            });
+        pending.forEach((options) => this.StartPlayback(sound, options));
     }
 
     private AttachCompleteHandler(sound: SoundJsSound, options: SoundOptions): void

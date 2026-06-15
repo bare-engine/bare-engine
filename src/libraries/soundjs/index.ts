@@ -17,6 +17,7 @@ export interface SoundJsSound
   playing: boolean;
   playbackRate: number;
   volume: number;
+  pan: number;
   startOffset?: number;
   play(): void;
   pause(): void;
