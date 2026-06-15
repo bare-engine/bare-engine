@@ -27,6 +27,7 @@ module.exports = ({ mode }) => {
     const buildIndexPath = ensureLocalBuildIndex(projectRoot, engineIndexPath);
     const projectPackage = readProjectPackage(projectRoot);
     const stripOptions = projectPackage.bareEngine?.stripUnusedMethods;
+    const stripGeneratedAssets = projectPackage.bareEngine?.stripGeneratedAssets;
     const autoRegisterClasses = projectPackage.bareEngine?.autoRegisterClasses !== false
         && projectPackage.bareEngine?.autoRegisterComponents !== false;
     const texturePackImages = resolveTexturePackImagesConfig(projectPackage, { warn: console.warn });
@@ -66,7 +67,7 @@ module.exports = ({ mode }) => {
             bareIndexOutputPlugin(),
             bareInitialAssetsPlugin({ projectRoot }),
             bareGeneratedAssetsPlugin({ projectRoot, imageGlobs: projectPackage.bareEngine?.imageGlobs }),
-            ...(!isDev ? [bareInlineGeneratedAssetsPlugin({ projectRoot })] : []),
+            ...(!isDev && stripGeneratedAssets !== false ? [bareInlineGeneratedAssetsPlugin({ projectRoot })] : []),
             bareEditorAndApiPlugin({
                 projectRoot,
                 editorHtmlPath: path.resolve(__dirname, "editor.html")
