@@ -1,3 +1,5 @@
+/// <reference path="./types/globals.d.ts" />
+
 // Core
 export { BareEngine } from "./bareEngine";
 export { Bare } from "./types/bare";

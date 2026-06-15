@@ -1,3 +1,5 @@
+/// <reference path="./types/globals.d.ts" />
+
 import type { ArcadeObject } from "./objects/arcadeObject";
 
 // Controller

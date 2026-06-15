@@ -1,3 +1,5 @@
+/// <reference path="./types/globals.d.ts" />
+
 import type { RigidBody } from "./libraries/sopiro/rigidbody";
 
 // Controller
