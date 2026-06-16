@@ -56,16 +56,16 @@ export class CameraHandler {
         //events.persistent.on(BareEvent.gameStarted, () => this.ResetForStart());
 
         this.scene.events.persistent.on(BareEvent.level_loaded, ({ level }) => {
-                if (this.scene.UI)
-                    return; //
+            if (this.scene.UI)
+                return; //
 
-                const dims: Size = level.dimensions;
+            const dims: Size = level.dimensions;
+            
+            if (this.bounds.x == 0 && this.bounds.y == 0 && this.bounds.width == 0 && this.bounds.height == 0)
                 this.SetBounds({ x: 0, y: 0, width: dims.width, height: dims.height });
-                //this.SetDimensions(dims.width,  dims.height );
-                this.CalculateZoomFit();
-                // default to level center
-                //this.SetPosition(dims.width / 2, dims.height / 2);
-            });
+
+            this.CalculateZoomFit();
+        });
     }
 
     Awake()
@@ -303,6 +303,12 @@ export class CameraHandler {
 
             if (viewH >= bh) cy = by + bh / 2;
             else cy = Helper.Clamp(cy, by + viewH / 2, by + bh - viewH / 2);
+
+            // Write the clamped center back into target so it can't drift
+            // unbounded while pressed against an edge (otherwise AddPosition
+            // accumulates off-screen and reversing direction does nothing).
+            this.target.x = cx;
+            this.target.y = cy;
         }
 
         const shake = this.GetShakeOffset(scale);
