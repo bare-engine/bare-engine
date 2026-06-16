@@ -1426,6 +1426,7 @@ function bareGeneratedAssetsPlugin(options = {}) {
             }
 
             const outputNorm = normalize(outputPath);
+            const outputResolved = normalize(path.resolve(outputPath));
             const sources = [normalize(settingsPath), ...watchDirs.map(normalize)];
             const regenerate = (filePath) => {
                 const norm = normalize(filePath);
@@ -1433,8 +1434,17 @@ function bareGeneratedAssetsPlugin(options = {}) {
                     return; // never react to our own output
                 }
                 const isSource = sources.some(src => norm === src || norm.startsWith(src + "/"));
-                if (isSource) {
-                    generateAssets(projectRoot, outputPath, imageGlobs);
+                if (isSource && generateAssets(projectRoot, outputPath, imageGlobs)) {
+                    // assets.ts is excluded from the dev watcher (vite.config server.watch.ignored)
+                    // to avoid reacting to our own writes, so Vite won't HMR it on its own. Drop its
+                    // cached transform and full-reload so the running game picks up the new module.
+                    const mods = server.moduleGraph.getModulesByFile(outputResolved);
+                    if (mods) {
+                        for (const mod of mods) {
+                            server.moduleGraph.invalidateModule(mod);
+                        }
+                    }
+                    server.ws.send({ type: "full-reload", path: "*" });
                 }
             };
 
@@ -1747,10 +1757,12 @@ function generateAssets(projectRoot, outputPath, imageGlobs = []) {
         if (existing !== output) {
             fs.writeFileSync(outputPath, output);
             console.log(`Generated assets.ts (${imageEntries.length} images, ${soundEntries.length} sounds, ${fontEntries.length} fonts, ${levelEntries.length} levels, ${entityEntries.length} entities, ${baseEntityEntries.length} base entities, ${animationEntries.length} animations, ${layerEntries.length} layers)`);
+            return true;
         }
     } catch (error) {
         console.error("Error generating assets.ts:", error);
     }
+    return false;
 }
 
 // Recursively collect files with one of the given extensions, returning the
