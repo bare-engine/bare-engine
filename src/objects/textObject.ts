@@ -14,6 +14,12 @@ export class TextObject extends GameObject
         set: (text: string) => this.SetText(text),
     };
 
+    @InspectorField
+    fontSize = {
+        get: () => this.textTexture.style.fontSize,
+        set: (fontSize: number) => {this.textTexture.style.fontSize = fontSize; this.UpdateText();},
+    };
+
     constructor(scene: Scene, options: ITextOptions = {})
     {
         super(scene);
@@ -38,12 +44,19 @@ export class TextObject extends GameObject
         this.textTexture.text = text;
 
         // REAPLY PIVOT AFTER CHANGING TEXT(URE)
+        this.UpdateText();
+        
+        this.SetNameBasedOnText(text);
+    }
+
+    UpdateText()
+    {
+        this.textTexture.update();
+
         if (this.pivotPercentage.x != -1)
             this.pivotX = this.textTexture.width * this.pivotPercentage.x;
         if (this.pivotPercentage.y != -1)
             this.pivotY = this.textTexture.height * this.pivotPercentage.y;
-
-        this.SetNameBasedOnText(text);
     }
 
     override SetPivot(x: number, y: number): this
