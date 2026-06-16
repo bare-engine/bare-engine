@@ -7,6 +7,7 @@ import { Color, RenderTexture, Texture, TextureFilterMode } from '../libraries/n
 import { MakePath, MakePathForEntity } from '../globals';
 import { SaveDataHandler } from './SaveDataHandler';
 import { EditorUIHintHandler } from './editorUIHintHandler';
+import { Bare } from '../types/bare';
 
 /*
     BUILD SETUP/CONTROLS UI
@@ -219,6 +220,10 @@ export class EditorUIHandler {
         // IF ANY ENTRIES LEFT, ADD THEM TO UNCATEGORIZED
         if (allEntityNames.length > 0)
             categoriesFinal["uncategorized"] = {...data.categories.uncategorized, entries: allEntityNames};
+
+        // 
+        if (Bare.assets.images.length > 0)
+            categoriesFinal["images"] = { entries: Bare.assets.images };
 
         // Process each category
         var categoriesEntries = Object.entries(categoriesFinal)

@@ -10,7 +10,7 @@ export { GameObject } from "./objects/gameObject";
 export { TextObject } from "./objects/textObject";
 
 export { Scene } from "./scenes/scene";
-export { SoundJsSound } from "./libraries/soundjs/index";
+export type { SoundJsSound } from "./libraries/soundjs/index";
 
 // Controllers
 export { Component, ComponentController, component } from "./controllers/componentController";

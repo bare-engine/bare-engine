@@ -273,6 +273,8 @@
             return getInitialAssetKey(link);
       })
       
+      var isLocalhost = ['localhost'].some(domain => window.location.href.includes(domain))
+      if (isLocalhost)
       if (assetsLinkValue.length > 0)
         console.log("Initial assets found: ", assetsLinkValue);
 

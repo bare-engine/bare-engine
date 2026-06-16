@@ -63,8 +63,8 @@ export class SceneController
     {
         if (this.Has(scene as SceneClass<T>))
         {
-            console.warn("SceneController: Scene already added: " + (scene as SceneClass<T>).name + ". It will be replaced");
-            this.Remove(scene as SceneClass<T>);
+            //console.warn("SceneController: Scene already added: " + (scene as SceneClass<T>).name + ". It will be replaced");
+            this.Remove(scene);
         }
 
         var sceneInstance: T;
