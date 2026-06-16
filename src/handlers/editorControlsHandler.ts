@@ -621,13 +621,22 @@ export class EditorControlsHandler {
 
         this.SetCurrentPreviewActive(true);
 
-        this.currentPreviewEntity.WhenTextureLoaded(() => {
+        var ready = () => {
             // WILL END UP SETTING THE PIVOT CORRECTLY
             this.scene.ApplyEntityToGameObject(entityCopy, this.currentPreviewEntity);
             this.SetCurrentPreviewActive(true); // COULD HAVE BEEN SET TO VISIBLE FALSE ABOVE
             this.currentPreviewEntity.alpha = 0.5;
             this.currentPreviewEntity.customName = 'ignoreInPlugin';
+        }
+
+        this.currentPreviewEntity.WhenTextureLoaded(() => {
+            ready();
         });
+
+        if (entityCopy.texture == "NONE")
+        {
+            ready();
+        }
     }
 
     MouseIsOnEditor(event: PointerEvent | WheelEvent): boolean {

@@ -1,5 +1,6 @@
 import { ITextOptions, TextTexture, Vec2 } from "../libraries/new-rapid-render";
 import { Scene } from "../scenes/scene";
+import { InspectorField } from "../utils/decorators";
 import { GameObject } from "./gameObject";
 
 export class TextObject extends GameObject
@@ -7,10 +8,15 @@ export class TextObject extends GameObject
     textTexture: TextTexture;
     pivotPercentage: Vec2 = new Vec2();
 
+    @InspectorField
+    text = {
+        get: () => this.textTexture.text,
+        set: (text: string) => this.SetText(text),
+    };
+
     constructor(scene: Scene, options: ITextOptions = {})
     {
         super(scene);
-
 
         if (!options.fontFamily && bare.defaultFont)
             options.fontFamily = bare.defaultFont; // COULD ALSO DO SAME IN RAPID TEXT - TODO

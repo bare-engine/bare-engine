@@ -308,7 +308,7 @@ export class SceneController
 
     GetMainScene(checkEnabled: boolean = true): Scene
     {
-        return this.GetLevelScene(checkEnabled) || this.currentScenes[0];
+        return /*this.GetLevelScene(checkEnabled) || */this.currentScenes[0];
     }
 
     DisableAll()
