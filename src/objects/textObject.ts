@@ -27,7 +27,7 @@ export class TextObject extends GameObject
         if (!options.fontFamily && bare.defaultFont)
             options.fontFamily = bare.defaultFont; // COULD ALSO DO SAME IN RAPID TEXT - TODO
 
-        this.textTexture = rapid.texture.createTextTexture(options);
+        this.textTexture = bare.texture.createTextTexture(options);
         this.SetTexture(this.textTexture);
 
         this.SetNameBasedOnText(options.text || "");
@@ -45,7 +45,7 @@ export class TextObject extends GameObject
 
         // REAPLY PIVOT AFTER CHANGING TEXT(URE)
         this.UpdateText();
-        
+
         this.SetNameBasedOnText(text);
     }
 

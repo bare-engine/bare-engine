@@ -12,17 +12,41 @@ const emojiMappingEmojiToName = require("./emojiMappingEmojiToName.json");
 const EMOJI_KEYS_BY_LENGTH = Object.keys(emojiMappingEmojiToName)
     .sort((a, b) => b.length - a.length);
 
+// Minify GLSL while preserving:
+//  - preprocessor directives (#version, #define, ...) which must stay on their own line
+//  - the `// CUSTOM_CODE` / `// CUSTOM_CODE_CALL` injection markers that generateShader
+//    replaces literally (with a single space after `//`)
+//  - the `%TEXTURE_NUM%` / `%GET_COLOR%` placeholders (plain tokens, untouched)
+function minifyGLSL(src) {
+    return src
+        .replace(/\r\n?/g, "\n")                   // normalize CRLF -> LF
+        .replace(/\/\*[\s\S]*?\*\//g, "")          // block comments
+        .replace(/\/\/(?! ?CUSTOM_CODE)[^\n]*/g, "") // line comments, except CUSTOM_CODE markers
+        .replace(/[ \t]+/g, " ")                   // collapse runs of spaces/tabs
+        .replace(/ *\n */g, "\n")                  // trim whitespace at line edges
+        .replace(/\n{2,}/g, "\n")                  // drop blank lines
+        .trim();
+}
+
 function bareShaderRawPlugin() {
+    let shouldMinify = false;
     return {
         name: "bare:shader-raw",
         enforce: "pre",
+        configResolved(config) {
+            // Keep shaders readable while developing; only minify production builds.
+            shouldMinify = config.command === "build";
+        },
         load(id) {
             const filePath = cleanId(id);
             if (!/\.(frag|vert)$/.test(filePath)) {
                 return null;
             }
 
-            const source = fs.readFileSync(filePath, "utf8");
+            let source = fs.readFileSync(filePath, "utf8");
+            if (shouldMinify) {
+                source = minifyGLSL(source);
+            }
             return `export default ${JSON.stringify(source)};`;
         }
     };
