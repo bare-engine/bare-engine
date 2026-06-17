@@ -21,7 +21,7 @@ import {
     drawSprite,
 } from "./draw";
 import { Vec2 } from "./math";
-import { AtlasSprtieRegion } from "./region/atlasSpriteRegion";
+import { AtlasSpriteRegion } from "./region/atlasSpriteRegion";
 
 /**
  * Options for initializing the Rapid application.
@@ -154,7 +154,7 @@ export class Rapid {
     /** Region dedicated to arbitrary geometry and shapes rendering. */
     graphicRegion: GraphicRegion;
 
-    atlasSpriteRegion: AtlasSprtieRegion;
+    atlasSpriteRegion: AtlasSpriteRegion;
 
     /** Counts the number of WebGL draw calls made in the current frame. */
     drawcallCount: number = 0;
@@ -207,7 +207,7 @@ export class Rapid {
 
         this.spriteRegion = new SpriteRegion(this);
         this.graphicRegion = new GraphicRegion(this);
-        this.atlasSpriteRegion = new AtlasSprtieRegion(this);
+        this.atlasSpriteRegion = new AtlasSpriteRegion(this);
 
         const cssW = this.canvas.clientWidth || this.canvas.width;
         const cssH = this.canvas.clientHeight || this.canvas.height;
