@@ -75,7 +75,8 @@ export class BareEngine
     storage:typeof SaveDataHandler;
     pool:Map<string, PoolHandler<GameObject>> = this.gameObjectPools;
     ui:UIScene = uiScene; // PROXY - LAZILY CREATES THE UI SCENE ON FIRST USE
-    
+    get util(): typeof Helper { return Helper; }
+
     get globalEvents(): Emitter<Events> { return globalEvents; }
     get editor(): EditorScene { return sceneController.GetAll().find(scene => scene.constructor.name == "EditorScene") as any; }
 
