@@ -652,11 +652,17 @@ function bareInitialAssetsPlugin(options = {}) {
     };
 }
 
+// Shared "suppress the next dev full-reload" window. The save-entity-data endpoint
+// (bareEditorAndApiPlugin) opens it when a save passes skipReload, and BOTH the
+// settingsData HMR handler AND the generated-assets watcher honor it - otherwise
+// regenerating assets.ts on an entity add/remove would full-reload the page even
+// though the running game already applied the change in-memory.
+let skipReloadUntil = 0;
+
 function bareEditorAndApiPlugin(options = {}) {
     const projectRoot = options.projectRoot || process.cwd();
     const editorHtmlPath = options.editorHtmlPath || path.resolve(__dirname, "../config/editor.html");
     const publicDir = path.join(projectRoot, "public");
-    let skipReloadUntil = 0;
     let lastSettingsDataPath = "";
     let shouldEmitEditorHtml = false;
 
@@ -1468,7 +1474,12 @@ function bareGeneratedAssetsPlugin(options = {}) {
                             server.moduleGraph.invalidateModule(mod);
                         }
                     }
-                    server.ws.send({ type: "full-reload", path: "*" });
+                    // Keep the regenerated assets.ts on disk (correct for the next real reload),
+                    // but skip the full-reload while a skipReload save is in flight - the running
+                    // game already applied the entity change in-memory via the plugin handler.
+                    if (Date.now() > skipReloadUntil) {
+                        server.ws.send({ type: "full-reload", path: "*" });
+                    }
                 }
             };
 
