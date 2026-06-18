@@ -6,6 +6,7 @@ const MagicString = require("magic-string");
 const ts = require("./projectRequire")("typescript");
 const createControllerProxyTransformer = require("./controllerProxyTransformer");
 const createGameObjectNameTransformer = require("./gameObjectNameTransformer");
+const createDecoratorStripTransformer = require("./decoratorStripTransformer");
 const { stripTexturePackImages } = require("../scripts/stripTexturePackImages.cjs");
 const emojiMappingEmojiToName = require("./emojiMappingEmojiToName.json");
 
@@ -57,6 +58,10 @@ function bareTypeScriptTransformPlugin(options = {}) {
     const tsconfigPath = options.tsconfigPath || findTsconfig(projectRoot);
     const useTypeChecker = options.useTypeChecker !== false;
     const hotRestart = options.hotRestart !== false;
+    // Strips the editor-only inspector decorators (and replaces the decorators.ts reader calls)
+    // so decorators.ts tree-shakes out of the prod bundle. Opt-in: the consumer prod config sets
+    // it, while dev and the e2e fixture leave it off so the inspector/@Save behaviour stays intact.
+    const stripDecorators = options.stripDecorators === true;
     const include = options.include || ((filePath) => {
         const normalized = normalize(filePath);
         return normalized.startsWith(normalize(path.join(projectRoot, "src")))
@@ -90,8 +95,8 @@ function bareTypeScriptTransformPlugin(options = {}) {
             }
 
             const result = useTypeChecker
-                ? emitTransformedTs(filePath, code, compilerOptions)
-                : transpileTransformedTs(filePath, code, compilerOptions);
+                ? emitTransformedTs(filePath, code, compilerOptions, stripDecorators)
+                : transpileTransformedTs(filePath, code, compilerOptions, stripDecorators);
             const shouldAppendHotRestart = hotRestart && hasStartBareCall(code, filePath);
             return result ? {
                 code: shouldAppendHotRestart ? appendHotRestart(result.code) : result.code,
@@ -961,7 +966,7 @@ function removeTexturePackOutput(outputDir) {
     fs.rmSync(path.join(outputDir, "texturePackImages.png"), { force: true });
 }
 
-function emitTransformedTs(filePath, code, compilerOptions) {
+function emitTransformedTs(filePath, code, compilerOptions, stripDecorators) {
     const normalizedTarget = normalize(filePath);
     const host = ts.createCompilerHost(compilerOptions);
     const originalReadFile = host.readFile.bind(host);
@@ -985,6 +990,7 @@ function emitTransformedTs(filePath, code, compilerOptions) {
         false,
         {
             before: [
+                ...(stripDecorators ? [createDecoratorStripTransformer()] : []),
                 createControllerProxyTransformer(program),
                 createGameObjectNameTransformer(program)
             ]
@@ -1003,12 +1009,13 @@ function emitTransformedTs(filePath, code, compilerOptions) {
     };
 }
 
-function transpileTransformedTs(filePath, code, compilerOptions) {
+function transpileTransformedTs(filePath, code, compilerOptions, stripDecorators) {
     const result = ts.transpileModule(code, {
         fileName: filePath,
         compilerOptions,
         transformers: {
             before: [
+                ...(stripDecorators ? [createDecoratorStripTransformer()] : []),
                 createControllerProxyTransformer(),
                 createGameObjectNameTransformer()
             ]

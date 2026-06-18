@@ -28,6 +28,9 @@ module.exports = ({ mode }) => {
     const projectPackage = readProjectPackage(projectRoot);
     const stripOptions = projectPackage.bareEngine?.stripUnusedMethods;
     const stripGeneratedAssets = projectPackage.bareEngine?.stripGeneratedAssets;
+    // Strip the editor-only inspector decorators in prod so decorators.ts tree-shakes away.
+    // On by default for prod builds; opt out with "bareEngine.stripDecorators": false.
+    const stripDecorators = !isDev && projectPackage.bareEngine?.stripDecorators !== false;
     const autoRegisterClasses = projectPackage.bareEngine?.autoRegisterClasses !== false
         && projectPackage.bareEngine?.autoRegisterComponents !== false;
     const texturePackImages = resolveTexturePackImagesConfig(projectPackage, { warn: console.warn });
@@ -56,7 +59,8 @@ module.exports = ({ mode }) => {
             ...(autoRegisterClasses ? [bareAutoRegisterClassesPlugin({ projectRoot })] : []),
             bareTypeScriptTransformPlugin({
                 projectRoot,
-                useTypeChecker: false
+                useTypeChecker: false,
+                stripDecorators
             }),
             bareFullReloadPlugin({ projectRoot }),
             bareIgnoreLevelJsonHotUpdatesPlugin({ projectRoot }),
