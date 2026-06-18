@@ -3,7 +3,7 @@ import { keyboardController } from '../controllers/keyboardController';
 import { GameMode } from '../globals';
 import { Color, Vec2 } from '../libraries/new-rapid-render';
 import type { EditorScene } from '../scenes/editorScene';
-import { Run } from '../utils/decorators';
+import { Run } from '../utils/runModes';
 
 type Edge = 'left' | 'right' | 'top' | 'bottom' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 type HorizontalEdge = 'left' | 'right';

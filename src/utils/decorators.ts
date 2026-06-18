@@ -1,4 +1,3 @@
-import { GameMode } from "../globals";
 import { Color } from "../libraries/new-rapid-render";
 
 const BUTTON_METADATA_KEY = "__editorButtons__";
@@ -11,25 +10,11 @@ const ENUM_METADATA_KEY = "__fieldEnums__";
 const DECIMAL_METADATA_KEY = "__fieldDecimals__";
 const LABEL_METADATA_KEY = "__fieldLabels__";
 const DESCRIPTION_METADATA_KEY = "__fieldDescriptions__";
-const RUN_MODES_KEY = "__runModes__";
 const SAVE_METADATA_KEY = "__saveFields__";
 
-/**
- * Restricts when a component is active based on GameMode.
- *
- * @Run(GameMode.Editor)                — component is only added in Editor mode
- * @Run(GameMode.Game, GameMode.Editor) — component is added in both modes
- */
-export function Run(...modes: GameMode[])
-{
-    return function (target: any)
-    {
-        target[RUN_MODES_KEY] = modes;
-        return target;
-    };
-}
-
-export { RUN_MODES_KEY };
+// NOTE: @Run / RUN_MODES_KEY live in ./runModes.ts (not here) because they carry runtime
+// semantics and must survive the production build that strips these editor-only decorators
+// and tree-shakes decorators.ts away.
 
 export interface ButtonEntry
 {

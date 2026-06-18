@@ -4,7 +4,7 @@ import { GameObject } from "../objects/gameObject";
 import { ArcadeObject } from "../objects/arcadeObject";
 import { Scene } from "../scenes/scene";
 import { Helper } from "../utils/helper";
-import { Run } from "../utils/decorators";
+import { Run } from "../utils/runModes";
 
 @Run(GameMode.Editor)
 export class PivotRemoveComponent extends Component

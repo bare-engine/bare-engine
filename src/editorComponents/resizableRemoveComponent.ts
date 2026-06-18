@@ -2,7 +2,7 @@ import { Component } from '../controllers/componentController';
 import { GameMode } from '../globals';
 import { GameObject } from '../objects/gameObject';
 import { ArcadeObject } from '../objects/arcadeObject';
-import { Run } from '../utils/decorators';
+import { Run } from '../utils/runModes';
 import { Helper } from '../utils/helper';
 import { PivotComponent } from './pivotComponent';
 

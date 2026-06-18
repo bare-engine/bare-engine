@@ -2,7 +2,8 @@ import { GameMode, RegisterController } from "../globals";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
 import { BareEvent, Ctor } from '../types/bareTypes';
-import { InspectorField, RUN_MODES_KEY } from "../utils/decorators";
+import { InspectorField } from "../utils/decorators";
+import { RUN_MODES_KEY } from "../utils/runModes";
 
 // REFERENCING A CLASS EXTENDING BASECOMPONENT WILL AUTOMATICALLY ALSO INCLUDE COMPONENTCONTROLLER
 export abstract class Component<T extends GameObject = GameObject>

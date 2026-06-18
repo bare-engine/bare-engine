@@ -8,7 +8,8 @@ import { ArcadeObject } from "../objects/arcadeObject";
 import { GameMode } from "../globals";
 import { Color } from "../libraries/new-rapid-render";
 import { Scene } from "../scenes/scene";
-import { Run, Save } from "../utils/decorators";
+import { Run } from "../utils/runModes";
+import { Save } from "../utils/decorators";
 
 @Run(GameMode.Editor)
 export class PivotComponent extends Component
