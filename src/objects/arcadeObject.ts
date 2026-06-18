@@ -13,14 +13,14 @@ export class ArcadeObject extends GameObject
     
     physicsHitbox: Hitbox = new Hitbox(this, {x1 : 0, y1 : 0, x2 : 0, y2 : 0});
 
-    static: boolean = false;
-    collide: boolean = true;
-    sensor:boolean = false; // IF TRUE, WILL NOT RESPECT stayInBounds
-    velocity: Vec2 = new Vec2(0, 0);
-    drag: number = 0//.15;
-    restitution: number = 0//.8;
-    stayInBounds: boolean = true;
-    removeOnOutOfBounds: boolean = false;
+    @InspectorField static: boolean = false;
+    @InspectorField collide: boolean = true;
+    @InspectorField sensor:boolean = false; // IF TRUE, WILL NOT RESPECT stayInBounds
+    @InspectorField velocity: Vec2 = new Vec2(0, 0);
+    @InspectorField drag: number = 0//.15;
+    @InspectorField restitution: number = 0//.8;
+    @InspectorField stayInBounds: boolean = true;
+    @InspectorField removeOnOutOfBounds: boolean = false;
     
     blocked:BlockedState = BlockedState.None;
     collidingObjects: ArcadeObject[] = [];

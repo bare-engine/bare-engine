@@ -65,7 +65,7 @@ export class Scene implements SceneI
     @InspectorClass public camera: CameraHandler;
 
     @InspectorClass
-    @Label("Settings")
+    @Label("settings")
     public settingsHandler: SettingsHandler = new SettingsHandler(this);
     
     get settingsData(): SettingsData { return this.settingsHandler.Get(); }
