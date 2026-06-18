@@ -4,6 +4,7 @@ import { CollisionHandlingType, Entity, LayerInfo, SettingsData } from "../types
 import { Helper } from "../utils/helper";
 import { Scene } from "../scenes/scene";
 import { Bare } from "../types/bare";
+import { InspectorField, Locked } from "../utils/decorators";
 
 // SettingsHandler KEEPS TRACK OF RAW AND PROCESSED SETTINGS
 // BIT CLUMSY TO HAVE THEM BOTH, BUT HAVING ONLY ONE WOULD MEAN I'D HAVE TO UNDO THE CHANGES THAT HAPPEN IN PROCESS()
@@ -19,6 +20,13 @@ export class SettingsHandler
 
     public scene: Scene;
 
+    @InspectorField
+    private get gravity(): number { return this.processed.gravity; }
+    private set gravity(value: number) { this.raw.gravity = value; this.Process(); }
+
+    @InspectorField
+    private get defaultAnimationFramesPerSecond(): number { return this.processed.defaultAnimationFramesPerSecond; }
+    
     constructor(scene: Scene)
     {
         this.scene = scene;

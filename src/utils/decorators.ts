@@ -518,7 +518,7 @@ export function getInspectorFields(component: any): InspectorFieldData[]
             Object.assign(descriptions, proto[DESCRIPTION_METADATA_KEY]);
     }
 
-    return entries.map(entry =>
+    const fieldData = entries.map(entry =>
     {
         const value = getFieldValue(component, entry);
         const isDescriptor = isInspectorFieldDescriptor(value);
@@ -576,6 +576,9 @@ export function getInspectorFields(component: any): InspectorFieldData[]
             description: descriptions[entry.name],
         };
     });
+
+    // DON'T SURFACE FIELDS WITH NO VALUE - THE PLUGIN HAS NOTHING TO RENDER FOR THEM
+    return fieldData.filter(field => field.current !== undefined);
 }
 
 /** Returns the names of every @InspectorField registered on the instance's class and its ancestors. */

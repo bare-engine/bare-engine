@@ -18,8 +18,8 @@ export class CameraHandler {
     dimensions: Size = { width: 0, height: 0 };
 
     @InspectorField
-    get _dimensions(): Size { return this.dimensions; }
-    set _dimensions(dimensions: Size) { this.SetDimensions(dimensions.width, dimensions.height); }
+    private get _dimensions(): Size { return this.dimensions; }
+    private set _dimensions(dimensions: Size) { this.SetDimensions(dimensions.width, dimensions.height); }
     
     // world bounds the camera is allowed to show
     @InspectorField bounds: Rectangle = { x: 0, y: 0, width: 0, height: 0 };
@@ -28,8 +28,8 @@ export class CameraHandler {
    
     @InspectorField
     @Enum(CameraScaleMode)
-    get _scaleMode(): CameraScaleMode { return this.scaleMode; }
-    set _scaleMode(mode: CameraScaleMode) { this.SetScaleMode(mode); }
+    private get _scaleMode(): CameraScaleMode { return this.scaleMode; }
+    private set _scaleMode(mode: CameraScaleMode) { this.SetScaleMode(mode); }
 
     // derived
     @InspectorField zoomFit: number = 1;
