@@ -18,7 +18,7 @@ export class LevelHandler
     
     currentLevel: LevelData;
     
-    public scene: Scene;
+    scene: Scene;
 
     @InspectorField
     private get name():string { return this.currentLevel.name; }
@@ -27,8 +27,11 @@ export class LevelHandler
     private get dimensions():Size { return this.currentLevel.dimensions; }
     
     @InspectorField
-    backgroundColor: Color | null = null;
-    
+    _backgroundColor = {
+        get: () => rapid.backgroundColor,
+        set: (color: Color) => bare.SetBackgroundColor(color)
+    };
+
     constructor(scene: Scene)
     {
         this.scene = scene;
@@ -897,13 +900,13 @@ export class LevelHandler
 
     PreRender()
     {
-        if (this.backgroundColor)
-            rapid.drawRect({ width: this.currentLevel.dimensions.width, height: this.currentLevel.dimensions.height, color: this.backgroundColor });
+        // if (this.backgroundColor)
+        //     rapid.drawRect({ width: this.currentLevel.dimensions.width, height: this.currentLevel.dimensions.height, color: this.backgroundColor });
     }
 
     Clear()
     {
-        this.backgroundColor = null;
+        //this.backgroundColor = null;
         this.currentLevel = null;
     }
 

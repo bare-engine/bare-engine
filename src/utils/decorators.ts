@@ -1,4 +1,5 @@
 import { GameMode } from "../globals";
+import { Color } from "../libraries/new-rapid-render";
 
 const BUTTON_METADATA_KEY = "__editorButtons__";
 const FIELD_METADATA_KEY = "__editorFields__";
@@ -45,7 +46,7 @@ export interface FieldEntry
 export interface InspectorFieldData
 {
     name: string;
-    type: "input" | "dropdown" | "object";
+    type: "input" | "dropdown" | "object" | "color";
     current: any;
     values?: any[];
     locked?: boolean;
@@ -427,6 +428,12 @@ function isGetterOnlyAccessor(component: any, name: string): boolean
     return false;
 }
 
+/** A Color instance (duck-typed via toHex) — surfaced as a "color" field and edited via a hex string. */
+function isColorValue(value: any): boolean
+{
+    return value != null && typeof value === "object" && typeof (value as any).toHex === "function";
+}
+
 function isInspectorObjectField(value: any): boolean
 {
     return value !== null
@@ -507,14 +514,29 @@ export function getInspectorFields(component: any): InspectorFieldData[]
         if (resolvedDecimals === undefined && range && range.min === 0 && range.max === 1)
             resolvedDecimals = 2;
 
+        let current = isDescriptor
+            ? descriptor.current ?? (typeof descriptor.get === "function" ? descriptor.get() : undefined)
+            : value;
+
+        // Color values are surfaced as a "color" field and serialized to a hex string for the picker.
+        const isColor = isColorValue(current);
+        if (isColor)
+            current = (current as any).toHex();
+
+        let type: InspectorFieldData["type"];
+        if (dropdownValues !== undefined)
+            type = "dropdown";
+        else if (isColor)
+            type = "color";
+        else if (!isDescriptor && isInspectorObjectField(value))
+            type = "object";
+        else
+            type = entry.type;
+
         return {
             name: labels[entry.name] ?? entry.name,
-            type: dropdownValues !== undefined
-                ? "dropdown"
-                : (!isDescriptor && isInspectorObjectField(value) ? "object" : entry.type),
-            current: isDescriptor
-                ? descriptor.current ?? (typeof descriptor.get === "function" ? descriptor.get() : undefined)
-                : value,
+            type,
+            current,
             values: dropdownValues,
             locked: lockedFields.includes(entry.name) || readOnlyDescriptor,
             range: range,
@@ -582,12 +604,23 @@ export async function applyInspectorField(component: any, fieldName: string, val
         ? fieldValue.set || fieldValue.onChange
         : undefined;
 
+    // Color fields come back from the inspector as a hex string; rebuild a Color if the field holds one.
+    let resolvedValue = value;
+    if (typeof value === "string")
+    {
+        const current = isDescriptor
+            ? fieldValue.current ?? (typeof fieldValue.get === "function" ? fieldValue.get() : undefined)
+            : fieldValue;
+        if (isColorValue(current))
+            resolvedValue = Color.fromHex(value);
+    }
+
     if (setter)
-        await setter.call(component, value);
+        await setter.call(component, resolvedValue);
     else if (isDescriptor || isGetterOnlyAccessor(component, entry.name))
         return true; // read-only (descriptor `{ get }` or native getter) — don't clobber / throw
     else
-        component[entry.name] = value;
+        component[entry.name] = resolvedValue;
 
     return true;
 }
