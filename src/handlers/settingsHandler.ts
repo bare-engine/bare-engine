@@ -21,11 +21,12 @@ export class SettingsHandler
     public scene: Scene;
 
     @InspectorField
-    private get gravity(): number { return this.processed.gravity; }
+    private get gravity(): number { return this.processed?.gravity; }
     private set gravity(value: number) { this.raw.gravity = value; this.Process(); }
 
     @InspectorField
-    private get defaultAnimationFramesPerSecond(): number { return this.processed.defaultAnimationFramesPerSecond; }
+    private get defaultAnimationFramesPerSecond(): number { return this.processed?.defaultAnimationFramesPerSecond; }
+    private set defaultAnimationFramesPerSecond(value: number) { this.raw.defaultAnimationFramesPerSecond = value; this.Process(); }
     
     constructor(scene: Scene)
     {

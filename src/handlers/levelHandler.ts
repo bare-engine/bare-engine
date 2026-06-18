@@ -21,14 +21,14 @@ export class LevelHandler
     scene: Scene;
 
     @InspectorField
-    private get name():string { return this.currentLevel.name; }
+    private get name():string { return this.currentLevel?.name; }
 
     @InspectorField
-    private get dimensions():Size { return this.currentLevel.dimensions; }
+    private get dimensions():Size { return this.currentLevel?.dimensions; }
     
     @InspectorField
     private backgroundColor = {
-        get: () => rapid.backgroundColor,
+        get: () => this.currentLevel ? rapid.backgroundColor : undefined,
         set: (color: Color) => bare.SetBackgroundColor(color)
     };
 
