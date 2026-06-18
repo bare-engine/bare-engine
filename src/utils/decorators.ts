@@ -39,6 +39,10 @@ export interface InspectorFieldData
     range?: InspectorRangeData;
     decimals?: number;
     description?: string;
+    /** Name of the class that declared this @InspectorField (the position-owning class, so an
+     *  overriding subclass keeps the ancestor's grouping). Lets the inspector draw dividers
+     *  between fields inherited from different classes. */
+    source?: string;
 }
 
 export interface InspectorRangeData
@@ -509,6 +513,7 @@ export function getInspectorFields(component: any): InspectorFieldData[]
     // Each class declares its own metadata array/record (see addField etc.), which would otherwise shadow ancestors'.
     const entries: FieldEntry[] = [];
     const indexByName = new Map<string, number>();
+    const sources: Record<string, string> = {};
     const lockedFields: string[] = [];
     const ranges: Record<string, InspectorRangeData> = {};
     const dropdowns: Record<string, InspectorDropdownValues> = {};
@@ -521,6 +526,8 @@ export function getInspectorFields(component: any): InspectorFieldData[]
     {
         if (Object.prototype.hasOwnProperty.call(proto, FIELD_METADATA_KEY))
         {
+            // THE CLASS THAT OWNS THIS PROTOTYPE DECLARED THESE FIELDS
+            const source: string = proto.constructor?.name ?? "";
             for (const entry of (proto[FIELD_METADATA_KEY] as FieldEntry[]))
             {
                 const existing = indexByName.get(entry.name);
@@ -530,6 +537,7 @@ export function getInspectorFields(component: any): InspectorFieldData[]
                 {
                     indexByName.set(entry.name, entries.length);
                     entries.push(entry);
+                    sources[entry.name] = source; // KEEP THE POSITION-OWNING CLASS SO OVERRIDES DON'T SPLIT A GROUP
                 }
             }
         }
@@ -605,6 +613,7 @@ export function getInspectorFields(component: any): InspectorFieldData[]
             range: range,
             decimals: resolvedDecimals,
             description: descriptions[entry.name],
+            source: sources[entry.name],
         };
     });
 
