@@ -159,7 +159,7 @@ window.__GAME_DEBUG_API__ = {
 
     var buttons = getButtons(scene.constructor as any);
     if (buttons.length > 0)
-        data.__buttons = buttons.map(b => ({ label: b.label, method: b.methodKey }));
+        data.__buttons = buttons.map(b => ({ label: b.label, method: b.methodKey, order: b.order, source: b.source }));
 
     var fields = getInspectorFields(scene);
     if (fields.length > 0)
@@ -1849,7 +1849,7 @@ export class PluginHandler
         // ADD DATA FOR @InspectorButton AND @InspectorField DECORATORS ON THE OBJECT ITSELF
         var objButtons = getButtons(o.constructor as any);
         if (objButtons.length > 0)
-            data.__buttons = objButtons.map(b => ({ label: b.label, method: b.methodKey }));
+            data.__buttons = objButtons.map(b => ({ label: b.label, method: b.methodKey, order: b.order, source: b.source }));
 
         var objFields = getInspectorFields(o);
         if (onlyFieldsInData)

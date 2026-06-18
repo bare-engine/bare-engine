@@ -11,6 +11,21 @@ const DECIMAL_METADATA_KEY = "__fieldDecimals__";
 const LABEL_METADATA_KEY = "__fieldLabels__";
 const DESCRIPTION_METADATA_KEY = "__fieldDescriptions__";
 const SAVE_METADATA_KEY = "__saveFields__";
+const ORDER_COUNTER_KEY = "__inspectorOrderCounter__";
+const INSPECTOR_CLASS_ORDER_KEY = "__inspectorClassOrders__";
+
+// Monotonic per-class declaration index. @InspectorField / @InspectorClass / @InspectorButton
+// decorators run in source order, so a shared counter on the prototype records the order each
+// member was declared - letting the inspector render a class's members in their source order
+// (e.g. field, then class, then button) instead of grouped by decorator type.
+function nextDeclarationOrder(proto: any): number
+{
+    const current = Object.prototype.hasOwnProperty.call(proto, ORDER_COUNTER_KEY)
+        ? (proto[ORDER_COUNTER_KEY] as number)
+        : 0;
+    proto[ORDER_COUNTER_KEY] = current + 1;
+    return current;
+}
 
 // NOTE: @Run / RUN_MODES_KEY live in ./runModes.ts (not here) because they carry runtime
 // semantics and must survive the production build that strips these editor-only decorators
@@ -21,12 +36,14 @@ export interface ButtonEntry
     label: string;
     methodKey: string;
     sourceKey?: string;
+    order?: number;
 }
 
 export interface FieldEntry
 {
     name: string;
     type: "input" | "dropdown" | "object";
+    order?: number;
 }
 
 export interface InspectorFieldData
@@ -43,6 +60,9 @@ export interface InspectorFieldData
      *  overriding subclass keeps the ancestor's grouping). Lets the inspector draw dividers
      *  between fields inherited from different classes. */
     source?: string;
+    /** Declaration-order index within its declaring class (shared with that class's buttons/inspector
+     *  classes), so the inspector can render members in source order rather than grouped by type. */
+    order?: number;
 }
 
 export interface InspectorRangeData
@@ -78,7 +98,7 @@ function addButton(proto: object, name: string, options?: string | InspectorButt
         label = options.label || methodKey;
     }
 
-    const entry = { label, methodKey, sourceKey: name };
+    const entry: ButtonEntry = { label, methodKey, sourceKey: name, order: nextDeclarationOrder(proto) };
     const sameSourceIndex = buttons.findIndex(button => (button.sourceKey ?? button.methodKey) === name);
 
     if (sameSourceIndex === -1)
@@ -142,9 +162,10 @@ function prototypeChain(proto: any): any[]
 }
 
 /** Returns all editor buttons registered on the component class and its ancestors. */
-export function getButtons(componentClass: any): { label: string; methodKey: string; callback: () => void }[]
+export function getButtons(componentClass: any): { label: string; methodKey: string; order?: number; source?: string; callback: () => void }[]
 {
     const entries: ButtonEntry[] = [];
+    const entrySources: string[] = [];
     const indexByKey = new Map<string, number>();
 
     // WALK PARENT-FIRST SO INHERITED BUTTONS ARE INCLUDED; A CHILD WITH THE SAME SOURCE OVERRIDES THE PARENT
@@ -153,23 +174,30 @@ export function getButtons(componentClass: any): { label: string; methodKey: str
         if (!Object.prototype.hasOwnProperty.call(proto, BUTTON_METADATA_KEY))
             continue;
 
+        const source: string = proto.constructor?.name ?? "";
         for (const entry of (proto[BUTTON_METADATA_KEY] as ButtonEntry[]))
         {
             const key = entry.sourceKey ?? entry.methodKey;
             const existing = indexByKey.get(key);
             if (existing !== undefined)
+            {
                 entries[existing] = entry;
+                entrySources[existing] = source;
+            }
             else
             {
                 indexByKey.set(key, entries.length);
                 entries.push(entry);
+                entrySources.push(source);
             }
         }
     }
 
-    return entries.map(e => ({
+    return entries.map((e, i) => ({
         label: e.label,
         methodKey: e.methodKey,
+        order: e.order,
+        source: entrySources[i],
         callback: () => componentClass.prototype[e.methodKey](),
     }));
 }
@@ -182,7 +210,7 @@ function addField(proto: object, name: string): void
     if (fields.some(field => field.name === name))
         return;
 
-    fields.push({ name, type: "input" });
+    fields.push({ name, type: "input", order: nextDeclarationOrder(proto) });
     (proto as any)[FIELD_METADATA_KEY] = fields;
 }
 
@@ -212,6 +240,9 @@ export interface InspectorClassData
     /** Name of the class that declared this @InspectorClass member, so the inspector can group it
      *  with that class's fields (e.g. a subclass's own controller sits with the subclass's fields). */
     source?: string;
+    /** Declaration-order index within its declaring class (shared with that class's fields/buttons),
+     *  so the inspector can render members in source order rather than grouped by decorator type. */
+    order?: number;
 }
 
 function addInspectorClass(proto: object, name: string): void
@@ -222,6 +253,13 @@ function addInspectorClass(proto: object, name: string): void
     if (!members.includes(name))
         members.push(name);
     (proto as any)[INSPECTOR_CLASS_METADATA_KEY] = members;
+
+    const orders: Record<string, number> = Object.prototype.hasOwnProperty.call(proto, INSPECTOR_CLASS_ORDER_KEY)
+        ? (proto as any)[INSPECTOR_CLASS_ORDER_KEY]
+        : {};
+    if (!(name in orders))
+        orders[name] = nextDeclarationOrder(proto);
+    (proto as any)[INSPECTOR_CLASS_ORDER_KEY] = orders;
 }
 
 /**
@@ -268,6 +306,23 @@ function getInspectorClassSources(component: any): Record<string, string>
     return sources;
 }
 
+/** Maps each @InspectorClass member name to its declaration-order index within its declaring class. */
+function getInspectorClassOrders(component: any): Record<string, number>
+{
+    const proto = typeof component === "function" ? component.prototype : component.constructor.prototype;
+    const orders: Record<string, number> = {};
+    for (const p of prototypeChain(proto))
+    {
+        if (!Object.prototype.hasOwnProperty.call(p, INSPECTOR_CLASS_ORDER_KEY))
+            continue;
+        const protoOrders = p[INSPECTOR_CLASS_ORDER_KEY] as Record<string, number>;
+        for (const name in protoOrders)
+            if (!(name in orders))
+                orders[name] = protoOrders[name];
+    }
+    return orders;
+}
+
 function getMemberLabel(component: any, memberName: string): string
 {
     const proto = typeof component === "function" ? component.prototype : component.constructor.prototype;
@@ -302,6 +357,7 @@ export function getInspectorClasses(component: any): InspectorClassData[]
 {
     const result: InspectorClassData[] = [];
     const sources = getInspectorClassSources(component);
+    const orders = getInspectorClassOrders(component);
     for (const name of getInspectorClassNames(component))
     {
         const instance = component[name];
@@ -313,6 +369,7 @@ export function getInspectorClasses(component: any): InspectorClassData[]
             propertyName: name,
             __fields: getInspectorFields(instance),
             source: sources[name],
+            order: orders[name],
         };
 
         const buttons = getButtons(instance.constructor as any);
@@ -536,6 +593,7 @@ export function getInspectorFields(component: any): InspectorFieldData[]
     const entries: FieldEntry[] = [];
     const indexByName = new Map<string, number>();
     const sources: Record<string, string> = {};
+    const orders: Record<string, number> = {};
     const lockedFields: string[] = [];
     const ranges: Record<string, InspectorRangeData> = {};
     const dropdowns: Record<string, InspectorDropdownValues> = {};
@@ -560,6 +618,8 @@ export function getInspectorFields(component: any): InspectorFieldData[]
                     indexByName.set(entry.name, entries.length);
                     entries.push(entry);
                     sources[entry.name] = source; // KEEP THE POSITION-OWNING CLASS SO OVERRIDES DON'T SPLIT A GROUP
+                    if (entry.order !== undefined)
+                        orders[entry.name] = entry.order;
                 }
             }
         }
@@ -636,6 +696,7 @@ export function getInspectorFields(component: any): InspectorFieldData[]
             decimals: resolvedDecimals,
             description: descriptions[entry.name],
             source: sources[entry.name],
+            order: orders[entry.name],
         };
     });
 

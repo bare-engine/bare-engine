@@ -1,11 +1,10 @@
+import { MakePathForEntity } from "../globals";
 import { Texture, Vec2 } from "../libraries/new-rapid-render";
+import { Scene } from "../scenes/scene";
 import { BareEvent, BlockedState, ConstructEntityOptions, Entity, HitboxType, Rectangle, Rectangle2Vec } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
-import { Scene } from "../scenes/scene";
-import { MakePathForEntity } from "../globals";
-import { GameObject } from "./gameObject";
 import { Dropdown, InspectorField, Int } from "../utils/decorators";
-import { Helper } from "../utils/helper";
+import { GameObject } from "./gameObject";
 
 export class ArcadeObject extends GameObject
 {
