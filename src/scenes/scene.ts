@@ -29,10 +29,10 @@ export class Scene implements SceneI
     @InspectorField public UI: boolean = false;
     @InspectorField public resize: boolean = false;
     @InspectorField @Locked public solo: boolean = false;
+    @InspectorField public render: boolean = true;
     
     public secret: boolean = false; // IF TRUE, WILL MAKE THE SCENE NOT INCLUDE IN bare.scene.GetAll() - USED FOR PLUGIN ATM
     public isLevel: boolean = false;
-    public doRender: boolean = true;
 
     @InspectorClass public object: ObjectController;
     @InspectorClass public mouse: MouseController;
@@ -899,6 +899,9 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
 
     Render(): void
     {
+        if (!this.render)
+            return;
+
         rapid.matrixStack.save();
 
         if (!this.UI)

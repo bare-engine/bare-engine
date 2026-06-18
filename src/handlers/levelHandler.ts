@@ -27,7 +27,7 @@ export class LevelHandler
     private get dimensions():Size { return this.currentLevel.dimensions; }
     
     @InspectorField
-    _backgroundColor = {
+    private backgroundColor = {
         get: () => rapid.backgroundColor,
         set: (color: Color) => bare.SetBackgroundColor(color)
     };
@@ -147,7 +147,7 @@ export class LevelHandler
 
         this.scene.Clear(false);
         
-        this.scene.doRender = false;
+        this.scene.render = false;
 
         var level: LevelData;
         try
@@ -160,7 +160,7 @@ export class LevelHandler
             return;
         }
 
-        this.scene.doRender = true;
+        this.scene.render = true;
         this.scene.PostLoadLevel(level, persistenObjUIDs);
         
         bare.SendEvent(BareEvent.level_loaded, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
