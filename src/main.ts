@@ -3,7 +3,7 @@ import { BareEngine } from './bareEngine';
 import { BaseTexture, Color, CustomGlShader, Rapid, Texture, TextureFilterMode } from './libraries/new-rapid-render';
 import { supportsWebGL } from './libraries/new-rapid-render/webgl/utils';
 import { BareEvent, BareOptions, SceneClass } from './types/bareTypes';
-import { globalEvents } from './globals';
+import { globalEvents, Scene } from './globals';
 import { sceneController } from './controllers/sceneController';
 export { MakePath, MakePathForEntity } from "./globals";
 
@@ -33,7 +33,7 @@ function GetBareOptions(options?: BareOptions): BareOptions
     }, ...options };
 }
 
-export function StartBare(gameClass: SceneClass, options?: BareOptions): void
+export function StartBare(gameClass: SceneClass, options?: BareOptions): Scene
 {
     // DEFAULTS + OVERRIDE OPTIONS
     options = GetBareOptions(options);
@@ -279,5 +279,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): void
         // IN CASE INITIAL ASSETS ARE ALREADY LOADED, TRIGGER RIGHT AWAY
         window.initialAssetsReady(window.initialAssets);
     }
+
+    return sceneController.Get(gameClass);
 }
 
