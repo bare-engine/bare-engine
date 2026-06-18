@@ -28,9 +28,11 @@ export class Scene implements SceneI
     public persistent: boolean = false;
     public UI: boolean = false;
     public resize: boolean = false;
+    public solo: boolean = false;
+    
     public secret: boolean = false; // IF TRUE, WILL MAKE THE SCENE NOT INCLUDE IN bare.scene.GetAll() - USED FOR PLUGIN ATM
-
     public isLevel: boolean = false;
+    public doRender: boolean = true;
 
     public object: ObjectController;
     public mouse: MouseController;
@@ -46,11 +48,8 @@ export class Scene implements SceneI
     public settingsHandler: SettingsHandler = new SettingsHandler(this);
     
     get settingsData(): SettingsData { return this.settingsHandler.Get(); }
-    
-    isPaused: boolean = false;//
-    doRender: boolean = true;
 
-    sceneOptions: SceneOptions;
+    sceneOptionsSettingsData: SettingsData;
 
     // MOVE OUT? HAS SaveData REFERENCE - TODO
     get currentLevelStr(): string { return SaveData.currentLevelStr; }
@@ -81,12 +80,13 @@ export class Scene implements SceneI
         if (!options.settingsData)
             options.settingsData = defaultSettingsData;
         
-        this.sceneOptions = options;
+        this.sceneOptionsSettingsData = options.settingsData;
 
         this.UI = options.UI ?? false;
         this.resize = options.resize ?? false;
         this.persistent = options.persistent ?? false;
         this.secret = options.secret ?? false;
+        this.solo = options.solo ?? false;
 
         bare.AddClass(GameObject);
         bare.AddClass(ObjectController);
@@ -100,7 +100,7 @@ export class Scene implements SceneI
         this.paused = false;
         this.started = false;
 
-        await this.settingsHandler.Process(payload?.settingsHandler?.GetRaw() || this.sceneOptions.settingsData);//this.settingsData
+        await this.settingsHandler.Process(payload?.settingsHandler?.GetRaw() || this.sceneOptionsSettingsData);//this.settingsData
 
         var classes = controllerNames;
         for (let i = 0; i < classes.length; i++)
@@ -1210,5 +1210,10 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
 
         return await this.level?.Load(levelInput);
     }
+}
+
+function inspectorField(target: Scene, propertyKey: "started"): void
+{
+    throw new Error("Function not implemented.");
 }
 

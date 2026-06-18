@@ -79,7 +79,7 @@ export class SceneController
         var iInsert = this.currentScenes.length;
         for (var i = 0; i < this.currentScenes.length; i++)
         {
-            if (this.currentScenes[i].sceneOptions.UI)
+            if (this.currentScenes[i].UI)
             {
                 iInsert = i;
                 break;
@@ -87,7 +87,7 @@ export class SceneController
         }
         this.currentScenes.splice(iInsert, 0, sceneInstance);
 
-        if (sceneInstance.sceneOptions.solo)
+        if (sceneInstance.solo)
             this.DisableAll();
 
         await sceneInstance.Awake(payload); // WILL ENABLE THE SCENE AGAIN TOO
@@ -125,7 +125,7 @@ export class SceneController
             globalEvents.emit(BareEvent.scene_removed, { scene: targetScene });
             globalEvents.emit(BareEvent.scene_changed, { scene: targetScene, type: "removed" });
 
-            if (targetScene.sceneOptions.solo)
+            if (targetScene.solo)
                 this.EnableAll();
         }
         else
