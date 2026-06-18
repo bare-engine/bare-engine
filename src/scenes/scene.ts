@@ -29,7 +29,24 @@ export class Scene implements SceneI
     @InspectorField public persistent: boolean = false;
     @InspectorField public UI: boolean = false;
     @InspectorField public resize: boolean = false;
-    @InspectorField @Locked public solo: boolean = false;
+    public solo: boolean = false;
+   
+    @InspectorField
+    get _solo(): boolean { return this.solo; }
+    set _solo(solo: boolean) {
+        if (solo)
+        {
+            sceneController.DisableAll();
+            sceneController.GetAll().forEach(scene => scene.solo = false);
+            this.enabled = true;
+        }
+        else
+        {
+            sceneController.EnableAll();
+        }
+
+        this.solo = solo;
+    }
     
     public secret: boolean = false; // IF TRUE, WILL MAKE THE SCENE NOT INCLUDE IN bare.scene.GetAll() - USED FOR PLUGIN ATM
     public isLevel: boolean = false;
