@@ -4,7 +4,7 @@ import { CollisionHandlingType, Entity, LayerInfo, SettingsData } from "../types
 import { Helper } from "../utils/helper";
 import { Scene } from "../scenes/scene";
 import { Bare } from "../types/bare";
-import { InspectorField, Locked } from "../utils/decorators";
+import { InspectorButton, InspectorField, Label, Locked } from "../utils/decorators";
 
 // SettingsHandler KEEPS TRACK OF RAW AND PROCESSED SETTINGS
 // BIT CLUMSY TO HAVE THEM BOTH, BUT HAVING ONLY ONE WOULD MEAN I'D HAVE TO UNDO THE CHANGES THAT HAPPEN IN PROCESS()
@@ -28,6 +28,10 @@ export class SettingsHandler
     private get defaultAnimationFramesPerSecond(): number { return this.processed?.defaultAnimationFramesPerSecond; }
     private set defaultAnimationFramesPerSecond(value: number) { this.raw.defaultAnimationFramesPerSecond = value; this.Process(); }
     
+    //@InspectorButton
+    //@Label("Edit")
+    //private editSettings() { /*CALL PLUGIN TO GO TO (TO BE MADE) SETTINGS DATA TAB - TODO*/ }
+
     constructor(scene: Scene)
     {
         this.scene = scene;

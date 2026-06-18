@@ -209,6 +209,9 @@ export interface InspectorClassData
     propertyName: string;
     __fields: InspectorFieldData[];
     __buttons?: { label: string; method: string }[];
+    /** Name of the class that declared this @InspectorClass member, so the inspector can group it
+     *  with that class's fields (e.g. a subclass's own controller sits with the subclass's fields). */
+    source?: string;
 }
 
 function addInspectorClass(proto: object, name: string): void
@@ -248,6 +251,23 @@ export function getInspectorClassNames(component: any): string[]
     return names;
 }
 
+/** Maps each @InspectorClass member name to the class that declared it (the position-owning class). */
+function getInspectorClassSources(component: any): Record<string, string>
+{
+    const proto = typeof component === "function" ? component.prototype : component.constructor.prototype;
+    const sources: Record<string, string> = {};
+    for (const p of prototypeChain(proto))
+    {
+        if (!Object.prototype.hasOwnProperty.call(p, INSPECTOR_CLASS_METADATA_KEY))
+            continue;
+        const source: string = p.constructor?.name ?? "";
+        for (const name of (p[INSPECTOR_CLASS_METADATA_KEY] as string[]))
+            if (!(name in sources))
+                sources[name] = source;
+    }
+    return sources;
+}
+
 function getMemberLabel(component: any, memberName: string): string
 {
     const proto = typeof component === "function" ? component.prototype : component.constructor.prototype;
@@ -281,6 +301,7 @@ export function resolveInspectorClassName(component: any, nameOrLabel: string): 
 export function getInspectorClasses(component: any): InspectorClassData[]
 {
     const result: InspectorClassData[] = [];
+    const sources = getInspectorClassSources(component);
     for (const name of getInspectorClassNames(component))
     {
         const instance = component[name];
@@ -291,6 +312,7 @@ export function getInspectorClasses(component: any): InspectorClassData[]
             name: getMemberLabel(component, name),
             propertyName: name,
             __fields: getInspectorFields(instance),
+            source: sources[name],
         };
 
         const buttons = getButtons(instance.constructor as any);
