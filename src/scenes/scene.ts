@@ -17,18 +17,20 @@ import { GameObject } from "../objects/gameObject";
 import { defaultSettingsData } from "../types/bareData";
 import { AwakePayload, BareEvent, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
-import { getInspectorFieldNames, InspectorClass, InspectorField, Locked } from "../utils/decorators";
+import { getInspectorFieldNames, InspectorClass, InspectorField, Label, Locked } from "../utils/decorators";
 import { Bare } from "../types/bare";
 
 export class Scene implements SceneI
 {
-    @InspectorField public started: boolean = false;
+    public started: boolean = false;
+
     @InspectorField public enabled: boolean = true;
     @InspectorField public paused: boolean = false;
     @InspectorField public render: boolean = true;
     @InspectorField public persistent: boolean = false;
     @InspectorField public UI: boolean = false;
     @InspectorField public resize: boolean = false;
+
     public solo: boolean = false;
    
     @InspectorField
@@ -62,7 +64,9 @@ export class Scene implements SceneI
     @InspectorClass public level: LevelHandler;
     @InspectorClass public camera: CameraHandler;
 
-    @InspectorClass public settingsHandler: SettingsHandler = new SettingsHandler(this);
+    @InspectorClass
+    @Label("Settings")
+    public settingsHandler: SettingsHandler = new SettingsHandler(this);
     
     get settingsData(): SettingsData { return this.settingsHandler.Get(); }
 

@@ -11,7 +11,7 @@ import { Scene } from "../scenes/scene";
 import { OutlineShader } from "../shaders/outlineShader";
 import { defaultSettingsData } from "../types/bareData";
 import { BareEvent, Entity, EntityVarsNestedEntry, entityVarsNested, LevelData, Position, SaveData, Scalar, SettingsData } from "../types/bareTypes";
-import { applyInspectorField, getButtons, getInspectorClasses, getInspectorClassNames, getInspectorFieldDescriptions, getInspectorFields } from "../utils/decorators";
+import { applyInspectorField, getButtons, getInspectorClasses, getInspectorFieldDescriptions, getInspectorFields, resolveInspectorClassName } from "../utils/decorators";
 import { Helper } from "../utils/helper";
 import { SaveDataHandler } from "./SaveDataHandler";
 
@@ -178,17 +178,16 @@ window.__GAME_DEBUG_API__ = {
     if (!scene)
         return false;
 
-    var inspectorClassNames = new Set(getInspectorClassNames(scene));
-
     for (let prop in props)
     {
         if (prop.startsWith("__"))
             continue;
 
         // NESTED @InspectorClass EDIT - props[prop] IS A { field: value } MAP FOR scene[prop]
-        if (inspectorClassNames.has(prop) && props[prop] && typeof props[prop] === "object")
+        const inspectorClassName = resolveInspectorClassName(scene, prop);
+        if (inspectorClassName && props[prop] && typeof props[prop] === "object")
         {
-            var instance = (scene as any)[prop];
+            var instance = (scene as any)[inspectorClassName];
             if (instance)
             {
                 for (let sub in props[prop])
@@ -220,7 +219,8 @@ window.__GAME_DEBUG_API__ = {
         return false;
 
     // className TARGETS A BUTTON ON AN @InspectorClass MEMBER (eg scene.object)
-    var target = className ? (scene as any)[className] : scene;
+    const inspectorClassName = className ? resolveInspectorClassName(scene, className) ?? className : undefined;
+    var target = inspectorClassName ? (scene as any)[inspectorClassName] : scene;
     if (!target)
         return false;
 

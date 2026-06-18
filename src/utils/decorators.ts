@@ -202,6 +202,7 @@ export function InspectorBaseClass(_target: Function): void
 export interface InspectorClassData
 {
     name: string;
+    propertyName: string;
     __fields: InspectorFieldData[];
     __buttons?: { label: string; method: string }[];
 }
@@ -243,6 +244,32 @@ export function getInspectorClassNames(component: any): string[]
     return names;
 }
 
+function getMemberLabel(component: any, memberName: string): string
+{
+    const proto = typeof component === "function" ? component.prototype : component.constructor.prototype;
+    let label: string | undefined;
+    for (const p of prototypeChain(proto))
+    {
+        if (!Object.prototype.hasOwnProperty.call(p, LABEL_METADATA_KEY))
+            continue;
+
+        const labels = p[LABEL_METADATA_KEY] as Record<string, string>;
+        if (Object.prototype.hasOwnProperty.call(labels, memberName))
+            label = labels[memberName];
+    }
+
+    return label ?? memberName;
+}
+
+export function resolveInspectorClassName(component: any, nameOrLabel: string): string | undefined
+{
+    for (const name of getInspectorClassNames(component))
+        if (name === nameOrLabel || getMemberLabel(component, name) === nameOrLabel)
+            return name;
+
+    return undefined;
+}
+
 /**
  * For each @InspectorClass member, reads the live instance and gathers its @InspectorField /
  * @InspectorButton members (traversing the instance's whole prototype chain via getInspectorFields).
@@ -256,7 +283,11 @@ export function getInspectorClasses(component: any): InspectorClassData[]
         if (instance == null || typeof instance !== "object")
             continue;
 
-        const entry: InspectorClassData = { name, __fields: getInspectorFields(instance) };
+        const entry: InspectorClassData = {
+            name: getMemberLabel(component, name),
+            propertyName: name,
+            __fields: getInspectorFields(instance),
+        };
 
         const buttons = getButtons(instance.constructor as any);
         if (buttons.length > 0)
