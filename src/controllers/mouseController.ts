@@ -3,6 +3,7 @@ import { Scene } from '../scenes/scene';
 import { BareEvent, BareEventPayload } from '../types/bareTypes';
 import { Helper } from "../utils/helper";
 import { RegisterController } from '../globals';
+import { InspectorField } from "../utils/decorators";
 
 type MouseSpace = {
     position: Vec2;
@@ -14,6 +15,14 @@ type MouseSpace = {
 
 export class MouseController
 {
+    @InspectorField
+    mouseScreenPosition = {
+        get: () => this.screen.position
+    };
+
+    @InspectorField
+    private get mouseWorldPosition(): Vec2 { return this.world.position; }
+    
     screen: MouseSpace = {
         position: new Vec2(0, 0),
         positionPrev: new Vec2(0, 0),

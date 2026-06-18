@@ -17,33 +17,33 @@ import { GameObject } from "../objects/gameObject";
 import { defaultSettingsData } from "../types/bareData";
 import { AwakePayload, BareEvent, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
-import { getInspectorFieldNames } from "../utils/decorators";
+import { getInspectorFieldNames, InspectorClass, InspectorField, Locked } from "../utils/decorators";
 import { Bare } from "../types/bare";
 
 export class Scene implements SceneI
 {
-    public started: boolean = false;
-    public enabled: boolean = true;
-    public paused: boolean = false;
-    public persistent: boolean = false;
-    public UI: boolean = false;
-    public resize: boolean = false;
-    public solo: boolean = false;
+    @InspectorField public started: boolean = false;
+    @InspectorField public enabled: boolean = true;
+    @InspectorField public paused: boolean = false;
+    @InspectorField public persistent: boolean = false;
+    @InspectorField public UI: boolean = false;
+    @InspectorField public resize: boolean = false;
+    @InspectorField @Locked public solo: boolean = false;
     
     public secret: boolean = false; // IF TRUE, WILL MAKE THE SCENE NOT INCLUDE IN bare.scene.GetAll() - USED FOR PLUGIN ATM
     public isLevel: boolean = false;
     public doRender: boolean = true;
 
-    public object: ObjectController;
-    public mouse: MouseController;
-    public hitbox: HitboxController;
-    public tween: TweenController;
-    public component: ComponentController;
-    public arcade: ArcadePhysicsController;
-    public sopiro: SopiroPhysicsController;
-    public particle: ParticleController;
-    public level: LevelHandler;
-    public camera: CameraHandler;
+    @InspectorClass public object: ObjectController;
+    @InspectorClass public mouse: MouseController;
+    @InspectorClass public hitbox: HitboxController;
+    @InspectorClass public tween: TweenController;
+    @InspectorClass public component: ComponentController;
+    @InspectorClass public arcade: ArcadePhysicsController;
+    @InspectorClass public sopiro: SopiroPhysicsController;
+    @InspectorClass public particle: ParticleController;
+    @InspectorClass public level: LevelHandler;
+    @InspectorClass public camera: CameraHandler;
 
     public settingsHandler: SettingsHandler = new SettingsHandler(this);
     
@@ -1210,10 +1210,5 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
 
         return await this.level?.Load(levelInput);
     }
-}
-
-function inspectorField(target: Scene, propertyKey: "started"): void
-{
-    throw new Error("Function not implemented.");
 }
 

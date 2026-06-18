@@ -1,6 +1,7 @@
 import { GameObject } from "../objects/gameObject";
 import { Scene } from "../scenes/scene";
 import { RegisterController } from "../globals";
+import { InspectorField } from "../utils/decorators";
 
 export class ObjectController
 {
@@ -9,6 +10,11 @@ export class ObjectController
 
     public scene: Scene;
 
+    @InspectorField
+    objects = {
+        get: () => this.GetAll().length
+    };
+    
     constructor(scene: Scene)
     {
         this.scene = scene;

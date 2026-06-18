@@ -11,7 +11,7 @@ import { Scene } from "../scenes/scene";
 import { OutlineShader } from "../shaders/outlineShader";
 import { defaultSettingsData } from "../types/bareData";
 import { BareEvent, Entity, EntityVarsNestedEntry, entityVarsNested, LevelData, Position, SaveData, Scalar, SettingsData } from "../types/bareTypes";
-import { applyInspectorField, getButtons, getInspectorFieldDescriptions, getInspectorFields } from "../utils/decorators";
+import { applyInspectorField, getButtons, getInspectorClasses, getInspectorClassNames, getInspectorFieldDescriptions, getInspectorFields } from "../utils/decorators";
 import { Helper } from "../utils/helper";
 import { SaveDataHandler } from "./SaveDataHandler";
 
@@ -143,9 +143,89 @@ window.__GAME_DEBUG_API__ = {
     scenes = scenes.filter(s => s.enabled); // DON'T SHOW DISABLED SCENES IN PLUGIN
     var sceneStrings = scenes.map(s => s.constructor.name);
 
-    sceneStrings = sceneStrings.reverse(); // 
+    sceneStrings = sceneStrings.reverse(); //
 
     return sceneStrings;
+  },
+
+  // SCENE INSPECTOR - SHOWS THE @InspectorField / @InspectorButton DECORATED MEMBERS ON A SCENE
+  // SAME SHAPE AS getObject's __fields / __buttons, SO THE PLUGIN RENDERS IT THE SAME WAY AS COMPONENTS
+  getScene(sceneClassString: string) {
+    var scene = sceneClassString ? plugin.GetScene(sceneClassString) : plugin.GetCurrentScene();
+    if (!scene)
+        return null;
+
+    var data: any = { name: scene.constructor.name, isScene: true };
+
+    var buttons = getButtons(scene.constructor as any);
+    if (buttons.length > 0)
+        data.__buttons = buttons.map(b => ({ label: b.label, method: b.methodKey }));
+
+    var fields = getInspectorFields(scene);
+    if (fields.length > 0)
+        data.__fields = fields;
+
+    // @InspectorClass MEMBERS (eg scene.object) - SHOWN AS COLLAPSIBLE GROUPS, LIKE COMPONENTS
+    var inspectorClasses = getInspectorClasses(scene);
+    if (inspectorClasses.length > 0)
+        data.__inspectorClasses = inspectorClasses;
+
+    return data;
+  },
+
+  async setScene(sceneClassString: string, props: Record<string, any>) {
+    var scene = sceneClassString ? plugin.GetScene(sceneClassString) : plugin.GetCurrentScene();
+    if (!scene)
+        return false;
+
+    var inspectorClassNames = new Set(getInspectorClassNames(scene));
+
+    for (let prop in props)
+    {
+        if (prop.startsWith("__"))
+            continue;
+
+        // NESTED @InspectorClass EDIT - props[prop] IS A { field: value } MAP FOR scene[prop]
+        if (inspectorClassNames.has(prop) && props[prop] && typeof props[prop] === "object")
+        {
+            var instance = (scene as any)[prop];
+            if (instance)
+            {
+                for (let sub in props[prop])
+                {
+                    if (sub.startsWith("__"))
+                        continue;
+
+                    if (await applyInspectorField(instance, sub, props[prop][sub]))
+                        continue;
+
+                    instance[sub] = props[prop][sub];
+                }
+            }
+            continue;
+        }
+
+        if (await applyInspectorField(scene, prop, props[prop]))
+            continue;
+
+        (scene as any)[prop] = props[prop];
+    }
+
+    return true;
+  },
+
+  clickedSceneButton(sceneClassString: string, methodName: string, className?: string) {
+    var scene = sceneClassString ? plugin.GetScene(sceneClassString) : plugin.GetCurrentScene();
+    if (!scene)
+        return false;
+
+    // className TARGETS A BUTTON ON AN @InspectorClass MEMBER (eg scene.object)
+    var target = className ? (scene as any)[className] : scene;
+    if (!target)
+        return false;
+
+    (target as any)[methodName]();
+    return true;
   },
 
   getAllObjects() {

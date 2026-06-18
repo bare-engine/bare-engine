@@ -2,6 +2,7 @@ import { GameMode } from "../globals";
 
 const BUTTON_METADATA_KEY = "__editorButtons__";
 const FIELD_METADATA_KEY = "__editorFields__";
+const INSPECTOR_CLASS_METADATA_KEY = "__inspectorClassMembers__";
 const LOCKED_METADATA_KEY = "__lockedFields__";
 const RANGE_METADATA_KEY = "__fieldRanges__";
 const DROPDOWN_METADATA_KEY = "__fieldDropdowns__";
@@ -211,6 +212,74 @@ export function InspectorBaseClass(_target: Function): void
     return;
 }
 
+export interface InspectorClassData
+{
+    name: string;
+    __fields: InspectorFieldData[];
+    __buttons?: { label: string; method: string }[];
+}
+
+function addInspectorClass(proto: object, name: string): void
+{
+    const members: string[] = Object.prototype.hasOwnProperty.call(proto, INSPECTOR_CLASS_METADATA_KEY)
+        ? (proto as any)[INSPECTOR_CLASS_METADATA_KEY]
+        : [];
+    if (!members.includes(name))
+        members.push(name);
+    (proto as any)[INSPECTOR_CLASS_METADATA_KEY] = members;
+}
+
+/**
+ * Marks a member that holds another object whose @InspectorField / @InspectorButton members
+ * should be surfaced in the inspector as a collapsible group (rendered like a component).
+ *
+ *   @InspectorClass public object: ObjectController;
+ */
+// @InspectorClass
+export function InspectorClass(target: any, propertyKey: string): void
+{
+    addInspectorClass(target, propertyKey);
+}
+
+/** Returns the names of every @InspectorClass member registered on the instance's class and its ancestors. */
+export function getInspectorClassNames(component: any): string[]
+{
+    const proto = typeof component === "function" ? component.prototype : component.constructor.prototype;
+    const names: string[] = [];
+    for (const p of prototypeChain(proto))
+    {
+        if (Object.prototype.hasOwnProperty.call(p, INSPECTOR_CLASS_METADATA_KEY))
+            for (const name of (p[INSPECTOR_CLASS_METADATA_KEY] as string[]))
+                if (!names.includes(name))
+                    names.push(name);
+    }
+    return names;
+}
+
+/**
+ * For each @InspectorClass member, reads the live instance and gathers its @InspectorField /
+ * @InspectorButton members (traversing the instance's whole prototype chain via getInspectorFields).
+ */
+export function getInspectorClasses(component: any): InspectorClassData[]
+{
+    const result: InspectorClassData[] = [];
+    for (const name of getInspectorClassNames(component))
+    {
+        const instance = component[name];
+        if (instance == null || typeof instance !== "object")
+            continue;
+
+        const entry: InspectorClassData = { name, __fields: getInspectorFields(instance) };
+
+        const buttons = getButtons(instance.constructor as any);
+        if (buttons.length > 0)
+            entry.__buttons = buttons.map(b => ({ label: b.label, method: b.methodKey }));
+
+        result.push(entry);
+    }
+    return result;
+}
+
 export function getOwnInspectorFieldNames(classOrPrototype: any): string[]
 {
     const proto = typeof classOrPrototype === "function" ? classOrPrototype.prototype : classOrPrototype;
@@ -331,14 +400,31 @@ function getFieldValue(component: any, entry: FieldEntry): any
 
 function isInspectorFieldDescriptor(value: any): boolean
 {
-    return value !== null
-        && typeof value === "object"
-        && (
-            "current" in value
-            || "get" in value
-            || "set" in value
-            || "onChange" in value
-        );
+    // Only treat a PLAIN object literal (e.g. `{ get: () => ... }`) as a descriptor. A class instance
+    // such as Vec2 has its own `set`/`get` methods but is a real field value, not a descriptor wrapper.
+    if (value === null || typeof value !== "object")
+        return false;
+
+    const proto = Object.getPrototypeOf(value);
+    if (proto !== Object.prototype && proto !== null)
+        return false;
+
+    return "current" in value
+        || "get" in value
+        || "set" in value
+        || "onChange" in value;
+}
+
+/** True when `name` resolves to a native getter with no setter (e.g. `get foo() {}`) anywhere up the chain. */
+function isGetterOnlyAccessor(component: any, name: string): boolean
+{
+    for (let proto = component; proto && proto !== Object.prototype; proto = Object.getPrototypeOf(proto))
+    {
+        const desc = Object.getOwnPropertyDescriptor(proto, name);
+        if (desc)
+            return typeof desc.get === "function" && typeof desc.set !== "function";
+    }
+    return false;
 }
 
 function isInspectorObjectField(value: any): boolean
@@ -407,6 +493,12 @@ export function getInspectorFields(component: any): InspectorFieldData[]
         const descriptor = isDescriptor ? value : {};
         const dropdownValues = resolveDropdownValues(component, dropdowns[entry.name]);
 
+        // A descriptor with no setter (e.g. `{ get: () => ... }`) is read-only — surface it as locked
+        // so the inspector shows the value without letting it be edited (which would clobber the descriptor).
+        const hasSetter = isDescriptor
+            && (typeof descriptor.set === "function" || typeof descriptor.onChange === "function");
+        const readOnlyDescriptor = (isDescriptor && !hasSetter) || isGetterOnlyAccessor(component, entry.name);
+
         const range = ranges[entry.name];
 
         // A @Range(0, 1) field defaults to 2 decimals (integer steps would be useless on a 0..1 range);
@@ -424,7 +516,7 @@ export function getInspectorFields(component: any): InspectorFieldData[]
                 ? descriptor.current ?? (typeof descriptor.get === "function" ? descriptor.get() : undefined)
                 : value,
             values: dropdownValues,
-            locked: lockedFields.includes(entry.name),
+            locked: lockedFields.includes(entry.name) || readOnlyDescriptor,
             range: range,
             decimals: resolvedDecimals,
             description: descriptions[entry.name],
@@ -485,12 +577,15 @@ export async function applyInspectorField(component: any, fieldName: string, val
         return true;
 
     const fieldValue = getFieldValue(component, entry);
-    const setter = isInspectorFieldDescriptor(fieldValue)
+    const isDescriptor = isInspectorFieldDescriptor(fieldValue);
+    const setter = isDescriptor
         ? fieldValue.set || fieldValue.onChange
         : undefined;
 
     if (setter)
         await setter.call(component, value);
+    else if (isDescriptor || isGetterOnlyAccessor(component, entry.name))
+        return true; // read-only (descriptor `{ get }` or native getter) — don't clobber / throw
     else
         component[entry.name] = value;
 
