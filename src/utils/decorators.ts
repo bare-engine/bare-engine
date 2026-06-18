@@ -7,6 +7,7 @@ const INSPECTOR_CLASS_METADATA_KEY = "__inspectorClassMembers__";
 const LOCKED_METADATA_KEY = "__lockedFields__";
 const RANGE_METADATA_KEY = "__fieldRanges__";
 const DROPDOWN_METADATA_KEY = "__fieldDropdowns__";
+const ENUM_METADATA_KEY = "__fieldEnums__";
 const DECIMAL_METADATA_KEY = "__fieldDecimals__";
 const LABEL_METADATA_KEY = "__fieldLabels__";
 const DESCRIPTION_METADATA_KEY = "__fieldDescriptions__";
@@ -338,6 +339,42 @@ export function Dropdown(values: InspectorDropdownValues): (target: any, propert
     };
 }
 
+// @Enum(CameraScaleMode) — dropdown built from an enum's members. The inspector displays the
+// member NAMES while the field keeps the enum's underlying value (eg the number for numeric enums);
+// the name<->value conversion happens server-side, so the renderer still sees a flat string list.
+export function Enum(enumObj: Record<string, any>): (target: any, propertyKey: string) => void
+{
+    return function (target: any, propertyKey: string): void
+    {
+        const enums: Record<string, Record<string, any>> = target[ENUM_METADATA_KEY] || {};
+        enums[propertyKey] = enumObj;
+        target[ENUM_METADATA_KEY] = enums;
+    };
+}
+
+/** Member names of an enum, dropping the numeric reverse-mapping keys that numeric enums add (0:"Cover"). */
+function enumMemberNames(enumObj: Record<string, any>): string[]
+{
+    return Object.keys(enumObj).filter(key => isNaN(Number(key)));
+}
+
+/** Maps an enum's underlying value back to its member name (for display); returns the value if unmatched. */
+function enumNameForValue(enumObj: Record<string, any>, value: any): any
+{
+    for (const name of enumMemberNames(enumObj))
+        if (enumObj[name] === value)
+            return name;
+    return value;
+}
+
+/** Maps a member name (as picked in the inspector) to the enum's underlying value; passes through otherwise. */
+function enumValueForName(enumObj: Record<string, any>, name: any): any
+{
+    if (typeof name === "string" && isNaN(Number(name)) && Object.prototype.hasOwnProperty.call(enumObj, name))
+        return enumObj[name];
+    return name;
+}
+
 export function Decimal(places: number): (target: any, propertyKey: string) => void
 {
     return function (target: any, propertyKey: string): void
@@ -459,6 +496,7 @@ export function getInspectorFields(component: any): InspectorFieldData[]
     const lockedFields: string[] = [];
     const ranges: Record<string, InspectorRangeData> = {};
     const dropdowns: Record<string, InspectorDropdownValues> = {};
+    const enums: Record<string, Record<string, any>> = {};
     const decimals: Record<string, number> = {};
     const labels: Record<string, string> = {};
     const descriptions: Record<string, string> = {};
@@ -485,6 +523,8 @@ export function getInspectorFields(component: any): InspectorFieldData[]
             Object.assign(ranges, proto[RANGE_METADATA_KEY]);
         if (Object.prototype.hasOwnProperty.call(proto, DROPDOWN_METADATA_KEY))
             Object.assign(dropdowns, proto[DROPDOWN_METADATA_KEY]);
+        if (Object.prototype.hasOwnProperty.call(proto, ENUM_METADATA_KEY))
+            Object.assign(enums, proto[ENUM_METADATA_KEY]);
         if (Object.prototype.hasOwnProperty.call(proto, DECIMAL_METADATA_KEY))
             Object.assign(decimals, proto[DECIMAL_METADATA_KEY]);
         if (Object.prototype.hasOwnProperty.call(proto, LABEL_METADATA_KEY))
@@ -498,7 +538,10 @@ export function getInspectorFields(component: any): InspectorFieldData[]
         const value = getFieldValue(component, entry);
         const isDescriptor = isInspectorFieldDescriptor(value);
         const descriptor = isDescriptor ? value : {};
-        const dropdownValues = resolveDropdownValues(component, dropdowns[entry.name]);
+        const enumObj = enums[entry.name];
+        const dropdownValues = enumObj !== undefined
+            ? enumMemberNames(enumObj)
+            : resolveDropdownValues(component, dropdowns[entry.name]);
 
         // A descriptor with no setter (e.g. `{ get: () => ... }`) is read-only — surface it as locked
         // so the inspector shows the value without letting it be edited (which would clobber the descriptor).
@@ -517,6 +560,10 @@ export function getInspectorFields(component: any): InspectorFieldData[]
         let current = isDescriptor
             ? descriptor.current ?? (typeof descriptor.get === "function" ? descriptor.get() : undefined)
             : value;
+
+        // Enum fields store the underlying value but display the member name in the dropdown.
+        if (enumObj !== undefined)
+            current = enumNameForValue(enumObj, current);
 
         // Color values are surfaced as a "color" field and serialized to a hex string for the picker.
         const isColor = isColorValue(current);
@@ -576,6 +623,19 @@ function findInspectorFieldEntry(component: any, fieldName: string): FieldEntry 
     return undefined;
 }
 
+/** Finds the enum object registered via @Enum for a field, anywhere in the prototype chain. */
+function findFieldEnum(component: any, fieldName: string): Record<string, any> | undefined
+{
+    for (const proto of prototypeChain(component.constructor.prototype))
+    {
+        const fieldEnums: Record<string, Record<string, any>> = Object.prototype.hasOwnProperty.call(proto, ENUM_METADATA_KEY)
+            ? proto[ENUM_METADATA_KEY] : {};
+        if (Object.prototype.hasOwnProperty.call(fieldEnums, fieldName))
+            return fieldEnums[fieldName];
+    }
+    return undefined;
+}
+
 function isInspectorFieldLocked(component: any, fieldName: string): boolean
 {
     for (const proto of prototypeChain(component.constructor.prototype))
@@ -604,9 +664,14 @@ export async function applyInspectorField(component: any, fieldName: string, val
         ? fieldValue.set || fieldValue.onChange
         : undefined;
 
-    // Color fields come back from the inspector as a hex string; rebuild a Color if the field holds one.
+    // Enum fields come back as the picked member name; map it to the enum's underlying value.
     let resolvedValue = value;
-    if (typeof value === "string")
+    const fieldEnum = findFieldEnum(component, entry.name);
+    if (fieldEnum !== undefined)
+        resolvedValue = enumValueForName(fieldEnum, value);
+
+    // Color fields come back from the inspector as a hex string; rebuild a Color if the field holds one.
+    if (fieldEnum === undefined && typeof value === "string")
     {
         const current = isDescriptor
             ? fieldValue.current ?? (typeof fieldValue.get === "function" ? fieldValue.get() : undefined)

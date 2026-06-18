@@ -25,11 +25,11 @@ export class Scene implements SceneI
     @InspectorField public started: boolean = false;
     @InspectorField public enabled: boolean = true;
     @InspectorField public paused: boolean = false;
+    @InspectorField public render: boolean = true;
     @InspectorField public persistent: boolean = false;
     @InspectorField public UI: boolean = false;
     @InspectorField public resize: boolean = false;
     @InspectorField @Locked public solo: boolean = false;
-    @InspectorField public render: boolean = true;
     
     public secret: boolean = false; // IF TRUE, WILL MAKE THE SCENE NOT INCLUDE IN bare.scene.GetAll() - USED FOR PLUGIN ATM
     public isLevel: boolean = false;

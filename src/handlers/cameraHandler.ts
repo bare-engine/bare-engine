@@ -2,28 +2,39 @@ import { RegisterController } from "../globals";
 import { Vec2 } from "../libraries/new-rapid-render";
 import type { Scene } from "../scenes/scene";
 import { BareEvent, CameraScaleMode, Rectangle, type Size } from "../types/bareTypes";
-import { InspectorField } from "../utils/decorators";
+import { Enum, InspectorField } from "../utils/decorators";
 import { Helper } from "../utils/helper";
 
 export class CameraHandler {
-    scaleMode: CameraScaleMode = CameraScaleMode.Cover;
-    zoom: number = 1;
+    // actual camera center (after clamping)
+    position: Vec2 = new Vec2(0, 0);
+
+    // target camera center
+    @InspectorField target: Vec2 = new Vec2(0, 0);
+
+    @InspectorField zoom: number = 1;
 
     // "logical area" you want to fit/cover on screen when zoomFit is applied
     dimensions: Size = { width: 0, height: 0 };
 
+    @InspectorField
+    get _dimensions(): Size { return this.dimensions; }
+    set _dimensions(dimensions: Size) { this.SetDimensions(dimensions.width, dimensions.height); }
+    
     // world bounds the camera is allowed to show
-    bounds: Rectangle = { x: 0, y: 0, width: 0, height: 0 };
+    @InspectorField bounds: Rectangle = { x: 0, y: 0, width: 0, height: 0 };
 
-    // target camera center (unbounded)
-    target: Vec2 = new Vec2(0, 0);
-
-    // actual camera center (after clamping)
-    position: Vec2 = new Vec2(0, 0);
+    scaleMode: CameraScaleMode = CameraScaleMode.Cover;
+   
+    @InspectorField
+    @Enum(CameraScaleMode)
+    get _scaleMode(): CameraScaleMode { return this.scaleMode; }
+    set _scaleMode(mode: CameraScaleMode) { this.SetScaleMode(mode); }
 
     // derived
-    zoomFit: number = 1;
+    @InspectorField zoomFit: number = 1;
     offset: Vec2 = new Vec2(0, 0);
+
     scene: Scene;
 
     // shake
@@ -50,14 +61,6 @@ export class CameraHandler {
     {
         this.target.y = value + this.dimensions.height / 2;
     }
-
-    @InspectorField private get _position(): Vec2 { return this.position; }
-    @InspectorField private set _target(value: Vec2) { this.target = value; }
-    @InspectorField private get _zoom(): number { return this.zoom; }
-    @InspectorField private get _zoomFit(): number { return this.zoomFit; }
-    @InspectorField private get _scaleMode(): CameraScaleMode { return this.scaleMode; }
-    @InspectorField private get _dimensions(): Size { return this.dimensions; }
-    @InspectorField private get _bounds(): Rectangle { return this.bounds; }
 
     constructor(scene: Scene)
     {
@@ -145,7 +148,6 @@ export class CameraHandler {
     SetZoom(zoom: number)
     {
         this.zoom = zoom;
-        this.CalculateZoomFit();
     }
 
     // center position
@@ -193,7 +195,6 @@ export class CameraHandler {
     SetBounds(bounds: Rectangle)
     {
         this.bounds = bounds;
-        this.CalculateZoomFit();
     }
 
     SetBoundsToScreen()
