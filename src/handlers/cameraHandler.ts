@@ -2,6 +2,7 @@ import { RegisterController } from "../globals";
 import { Vec2 } from "../libraries/new-rapid-render";
 import type { Scene } from "../scenes/scene";
 import { BareEvent, CameraScaleMode, Rectangle, type Size } from "../types/bareTypes";
+import { InspectorField } from "../utils/decorators";
 import { Helper } from "../utils/helper";
 
 export class CameraHandler {
@@ -49,6 +50,14 @@ export class CameraHandler {
     {
         this.target.y = value + this.dimensions.height / 2;
     }
+
+    @InspectorField private get _position(): Vec2 { return this.position; }
+    @InspectorField private set _target(value: Vec2) { this.target = value; }
+    @InspectorField private get _zoom(): number { return this.zoom; }
+    @InspectorField private get _zoomFit(): number { return this.zoomFit; }
+    @InspectorField private get _scaleMode(): CameraScaleMode { return this.scaleMode; }
+    @InspectorField private get _dimensions(): Size { return this.dimensions; }
+    @InspectorField private get _bounds(): Rectangle { return this.bounds; }
 
     constructor(scene: Scene)
     {

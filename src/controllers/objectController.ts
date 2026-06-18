@@ -11,9 +11,10 @@ export class ObjectController
     public scene: Scene;
 
     @InspectorField
-    objects = {
-        get: () => this.GetAll().length
-    };
+    private get objectsNum():int { return this.GetAll().length; }
+    
+    @InspectorField
+    private get layersNum():int { return this.layers.length; }
     
     constructor(scene: Scene)
     {

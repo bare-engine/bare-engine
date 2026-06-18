@@ -2,7 +2,7 @@ import { GameMode, RegisterController } from "../globals";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
 import { BareEvent, Ctor } from '../types/bareTypes';
-import { RUN_MODES_KEY } from "../utils/decorators";
+import { InspectorField, RUN_MODES_KEY } from "../utils/decorators";
 
 // REFERENCING A CLASS EXTENDING BASECOMPONENT WILL AUTOMATICALLY ALSO INCLUDE COMPONENTCONTROLLER
 export abstract class Component<T extends GameObject = GameObject>
@@ -54,6 +54,9 @@ export class ComponentController
     private queuedForStart: Component<any>[] = [];
 
     public scene: Scene
+
+    @InspectorField
+    private get componentsNum():int { return Array.from(this.componentsByType.values()).flat().length; }
 
     constructor(scene: Scene)
     {

@@ -16,9 +16,7 @@ type MouseSpace = {
 export class MouseController
 {
     @InspectorField
-    mouseScreenPosition = {
-        get: () => this.screen.position
-    };
+    private get mouseScreenPosition(): Vec2 { return this.screen.position; }
 
     @InspectorField
     private get mouseWorldPosition(): Vec2 { return this.world.position; }

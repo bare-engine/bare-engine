@@ -4,6 +4,7 @@ import Tween, { TweenWithPromise } from "../libraries/tweenJS/Tween";
 import type { Scene } from "../scenes/scene";
 import { GameObject } from "../objects/gameObject";
 import { RegisterController } from '../globals';
+import { InspectorField } from '../utils/decorators';
 
 export class TweenController
 {
@@ -11,6 +12,9 @@ export class TweenController
     time: number = 0;
 
     public scene: Scene;
+
+    @InspectorField
+    private get tweensNum():int { return this.tweens.length; }
 
     constructor(scene: Scene)
     {

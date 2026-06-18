@@ -5,6 +5,7 @@ import { BareEvent, BareEventPayload, CollisionHandlingType, HitboxType } from '
 import { Hitbox } from "../types/hitbox";
 import { Helper } from "../utils/helper";
 import { RegisterController } from "../globals";
+import { InspectorField } from "../utils/decorators";
 
 type AnyPress = (go: any, ...args: any[]) => any;
 
@@ -35,6 +36,9 @@ export class HitboxController
     // SO A CONTROLLER NEVER BLOCKS ITS OWN RE-ENTRANT Update (eg PointerDown CALLS Update AGAIN).
     private static pointerClaimedFrame: int = -1;
     private static pointerClaimedBy: HitboxController | null = null;
+
+    @InspectorField
+    private get hitboxesNum():int { return this.GetAll().length; }
 
     private PointerClaimedByOther(): boolean
     {
@@ -318,6 +322,45 @@ export class HitboxController
         }
 
         return true;
+    }
+    
+    GetAll()
+    {
+        var hitboxes: Hitbox[] = [];
+
+        const collect = (current: GameObject) => {
+            for (var i = current.children.length - 1; i >= 0; i--)
+            {
+                collect(current.children[i]);
+            }
+
+            hitboxes.push(current.tapHitbox);
+        };
+
+        var layers = this.scene.object.GetLayers();
+        var layersSettings = this.scene.settingsData.layers;
+        var l = layersSettings.length;
+
+        for (var i = 0; i < layers.length; i++)
+        {
+            const layer = i;
+
+            if (layer > l - 1)
+                continue;
+
+            if (this.exclusiveLayers.length > 0 && !this.exclusiveLayers.includes(layer))
+                continue;
+
+            var objs = layers[i];
+
+            for (var j = objs.length - 1; j >= 0; j--)
+            {
+                var obj = objs[j];
+                collect(obj);
+            }
+        }
+
+        return hitboxes;
     }
 
     private GetTopInObject(obj: GameObject, point: Vec2): Hitbox | null

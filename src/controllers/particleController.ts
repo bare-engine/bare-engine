@@ -2,6 +2,7 @@ import { ParticleEmitter } from "../libraries/new-rapid-render/particle";
 import { Vec2 } from "../libraries/new-rapid-render";
 import { Scene } from "../scenes/scene";
 import { RegisterController } from "../globals";
+import { InspectorField } from "../utils/decorators";
 type ParticleEmitterEntry = {
     emitter: ParticleEmitter;
     autoRemove: boolean;
@@ -27,6 +28,15 @@ export class ParticleController
     private emitters: ParticleEmitterEntry[] = [];
 
     public scene: Scene;
+
+    @InspectorField
+    private get emittersNum():int { return this.emitters.length; }
+
+    @InspectorField
+    private get activeEmittersNum():int { return this.emitters.filter(entry => entry.hasActivated).length; }
+
+    @InspectorField
+    private get particlesNum():int { return this.emitters.reduce((total, entry) => total + entry.emitter.getParticleCount(), 0); }
 
     constructor(scene: Scene)
     {

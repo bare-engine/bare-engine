@@ -7,8 +7,8 @@ import { Scene } from "../scenes/scene";
 import { defaultSettingsData } from "../types/bareData";
 import { BareEvent, BareEventPayload, ConstructEntityOptions, Entity, entityVars, LevelData, SaveData, Scalar, SettingsData } from '../types/bareTypes';
 import { Hitbox } from "../types/hitbox";
-import { getSaveFields } from "../utils/decorators";
-import { Helper } from "../utils/helper";
+import { getSaveFields, InspectorField } from "../utils/decorators";
+import { Helper, Size } from "../utils/helper";
 import { assetsHandler } from "./assetsHandler";
 import { SettingsHandler } from "./settingsHandler";
 
@@ -19,6 +19,14 @@ export class LevelHandler
     currentLevel: LevelData;
     
     public scene: Scene;
+
+    @InspectorField
+    private get name():string { return this.currentLevel.name; }
+
+    @InspectorField
+    private get dimensions():Size { return this.currentLevel.dimensions; }
+    
+    @InspectorField
     backgroundColor: Color | null = null;
     
     constructor(scene: Scene)

@@ -7,6 +7,7 @@ import { ArcadeObject } from "../objects/arcadeObject";
 import { BareEvent, BlockedState } from "../types/bareTypes";
 import { RegisterController } from "../globals";
 import { PhysicsControllerBase } from "./physicsControllerBase";
+import { InspectorField } from "../utils/decorators";
 
 const arcadePhysicsEventDefs = {
     collision_start: "collision_start",
@@ -42,6 +43,9 @@ export class ArcadePhysicsController extends PhysicsControllerBase
     public OnPreCollisionResolve: ((obj1: ArcadeObject, obj2: ArcadeObject) => boolean) | null = null;
     private broadPhaseMaxItems: number = 8;
     private broadPhaseMaxLevels: number = 6;
+
+    @InspectorField
+    private get objectsNum():int { return this.objects.length; }
 
     constructor(scene: Scene)
     {
