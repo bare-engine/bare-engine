@@ -87,6 +87,7 @@ export class TransformToolHandler
     private starts: TargetStart[] = [];
 
     private cursorSet = false;
+    private editorControlsSuppressed = false;
 
     private constructor()
     {
@@ -106,6 +107,7 @@ export class TransformToolHandler
     Clear(): void
     {
         this.RestoreHitboxes();
+        this.SuppressEditorControls(false); // re-enable editor placement/selection (uses current targets' scene)
         this.targets = [];
         this.starts = [];
         this.resizing = false;
@@ -166,6 +168,7 @@ export class TransformToolHandler
             else this.ApplyResize(scene);
 
             this.SetHitboxesActive(false); // keep body-drag suppressed for the whole gesture
+            this.SuppressEditorControls(true); // suppress editor placement/selection during the gesture
             this.SetCursor(this.rotating ? 'grabbing' : this.CursorFor(this.handle!.name));
             return;
         }
@@ -193,6 +196,7 @@ export class TransformToolHandler
         }
 
         this.SetHitboxesActive(cursor == null);
+        this.SuppressEditorControls(cursor != null); // block stamp placement / selection while hovering a handle
         this.SetCursor(cursor);
     };
 
@@ -608,6 +612,20 @@ export class TransformToolHandler
     private RestoreHitboxes(): void
     {
         this.SetHitboxesActive(true);
+    }
+
+    // Disable the editor's controls while a handle is hovered/dragged, so a stamp (currentPreviewEntity)
+    // doesn't place an object and a click doesn't re-select. Mirrors ResizableComponent's edge-hover behaviour.
+    // No-op outside the level editor (in-game plugin scenes have no editorControlsHandler).
+    private SuppressEditorControls(suppress: boolean): void
+    {
+        if (this.editorControlsSuppressed === suppress) return;
+
+        const controls = (this.GetScene() as any)?.editorControlsHandler;
+        if (!controls || typeof controls.SetActive !== 'function') return;
+
+        controls.SetActive(!suppress);
+        this.editorControlsSuppressed = suppress;
     }
 
     private SetCursor(cursor: string | null): void
