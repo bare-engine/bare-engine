@@ -1,7 +1,7 @@
 import { keyboardController } from "../controllers/keyboardController";
 import { sceneController } from "../controllers/sceneController";
 import { GameMode, globalEvents } from "../globals";
-import { Color, Vec2 } from "../libraries/new-rapid-render";
+import { Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { ArcadeObject } from "../objects/arcadeObject";
 import { EditorScene } from "../scenes/editorScene";
@@ -844,40 +844,56 @@ window.__GAME_DEBUG_API__ = {
         if (!o)
             return false;
 
-        // APPLY @InspectorField DECORATED FIELDS DECLARED ON THE OBJECT ITSELF
-        // applyInspectorField is a no-op (returns false) for props that aren't registered inspector fields,
-        // so the explicit transform/prop handling below is unaffected.
+        // APPLY @InspectorField DECORATED FIELDS DECLARED ON THE OBJECT ITSELF.
+        // REMEMBER WHICH PROPS THAT COVERED, SO THE GENERIC PASS BELOW DOESN'T RE-ASSIGN
+        // AND CLOBBER THEIR {get,set} DESCRIPTORS.
+        const inspectorHandled = new Set<string>();
         for (let prop in props)
         {
             if (prop.startsWith("__"))
                 continue;
 
-            await applyInspectorField(o, prop, props[prop]);
+            if (await applyInspectorField(o, prop, props[prop]))
+                inspectorHandled.add(prop);
         }
 
-        // APPLY PROPS TO OBJECT
-        if (props.customName !== undefined) o.customName = props.customName;
+        // PROPS THAT NEED BESPOKE HANDLING (BELOW) - SKIP THEM IN THE GENERIC PASS
+        const handledExplicitly = new Set(["pivot", "hitbox", "tags", "customData", "components"]);
 
-        if (props.x !== undefined) o.x = props.x;
-        if (props.y !== undefined) o.y = props.y;
-        if (props.scaleX !== undefined) o.scaleX = props.scaleX;
-        if (props.scaleY !== undefined) o.scaleY = props.scaleY;
-        if (props.rotation !== undefined) o.rotation = props.rotation;
+        // GENERIC PASS - MIRRORS Scene.ApplyEntityVarsToGameObject / setEntityField:
+        // route through the object's specialMap (color, children, ...) else assign the field directly.
+        // COVERS customName, x/y, scale*, rotation, inner*, flipped, visible, persistent, save, alpha, color, children.
+        const specialMap = o.specialMap;
+        for (let prop in props)
+        {
+            if (prop.startsWith("__") || inspectorHandled.has(prop) || handledExplicitly.has(prop))
+                continue;
 
-        if (props.innerX !== undefined) o.innerTransform.position.x = props.innerX;
-        if (props.innerY !== undefined) o.innerTransform.position.y = props.innerY;
-        if (props.innerScaleX !== undefined) o.innerScale.x = props.innerScaleX;
-        if (props.innerScaleY !== undefined) o.innerScale.y = props.innerScaleY;
-        if (props.innerRotation !== undefined) o.innerTransform.rotation = props.innerRotation;
+            const value = props[prop];
+            if (value === undefined)
+                continue;
 
-        if (props.pivot !== undefined) { 
+            const special = specialMap[prop];
+            if (special)
+            {
+                special(o, value);
+                continue;
+            }
+
+            if (prop in o)
+                o[prop] = value;
+        }
+
+        // PIVOT / HITBOX - LIKE A specialMap ENTRY, BUT ALSO RE-APPLY WHEN GIVEN AS A PERCENTAGE
+        // AND MIRROR THE VALUE ONTO o.entity SO getObject() STAYS IN SYNC.
+        if (props.pivot !== undefined) {
             if ((props.pivot.x >= 0 && props.pivot.x < 1) || (props.pivot.y >= 0 && props.pivot.y < 1))
             {
                 scene.ApplyEntityToGameObject(props as Entity, o, false);
             }
             o.entity.pivot = props.pivot; //
         }
-        if (props.hitbox !== undefined) { 
+        if (props.hitbox !== undefined) {
             if ((props.hitbox.x >= 0 && props.hitbox.x < 1) || (props.hitbox.y >= 0 && props.hitbox.y < 1) ||
                 (props.hitbox.width >= 0 && props.hitbox.width < 1) || (props.hitbox.height >= 0 && props.hitbox.height < 1))
             {
@@ -885,29 +901,12 @@ window.__GAME_DEBUG_API__ = {
             }
             o.entity.hitbox = props.hitbox; //
         }
-        if (props.hitbox !== undefined) { 
-            
-        }
 
         //if (props.pivotBasedOnHitbox !== undefined) { o.pivotBasedOnHitbox.x = props.pivotBasedOnHitbox.x; o.pivotBasedOnHitbox.y = props.pivotBasedOnHitbox.y; }
-       
-        if (props.flipped !== undefined) o.flipped = props.flipped;
-        if (props.visible !== undefined) o.visible = props.visible;
-        if (props.persistent !== undefined) o.persistent = props.persistent;
-        if (props.save !== undefined) o.save = props.save;
-        if (props.tags !== undefined) o.tags = JSON.parse(props.tags);
-        if (props.color !== undefined) o.color = Color.fromHex(props.color);
-        if (props.alpha !== undefined) o.alpha = props.alpha;
-        if (props.customData !== undefined) o.customData = JSON.parse(props.customData);
 
-        if (props.children !== undefined)
-        {
-            // ADD CHILDREN
-            for (var i = 0; i < props.children.length; i++)
-            {
-                o.AddChild(props.children[i]);
-            }
-        }
+        // tags / customData ARRIVE AS JSON STRINGS FROM THE PLUGIN
+        if (props.tags !== undefined) o.tags = JSON.parse(props.tags);
+        if (props.customData !== undefined) o.customData = JSON.parse(props.customData);
 
         // UPDATE OR ADD COMPONENTS
         if (props.components !== undefined)
