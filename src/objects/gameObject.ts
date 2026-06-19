@@ -255,6 +255,43 @@ export class GameObject
         // OVERRIDE
     }
 
+    // MAPS ENTITY PROPS THAT NEED CUSTOM HANDLING WHEN APPLIED TO THIS OBJECT.
+    // OVERRIDE IN SUBCLASSES WITH { ...super.specialMap, ... } TO ADD MORE.
+    get specialMap(): Record<string, (obj: GameObject, value: any) => void>
+    {
+        return {
+            pivot: (o, v) => o.SetPivot(v.x, v.y), // SETPIVOT DOES SOME EXTRA WORK FOR PERCENTAGES, SO CUSTOM MAPPING
+            texture: (o, v) => v && v != "NONE" && o.InitTexture(v), // PROCESS CUSTOM TEXTURE NAME
+            color: (o, v) => o.SetColor(v), // PROCESS THE HEX COLOR STRING
+            children: (o, v) => {
+                for (const childEntity of v)
+                {
+                    o.scene.AddGameObject(childEntity, o);
+                }
+            },
+            components: (o, v) => {
+                for (const component in v)
+                {
+                    const className = Helper.CapitalizeFirstLetter(component) + "Component";
+                    var ComponentClass = bare.componentClasses[className];
+                    if (!ComponentClass)
+                    {
+                        console.error('Component class not found: ' + className + '. Add it with bareEngine.AddClass(' + Helper.CapitalizeFirstLetter(component) + 'Component);');
+                        return;
+                    }
+                    var componentValues = v[component];
+                    var componentInstance = new ComponentClass(o.scene);
+                    for (const key in componentValues)
+                    {
+                        componentInstance[key] = componentValues[key];
+                    }
+                    componentInstance.__paramNames = Object.keys(componentValues);
+                    o.AddComponent(componentInstance);
+                }
+            },
+        };
+    }
+
     static GetUniqueID(): string
     {
         return (GameObject.gameObjectCounter++).toString();

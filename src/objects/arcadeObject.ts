@@ -63,54 +63,69 @@ export class ArcadeObject extends GameObject
         return super.SetTexture(texture);
     }
 
+    // EXTEND THE BASE SPECIAL MAP WITH HITBOX HANDLING - SETS THE physicsHitbox RECTANGLE DIRECTLY
+    override get specialMap(): Record<string, (obj: GameObject, value: any) => void>
+    {
+        return {
+            ...super.specialMap,
+            hitbox: (o, v) => {
+                var obj = o as ArcadeObject;
+                var hb = (v as Rectangle2Vec);
+
+                obj.physicsHitbox.rectangle = {x: 0, y: 0, width: 0, height: 0};
+
+                obj.WhenTextureLoaded(() => {
+                    if (!obj.texture) // NO, TODO - SHOULD NOT GET HERE, BUT NEEDED FOR COLLISION RECT IN ENTITY TO SHOW UP FOR SOME REASON
+                        return; // RELATED TO WhenTextureLoaded() IN GameObject AND if (texturePath == "NONE") return; IN InitTexture()
+
+                    var rect: Rectangle = {x: 0, y: 0, width: 0, height: 0};
+                    var w = obj.texture!.width * 1; //this.totalScaleX;
+                    var h = obj.texture!.height * 1; //this.totalScaleY;
+
+                    var allArePercentages = (hb.x1 >= 0 && hb.x1 <= 1 && hb.y1 >= 0 && hb.y1 <= 1 && hb.x2 >= 0 && hb.x2 <= 1 && hb.y2 >= 0 && hb.y2 <= 1);
+
+                    if (allArePercentages)
+                    {
+                        rect.x = hb.x1 * w;
+                        rect.y = hb.y1 * h;
+                        rect.width = (hb.x2 * w) - rect.x;
+                        rect.height = (hb.y2 * h) - rect.y;
+                    }
+                    else
+                    {
+                        rect.x = hb.x1;
+                        rect.y = hb.y1;
+                        rect.width = (hb.x2) - rect.x;
+                        rect.height = (hb.y2) - rect.y;
+                    }
+
+                    // APPLY
+                    obj.physicsHitbox.rectangle = rect;
+                });
+            },
+        };
+    }
+
     override OnApplyEntityToGameObject(entity: Entity, addComponents: boolean)
     {
-        // SET HITBOX, IF PROVIDED
+        // RECTANGLE IS SET BY THE hitbox SPECIAL MAP HANDLER (RUNS FIRST); HERE WE APPLY THE
+        // ENTITY-DEPENDENT EXTRAS (CIRCLE TYPE / RADIUS / pivotBasedOnHitbox) ON TOP OF IT.
         if (entity.hitbox)
         {
-            var hb = (entity.hitbox as Rectangle2Vec);
-
-            this.physicsHitbox.rectangle = {x: 0, y: 0, width: 0, height: 0};
-
             this.WhenTextureLoaded(() => {
-                if (!this.texture) // NO, TODO - SHOULD NOT GET HERE, BUT NEEDED FOR COLLISION RECT IN ENTITY TO SHOW UP FOR SOME REASON
-                    return; // RELATED TO WhenTextureLoaded() IN GameObject AND if (texturePath == "NONE") return; IN InitTexture()
-
-                var rect: Rectangle = {x: 0, y: 0, width: 0, height: 0};
-                var w = this.texture!.width * 1; //this.totalScaleX;
-                var h = this.texture!.height * 1; //this.totalScaleY;
-
-                var allArePercentages = (hb.x1 >= 0 && hb.x1 <= 1 && hb.y1 >= 0 && hb.y1 <= 1 && hb.x2 >= 0 && hb.x2 <= 1 && hb.y2 >= 0 && hb.y2 <= 1);
-
-                if (allArePercentages)
-                {
-                    rect.x = hb.x1 * w;
-                    rect.y = hb.y1 * h;
-                    rect.width = (hb.x2 * w) - rect.x;
-                    rect.height = (hb.y2 * h) - rect.y; 
-                }
-                else
-                {
-                    rect.x = hb.x1;
-                    rect.y = hb.y1;
-                    rect.width = (hb.x2) - rect.x;
-                    rect.height = (hb.y2) - rect.y;
-                }
-
-                // APPLY
-                //entity.hitbox = rect; // CHANGE IN DATA, SO DOESN'T PROCESS NEXT TIME (?)
-                this.physicsHitbox.rectangle = rect;
+                if (!this.texture)
+                    return;
 
                 if (entity.hitboxType == "Circle")
                 {
                     this.physicsHitbox.type = HitboxType.Circle;
-                    this.physicsHitbox.radius = (entity.hitboxRadius || Math.max(rect.width, rect.height) / 2);
-                }   
+                    this.physicsHitbox.radius = (entity.hitboxRadius || Math.max(this.physicsHitbox.rectangle.width, this.physicsHitbox.rectangle.height) / 2);
+                }
 
                 // pivotBasedOnHitbox
                 if (entity.pivot == undefined)
                 {
-                    // THIS SHOULD REALLY ONLY HAPPENS WHEN TEXTURE IS LOADED ABOVE, IF IT ISN'T, THIS BREAKS. 
+                    // THIS SHOULD REALLY ONLY HAPPENS WHEN TEXTURE IS LOADED ABOVE, IF IT ISN'T, THIS BREAKS.
                     // TODO, CACHE IMAGE SIZES?
                     var hbRect = (this.physicsHitbox.rectangle!);
 
@@ -127,11 +142,11 @@ export class ArcadeObject extends GameObject
                             this.pivot.y = (hbRect.y + hbRect.height * entity.pivotBasedOnHitbox.y); // RELATIVE
                         else
                             this.pivot.y = (hbRect.y + entity.pivotBasedOnHitbox.y); // ABSOLUTE (IF YOU'D WANT THIS FOR SOME REASON!)
-                    
+
                         //if (this.levelEntity)
                         //    this.levelEntity.pivot = this.pivot.clone();
                     }
-                }   
+                }
             });
 
             // CAN COLLIDE

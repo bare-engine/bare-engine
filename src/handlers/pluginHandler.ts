@@ -721,11 +721,28 @@ window.__GAME_DEBUG_API__ = {
 
     async setEntityField(name: string, props: Record<string, any>, childPath: number[], save:boolean = false)
     {
-        if (!save)
-            return;
-        
         let entityScene = sceneController.Get(EntityScene);
 
+        if (!save)
+        {
+            var obj = entityScene.object.GetByName(name);
+            for (var prop in props)
+            {
+                var value = props[prop];
+
+                // if special mapping exists — use it
+                const special = obj.specialMap[prop];
+                if (special) 
+                {
+                    special(obj, value);
+                    continue;
+                }
+                obj[prop] = value;
+            }
+
+            return;
+        }
+        
         var rawSettingsData = entityScene.settingsHandler.GetRaw();
 
         // MAKE SURE ANY OR ANY_ENTITY EXISTS, IF WE'RE GONNA WRITE TO IT

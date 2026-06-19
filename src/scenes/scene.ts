@@ -16,7 +16,6 @@ import { Color, RenderTexture, Texture, Vec2 } from "../libraries/new-rapid-rend
 import { GameObject } from "../objects/gameObject";
 import { defaultSettingsData } from "../types/bareData";
 import { AwakePayload, BareEvent, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
-import { Helper } from "../utils/helper";
 import { getInspectorFieldNames, InspectorClass, InspectorField, Label, Locked } from "../utils/decorators";
 import { Bare } from "../types/bare";
 
@@ -354,39 +353,6 @@ export class Scene implements SceneI
         obj.entity = entity;
     }
 
-    private specialMap: Record<string, (obj: GameObject, value: any) => void> =
-    {
-        pivot: (o, v) => o.SetPivot(v.x, v.y), // SETPIVOT DOES SOME EXTRA WORK FOR PERCENTAGES, SO CUSTOM MAPPING
-        texture: (o, v) => v && v != "NONE" && o.InitTexture(v), // PROCESS CUSTOM TEXTURE NAME
-        color: (o, v) => o.SetColor(v), // PROCESS THE HEX COLOR STRING
-        children: (o, v) => {
-            for (const childEntity of v)
-            {
-                this.AddGameObject(childEntity, o);
-            }
-        },
-        components: (o, v) => {
-            for (const component in v)
-            {
-                const className = Helper.CapitalizeFirstLetter(component) + "Component";
-                var ComponentClass = bare.componentClasses[className];
-                if (!ComponentClass)
-                {
-                    console.error('Component class not found: ' + className + '. Add it with bareEngine.AddClass(' + Helper.CapitalizeFirstLetter(component) + 'Component);');
-                    return;
-                }
-                var componentValues = v[component];
-                var componentInstance = new ComponentClass(o.scene);
-                for (const key in componentValues)
-                {
-                    componentInstance[key] = componentValues[key];
-                }
-                componentInstance.__paramNames = Object.keys(componentValues);
-                o.AddComponent(componentInstance);
-            }
-        }
-    };
-
     ApplyEntityVarsToGameObject(entity: Entity, obj: GameObject, addComponents: boolean = true)
     {
         obj.OnApplyEntityVarsToGameObject(entity, obj);
@@ -428,6 +394,7 @@ export class Scene implements SceneI
         }
 
         const inspectorFieldNames = new Set(getInspectorFieldNames(obj));
+        const specialMap = obj.specialMap;
 
         for (const key in entity) {
             if (key == "components" && !addComponents)
@@ -436,15 +403,15 @@ export class Scene implements SceneI
             const value = entity[key];
             if (value === undefined) continue;
 
-            // skip if obj doesn't have the field
-            if (!(key in obj)) continue;
-
-            // if special mapping exists — use it
-            const special = this.specialMap[key];
+            // if special mapping exists — use it (takes priority; the field need not exist on obj, eg hitbox)
+            const special = specialMap[key];
             if (special) {
                 special(obj, value);
                 continue;
             }
+
+            // skip if obj doesn't have the field
+            if (!(key in obj)) continue;
 
             // @InspectorField descriptors hold a { get, set } object on the instance.
             // Route through the descriptor's setter so we don't clobber that object (which would
