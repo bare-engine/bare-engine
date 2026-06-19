@@ -14,12 +14,12 @@ type HandleName =
 interface HandleDef
 {
     name: HandleName;
-    // -1 = left/top edge, 0 = centre, 1 = right/bottom edge
+    // -1 = left/top edge, 0 = centre, 1 = right/bottom edge (in frame-local space)
     sx: -1 | 0 | 1;
     sy: -1 | 0 | 1;
 }
 
-// The 8 anchors: 4 corners + 4 mid-sides.
+// The 8 resize anchors: 4 corners + 4 mid-sides.
 const HANDLES: HandleDef[] = [
     { name: 'top-left',     sx: -1, sy: -1 },
     { name: 'top',          sx:  0, sy: -1 },
@@ -31,7 +31,9 @@ const HANDLES: HandleDef[] = [
     { name: 'left',         sx: -1, sy:  0 },
 ];
 
-interface Frame { x: number; y: number; w: number; h: number; }
+// Oriented bounding box: centre, half-extents along its own axes, and rotation (radians).
+// angle == 0 is a plain axis-aligned box (used for multi-selection groups).
+interface Frame { cx: number; cy: number; hw: number; hh: number; angle: number; }
 
 interface TargetStart
 {
@@ -39,24 +41,31 @@ interface TargetStart
     pos: Vec2;       // world position of the object's origin at grab time
     scaleX: number;
     scaleY: number;
+    rotation: number; // degrees, at grab time
 }
 
-const HANDLE_SIZE = 5;   // drawn handle size, in screen px (scaled by zoom)
-const HANDLE_HIT_PAD = 5; // extra grab slack around a handle, in screen px
-const MIN_SIZE = 1;      // smallest world-space group dimension while resizing
+const HANDLE_SIZE = 5;        // drawn resize-handle size, in screen px (scaled by zoom)
+const HANDLE_HIT_PAD = 5;     // extra grab slack around a handle, in screen px
+const MIN_SIZE = 1;           // smallest world-space frame dimension while resizing
+const ROT_HANDLE_DIST = 18;   // gap from the top edge to the rotation knob, in screen px
+const ROT_HANDLE_RADIUS = 5;  // rotation knob radius, in screen px
+const ROT_SNAP_DEG = 15;      // rotation snap step while holding shift
 
 /*
     TRANSFORM GIZMO
-    Draws a bounding rectangle + 8 drag handles around the current selection and
-    resizes it when a handle is dragged. Replaces the selection outline used by
-    EditorControlsHandler (editor) and PluginHandler (in-game right-click select).
+    Draws a bounding rectangle + 8 resize handles + a rotation knob above the box
+    around the current selection, and transforms it when a handle is dragged.
+    Replaces the selection outline used by EditorControlsHandler (editor) and
+    PluginHandler (in-game right-click select).
 
     Single global singleton fed by both selection sources via SetTargets()/Clear().
-    The resize maths is modelled on ResizableComponent.
+    The maths is modelled on ResizableComponent.
 
-    NOTE: the gizmo is axis-aligned for now. It is built around a "frame" so an
-    oriented box (rotated single-object selection) can be slotted in next without
-    touching the hit-testing / draw code.
+    The gizmo is an oriented "frame" (centre + half-extents + angle):
+      - a single selected object: the box hugs and rotates with the object.
+      - a group: an axis-aligned box around the combined world bounds (angle 0).
+    All hit-testing / drawing / resizing goes through the frame's local axes, so the
+    rotated case and the axis-aligned case share one code path.
 */
 export class TransformToolHandler
 {
@@ -70,9 +79,11 @@ export class TransformToolHandler
     targets: GameObject[] = [];
 
     private resizing = false;
+    private rotating = false;
     private handle: HandleDef | null = null;
 
-    private startRect: Frame = { x: 0, y: 0, w: 0, h: 0 };
+    private startFrame: Frame = { cx: 0, cy: 0, hw: 0, hh: 0, angle: 0 };
+    private startMouseAngle = 0;
     private starts: TargetStart[] = [];
 
     private cursorSet = false;
@@ -98,6 +109,7 @@ export class TransformToolHandler
         this.targets = [];
         this.starts = [];
         this.resizing = false;
+        this.rotating = false;
         this.handle = null;
         this.SetCursor(null);
     }
@@ -106,7 +118,7 @@ export class TransformToolHandler
 
     private OnPointerDown = ({ event }: BareEventPayload['pointer_down']): void =>
     {
-        if (this.resizing) return;
+        if (this.resizing || this.rotating) return;
         if (this.targets.length == 0) return;
         if (bare.MouseIsOnEditor(event)) return;
 
@@ -118,7 +130,16 @@ export class TransformToolHandler
         const frame = this.GetFrame();
         if (!frame) return;
 
-        const handle = this.HitTest(scene, frame, scene.mouse.world.position);
+        const mouse = scene.mouse.world.position;
+
+        // Rotation knob takes priority - it sits outside the box, above the top edge.
+        if (this.HitTestRotation(scene, frame, mouse))
+        {
+            this.BeginRotate(frame, mouse);
+            return;
+        }
+
+        const handle = this.HitTest(scene, frame, mouse);
         if (!handle) return;
 
         this.BeginResize(handle, frame);
@@ -138,24 +159,41 @@ export class TransformToolHandler
         const scene = this.GetScene();
         if (!scene) return;
 
-        if (this.resizing)
+        // Active gesture (mouse still held): apply the transform and keep the gesture cursor.
+        if ((this.resizing || this.rotating) && scene.mouse.IsDown())
         {
-            if (scene.mouse.IsDown())
-                this.ApplyResize(scene);
-            else
-                this.EndResize(scene);
+            if (this.rotating) this.ApplyRotate(scene);
+            else this.ApplyResize(scene);
 
-            this.SetHitboxesActive(false); // keep body-drag suppressed for the whole resize
-            this.SetCursor(this.handle);
+            this.SetHitboxesActive(false); // keep body-drag suppressed for the whole gesture
+            this.SetCursor(this.rotating ? 'grabbing' : this.CursorFor(this.handle!.name));
             return;
         }
 
-        // HOVER: detect the handle under the cursor for the cursor + to suppress body-drag.
-        const frame = this.GetFrame();
-        const handle = frame ? this.HitTest(scene, frame, scene.mouse.world.position) : null;
+        // Gesture just released: finish it, then fall through to normal hover handling.
+        if (this.resizing || this.rotating)
+            this.EndTransform(scene);
 
-        this.SetHitboxesActive(handle == null);
-        this.SetCursor(handle);
+        // HOVER: pick the cursor + decide whether to suppress body-drag.
+        const frame = this.GetFrame();
+        let cursor: string | null = null;
+
+        if (frame)
+        {
+            const mouse = scene.mouse.world.position;
+            if (this.HitTestRotation(scene, frame, mouse))
+            {
+                cursor = 'grab';
+            }
+            else
+            {
+                const handle = this.HitTest(scene, frame, mouse);
+                if (handle) cursor = this.CursorFor(handle.name);
+            }
+        }
+
+        this.SetHitboxesActive(cursor == null);
+        this.SetCursor(cursor);
     };
 
     private OnRender = (): void =>
@@ -181,33 +219,31 @@ export class TransformToolHandler
     private BeginResize(handle: HandleDef, frame: Frame): void
     {
         this.resizing = true;
+        this.rotating = false;
         this.handle = handle;
-        this.startRect = { ...frame };
-
-        this.starts = this.targets.map(o => ({
-            obj: o,
-            pos: o.parent ? o.parent.ToGlobal(new Vec2(o.x, o.y)) : new Vec2(o.x, o.y),
-            scaleX: o.scale.x,
-            scaleY: o.scale.y,
-        }));
+        this.startFrame = { ...frame };
+        this.RecordStarts();
     }
 
     private ApplyResize(scene: Scene): void
     {
         const handle = this.handle!;
-        const sr = this.startRect;
+        const f = this.startFrame;
         const m = scene.mouse.world.position;
 
         const fromCenter = keyboardController.IsKeyDown('alt');
-        const keepAspect = keyboardController.IsKeyDown('shift');
+        const keepAspect = !keyboardController.IsKeyDown('shift'); // ratio by default, shift = scale freely
 
-        const cx = sr.x + sr.w * 0.5;
-        const cy = sr.y + sr.h * 0.5;
+        // Mouse in the frame's local space (box spans [-hw,hw] x [-hh,hh], centred at 0).
+        const ml = this.ToFrameLocal(f, m);
 
-        // For each axis: the fixed anchor point and the scale factor relative to the start rect.
+        const fullW = f.hw * 2;
+        const fullH = f.hh * 2;
+
+        // Per axis: the fixed anchor (in local space) and the scale factor vs the start frame.
         // sx/sy stay 1 on an axis the handle doesn't drive (e.g. a side handle).
-        let anchorX = sr.x;
-        let anchorY = sr.y;
+        let anchorLX = 0;
+        let anchorLY = 0;
         let sx = 1;
         let sy = 1;
 
@@ -215,15 +251,15 @@ export class TransformToolHandler
         {
             if (fromCenter)
             {
-                anchorX = cx;
-                const half = Math.max(MIN_SIZE * 0.5, Math.abs(m.x - cx));
-                sx = sr.w > 0 ? (half * 2) / sr.w : 1;
+                anchorLX = 0;
+                const half = Math.max(MIN_SIZE * 0.5, Math.abs(ml.x));
+                sx = f.hw > 0 ? half / f.hw : 1;
             }
             else
             {
-                anchorX = handle.sx > 0 ? sr.x : sr.x + sr.w;
-                const len = Math.max(MIN_SIZE, handle.sx > 0 ? m.x - anchorX : anchorX - m.x);
-                sx = sr.w > 0 ? len / sr.w : 1;
+                anchorLX = -handle.sx * f.hw;
+                const len = Math.max(MIN_SIZE, handle.sx > 0 ? ml.x - anchorLX : anchorLX - ml.x);
+                sx = fullW > 0 ? len / fullW : 1;
             }
         }
 
@@ -231,15 +267,15 @@ export class TransformToolHandler
         {
             if (fromCenter)
             {
-                anchorY = cy;
-                const half = Math.max(MIN_SIZE * 0.5, Math.abs(m.y - cy));
-                sy = sr.h > 0 ? (half * 2) / sr.h : 1;
+                anchorLY = 0;
+                const half = Math.max(MIN_SIZE * 0.5, Math.abs(ml.y));
+                sy = f.hh > 0 ? half / f.hh : 1;
             }
             else
             {
-                anchorY = handle.sy > 0 ? sr.y : sr.y + sr.h;
-                const len = Math.max(MIN_SIZE, handle.sy > 0 ? m.y - anchorY : anchorY - m.y);
-                sy = sr.h > 0 ? len / sr.h : 1;
+                anchorLY = -handle.sy * f.hh;
+                const len = Math.max(MIN_SIZE, handle.sy > 0 ? ml.y - anchorLY : anchorLY - ml.y);
+                sy = fullH > 0 ? len / fullH : 1;
             }
         }
 
@@ -255,6 +291,10 @@ export class TransformToolHandler
             else if (handle.sy != 0) sx = sy;
         }
 
+        const anchor = this.FromFrameLocal(f, anchorLX, anchorLY);
+        const cos = Math.cos(f.angle);
+        const sin = Math.sin(f.angle);
+
         for (const st of this.starts)
         {
             const o = st.obj;
@@ -263,26 +303,83 @@ export class TransformToolHandler
             o.scale.x = st.scaleX * sx;
             o.scale.y = st.scaleY * sy;
 
-            // Scale the object's world origin about the fixed anchor. Pivot terms cancel,
-            // so this is independent of each object's pivot.
-            const nx = anchorX + (st.pos.x - anchorX) * sx;
-            const ny = anchorY + (st.pos.y - anchorY) * sy;
+            // Scale the object's world origin about the fixed anchor, along the frame's axes:
+            // new = anchor + R(angle) * diag(sx,sy) * R(-angle) * (start - anchor).
+            // Pivot terms cancel, so this is independent of each object's pivot.
+            const dx = st.pos.x - anchor.x;
+            const dy = st.pos.y - anchor.y;
+            const lx =  dx * cos + dy * sin;
+            const ly = -dx * sin + dy * cos;
+            const wx = (lx * sx) * cos - (ly * sy) * sin;
+            const wy = (lx * sx) * sin + (ly * sy) * cos;
 
-            if (o.parent)
-            {
-                const local = o.parent.ToLocal(new Vec2(nx, ny));
-                o.SetPosition(local.x, local.y);
-            }
-            else
-            {
-                o.SetPosition(nx, ny);
-            }
+            this.SetWorldPosition(o, anchor.x + wx, anchor.y + wy);
         }
     }
 
-    private EndResize(scene: Scene): void
+    // ================= ROTATE =================
+
+    private BeginRotate(frame: Frame, mouse: Vec2): void
+    {
+        this.rotating = true;
+        this.resizing = false;
+        this.handle = null;
+        this.startFrame = { ...frame };
+        this.startMouseAngle = Math.atan2(mouse.y - frame.cy, mouse.x - frame.cx);
+        this.RecordStarts();
+    }
+
+    private ApplyRotate(scene: Scene): void
+    {
+        const f = this.startFrame;
+        const m = scene.mouse.world.position;
+
+        let deltaDeg = (Math.atan2(m.y - f.cy, m.x - f.cx) - this.startMouseAngle) * 180 / Math.PI;
+
+        if (keyboardController.IsKeyDown('shift'))
+        {
+            // Snap the resulting rotation to absolute steps (0/15/30/...), not the drag delta.
+            // Measured from the primary object's start rotation, so a single object lands exactly on a step.
+            const baseDeg = this.starts[0]?.rotation ?? 0;
+            const snapped = Math.round((baseDeg + deltaDeg) / ROT_SNAP_DEG) * ROT_SNAP_DEG;
+            deltaDeg = snapped - baseDeg;
+        }
+
+        const delta = deltaDeg * Math.PI / 180;
+        const cos = Math.cos(delta);
+        const sin = Math.sin(delta);
+
+        for (const st of this.starts)
+        {
+            const o = st.obj;
+            if (!o) continue;
+
+            o.rotation = st.rotation + deltaDeg;
+
+            // Rotate the object's world origin about the frame centre by the same delta.
+            const dx = st.pos.x - f.cx;
+            const dy = st.pos.y - f.cy;
+            this.SetWorldPosition(o, f.cx + dx * cos - dy * sin, f.cy + dx * sin + dy * cos);
+        }
+    }
+
+    // ================= GESTURE LIFECYCLE =================
+
+    private RecordStarts(): void
+    {
+        this.starts = this.targets.map(o => ({
+            obj: o,
+            pos: o.parent ? o.parent.ToGlobal(new Vec2(o.x, o.y)) : new Vec2(o.x, o.y),
+            scaleX: o.scale.x,
+            scaleY: o.scale.y,
+            rotation: o.rotation,
+        }));
+    }
+
+    private EndTransform(scene: Scene): void
     {
         this.resizing = false;
+        this.rotating = false;
         this.handle = null;
         this.starts = [];
 
@@ -292,6 +389,19 @@ export class TransformToolHandler
             save();
     }
 
+    private SetWorldPosition(o: GameObject, worldX: number, worldY: number): void
+    {
+        if (o.parent)
+        {
+            const local = o.parent.ToLocal(new Vec2(worldX, worldY));
+            o.SetPosition(local.x, local.y);
+        }
+        else
+        {
+            o.SetPosition(worldX, worldY);
+        }
+    }
+
     // ================= GEOMETRY =================
 
     private GetScene(): Scene | null
@@ -299,11 +409,37 @@ export class TransformToolHandler
         return this.targets[0]?.scene ?? null;
     }
 
-    // World-space AABB union of the selection. Built as a "frame" so a rotated box can replace it later.
+    // A single textured object yields an oriented box that hugs and rotates with it.
+    // Everything else (groups, textureless objects) yields an axis-aligned world AABB.
     private GetFrame(): Frame | null
     {
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        if (this.targets.length == 0) return null;
 
+        if (this.targets.length == 1)
+        {
+            const o = this.targets[0];
+            const texW = o.texture?.width ?? 0;
+            const texH = o.texture?.height ?? 0;
+
+            if (texW > 0 && texH > 0)
+            {
+                // Derive the oriented box from actual world geometry, so parent scale/rotation,
+                // inner transform and flip are all accounted for.
+                const center = o.ToGlobal(new Vec2(texW * 0.5, texH * 0.5), true);
+                const right  = o.ToGlobal(new Vec2(texW,       texH * 0.5), true);
+                const bottom = o.ToGlobal(new Vec2(texW * 0.5, texH      ), true);
+
+                return {
+                    cx: center.x,
+                    cy: center.y,
+                    hw: Math.hypot(right.x - center.x, right.y - center.y),
+                    hh: Math.hypot(bottom.x - center.x, bottom.y - center.y),
+                    angle: Math.atan2(right.y - center.y, right.x - center.x),
+                };
+            }
+        }
+
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         for (const o of this.targets)
         {
             const b = o.GetBounds();
@@ -315,26 +451,50 @@ export class TransformToolHandler
 
         if (!isFinite(minX)) return null;
 
-        return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+        return {
+            cx: (minX + maxX) * 0.5,
+            cy: (minY + maxY) * 0.5,
+            hw: (maxX - minX) * 0.5,
+            hh: (maxY - minY) * 0.5,
+            angle: 0,
+        };
     }
 
-    private HandlePos(frame: Frame, handle: HandleDef): Vec2
+    // Frame-local point (along the box's own axes) -> world.
+    private FromFrameLocal(f: Frame, lx: number, ly: number): Vec2
     {
-        // sx/sy in {-1,0,1} -> {0, 0.5, 1} along the frame.
-        return new Vec2(
-            frame.x + (handle.sx + 1) * 0.5 * frame.w,
-            frame.y + (handle.sy + 1) * 0.5 * frame.h,
-        );
+        const cos = Math.cos(f.angle);
+        const sin = Math.sin(f.angle);
+        return new Vec2(f.cx + lx * cos - ly * sin, f.cy + lx * sin + ly * cos);
+    }
+
+    // World point -> frame-local (box spans [-hw,hw] x [-hh,hh], centred at 0).
+    private ToFrameLocal(f: Frame, p: Vec2): Vec2
+    {
+        const cos = Math.cos(f.angle);
+        const sin = Math.sin(f.angle);
+        const dx = p.x - f.cx;
+        const dy = p.y - f.cy;
+        return new Vec2(dx * cos + dy * sin, -dx * sin + dy * cos);
+    }
+
+    private HandlePos(f: Frame, handle: HandleDef): Vec2
+    {
+        return this.FromFrameLocal(f, handle.sx * f.hw, handle.sy * f.hh);
+    }
+
+    private RotHandlePos(f: Frame, zoom: number): Vec2
+    {
+        return this.FromFrameLocal(f, 0, -f.hh - ROT_HANDLE_DIST / zoom);
     }
 
     private HitTest(scene: Scene, frame: Frame, mouse: Vec2): HandleDef | null
     {
         const zoom = scene.GetCameraZoom();
         const radius = (HANDLE_SIZE * 0.5 + HANDLE_HIT_PAD) / zoom;
-        const radiusSq = radius * radius;
 
         let best: HandleDef | null = null;
-        let bestSq = radiusSq;
+        let bestSq = radius * radius;
 
         for (const handle of HANDLES)
         {
@@ -352,6 +512,16 @@ export class TransformToolHandler
         return best;
     }
 
+    private HitTestRotation(scene: Scene, frame: Frame, mouse: Vec2): boolean
+    {
+        const zoom = scene.GetCameraZoom();
+        const radius = (ROT_HANDLE_RADIUS + HANDLE_HIT_PAD) / zoom;
+        const p = this.RotHandlePos(frame, zoom);
+        const dx = mouse.x - p.x;
+        const dy = mouse.y - p.y;
+        return (dx * dx + dy * dy) <= radius * radius;
+    }
+
     // ================= DRAW =================
 
     private DrawGizmo(scene: Scene, frame: Frame): void
@@ -361,17 +531,29 @@ export class TransformToolHandler
 
         const color = Color.fromHex('#dda112');
         color.a = 230;
+        const fill = new Color(255, 255, 255, 255);
 
-        const tl = new Vec2(frame.x, frame.y);
-        const tr = new Vec2(frame.x + frame.w, frame.y);
-        const br = new Vec2(frame.x + frame.w, frame.y + frame.h);
-        const bl = new Vec2(frame.x, frame.y + frame.h);
+        // Oriented box outline.
+        const corners = [
+            this.FromFrameLocal(frame, -frame.hw, -frame.hh),
+            this.FromFrameLocal(frame,  frame.hw, -frame.hh),
+            this.FromFrameLocal(frame,  frame.hw,  frame.hh),
+            this.FromFrameLocal(frame, -frame.hw,  frame.hh),
+        ];
+        rapid.drawLine({ points: corners, width: lineWidth, roundCap: false, color, closed: true });
 
-        rapid.drawLine({ points: [tl, tr, br, bl], width: lineWidth, roundCap: false, color, closed: true });
+        // Rotation stem + knob (above the top edge, following the box orientation).
+        const topCenter = this.FromFrameLocal(frame, 0, -frame.hh);
+        const knob = this.RotHandlePos(frame, zoom);
+        rapid.drawLine({ points: [topCenter, knob], width: lineWidth, roundCap: false, color });
 
+        const knobR = ROT_HANDLE_RADIUS / zoom;
+        rapid.drawCircle({ radius: knobR, color, position: knob });
+        rapid.drawCircle({ radius: Math.max(0, knobR - lineWidth), color: fill, position: knob });
+
+        // Resize handles (small screen-aligned squares at the rotated positions).
         const size = HANDLE_SIZE / zoom;
         const half = size * 0.5;
-        const fill = new Color(255, 255, 255, 255);
 
         for (const handle of HANDLES)
         {
@@ -428,11 +610,11 @@ export class TransformToolHandler
         this.SetHitboxesActive(true);
     }
 
-    private SetCursor(handle: HandleDef | null): void
+    private SetCursor(cursor: string | null): void
     {
-        if (handle)
+        if (cursor)
         {
-            bare.SetCursor(this.CursorFor(handle.name));
+            bare.SetCursor(cursor);
             this.cursorSet = true;
         }
         else if (this.cursorSet)
