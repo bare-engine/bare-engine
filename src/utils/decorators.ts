@@ -73,11 +73,11 @@ export interface InspectorRangeData
 
 export type InspectorDropdownValues = any[] | (() => any[]);
 
-function addButton(proto: object, name: string): void
+function addButton(proto: object, name: string, label: string = name): void
 {
     const buttons: ButtonEntry[] = (proto as any)[BUTTON_METADATA_KEY] || [];
 
-    const entry: ButtonEntry = { label: name, methodKey: name, sourceKey: name, order: nextDeclarationOrder(proto) };
+    const entry: ButtonEntry = { label, methodKey: name, sourceKey: name, order: nextDeclarationOrder(proto) };
     const sameSourceIndex = buttons.findIndex(button => (button.sourceKey ?? button.methodKey) === name);
 
     if (sameSourceIndex === -1)
@@ -88,19 +88,35 @@ function addButton(proto: object, name: string): void
     (proto as any)[BUTTON_METADATA_KEY] = buttons;
 }
 
+// A method-only decorator: requiring the method descriptor makes TypeScript reject the decorator on
+// a field/property (a property decorator receives no descriptor), so a button can't bind to a non-method.
+type ButtonMethodDecorator = (target: any, propertyKey: string, descriptor: TypedPropertyDescriptor<(...args: any[]) => any>) => void;
+
 /**
- * Marks a method as an editor button. The label defaults to the method name; use @Label("…")
- * for a custom label.
+ * Marks a method as an editor button. The label defaults to the method name; pass one inline or
+ * use @Label("…") for a custom label (@Label wins if both are present).
  *
- *   @InspectorButton
- *   Fire() { … }
- *
- * Requiring the method descriptor makes TypeScript reject the decorator on a field/property
- * (a property decorator receives no descriptor), so a button can't bind to a non-method.
+ *   @InspectorButton            Fire() { … }   // label = "Fire"
+ *   @InspectorButton("Restart") Fire() { … }   // label = "Restart"
  */
-export function InspectorButton(target: any, propertyKey: string, _descriptor: TypedPropertyDescriptor<(...args: any[]) => any>): void
+// @InspectorButton("label")
+export function InspectorButton(label: string): ButtonMethodDecorator;
+// @InspectorButton — bare
+export function InspectorButton(target: any, propertyKey: string, descriptor: TypedPropertyDescriptor<(...args: any[]) => any>): void;
+export function InspectorButton(targetOrLabel: any, propertyKey?: string, _descriptor?: any): any
 {
-    addButton(target, propertyKey);
+    // @InspectorButton("label") — factory; the returned decorator is still method-only.
+    if (typeof targetOrLabel === "string")
+    {
+        const label = targetOrLabel;
+        return function (target: any, key: string, _d: TypedPropertyDescriptor<(...args: any[]) => any>): void
+        {
+            addButton(target, key, label);
+        };
+    }
+
+    // @InspectorButton — bare method decorator
+    addButton(targetOrLabel, propertyKey as string);
 }
 
 /** Returns the prototype chain (parent-first), stopping before Object.prototype. */
@@ -145,7 +161,7 @@ export function getButtons(componentClass: any): { label: string; methodKey: str
     }
 
     return entries.map((e, i) => ({
-        label: getMemberLabel(componentClass, e.sourceKey ?? e.methodKey),
+        label: getDeclaredLabel(componentClass, e.sourceKey ?? e.methodKey) ?? e.label,
         methodKey: e.methodKey,
         order: e.order,
         source: entrySources[i],
@@ -274,7 +290,8 @@ function getInspectorClassOrders(component: any): Record<string, number>
     return orders;
 }
 
-function getMemberLabel(component: any, memberName: string): string
+/** The @Label declared for a member anywhere up the prototype chain, or undefined if none. */
+function getDeclaredLabel(component: any, memberName: string): string | undefined
 {
     const proto = typeof component === "function" ? component.prototype : component.constructor.prototype;
     let label: string | undefined;
@@ -288,7 +305,12 @@ function getMemberLabel(component: any, memberName: string): string
             label = labels[memberName];
     }
 
-    return label ?? memberName;
+    return label;
+}
+
+function getMemberLabel(component: any, memberName: string): string
+{
+    return getDeclaredLabel(component, memberName) ?? memberName;
 }
 
 export function resolveInspectorClassName(component: any, nameOrLabel: string): string | undefined
