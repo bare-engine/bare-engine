@@ -7,6 +7,7 @@ import { OutlineShader } from "../shaders/outlineShader";
 import { BareEvent, BareEventPayload, Entity, Rectangle } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
 import { MakePath, MakePathForEntity } from "../globals";
+import { TransformToolHandler } from "./transformToolHandler";
 
 /*
     BUILD CONTROLS INGAME
@@ -456,6 +457,8 @@ export class EditorControlsHandler {
         }
 
         this.selectedObjects.length = 0;
+
+        TransformToolHandler.Get().Clear();
     }
 
     SelectGameObjects(objs: GameObject[], clearPrevious: boolean = true)
@@ -475,13 +478,13 @@ export class EditorControlsHandler {
             // Already selected objects stay selected during additive selection.
             if (this.selectedObjects.includes(obj))
                 continue;
-            
-            if (!obj.HasShader(OutlineShader))
-                obj.AddShader(OutlineShader, { color: [0.867, 0.631, 0.071, 1.0], width: 8.0 });
 
             //obj.color = Color.fromHex('#707070ff');
             this.selectedObjects.push(obj);
         }
+
+        // TRANSFORM GIZMO REPLACES THE OUTLINE - DRAW IT AROUND THE CURRENT SELECTION
+        TransformToolHandler.Get().SetTargets(this.selectedObjects);
 
         // IF SINGLE OBJECT SELECTED, SELECT IN PLUGIN
         if (objs.length == 1)
@@ -936,5 +939,7 @@ export class EditorControlsHandler {
 
         bare.hitbox.ClearExclusiveLayers();
         bare.object.Remove(this.currentPreviewEntity);
+
+        TransformToolHandler.Get().Clear(); // HIDE THE GIZMO WHEN THE EDITOR CLOSES
     }
-} 
+}

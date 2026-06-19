@@ -14,6 +14,7 @@ import { BareEvent, Entity, EntityVarsNestedEntry, entityVarsNested, LevelData, 
 import { applyInspectorField, getButtons, getInspectorClasses, getInspectorFieldDescriptions, getInspectorFields, resolveInspectorClassName } from "../utils/decorators";
 import { Helper } from "../utils/helper";
 import { SaveDataHandler } from "./SaveDataHandler";
+import { TransformToolHandler } from "./transformToolHandler";
 
 // THIS PLUGIN CODE DOES NOT GET INCLUDED IN PRODUCTION
 
@@ -97,6 +98,7 @@ window.__GAME_DEBUG_API__ = {
       if (!selected) return false;
 
       selected.RemoveShader(OutlineShader);
+      TransformToolHandler.Get().Clear();
 
       return true;
   },
@@ -1475,11 +1477,14 @@ export class PluginHandler
         {
             plugin.TraceObject(obj);
 
-            // ENABLE OUTLINE SHADER FOR SELECTED OBJECT
-            if (!obj.HasShader(OutlineShader))
-                obj.AddShader(OutlineShader, { color: [0.867, 0.631, 0.071, 1.0], width: 8.0 });
+            // TRANSFORM GIZMO REPLACES THE OUTLINE SHADER
+            TransformToolHandler.Get().SetTargets([obj]);
 
             this.lastRightClickedObject = obj;
+        }
+        else
+        {
+            TransformToolHandler.Get().Clear();
         }
     }
 
