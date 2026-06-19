@@ -73,32 +73,11 @@ export interface InspectorRangeData
 
 export type InspectorDropdownValues = any[] | (() => any[]);
 
-export interface InspectorButtonOptions
-{
-    label?: string;
-    OnClick?: string;
-}
-
-function addButton(proto: object, name: string, options?: string | InspectorButtonOptions): void
+function addButton(proto: object, name: string): void
 {
     const buttons: ButtonEntry[] = (proto as any)[BUTTON_METADATA_KEY] || [];
 
-    let label = name;
-    let methodKey = name;
-
-    if (typeof options === "string")
-    {
-        label = options;
-        if (typeof (proto as any)[options] === "function")
-            methodKey = options;
-    }
-    else if (options)
-    {
-        if (options.OnClick) methodKey = options.OnClick.replace("()", "");
-        label = options.label || methodKey;
-    }
-
-    const entry: ButtonEntry = { label, methodKey, sourceKey: name, order: nextDeclarationOrder(proto) };
+    const entry: ButtonEntry = { label: name, methodKey: name, sourceKey: name, order: nextDeclarationOrder(proto) };
     const sameSourceIndex = buttons.findIndex(button => (button.sourceKey ?? button.methodKey) === name);
 
     if (sameSourceIndex === -1)
@@ -110,46 +89,18 @@ function addButton(proto: object, name: string, options?: string | InspectorButt
 }
 
 /**
- * Marks a method as an editor button.
+ * Marks a method as an editor button. The label defaults to the method name; use @Label("…")
+ * for a custom label.
  *
- * @Button                                     — label = method name
- * @Button("Fire")                             — label = "Fire"
- * @Button({label: "Fire", OnClick: "Fire()"}) — label + explicit method
+ *   @InspectorButton
+ *   Fire() { … }
+ *
+ * Requiring the method descriptor makes TypeScript reject the decorator on a field/property
+ * (a property decorator receives no descriptor), so a button can't bind to a non-method.
  */
-// @InspectorButton("label")
-export function InspectorButton(label: string): (target: any, propertyKey: string) => void;
-// @InspectorButton("label", "method")
-export function InspectorButton(label: string, methodKey: string): (target: any, propertyKey: string) => void;
-// @InspectorButton({label: "Fire", OnClick: "Fire()"})
-export function InspectorButton(options: InspectorButtonOptions): (target: any, propertyKey: string) => void;
-// @InspectorButton
-export function InspectorButton(target: any, propertyKey: string): void;
-export function InspectorButton(targetOrOptions: any, propertyKey?: string): any
+export function InspectorButton(target: any, propertyKey: string, _descriptor: TypedPropertyDescriptor<(...args: any[]) => any>): void
 {
-    if (typeof targetOrOptions === "string" && typeof propertyKey === "string")
-    {
-        const label = targetOrOptions;
-        const methodKey = propertyKey;
-
-        return function (target: any, key: string): void
-        {
-            addButton(target, key, { label, OnClick: methodKey });
-        };
-    }
-
-    // @InspectorButton — bare, legacy decorator called with (target, propertyKey)
-    if (typeof propertyKey === "string")
-    {
-        addButton(targetOrOptions, propertyKey);
-        return;
-    }
-
-    // @InspectorButton("label") or @Button({...}) — factory
-    const options = targetOrOptions as string | InspectorButtonOptions;
-    return function (target: any, key: string): void
-    {
-        addButton(target, key, options);
-    };
+    addButton(target, propertyKey);
 }
 
 /** Returns the prototype chain (parent-first), stopping before Object.prototype. */
@@ -194,7 +145,7 @@ export function getButtons(componentClass: any): { label: string; methodKey: str
     }
 
     return entries.map((e, i) => ({
-        label: e.label,
+        label: getMemberLabel(componentClass, e.sourceKey ?? e.methodKey),
         methodKey: e.methodKey,
         order: e.order,
         source: entrySources[i],
