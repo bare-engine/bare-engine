@@ -1,5 +1,6 @@
 import type { Scene } from "../scenes/scene";
 import type { GameObject } from "../objects/gameObject";
+import type { Component } from "../controllers/componentController";
 import { CanvasScaleMode, Color, CustomGlShader, TextureFilterMode, UniformValue } from "../libraries/new-rapid-render";
 
 export type Scalar = (number | string | boolean);
@@ -87,6 +88,13 @@ export enum CameraScaleMode
 
 
 export type Ctor<T> = new (...args: any[]) => T;
+
+// DROPS THE FIRST ELEMENT (THE AUTO-INJECTED scene) FROM A CONSTRUCTOR'S PARAM TUPLE
+export type DropFirst<T extends any[]> = T extends [any, ...infer R] ? R : [];
+
+// A COMPONENT CLASS WHOSE FIRST CONSTRUCTOR PARAM IS scene, KEEPING THE REST OF THE PARAM TYPES
+export type ComponentCtor<T extends Component<GameObject> = Component<GameObject>> =
+    new (scene: Scene, ...args: any[]) => T;
 
 export type GameObjectClass = { new (...args: any[]): GameObject };
 

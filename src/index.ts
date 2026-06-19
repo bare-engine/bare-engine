@@ -38,6 +38,7 @@ export { AnimationComponent, AnimationEvent } from "./components/animationCompon
 export type { AnimationEventPayload as AnimationEvents } from "./components/animationComponent";
 export { CollisionEventComponent } from "./components/collisionEventComponent";
 export { ParticleComponent } from "./components/particleComponent";
+export { TextComponent } from "./components/textComponent";
 
 // Editor
 export { PivotComponent } from "./editorComponents/pivotComponent";

@@ -3,7 +3,7 @@ import { assetsHandler } from "../handlers/assetsHandler";
 import mitt from "../libraries/mitt";
 import { Color, MaskType, MatrixStack, Texture, Vec2 } from "../libraries/new-rapid-render";
 import type { Scene } from "../scenes/scene";
-import type { Ctor, Events, Rectangle, Shader } from "../types/bareTypes";
+import type { ComponentCtor, Ctor, DropFirst, Events, Rectangle, Shader } from "../types/bareTypes";
 import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';
 import { Hitbox } from '../types/hitbox';
 import { getOwnInspectorFieldNames } from "../utils/decorators";
@@ -196,10 +196,10 @@ export class GameObject
     }
 
     // CAN SUPPY A CLASS OR INSTANCE OF COMPONENT
-    AddComponent<T extends Component<this>>(componentClass: Ctor<T>): T;
-    AddComponent<T extends Component<this>>(componentClass: Ctor<T>, ...args: any[]): T;
-    AddComponent<T extends Component<this>>(componentInstance: T): T;
-    AddComponent<T extends Component<this>>(arg: Ctor<T> | T, ...args: any[]): T
+    // FOR A CLASS, THE TRAILING ARGS ARE TYPED FROM ITS CONSTRUCTOR (scene IS INJECTED, SO IT'S DROPPED)
+    AddComponent<C extends ComponentCtor>(componentClass: C, ...args: DropFirst<ConstructorParameters<C>>): InstanceType<C>;
+    AddComponent<T extends Component<GameObject>>(componentInstance: T): T;
+    AddComponent<T extends Component<GameObject>>(arg: Ctor<T> | T, ...args: any[]): T
     {
         var componentController = this.scene.Get("component"); // NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
 
