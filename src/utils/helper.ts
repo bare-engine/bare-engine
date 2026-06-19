@@ -402,9 +402,9 @@ export class Helper
         return classes;
     }
 
-    // USED JUST FOR COMPONENTS ATM
-    // REMOVES LEADING _ THAT SOME COMPONENTS GET
-    // REMOVES NUMBER AT END - CAUSED BY DECORATOR ON COMPONENT, EG: @Run(GameMode.Game, GameMode.Editor)
+    // bare.AddClass RESTORES THE TRUE cls.name AT REGISTRATION, SO THIS USUALLY
+    // RETURNS IT DIRECTLY. FALLBACK STRIPS THE LEADING _ AND TRAILING NUMBER THE
+    // DECORATOR TRANSFORM ADDS TO UNREGISTERED CLASSES, EG: Weapon -> Weapon2.
     static GetNameFromClass(_class: any): string
     {
         return _class.name.replace(/^_/, '').replace(/\d+$/, '');

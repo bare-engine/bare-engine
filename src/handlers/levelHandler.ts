@@ -865,7 +865,8 @@ export class LevelHandler
         if (constructorVarNames.length == 0)
             constructorVarNames = (component as any).__paramNames || Helper.GetConstructorParamNames(component.constructor);
         
-        var className = Helper.GetNameFromClass(component.constructor);
+        // Component classes have .name normalized at registration (AddClass), so read it directly.
+        var className = component.constructor.name;
         var defaultValues = bare.componentDefaulValues[className];
 
         // GET VALUE FROM EACH KEY OF CONSTRUCTOR PARAMS

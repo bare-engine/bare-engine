@@ -521,9 +521,14 @@ export class BareEngine
     // A CATCH-ALL METHOD TO REGISTER CLASSES
     // CAN BE CONTROLLER/GAMEOBJECT/COMPONENT/PHYSICS/ETC
     // DOESN'T ALWAYS DO SOMETHING, BUT JUST A HOAX TO LET THE DEV REFFERENCE THE CLASS
-    AddClass(_class: any): void
+    AddClass(_class: any, name?: string): void
     {
-        const className = Helper.GetNameFromClass(_class);
+        // The auto-register plugin passes the true source name; for a manual
+        // AddClass(Cls) we strip the decorator-added suffix off the mangled .name
+        // as a best-effort guess. Either way, write it back onto cls.name so every
+        // later read - cls.name, instance.constructor.name, GetNameFromClass - is clean.
+        const className = name ?? Helper.GetNameFromClass(_class);
+        Object.defineProperty(_class, "name", { value: className, configurable: true });
 
         if (bare.registeredClasses[className])
         {
@@ -550,7 +555,7 @@ export class BareEngine
         // COMPONENT
         if (className.endsWith('Component'))
         {
-            this.RegisterComponent(_class);
+            this.RegisterComponent(_class, name);
 
             //Scene.modules[className] = "taken"; // COMMENTED OUT SINCE REGISTERED COMPONENTS ARE LOCAL TO BARE, HAS TO ADD
 
@@ -561,9 +566,14 @@ export class BareEngine
         //bareEngine.registeredClasses[className] = instance;
     }
 
-    RegisterComponent(componentClass: any)
+    RegisterComponent(componentClass: any, name?: string)
     {
-        var className = Helper.GetNameFromClass(componentClass);
+        // The components plugin calls this directly with the true source name; for a
+        // direct call without one, strip the decorator-added suffix off .name. Write
+        // it back so every cls.name / instance.constructor.name read stays clean.
+        const className = name ?? Helper.GetNameFromClass(componentClass);
+        Object.defineProperty(componentClass, "name", { value: className, configurable: true });
+
         bare.componentClasses[className] = componentClass;
 
         // FIND DEFAULT VALUES - DUPLICATE CODE FROM SerializeComponent - TODO
@@ -730,7 +740,7 @@ export class BareEngine
     
     RegisterGameObjectPool(cls: GameObjectClass, defaultPoolSize: number = 10): void
     {
-        const className = Helper.GetNameFromClass(cls);
+        const className = cls.name;
 
         if (this.gameObjectPools.has(className))
         {

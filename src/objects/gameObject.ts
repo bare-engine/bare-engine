@@ -103,15 +103,11 @@ export class GameObject
         }
     }
  
-    static GetClassName(cls: GameObjectClass): string
-    {
-        return cls.name.startsWith("_") ? cls.name.substring(1) : cls.name;
-    }
-    
     // ONLY FOR PLUGIN - MOVE - TODO
     static RegisterGameObject(cls: GameObjectClass, defaultPoolSize: number = 1): void
     {
-        const className = GameObject.GetClassName(cls);
+        // bare.AddClass redefined cls.name to the true source name, so read it directly.
+        const className = cls.name;
         const alreadyRegistered = !!GameObject.registeredGameObjects[className];
 
         if (!alreadyRegistered)

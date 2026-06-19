@@ -394,13 +394,18 @@ function bareAutoRegisterClassesPlugin(options = {}) {
 
             const registrations = getRegisteredClasses().filter(c =>
                 (!c.filePath || normalize(c.filePath) !== normalize(filePath))
-                && !new RegExp(`\\bbare\\.AddClass\\s*\\(\\s*${c.name}\\s*\\)`).test(code)
+                && !new RegExp(`\\bbare\\.(?:AddClass|RegisterComponent)\\s*\\(\\s*${c.name}\\s*\\)`).test(code)
             );
             if (registrations.length === 0) {
                 return null;
             }
 
-            const statements = registrations.map(c => `bare.AddClass(${c.name});`);
+            // Components register via RegisterComponent; everything else via the AddClass catch-all.
+            const statements = registrations.map(c =>
+                c.kind === "component"
+                    ? `bare.RegisterComponent(${c.name}, ${JSON.stringify(c.name)});`
+                    : `bare.AddClass(${c.name}, ${JSON.stringify(c.name)});`
+            );
             const result = addStatementsToOnAwake(code, target[1], statements, filePath);
             if (result === code) {
                 return null;
