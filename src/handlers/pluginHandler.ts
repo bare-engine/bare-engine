@@ -882,8 +882,19 @@ window.__GAME_DEBUG_API__ = {
                 continue;
             }
 
-            if (prop in o)
-                o[prop] = value;
+            if (!(prop in o))
+                continue;
+
+            // detect XY struct - write into the existing object (eg a Vec2) rather than replacing it
+            const isXY = value && typeof value === "object" && ("x" in value || "y" in value);
+            if (isXY)
+            {
+                if ("x" in value) o[prop].x = value.x;
+                if ("y" in value) o[prop].y = value.y;
+                continue;
+            }
+
+            o[prop] = value;
         }
 
         // PIVOT / HITBOX - LIKE A specialMap ENTRY, BUT ALSO RE-APPLY WHEN GIVEN AS A PERCENTAGE

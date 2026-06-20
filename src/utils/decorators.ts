@@ -794,7 +794,21 @@ export async function applyInspectorField(component: any, fieldName: string, val
     else if (isDescriptor || isGetterOnlyAccessor(component, entry.name))
         return true; // read-only (descriptor `{ get }` or native getter) — don't clobber / throw
     else
-        component[entry.name] = resolvedValue;
+    {
+        // If the field holds an object (eg a Vec2) and we got an {x,y} struct, write into the
+        // existing object rather than replacing it — replacing would drop the Vec2 and its methods.
+        const current = component[entry.name];
+        const isXY = resolvedValue && typeof resolvedValue === "object"
+            && ("x" in resolvedValue || "y" in resolvedValue);
+
+        if (isXY && current && typeof current === "object")
+        {
+            if ("x" in resolvedValue) current.x = resolvedValue.x;
+            if ("y" in resolvedValue) current.y = resolvedValue.y;
+        }
+        else
+            component[entry.name] = resolvedValue;
+    }
 
     return true;
 }
