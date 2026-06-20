@@ -364,6 +364,7 @@ export function getOwnInspectorFieldNames(classOrPrototype: any): string[]
     return entries.map(entry => entry.name);
 }
 
+// @Save ALSO SERVES AS @InspectorField TOO
 export function Save(target: any, propertyKey: string): void
 {
     const saveFields: string[] = target[SAVE_METADATA_KEY] || [];
@@ -596,6 +597,21 @@ export function getInspectorFields(component: any): InspectorFieldData[]
                 }
             }
         }
+        if (Object.prototype.hasOwnProperty.call(proto, SAVE_METADATA_KEY))
+        {
+            // @Save fields are shown in the inspector through serialized component data. Also surface
+            // them through the inspector metadata pipeline so @Int/@Range/@Dropdown/etc. are respected.
+            const source: string = proto.constructor?.name ?? "";
+            for (const name of (proto[SAVE_METADATA_KEY] as string[]))
+            {
+                if (indexByName.has(name))
+                    continue;
+
+                indexByName.set(name, entries.length);
+                entries.push({ name, type: "input" });
+                sources[name] = source;
+            }
+        }
         if (Object.prototype.hasOwnProperty.call(proto, LOCKED_METADATA_KEY))
             lockedFields.push(...(proto[LOCKED_METADATA_KEY] as string[]));
         if (Object.prototype.hasOwnProperty.call(proto, RANGE_METADATA_KEY))
@@ -687,6 +703,9 @@ export function getInspectorFieldNames(component: any): string[]
         if (Object.prototype.hasOwnProperty.call(p, FIELD_METADATA_KEY))
             for (const e of (p[FIELD_METADATA_KEY] as FieldEntry[]))
                 names.add(e.name);
+        if (Object.prototype.hasOwnProperty.call(p, SAVE_METADATA_KEY))
+            for (const name of (p[SAVE_METADATA_KEY] as string[]))
+                names.add(name);
     }
     return [...names];
 }
@@ -703,6 +722,12 @@ function findInspectorFieldEntry(component: any, fieldName: string): FieldEntry 
         const entry = entries.find(e => e.name === fieldName || labels[e.name] === fieldName);
         if (entry)
             return entry;
+
+        const saveFields: string[] = Object.prototype.hasOwnProperty.call(proto, SAVE_METADATA_KEY)
+            ? proto[SAVE_METADATA_KEY] : [];
+        const saveName = saveFields.find(name => name === fieldName || labels[name] === fieldName);
+        if (saveName)
+            return { name: saveName, type: "input" };
     }
     return undefined;
 }
