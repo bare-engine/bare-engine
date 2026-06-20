@@ -686,6 +686,18 @@ window.__GAME_DEBUG_API__ = {
         return entityData;
   },
 
+  // MARK/UNMARK AN INHERITED PROPERTY AS REMOVED ON THIS ENTITY (entity.propertiesRemoved)
+  async setEntityPropertyRemoved(entityName: string, childPath: number[], field: string, removed: boolean)
+  {
+        return plugin.ToggleEntityRemovedArray("propertiesRemoved", field, removed, childPath);
+  },
+
+  // MARK/UNMARK AN INHERITED COMPONENT AS REMOVED ON THIS ENTITY (entity.componentsRemoved)
+  async setEntityComponentRemoved(entityName: string, childPath: number[], compName: string, removed: boolean)
+  {
+        return plugin.ToggleEntityRemovedArray("componentsRemoved", compName, removed, childPath);
+  },
+
   getDefaultValueForEntityField(entityName: string, field: string)
   {
     if (field == "pivotBasedOnHitbox")
@@ -1802,6 +1814,70 @@ export class PluginHandler
             }
         }
 
+        // RE-ADD REMOVED PROPERTIES/COMPONENTS SO THE PLUGIN CAN STILL SHOW THEM (GREYED-OUT, WITH A REVERT BUTTON).
+        // ConstructEntity STRIPPED THEM OUT OF processedEntity VIA propertiesRemoved/componentsRemoved, SO WE LOOK
+        // UP THE INHERITED VALUE FROM THE BASE CHAIN AND TAG IT WITH THE SOURCE THAT PROVIDES IT.
+        var removedProps = Array.isArray(entity.propertiesRemoved) ? entity.propertiesRemoved : [];
+        for (var removedProp of removedProps)
+        {
+            var propSource = "";
+            var propValue: any = undefined;
+            for (var p = 1; p < extendOrder.length; p++)
+            {
+                var propSrc = extendOrder[p];
+                var propRawBase = settingsDataRaw.baseEntities[propSrc] || defaultSettingsData.baseEntities[propSrc];
+                if (propRawBase && Object.prototype.hasOwnProperty.call(propRawBase, removedProp))
+                {
+                    propSource = propSrc;
+                    propValue = settingsDataProcessed.baseEntities[propSrc]?.[removedProp] ?? propRawBase[removedProp];
+                    break;
+                }
+            }
+            // FALL BACK TO THE IMMEDIATE BASE IF NO AUTHORED SOURCE FOUND (EG A CLASS-LEVEL DEFAULT)
+            if (!propSource && extendOrder.length > 1)
+            {
+                propSource = extendOrder[1];
+                propValue = settingsDataProcessed.baseEntities[propSource]?.[removedProp];
+            }
+            if (!propSource)
+                continue;
+
+            newEntity[removedProp] = propValue ?? null;
+            newEntity.baseEntityLog[propSource] ??= [];
+            if (!newEntity.baseEntityLog[propSource].includes(removedProp))
+                newEntity.baseEntityLog[propSource].push(removedProp);
+        }
+
+        var removedComps = Array.isArray(entity.componentsRemoved) ? entity.componentsRemoved : [];
+        if (removedComps.length > 0)
+            newEntity.components = { ...(newEntity.components ?? {}) }; // CLONE - newEntity SHARES processedEntity'S components REFERENCE
+        for (var removedComp of removedComps)
+        {
+            var compSource = "";
+            var compValue: any = undefined;
+            for (var c = 1; c < extendOrder.length; c++)
+            {
+                var compSrc = extendOrder[c];
+                var compRawBase = settingsDataRaw.baseEntities[compSrc] || defaultSettingsData.baseEntities[compSrc];
+                if (compRawBase?.components && Object.prototype.hasOwnProperty.call(compRawBase.components, removedComp))
+                {
+                    compSource = compSrc;
+                    compValue = settingsDataProcessed.baseEntities[compSrc]?.components?.[removedComp] ?? compRawBase.components[removedComp];
+                    break;
+                }
+            }
+            if (!compSource && extendOrder.length > 1)
+            {
+                compSource = extendOrder[1];
+                compValue = settingsDataProcessed.baseEntities[compSource]?.components?.[removedComp];
+            }
+            if (!compSource)
+                continue;
+
+            newEntity.components[removedComp] = compValue ?? {};
+            newEntity.baseEntityLog["__componentSources__"].components[removedComp] = compSource;
+        }
+
         return newEntity;
     }
 
@@ -1936,6 +2012,54 @@ export class PluginHandler
         {
         await plugin.GetCurrentScene().Restart();
         }*/
+    }
+
+    // TOGGLE A VALUE IN entity.propertiesRemoved / entity.componentsRemoved, RE-PROCESS AND SAVE.
+    // USED BY THE PLUGIN'S X/REVERT BUTTONS ON INHERITED FIELDS/COMPONENTS.
+    async ToggleEntityRemovedArray(arrayKey: "propertiesRemoved" | "componentsRemoved", value: string, removed: boolean, childPath: number[]): Promise<Entity>
+    {
+        var entityScene = plugin.GetCurrentScene() as EntityScene;
+        var rawSettingsData = entityScene.settingsHandler.GetRaw();
+
+        rawSettingsData.baseEntities.ANY ??= {};
+        rawSettingsData.baseEntities.ANY_ENTITY ??= {};
+
+        var entity: Entity;
+        if (entityScene.isBase)
+            entity = rawSettingsData.baseEntities[entityScene.objectName];
+        else
+            entity = rawSettingsData.entities[entityScene.objectName];
+
+        // GET THE CHILD
+        if (childPath?.length > 0)
+        {
+            for (var i = 0; i < childPath.length; i++)
+                entity = entity.children[childPath[i]];
+        }
+
+        var list = Array.isArray(entity[arrayKey]) ? entity[arrayKey] : [];
+        if (removed)
+        {
+            if (!list.includes(value))
+                list = [...list, value];
+        }
+        else
+        {
+            list = list.filter(v => v !== value);
+        }
+
+        if (list.length > 0)
+            entity[arrayKey] = list;
+        else
+            delete entity[arrayKey];
+
+        await entityScene.settingsHandler.Process();
+
+        var entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase);
+
+        await plugin.SaveSettingsData(rawSettingsData);
+
+        return entityData;
     }
 
     GetCurrentEntity(): Entity
