@@ -364,7 +364,7 @@ export function getOwnInspectorFieldNames(classOrPrototype: any): string[]
     return entries.map(entry => entry.name);
 }
 
-// @Save ALSO SERVES AS @InspectorField TOO
+// @Save ALSO SERVES AS @InspectorField
 export function Save(target: any, propertyKey: string): void
 {
     const saveFields: string[] = target[SAVE_METADATA_KEY] || [];

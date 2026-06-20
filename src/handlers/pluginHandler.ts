@@ -953,76 +953,7 @@ window.__GAME_DEBUG_API__ = {
         }
 
         // ALIGN ALL THE VARS WITH THE LEVEL ENTITY, FOR GETOBJECT()... todo
-
-        if (scene instanceof EntityScene)
-        {
-            let entityScene = scene as EntityScene;
-            
-            var rawSettingsData = entityScene.settingsHandler.GetRaw();
-
-            // MAKE SURE ANY OR ANY_ENTITY EXISTS, IF WE'RE GONNA WRITE TO IT
-            //if (entityScene.isBase)
-            {
-                //if (entityScene.objectName == "ANY")
-                    rawSettingsData.baseEntities.ANY ??= {...defaultSettingsData.baseEntities.ANY};
-                
-                //if (entityScene.objectName == "ANY_ENTITY")
-                    rawSettingsData.baseEntities.ANY_ENTITY ??= {...defaultSettingsData.baseEntities.ANY_ENTITY};
-            }
-            
-            // UNDO DEFAULT ADDITIONS TO ANY AND ANY_ENTITY AGAIN, DON'T WANT TO SAVE THEM
-            // THIS IS ALSO ADDED AT getEntityData
-            //if (entityScene.objectName == "ANY" || entityScene.objectName == "ANY_ENTITY")
-            //if (entityScene.isBase)
-            {
-                var propKeys = Object.keys(props);
-
-                //if (entityScene.objectName == "ANY")
-                {
-                    var anyKeys = Object.keys(defaultSettingsData.baseEntities.ANY);
-                    for (var key of anyKeys)
-                    {
-                        if (rawSettingsData.baseEntities.ANY[key] == defaultSettingsData.baseEntities.ANY[key]) // IF SAME AS DEFAULT
-                        if (entityScene.objectName != "ANY" || !propKeys.includes(key))
-                            delete rawSettingsData.baseEntities.ANY[key];
-                    }
-
-                    if (Object.keys(rawSettingsData.baseEntities.ANY).length == 0)
-                        delete rawSettingsData.baseEntities.ANY;
-                }
-
-                //if (entityScene.objectName == "ANY_ENTITY")
-                {
-                    var anyEntityKeys = Object.keys(defaultSettingsData.baseEntities.ANY_ENTITY);
-                    for (var key of anyEntityKeys)
-                    {
-                        if (rawSettingsData.baseEntities.ANY_ENTITY[key] == defaultSettingsData.baseEntities.ANY_ENTITY[key])
-                        if (entityScene.objectName != "ANY_ENTITY" || !propKeys.includes(key))
-                            delete rawSettingsData.baseEntities.ANY_ENTITY[key];
-                    }
-
-                    if (Object.keys(rawSettingsData.baseEntities.ANY_ENTITY).length == 0)
-                        delete rawSettingsData.baseEntities.ANY_ENTITY;
-                }
-            }
-
-            // SHOULD STILL APPLY PROPS TO rawSettingsData - TODO
-            // SO YOU CAN EDIT BASE ENTITY, AND IT'S FOUND IN ENTITY SCENE SAVE
-            
-            if (save)
-            {
-                await (o.scene as EditorScene).saveLevelCallback?.();
-                await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase);
-            }
-
-            // ADD DEFAULTS TO RAW SETTINGS AGAIN, SO PROPS CAN BE ADDED TO IT
-            rawSettingsData.baseEntities.ANY ??= {...defaultSettingsData.baseEntities.ANY};
-            rawSettingsData.baseEntities.ANY_ENTITY ??= {...defaultSettingsData.baseEntities.ANY_ENTITY};
-        }
-        else
-        {
-            (o.scene as EditorScene).saveLevelCallback?.();
-        }
+        (o.scene as EditorScene).saveLevelCallback?.();
 
         return true;
     },
