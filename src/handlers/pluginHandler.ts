@@ -106,7 +106,15 @@ window.__GAME_DEBUG_API__ = {
   // called by the game to notify the panel
   selectObjectInPlugin(uid: string, openObjectsTab: boolean = false, parentIds: string[] = [])
   {
-    window.postMessage({ __fromGame: true, type: "selectObject", id: uid, openObjectsTab: openObjectsTab, parentIds }, "*");
+    window.postMessage({ __fromGame: true, type: "selectObject", id: uid, openObjectsTab: openObjectsTab, parentIds, selectedIds: [uid] }, "*");
+  },
+
+  // called by the game to notify the panel of a MULTI-OBJECT selection.
+  // The last id is shown in the inspector (primary), but field edits get applied to all selectedIds.
+  selectObjectsInPlugin(uids: string[], openObjectsTab: boolean = true)
+  {
+    var primaryId = uids[uids.length - 1];
+    window.postMessage({ __fromGame: true, type: "selectObject", id: primaryId, openObjectsTab, parentIds: [], selectedIds: uids }, "*");
   },
 
   gotoLevelView(levelPath: string) {
@@ -1626,6 +1634,11 @@ export class PluginHandler
     SelectObjectInPlugin(uid: string, openObjectsTab: boolean = false, parentIds: string[] = [])
     {
         window.__GAME_DEBUG_API__.selectObjectInPlugin(uid, openObjectsTab, parentIds);
+    }
+
+    SelectObjectsInPlugin(uids: string[])
+    {
+        window.__GAME_DEBUG_API__.selectObjectsInPlugin(uids);
     }
 
     AddDebugAction(label: string, callback: () => void)

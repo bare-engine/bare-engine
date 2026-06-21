@@ -486,9 +486,13 @@ export class EditorControlsHandler {
         // TRANSFORM GIZMO REPLACES THE OUTLINE - DRAW IT AROUND THE CURRENT SELECTION
         TransformToolHandler.Get().SetTargets(this.selectedObjects);
 
-        // IF SINGLE OBJECT SELECTED, SELECT IN PLUGIN
-        if (objs.length == 1)
-            globalThis.plugin?.SelectObjectInPlugin(objs[0].uniqueID, true);
+        // NOTIFY THE PLUGIN OF THE FULL CURRENT SELECTION. SINGLE SELECTION SHOWS THAT OBJECT;
+        // MULTI SELECTION SHOWS THE LAST ONE BUT APPLIES FIELD EDITS TO ALL SELECTED.
+        var selectedIds = this.selectedObjects.map(o => o.uniqueID);
+        if (selectedIds.length == 1)
+            globalThis.plugin?.SelectObjectInPlugin(selectedIds[0], true);
+        else if (selectedIds.length > 1)
+            globalThis.plugin?.SelectObjectsInPlugin(selectedIds);
     }
 
     private OnScroll(ev: WheelEvent)
