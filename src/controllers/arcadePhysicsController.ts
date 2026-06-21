@@ -748,50 +748,25 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             return null;
         }
 
-        if (obj.parent) {
-            const points = [
-                obj.ToGlobal(new Vec2(rect.x, rect.y)),
-                obj.ToGlobal(new Vec2(rect.x + rect.width, rect.y)),
-                obj.ToGlobal(new Vec2(rect.x + rect.width, rect.y + rect.height)),
-                obj.ToGlobal(new Vec2(rect.x, rect.y + rect.height))
-            ];
+        // Transform the four hitbox corners to world space (texture space -> world,
+        // including rotation/scale/inner transform) and take their AABB. This matches
+        // hitboxController.GetRect exactly, so collisions align with the debug rect,
+        // and stays a true AABB even when the object is rotated (rotation-expanded box).
+        const topLeft     = obj.ToGlobal(new Vec2(rect.x, rect.y), true);
+        const topRight    = obj.ToGlobal(new Vec2(rect.x + rect.width, rect.y), true);
+        const bottomRight = obj.ToGlobal(new Vec2(rect.x + rect.width, rect.y + rect.height), true);
+        const bottomLeft  = obj.ToGlobal(new Vec2(rect.x, rect.y + rect.height), true);
 
-            let minX = Infinity;
-            let minY = Infinity;
-            let maxX = -Infinity;
-            let maxY = -Infinity;
-
-            for (const point of points) {
-                minX = Math.min(minX, point.x);
-                minY = Math.min(minY, point.y);
-                maxX = Math.max(maxX, point.x);
-                maxY = Math.max(maxY, point.y);
-            }
-
-            return {
-                x: minX,
-                y: minY,
-                width: maxX - minX,
-                height: maxY - minY
-            };
-        }
-
-        // Scale the hitbox offset and pivot by the object's scale, matching the
-        // engine's GetBounds() convention (gameObject.ts). Computing both edges and
-        // taking the min keeps the AABB correct under negative scale (flips).
-        const sx = obj.totalScaleX;
-        const sy = obj.totalScaleY;
-
-        const x0 = obj.x + (rect.x - obj.pivot.x) * sx;
-        const x1 = obj.x + (rect.x + rect.width - obj.pivot.x) * sx;
-        const y0 = obj.y + (rect.y - obj.pivot.y) * sy;
-        const y1 = obj.y + (rect.y + rect.height - obj.pivot.y) * sy;
+        const minX = Math.min(topLeft.x, topRight.x, bottomRight.x, bottomLeft.x);
+        const minY = Math.min(topLeft.y, topRight.y, bottomRight.y, bottomLeft.y);
+        const maxX = Math.max(topLeft.x, topRight.x, bottomRight.x, bottomLeft.x);
+        const maxY = Math.max(topLeft.y, topRight.y, bottomRight.y, bottomLeft.y);
 
         return {
-            x: Math.min(x0, x1),
-            y: Math.min(y0, y1),
-            width: Math.abs(rect.width * sx),
-            height: Math.abs(rect.height * sy)
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY
         };
     }
 
@@ -803,16 +778,18 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             return null;
         }
 
-        if (!obj.parent) {
-            return {
-                x: obj.x,
-                y: obj.y,
-                radius: radius * Math.max(Math.abs(obj.totalScaleX), Math.abs(obj.totalScaleY))
-            };
-        }
+        // Match hitboxController.GetCircleCenter / GetRadius exactly so physics aligns
+        // with the debug circle: the circle offset and pivot are added in texture space,
+        // then transformed to world via ToGlobal(..., true). The world radius is derived
+        // from the transformed center-to-edge distance (handles scale/rotation).
+        const localCenter = new Vec2(
+            obj.physicsHitbox.circleOffset.x + obj.pivot.x,
+            obj.physicsHitbox.circleOffset.y + obj.pivot.y
+        );
+        const localEdge = new Vec2(localCenter.x + radius, localCenter.y);
 
-        const center = obj.ToGlobal(new Vec2(obj.pivot.x, obj.pivot.y));
-        const edge = obj.ToGlobal(new Vec2(obj.pivot.x + radius, obj.pivot.y));
+        const center = obj.ToGlobal(localCenter, true);
+        const edge = obj.ToGlobal(localEdge, true);
 
         return {
             x: center.x,
