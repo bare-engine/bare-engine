@@ -1,6 +1,6 @@
 import { Component } from "../controllers/componentController";
 import { Scene } from "../globals";
-import { ITextOptions, TextTexture, Vec2 } from "../libraries/new-rapid-render";
+import { Color, ITextOptions, TextTexture, Vec2 } from "../libraries/new-rapid-render";
 import { Dropdown, InspectorField, Int } from "../utils/decorators";
 
 export class TextComponent extends Component
@@ -27,12 +27,17 @@ export class TextComponent extends Component
     get align():string {return this.textTexture.style.align;}
     set align(value:"left" | "center" | "right") {this.textTexture.style.align = value; this.UpdateText();}
     
-    constructor(scene: Scene, text: string = "Text", options:ITextOptions = {})
+    @InspectorField
+    get _color():Color {return Color.fromHex(this.textTexture.style.fill as string);}
+    set _color(value:Color) { this.textTexture.style.fill = value.toHex(); this.UpdateText();}
+    
+    constructor(scene: Scene, options:ITextOptions = {})
     {
         super(scene);
 
+        options.text ??= "Text";
+
         this.textTexture = bare.texture.createTextTexture(options);
-        this.SetText(text);
     }
 
     SetText(text: string): void

@@ -1,4 +1,4 @@
-import { ITextOptions, TextTexture, Vec2 } from "../libraries/new-rapid-render";
+import { Color, ITextOptions, TextTexture, Vec2 } from "../libraries/new-rapid-render";
 import { Scene } from "../scenes/scene";
 import { Dropdown, InspectorField, Int } from "../utils/decorators";
 import { GameObject } from "./gameObject";
@@ -25,15 +25,21 @@ export class TextObject extends GameObject
     get align():string {return this.textTexture.style.align;}
     set align(value:"left" | "center" | "right") {this.textTexture.style.align = value; this.UpdateText();}
     
-    constructor(scene: Scene, text: string = "Text", options: ITextOptions = {})
+    @InspectorField
+    get _color():Color {return Color.fromHex(this.textTexture.style.fill as string);}
+    set _color(value:Color) { this.textTexture.style.fill = value.toHex(); this.UpdateText();}
+    
+    constructor(scene: Scene, options: ITextOptions = {})
     {
         super(scene);
+
+        options.text ??= "Text";
 
         if (!options.fontFamily && bare.defaultFont)
             options.fontFamily = bare.defaultFont; // COULD ALSO DO SAME IN RAPID TEXT - TODO
 
         this.textTexture = bare.texture.createTextTexture(options);
-        this.SetText(text);
+        this.SetText(options.text);
         this.SetTexture(this.textTexture);
 
         this.SetNameBasedOnText(options.text || "");
