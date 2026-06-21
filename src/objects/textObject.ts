@@ -1,6 +1,6 @@
 import { ITextOptions, TextTexture, Vec2 } from "../libraries/new-rapid-render";
 import { Scene } from "../scenes/scene";
-import { InspectorField } from "../utils/decorators";
+import { Dropdown, InspectorField, Int } from "../utils/decorators";
 import { GameObject } from "./gameObject";
 
 export class TextObject extends GameObject
@@ -14,13 +14,18 @@ export class TextObject extends GameObject
         set: (text: string) => this.SetText(text),
     };
 
-    @InspectorField
+    @InspectorField @Int
     fontSize = {
         get: () => this.textTexture.style.fontSize,
         set: (fontSize: number) => {this.textTexture.style.fontSize = fontSize; this.UpdateText();},
     };
 
-    constructor(scene: Scene, options: ITextOptions = {})
+    @InspectorField
+    @Dropdown(["left", "center", "right"])
+    get align():string {return this.textTexture.style.align;}
+    set align(value:"left" | "center" | "right") {this.textTexture.style.align = value; this.UpdateText();}
+    
+    constructor(scene: Scene, text: string = "Text", options: ITextOptions = {})
     {
         super(scene);
 
@@ -28,6 +33,7 @@ export class TextObject extends GameObject
             options.fontFamily = bare.defaultFont; // COULD ALSO DO SAME IN RAPID TEXT - TODO
 
         this.textTexture = bare.texture.createTextTexture(options);
+        this.SetText(text);
         this.SetTexture(this.textTexture);
 
         this.SetNameBasedOnText(options.text || "");
@@ -47,6 +53,11 @@ export class TextObject extends GameObject
         this.UpdateText();
 
         this.SetNameBasedOnText(text);
+    }
+
+    GetText(): string
+    {
+        return this.textTexture.text;
     }
 
     UpdateText()
