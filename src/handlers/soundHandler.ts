@@ -12,7 +12,6 @@ export type SoundOptions = {
     start?: number;
     echo?: boolean | { delay?: number; feedback?: number; filter?: number };
     reverb?: boolean | { duration?: number; decay?: number; reverse?: boolean };
-    autoplay?: boolean;
     complete?: (sound: SoundJsSound) => void;
     loaded?: (sound: SoundJsSound) => void;
 };
@@ -20,23 +19,32 @@ export type SoundOptions = {
 export class SoundHandler
 {
     private sounds: Map<string, SoundJsSound> = new Map();
+    private loads: Map<string, Promise<SoundJsSound>> = new Map();
     private soundPaths: Map<string, string> = new Map();
-    private pendingPlays: Map<string, SoundOptions[]> = new Map();
+    private suspendedForVisibility: boolean = false;
 
     constructor()
     {
         globalEvents.persistent.on(BareEvent.game_awake, () => bare.sound = this);
+
+        document.addEventListener('visibilitychange', () => this.SyncToTabVisibility());
     }
 
-    public Init(): void
+    private SyncToTabVisibility(): void
     {
-        globalEvents.on(BareEvent.game_focusChange, (hasFocus) =>
+        if (document.hidden)
+        {
+            if (actx.state === 'running')
             {
-                if (hasFocus)
-                    actx.resume();
-                else
-                    actx.suspend();
-            });
+                this.suspendedForVisibility = true;
+                actx.suspend().catch(() => {});
+            }
+        }
+        else if (this.suspendedForVisibility)
+        {
+            this.suspendedForVisibility = false;
+            actx.resume().catch(() => {});
+        }
     }
 
     public Register(id: string, src: string): void
@@ -49,14 +57,67 @@ export class SoundHandler
         return this.sounds.get(id);
     }
 
+    // Ensure a sound is fetched and decoded. The decode runs once per id and is
+    // shared through a cached promise, so calling this repeatedly - or preloading
+    // up front via `await bare.sound.Load(id)` - is cheap. Resolves with the
+    // playable sound; does not start playback (that's `Play`).
+    public Load(id: string, src?: string): Promise<SoundJsSound>
+    {
+        const existing = this.loads.get(id);
+
+        if (existing)
+            return existing;
+
+        const source = src ?? this.GetPath(id);
+
+        const load = new Promise<SoundJsSound>((resolve, reject) =>
+            {
+                const sound = makeSound(
+                    source,
+                    () => resolve(sound),
+                    true,
+                    undefined,
+                    (failedSource, error) =>
+                    {
+                        console.error(`Audio could not be loaded: ${failedSource}`, error);
+                        // Evict so a later Play can retry instead of staying stuck.
+                        this.loads.delete(id);
+                        this.sounds.delete(id);
+                        reject(error);
+                    }
+                );
+
+                this.sounds.set(id, sound);
+            });
+
+        this.loads.set(id, load);
+
+        return load;
+    }
+
     public Play(id: string, options: SoundOptions = {}): SoundJsSound | null
     {
         if (!SaveData.soundEnabled)
             return null;
 
-        const sound = this.Load(id, options);
+        const ready = this.Load(id, this.GetOptionSource(options));
+        const sound = this.sounds.get(id)!;
 
-        this.PlayLoaded(id, sound, options);
+        // Start now if the buffer is ready, otherwise as soon as it decodes.
+        if (sound.hasLoaded || sound.buffer)
+        {
+            this.StartPlayback(sound, options);
+        }
+        else
+        {
+            ready
+                .then(() =>
+                    {
+                        options.loaded?.(sound);
+                        this.StartPlayback(sound, options);
+                    })
+                .catch(() => { /* load failure already reported in Load */ });
+        }
 
         return sound;
     }
@@ -66,54 +127,17 @@ export class SoundHandler
         return this.Play(id, { ...options, rate: Helper.RandomRange(1 - randomRange*.5, 1 + randomRange*.5) });
     }
 
-    public Load(id: string, options: SoundOptions = {}): SoundJsSound
-    {
-        let sound = this.sounds.get(id);
-
-        if (sound)
-            return sound;
-
-        const src = this.GetOptionSource(options) ?? this.GetPath(id);
-        sound = makeSound(
-            src,
-            () =>
-            {
-                options.loaded?.(sound!);
-                this.FlushPendingPlays(id, sound!);
-            },
-            true,
-            undefined,
-            (source, error) => console.error(`Audio could not be loaded: ${source}`, error)
-        );
-
-        this.ApplyOptions(sound, options);
-        this.sounds.set(id, sound);
-
-        if (options.autoplay)
-            this.PlayLoaded(id, sound, options);
-
-        return sound;
-    }
-
-    private GetPath(id: string): string
-    {
-        const src = this.soundPaths.get(id);
-
-        if (src)
-            return src;
-
-        const fallbackFileName = `${id}.mp3`;
-        this.Register(id, fallbackFileName);
-
-        return this.soundPaths.get(id)!;
-    }
-
     public Stop(id: string): void
     {
         const sound = this.sounds.get(id);
 
         if (sound)
             this.StopSound(sound);
+    }
+
+    public StopAll(): void
+    {
+        this.sounds.forEach((sound) => this.StopSound(sound));
     }
 
     public SetVolume(id: string, volume: number): void
@@ -139,15 +163,35 @@ export class SoundHandler
         this.sounds.get(id)?.fadeOut(durationInSeconds);
     }
 
-    public StopAll(): void
+    private GetPath(id: string): string
     {
-        this.sounds.forEach((sound) => this.StopSound(sound));
+        const src = this.soundPaths.get(id);
+
+        if (src)
+            return src;
+
+        const fallbackFileName = `${id}.mp3`;
+        this.Register(id, fallbackFileName);
+
+        return this.soundPaths.get(id)!;
     }
 
     private StopSound(sound: SoundJsSound): void
     {
         sound.pause();
         sound.startOffset = 0;
+    }
+
+    private StartPlayback(sound: SoundJsSound, options: SoundOptions): void
+    {
+        this.ApplyOptions(sound, options);
+
+        if (options.start !== undefined)
+            sound.playFrom(options.start);
+        else
+            sound.play();
+
+        this.AttachCompleteHandler(sound, options);
     }
 
     private ApplyOptions(sound: SoundJsSound, options: SoundOptions): void
@@ -174,45 +218,6 @@ export class SoundHandler
         }
 
         sound.playbackRate = (options.rate ?? 1);
-    }
-
-    private PlayLoaded(id: string, sound: SoundJsSound, options: SoundOptions): void
-    {
-        if (sound.hasLoaded || sound.buffer)
-            this.StartPlayback(sound, options);
-        else
-            this.QueuePlay(id, options);
-    }
-
-    private StartPlayback(sound: SoundJsSound, options: SoundOptions): void
-    {
-        this.ApplyOptions(sound, options);
-
-        if (options.start !== undefined)
-            sound.playFrom(options.start);
-        else
-            sound.play();
-
-        this.AttachCompleteHandler(sound, options);
-    }
-
-    private QueuePlay(id: string, options: SoundOptions): void
-    {
-        const pending = this.pendingPlays.get(id) ?? [];
-
-        pending.push({ ...options });
-        this.pendingPlays.set(id, pending);
-    }
-
-    private FlushPendingPlays(id: string, sound: SoundJsSound): void
-    {
-        const pending = this.pendingPlays.get(id);
-
-        if (!pending)
-            return;
-
-        this.pendingPlays.delete(id);
-        pending.forEach((options) => this.StartPlayback(sound, options));
     }
 
     private AttachCompleteHandler(sound: SoundJsSound, options: SoundOptions): void
