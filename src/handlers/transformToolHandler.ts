@@ -44,10 +44,10 @@ interface TargetStart
     rotation: number; // degrees, at grab time
 }
 
-const HANDLE_SIZE = 5;        // drawn resize-handle size, in screen px (scaled by zoom)
+const HANDLE_SIZE = 5;        // drawn resize-handle size, in on-screen px (see Scene.ScreenPxToWorldScale)
 const HANDLE_HIT_PAD = 5;     // extra grab slack around a handle, in screen px
 const MIN_SIZE = 1;           // smallest world-space frame dimension while resizing
-const ROT_HANDLE_DIST = 18;   // gap from the top edge to the rotation knob, in screen px
+const ROT_HANDLE_GAP = 0.5;   // gap from the top edge to the rotation knob, as a fraction of the box half-height (box-relative, like the resize anchors)
 const ROT_HANDLE_RADIUS = 5;  // rotation knob radius, in screen px
 const ROT_SNAP_DEG = 15;      // rotation snap step while holding shift
 
@@ -487,15 +487,16 @@ export class TransformToolHandler
         return this.FromFrameLocal(f, handle.sx * f.hw, handle.sy * f.hh);
     }
 
-    private RotHandlePos(f: Frame, zoom: number): Vec2
+    private RotHandlePos(f: Frame): Vec2
     {
-        return this.FromFrameLocal(f, 0, -f.hh - ROT_HANDLE_DIST / zoom);
+        // Gap scales with the box height so the knob keeps the same relative distance as the
+        // box grows/shrinks on screen, matching the resize anchors (which sit on the box).
+        return this.FromFrameLocal(f, 0, -f.hh * (1 + ROT_HANDLE_GAP));
     }
 
     private HitTest(scene: Scene, frame: Frame, mouse: Vec2): HandleDef | null
     {
-        const zoom = scene.GetCameraZoom();
-        const radius = (HANDLE_SIZE * 0.5 + HANDLE_HIT_PAD) / zoom;
+        const radius = (HANDLE_SIZE * 0.5 + HANDLE_HIT_PAD) * scene.ScreenPxToWorldScale();
 
         let best: HandleDef | null = null;
         let bestSq = radius * radius;
@@ -518,9 +519,9 @@ export class TransformToolHandler
 
     private HitTestRotation(scene: Scene, frame: Frame, mouse: Vec2): boolean
     {
-        const zoom = scene.GetCameraZoom();
-        const radius = (ROT_HANDLE_RADIUS + HANDLE_HIT_PAD) / zoom;
-        const p = this.RotHandlePos(frame, zoom);
+        const pxToWorld = scene.ScreenPxToWorldScale();
+        const radius = (ROT_HANDLE_RADIUS + HANDLE_HIT_PAD) * pxToWorld;
+        const p = this.RotHandlePos(frame);
         const dx = mouse.x - p.x;
         const dy = mouse.y - p.y;
         return (dx * dx + dy * dy) <= radius * radius;
@@ -530,8 +531,8 @@ export class TransformToolHandler
 
     private DrawGizmo(scene: Scene, frame: Frame): void
     {
-        const zoom = scene.GetCameraZoom();
-        const lineWidth = 2 / zoom;
+        const pxToWorld = scene.ScreenPxToWorldScale();
+        const lineWidth = 2 * pxToWorld;
 
         const color = Color.fromHex('#dda112');
         color.a = 230;
@@ -548,15 +549,15 @@ export class TransformToolHandler
 
         // Rotation stem + knob (above the top edge, following the box orientation).
         const topCenter = this.FromFrameLocal(frame, 0, -frame.hh);
-        const knob = this.RotHandlePos(frame, zoom);
+        const knob = this.RotHandlePos(frame);
         rapid.drawLine({ points: [topCenter, knob], width: lineWidth, roundCap: false, color });
 
-        const knobR = ROT_HANDLE_RADIUS / zoom;
+        const knobR = ROT_HANDLE_RADIUS * pxToWorld;
         rapid.drawCircle({ radius: knobR, color, position: knob });
         rapid.drawCircle({ radius: Math.max(0, knobR - lineWidth), color: fill, position: knob });
 
         // Resize handles (small screen-aligned squares at the rotated positions).
-        const size = HANDLE_SIZE / zoom;
+        const size = HANDLE_SIZE * pxToWorld;
         const half = size * 0.5;
 
         for (const handle of HANDLES)

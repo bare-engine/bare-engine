@@ -88,7 +88,7 @@ export class ResizableComponent extends Component
         const mouse = bare.mouse.world.position;
         const hoveredHitbox = bare.hitbox.GetCurrentHover();
         const hoveringThis = hoveredHitbox?.parent === this.go;
-        const zoom = this.scene.GetCameraZoom();
+        const px = this.scene.ScreenPxToWorldScale();
 
         const fromCenter = keyboardController.IsKeyDown('alt');
         const keepAspect = keyboardController.IsKeyDown('shift');
@@ -104,7 +104,7 @@ export class ResizableComponent extends Component
         {
             const hovered = bare.hitbox.GetCurrentHover();
             const hoveredGo = hovered?.parent;
-            const edgeCandidate = (hoveredGo === this.go || hovered == null) ? this.getEdge(mouse, left, top, right, bottom, zoom) : null;
+            const edgeCandidate = (hoveredGo === this.go || hovered == null) ? this.getEdge(mouse, left, top, right, bottom, px) : null;
 
             this.draggingPivot = (hovered && hovered.parent.name == "dot") ? true : false;
 
@@ -170,7 +170,7 @@ export class ResizableComponent extends Component
             const dx = mouse.x - this.freeStartPos.x;
             const dy = mouse.y - this.freeStartPos.y;
 
-            const threshold = this.freeResizeThreshold / zoom;
+            const threshold = this.freeResizeThreshold * px;
             if ((dx * dx + dy * dy) >= (threshold * threshold))
             {
                 this.freeResizePending = false;
@@ -247,7 +247,7 @@ export class ResizableComponent extends Component
         const canCheckHover = hoveringThis || !hoveredHitbox;
         const activeEdge = (this.resizing && this.edge)
             ? this.edge
-            : (canCheckHover ? this.getEdge(mouse, curLeft, curTop, curRight, curBottom, zoom) : null);
+            : (canCheckHover ? this.getEdge(mouse, curLeft, curTop, curRight, curBottom, px) : null);
 
         this.hoverEdge = activeEdge;
 
@@ -293,9 +293,9 @@ export class ResizableComponent extends Component
 
         const color = Color.fromHex('#dda112');
         color.a = 210;
-        const zoom = this.scene.GetCameraZoom();
-        const width = 3 / zoom;
-        const cornerLength = 12 / zoom;
+        const px = this.scene.ScreenPxToWorldScale();
+        const width = 3 * px;
+        const cornerLength = 12 * px;
 
         const draw = (start: Vec2, end: Vec2, round: boolean = false) =>
         {
@@ -552,10 +552,10 @@ export class ResizableComponent extends Component
         top: number,
         right: number,
         bottom: number,
-        zoom: number
+        px: number
     ): Edge | null
     {
-        const half = (this.edgeMargin / zoom) * 0.5;
+        const half = (this.edgeMargin * px) * 0.5;
 
         const onLeft   = mouse.x >= left   - half && mouse.x <= left   + half;
         const onRight  = mouse.x >= right  - half && mouse.x <= right  + half;

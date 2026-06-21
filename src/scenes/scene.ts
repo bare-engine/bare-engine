@@ -1006,7 +1006,7 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
         }
     }
 
-    GetCameraZoom(): number 
+    GetCameraZoom(): number
     {
         if (this.camera)
         {
@@ -1017,6 +1017,16 @@ Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("
         {
             return 1;
         }
+    }
+
+    // World units per on-screen (CSS) pixel. Folds in the camera zoom (world -> buffer px)
+    // AND bare.resolutionScale (buffer px -> CSS px), so screen-sized editor UI (gizmo handles,
+    // pivot dots, outlines) keeps a constant on-screen size in low-resolution games where the
+    // buffer is scaled up to fill the canvas. Use this for sizing, not ScreenToWorld (a point
+    // transform that includes camera pan and works in buffer px).
+    ScreenPxToWorldScale(): number
+    {
+        return 1 / (this.GetCameraZoom() * bare.resolutionScale);
     }
 
     GetContructorName(gameObject: GameObject): string

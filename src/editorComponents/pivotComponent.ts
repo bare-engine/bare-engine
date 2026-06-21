@@ -155,8 +155,7 @@ export class PivotComponent extends Component
 
     OnPostRender()
     {
-        const zoom = this.scene.GetCameraZoom();
-        var radius = 9 / zoom;
+        var radius = 9 * this.scene.ScreenPxToWorldScale();
 
         // *3 UHH?! FIX THOSE HITBOX SHENANIGANS - TODO
         this.go.tapHitbox.rectangle = {x: -radius, y: -radius, width: radius*3, height: radius*3};

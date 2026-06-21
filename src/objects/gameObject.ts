@@ -498,7 +498,7 @@ export class GameObject
             rapid.matrixStack.save();
             rapid.matrixStack.translate(this.x, this.y)
             rapid.drawCircle({
-                radius: 4 / this.scene.GetCameraZoom(),
+                radius: 4 * this.scene.ScreenPxToWorldScale(),
                 color: new Color(0, 0, 0, 255),
                 segments: 16,
             });
