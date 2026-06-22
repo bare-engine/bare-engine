@@ -73,7 +73,7 @@ export class CameraHandler {
 
             const dims: Size = level.dimensions;
             
-            if (this.bounds.x == 0 && this.bounds.y == 0 && this.bounds.width == 0 && this.bounds.height == 0)
+            //if (this.bounds.x == 0 && this.bounds.y == 0 && this.bounds.width == 0 && this.bounds.height == 0)
                 this.SetBounds({ x: 0, y: 0, width: dims.width, height: dims.height });
 
             this.CalculateZoomFit();

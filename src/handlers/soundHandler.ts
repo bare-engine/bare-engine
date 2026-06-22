@@ -83,7 +83,7 @@ export class SoundHandler
                         // Evict so a later Play can retry instead of staying stuck.
                         this.loads.delete(id);
                         this.sounds.delete(id);
-                        reject(error);
+                        //reject(error);
                     }
                 );
 

@@ -181,7 +181,7 @@ export class ComponentController
 
     GetAllByType<ComponentType extends Component<any>>(componentType: Ctor<ComponentType>): ComponentType[]
     {
-        return this.componentsByType.get(componentType) as unknown as ComponentType[]
+        return this.componentsByType.get(componentType) as unknown as ComponentType[] || [];
     }
 
     GetAllFrom(object: GameObject): Component<any>[]

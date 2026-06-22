@@ -599,8 +599,18 @@ export class TransformToolHandler
             return;
         }
 
+        // GetAll() only returns top-level objects, so a selected child (eg a ctrl+right-click deep
+        // select) must be matched via its top-level ancestor - otherwise it'd be pruned every frame.
         const all = scene.object.GetAll();
-        this.targets = this.targets.filter(o => o && o.scene === scene && all.includes(o));
+        this.targets = this.targets.filter(o => o && o.scene === scene && all.includes(this.RootOf(o)));
+    }
+
+    private RootOf(o: GameObject): GameObject
+    {
+        let root = o;
+        while (root.parent)
+            root = root.parent;
+        return root;
     }
 
     private SetHitboxesActive(active: boolean): void
