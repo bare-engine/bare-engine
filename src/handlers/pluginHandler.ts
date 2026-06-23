@@ -426,6 +426,7 @@ window.__GAME_DEBUG_API__ = {
 
     var AddExtraPropsToData = (data: any, o: GameObject) => {
         data.id = o.uniqueID;
+        data.hasChildren = o.children.length > 0;
         data.name = o.name;
         data.x = o.x;
         data.y = o.y;
