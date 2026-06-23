@@ -669,6 +669,14 @@ function bareInitialAssetsPlugin(options = {}) {
 // though the running game already applied the change in-memory.
 let skipReloadUntil = 0;
 
+// Set while a texturePackImages (AssetPack) build is clearing + rewriting
+// public/initial/generated. The generated-assets watcher honors it so it doesn't
+// fire a racy full-reload while the atlas is momentarily missing from disk - which
+// would reload the page with no initial-asset tags and leave window.initialAssets
+// empty. The texturePackImages plugin does the single authoritative reload once the
+// build finishes and the atlas is back on disk.
+let texturePackBuilding = false;
+
 function bareEditorAndApiPlugin(options = {}) {
     const projectRoot = options.projectRoot || process.cwd();
     const editorHtmlPath = options.editorHtmlPath || path.resolve(__dirname, "../config/editor.html");
@@ -877,23 +885,37 @@ function bareTexturePackImagesPlugin(options = {}) {
         console.log(`[assets] Running ${buildCommand.join(" ")} (${reason})`);
         const useShell = process.platform === "win32" && /\.cmd$/i.test(resolvedCommand);
 
+        // Suppress the generated-assets watcher's reload until the atlas is rewritten.
+        texturePackBuilding = true;
+        const finish = (sendReload) => {
+            child = null;
+            if (sendReload && serverRef) {
+                serverRef.ws.send({ type: "full-reload", path: "/initial" });
+            }
+            // Swallow the trailing generated-assets watcher events from the freshly
+            // written atlas for a short grace window so they don't fire a second reload.
+            skipReloadUntil = Math.max(skipReloadUntil, Date.now() + 500);
+            texturePackBuilding = false;
+            if (queued) {
+                queued = false;
+                run("queued changes");
+            }
+        };
+
         child = spawn(resolvedCommand, args, {
             cwd: projectRoot,
             stdio: "inherit",
             shell: useShell
         });
+        child.on("error", (error) => {
+            console.error(`[assets] build:assets failed to start: ${error.message}`);
+            finish(false);
+        });
         child.on("close", (code) => {
             if (code !== 0) {
                 console.error(`[assets] build:assets failed with code ${code}`);
             }
-            child = null;
-            if (serverRef) {
-                serverRef.ws.send({ type: "full-reload", path: "/initial" });
-            }
-            if (queued) {
-                queued = false;
-                run("queued changes");
-            }
+            finish(true);
         });
     }
 
@@ -1488,8 +1510,10 @@ function bareGeneratedAssetsPlugin(options = {}) {
                     }
                     // Keep the regenerated assets.ts on disk (correct for the next real reload),
                     // but skip the full-reload while a skipReload save is in flight - the running
-                    // game already applied the entity change in-memory via the plugin handler.
-                    if (Date.now() > skipReloadUntil) {
+                    // game already applied the entity change in-memory via the plugin handler -
+                    // or while a texturePackImages build is mid-rewrite of the atlas (the
+                    // texturePackImages plugin reloads once the atlas is back on disk).
+                    if (Date.now() > skipReloadUntil && !texturePackBuilding) {
                         server.ws.send({ type: "full-reload", path: "*" });
                     }
                 }
