@@ -109,6 +109,8 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
         let objectsToRemove: ArcadeObject[] | null = null;
 
+        var gravity = this.scene.settingsData?.gravity || 0;
+
         for (const obj of this.objects)
         {
             if (obj.parent) {
@@ -134,7 +136,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
             if (!obj.static)
             {
-                obj.velocity.y += obj.scene.settingsData.gravity * fixedDeltaTime;
+                obj.velocity.y += gravity * fixedDeltaTime;
             }
 
             if (obj.drag > 0)
