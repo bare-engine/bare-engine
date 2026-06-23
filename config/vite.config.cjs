@@ -40,7 +40,8 @@ module.exports = ({ mode }) => {
         base: "./",
         publicDir: path.join(projectRoot, "public"),
         define: {
-            __DEV__: JSON.stringify(isDev)
+            __DEV__: JSON.stringify(isDev),
+            __STRIP_GENERATED_ASSETS__: JSON.stringify(stripGeneratedAssets !== false)
         },
         resolve: {
             extensions: [".ts", ".js", ".json"]
