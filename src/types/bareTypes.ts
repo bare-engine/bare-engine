@@ -297,7 +297,7 @@ interface AnimationDataInfo
 
 export interface SettingsData
 {
-    name?: string;
+    name?: string; // WHEN SettingsData IS SAVED TO FILE, THIS NAME IS USED AS THE FILE NAME. IF LEFT EMPTY, THE DEFAULT settingsData.json IS USED
     categories?: Record<string, Category>;
     baseEntities?: Record<string, Entity>;
     entities?: Record<string, Entity>;
