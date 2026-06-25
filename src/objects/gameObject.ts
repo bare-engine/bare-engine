@@ -6,7 +6,7 @@ import type { Scene } from "../scenes/scene";
 import type { ComponentCtor, Ctor, DropFirst, Events, Rectangle, Shader } from "../types/bareTypes";
 import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';
 import { Hitbox } from '../types/hitbox';
-import { getOwnInspectorFieldNames } from "../utils/decorators";
+import { getOwnInspectorFieldNames, InspectorField, Range } from "../utils/decorators";
 import { Helper } from '../utils/helper';
 
 export class Transform {
@@ -38,14 +38,8 @@ export class GameObject
     pluginName:string;
     uniqueID:string = "";
 
-    customName: string = "";
     active:boolean = true;
-    visible:boolean = true;
-    persistent: boolean = false;
-    save: boolean = false;
-    tags:Array<string> = [];
     texture: Texture | null;
-    color:Color = new Color(255, 255, 255, 255);
     
     shaders: Shader[] = [];
     private mask: GameObject | null = null;
@@ -73,8 +67,6 @@ export class GameObject
     entity: Entity | null = null; 
     
     visibleInEditor:boolean = true;
-
-    customData: Record<string, any> = {};
 
     OnTextureLoadedCallbacks: Function[] = [];
 
@@ -600,6 +592,155 @@ export class GameObject
         this.mask = null;
     }
 
+    @InspectorField
+    get position(): Vec2
+    {
+        return this.transform.position;
+    }
+
+    set position(vec2: Vec2)
+    {
+        this.transform.position.x = vec2.x;
+        this.transform.position.y = vec2.y;
+    }
+
+    @InspectorField
+    get scale(): Vec2
+    {
+        return this.transform.scale;
+    }
+
+    set scale(value: Vec2 | number)
+    {
+        if (typeof value === 'number') {
+            this.transform.scale.set(value, value);
+        } else {
+            this.transform.scale.to(value);
+        }
+    }
+
+    // ROTATION IN DEGREES
+    @InspectorField
+    get rotation(): number
+    {
+        return this.transform.rotation;
+    }
+
+    set rotation(value: number)
+    {
+        this.transform.rotation = (value % 360);
+    }
+
+    // OUTER pivot — anchors this object in its parent and offsets its children.
+    // Lazily allocated so transform.pivot can stay null after Reset()/pooling.
+    @InspectorField
+    get pivot(): Vec2
+    {
+        return this.transform.pivot ??= new Vec2();
+    }
+
+    set pivot(v: Vec2)
+    {
+        this.transform.pivot = v;
+    }
+
+    @InspectorField
+    get innerPosition(): Vec2
+    {
+        return this.innerTransform.position;
+    }
+
+    set innerPosition(vec2: Vec2)
+    {
+        this.innerTransform.position.x = vec2.x;
+        this.innerTransform.position.y = vec2.y;
+    }
+
+    @InspectorField
+    get innerScale(): Vec2
+    {
+        return this.innerTransform.scale;
+    }
+
+    set innerScale(value: Vec2 | number)
+    {
+        if (typeof value === 'number') {
+            this.innerTransform.scale.set(value, value);
+        } else {
+            this.innerTransform.scale.to(value);
+        }
+    }
+
+    @InspectorField
+    get innerRotation(): number
+    {
+        return this.innerTransform.rotation;
+    }
+
+    set innerRotation(value: number)
+    {
+        this.innerTransform.rotation = value;
+    }
+
+    // INNER pivot — anchor for the sprite's inner transform. Inherits the outer pivot until set;
+    // first access snapshots the outer pivot into its OWN Vec2 so edits don't mutate the shared one.
+    @InspectorField
+    get innerPivot(): Vec2
+    {
+        return this.innerTransform.pivot ??= new Vec2(this.pivot.x, this.pivot.y);
+    }
+
+    set innerPivot(v: Vec2)
+    {
+        (this.innerTransform.pivot ??= new Vec2()).set(v.x, v.y);
+    }
+
+    @InspectorField
+    @Range(0, 1)
+    get alpha(): number
+    {
+        return this.color.a / 255;
+    }
+    set alpha(value: number)
+    {
+        value = Math.min(Math.max(value, 0), 1);
+        this.color.a = value * 255;
+    }
+
+    @InspectorField
+    visible:boolean = true;
+
+    @InspectorField
+    color:Color = new Color(255, 255, 255, 255);
+
+    @InspectorField
+    get flipped(): boolean
+    {
+        return this.transform.flipped;
+    }
+
+    set flipped(value: boolean)
+    {
+        this.transform.flipped = value;
+    }
+
+    @InspectorField
+    customName: string = "";
+
+    @InspectorField
+    persistent: boolean = false;
+
+    @InspectorField
+    save: boolean = false;
+
+    @InspectorField
+    tags:Array<string> = [];
+
+    @InspectorField
+    customData: Record<string, any> = {};
+
+    // ===== NON-INSPECTOR ACCESSORS =====
+
     get x(): number
     {
         return this.transform.position.x;
@@ -618,31 +759,6 @@ export class GameObject
     set y(value: number)
     {
         this.transform.position.y = value;
-    }
-
-    set position(vec2: Vec2)
-    {
-        this.transform.position.x = vec2.x;
-        this.transform.position.y = vec2.y;
-    }
-
-    get position(): Vec2
-    {
-        return this.transform.position;
-    }
-
-    get scale(): Vec2
-    {
-        return this.transform.scale;
-    }
-
-    set scale(value: Vec2 | number)
-    {
-        if (typeof value === 'number') {
-            this.transform.scale.set(value, value);
-        } else {
-            this.transform.scale.to(value);
-        }
     }
 
     get scaleX(): number
@@ -665,72 +781,6 @@ export class GameObject
         this.scale.y = value;
     }
 
-    get innerX(): number
-    {
-        return this.innerTransform.position.x;
-    }
-
-    set innerX(value: number)
-    {
-        this.innerTransform.position.x = value;
-    }
-
-    get innerY(): number
-    {
-        return this.innerTransform.position.y;
-    }
-
-    set innerY(value: number)
-    {
-        this.innerTransform.position.y = value;
-    }
-
-    get innerScale(): Vec2
-    {
-        return this.innerTransform.scale;
-    }
-
-    set innerScale(value: Vec2 | number)
-    {
-        if (typeof value === 'number') {
-            this.innerTransform.scale.set(value, value);
-        } else {
-            this.innerTransform.scale.to(value);
-        }
-    }
-
-    set innerPosition(vec2: Vec2)
-    {
-        this.innerTransform.position.x = vec2.x;
-        this.innerTransform.position.y = vec2.y;
-    }
-
-    get innerPosition(): Vec2
-    {
-        return this.innerTransform.position;
-    }
-
-    // ROTATION IN DEGREES
-    set rotation(value: number)
-    {
-        this.transform.rotation = (value % 360);
-    }
-
-    get rotation(): number
-    {
-        return this.transform.rotation;
-    }
-
-    set innerRotation(value: number)
-    {
-        this.innerTransform.rotation = value;
-    }
-
-    get innerRotation(): number
-    {
-        return this.innerTransform.rotation;
-    }
-
     get innerScaleX(): number
     {
         return this.innerScale.x;
@@ -751,6 +801,36 @@ export class GameObject
         this.innerTransform.scale.y = value;
     }
 
+    get innerX(): number
+    {
+        return this.innerTransform.position.x;
+    }
+
+    set innerX(value: number)
+    {
+        this.innerTransform.position.x = value;
+    }
+
+    get innerY(): number
+    {
+        return this.innerTransform.position.y;
+    }
+
+    set innerY(value: number)
+    {
+        this.innerTransform.position.y = value;
+    }
+
+    get innerFlipped(): boolean
+    {
+        return this.innerTransform.flipped;
+    }
+
+    set innerFlipped(value: boolean)
+    {
+        this.innerTransform.flipped = value;
+    }
+
     get totalScale(): number
     {
         return this.scale.x * this.innerScale.x;
@@ -764,44 +844,6 @@ export class GameObject
     get totalScaleY(): number
     {
         return this.scale.y * this.innerScale.y;
-    }
-
-    get flipped(): boolean
-    {
-        return this.transform.flipped;
-    }
-
-    set flipped(value: boolean)
-    {
-        this.transform.flipped = value;
-    }
-
-    get innerFlipped(): boolean
-    {
-        return this.innerTransform.flipped;
-    }
-
-    set innerFlipped(value: boolean)
-    {
-        this.innerTransform.flipped = value;
-    }
-
-    // OUTER pivot — anchors this object in its parent and offsets its children.
-    // Lazily allocated so transform.pivot can stay null after Reset()/pooling.
-    get pivot(): Vec2
-    {
-        return this.transform.pivot ??= new Vec2();
-    }
-
-    set pivot(v: Vec2)
-    {
-        this.transform.pivot = v;
-    }
-
-    // INNER pivot — anchor for the sprite's inner transform. Inherits the outer pivot when unset.
-    get innerPivot(): Vec2
-    {
-        return this.innerTransform.pivot ?? this.pivot;
     }
 
     get pivotX(): number
@@ -822,19 +864,6 @@ export class GameObject
     set pivotY(value: number)
     {
         this.pivot.y = value;
-    }
-
-    //@InspectorField
-    //@Range(0, 1)
-    set alpha(value: number)
-    {
-        value = Math.min(Math.max(value, 0), 1);
-        this.color.a = value * 255;
-    }
-
-    get alpha()
-    {
-        return this.color.a / 255;
     }
 
     get width(): number

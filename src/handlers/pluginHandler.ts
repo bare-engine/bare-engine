@@ -938,9 +938,10 @@ window.__GAME_DEBUG_API__ = {
 
         //if (props.pivotBasedOnHitbox !== undefined) { o.pivotBasedOnHitbox.x = props.pivotBasedOnHitbox.x; o.pivotBasedOnHitbox.y = props.pivotBasedOnHitbox.y; }
 
-        // tags / customData ARRIVE AS JSON STRINGS FROM THE PLUGIN
-        if (props.tags !== undefined) o.tags = JSON.parse(props.tags);
-        if (props.customData !== undefined) o.customData = JSON.parse(props.customData);
+        // tags / customData CAN ARRIVE AS JSON STRINGS (entity/legacy path) OR ALREADY-PARSED
+        // array/object VALUES (the @InspectorField path handled by applyInspectorField above).
+        if (typeof props.tags === "string") o.tags = JSON.parse(props.tags);
+        if (typeof props.customData === "string") o.customData = JSON.parse(props.customData);
 
         // UPDATE OR ADD COMPONENTS
         if (props.components !== undefined)
