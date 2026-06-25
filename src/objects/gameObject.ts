@@ -509,6 +509,17 @@ export class GameObject
             });
 
             rapid.matrixStack.restore();
+
+            // INNER PIVOT — SLIGHTLY SMALLER WHITE CIRCLE
+            var innerPivotWorld = this.ToGlobal(this.innerPivot, true);
+            rapid.matrixStack.save();
+            rapid.matrixStack.translate(innerPivotWorld.x, innerPivotWorld.y);
+            rapid.drawCircle({
+                radius: 2 * this.scene.ScreenPxToWorldScale(),
+                color: new Color(255, 255, 255, 255),
+                segments: 16,
+            });
+            rapid.matrixStack.restore();
         }
 
         this.OnPostRender();
