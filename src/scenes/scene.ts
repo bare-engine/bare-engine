@@ -394,6 +394,19 @@ export class Scene implements SceneI
         }
 
         const inspectorFieldNames = new Set(getInspectorFieldNames(obj));
+        const isInspectorDescriptor = (value: any): boolean => {
+            if (value === null || typeof value !== "object")
+                return false;
+
+            const proto = Object.getPrototypeOf(value);
+            if (proto !== Object.prototype && proto !== null)
+                return false;
+
+            return "current" in value
+                || "get" in value
+                || "set" in value
+                || "onChange" in value;
+        };
         const specialMap = obj.specialMap;
 
         for (const key in entity) {
@@ -419,7 +432,7 @@ export class Scene implements SceneI
             if (inspectorFieldNames.has(key))
             {
                 const descriptor = obj[key];
-                if (descriptor && typeof descriptor === "object"
+                if (isInspectorDescriptor(descriptor)
                     && (typeof descriptor.set === "function" || typeof descriptor.onChange === "function"))
                 {
                     (descriptor.set || descriptor.onChange).call(obj, value);

@@ -597,11 +597,9 @@ export class GameObject
     {
         return this.transform.position;
     }
-
     set position(vec2: Vec2)
     {
-        this.transform.position.x = vec2.x;
-        this.transform.position.y = vec2.y;
+        this.SetPosition(vec2.x, vec2.y);
     }
 
     @InspectorField
@@ -638,7 +636,6 @@ export class GameObject
     {
         return this.transform.pivot ??= new Vec2();
     }
-
     set pivot(v: Vec2)
     {
         this.transform.pivot = v;
@@ -649,7 +646,6 @@ export class GameObject
     {
         return this.innerTransform.position;
     }
-
     set innerPosition(vec2: Vec2)
     {
         this.innerTransform.position.x = vec2.x;
@@ -661,7 +657,6 @@ export class GameObject
     {
         return this.innerTransform.scale;
     }
-
     set innerScale(value: Vec2 | number)
     {
         if (typeof value === 'number') {
@@ -676,7 +671,6 @@ export class GameObject
     {
         return this.innerTransform.rotation;
     }
-
     set innerRotation(value: number)
     {
         this.innerTransform.rotation = value;
@@ -689,7 +683,6 @@ export class GameObject
     {
         return this.innerTransform.pivot ??= new Vec2(this.pivot.x, this.pivot.y);
     }
-
     set innerPivot(v: Vec2)
     {
         (this.innerTransform.pivot ??= new Vec2()).set(v.x, v.y);
@@ -718,7 +711,6 @@ export class GameObject
     {
         return this.transform.flipped;
     }
-
     set flipped(value: boolean)
     {
         this.transform.flipped = value;
@@ -739,33 +731,28 @@ export class GameObject
     @InspectorField
     customData: Record<string, any> = {};
 
-    // ===== NON-INSPECTOR ACCESSORS =====
-
     get x(): number
     {
         return this.transform.position.x;
     }
-
     set x(value: number)
     {
-        this.transform.position.x = value;
+        this.SetPosition(value, this.y);
     }
 
     get y(): number
     {
         return this.transform.position.y;
     }
-
     set y(value: number)
     {
-        this.transform.position.y = value;
+        this.SetPosition(this.x, value);
     }
 
     get scaleX(): number
     {
         return this.scale.x;
     }
-
     set scaleX(value: number)
     {
         this.scale.x = value;
@@ -775,7 +762,6 @@ export class GameObject
     {
         return this.scale.y;
     }
-
     set scaleY(value: number)
     {
         this.scale.y = value;
@@ -785,7 +771,6 @@ export class GameObject
     {
         return this.innerScale.x;
     }
-
     set innerScaleX(value: number)
     {
         this.innerTransform.scale.x = value;
@@ -795,7 +780,6 @@ export class GameObject
     {
         return this.innerScale.y;
     }
-
     set innerScaleY(value: number)
     {
         this.innerTransform.scale.y = value;
@@ -805,7 +789,6 @@ export class GameObject
     {
         return this.innerTransform.position.x;
     }
-
     set innerX(value: number)
     {
         this.innerTransform.position.x = value;
@@ -815,7 +798,6 @@ export class GameObject
     {
         return this.innerTransform.position.y;
     }
-
     set innerY(value: number)
     {
         this.innerTransform.position.y = value;
@@ -825,7 +807,6 @@ export class GameObject
     {
         return this.innerTransform.flipped;
     }
-
     set innerFlipped(value: boolean)
     {
         this.innerTransform.flipped = value;
@@ -840,7 +821,6 @@ export class GameObject
     {
         return this.scale.x * this.innerScale.x;
     }
-
     get totalScaleY(): number
     {
         return this.scale.y * this.innerScale.y;
@@ -850,7 +830,6 @@ export class GameObject
     {
         return this.pivot.x;
     }
-
     set pivotX(value: number)
     {
         this.pivot.x = value;
@@ -860,7 +839,6 @@ export class GameObject
     {
         return this.pivot.y;
     }
-
     set pivotY(value: number)
     {
         this.pivot.y = value;
