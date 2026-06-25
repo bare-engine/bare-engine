@@ -751,13 +751,15 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         }
 
         // Transform the four hitbox corners to world space (texture space -> world,
-        // including rotation/scale/inner transform) and take their AABB. This matches
-        // hitboxController.GetRect exactly, so collisions align with the debug rect,
-        // and stays a true AABB even when the object is rotated (rotation-expanded box).
-        const topLeft     = obj.ToGlobal(new Vec2(rect.x, rect.y), true);
-        const topRight    = obj.ToGlobal(new Vec2(rect.x + rect.width, rect.y), true);
-        const bottomRight = obj.ToGlobal(new Vec2(rect.x + rect.width, rect.y + rect.height), true);
-        const bottomLeft  = obj.ToGlobal(new Vec2(rect.x, rect.y + rect.height), true);
+        // including rotation/scale) and take their AABB. The inner transform is
+        // intentionally excluded so juice tweens (innerScale/innerPosition/innerRotation)
+        // don't move or resize the hitbox. This matches hitboxController.GetRect exactly,
+        // so collisions align with the debug rect, and stays a true AABB even when the
+        // object is rotated (rotation-expanded box).
+        const topLeft     = obj.ToGlobal(new Vec2(rect.x, rect.y));
+        const topRight    = obj.ToGlobal(new Vec2(rect.x + rect.width, rect.y));
+        const bottomRight = obj.ToGlobal(new Vec2(rect.x + rect.width, rect.y + rect.height));
+        const bottomLeft  = obj.ToGlobal(new Vec2(rect.x, rect.y + rect.height));
 
         const minX = Math.min(topLeft.x, topRight.x, bottomRight.x, bottomLeft.x);
         const minY = Math.min(topLeft.y, topRight.y, bottomRight.y, bottomLeft.y);
@@ -782,16 +784,17 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
         // Match hitboxController.GetCircleCenter / GetRadius exactly so physics aligns
         // with the debug circle: the circle offset and pivot are added in texture space,
-        // then transformed to world via ToGlobal(..., true). The world radius is derived
-        // from the transformed center-to-edge distance (handles scale/rotation).
+        // then transformed to world via ToGlobal. The inner transform is excluded so juice
+        // tweens don't move or resize the hitbox. The world radius is derived from the
+        // transformed center-to-edge distance (handles scale/rotation).
         const localCenter = new Vec2(
             obj.physicsHitbox.circleOffset.x + obj.pivot.x,
             obj.physicsHitbox.circleOffset.y + obj.pivot.y
         );
         const localEdge = new Vec2(localCenter.x + radius, localCenter.y);
 
-        const center = obj.ToGlobal(localCenter, true);
-        const edge = obj.ToGlobal(localEdge, true);
+        const center = obj.ToGlobal(localCenter);
+        const edge = obj.ToGlobal(localEdge);
 
         return {
             x: center.x,

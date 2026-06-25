@@ -224,7 +224,7 @@ export class HitboxController
             hitbox.circleOffset.x + parent.pivot.x,
             hitbox.circleOffset.y + parent.pivot.y
         );
-        const worldCenter = parent.ToGlobal(localCenter, true);
+        const worldCenter = parent.ToGlobal(localCenter);
 
         return worldCenter;
     }
@@ -239,8 +239,8 @@ export class HitboxController
         const radius = hitbox.GetRadius();
         const localEdge = new Vec2(localCenter.x + radius, localCenter.y);
 
-        const worldCenter = parent.ToGlobal(localCenter, true);
-        const worldEdge = parent.ToGlobal(localEdge, true);
+        const worldCenter = parent.ToGlobal(localCenter);
+        const worldEdge = parent.ToGlobal(localEdge);
 
         return Helper.Distance(worldCenter, worldEdge);
     }
@@ -250,10 +250,12 @@ export class HitboxController
         const rect = hitbox.rectangle;
         const parent = hitbox.parent;
 
-        const topLeft = parent.ToGlobal(new Vec2(rect.x, rect.y), true);
-        const topRight = parent.ToGlobal(new Vec2(rect.x + rect.width, rect.y), true);
-        const bottomRight = parent.ToGlobal(new Vec2(rect.x + rect.width, rect.y + rect.height), true);
-        const bottomLeft = parent.ToGlobal(new Vec2(rect.x, rect.y + rect.height), true);
+        // Inner transform is excluded so juice tweens (innerScale/innerPosition/innerRotation)
+        // don't move or resize the hitbox; keep this aligned with arcadePhysicsController.
+        const topLeft = parent.ToGlobal(new Vec2(rect.x, rect.y));
+        const topRight = parent.ToGlobal(new Vec2(rect.x + rect.width, rect.y));
+        const bottomRight = parent.ToGlobal(new Vec2(rect.x + rect.width, rect.y + rect.height));
+        const bottomLeft = parent.ToGlobal(new Vec2(rect.x, rect.y + rect.height));
 
         const minX = Math.min(topLeft.x, topRight.x, bottomRight.x, bottomLeft.x);
         const minY = Math.min(topLeft.y, topRight.y, bottomRight.y, bottomLeft.y);
