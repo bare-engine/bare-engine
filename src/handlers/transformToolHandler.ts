@@ -436,6 +436,16 @@ export class TransformToolHandler
                 let ay = xPt.y - origin.y;
                 const len = Math.hypot(ax, ay) || 1;
                 ax /= len; ay /= len;          // outer X axis (unit)
+
+                // `flipped` mirrors the sprite through the outer transform's X axis. The gizmo
+                // should still treat the object's unmirrored orientation as "top", otherwise the
+                // frame angle jumps by 180 degrees and the rotation knob appears below the box.
+                if (o.scale.x * (o.flipped ? -1 : 1) < 0)
+                {
+                    ax = -ax;
+                    ay = -ay;
+                }
+
                 const bx = -ay, by = ax;       // outer Y axis (perpendicular, unit)
 
                 // Enclose the inner-transformed sprite corners by projecting them onto the outer
