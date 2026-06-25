@@ -427,18 +427,44 @@ export class TransformToolHandler
 
             if (texW > 0 && texH > 0)
             {
-                // Derive the oriented box from actual world geometry, so parent scale/rotation,
-                // inner transform and flip are all accounted for.
-                const center = o.ToGlobal(new Vec2(texW * 0.5, texH * 0.5), true);
-                const right  = o.ToGlobal(new Vec2(texW,       texH * 0.5), true);
-                const bottom = o.ToGlobal(new Vec2(texW * 0.5, texH      ), true);
+                // The box is aligned to the object's OUTER transform (object rotation + ancestors),
+                // NOT the inner transform - the gizmo must not tilt with an inner rotation, since
+                // resize/rotate drive the outer transform (o.scale / o.rotation).
+                const origin = o.ToGlobal(new Vec2(0, 0), false);
+                const xPt    = o.ToGlobal(new Vec2(1, 0), false);
+                let ax = xPt.x - origin.x;
+                let ay = xPt.y - origin.y;
+                const len = Math.hypot(ax, ay) || 1;
+                ax /= len; ay /= len;          // outer X axis (unit)
+                const bx = -ay, by = ax;       // outer Y axis (perpendicular, unit)
+
+                // Enclose the inner-transformed sprite corners by projecting them onto the outer
+                // axes - so an inner rotation/scale/flip only widens the bounds, never tilts the box.
+                const corners = [
+                    o.ToGlobal(new Vec2(0,    0),    true),
+                    o.ToGlobal(new Vec2(texW, 0),    true),
+                    o.ToGlobal(new Vec2(texW, texH), true),
+                    o.ToGlobal(new Vec2(0,    texH), true),
+                ];
+
+                let minU = Infinity, maxU = -Infinity, minV = Infinity, maxV = -Infinity;
+                for (const c of corners)
+                {
+                    const u = c.x * ax + c.y * ay;
+                    const v = c.x * bx + c.y * by;
+                    minU = Math.min(minU, u); maxU = Math.max(maxU, u);
+                    minV = Math.min(minV, v); maxV = Math.max(maxV, v);
+                }
+
+                const cu = (minU + maxU) * 0.5;
+                const cv = (minV + maxV) * 0.5;
 
                 return {
-                    cx: center.x,
-                    cy: center.y,
-                    hw: Math.hypot(right.x - center.x, right.y - center.y),
-                    hh: Math.hypot(bottom.x - center.x, bottom.y - center.y),
-                    angle: Math.atan2(right.y - center.y, right.x - center.x),
+                    cx: cu * ax + cv * bx,
+                    cy: cu * ay + cv * by,
+                    hw: (maxU - minU) * 0.5,
+                    hh: (maxV - minV) * 0.5,
+                    angle: Math.atan2(ay, ax),
                 };
             }
         }
