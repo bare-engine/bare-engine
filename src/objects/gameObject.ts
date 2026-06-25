@@ -14,6 +14,7 @@ export class Transform {
     scale = new Vec2(1, 1);
     rotation = 0;
     flipped = false;
+    pivot: Vec2 | null = null; // null = inherit (inner transform) / lazy origin (outer transform)
 
     Reset()
     {
@@ -21,6 +22,7 @@ export class Transform {
         this.scale = new Vec2(1, 1);
         this.rotation = 0;
         this.flipped = false;
+        this.pivot = null;
     }
 }
 
@@ -37,7 +39,6 @@ export class GameObject
     uniqueID:string = "";
 
     customName: string = "";
-    pivot:Vec2 = new Vec2();
     active:boolean = true;
     visible:boolean = true;
     persistent: boolean = false;
@@ -463,11 +464,11 @@ export class GameObject
         this.OnRender();
     }
 
+    // pos / rot / scale only. Pivot is applied separately at the content boundary:
+    // children use transform.pivot, the sprite uses innerPivot (see RenderSprite / GetBounds).
     ApplyTransformToMatrixStack(transform: Transform)
     {
-        rapid.matrixStack.translate(transform.position.x, transform.position.y)
-        rapid.matrixStack.rotate(transform.rotation * (Math.PI / 180));
-        rapid.matrixStack.scale(transform.scale.x * (transform.flipped ? -1 : 1), transform.scale.y);
+        this.applyTransform(rapid.matrixStack, transform);
     }
 
     public RenderTransformed(inheritedColor?: Color)
@@ -477,7 +478,9 @@ export class GameObject
 
         rapid.matrixStack.save();
 
-        this.ApplyTransformToMatrixStack(this.innerTransform);
+        // Sprite is anchored at the OUTER pivot; the inner transform pivots around the inner pivot.
+        rapid.matrixStack.translate(-this.pivot.x, -this.pivot.y);
+        this.applyInnerTransform(rapid.matrixStack, this);
 
         if (this.texture)
             this.RenderSprite(inheritedColor);
@@ -559,7 +562,7 @@ export class GameObject
         rapid.drawSprite({
             texture: texture,
             color: renderColor,
-            position: new Vec2(-this.pivot.x, -this.pivot.y),
+            position: new Vec2(0, 0),
         });
 
         if (this.mask)
@@ -772,6 +775,24 @@ export class GameObject
         this.innerTransform.flipped = value;
     }
 
+    // OUTER pivot — anchors this object in its parent and offsets its children.
+    // Lazily allocated so transform.pivot can stay null after Reset()/pooling.
+    get pivot(): Vec2
+    {
+        return this.transform.pivot ??= new Vec2();
+    }
+
+    set pivot(v: Vec2)
+    {
+        this.transform.pivot = v;
+    }
+
+    // INNER pivot — anchor for the sprite's inner transform. Inherits the outer pivot when unset.
+    get innerPivot(): Vec2
+    {
+        return this.innerTransform.pivot ?? this.pivot;
+    }
+
     get pivotX(): number
     {
         return this.pivot.x;
@@ -859,18 +880,28 @@ export class GameObject
         for (var i = chain.length - 1; i >= 0; i--)
         {
             var ancestor = chain[i];
-            this.applyTransform(m, ancestor);
+            this.applyTransform(m, ancestor.transform);
             m.translate(-ancestor.pivot.x, -ancestor.pivot.y);
         }
     }
 
-    private applyTransform(m: MatrixStack, t: { position?: { x: number, y: number }, rotation: number, scale: { x: number, y: number }, flipped: boolean })
+    private applyTransform(m: MatrixStack, t: Transform)
     {
-        var tx = t.position!.x;
-        var ty = t.position!.y;
-        m.translate(tx, ty);
+        m.translate(t.position.x, t.position.y);
         m.rotate(t.rotation * (Math.PI / 180));
         m.scale(t.scale.x * (t.flipped ? -1 : 1), t.scale.y);
+    }
+
+    // Applies the inner transform anchored at the inner pivot (which defaults to the outer pivot).
+    // Pivoting around innerPivot means inner rotation/scale spins the sprite around that point
+    // WITHOUT shifting its outer placement — when the inner transform is identity this is a no-op.
+    // Call after the outer-pivot offset (translate(-pivot)), in the texture's local space.
+    private applyInnerTransform(m: MatrixStack, obj: GameObject)
+    {
+        var pivot = obj.innerPivot;
+        m.translate(pivot.x, pivot.y);
+        this.applyTransform(m, obj.innerTransform);
+        m.translate(-pivot.x, -pivot.y);
     }
 
     private cornersToRect(corners: {x: number, y: number}[]): Rectangle
@@ -916,14 +947,13 @@ export class GameObject
         m.identity();
         
         this.buildAncestorMatrix(m);
-        this.applyTransform(m, this);
+        this.applyTransform(m, this.transform);
 
         m.save();
-        this.applyTransform(m, this.innerTransform);
+        m.translate(-this.pivot.x, -this.pivot.y);
+        this.applyInnerTransform(m, this);
 
-        var px = -this.pivot.x;
-        var py = -this.pivot.y;
-        var corners = this.getCorners(m, px, py, this.texture!.width + px, this.texture!.height + py);
+        var corners = this.getCorners(m, 0, 0, this.texture!.width, this.texture!.height);
         m.restore();
         
         m.restore();
@@ -959,9 +989,7 @@ export class GameObject
             }
             if (ow === 0 && oh === 0) return;
 
-            var px = -obj.pivot.x;
-            var py = -obj.pivot.y;
-            var corners = this.getCorners(m, px, py, ow + px, oh + py);
+            var corners = this.getCorners(m, 0, 0, ow, oh);
 
             for (var c of corners)
             {
@@ -974,10 +1002,11 @@ export class GameObject
 
         var recurse = (obj: GameObject) => {
             m.save();
-            this.applyTransform(m, obj);
+            this.applyTransform(m, obj.transform);
 
             m.save();
-            this.applyTransform(m, obj.innerTransform);
+            m.translate(-obj.pivot.x, -obj.pivot.y);
+            this.applyInnerTransform(m, obj);
             updateBounds(obj);
             m.restore();
 
@@ -1134,6 +1163,54 @@ export class GameObject
         return this.SetPivot(.5, .5);
     }
 
+    CenterInnerPivot(): this
+    {
+        return this.SetInnerPivot(.5, .5);
+    }
+
+    // Inner pivot anchors the inner transform (sprite-only squash/rotate/etc.).
+    // Raw texture units; when unset the sprite uses the outer pivot.
+    SetInnerPivot(x: number, y: number): this
+    {
+        if (!this.texture)
+        {
+            var xArg = x;
+            var yArg = y;
+            this.WhenTextureLoaded(() => this.SetInnerPivot(xArg, yArg));
+            // STILL CONTINUING,... TO SET PIVOT BEFOREHAND, SINCE MIGHT NEVER GET TEXTURE LOADED, EG FOR UI ELEMENTS
+        }
+        
+        // OPTION TO PASS IN A PERCENTAGE
+        if (x > 0 && x <= 1)
+        {
+            if (!this.texture)
+            {
+                x = x * this.width;
+                //console.error("CANNOT SET PERCENTAGE ON A GAMEOBJECT WITHOUT A TEXTURE. LOAD IT FIRST");
+                //return this;
+            }
+            else
+                x = x * this.texture.width;
+        }
+        if (y > 0 && y <= 1)
+        {
+            if (!this.texture)
+            {
+                y = y * this.height;
+                //console.error("CANNOT SET PERCENTAGE ON A GAMEOBJECT WITHOUT A TEXTURE. LOAD IT FIRST");
+                //return this;
+            }
+            else
+                y = y * this.texture.height;
+        }
+
+        this.innerTransform.pivot ??= new Vec2();
+        this.innerTransform.pivot.x = x;
+        this.innerTransform.pivot.y = y;
+
+        return this;
+    }
+
     
     /*applyWorldMatrix(m: typeof rapid.matrixStack)
     {
@@ -1169,11 +1246,11 @@ export class GameObject
         this.buildAncestorMatrix(m);
         this.applyTransform(m, this.transform);
 
-        if (includeInnerTransform)
-            this.applyTransform(m, this.innerTransform);
-
         m.translate(-this.pivot.x, -this.pivot.y);
-        
+
+        if (includeInnerTransform)
+            this.applyInnerTransform(m, this);
+
         const {x, y} = m.localToWorld(localPoint.x, localPoint.y);
         
         m.restore();
