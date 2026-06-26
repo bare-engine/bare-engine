@@ -19,6 +19,9 @@ export class EditorUIHandler {
     private static readonly textureFrameUrlCache = new Map<string, string>();
     private static readonly textureFrameLoadCache = new Map<string, Promise<string>>();
     private static readonly imageLoadCache = new Map<string, Promise<HTMLImageElement>>();
+    private static readonly previewImageUrlCache = new Map<string, string>();
+    private static readonly previewImageUrlLoadCache = new Map<string, Promise<string>>();
+    private static readonly imageEntityCache = new WeakMap<SettingsData, Map<string, Entity>>();
 
     private abortController: AbortController = new AbortController();
     private isMinimized: boolean = false;
@@ -27,6 +30,9 @@ export class EditorUIHandler {
     public editorUIHintHandler: EditorUIHintHandler;
 
     private data: SettingsData;
+    private imagesCategoryElement: HTMLElement | null = null;
+    private imagesCategoryCacheKey: string = '';
+    private imagesCategorySettingsData: SettingsData | null = null;
     private gridToggleEl: HTMLElement | null = null;
     private gridSizeInputEl: HTMLInputElement | null = null;
     private gridModalEl: HTMLElement | null = null;
@@ -136,6 +142,100 @@ export class EditorUIHandler {
             .catch((error) => console.error(error));
     }
 
+    private GetImageCategoryCacheKey(entries: string[]): string {
+        return entries.join('\0');
+    }
+
+    private GetCachedImageEntity(imagePath: string, data: SettingsData): Entity {
+        let dataCache = EditorUIHandler.imageEntityCache.get(data);
+        if (!dataCache)
+        {
+            dataCache = new Map<string, Entity>();
+            EditorUIHandler.imageEntityCache.set(data, dataCache);
+        }
+
+        let entity = dataCache.get(imagePath);
+        if (entity)
+            return entity;
+
+        entity = this.scene.ConstructEntity(imagePath, data);
+        // images CATEGORY CONTAINS GENERATED PATHS - NO NEED FOR A SEPARATE imagePath
+        entity.imagePath = "";
+
+        dataCache.set(imagePath, entity);
+        return entity;
+    }
+
+    private GetSidebarEntity(entityId: string, categoryName: string, data: SettingsData): Entity {
+        if (categoryName == "images")
+            return this.GetCachedImageEntity(entityId, data);
+
+        return this.scene.ConstructEntity(entityId);
+    }
+
+    private LoadCachedPreviewImageUrl(src: string): Promise<string> {
+        const cachedUrl = EditorUIHandler.previewImageUrlCache.get(src);
+        if (cachedUrl)
+            return Promise.resolve(cachedUrl);
+
+        let previewLoad = EditorUIHandler.previewImageUrlLoadCache.get(src);
+        if (previewLoad)
+            return previewLoad;
+
+        previewLoad = this.LoadCachedImage(src)
+            .then(async (sourceImg) => {
+                await sourceImg.decode?.().catch(() => undefined);
+
+                const maxSize = 128;
+                const sourceWidth = sourceImg.naturalWidth || sourceImg.width || maxSize;
+                const sourceHeight = sourceImg.naturalHeight || sourceImg.height || maxSize;
+                const scale = Math.min(1, maxSize / sourceWidth, maxSize / sourceHeight);
+                const width = Math.max(1, Math.round(sourceWidth * scale));
+                const height = Math.max(1, Math.round(sourceHeight * scale));
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d')!;
+                ctx.drawImage(sourceImg, 0, 0, width, height);
+
+                const previewUrl = canvas.toDataURL('image/webp');
+                EditorUIHandler.previewImageUrlCache.set(src, previewUrl);
+                EditorUIHandler.previewImageUrlLoadCache.delete(src);
+                return previewUrl;
+            })
+            .catch((error) => {
+                EditorUIHandler.previewImageUrlLoadCache.delete(src);
+                console.error(error);
+                return src;
+            });
+
+        EditorUIHandler.previewImageUrlLoadCache.set(src, previewLoad);
+        return previewLoad;
+    }
+
+    private SetupPreviewImage(img: HTMLImageElement, src: string, id?: string): void {
+        if (id)
+            img.id = id;
+
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'contain';
+
+        const cachedUrl = EditorUIHandler.previewImageUrlCache.get(src);
+        if (cachedUrl)
+        {
+            img.src = cachedUrl;
+            return;
+        }
+
+        this.LoadCachedPreviewImageUrl(src)
+            .then((previewUrl) => img.src = previewUrl);
+    }
+
     async LoadEditorPage(): Promise<void> {
         const overlay = document.getElementById('editor-overlay') as HTMLElement;
         const container = document.getElementById('editor-content') as HTMLElement;
@@ -239,6 +339,19 @@ export class EditorUIHandler {
         {
             if (!categoryData || !categoryData.entries || categoryData.entries.length === 0) return;
 
+            if (categoryName == "images" && Array.isArray(categoryData.entries))
+            {
+                const cacheKey = this.GetImageCategoryCacheKey(categoryData.entries);
+                if (
+                    this.imagesCategoryElement
+                    && this.imagesCategoryCacheKey == cacheKey
+                    && this.imagesCategorySettingsData == data
+                ) {
+                    sidebarContent.appendChild(this.imagesCategoryElement);
+                    continue;
+                }
+            }
+
             // Create category container
             const categoryElement = document.createElement('div');
             categoryElement.className = 'entity-item';
@@ -266,10 +379,7 @@ export class EditorUIHandler {
                         const categoryImagePath = this.GetCategoryImagePath(categoryData.image);
                         if (categoryImagePath) {
                             const img = document.createElement('img');
-                            img.src = categoryImagePath;
-                            img.style.width = '100%';
-                            img.style.height = '100%';
-                            img.style.objectFit = 'contain';
+                            this.SetupPreviewImage(img, categoryImagePath);
                             categoryIcon.appendChild(img);
                         } else {
                             categoryIcon.textContent = '📦'; // Fallback icon
@@ -306,15 +416,7 @@ export class EditorUIHandler {
             if (Array.isArray(categoryData.entries)) 
             {
                 categoryData.entries.forEach(entityId => {
-                    var entity;
-                    
-                    entity = this.scene.ConstructEntity(entityId);
-
-                    if (categoryName == "images")
-                    {
-                        // images CATEGORY CONTAINS ALL ABSOLUTE GENERATED PATHS - NO NEED FOR ANY imagePath
-                        entity.imagePath = "";
-                    }
+                    var entity = this.GetSidebarEntity(entityId, categoryName, data);
 
                     if (entity)
                     {
@@ -340,11 +442,7 @@ export class EditorUIHandler {
                             const entityImagePath = this.GetEntityImagePath(entity);
                             if (entityImagePath && entityImagePath !== 'images/whitePixel.webp') {
                                 const img = document.createElement('img');
-                                img.src = entityImagePath;
-                                img.id = entityId;
-                                img.style.width = '100%';
-                                img.style.height = '100%';
-                                img.style.objectFit = 'contain';
+                                this.SetupPreviewImage(img, entityImagePath, entityId);
                                 img.style.borderRadius = '3px';
                                 childEntity.appendChild(img);
                             } else {
@@ -464,6 +562,13 @@ export class EditorUIHandler {
                 categoryElement.classList.add('expanded');
 
             sidebarContent.appendChild(categoryElement);
+
+            if (categoryName == "images" && Array.isArray(categoryData.entries))
+            {
+                this.imagesCategoryElement = categoryElement;
+                this.imagesCategoryCacheKey = this.GetImageCategoryCacheKey(categoryData.entries);
+                this.imagesCategorySettingsData = data;
+            }
         }
 
         // IF ONLY 1 CATEGORY, EXPAND IT
