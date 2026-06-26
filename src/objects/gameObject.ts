@@ -676,8 +676,7 @@ export class GameObject
         this.innerTransform.rotation = value;
     }
 
-    // INNER pivot — anchor for the sprite's inner transform. Inherits the outer pivot until set;
-    // first access snapshots the outer pivot into its OWN Vec2 so edits don't mutate the shared one.
+    // INNER pivot — anchor for the sprite's inner transform. Inherits the outer pivot until set
     @InspectorField
     get innerPivot(): Vec2
     {
