@@ -715,7 +715,7 @@ export class Scene implements SceneI
 
                     if (entity.texture)
                     {
-                        hasEntityImage = Bare.assets.images.includes(entity.texture);
+                        hasEntityImage = Bare.assets.images.includes(entity.texture) || entity.texture == "whitePixel";
                     }
                     else
                     {

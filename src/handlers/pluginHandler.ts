@@ -881,7 +881,7 @@ window.__GAME_DEBUG_API__ = {
         }
 
         // PROPS THAT NEED BESPOKE HANDLING (BELOW) - SKIP THEM IN THE GENERIC PASS
-        const handledExplicitly = new Set(["pivot", "hitbox", "tags", "customData", "components"]);
+        const handledExplicitly = new Set(["pivot", "innerPivot", "hitbox", "tags", "customData", "components"]);
 
         // GENERIC PASS - MIRRORS Scene.ApplyEntityVarsToGameObject / setEntityField:
         // route through the object's specialMap (color, children, ...) else assign the field directly.
@@ -1991,6 +1991,11 @@ export class PluginHandler
 
     async SaveSettingsData(newData: SettingsData): Promise<void>
     {
+        if (newData.processed)
+        {
+            throw new Error('Cannot save processed data. Something went really wrong!');
+        }
+        
         sceneController.GetMainScene().settingsHandler.FilterSettingsDataDefaults(newData);
 
         plugin.doNotifyAfterSave = false;

@@ -499,6 +499,11 @@ export class EditorScene extends Scene
 
     async SaveEntityData(newRawData: SettingsData)
     {
+        if (newRawData.processed)
+        {
+            throw new Error('Cannot save processed data. Something went really wrong!');
+        }
+
         //if (globalThis.plugin)
         //    globalThis.plugin.FilterSettingsDataDefaults(newRawData);
 

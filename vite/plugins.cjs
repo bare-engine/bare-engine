@@ -1418,6 +1418,7 @@ function buildLineShiftMap(original, next, id) {
 }
 
 const ASSET_IMAGE_EXTENSIONS = new Set([".webp", ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".svg"]);
+const ASSET_GENERATED_IMAGE_EXTENSIONS = new Set([".webp"]);
 const ASSET_SOUND_EXTENSIONS = new Set([".mp3", ".wav", ".ogg", ".m4a", ".flac", ".aac"]);
 const ASSET_FONT_EXTENSIONS = new Set([".ttf", ".otf", ".woff", ".woff2"]);
 const ASSET_LEVEL_EXTENSIONS = new Set([".json"]);
@@ -1767,7 +1768,7 @@ function generateAssets(projectRoot, outputPath, imageGlobs = []) {
     try {
         const publicDir = path.join(projectRoot, "public");
 
-        const images = collectAssetFiles(path.join(publicDir, "images"), ASSET_IMAGE_EXTENSIONS);
+        const images = collectAssetFiles(path.join(publicDir, "images"), ASSET_GENERATED_IMAGE_EXTENSIONS);
         const initialImages = collectInitialImageEntries(path.join(publicDir, "initial"));
         const sounds = collectAssetFiles(path.join(publicDir, "sounds"), ASSET_SOUND_EXTENSIONS);
         const fonts = collectAssetFiles(path.join(publicDir, "fonts"), ASSET_FONT_EXTENSIONS);

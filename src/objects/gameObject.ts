@@ -256,6 +256,7 @@ export class GameObject
     {
         return {
             pivot: (o, v) => o.SetPivot(v.x, v.y), // SETPIVOT DOES SOME EXTRA WORK FOR PERCENTAGES, SO CUSTOM MAPPING
+            innerPivot: (o, v) => o.SetInnerPivot(v.x, v.y), // SetInnerPivot DOES SOME EXTRA WORK FOR PERCENTAGES, SO CUSTOM MAPPING
             texture: (o, v) => v && v != "NONE" && o.InitTexture(v), // PROCESS CUSTOM TEXTURE NAME
             color: (o, v) => o.SetColor(v), // PROCESS THE HEX COLOR STRING
             children: (o, v) => {

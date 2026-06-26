@@ -210,11 +210,19 @@ export class EditorUIHandler {
             {
                 for (const entityName of categoryData.entries)
                 {
+                    // DON'T WANT ENTRIES IN uncategorized THAT ARE ALREALY IN ENTITIES
                     var i = allEntityNames.indexOf(entityName);
                     if (i != -1)
                         allEntityNames.splice(i, 1);
                 }
             }
+        }
+
+        for (var i = allEntityNames.length - 1; i >= 0; i--)
+        {
+            var entityName = allEntityNames[i];
+            if (entityName.includes('#'))
+                allEntityNames.splice(i, 1);
         }
 
         // IF ANY ENTRIES LEFT, ADD THEM TO UNCATEGORIZED
@@ -243,30 +251,34 @@ export class EditorUIHandler {
             const categoryIcon = document.createElement('div');
             categoryIcon.className = 'entity-image';
             
-            // Get category image from loaded texture or fallback to path
-            const texture = assetsHandler.HasTexture(categoryData.image)
-                ? assetsHandler.GetTexture(categoryData.image)
-                : null;
-            if (texture?.base?.uid) {
-                this.SetTextureBackground(categoryIcon, texture);
-            } else {
-                if (categoryData.image)
-                {
-                    const categoryImagePath = this.GetCategoryImagePath(categoryData.image);
-                    if (categoryImagePath) {
-                        const img = document.createElement('img');
-                        img.src = categoryImagePath;
-                        img.style.width = '100%';
-                        img.style.height = '100%';
-                        img.style.objectFit = 'contain';
-                        categoryIcon.appendChild(img);
-                    } else {
-                        categoryIcon.textContent = '📦'; // Fallback icon
+            if (categoryData.image)
+            {
+                // Get category image from loaded texture or fallback to path
+                const texture = assetsHandler.HasTexture(categoryData.image)
+                    ? assetsHandler.GetTexture(categoryData.image)
+                    : null;
+
+                if (texture?.base?.uid) {
+                    this.SetTextureBackground(categoryIcon, texture);
+                } else {
+                    if (categoryData.image)
+                    {
+                        const categoryImagePath = this.GetCategoryImagePath(categoryData.image);
+                        if (categoryImagePath) {
+                            const img = document.createElement('img');
+                            img.src = categoryImagePath;
+                            img.style.width = '100%';
+                            img.style.height = '100%';
+                            img.style.objectFit = 'contain';
+                            categoryIcon.appendChild(img);
+                        } else {
+                            categoryIcon.textContent = '📦'; // Fallback icon
+                        }
                     }
-                }
-                else
-                {
-                    categoryIcon.style.display = 'none';
+                    else
+                    {
+                        categoryIcon.style.display = 'none';
+                    }
                 }
             }
             
@@ -294,8 +306,18 @@ export class EditorUIHandler {
             if (Array.isArray(categoryData.entries)) 
             {
                 categoryData.entries.forEach(entityId => {
-                    const entity = this.scene.ConstructEntity(entityId);
-                    if (entity) {
+                    var entity;
+                    
+                    entity = this.scene.ConstructEntity(entityId);
+
+                    if (categoryName == "images")
+                    {
+                        // images CATEGORY CONTAINS ALL ABSOLUTE GENERATED PATHS - NO NEED FOR ANY imagePath
+                        entity.imagePath = "";
+                    }
+
+                    if (entity)
+                    {
                         const childEntity = document.createElement('div');
                         childEntity.className = 'child-entity';
                         childEntity.onpointerdown = (e) => {

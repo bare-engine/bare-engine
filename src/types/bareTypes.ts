@@ -115,6 +115,7 @@ export interface Entity
     rotation?: number;
     flipped?: boolean;
     pivot?: any; //Position | String;
+    innerPivot?: any; //Position | String;
     pivotBasedOnHitbox?: any; //Position | String;
     //innerX?: number;
     //innerY?: number;
@@ -172,6 +173,8 @@ export type ConstructEntityOptions = { propsToIgnoreInEntity?: string[], fillPre
 export type EntityVarsNestedGroup = Record<string, string[]>;
 export type EntityVarsNestedEntry = string | EntityVarsNestedGroup;
 
+// GET THESE FROM DECORATORS? - TODO
+// THOUGH CLASSES, EG RIGIRBODY, WOULD NOT BE TREE-SHAKEN ANYMORE - GENERATE THEIR DECORATED FIELDS HERE? VITE PLUGIN
 export var entityVarsNestedRecord: Record<string, string[]> =
 {
     "HideInPlugin": [
@@ -197,6 +200,7 @@ export var entityVarsNestedRecord: Record<string, string[]> =
         //"innerScaleY",
         "innerScale",
         "innerRotation",
+        "innerPivot",
 
         "texture",
         "color",

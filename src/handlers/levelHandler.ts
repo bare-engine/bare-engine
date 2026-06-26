@@ -351,6 +351,8 @@ export class LevelHandler
                     
                     var entity = this.SerializeObject(obj);
 
+                    delete entity.save;
+        
                     // POSITION HAS BEEN STORED, CAN APPLY PIVOT AGAIN
                     if (obj.revertPivotOnSave)
                     {
@@ -425,12 +427,20 @@ export class LevelHandler
         // 
         var customSerialize:Record<string, (currentValue) => any> = {};
     
+        // MAKING SURE TO SAVE THE ORIGINAL PIVOT, COULD BE % VALUE, WHILE FINAL PIVOT IS ABSOLUTE
         customSerialize["pivot"] = (pivot:Vec2) => {
             if (obj.entity?.pivot)
                 return obj.entity.pivot;
             else
                 return pivot;
         };
+
+        /*customSerialize["innerPivot"] = (innerPivot:Vec2) => {
+            if (obj.entity?.innerPivot)
+                return obj.entity.innerPivot;
+            else
+                return innerPivot;
+        };*/
 
         customSerialize["hitbox"] = (physicsHitbox:Hitbox) => {
             if (obj.entity?.hitbox)
