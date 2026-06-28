@@ -567,6 +567,21 @@ export class Scene implements SceneI
         else
             serializedValue = objValue;
 
+        // Only emit serializable values - had problem with DiamondUI.text before
+        if (typeof serializedValue === "function")
+            serializedValue = undefined;
+        else
+        if (serializedValue !== null && typeof serializedValue === "object")
+        {
+            var proto = Object.getPrototypeOf(serializedValue);
+            var isPlain = Array.isArray(serializedValue) || proto === Object.prototype || proto === null;
+            if (!isPlain)
+            {
+                try { structuredClone(serializedValue); } // throws on non-cloneable -> drop it
+                catch (_e) { serializedValue = undefined; }
+            }
+        }
+
         return serializedValue;
     }
 
