@@ -24,6 +24,19 @@ declare global {
   }
 }
 
+function getObjectByIdFromAllScenes(uid: string): GameObject | null
+{
+    for (const scene of sceneController.GetAll(true))
+    {
+        const objectController = scene.object;
+        const obj = objectController.GetById(uid);
+        if (obj)
+            return obj;
+    }
+
+    return null;
+}
+
 window.__GAME_DEBUG_API__ = {
     setPluginConnected(connected: boolean) {
         if (connected)
@@ -79,8 +92,7 @@ window.__GAME_DEBUG_API__ = {
 
   selectedObject(uid: string)
   {
-      var objs = sceneController.GetAllObjects();
-      let selected: any = objs.find(o => o.uniqueID === uid);
+      let selected = getObjectByIdFromAllScenes(uid);
 
         plugin.HandleClickObject(selected);
 
@@ -92,8 +104,7 @@ window.__GAME_DEBUG_API__ = {
 
   unselectedObject(uid: string)
   {
-      var objs = sceneController.GetAllObjects();
-      let selected: any = objs.find(o => o.uniqueID === uid) ?? null;
+      let selected = getObjectByIdFromAllScenes(uid);
 
       if (!selected) return false;
 
