@@ -1797,7 +1797,7 @@ export class PluginHandler
         {
             // LOG EXTENDED PROPERTIES - SHOULD NOT HAVE BEEN FOUND BEFORE
             var extendEntityName = extendOrder[i];
-            var extendEntity = settingsDataRaw.baseEntities[extendEntityName] || defaultSettingsData.baseEntities[extendEntityName];
+            var extendEntity = settingsDataProcessed.baseEntities[extendEntityName] || defaultSettingsData.baseEntities[extendEntityName];
             var propsExtended = Object.keys(extendEntity);
             var propsExtendedFiltered = propsExtended.filter(p => !propsFound.includes(p) && Helper.ObjectsAreEqual(extendEntity[p], processedEntity[p]));
 
@@ -1829,9 +1829,9 @@ export class PluginHandler
             }
         }
 
-        // RE-ADD REMOVED PROPERTIES/COMPONENTS SO THE PLUGIN CAN STILL SHOW THEM (GREYED-OUT, WITH A REVERT BUTTON).
-        // ConstructEntity STRIPPED THEM OUT OF processedEntity VIA propertiesRemoved/componentsRemoved, SO WE LOOK
-        // UP THE INHERITED VALUE FROM THE BASE CHAIN AND TAG IT WITH THE SOURCE THAT PROVIDES IT.
+        // re-add removed properties/components so the plugin can still show them (greyed-out, with a revert button).
+        // constructentity stripped them out of processedentity via propertiesremoved/componentsremoved, so we look
+        // up the inherited value from the base chain and tag it with the source that provides it.
         var removedProps = Array.isArray(entity.propertiesRemoved) ? entity.propertiesRemoved : [];
         for (var removedProp of removedProps)
         {
@@ -1995,7 +1995,7 @@ export class PluginHandler
         {
             throw new Error('Cannot save processed data. Something went really wrong!');
         }
-        
+
         sceneController.GetMainScene().settingsHandler.FilterSettingsDataDefaults(newData);
 
         plugin.doNotifyAfterSave = false;
