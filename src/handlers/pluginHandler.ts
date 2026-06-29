@@ -373,7 +373,7 @@ window.__GAME_DEBUG_API__ = {
     var entity:Entity;
     var raw = entityScene.settingsHandler.GetRaw();
     if (isBase)
-        entity = raw.baseEntities[name];
+        entity = raw.baseEntities[name] || defaultSettingsData.baseEntities[name] || {};
     else
         entity = raw.entities[name];
 
@@ -393,7 +393,32 @@ window.__GAME_DEBUG_API__ = {
         delete processedEntityCopy[key];
     }*/
 
-    var entityWithLog = plugin.BuildExtendDataLog(entity, name, processedEntity, raw, processed);
+    // COPY ENTITY AND FIND EXTENDS TO CONSTRUCT IT - BUT WITH RAW VALUES - NEED THOSE IN PLUGIN
+    // (SAME THING HAPPENS IN settingsHandler PROCESS, JUST NOT FILLING PRESETS)
+    var entityCopy = {...entity};
+    var defaultBaseEntity = (isBase ? "ANY" : "ANY_ENTITY");
+    let baseEntity = entityCopy.baseEntity || defaultBaseEntity;
+    var scene = plugin.GetCurrentScene();
+
+    while (baseEntity)
+    {
+        var entityBase = raw.baseEntities[baseEntity];
+
+        // INSERT MEMBERS FROM ENTITY BASE WE DIDN'T DEFINE ALREADY IN ENTITY
+        for (const key of Object.keys(entityBase))
+        {
+            if (!(key in entityCopy))
+            {
+                entityCopy[key] = entityBase[key];
+            }
+        }
+
+        entityCopy.components = scene.MergeComponents(entityBase.components, entityCopy.components);
+
+        baseEntity = raw.baseEntities[baseEntity]?.baseEntity;
+    }
+
+    var entityWithLog = plugin.BuildExtendDataLog(entity, entityCopy, name, processedEntity, raw, processed);
 
     // WE'VE SET entity.baseEntity = "ANY_ENTITY"; WHEN CONSTRUCTING ENTITY, BUT DON'T WANT TO SHOW THIS IN PLUGIN (NOT USER VALUE)
     // ALONG WITH THE VALUES ANY_ENTITY SETS (EG: baseClass)
@@ -423,6 +448,8 @@ window.__GAME_DEBUG_API__ = {
     if (obj)
         plugin.AddInspectorDataToObject(entityWithLog, obj, true);
 
+    entityWithLog.name ??= name;
+    
     return entityWithLog;
   },
 
@@ -604,7 +631,8 @@ window.__GAME_DEBUG_API__ = {
 
   getNestedEntityVars(entityName: string, childPath: string[])
   {
-        var entity = plugin.GetCurrentEntityProcessed();
+        var scene = plugin.GetCurrentScene();
+        var entity = scene.settingsHandler.GetExtendedEntity(entityName);
         
         // GET THE CHILD
         if (childPath.length > 0)
@@ -1779,9 +1807,9 @@ export class PluginHandler
     // RETURNS A NEW ENTITY WITH baseEntityLog ADDED TOT IT
     // HOLDS DATA ABOUT WHAT PROPERTIES IT EXTENDS
     // SENDING ALONG PROCESSED ARGS, SO baseEntity IS ALWAYS SET
-    BuildExtendDataLog(entity: Entity, entityName: string, processedEntity: Entity, settingsDataRaw: SettingsData, settingsDataProcessed: SettingsData): Entity
+    BuildExtendDataLog(entity: Entity, entityToApplyTo: Entity, entityName: string, processedEntity: Entity, settingsDataRaw: SettingsData, settingsDataProcessed: SettingsData): Entity
     {
-        var newEntity = {...processedEntity}; // SHALLOW COPY, MORE IS NOT NEEDED, SINCE WE ONLY ADD baseEntityLog TO IT
+        var newEntity = entityToApplyTo;//{...newEntity}; // SHALLOW COPY, MORE IS NOT NEEDED, SINCE WE ONLY ADD baseEntityLog TO IT
 
         // GET BASE ENTITIES ALL THE WAY DOWN, PUSH IN extendOrder
         let baseEntity = processedEntity.baseEntity;
@@ -1808,9 +1836,9 @@ export class PluginHandler
         {
             // LOG EXTENDED PROPERTIES - SHOULD NOT HAVE BEEN FOUND BEFORE
             var extendEntityName = extendOrder[i];
-            var extendEntity = settingsDataProcessed.baseEntities[extendEntityName] || defaultSettingsData.baseEntities[extendEntityName];
+            var extendEntity = settingsDataRaw.baseEntities[extendEntityName] || defaultSettingsData.baseEntities[extendEntityName]; // THIS CAUSES A PROBLEM WITH FIELD THAT CAN ALSO BE STRING, settingsDataRaw IS DIFFERENT THEN PROCESSED, DOESN'T END UP UNDER RIGHT BASE ENTITY. EG pivotPercOnHitbox CENTER - TODO
             var propsExtended = Object.keys(extendEntity);
-            var propsExtendedFiltered = propsExtended.filter(p => !propsFound.includes(p) && Helper.ObjectsAreEqual(extendEntity[p], processedEntity[p]));
+            var propsExtendedFiltered = propsExtended.filter(p => !propsFound.includes(p));
 
             newEntity.baseEntityLog[extendEntityName] = propsExtendedFiltered;
 

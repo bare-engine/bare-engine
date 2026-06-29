@@ -185,28 +185,6 @@ export var entityVarsNestedRecord: Record<string, string[]> =
         "propertiesRemoved",
         "interactableInEditor",
     ],
-    "General": [
-        //"scaleX",
-        //"scaleY",
-        "position", // ONLY FOR CHILD
-        "scale",
-        "rotation",
-        "flipped",
-        "pivot",
-        //"innerX",
-        //"innerY",
-        "innerPosition",
-        //"innerScaleX",
-        //"innerScaleY",
-        "innerScale",
-        "innerRotation",
-        "innerPivot",
-
-        "texture",
-        "color",
-        "alpha",
-        "visible",
-    ],
     "Misc": [
         //"propertiesRemoved",
 
@@ -244,7 +222,8 @@ export var entityVarsAr: string[] =
 [
     "baseEntity",
     "baseClass",
-    "imagePath"
+    "imagePath",
+    "texture"
 ];
 
 export var entityVarsNested: EntityVarsNestedEntry[] = [

@@ -590,6 +590,32 @@ export class SettingsHandler
         return final(entity);
     }
 
+    GetExtendedEntity(entityName: string)
+    {
+        var entity = {...this.raw.entities[entityName]}; // SHALLOW COPY
+
+        var baseEntity = entity.baseEntity || "ANY_ENTITY";
+        while (baseEntity)
+        {
+            var entityBase = this.raw.baseEntities[baseEntity];
+
+            // INSERT MEMBERS FROM ENTITY BASE WE DIDN'T DEFINE ALREADY IN ENTITY
+            for (const key of Object.keys(entityBase))
+            {
+                if (!(key in entity))
+                {
+                    entity[key] = entityBase[key];
+                }
+            }
+
+            entity.components = this.scene.MergeComponents(entityBase.components, entity.components);
+
+            baseEntity = entityBase.baseEntity;
+        }
+
+        return entity;
+    }
+
     FillPresets(entity: Record<string, any>, rawSettingsData: SettingsData)
     {
         var presets = rawSettingsData.presets;

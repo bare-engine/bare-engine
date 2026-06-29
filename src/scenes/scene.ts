@@ -567,7 +567,8 @@ export class Scene implements SceneI
         else
             serializedValue = objValue;
 
-        // Only emit serializable values - had problem with DiamondUI.text before
+        // Only emit serializable values - had problem with DiamondUI.text before - todo
+        // because text is in entityVars, from textObject - unwanted overlap. need to refactor to only include @inspectorField and @save from object
         if (typeof serializedValue === "function")
             serializedValue = undefined;
         else
