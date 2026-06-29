@@ -280,7 +280,7 @@ export class Scene implements SceneI
                         // NO ENTITY IN DATA - MERGE WITH baseEntity BASE
                         if (!entityArg.baseEntity)
                             if (!entityArg.name)
-                                entityArg.baseEntity = "ANY"; // NO NAME, PROBABLY A BASE ENTITY?
+                                entityArg.baseEntity = "ANY_ENTITY";
                             else
                                 if (settingsData.baseEntities[entityArg.name])
                                     entityArg.baseEntity = "ANY";

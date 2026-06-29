@@ -449,7 +449,7 @@ window.__GAME_DEBUG_API__ = {
         plugin.AddInspectorDataToObject(entityWithLog, obj, true);
 
     entityWithLog.name ??= name;
-    
+
     return entityWithLog;
   },
 
