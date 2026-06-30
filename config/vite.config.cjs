@@ -47,7 +47,7 @@ module.exports = ({ mode }) => {
             extensions: [".ts", ".js", ".json"]
         },
         plugins: [
-            bareTerminalTitlePlugin(projectPackage.bareEngine?.index?.title || projectPackage.name),
+            bareTerminalTitlePlugin(projectPackage.bareEngine?.index?.title || projectPackage.bareEngine?.name || projectPackage.name),
             bareFilterSettingsDataWarningPlugin(),
             ...withTransformSourcemap(entryShaking.default({
                 targets: [

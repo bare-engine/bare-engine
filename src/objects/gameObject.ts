@@ -6,7 +6,7 @@ import type { Scene } from "../scenes/scene";
 import type { ComponentCtor, Ctor, DropFirst, Events, Rectangle, Shader } from "../types/bareTypes";
 import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';
 import { Hitbox } from '../types/hitbox';
-import { getOwnInspectorFieldNames, InspectorField, Range } from "../utils/decorators";
+import { getOwnInspectorFieldNames, InspectorField, Percentage, Range } from "../utils/decorators";
 import { Helper } from '../utils/helper';
 
 export class Transform {
@@ -688,8 +688,7 @@ export class GameObject
         (this.innerTransform.pivot ??= new Vec2()).set(v.x, v.y);
     }
 
-    @InspectorField
-    @Range(0, 1)
+    @InspectorField @Percentage
     get alpha(): number
     {
         return this.color.a / 255;
@@ -1340,7 +1339,7 @@ export class GameObject
             // REMOVE GameObject FROM ITS PARENT OR SCENE FIRST
             input.Remove(false); // DON'T WANT TO CLEAR!
 
-            // THEN ADD IT AS CHILD
+            // THEN ADD IT AS NEW CHILD
             var child = input;
             child.parent = this;
             this.children.push(child);

@@ -399,6 +399,22 @@ export function Range(min?: number, max?: number): (target: any, propertyKey: st
     };
 }
 
+// @Percentage or @Percentage() — shorthand for @Range(0, 1) (a 0..1 value the inspector renders
+// with 2 decimals, see getInspectorFields).
+export function Percentage(target: any, propertyKey: string): void;
+export function Percentage(): (target: any, propertyKey: string) => void;
+export function Percentage(target?: any, propertyKey?: string): any
+{
+    const apply = Range(0, 1);
+    if (typeof propertyKey === "string")
+    {
+        apply(target, propertyKey);
+        return;
+    }
+
+    return apply;
+}
+
 // EG: @Dropdown(Bare.data.entities)
 // OR: @Dropdown(() => new Array(1,2,3))
 // OR: @Dropdown(function (this: AnimationComponent) { return this.allAnimationNamesForObject; })
