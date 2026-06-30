@@ -19,8 +19,6 @@ export class EditorUIHandler {
     private static readonly textureFrameUrlCache = new Map<string, string>();
     private static readonly textureFrameLoadCache = new Map<string, Promise<string>>();
     private static readonly imageLoadCache = new Map<string, Promise<HTMLImageElement>>();
-    private static readonly previewImageUrlCache = new Map<string, string>();
-    private static readonly previewImageUrlLoadCache = new Map<string, Promise<string>>();
     private static readonly imageEntityCache = new WeakMap<SettingsData, Map<string, Entity>>();
 
     private abortController: AbortController = new AbortController();
@@ -173,48 +171,6 @@ export class EditorUIHandler {
         return this.scene.ConstructEntity(entityId);
     }
 
-    private LoadCachedPreviewImageUrl(src: string): Promise<string> {
-        const cachedUrl = EditorUIHandler.previewImageUrlCache.get(src);
-        if (cachedUrl)
-            return Promise.resolve(cachedUrl);
-
-        let previewLoad = EditorUIHandler.previewImageUrlLoadCache.get(src);
-        if (previewLoad)
-            return previewLoad;
-
-        previewLoad = this.LoadCachedImage(src)
-            .then(async (sourceImg) => {
-                await sourceImg.decode?.().catch(() => undefined);
-
-                const maxSize = 128;
-                const sourceWidth = sourceImg.naturalWidth || sourceImg.width || maxSize;
-                const sourceHeight = sourceImg.naturalHeight || sourceImg.height || maxSize;
-                const scale = Math.min(1, maxSize / sourceWidth, maxSize / sourceHeight);
-                const width = Math.max(1, Math.round(sourceWidth * scale));
-                const height = Math.max(1, Math.round(sourceHeight * scale));
-
-                const canvas = document.createElement('canvas');
-                canvas.width = width;
-                canvas.height = height;
-
-                const ctx = canvas.getContext('2d')!;
-                ctx.drawImage(sourceImg, 0, 0, width, height);
-
-                const previewUrl = canvas.toDataURL('image/webp');
-                EditorUIHandler.previewImageUrlCache.set(src, previewUrl);
-                EditorUIHandler.previewImageUrlLoadCache.delete(src);
-                return previewUrl;
-            })
-            .catch((error) => {
-                EditorUIHandler.previewImageUrlLoadCache.delete(src);
-                console.error(error);
-                return src;
-            });
-
-        EditorUIHandler.previewImageUrlLoadCache.set(src, previewLoad);
-        return previewLoad;
-    }
-
     private SetupPreviewImage(img: HTMLImageElement, src: string, id?: string): void {
         if (id)
             img.id = id;
@@ -225,15 +181,8 @@ export class EditorUIHandler {
         img.style.height = '100%';
         img.style.objectFit = 'contain';
 
-        const cachedUrl = EditorUIHandler.previewImageUrlCache.get(src);
-        if (cachedUrl)
-        {
-            img.src = cachedUrl;
-            return;
-        }
-
-        this.LoadCachedPreviewImageUrl(src)
-            .then((previewUrl) => img.src = previewUrl);
+        // POINT DIRECTLY AT THE FULL IMAGE - THE BROWSER DECODES IT LAZILY AS IT SCROLLS INTO VIEW
+        img.src = src;
     }
 
     async LoadEditorPage(): Promise<void> {
