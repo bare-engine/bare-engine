@@ -788,6 +788,16 @@ window.__GAME_DEBUG_API__ = {
         if (!save)
         {
             var obj = entityScene.object.GetByName(name);
+
+            // GET THE CHILD
+            if (childPath.length > 0)
+            {
+                for (var i = 0; i < childPath.length; i++)
+                {
+                    obj = obj.children[childPath[i]];
+                }
+            }
+
             for (var prop in props)
             {
                 var value = props[prop];

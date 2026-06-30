@@ -608,7 +608,6 @@ export class GameObject
     {
         return this.transform.scale;
     }
-
     set scale(value: Vec2 | number)
     {
         if (typeof value === 'number') {
@@ -624,7 +623,6 @@ export class GameObject
     {
         return this.transform.rotation;
     }
-
     set rotation(value: number)
     {
         this.transform.rotation = (value % 360);
@@ -736,7 +734,7 @@ export class GameObject
     }
     set x(value: number)
     {
-        this.SetPosition(value, this.y);
+        this.transform.position.x = value;
     }
 
     get y(): number
@@ -745,7 +743,7 @@ export class GameObject
     }
     set y(value: number)
     {
-        this.SetPosition(this.x, value);
+        this.transform.position.y = value;
     }
 
     get scaleX(): number
