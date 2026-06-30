@@ -388,8 +388,8 @@ export class LevelHandler
                 {
                     if (constructorName == "GameObject")
                         varsToSave = defaultSettingsData.saveVars!["GameObject"];
-                    else
-                        console.warn("NO VARS TO SAVE FOR " + constructorName);
+                    //else
+                    //    console.warn("NO VARS TO SAVE FOR " + constructorName);
                 }
             }
 
@@ -655,8 +655,8 @@ export class LevelHandler
                 {
                     if (constructorName == "GameObject")
                         varsToSave = defaultSettingsData.saveVars!["GameObject"];
-                    else
-                        console.warn("NO VARS TO SAVE FOR " + constructorName);
+                    //else
+                    //    console.warn("NO VARS TO SAVE FOR " + constructorName);
                 }
 
                 varsToSave = varsToSave.slice();

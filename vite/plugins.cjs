@@ -682,7 +682,20 @@ function bareEditorAndApiPlugin(options = {}) {
     const editorHtmlPath = options.editorHtmlPath || path.resolve(__dirname, "../config/editor.html");
     const publicDir = path.join(projectRoot, "public");
     let lastSettingsDataPath = "";
+    // Paths (relative to public, forward-slashed) of level files written/removed under
+    // a skipReload request, so handleHotUpdate can swallow Vite's own public-dir reload
+    // for them (separate from the generated-assets watcher's reload). A list because a
+    // rename touches two files (save new + remove old) within one window.
+    let skipReloadPaths = [];
     let shouldEmitEditorHtml = false;
+
+    function markSkipReload(relPath) {
+        if (Date.now() > skipReloadUntil) {
+            skipReloadPaths = []; // previous window expired - start fresh
+        }
+        skipReloadUntil = Date.now() + 5000;
+        skipReloadPaths.push(String(relPath || "").replace(/\\/g, "/"));
+    }
 
     return {
         name: "bare:editor-api",
@@ -706,8 +719,11 @@ function bareEditorAndApiPlugin(options = {}) {
                 }
 
                 if (req.method === "POST" && requestUrl.pathname === "/api/save-level") {
-                    readJson(req, res, ({ levelData, levelPath }) => {
+                    readJson(req, res, ({ levelData, levelPath, skipReload }) => {
                         const fullPath = path.join(publicDir, String(levelPath || ""));
+                        if (skipReload) {
+                            markSkipReload(levelPath);
+                        }
                         writeJsonFile(fullPath, levelData);
                         return { success: true, message: `Level saved to ${fullPath}` };
                     });
@@ -715,7 +731,7 @@ function bareEditorAndApiPlugin(options = {}) {
                 }
 
                 if (req.method === "POST" && requestUrl.pathname === "/api/create-level") {
-                    readJson(req, res, ({ levelData, path: levelPath }) => {
+                    readJson(req, res, ({ levelData, path: levelPath, skipReload }) => {
                         if (!levelData || !levelData.name) {
                             throw new Error("levelData.name is required");
                         }
@@ -726,6 +742,12 @@ function bareEditorAndApiPlugin(options = {}) {
                             error.statusCode = 409;
                             throw error;
                         }
+                        // The new level file makes the generated-assets watcher regenerate
+                        // assets.ts and full-reload. The running game already navigates to the
+                        // new level in-memory (gotoLevelEdit), so suppress that reload.
+                        if (skipReload) {
+                            markSkipReload(safePath);
+                        }
                         writeJsonFile(fullPath, levelData);
                         return { success: true, message: `Level created at ${fullPath}`, path: safePath };
                     });
@@ -733,13 +755,19 @@ function bareEditorAndApiPlugin(options = {}) {
                 }
 
                 if (req.method === "POST" && requestUrl.pathname === "/api/remove-level") {
-                    readJson(req, res, ({ path: levelPath }) => {
+                    readJson(req, res, ({ path: levelPath, skipReload }) => {
                         const safePath = assertSafePath(levelPath);
                         const fullPath = path.join(publicDir, safePath);
                         if (!fs.existsSync(fullPath)) {
                             const error = new Error(`Level not found: ${safePath}`);
                             error.statusCode = 404;
                             throw error;
+                        }
+                        // Deleting the level file makes the generated-assets watcher regenerate
+                        // assets.ts and full-reload. The running game handles its own in-memory
+                        // restart/scene removal, so suppress that reload.
+                        if (skipReload) {
+                            markSkipReload(safePath);
                         }
                         fs.unlinkSync(fullPath);
                         return { success: true, message: `Level removed at ${fullPath}`, path: safePath };
@@ -819,7 +847,9 @@ function bareEditorAndApiPlugin(options = {}) {
             }
 
             const filePath = normalize(ctx.file);
-            if (filePath.includes("/data/settingsData.json") || (lastSettingsDataPath && filePath.includes(lastSettingsDataPath))) {
+            if (filePath.includes("/data/settingsData.json")
+                || (lastSettingsDataPath && filePath.includes(lastSettingsDataPath))
+                || skipReloadPaths.some(p => p && filePath.includes(p))) {
                 return [];
             }
         },

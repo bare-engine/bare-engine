@@ -1201,7 +1201,8 @@ window.__GAME_DEBUG_API__ = {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
               path: path,
-              levelData: levelData
+              levelData: levelData,
+              skipReload: true
           })
         });
         const json = await res.json().catch(() => null);
@@ -1222,7 +1223,8 @@ window.__GAME_DEBUG_API__ = {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-              path: path
+              path: path,
+              skipReload: true
           })
         });
         const json = await res.json().catch(() => null);
@@ -1288,12 +1290,12 @@ window.__GAME_DEBUG_API__ = {
                 await fetch('/api/save-level', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ levelPath: newPath, levelData: data })
+                    body: JSON.stringify({ levelPath: newPath, levelData: data, skipReload: true })
                 });
                 await fetch('/api/remove-level', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ path: oldPath })
+                    body: JSON.stringify({ path: oldPath, skipReload: true })
                 });
                 window.__GAME_DEBUG_API__.refreshLevelFiles();
 
@@ -1304,7 +1306,7 @@ window.__GAME_DEBUG_API__ = {
                 await fetch('/api/save-level', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ levelPath: oldPath, levelData: data })
+                    body: JSON.stringify({ levelPath: oldPath, levelData: data, skipReload: true })
                 });
             }
 
