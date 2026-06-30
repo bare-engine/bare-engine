@@ -693,7 +693,7 @@ function bareEditorAndApiPlugin(options = {}) {
         if (Date.now() > skipReloadUntil) {
             skipReloadPaths = []; // previous window expired - start fresh
         }
-        skipReloadUntil = Date.now() + 5000;
+        skipReloadUntil = Date.now() + 500;
         skipReloadPaths.push(String(relPath || "").replace(/\\/g, "/"));
     }
 

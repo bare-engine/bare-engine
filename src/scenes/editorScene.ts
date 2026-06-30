@@ -35,7 +35,7 @@ export class EditorScene extends Scene
     
     saveLevelCallback: () => Promise<LevelData>;
 
-    constructor(sceneOptions: SceneOptions | SettingsData = {solo: true, persistent: true, settingsData: sceneController.GetLevelScene()?.settingsData})
+    constructor(sceneOptions: SceneOptions | SettingsData = {solo: true, persistent: true, settingsData: sceneController.GetLevelScene()?.settingsHandler.GetRaw()})
     {  
         super(sceneOptions);
         

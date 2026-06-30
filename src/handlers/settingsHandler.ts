@@ -39,6 +39,9 @@ export class SettingsHandler
 
     async Process(raw: SettingsData = this.raw, options:ConstructEntityOptions = {}): Promise<SettingsData>
     {
+        if (raw?.processed)
+            throw new Error('Process() received already-processed data — caller passed Get()/settingsData instead of GetRaw()');
+
         var settings = this.clone(raw);
 
         var layerObjectsIsSetByUser = settings.layers?.includes("objects");
@@ -667,6 +670,9 @@ export class SettingsHandler
 
     SetRaw(raw: SettingsData): void
     {
+        if (raw?.processed)
+            throw new Error('SetRaw() received already-processed data — caller passed Get()/settingsData instead of GetRaw()');
+
         this.raw = raw;
 
         // PROCESS NOW?? TODO
@@ -746,5 +752,26 @@ export class SettingsHandler
         
         // SHOULD NEVER BE ANYTHING IN NONE, JUST DELETE IT
         delete settingsData.baseEntities.NONE;
+
+        // STRIP INSPECTOR-ONLY METADATA (__fields / __buttons) THAT THE PLUGIN INJECTS FOR DISPLAY
+        // (SEE AddInspectorDataToObject) AND CAN ECHO BACK INTO THE DATA WE SAVE
+        this.StripInspectorMeta(settingsData);
+    }
+
+    // RECURSIVELY REMOVE INSPECTOR-DISPLAY KEYS SO THEY NEVER GET PERSISTED INTO settingsData
+    StripInspectorMeta(value: any)
+    {
+        if (Array.isArray(value))
+        {
+            for (var item of value)
+                this.StripInspectorMeta(item);
+        }
+        else if (value && typeof value === "object")
+        {
+            delete value.__fields;
+            delete value.__buttons;
+            for (var key in value)
+                this.StripInspectorMeta(value[key]);
+        }
     }
 }
