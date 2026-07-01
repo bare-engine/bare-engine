@@ -442,14 +442,14 @@ export class GameObject
         this.RenderTransformed(effectiveColor);
 
         rapid.matrixStack.save();
-        rapid.matrixStack.translate(-this.pivot.x, -this.pivot.y);
+        this.ApplyChildTransform();
 
         // Render children with inherited color
         for (var i = 0; i < this.children.length; i++)
         {
             this.children[i].Render(effectiveColor);
         }
-        
+
         rapid.matrixStack.restore();
 
         rapid.matrixStack.restore();
@@ -462,6 +462,20 @@ export class GameObject
     ApplyTransformToMatrixStack(transform: Transform)
     {
         this.applyTransform(rapid.matrixStack, transform);
+    }
+
+    // Establishes the space children render in, relative to this object's already-applied
+    // outer transform. By default children are anchored at the outer pivot (the same origin
+    // the sprite content starts from), but NOT the inner transform. Override to fold the inner
+    // transform in as well, so children track the sprite's inner squash / flip / rotate.
+    protected ApplyChildTransform()
+    {
+        rapid.matrixStack.translate(-this.pivot.x, -this.pivot.y);
+    }
+
+    protected ApplyInnerTransformToMatrixStack()
+    {
+        this.applyInnerTransform(rapid.matrixStack, this);
     }
 
     public RenderTransformed(inheritedColor?: Color)
@@ -907,10 +921,6 @@ export class GameObject
         m.scale(t.scale.x * (t.flipped ? -1 : 1), t.scale.y);
     }
 
-    // Applies the inner transform anchored at the inner pivot (which defaults to the outer pivot).
-    // Pivoting around innerPivot means inner rotation/scale spins the sprite around that point
-    // WITHOUT shifting its outer placement — when the inner transform is identity this is a no-op.
-    // Call after the outer-pivot offset (translate(-pivot)), in the texture's local space.
     private applyInnerTransform(m: MatrixStack, obj: GameObject)
     {
         var pivot = obj.innerPivot;
