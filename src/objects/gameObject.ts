@@ -507,8 +507,10 @@ export class GameObject
         
         if (window.debug)
         {
+            // OUTER PIVOT / ORIGIN — BLACK CIRCLE (world space so nested children draw correctly)
+            var originWorld = this.ToGlobal(this.pivot);
             rapid.matrixStack.save();
-            rapid.matrixStack.translate(this.x, this.y)
+            rapid.matrixStack.translate(originWorld.x, originWorld.y);
             rapid.drawCircle({
                 radius: 4 * this.scene.ScreenPxToWorldScale(),
                 color: new Color(0, 0, 0, 255),
@@ -530,6 +532,12 @@ export class GameObject
         }
 
         this.OnPostRender();
+
+        // RECURSE SO CHILDREN (AND THEIR DEBUG VISUALS) ALSO POST-RENDER
+        for (var i = 0; i < this.children.length; i++)
+        {
+            this.children[i].PostRender();
+        }
     }
 
     OnPostRender()
