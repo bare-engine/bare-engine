@@ -583,7 +583,7 @@ function bareHtmlPlugin(options = {}) {
     const indexHtmlPath = options.indexHtmlPath || path.resolve(__dirname, "../config/index.html");
     const projectPackage = readProjectPackage(projectRoot);
     const htmlOptions = projectPackage.bareEngine?.index || {};
-    const title = htmlOptions.title || "Bare Game";
+    const title = htmlOptions.title || projectPackage.bareEngine?.name || projectPackage.name || "Bare Game";
     const backgroundColor = htmlOptions.backgroundColor || "rgb(255, 255, 255)";
     const textColor = htmlOptions.textColor || "rgb(0, 0, 0)";
     const loadingTextStyle = htmlOptions.showLoading === false ? "display: none;" : "";
