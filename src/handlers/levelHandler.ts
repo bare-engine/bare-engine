@@ -550,9 +550,20 @@ export class LevelHandler
         {
             for (let i = 0; i < Math.min(orig.children.length, updated.children.length); i++)
             {
-                diff.children ??= [];
-                diff.children[i] ??= {};
-                this.AddRemovedComponents(orig.children[i], updated.children[i], diff.children[i]);
+                // REUSE AN EXISTING CHILD DIFF IF ONE, ELSE RECURSE INTO A TEMP WE ONLY KEEP IF NON-EMPTY
+                const existing = diff.children?.[i];
+                const childDiff = existing ?? {};
+
+                this.AddRemovedComponents(orig.children[i], updated.children[i], childDiff);
+
+                if (!existing && Object.keys(childDiff).length > 0)
+                {
+                    // PAD EARLIER INDICES ONLY WHEN NEEDED TO KEEP ALIGNMENT FOR THIS ENTRY
+                    diff.children ??= [];
+                    while (diff.children.length < i)
+                        diff.children.push({});
+                    diff.children[i] = childDiff;
+                }
             }
         }
     }

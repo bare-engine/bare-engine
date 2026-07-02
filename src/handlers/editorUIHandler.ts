@@ -880,6 +880,9 @@ export class EditorUIHandler {
             sidebar.classList.remove('minimized');
             minimizeBtn.innerHTML = '🔻';
         }
+
+        // MOVE THE INFO BUTTON TO THE CORNER WHEN LAYERS ARE HIDDEN
+        this.editorUIHintHandler?.UpdateContainerPosition();
     }
 
     async ToggleGrid()

@@ -736,6 +736,16 @@ export class GameObject
     }
 
     @InspectorField
+    get innerFlipped(): boolean
+    {
+        return this.innerTransform.flipped;
+    }
+    set innerFlipped(value: boolean)
+    {
+        this.innerTransform.flipped = value;
+    }
+
+    @InspectorField
     customName: string = "";
 
     @InspectorField
@@ -820,15 +830,6 @@ export class GameObject
     set innerY(value: number)
     {
         this.innerTransform.position.y = value;
-    }
-
-    get innerFlipped(): boolean
-    {
-        return this.innerTransform.flipped;
-    }
-    set innerFlipped(value: boolean)
-    {
-        this.innerTransform.flipped = value;
     }
 
     get totalScale(): number

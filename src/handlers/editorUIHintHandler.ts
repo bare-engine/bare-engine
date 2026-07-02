@@ -170,8 +170,9 @@ export class EditorUIHintHandler {
         });
     }
 
-    // KEEP THE BUTTONS LEFT OF THE LAYERS SIDEBAR WHEN IT'S SHOWING
-    private UpdateContainerPosition(): void {
+    // KEEP THE BUTTONS LEFT OF THE LAYERS SIDEBAR WHEN IT'S SHOWING,
+    // OR IN THE BOTTOM RIGHT CORNER WHEN THE SIDEBAR IS HIDDEN/MINIMIZED
+    public UpdateContainerPosition(): void {
         if (!this.container)
             return;
 
