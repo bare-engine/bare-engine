@@ -1840,9 +1840,40 @@ export class PluginHandler
         let propsInThisEntity = Object.keys(entity); // USING entity, NOT newEntity SINCE THAT CONTAINS ALL PROPS ALREADY
         if (propsInThisEntity.includes("name"))
             propsInThisEntity.splice(propsInThisEntity.indexOf("name"), 1);
-        newEntity.baseEntityLog[entityName] = propsInThisEntity;
 
-        var propsFound = propsInThisEntity.slice();
+        // AN ENTITY PROP THAT *ALSO* EXISTS SOMEWHERE IN THE EXTEND CHAIN IS AN OVERRIDE OF AN
+        // INHERITED PROP, NOT A BRAND-NEW OWN PROP. KEEP THOSE LOGGED UNDER THEIR BASE SOURCE (SO
+        // THEY STAY GROUPED UNDER THE EXTENDED ENTITY IN THE PLUGIN INSTEAD OF JUMPING TO THE OWN
+        // GROUP) AND FLAG THEM IN __overriddenFields__ SO THE PLUGIN SHOWS A REVERT (R) BUTTON.
+        // baseEntity/baseClass ARE STRUCTURAL (EVERY ENTITY IN A CHAIN DECLARES THEM) - ALWAYS OWN.
+        var overrideExcluded = new Set(["baseEntity", "baseClass"]);
+        var propExistsInBase = (prop: string): boolean =>
+        {
+            for (var b = 1; b < extendOrder.length; b++)
+            {
+                var baseEnt = settingsDataRaw.baseEntities[extendOrder[b]] || defaultSettingsData.baseEntities[extendOrder[b]];
+                if (baseEnt && Object.prototype.hasOwnProperty.call(baseEnt, prop))
+                    return true;
+            }
+            return false;
+        };
+
+        var overriddenFields: string[] = [];
+        var ownOnlyProps: string[] = [];
+        for (var ownProp of propsInThisEntity)
+        {
+            if (!overrideExcluded.has(ownProp) && propExistsInBase(ownProp))
+                overriddenFields.push(ownProp);
+            else
+                ownOnlyProps.push(ownProp);
+        }
+
+        newEntity.baseEntityLog[entityName] = ownOnlyProps;
+        newEntity.baseEntityLog["__overriddenFields__"] = overriddenFields;
+
+        // ONLY OWN-ONLY PROPS SEED propsFound - OVERRIDDEN PROPS ARE LEFT FOR THE NEAREST BASE THAT
+        // DECLARES THEM TO CLAIM AS ITS SOURCE (KEEPING THEM UNDER THAT BASE'S GROUP).
+        var propsFound = ownOnlyProps.slice();
 
         for (var i = 1; i < extendOrder.length; i++) // START AT 1, ALREADY HANDLED 0 (SELF) ABOVE
         {
