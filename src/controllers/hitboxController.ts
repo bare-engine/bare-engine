@@ -599,6 +599,10 @@ export class HitboxController
     AssignCallback(gameobject: GameObject, type: "OnPress" | "OnRelease" | "OnEnter" | "OnLeave", callback: AnyPress): void
     {
         var rect = this.GetLocalRect(gameobject);
+
+        if (rect.x1 === 0 && rect.y1 === 0 && rect.x2 === 0 && rect.y2 === 0)
+            throw new Error("Cannot add hitbox to an object with no size. GameObject likely has not loaded its texture yet. Load the texture before adding the GameObject, or use this.obj.WhenTextureLoaded(...) to queue a callback.");
+
         const hitbox = gameobject.tapHitbox ?? new Hitbox(gameobject, rect);
         hitbox[type] = callback;
         gameobject.tapHitbox = hitbox;
