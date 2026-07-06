@@ -21,12 +21,6 @@ export const defaultSettingsData: SettingsData = {
     
   },
   presets: {
-    DEFAULT: {
-      pivotBasedOnHitbox: {
-        x: 0.5,
-        y: 0.5
-      }
-    },
     FULL: {
       hitbox: {
         x1: 0,
@@ -36,7 +30,7 @@ export const defaultSettingsData: SettingsData = {
       }
     },
     CENTER: {
-      pivot: {
+      ANY: {
         x: 0.5,
         y: 0.5
       }

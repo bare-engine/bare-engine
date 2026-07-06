@@ -450,6 +450,12 @@ window.__GAME_DEBUG_API__ = {
 
     entityWithLog.name ??= name;
 
+    // PARSE PRESETS
+    entityScene.settingsHandler.FillPresets(entityWithLog, raw, (parentRecord, keyWithPreset, presetName)=>{
+        parentRecord.__presets ??= {};
+        parentRecord.__presets[keyWithPreset] = presetName;
+    });
+
     return entityWithLog;
   },
 
@@ -1999,7 +2005,8 @@ export class PluginHandler
             for (var compName in data.components)
             {
                 var compData = data.components[compName];
-                if (!compData)
+                var isString = (typeof compData === 'string');
+                if (!compData || isString)
                     continue;
 
                 var fullCompName = Helper.CapitalizeFirstLetter(compName) + 'Component';

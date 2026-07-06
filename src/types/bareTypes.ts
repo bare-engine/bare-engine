@@ -280,14 +280,14 @@ interface AnimationDataInfo
 
 export interface SettingsData
 {
-    name?: string; // WHEN SettingsData IS SAVED TO FILE, THIS NAME IS USED AS THE FILE NAME. IF LEFT EMPTY, THE DEFAULT settingsData.json IS USED
+    name?: string; // WHEN SettingsData IS SAVED TO FILE, THIS NAME IS USED AS THE FILE NAME. IF LEFT EMPTY, THE DEFAULT settingsData.json IS USED. SO ANY EXTRA SettingsData json NEEDS A UNIQUE NAME, ELSE THEY WILL OVERRIDE THE DEFAULT ONE
     categories?: Record<string, Category>;
     baseEntities?: Record<string, Entity>;
     entities?: Record<string, Entity>;
     tilesheets?: Array<Entity>;//
     layers?: Array<string>;
     layersInfo?: Record<string, Partial<LayerInfo>>; // Partial, SINCE I'LL BE ASSIGNING MORE KEYS TO IT DURING PROCESSING
-    presets?: Record<string, any>;
+    presets?: Record<string, Record<string, any>>;
     saveVars?: Record<string, Array<string>>
     animations?: Record<string, AnimationDataInfo>
     showUI?: boolean,

@@ -619,22 +619,30 @@ export class SettingsHandler
         return entity;
     }
 
-    FillPresets(entity: Record<string, any>, rawSettingsData: SettingsData)
+    // IF ANY VALUE OF record IS A STRING, IF IT MATCHES WITH A PRESET, REPLACE IT
+    // RECURSIVELY GOES DOWN THE record
+    FillPresets(record: Record<string, any>, rawSettingsData: SettingsData, presetProcessCallback?: (parentRecord: Record<string, any>, keyWithPreset: string, presetName: string) => void)
     {
-        var presets = rawSettingsData.presets;
+        var presets = {
+            ...(defaultSettingsData.presets ?? {}),
+            ...(rawSettingsData.presets ?? {})
+        };
 
         if (!presets)
             return;
 
-        for (const key in entity)
+        for (const key in record)
         {
-            var propName = key as keyof Entity;
-            var value = entity[propName];
+            var propName = key;
+            var value = record[propName];
 
-            if (typeof value === "object" && value !== null)
+            if (propName.startsWith("__"))
+                continue;
+
+            if (typeof value === "object")
             {
                 // IF VALUE IS OBJECT, RECURSE
-                this.FillPresets(value, rawSettingsData);
+                this.FillPresets(value, rawSettingsData, presetProcessCallback);
             }
             else
             if (typeof value === "string")
@@ -642,16 +650,28 @@ export class SettingsHandler
                 const preset = presets[value];
                 if (preset !== undefined)
                 {
-                    const presetValue = preset?.[propName];
+                    var fillFieldWithPreset = (presetValue) =>
+                    {
+                        record[propName] = presetValue;
+                        presetProcessCallback?.(record, propName, value);
+                        
+                        // ALSO LOOK FOR PRESETS IN THE NEWLY SET VALUE
+                        if (typeof presetValue === "object")
+                            this.FillPresets(presetValue, rawSettingsData, presetProcessCallback);
+                    }
+                    
+                    if (preset.ANY)
+                    {
+                        // PRESET IS SET TO REPLACE ANYTHING, SET THE ENTITY FIELD VALUE TO THE PRESET
+                        fillFieldWithPreset(preset.ANY);
+                        continue;
+                    }
+
+                    const presetValue = preset[propName];
                     if (presetValue)
                     {
-                        // REPLACING SPECIFIC PROP OF ENTITY VALUE WITH VALUE FROM PRESET
-                        entity[propName] = presetValue;
-                    }
-                    else
-                    {
-                        // PRESET DIDN'T DEFINE WHAT PROPERY IT WAS MEANT TO REPLACE, REPLACE ANY PROP WITH THIS PRESET
-                        entity[propName] = preset;
+                        // PRESET MATCHES SPECIFIC FIELD, SET THE ENTITY FIELD VALUE TO THE PRESET
+                        fillFieldWithPreset(presetValue);
                     }
                 }
             }
