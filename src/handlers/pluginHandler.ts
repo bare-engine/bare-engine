@@ -1853,14 +1853,26 @@ export class PluginHandler
         // GROUP) AND FLAG THEM IN __overriddenFields__ SO THE PLUGIN SHOWS A REVERT (R) BUTTON.
         // baseEntity/baseClass ARE STRUCTURAL (EVERY ENTITY IN A CHAIN DECLARES THEM) - ALWAYS OWN.
         var overrideExcluded = new Set(["baseEntity", "baseClass"]);
-        var propExistsInBase = (prop: string): boolean =>
+        // Returns the inherited value for a prop from the nearest base in the chain that declares it,
+        // or a sentinel {found:false} when no base declares it.
+        var getInheritedValue = (prop: string): { found: boolean, value?: any } =>
         {
             for (var b = 1; b < extendOrder.length; b++)
             {
                 var baseEnt = settingsDataRaw.baseEntities[extendOrder[b]] || defaultSettingsData.baseEntities[extendOrder[b]];
                 if (baseEnt && Object.prototype.hasOwnProperty.call(baseEnt, prop))
-                    return true;
+                    return { found: true, value: baseEnt[prop] };
             }
+            return { found: false };
+        };
+
+        // Compares an own value against an inherited value. Handles primitives directly and falls back
+        // to a structural (JSON) compare for object values like pivot {x,y}.
+        var valuesEqual = (a: any, b: any): boolean =>
+        {
+            if (a === b) return true;
+            if (a && b && typeof a === "object" && typeof b === "object")
+                return JSON.stringify(a) === JSON.stringify(b);
             return false;
         };
 
@@ -1868,10 +1880,24 @@ export class PluginHandler
         var ownOnlyProps: string[] = [];
         for (var ownProp of propsInThisEntity)
         {
-            if (!overrideExcluded.has(ownProp) && propExistsInBase(ownProp))
-                overriddenFields.push(ownProp);
-            else
-                ownOnlyProps.push(ownProp);
+            if (!overrideExcluded.has(ownProp))
+            {
+                var inherited = getInheritedValue(ownProp);
+                if (inherited.found)
+                {
+                    // The prop exists in the base chain. It's only a real override when the own value
+                    // actually DIFFERS from the inherited value. If the user set it back to the inherited
+                    // value it's redundant, so skip it entirely (neither own nor overridden) - the base
+                    // that declares it will claim it below and it renders as a normal inherited field
+                    // (no blue label / revert button).
+                    if (valuesEqual(entity[ownProp], inherited.value))
+                        continue;
+
+                    overriddenFields.push(ownProp);
+                    continue;
+                }
+            }
+            ownOnlyProps.push(ownProp);
         }
 
         newEntity.baseEntityLog[entityName] = ownOnlyProps;
