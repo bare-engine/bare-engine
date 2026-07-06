@@ -866,26 +866,16 @@ window.__GAME_DEBUG_API__ = {
             delete entityCopy[key];
         }
 
-        // COMMENTED OUT, SINCE I WANT TO KEEP VALUE IN PLUGIN, EVEN IF IT'S DEFAULT
-        /*var entityWithDefaultValues = scene.GetEntityWithDefaultValues(entityCopy, scene.settingsData) as any;
-        entityWithDefaultValues.x = entityWithDefaultValues.position.x;
-        entityWithDefaultValues.y = entityWithDefaultValues.position.y;
-        entityWithDefaultValues.scaleX = entityWithDefaultValues.scale.x;
-        entityWithDefaultValues.scaleY = entityWithDefaultValues.scale.y;
-        entityWithDefaultValues.innerX = entityWithDefaultValues.innerPosition.x;
-        entityWithDefaultValues.innerY = entityWithDefaultValues.innerPosition.y;
-        entityWithDefaultValues.innerScaleX = entityWithDefaultValues.innerScale.x;
-        entityWithDefaultValues.innerScaleY = entityWithDefaultValues.innerScale.y;
-
         // DELETE ANY PROPS FROM ENTITY THAT HAVE SAME VALUE AS DEFAULT, THEY'RE NOT NEEDED
         // EG: YOU SET scaleX TO 2, THEN BACK TO 1, IT WILL REMOVE THE scaleX PROPERTY
+        var entityWithDefaultValues = entityScene.GetEntityWithDefaultValues(entityCopy, entityScene.settingsData) as any;
         for (var key in props)
         {
             var val = props[key];
             var defaultVal = entityWithDefaultValues[key];
             if (val == defaultVal)
                 delete entity[key];
-        }*/
+        }
         
         // SINCE WE JUST MODIFIED THE RAW ENTITY, WE RE-PROCESS THE settingsData AGAIN, SO IT'S UP TO DATE 
         await entityScene.settingsHandler.Process(rawSettingsData);
