@@ -53,7 +53,8 @@ module.exports = ({ mode }) => {
                 targets: [
                     path.resolve(__dirname, "../src/index.ts"),
                     path.resolve(__dirname, "../src/arcade.ts"),
-                    path.resolve(__dirname, "../src/sopiro.ts")
+                    path.resolve(__dirname, "../src/sopiro.ts"),
+                    path.resolve(__dirname, "../src/scenes/ecsScene.ts")
                 ]
             })),
             bareShaderRawPlugin(),

@@ -46,6 +46,10 @@
       "types": "./src/sopiro.ts",
       "default": "./src/sopiro.ts"
     },
+    "./ecs": {
+      "types": "./src/scenes/ecsScene.ts",
+      "default": "./src/scenes/ecsScene.ts"
+    },
     "./config": "./config/index.cjs",
     "./config/vite.config": "./config/vite.config.cjs",
     "./config/vite.config.cjs": "./config/vite.config.cjs",

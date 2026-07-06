@@ -18,6 +18,8 @@ import { defaultSettingsData } from "../types/bareData";
 import { AwakePayload, BareEvent, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
 import { getInspectorFieldNames, InspectorClass, InspectorField, Label, Locked } from "../utils/decorators";
 import { Bare } from "../types/bare";
+import type { World } from "../libraries/miniplex";
+import type { createQueue } from "../libraries/miniplex/queue";
 
 export class Scene implements SceneI
 {
@@ -78,6 +80,9 @@ export class Scene implements SceneI
     
     //private pipes = matt<Pipes>();
     
+    public declare worldECS: World<Entity>;
+    public declare queueECS: ReturnType<typeof createQueue>;
+
     constructor(sceneOptions: SceneOptions | SettingsData = {settingsData: defaultSettingsData})
     {
         let options: SceneOptions;
