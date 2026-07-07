@@ -233,10 +233,9 @@ export class TransformToolHandler
     {
         const handle = this.handle!;
         const f = this.startFrame;
-        const m = scene.mouse.world.position;
-
         const fromCenter = keyboardController.IsKeyDown('alt');
-        const keepAspect = !keyboardController.IsKeyDown('shift'); // ratio by default, shift = scale freely
+        const keepAspect = !keyboardController.IsKeyDown('shift') && !this.IsSinglePixelTextureResize(); // ratio by default; shift or 1x1 textures scale freely
+        const m = this.GetResizeMouse(scene, scene.mouse.world.position);
 
         // Mouse in the frame's local space (box spans [-hw,hw] x [-hh,hh], centred at 0).
         const ml = this.ToFrameLocal(f, m);
@@ -404,6 +403,39 @@ export class TransformToolHandler
         {
             o.SetPosition(worldX, worldY);
         }
+    }
+
+    private IsSinglePixelTextureResize(): boolean
+    {
+        if (this.starts.length != 1) return false;
+
+        const tex = this.starts[0].obj?.texture;
+        return tex?.width == 1 && tex?.height == 1;
+    }
+
+    private GetResizeMouse(scene: Scene, mouse: Vec2): Vec2
+    {
+        const gridSize = this.GetGridSize(scene);
+        if (!gridSize) return mouse;
+
+        return new Vec2(
+            this.SnapCoordinateToGrid(mouse.x, gridSize),
+            this.SnapCoordinateToGrid(mouse.y, gridSize)
+        );
+    }
+
+    private GetGridSize(scene: Scene): number | null
+    {
+        const settings = (scene as any).settingsData?.settings;
+        const gridSize = settings?.gridSize;
+        if (!settings?.gridEnabled || !gridSize || gridSize <= 0) return null;
+
+        return gridSize;
+    }
+
+    private SnapCoordinateToGrid(value: number, gridSize: number): number
+    {
+        return Math.round(value / gridSize) * gridSize;
     }
 
     // ================= GEOMETRY =================
