@@ -26,7 +26,7 @@ export class Polygon extends RigidBody
     override ResetValues(): this
     {
         super.ResetValues();
-        this.vertices = [];
+        this.vertices = [new Vec2()];
         this.area = 0;
 
         return this;
