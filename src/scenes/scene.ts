@@ -7,7 +7,7 @@ import type { ParticleController } from "../controllers/particleController";
 import { sceneController } from "../controllers/sceneController";
 import type { SopiroPhysicsController } from "../controllers/sopiroPhysicsController";
 import type { TweenController } from "../controllers/tweenController";
-import { controllerNames, globalEvents, MakePath, MakePathForEntity, SetControllerReferencesOnScene } from "../globals";
+import { controllerNames, GameMode, globalEvents, MakePath, MakePathForEntity, SetControllerReferencesOnScene } from "../globals";
 import type { CameraHandler } from "../handlers/cameraHandler";
 import type { LevelHandler } from "../handlers/levelHandler";
 import { SettingsHandler } from "../handlers/settingsHandler";
@@ -241,9 +241,12 @@ export class Scene implements SceneI
                     
                     // BIT OF A HACK TO MAKE SURE SOPIRO RIGIDBODIES HAVE A CENTER PIVOT
                     // PUT HERE TO LET THE EDITOR PREVIEW ALSO INHERIT IT
-                    var sopiroPhysicsClasses = ["Circle", "Box", "Polygon"];
-                    if (sopiroPhysicsClasses.includes(entityArg.baseClass))
-                        entityArg.pivot = { x: .5, y: .5 };
+                    if (bare.gameMode == GameMode.Game)
+                    {
+                        var sopiroPhysicsClasses = ["Circle", "Box", "Polygon"];
+                        if (sopiroPhysicsClasses.includes(entityArg.baseClass))
+                            entityArg.pivot = { x: .5, y: .5 };
+                    }
                 }
 
                 // entityArg HAS BEEN CONSTRUCTED, NOW MERGE IT WITH (ALREADY CONSTRUCTED) ENTITY FROM DATA

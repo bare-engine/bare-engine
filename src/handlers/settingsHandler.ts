@@ -5,6 +5,7 @@ import { Helper } from "../utils/helper";
 import { Scene } from "../scenes/scene";
 import { Bare } from "../types/bare";
 import { InspectorButton, InspectorField, Int, Label, Locked } from "../utils/decorators";
+import { GameMode } from "../globals";
 
 // SettingsHandler KEEPS TRACK OF RAW AND PROCESSED SETTINGS
 // BIT CLUMSY TO HAVE THEM BOTH, BUT HAVING ONLY ONE WOULD MEAN I'D HAVE TO UNDO THE CHANGES THAT HAPPEN IN PROCESS()
@@ -537,12 +538,6 @@ export class SettingsHandler
             // ANYTHING WITH A HITBOX IS A PHYSICS OBJECT
             //if ((entity.hitbox || entity.hitboxRadius) && entity.baseClass == "GameObject") 
             //    entity.baseClass = "ArcadeObject";
-
-            // BIT OF A HACK TO MAKE SURE SOPIRO RIGIDBODIES HAVE A CENTER PIVOT
-            // PUT HERE TO LET THE EDITOR PREVIEW ALSO INHERIT IT
-            var sopiroPhysicsClasses = ["Circle", "Box", "Polygon"];
-            if (sopiroPhysicsClasses.includes(entity.baseClass))
-                entity.pivot = { x: .5, y: .5 };
 
             // FILL PRESETS - LIKE hitbox: "FULL"                
             //                     hitbox: {x1: 0, y1: 0, x2: 1, y2: 1}

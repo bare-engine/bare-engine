@@ -356,7 +356,7 @@ export class World
                 r.log("Friction: " + String(this.target.friction), line++);
                 r.log("Restitution: " + String(this.target.restitution), line++);
                 r.log("Position: [" + String(this.target.position.x.toFixed(4)) + ", " + String(this.target.position.y.toFixed(4)) + "]", line++);
-                r.log("Rotation: " + String(this.target.rotation.toFixed(4)) + "rad", line++);
+                r.log("Rotation: " + String(this.target.rotationRad.toFixed(4)) + "rad", line++);
                 r.log("Linear velocity: [" + String((this.target.linearVelocity.x / 100).toFixed(4)) + ", " + String((this.target.linearVelocity.y / 100).toFixed(4)) + "]m/s", line++);
                 r.log("Angular velocity: " + String(this.target.angularVelocity.toFixed(4)) + "rad/s", line++);
                 r.log("Surface velocity: " + String(this.target.surfaceSpeed.toFixed(4)) + "m/s", line++);

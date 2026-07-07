@@ -5,9 +5,9 @@ import * as Util from "./util";
 import { Node } from "./aabbtree";
 import { GameObject } from "../../objects/gameObject";
 import { Matrix3 } from "./math";
-import { globalEvents } from "../../globals";
+import { GameMode, globalEvents } from "../../globals";
 import type { Scene } from "../../scenes/scene";
-import { BareEvent } from '../../types/bareTypes';
+import { BareEvent, Entity } from '../../types/bareTypes';
 
 export enum Type
 {
@@ -82,13 +82,34 @@ export abstract class RigidBody extends GameObject
         }
     }
 
-    // SET PIVOT TO CENTER, ALREADY HAPPENS IN ENTITY CREATION IN BARE GAME
-    // BUT ALSO NEEDS TO HAPPEN HERE, IN CASE RIGIDBODY IS CREATED DYNAMICALLY
-    override InitTexture(texturePath: string): Promise<Texture>
+    // CENTER PIVOT FOR RIGIDBODIES CREATED DYNAMICALLY BY CODE (NO ENTITY)
+    // LEVEL ENTITIES ARE HANDLED IN OnApplyEntityToGameObject INSTEAD
+    override async InitTexture(texturePath: string): Promise<Texture>
     {
-        var tex = super.InitTexture(texturePath);
-        this.CenterPivot();
+        var tex = await super.InitTexture(texturePath);
+
+        if (bare.gameMode == GameMode.Game && !this.entity)
+            this.CenterPivotKeepingVisualPosition();
+
         return tex;
+    }
+
+    // IN THE EDITOR THE PIVOT STAYS WHATEVER THE ENTITY SAYS, SO SAVING KEEPS POSITION/PIVOT UNTOUCHED
+    // IN GAME THE PIVOT MUST BE CENTERED (PHYSICS POSITION = CENTER OF MASS)
+    // ENTITY VARS (POSITION, PIVOT, SCALE) WERE JUST APPLIED, SO totalScale IS CORRECT AND THIS STAYS IDEMPOTENT
+    override OnApplyEntityToGameObject(entity: Entity, addComponents: boolean): void
+    {
+        if (bare.gameMode == GameMode.Game)
+            this.CenterPivotKeepingVisualPosition();
+    }
+
+    private CenterPivotKeepingVisualPosition(): void
+    {
+        var origPivot = this.pivot.clone();
+        this.CenterPivot();
+
+        this.x += (this.pivot.x - origPivot.x) * this.totalScaleX;
+        this.y += (this.pivot.y - origPivot.y) * this.totalScaleY;
     }
 
     override ResetValues(): this
