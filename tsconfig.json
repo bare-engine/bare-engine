@@ -9,7 +9,9 @@
     "moduleResolution": "Node",
     "baseUrl": ".",
     "paths": {
-      "bare-engine": ["src/index.ts"]
+      "bare-engine": ["src/index.ts"],
+      "bare-engine/arcade": ["src/arcade.ts"],
+      "bare-engine/sopiro": ["src/sopiro.ts"]
     },
     "lib": ["ES2020", "DOM"],
     "types": ["node"],
