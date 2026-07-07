@@ -42,8 +42,8 @@ export class TextComponent extends Component
 
     SetText(text: string): void
     {
+        // THE TEXTTEXTURE TEXT SETTER RE-RENDERS THE TEXTURE ON CHANGE, AND SKIPS IDENTICAL TEXT
         this.textTexture.text = text;
-        this.textTexture.update();
     }
 
     GetText(): string

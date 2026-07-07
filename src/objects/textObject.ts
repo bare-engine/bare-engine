@@ -53,10 +53,13 @@ export class TextObject extends GameObject
 
     SetText(text: string)
     {
+        if (this.textTexture.text === text)
+            return;
+
         this.textTexture.text = text;
 
-        // REAPLY PIVOT AFTER CHANGING TEXT(URE)
-        this.UpdateText();
+        // REAPPLY PIVOT AFTER CHANGING TEXT(URE)
+        this.ReapplyPivot();
 
         this.SetNameBasedOnText(text);
     }
@@ -70,6 +73,11 @@ export class TextObject extends GameObject
     {
         this.textTexture.update();
 
+        this.ReapplyPivot();
+    }
+
+    private ReapplyPivot()
+    {
         if (this.pivotPercentage.x != -1)
             this.pivotX = this.textTexture.width * this.pivotPercentage.x;
         if (this.pivotPercentage.y != -1)
