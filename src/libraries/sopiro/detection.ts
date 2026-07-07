@@ -293,7 +293,9 @@ export function detectCollision(a: RigidBody, b: RigidBody): ContactManifold | n
     if (a instanceof Circle && b instanceof Circle)
     {
         let d = Util.squared_distance(a.position, b.position);
-        let r2 = a.radius + b.radius;
+        let radiusA = a.worldRadius;
+        let radiusB = b.worldRadius;
+        let r2 = radiusA + radiusB;
 
         if (d > r2 * r2)
         {
@@ -304,7 +306,7 @@ export function detectCollision(a: RigidBody, b: RigidBody): ContactManifold | n
             d = Math.sqrt(d);
 
             let contactNormal = b.position.sub(a.position).normalized();
-            let contactPoint = a.position.add(contactNormal.mul(a.radius));
+            let contactPoint = a.position.add(contactNormal.mul(radiusA));
             let penetrationDepth = (r2 - d);
 
             let flipped = false;

@@ -24,10 +24,7 @@ export class Circle extends RigidBody
             Util.assert(density > 0);
 
             this._density = density;
-            this._mass = density * this.area;
-            this._invMass = 1.0 / this._mass;
-            this._inertia = Util.calculateCircleInertia(this.radius, this._mass);
-            this._invInertia = 1.0 / this._inertia;
+            this.RefreshMassProperties();
         }
     }
 
@@ -52,6 +49,25 @@ export class Circle extends RigidBody
     {
         this.radius = radius;
         this.area = Math.PI * this.radius * this.radius;
+    }
+
+    get worldRadius(): number
+    {
+        return this.radius * Math.max(Math.abs(this.scale.x), Math.abs(this.scale.y));
+    }
+
+    private RefreshMassProperties()
+    {
+        if (this.type == Type.Static)
+            return;
+
+        if (this._density <= 0)
+            this._density = Settings.defaultDensity;
+
+        this._mass = this._density * this.area;
+        this._invMass = 1.0 / this._mass;
+        this._inertia = Util.calculateCircleInertia(this.radius, this._mass);
+        this._invInertia = 1.0 / this._inertia;
     }
 
     override get mass(): number

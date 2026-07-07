@@ -20,7 +20,6 @@ export class Polygon extends RigidBody
             vertices = [new Vec2()];
         
         this.SetVertices(vertices, resetPosition);
-
     }
 
     override ResetValues(): this

@@ -51,9 +51,11 @@ export function createAABB(body: RigidBody, margin: number = 0.0): AABB
 {
     if (body instanceof Circle)
     {
+        let radius = body.worldRadius;
+
         return new AABB(
-            new Vec2(body.position.x - body.radius - margin, body.position.y - body.radius - margin),
-            new Vec2(body.position.x + body.radius + margin, body.position.y + body.radius + margin)
+            new Vec2(body.position.x - radius - margin, body.position.y - radius - margin),
+            new Vec2(body.position.x + radius + margin, body.position.y + radius + margin)
         );
     }
     else if (body instanceof Polygon) 
