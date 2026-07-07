@@ -1,4 +1,5 @@
-import { ArcadeObject, Scene } from "bare-engine";
+import { Scene } from "bare-engine";
+import { ArcadeObject } from "bare-engine/arcade";
 
 export class BarePhysicsTest extends Scene
 {

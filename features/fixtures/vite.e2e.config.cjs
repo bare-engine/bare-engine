@@ -16,6 +16,8 @@ module.exports = {
     resolve: {
         extensions: [".ts", ".js", ".json"],
         alias: {
+            "bare-engine/arcade": path.resolve(repoRoot, "src/arcade.ts"),
+            "bare-engine/sopiro": path.resolve(repoRoot, "src/sopiro.ts"),
             "bare-engine": path.resolve(repoRoot, "src/index.ts")
         }
     },

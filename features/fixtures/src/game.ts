@@ -16,6 +16,7 @@ import { GraphicsTest } from "./testScenes/graphicsTest";
 import { TweensTest } from "./testScenes/tweensTest";
 import { UiTest } from "./testScenes/uiTest";
 import { SaveComponentTest } from "./testScenes/saveComponentTest";
+import { Box, Circle } from "bare-engine/sopiro";
 
 function sceneName(scene: SceneClass): string {
     return scene.name[0].toLowerCase() + scene.name.slice(1);
@@ -55,8 +56,11 @@ class MainGame extends Scene
         super({ persistent: true });
     }
 
-    OnAwake(): void 
+    OnAwake(): void
     {
+        bare.AddClass(Box);
+        bare.AddClass(Circle);
+
         installBrowserTestHarness();
 
         window.__bareBrowserTests = {
