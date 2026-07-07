@@ -42,6 +42,12 @@ export class EditorScene extends Scene
         this.SetupFileDropZone();
     }
 
+    override Awake(payload?: any): Promise<void>
+    {
+        bare.gameMode = GameMode.Editor;
+        return super.Awake(payload);
+    }
+
     async OnStart(payload?: EditorSceneAwakePayload): Promise<void>
     {
         if (__DEV__)

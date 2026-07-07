@@ -451,7 +451,6 @@ export class EditorControlsHandler {
         for (var i = this.selectedObjects.length - 1; i >= 0; i--)
         {
             var obj = this.selectedObjects[i];
-            obj.color = new Color(255, 255, 255, 255);
 
             obj.RemoveShader(OutlineShader);
         }

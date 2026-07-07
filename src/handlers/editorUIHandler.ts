@@ -389,7 +389,7 @@ export class EditorUIHandler {
                             this.SetTextureBackground(childEntity, entityTex);
                         } else {
                             const entityImagePath = this.GetEntityImagePath(entity);
-                            if (entityImagePath && entityImagePath !== 'images/whitePixel.webp') {
+                            if (entityImagePath && !entityImagePath.endsWith('images/whitePixel.webp')) {
                                 const img = document.createElement('img');
                                 this.SetupPreviewImage(img, entityImagePath, entityId);
                                 img.style.borderRadius = '3px';
