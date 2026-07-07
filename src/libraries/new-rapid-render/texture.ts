@@ -707,9 +707,13 @@ class TextTexture extends Texture {
     }
 
     /**
-     * Set new style partially and update the texture
+     * Set new style partially and update the texture. Skips the update if
+     * none of the given values differ from the current style.
      */
     public set style(value: Partial<ITextStyle>) {
+        const keys = Object.keys(value) as (keyof ITextStyle)[];
+        if (keys.every((key) => this._style[key] === value[key])) return;
+
         this._style = { ...this._style, ...value };
         this.update();
     }
