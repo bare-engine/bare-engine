@@ -17,7 +17,7 @@ export class AngleJoint extends Joint
     {
         super(bodyA, bodyB, frequency, dampingRatio, jointMass);
         
-        this.initialAngleOffset = bodyB.rotation - bodyA.rotation;
+        this.initialAngleOffset = bodyB.rotationRad - bodyA.rotationRad;
     }
 
     override prepare(): void
@@ -30,7 +30,7 @@ export class AngleJoint extends Joint
 
         this.m = 1.0 / k;
 
-        let error = this.bodyB.rotation - this.bodyA.rotation - this.initialAngleOffset;
+        let error = this.bodyB.rotationRad - this.bodyA.rotationRad - this.initialAngleOffset;
 
         if (Settings.positionCorrection)
             this.bias = error * this.beta * Settings.inv_dt;

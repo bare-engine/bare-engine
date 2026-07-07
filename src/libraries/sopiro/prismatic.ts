@@ -40,7 +40,7 @@ export class PrismaticJoint extends Joint
         this.localAnchorA = this.bodyA.globalToLocal.mulVector2(anchorA, 1);
         this.localAnchorB = this.bodyB.globalToLocal.mulVector2(anchorB, 1);
 
-        this.initialAngle = bodyB.rotation - bodyA.rotation;
+        this.initialAngle = bodyB.rotationRad - bodyA.rotationRad;
 
         if (dir == undefined)
         {
@@ -85,7 +85,7 @@ export class PrismaticJoint extends Joint
         this.m = k.inverted();
 
         let error0 = this.u.dot(this.t);
-        let error1 = this.bodyB.rotation - this.bodyA.rotation - this.initialAngle;
+        let error1 = this.bodyB.rotationRad - this.bodyA.rotationRad - this.initialAngle;
 
         if (Settings.positionCorrection)
             this.bias = new Vec2(error0, error1).mul(this.beta * Settings.inv_dt);

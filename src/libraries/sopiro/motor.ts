@@ -37,7 +37,7 @@ export class MotorJoint extends Joint
         super(bodyA, bodyB, frequency, dampingRatio, jointMass);
 
         this.linearOffset = new Vec2();
-        this.initialAngleOffset = bodyB.rotation - bodyA.rotation;
+        this.initialAngleOffset = bodyB.rotationRad - bodyA.rotationRad;
         this.angularOffset = 0.0;
 
         this._maxForce = Util.clamp(maxForce, 0, Number.MAX_VALUE);
@@ -83,7 +83,7 @@ export class MotorJoint extends Joint
         let pb = this.bodyB.position.add(this.rb);
 
         let error0 = pb.sub(pa.add(this.linearOffset));
-        let error1 = this.bodyB.rotation - this.bodyA.rotation - this.initialAngleOffset - this.angularOffset;
+        let error1 = this.bodyB.rotationRad - this.bodyA.rotationRad - this.initialAngleOffset - this.angularOffset;
 
         if (Settings.positionCorrection)
         {

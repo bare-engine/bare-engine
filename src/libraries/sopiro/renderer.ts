@@ -187,7 +187,7 @@ export class Renderer
             rapid.matrixStack.save()
             rapid.matrixStack.translate(b.position.x, b.position.y)
             rapid.matrixStack.scale(b.scale.x, b.scale.y)
-            rapid.matrixStack.rotate(b.rotation)
+            rapid.matrixStack.rotate(b.rotationRad)
             rapid.drawGraphic({
                 points: b.vertices,
                 color: Color.fromHex(fillColor),

@@ -138,7 +138,7 @@ export class Island
 
             b.position.x += b.linearVelocity.x * Settings.dt;
             b.position.y += b.linearVelocity.y * Settings.dt;
-            b.rotation += b.angularVelocity * Settings.dt;
+            b.rotationRad += b.angularVelocity * Settings.dt;
 
             if (b.position.y < Settings.deadBottom)
                 this.world.unregister(b.id);

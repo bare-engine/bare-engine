@@ -27,7 +27,7 @@ export class WeldJoint extends Joint
     {
         super(bodyA, bodyB, frequency, dampingRatio, jointMass);
 
-        this.initialAngleOffset = bodyB.rotation - bodyA.rotation;
+        this.initialAngleOffset = bodyB.rotationRad - bodyA.rotationRad;
         this.localAnchorA = this.bodyA.globalToLocal.mulVector2(anchor, 1);
         this.localAnchorB = this.bodyB.globalToLocal.mulVector2(anchor, 1);
 
@@ -75,7 +75,7 @@ export class WeldJoint extends Joint
         let pb = this.bodyB.position.add(this.rb);
 
         let error01 = pb.sub(pa);
-        let error2 = this.bodyB.rotation - this.bodyA.rotation - this.initialAngleOffset;
+        let error2 = this.bodyB.rotationRad - this.bodyA.rotationRad - this.initialAngleOffset;
 
         if (Settings.positionCorrection)
             this.bias = new Vector3(error01.x, error01.y, error2).mul(this.beta * Settings.inv_dt);

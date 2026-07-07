@@ -353,21 +353,24 @@ export abstract class RigidBody extends GameObject
             window.physicsController.RefreshBody(this);
     }*/
 
-    set rotation(value: number)
+    // ROTATION IN RADIANS FOR THE PHYSICS ENGINE
+    // rotation ITSELF STAYS IN DEGREES, LIKE EVERY OTHER GAMEOBJECT
+    set rotationRad(value: number)
     {
         this.transform.rotation = value * (180 / Math.PI);
     }
 
-    get rotation(): number
+    get rotationRad(): number
     {
         return this.transform.rotation / (180 / Math.PI);
     }
+
     // Returns local to global transform
     get localToGlobal(): Matrix3
     {
         return new Matrix3()
             .translate(this.position.x, this.position.y)
-            .rotate(this.rotation)
+            .rotate(this.rotationRad)
             .scale(this.scale.x, this.scale.y);
     }
 
@@ -376,7 +379,7 @@ export abstract class RigidBody extends GameObject
     {
         return new Matrix3()
             .scale(1.0 / this.scale.x, 1.0 / this.scale.y)
-            .rotate(-this.rotation)
+            .rotate(-this.rotationRad)
             .translate(-this.position.x, -this.position.y);
     }
 }
