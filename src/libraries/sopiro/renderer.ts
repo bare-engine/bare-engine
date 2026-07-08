@@ -185,9 +185,10 @@ export class Renderer
         if (b instanceof Polygon)
         {
             rapid.matrixStack.save()
+            // MUST MATCH localToGlobal: translate -> rotate -> scale
             rapid.matrixStack.translate(b.position.x, b.position.y)
-            rapid.matrixStack.scale(b.scale.x, b.scale.y)
             rapid.matrixStack.rotate(b.rotationRad)
+            rapid.matrixStack.scale(b.scale.x, b.scale.y)
             rapid.drawGraphic({
                 points: b.vertices,
                 color: Color.fromHex(fillColor),
@@ -220,6 +221,7 @@ export class Renderer
         {
             rapid.matrixStack.save()
             rapid.matrixStack.translate(b.position.x, b.position.y)
+            rapid.matrixStack.rotate(b.rotationRad)
             rapid.matrixStack.scale(b.scale.x, b.scale.y)
             rapid.drawCircle({
                 radius: b.radius,

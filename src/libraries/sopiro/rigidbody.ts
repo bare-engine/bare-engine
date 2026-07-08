@@ -8,7 +8,7 @@ import { Matrix3 } from "./math";
 import { GameMode, globalEvents } from "../../globals";
 import type { Scene } from "../../scenes/scene";
 import { BareEvent, Entity } from '../../types/bareTypes';
-import { InspectorField, Percentage } from "../../utils/decorators";
+import { Enum, InspectorField, Locked, Percentage } from "../../utils/decorators";
 
 export enum Type
 {
@@ -26,7 +26,6 @@ export abstract class RigidBody extends GameObject
     private _force: Vec2;            // N
     private _torque: number;            // N⋅m
 
-   
     private _linearVelocity: Vec2;   // m/s
     private _angularVelocity: number;   // rad/s
 
@@ -40,9 +39,10 @@ export abstract class RigidBody extends GameObject
     private _restitution: number;
     private _surfaceSpeed: number;      // m/s (Tangential speed)
 
+    @InspectorField @Enum(Type) @Locked 
     public /*readonly*/ type: Type;
 
-    public id: number = -1;
+    public id: number = -1;//
     public islandID: number = 0;
     public manifoldIDs: number[] = [];  // ids of contact manifold containing this body
     public jointIDs: number[] = [];     // ids of the joint containing this body
@@ -105,13 +105,21 @@ export abstract class RigidBody extends GameObject
             this.CenterPivotKeepingVisualPosition();
     }
 
+    // THE PIVOT OFFSET LIVES INSIDE THE ROTATED SPACE (render = pos -> rotate -> scale -> -pivot),
+    // SO THE COMPENSATION MUST BE ROTATED ALONG OR ROTATED BODIES SHIFT AWAY FROM THEIR EDITOR SPOT
     private CenterPivotKeepingVisualPosition(): void
     {
         var origPivot = this.pivot.clone();
         this.CenterPivot();
 
-        this.x += (this.pivot.x - origPivot.x) * this.totalScaleX;
-        this.y += (this.pivot.y - origPivot.y) * this.totalScaleY;
+        var dx = (this.pivot.x - origPivot.x) * this.totalScaleX;
+        var dy = (this.pivot.y - origPivot.y) * this.totalScaleY;
+
+        var cos = Math.cos(this.rotationRad);
+        var sin = Math.sin(this.rotationRad);
+
+        this.x += dx * cos - dy * sin;
+        this.y += dx * sin + dy * cos;
     }
 
     override ResetValues(): this

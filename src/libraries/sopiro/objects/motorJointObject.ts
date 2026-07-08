@@ -38,9 +38,6 @@ export class MotorJointObject extends GameObject
 
     OnAwake(entity?: Entity): void
     {
-        if (entity.position)
-            this.SetPosition(entity.position.x, entity.position.y);
-
         this.bodyA = null;
         this.bodyB = null;
         this.motorJoint = null;
