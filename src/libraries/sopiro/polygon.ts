@@ -1,5 +1,5 @@
 import type { Scene } from "../../scenes/scene";
-import { InspectorField } from "../../utils/decorators";
+import { InspectorField, Range } from "../../utils/decorators";
 import { Vec2 } from "../new-rapid-render";
 import { RigidBody, Type } from "./rigidbody";
 import { Settings } from "./settings";
@@ -98,9 +98,9 @@ export class Polygon extends RigidBody
         this.area = Math.abs(area) / 2.0;
 
         //
-        this._mass = this._density * this.area;
+        this._mass = this._density * this.worldArea;
         this._invMass = 1.0 / this._mass;
-        this._inertia = Util.calculateConvexPolygonInertia(this.vertices, this._mass, this.area);
+        this._inertia = Util.calculateConvexPolygonInertia(this.worldVertices, this._mass, this.worldArea);
         this._invInertia = 1.0 / this._inertia;
 
         // BIT HACKY
@@ -126,7 +126,26 @@ export class Polygon extends RigidBody
         return this.vertices.length;
     }
 
-    @InspectorField
+    // vertices/area STAY IN LOCAL SPACE, THESE GIVE THE WORLD-SPACE VERSIONS THAT MASS/INERTIA NEED
+    get worldArea(): number
+    {
+        return this.area * Math.abs(this.scale.x * this.scale.y);
+    }
+
+    get worldVertices(): Vec2[]
+    {
+        return this.vertices.map(v => new Vec2(v.x * this.scale.x, v.y * this.scale.y));
+    }
+
+    override RefreshMassProperties(): void
+    {
+        if (this.type == Type.Static || !this.vertices || this.area <= 0 || !(this._density > 0) || this._density == Number.MAX_VALUE)
+            return;
+
+        this.density = this._density;
+    }
+
+    @InspectorField @Range(0.0001, Infinity)
     override get mass(): number
     {
         return this._mass;
@@ -136,10 +155,10 @@ export class Polygon extends RigidBody
     {
         Util.assert(mass > 0);
 
-        this._density = mass / this.area;
+        this._density = mass / this.worldArea;
         this._mass = mass;
         this._invMass = 1.0 / this._mass;
-        this._inertia = Util.calculateConvexPolygonInertia(this.vertices, this._mass, this.area);
+        this._inertia = Util.calculateConvexPolygonInertia(this.worldVertices, this._mass, this.worldArea);
         this._invInertia = 1.0 / this._inertia;
     }
 
@@ -154,9 +173,9 @@ export class Polygon extends RigidBody
         Util.assert(density > 0);
 
         this._density = density;
-        this._mass = density * this.area;
+        this._mass = density * this.worldArea;
         this._invMass = 1.0 / this._mass;
-        this._inertia = Util.calculateConvexPolygonInertia(this.vertices, this._mass, this.area);
+        this._inertia = Util.calculateConvexPolygonInertia(this.worldVertices, this._mass, this.worldArea);
         this._invInertia = 1.0 / this._inertia;
     }
 }

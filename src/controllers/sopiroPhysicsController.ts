@@ -12,6 +12,7 @@ import { Circle } from "../libraries/sopiro/circle";
 import { make_pair_natural } from "../libraries/sopiro/util";
 import { BareEvent } from "../types/bareTypes";
 import { PhysicsControllerBase } from "./physicsControllerBase";
+import { MotorJointObject } from "../libraries/sopiro/objects/motorJointObject";
 
 const sopiroPhysicsEventDefs = {
     collision_start: "collision_start",
@@ -35,7 +36,7 @@ declare module "../types/bareTypes" {
 
 export class SopiroPhysicsController extends PhysicsControllerBase
 {
-    private world: World;
+    public world: World;
     public collisionsEnabled: boolean = true;
 
     private activeCollisions: Map<number, { bodyA: RigidBody; bodyB: RigidBody }> = new Map();
@@ -55,6 +56,7 @@ export class SopiroPhysicsController extends PhysicsControllerBase
         bare.AddClass(Polygon);
         bare.AddClass(Box);
         bare.AddClass(Circle);
+        bare.AddClass(MotorJointObject);
 
         super.Start();
     }

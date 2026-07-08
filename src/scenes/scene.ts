@@ -371,6 +371,15 @@ export class Scene implements SceneI
             delete entity.polygonVertices;
         }
 
+        // PUT MASS AFTER THE OTHER PHYSICS PROPS (SCALE, DENSITY, rigidbodyRect/hitboxRadius)
+        // THOSE RECOMPUTE MASS FROM DENSITY, SO AN EXPLICIT MASS MUST BE APPLIED LAST TO WIN
+        if (entity.mass)
+        {
+            let val = entity.mass;
+            delete entity.mass;
+            entity.mass = val;
+        }
+
         // PUT STATIC 3RD LAST - FOR SOPIRO PHYSICS, IT NEEDS ALL OTHER RIGIDBODY DATA LIKE MASS FIRST, THEN SET STATIC
         if (entity.static)
         {

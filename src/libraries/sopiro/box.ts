@@ -55,10 +55,10 @@ export class Box extends Polygon
     {
         Util.assert(mass > 0);
 
-        this._density = mass / this.area;
+        this._density = mass / this.worldArea;
         this._mass = mass;
         this._invMass = 1.0 / this._mass;
-        this._inertia = Util.calculateBoxInertia(this.phyWidth, this.phyHeight, this._mass);
+        this._inertia = Util.calculateBoxInertia(this.phyWidth * Math.abs(this.scale.x), this.phyHeight * Math.abs(this.scale.y), this._mass);
         this._invInertia = 1.0 / this._inertia;
     }
 
@@ -73,9 +73,9 @@ export class Box extends Polygon
         Util.assert(density > 0);
 
         this._density = density;
-        this._mass = density * this.area;
+        this._mass = density * this.worldArea;
         this._invMass = 1.0 / this._mass;
-        this._inertia = Util.calculateBoxInertia(this.phyWidth, this.phyHeight, this._mass);
+        this._inertia = Util.calculateBoxInertia(this.phyWidth * Math.abs(this.scale.x), this.phyHeight * Math.abs(this.scale.y), this._mass);
         this._invInertia = 1.0 / this._inertia;
     }
 }

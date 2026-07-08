@@ -321,6 +321,7 @@ export abstract class RigidBody extends GameObject
     override SetScale(scale: number): this
     {
         super.SetScale(scale);
+        this.RefreshMassProperties();
         this.RefreshBody();
 
         return this;
@@ -329,10 +330,15 @@ export abstract class RigidBody extends GameObject
     override SetScaleXY(x: number, y: number): this
     {
         super.SetScaleXY(x, y);
+        this.RefreshMassProperties();
         this.RefreshBody();
-        
+
         return this;
     }
+
+    // COLLISION RUNS IN WORLD SPACE (localToGlobal BAKES IN SCALE), SO MASS/INERTIA ARE WORLD SPACE TOO
+    // AND MUST BE RECOMPUTED FROM DENSITY WHENEVER THE SCALE CHANGES - IMPLEMENTED BY CHILDREN
+    RefreshMassProperties(): void {}
 
     RefreshBody()
     {
