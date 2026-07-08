@@ -571,6 +571,9 @@ export class SettingsHandler
         {
             var entityBase = rawSettingsData.baseEntities[baseEntity];
 
+            if (!entityBase)
+                throw new Error(`Could not find base entity '${baseEntity}' for entity '${entity.name}'`);
+            
             // INSERT MEMBERS FROM ENTITY BASE WE DIDN'T DEFINE ALREADY IN ENTITY
             for (const key of Object.keys(entityBase))
             {

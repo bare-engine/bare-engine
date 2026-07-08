@@ -434,19 +434,6 @@ export const Events = undefined as unknown as Events;
  ...
  }*/
 
-export interface Pipes {
-    hitboxController_Update: (deltaTime: number) => void;
-    physicsController_Update: (deltaTime: number) => void;
-    screenController_Update: (deltaTime: number) => void;
-    screenController_Render: () => void;
-    physicsController_Render: () => void;
-    componentController_Update: (deltaTime: number) => void;
-    componentController_PreRender: () => void;
-    componentController_Render: () => void;
-    componentController_PostRender: () => void;
-    componentController_OnLevelChanged: (payload: { uids: string[] }) => void;
-}
-
 export interface BareScreen
 {
     OnAwake?(payload?: any): Promise<void> | void;
@@ -465,7 +452,7 @@ export class SaveData
     static soundEnabled: boolean = true;
     static musicEnabled: boolean = true;
 
-    static minimized: boolean = false; // REALLY ONLY FOR EDITOR - NEVER NEEDED IN PROD
+    static minimized: boolean = false; // REALLY ONLY FOR EDITOR - NEVER NEEDED IN PROD (WITHOUT EDITOR)
 }
 
 // TODO

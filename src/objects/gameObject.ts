@@ -362,7 +362,12 @@ export class GameObject
         this.OnTextureLoadedCallbacks.push(callback);
     }
 
-    OnAwake()
+    OnAwake(entity?: Entity)
+    {
+        // FOR OVERRIDE
+    }
+
+    OnStart()
     {
         // FOR OVERRIDE
     }

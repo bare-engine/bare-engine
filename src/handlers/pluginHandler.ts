@@ -1373,7 +1373,7 @@ export class PluginHandler
 
     constructor(showEditorButton: boolean, editorButtonPosition: Position)
     {
-        this.openEditorButtonPosition = editorButtonPosition;;
+        this.openEditorButtonPosition = editorButtonPosition;
 
         // HIDE OR SHOW EditorUIScene
         // SHOWS WHEN NO PLUGIN/CONNECTION

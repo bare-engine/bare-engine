@@ -45,7 +45,7 @@ export abstract class Component<T extends GameObject = GameObject>
     OnUpdate?(dt: number): void;
     OnFixedUpdate?(fixedDt: number): void;
     OnPreSaveLevel?(): void;
-    OnLevelChanged?(): void;
+    OnPostLoadLevel?(): void;
 }
 
 export class ComponentController
@@ -78,7 +78,7 @@ export class ComponentController
     // PROBALY SHOULD JUST LISTEN TO BareEvent.level_loaded? TODO
     public PostLoadLevel(persistenObjUIDs:string[] = []): void
     {
-        // CALL ONLEVELCHANGED ON PERSISTENT OBJECTS
+        // CALL OnPostLoadLevel ON PERSISTENT OBJECTS
         for (var i = 0; i < persistenObjUIDs.length; i++)
         {
             let uid = persistenObjUIDs[i]; 
@@ -86,9 +86,9 @@ export class ComponentController
             for (var k = 0; k < comps.length; k++)
             {
                 var comp = comps[k];
-                if (comp.OnLevelChanged)
+                if (comp.OnPostLoadLevel)
                 {
-                    comp.OnLevelChanged();
+                    comp.OnPostLoadLevel();
                 }
             }
         }

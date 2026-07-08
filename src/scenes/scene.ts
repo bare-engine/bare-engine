@@ -646,6 +646,7 @@ export class Scene implements SceneI
                 gameObject = bare.GetObjectFromPool("GameObject", this);
                 gameObject.pooled = true;
                 gameObject.name = "pooledGameObject";
+                gameObject.OnAwake();
             }
             else
             if (typeof input === "function")
@@ -661,18 +662,21 @@ export class Scene implements SceneI
                     gameObject.pooled = true;
 
                 gameObject.name = (pool ? "pooledGameObjectExtend" : "gameObjectExtend");
+                gameObject.OnAwake();
             }
             else
             if (input instanceof GameObject)
             {
                 // GameObject INSTANCE ALREADY PROVIDED
                 gameObject = input;
+                gameObject.OnAwake();
             }
             else
             if (input instanceof Texture)
             {
                 // TEXTURE
                 gameObject = bare.GetObjectFromPool("GameObject", this);
+                gameObject.OnAwake();
                 gameObject.SetTexture(input);
                 gameObject.pooled = true;
                 gameObject.name = input.texturePath || "PooledGameObjectFromTexture";
@@ -760,6 +764,8 @@ to package.json to keep the generated assets (can become large for big projects)
                 }
 
                 gameObject = bare.GetObjectFromPool(entity.baseClass!, this);
+                gameObject.OnAwake(entity);
+
                 gameObject.Init(MakePathForEntity(entity)); // LOADS TEXTURE TOO
 
                 //if (entity.texture != "NONE")
@@ -791,13 +797,14 @@ to package.json to keep the generated assets (can become large for big projects)
                 this.object.Add(gameObject, layer);
             }
 
-            gameObject.OnAwake();
             gameObject.Added();
         }
-
+        
         // NOTIFY
         globalEvents.emit(BareEvent.game_objectAdded, { gameObject: gameObject, layer: parent });
         this.events.emit(BareEvent.game_objectAdded, { gameObject: gameObject, layer: parent });
+
+        gameObject.OnStart();
 
         return gameObject as T;
     }

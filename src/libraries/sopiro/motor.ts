@@ -41,7 +41,7 @@ export class MotorJoint extends Joint
         this.angularOffset = 0.0;
 
         this._maxForce = Util.clamp(maxForce, 0, Number.MAX_VALUE);
-        this._maxTorque = Util.clamp(maxTorque, 0, Number.MAX_VALUE);;
+        this._maxTorque = Util.clamp(maxTorque, 0, Number.MAX_VALUE);
 
         this.localAnchorA = this.bodyA.globalToLocal.mulVector2(anchor, 1);
         this.localAnchorB = this.bodyB.globalToLocal.mulVector2(anchor, 1);

@@ -127,7 +127,7 @@ export class LevelHandler
             }
         }
 
-        // STORE PERSISTENT OBJECTS, TO CALL ONLEVELCHANGED AFTER LOAD
+        // STORE PERSISTENT OBJECTS, TO CALL OnPostLoadLevel AFTER LOAD
         var persistenObjUIDs:string[] = [];
         var gameLayers = bare.object.GetLayers();
         for (var i = 0; i < gameLayers.length; i++)
