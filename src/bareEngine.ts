@@ -548,6 +548,8 @@ export class BareEngine
         {
             bare.RegisterGameObjectPool(_class, 1);
 
+            GameObject.RegisterGameObject(_class);
+
             bare.registeredClasses[className] = _class;
             return;
         }

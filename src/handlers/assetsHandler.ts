@@ -146,11 +146,16 @@ class AssetsHandler
     Clear()
     {
         for (var tex of this.textures.values())
-            rapid.texture.destroy(tex);
+            if (tex != window.whitePixelTexture)
+                rapid.texture.destroy(tex);
 
         this.textures.clear();
         this.loading.clear();
         this.animationData.clear();
+
+        // BIT HACKY, BUT WE STILL NEED THE whitePixel TEXTURE, INITIALLY CREATED IN BareEngine.ts Init()
+        // ALSO PREVENTED DESTROYING IT ABOVE
+        assetsHandler.AddTexture("whitePixel", window.whitePixelTexture);
     }
 }
 

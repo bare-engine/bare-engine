@@ -8,6 +8,7 @@ import { Matrix3 } from "./math";
 import { GameMode, globalEvents } from "../../globals";
 import type { Scene } from "../../scenes/scene";
 import { BareEvent, Entity } from '../../types/bareTypes';
+import { InspectorField, Percentage } from "../../utils/decorators";
 
 export enum Type
 {
@@ -25,6 +26,7 @@ export abstract class RigidBody extends GameObject
     private _force: Vec2;            // N
     private _torque: number;            // N⋅m
 
+   
     private _linearVelocity: Vec2;   // m/s
     private _angularVelocity: number;   // rad/s
 
@@ -209,23 +211,31 @@ export abstract class RigidBody extends GameObject
         return this._invInertia;
     }
 
-    get friction(): number
+    @InspectorField
+    get linearVelocity(): Vec2
     {
-        return this._friction;
+        return this._linearVelocity;
+    }
+    set linearVelocity(v: Vec2)
+    {
+        this._linearVelocity = v.copy();
     }
 
-    set friction(f: number)
+    @InspectorField
+    get angularVelocity(): number
     {
-        Util.assert(f >= 0.0);
-
-        this._friction = f;
+        return this._angularVelocity;
+    }
+    set angularVelocity(w: number)
+    {
+        this._angularVelocity = w;
     }
 
+    @InspectorField @Percentage
     get restitution(): number
     {
         return this._restitution;
     }
-
     set restitution(r: number)
     {
         Util.assert(r >= 0.0 && r <= 1.0);
@@ -233,41 +243,32 @@ export abstract class RigidBody extends GameObject
         this._restitution = r;
     }
 
+    @InspectorField
+    get friction(): number
+    {
+        return this._friction;
+    }
+    set friction(f: number)
+    {
+        Util.assert(f >= 0.0);
+
+        this._friction = f;
+    }
+
+    @InspectorField
     get surfaceSpeed(): number
     {
         return this._surfaceSpeed;
     }
-
     set surfaceSpeed(s: number)
     {
         this._surfaceSpeed = s;
-    }
-
-    get linearVelocity(): Vec2
-    {
-        return this._linearVelocity;
-    }
-
-    set linearVelocity(v: Vec2)
-    {
-        this._linearVelocity = v.copy();
-    }
-
-    get angularVelocity(): number
-    {
-        return this._angularVelocity;
-    }
-
-    set angularVelocity(w: number)
-    {
-        this._angularVelocity = w;
     }
 
     get force(): Vec2
     {
         return this._force;
     }
-
     set force(f: Vec2)
     {
         this._force.x = f.x;
@@ -278,7 +279,6 @@ export abstract class RigidBody extends GameObject
     {
         return this._torque;
     }
-
     set torque(t)
     {
         this._torque = t;

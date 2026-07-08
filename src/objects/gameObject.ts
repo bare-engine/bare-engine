@@ -79,8 +79,6 @@ export class GameObject
     // OR EVEN BETTER: LET IT TAKE AN ENTITY - TODO
     constructor(scene: Scene, texturePath: string = "", x:number = 0, y:number = 0)
     {
-        GameObject.RegisterGameObject(this.constructor as GameObjectClass);
-
         this.scene = scene;
 
         this.ResetValues(); // MAKES ABOVE VALUES NOT REALLY MATTER, THESE ARE THE DEFAULTS

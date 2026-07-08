@@ -51,9 +51,10 @@ export class SopiroPhysicsController extends PhysicsControllerBase
     {
         this.scene.events.on(BareEvent.physics_refreshBody, this.RefreshBody.bind(this));
 
-        bare.RegisterGameObjectPool(Polygon, 1);
-        bare.RegisterGameObjectPool(Box, 1);
-        bare.RegisterGameObjectPool(Circle, 1);
+        bare.AddClass(RigidBody);
+        bare.AddClass(Polygon);
+        bare.AddClass(Box);
+        bare.AddClass(Circle);
 
         super.Start();
     }

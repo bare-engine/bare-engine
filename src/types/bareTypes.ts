@@ -197,24 +197,15 @@ export var entityVarsNestedRecord: Record<string, string[]> =
         "customData",
     ],
     "ArcadeObject": [
-        "static",
-        "sensor",
-        "drag",
-        "restitution",
         "pivotBasedOnHitbox",
         "hitbox",
         "hitboxType",
-        "hitboxRadius",
-        "stayInBounds",
-        "removeOnOutOfBounds",
+        "hitboxRadius"
     ],
     "RigidBody": [
-        "drag",
-        "mass",
-        "restitution",
         "rigidbodyRect",
         "hitboxRadius",
-        "polygonVertices",
+        "polygonVertices"
     ]
 }
 

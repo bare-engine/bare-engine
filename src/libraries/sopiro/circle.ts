@@ -70,11 +70,11 @@ export class Circle extends RigidBody
         this._invInertia = 1.0 / this._inertia;
     }
 
+    @InspectorField
     override get mass(): number
     {
         return this._mass;
     }
-
     // This will automatically set the inertia
     override set mass(mass: number)
     {
@@ -87,13 +87,12 @@ export class Circle extends RigidBody
         this._invInertia = 1.0 / this._inertia;
     }
 
+    @InspectorField
     override get density(): number
     {
         return this._density;
     }
-
     // This will automatically set the mass and inertia
-    @InspectorField
     override set density(density: number) //kg/m²
     {
         Util.assert(density > 0);

@@ -1,4 +1,5 @@
 import type { Scene } from "../../scenes/scene";
+import { InspectorField } from "../../utils/decorators";
 import { Vec2 } from "../new-rapid-render";
 import { RigidBody, Type } from "./rigidbody";
 import { Settings } from "./settings";
@@ -125,11 +126,11 @@ export class Polygon extends RigidBody
         return this.vertices.length;
     }
 
+    @InspectorField
     override get mass(): number
     {
         return this._mass;
     }
-
     // This will automatically set the inertia
     override set mass(mass: number)
     {
@@ -142,11 +143,11 @@ export class Polygon extends RigidBody
         this._invInertia = 1.0 / this._inertia;
     }
 
+    @InspectorField
     override get density(): number
     {
         return this._density;
     }
-
     // This will automatically set the mass and inertia
     override set density(density: number)
     {
