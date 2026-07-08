@@ -554,6 +554,17 @@ function isGetterOnlyAccessor(component: any, name: string): boolean
     return false;
 }
 
+function getAccessorSetter(component: any, name: string): ((value: any) => void) | undefined
+{
+    for (let proto = component; proto && proto !== Object.prototype; proto = Object.getPrototypeOf(proto))
+    {
+        const desc = Object.getOwnPropertyDescriptor(proto, name);
+        if (desc)
+            return desc.set;
+    }
+    return undefined;
+}
+
 /** A Color instance (duck-typed via toHex) — surfaced as a "color" field and edited via a hex string. */
 function isColorValue(value: any): boolean
 {
@@ -821,6 +832,10 @@ export async function applyInspectorField(component: any, fieldName: string, val
         {
             if ("x" in resolvedValue) current.x = resolvedValue.x;
             if ("y" in resolvedValue) current.y = resolvedValue.y;
+
+            const nativeSetter = getAccessorSetter(component, entry.name);
+            if (nativeSetter)
+                nativeSetter.call(component, current);
         }
         else
             component[entry.name] = resolvedValue;
