@@ -425,17 +425,19 @@ export class EditorControlsHandler {
             for (var i = objs.length - 1; i >= 0; i--)
             {
                 var obj = objs[i];
-                
+
                 if (!obj.tapHitbox)
                     continue; // COULD BE THE PREVIEW OBJECT
 
-                var topLeft = {x: obj.x - obj.pivot.x, y: obj.y - obj.pivot.y};
-                var otherRect = {x: topLeft.x, y: topLeft.y, width: obj.tapHitbox.rectangle.width, height: obj.tapHitbox.rectangle.height};
+                const hitboxRect = bare.hitbox.GetRect(obj.tapHitbox);
+                const otherRect = {
+                    x: hitboxRect.x1,
+                    y: hitboxRect.y1,
+                    width: hitboxRect.width,
+                    height: hitboxRect.height
+                };
 
-                if (otherRect.x < rect.x + rect.width &&
-                    otherRect.x + otherRect.width > rect.x &&
-                    otherRect.y < rect.y + rect.height &&
-                    otherRect.y + otherRect.height > rect.y)
+                if (this.RectsIntersect(otherRect, rect))
                 {
                     objsToSelect.push(obj);
                 }
@@ -444,6 +446,14 @@ export class EditorControlsHandler {
 
         var multiSelect = keyboardController.IsKeyDown("shift");
         this.SelectGameObjects(objsToSelect, !multiSelect);
+    }
+
+    private RectsIntersect(a: Rectangle, b: Rectangle): boolean
+    {
+        return a.x < b.x + b.width &&
+            a.x + a.width > b.x &&
+            a.y < b.y + b.height &&
+            a.y + a.height > b.y;
     }
 
     ClearSelection()

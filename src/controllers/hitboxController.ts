@@ -245,7 +245,7 @@ export class HitboxController
         return Helper.Distance(worldCenter, worldEdge);
     }
 
-    private GetRect(hitbox: Hitbox)
+    public GetRect(hitbox: Hitbox)
     {
         const rect = hitbox.rectangle;
         const parent = hitbox.parent;
