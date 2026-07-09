@@ -1453,6 +1453,15 @@ export class PluginHandler
             window.postMessage({ __fromGame: true, type: "entityDataChanged" }, "*");
         });
 
+        // NOTIFY THE PLUGIN WHEN AN OBJECT IS DESTROYED, SO IT CAN CLEAR ITS OBJECT PANEL
+        // (SCENES EMIT THIS ON globalEvents AS WELL AS ON THEIR OWN scene.events)
+        globalEvents.persistent.on(BareEvent.game_objectRemoved, (gameObject) => {
+            if (!this.isPluginConnected)
+                return;
+
+            window.postMessage({ __fromGame: true, type: "objectRemoved", id: gameObject.uniqueID }, "*");
+        });
+
         /*globalEvents.persistent.on(BareEvent.level_loaded, ({ levelStr }) => {
             window.__GAME_DEBUG_API__.selectLevel(levelStr);
         });*/
