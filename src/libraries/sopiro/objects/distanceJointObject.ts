@@ -1,3 +1,4 @@
+import { keyboardController } from "../../../controllers/keyboardController";
 import { GameMode, Scene } from "../../../globals";
 import { GameObject } from "../../../objects/gameObject";
 import { BareEvent } from "../../../types/bareTypes";
@@ -246,6 +247,24 @@ class TargetObject extends GameObject
     {
         super(scene);
         this.CenterPivot();
+    }
+
+    // Holding shift while dragging snaps the direction (angle from the owner) to 15 degree steps.
+    override SetPosition(x: number, y: number): this
+    {
+        if (this.owner && keyboardController.IsKeyDown("shift"))
+        {
+            var dx = x - this.owner.x;
+            var dy = y - this.owner.y;
+            var distance = Math.hypot(dx, dy);
+            var step = Math.PI / 12; // 15 degrees
+            var angle = Math.round(Math.atan2(dy, dx) / step) * step;
+
+            x = this.owner.x + Math.cos(angle) * distance;
+            y = this.owner.y + Math.sin(angle) * distance;
+        }
+
+        return super.SetPosition(x, y);
     }
 
     override OnRender(): void
