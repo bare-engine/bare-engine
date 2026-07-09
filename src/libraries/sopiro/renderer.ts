@@ -185,8 +185,8 @@ export class Renderer
         if (b instanceof Polygon)
         {
             rapid.matrixStack.save()
-            // MUST MATCH localToGlobal: translate -> rotate -> scale
-            rapid.matrixStack.translate(b.position.x, b.position.y)
+            // MUST MATCH localToGlobal: translate (incl. pivot compensation) -> rotate -> scale
+            rapid.matrixStack.translate(b.position.x + b.pivotCompensation.x, b.position.y + b.pivotCompensation.y)
             rapid.matrixStack.rotate(b.rotationRad)
             rapid.matrixStack.scale(b.scale.x, b.scale.y)
             rapid.drawGraphic({
@@ -220,7 +220,8 @@ export class Renderer
         else if (b instanceof Circle)
         {
             rapid.matrixStack.save()
-            rapid.matrixStack.translate(b.position.x, b.position.y)
+            // MUST MATCH localToGlobal: translate (incl. pivot compensation) -> rotate -> scale
+            rapid.matrixStack.translate(b.position.x + b.pivotCompensation.x, b.position.y + b.pivotCompensation.y)
             rapid.matrixStack.rotate(b.rotationRad)
             rapid.matrixStack.scale(b.scale.x, b.scale.y)
             rapid.drawCircle({

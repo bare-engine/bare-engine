@@ -381,11 +381,32 @@ export abstract class RigidBody extends GameObject
         return this.transform.rotation / (180 / Math.PI);
     }
 
+    // The collision hull is built centered on local origin (center of mass). In game the pivot is
+    // centered and position is shifted to match (see CenterPivotKeepingVisualPosition), so the hull
+    // lines up with the sprite. In the editor the pivot is left as-authored, so the hull would sit at
+    // the pivot anchor instead of the visual center - offsetting hit tests and debug draws. This is
+    // the same pivot->center shift baked into position in game, and it is exactly zero once centered.
+    get pivotCompensation(): Vec2
+    {
+        if (!this.texture)
+            return new Vec2();
+
+        var dx = (this.texture.width * 0.5 - this.pivot.x) * this.totalScaleX;
+        var dy = (this.texture.height * 0.5 - this.pivot.y) * this.totalScaleY;
+
+        var cos = Math.cos(this.rotationRad);
+        var sin = Math.sin(this.rotationRad);
+
+        return new Vec2(dx * cos - dy * sin, dx * sin + dy * cos);
+    }
+
     // Returns local to global transform
     get localToGlobal(): Matrix3
     {
+        var o = this.pivotCompensation;
+
         return new Matrix3()
-            .translate(this.position.x, this.position.y)
+            .translate(this.position.x + o.x, this.position.y + o.y)
             .rotate(this.rotationRad)
             .scale(this.scale.x, this.scale.y);
     }
@@ -393,9 +414,11 @@ export abstract class RigidBody extends GameObject
     // Returns global to local transform
     get globalToLocal(): Matrix3
     {
+        var o = this.pivotCompensation;
+
         return new Matrix3()
             .scale(1.0 / this.scale.x, 1.0 / this.scale.y)
             .rotate(-this.rotationRad)
-            .translate(-this.position.x, -this.position.y);
+            .translate(-(this.position.x + o.x), -(this.position.y + o.y));
     }
 }
