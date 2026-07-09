@@ -9,6 +9,7 @@ import { RigidBody } from "../libraries/sopiro/rigidbody";
 import { Settings } from "../libraries/sopiro/settings";
 import { Polygon } from "../libraries/sopiro/polygon";
 import { Circle } from "../libraries/sopiro/circle";
+import { Color } from "../libraries/new-rapid-render";
 import { make_pair_natural } from "../libraries/sopiro/util";
 import { BareEvent } from "../types/bareTypes";
 import { PhysicsControllerBase } from "./physicsControllerBase";
@@ -118,6 +119,37 @@ export class SopiroPhysicsController extends PhysicsControllerBase
     {
         if (window.debug)
             this.world.render();
+
+        this.RenderGrab();
+    }
+
+    // Visualize an active mouse grab: a line from the grabbed point on the body to the
+    // cursor target, with a circle at the target. Shown in-game, independent of debug.
+    private RenderGrab(): void
+    {
+        var grab = this.world.grabJoint;
+        if (!grab)
+            return;
+
+        var anchor = grab.bodyA.localToGlobal.mulVector2(grab.localAnchor, 1);
+
+        rapid.drawLine({
+            points: [anchor, grab.target],
+            width: 4,
+            color: Color.Black
+        });
+
+        rapid.drawCircle({
+            position: anchor,
+            radius: 8,
+            color: Color.Black
+        });
+        
+        rapid.drawCircle({
+            position: grab.target,
+            radius: 8,
+            color: Color.Black
+        });
     }
 
     setCollisionsEnabled(enabled: boolean): void

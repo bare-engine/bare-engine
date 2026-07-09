@@ -532,6 +532,46 @@ export class World
         return res;
     }
 
+    // Soft mouse-grab: a GrabJoint pulls the grabbed body toward a moving target point
+    // (the cursor) instead of teleporting it, so collisions and inertia stay intact.
+    public grabJoint: GrabJoint | null = null;
+
+    // Anchors the joint at worldTarget on the body and returns true if a grab started.
+    // Static bodies (and non-bodies) can't be grabbed.
+    grab(body: RigidBody, worldTarget: Vec2): boolean
+    {
+        this.releaseGrab();
+
+        // Only top-level bodies registered in this world can host a joint; static bodies
+        // (inverseMass 0) can't be pulled. Children/non-bodies fall through to a plain drag.
+        if (!(body instanceof RigidBody) || body.type == Type.Static || this.bodies.indexOf(body) < 0)
+            return false;
+
+        this.grabJoint = new GrabJoint(body, worldTarget, worldTarget.copy(), Settings.mouseStrength);
+        this.register(this.grabJoint);
+        body.awake();
+
+        return true;
+    }
+
+    moveGrab(worldTarget: Vec2): void
+    {
+        if (!this.grabJoint)
+            return;
+
+        this.grabJoint.target = worldTarget.copy();
+        this.grabJoint.bodyA.awake();
+    }
+
+    releaseGrab(): void
+    {
+        if (!this.grabJoint)
+            return;
+
+        this.unregister(this.grabJoint.id, true);
+        this.grabJoint = null;
+    }
+
     addPassTestPair(bodyA: RigidBody, bodyB: RigidBody)
     {
         this.passTestSet.add(Util.make_pair_natural(bodyA.id, bodyB.id));
@@ -546,6 +586,7 @@ export class World
 
     reset(): void
     {
+        this.grabJoint = null;
         this.tree.reset();
         this.bodies = [];
         this.joints = [];
