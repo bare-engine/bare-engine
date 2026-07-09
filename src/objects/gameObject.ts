@@ -1519,13 +1519,18 @@ export class GameObject
     
     Remove(clear:boolean = true)
     {
-        if (this.parent)
+        /*if (this.parent)
         {
             this.parent.RemoveChild(this);
             this.parent = null;
             return;
-        }
+        }*/
 
-        this.scene.RemoveGameObject(this, undefined, clear);
+        this.scene.RemoveGameObject(this, this.parent || undefined, clear);
+    }
+
+    OnRemove()
+    {
+        // FOR OVERRIDE
     }
 }
