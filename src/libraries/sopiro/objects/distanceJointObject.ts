@@ -1,13 +1,24 @@
 import { GameMode, Scene } from "../../../globals";
 import { GameObject } from "../../../objects/gameObject";
 import { BareEvent } from "../../../types/bareTypes";
-import { InspectorField } from "../../../utils/decorators";
+import { Enum, InspectorField } from "../../../utils/decorators";
 import { Color, Vec2 } from "../../new-rapid-render";
 import { testPointInside } from "../detection";
 import { DistanceJoint } from "../distance";
+import { Joint } from "../joint";
+import { MaxDistanceJoint } from "../maxdistance";
 import { RigidBody } from "../rigidbody";
 import { World } from "../world";
 import { JointObject } from "./jointObject";
+
+// PushPull: holds the bodies at an exact distance, resisting both directions (rod).
+// Pull: only enforces an upper bound, so the bodies swing freely inside the radius and
+// the spring engages only when overstretched (rope). Serialized by member name via @Enum.
+export enum DistanceMode
+{
+    PushPull,
+    Pull
+}
 
 export class DistanceJointObject extends JointObject
 {
@@ -19,6 +30,10 @@ export class DistanceJointObject extends JointObject
 
     @InspectorField
     targetOffset: Vec2 = new Vec2();
+
+    // -1 = derive from the anchor distance at creation time.
+    private _distance: number = -1;
+    private _mode: DistanceMode = DistanceMode.PushPull;
 
     targetObject: TargetObject;
 
@@ -38,9 +53,14 @@ export class DistanceJointObject extends JointObject
         bare.events.on(BareEvent.level_preSavedToDisk, () => super.CheckAddJoint(), "joint_level_preSave");
     }
 
-    override Remove(clear?: boolean): void
+    override OnRemove(): void
     {
-        super.Remove(clear);
+        if (this.targetObject)
+        {
+            this.targetObject.Remove();
+            this.targetObject = null!;
+        }
+
         bare.events.offAlias("joint_level_preSave");
     }
 
@@ -89,18 +109,71 @@ export class DistanceJointObject extends JointObject
         return null;
     }
 
-    protected override CreateJoint(bodyA: RigidBody, bodyB: RigidBody): DistanceJoint
+    protected override CreateJoint(bodyA: RigidBody, bodyB: RigidBody): Joint
     {
         var world = this.scene.Get("sopiro").world as World;
         var anchorA = this.position;
         var anchorB = this.GetAnchorB(bodyB);
 
-        var distanceJoint = new DistanceJoint(bodyA, bodyB, anchorA, anchorB, -1, this.frequency, this.dampingRatio, this.jointMass);
+        // Note the differing argument order between the two joint constructors.
+        var joint: Joint = this._mode == DistanceMode.Pull
+            ? new MaxDistanceJoint(bodyA, bodyB, this._distance, anchorA, anchorB, this.frequency, this.dampingRatio, this.jointMass)
+            : new DistanceJoint(bodyA, bodyB, anchorA, anchorB, this._distance, this.frequency, this.dampingRatio, this.jointMass);
 
-        this.joint = distanceJoint;
-        world.register(distanceJoint, true);
+        this.joint = joint;
+        world.register(joint, true);
 
-        return distanceJoint;
+        return joint;
+    }
+
+    @InspectorField @Enum(DistanceMode)
+    get mode(): DistanceMode
+    {
+        return this._mode;
+    }
+    set mode(mode: DistanceMode)
+    {
+        if (this._mode == mode)
+            return;
+
+        this._mode = mode;
+        this.RebuildJoint();
+    }
+
+    @InspectorField
+    get distance(): number
+    {
+        return this._distance;
+    }
+    set distance(distance: number)
+    {
+        this._distance = distance;
+
+        // -1 means "derive from anchors" and only applies at construction.
+        if (distance <= 0)
+            return;
+
+        if (this.joint instanceof MaxDistanceJoint)
+            this.joint.maxDistance = distance;
+        else if (this.joint instanceof DistanceJoint)
+            this.joint.length = distance;
+    }
+
+    // Mode swaps the joint class, so the existing joint has to be recreated.
+    private RebuildJoint(): void
+    {
+        if (!this.joint)
+            return;
+
+        var world = this.scene.Get("sopiro").world as World;
+        var bodyA = this.joint.bodyA;
+        var bodyB = this.joint.bodyB;
+
+        world.unregister(this.joint.id, true);
+        this.joint = null;
+
+        if (bodyA && bodyB)
+            this.CreateJoint(bodyA, bodyB);
     }
 
     override OnRender(): void
@@ -115,7 +188,7 @@ export class DistanceJointObject extends JointObject
         });
     }
 
-    private GetAnchorB(bodyB: RigidBody): Vec2
+    protected GetAnchorB(bodyB: RigidBody): Vec2
     {
         if (bare.gameMode == GameMode.Editor && this.targetObject)
         {
@@ -146,9 +219,9 @@ export class DistanceJointObject extends JointObject
             && !!this.GetBodyUnderPosition(this.targetObject.position);
     }
 
-    private get distanceJoint(): DistanceJoint | null
+    private get distanceJoint(): DistanceJoint | MaxDistanceJoint | null
     {
-        return this.joint as DistanceJoint | null;
+        return this.joint as DistanceJoint | MaxDistanceJoint | null;
     }
 
     private get anchorA(): Vec2

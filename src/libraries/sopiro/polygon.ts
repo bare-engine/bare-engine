@@ -162,7 +162,7 @@ export class Polygon extends RigidBody
         this._invInertia = 1.0 / this._inertia;
     }
 
-    @InspectorField
+    @InspectorField @Range(0.0001, Infinity)
     override get density(): number
     {
         return this._density;

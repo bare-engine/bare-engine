@@ -61,9 +61,8 @@ export abstract class JointObject extends GameObject
         this.joint = this.CreateJoint(bodyA, bodyB);
     }
 
-    override Remove(clear?: boolean): void
+    override OnRemove(): void
     {
-        super.Remove(clear);
         bare.events.offAlias("joint_level_preSave");
     }
 
