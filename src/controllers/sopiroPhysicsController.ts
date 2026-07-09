@@ -12,8 +12,10 @@ import { Circle } from "../libraries/sopiro/circle";
 import { make_pair_natural } from "../libraries/sopiro/util";
 import { BareEvent } from "../types/bareTypes";
 import { PhysicsControllerBase } from "./physicsControllerBase";
+import { DistanceJointObject } from "../libraries/sopiro/objects/distanceJointObject";
 import { MotorJointObject } from "../libraries/sopiro/objects/motorJointObject";
 import { JointObject } from "../libraries/sopiro/objects/jointObject";
+import { RevoluteJointObject } from "../libraries/sopiro/objects/revoluteJointObject";
 
 const sopiroPhysicsEventDefs = {
     collision_start: "collision_start",
@@ -57,7 +59,9 @@ export class SopiroPhysicsController extends PhysicsControllerBase
         bare.AddClass(Polygon);
         bare.AddClass(Box);
         bare.AddClass(Circle);
-        bare.AddClass(JointObject);
+        GameObject.RegisterEntityVars(JointObject);
+        bare.AddClass(RevoluteJointObject);
+        bare.AddClass(DistanceJointObject);
         bare.AddClass(MotorJointObject);
 
         super.Start();

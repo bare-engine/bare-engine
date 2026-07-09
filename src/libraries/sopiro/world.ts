@@ -91,6 +91,9 @@ export class World
                     b = pair.p1;
                 }
 
+                if (!a.collide || !b.collide)
+                    continue;
+
                 if (a.type == Type.Static && b.type == Type.Static)
                     continue;
 

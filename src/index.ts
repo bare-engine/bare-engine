@@ -84,7 +84,6 @@ export type {
   FrameRect,
   GameObjectClass, LayerInfo,
   LevelData,
-  Pipes,
   Position,
   Rectangle,
   Rectangle2Vec,

@@ -3,6 +3,7 @@ import { InspectorField, Percentage, Range } from "../../../utils/decorators";
 import { Vec2 } from "../../new-rapid-render";
 import { MotorJoint } from "../motor";
 import { RigidBody } from "../rigidbody";
+import { World } from "../world";
 import { JointObject } from "./jointObject";
 
 export class MotorJointObject extends JointObject
@@ -25,10 +26,15 @@ export class MotorJointObject extends JointObject
 
     protected CreateJoint(bodyA: RigidBody, bodyB: RigidBody): MotorJoint
     {
+        var world = this.scene.Get("sopiro").world as World;
+
         var motorJoint = new MotorJoint(bodyA, bodyB, this.position, this._maxForce, this._maxTorque, this.frequency, this.dampingRatio, this.jointMass);
         motorJoint.linearOffset.x = this._linearOffset.x;
         motorJoint.linearOffset.y = this._linearOffset.y;
         motorJoint.angularOffset = this._angularOffset;
+
+        this.joint = motorJoint;
+        world.register(motorJoint, true);
 
         return motorJoint;
     }
@@ -76,36 +82,6 @@ export class MotorJointObject extends JointObject
 
         if (this.motorJoint)
             this.motorJoint.maxTorque = maxTorque;
-    }
-
-    @InspectorField
-    override get frequency(): number
-    {   
-        return super.frequency;
-    }
-    override set frequency(frequency: number)
-    {
-        super.frequency = frequency;
-    }
-
-    @InspectorField @Percentage
-    override get dampingRatio(): number
-    {
-        return super.dampingRatio;
-    }
-    override set dampingRatio(dampingRatio: number)
-    {
-        super.dampingRatio = dampingRatio;
-    }
-
-    @InspectorField @Range(1, Infinity)
-    override get jointMass(): number
-    {
-        return super.jointMass;
-    }
-    override set jointMass(jointMass: number)
-    {
-        super.jointMass = jointMass;
     }
 
     @InspectorField

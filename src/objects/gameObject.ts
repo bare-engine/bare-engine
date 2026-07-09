@@ -55,6 +55,8 @@ export class GameObject
     pooled:boolean = false;
     revertPivotOnSave: boolean = false; // TODO
 
+    resizeable: boolean = true;
+
     tapHitbox: Hitbox | null = null; // PHASE THIS OUT, MAKE INTO COMPONENT? TODO
   
     startPosition = new Vec2();
@@ -107,6 +109,13 @@ export class GameObject
         {
             GameObject.registeredGameObjects[className] = cls;
         }
+
+        GameObject.RegisterEntityVars(cls);
+    }
+
+    static RegisterEntityVars(cls: any): void
+    {
+        const className = cls.name;
 
         // ADDING FIELDS DECORATED WITH @InspectorField OF THIS CLASS TO entityVarsNested
         // SO IT SHOWN IN PLUGIN DROPDOWN LATER
@@ -1453,6 +1462,7 @@ export class GameObject
         this.customName = "";
         this.tapHitbox = null;
         this.revertPivotOnSave = false;
+        this.resizeable = true;
 
         this.entity = null;
         

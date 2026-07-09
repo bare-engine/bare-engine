@@ -21,6 +21,7 @@ export enum Type
 export abstract class RigidBody extends GameObject
 {
     public isPhysicsObject = true;
+    public collide: boolean = true;
     
     // Center of mass in local space = (0, 0)
     private _force: Vec2;            // N
@@ -141,6 +142,7 @@ export abstract class RigidBody extends GameObject
         this.onContact = undefined;
         this.islandID = 0;
         this.id = -1;
+        this.collide = true;
         
         this._density = 0.0;
         this._mass = 0.0;

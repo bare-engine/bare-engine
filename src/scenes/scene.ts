@@ -808,12 +808,12 @@ to package.json to keep the generated assets (can become large for big projects)
 
             gameObject.Added();
         }
+        gameObject.OnStart();
         
         // NOTIFY
         globalEvents.emit(BareEvent.game_objectAdded, { gameObject: gameObject, layer: parent });
         this.events.emit(BareEvent.game_objectAdded, { gameObject: gameObject, layer: parent });
 
-        gameObject.OnStart();
 
         return gameObject as T;
     }

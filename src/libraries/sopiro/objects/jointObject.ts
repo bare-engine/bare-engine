@@ -1,18 +1,21 @@
-import { GameMode, Scene } from "../../../globals";
+import { GameMode } from "../../../globals";
 import { GameObject } from "../../../objects/gameObject";
-import { BareEvent, Entity } from "../../../types/bareTypes";
+import { BareEvent } from "../../../types/bareTypes";
 import { InspectorField, Percentage, Range } from "../../../utils/decorators";
 import { Circle } from "../circle";
 import { testPointInside } from "../detection";
 import { Joint } from "../joint";
-import { RevoluteJoint } from "../revolute";
 import { RigidBody, Type } from "../rigidbody";
+import { World } from "../world";
 
-export class JointObject extends GameObject
+export abstract class JointObject extends GameObject
 {
-    bodyA: RigidBody | null = null;
-    bodyB: RigidBody | null = null;
+    @InspectorField
+    baseCustomName: string = "";
 
+    @InspectorField
+    targetCustomName: string = "";
+    
     protected joint: Joint | null = null;
 
     // Keep serialized values until the level is loaded and the real joint can be created.
@@ -20,84 +23,165 @@ export class JointObject extends GameObject
     private _dampingRatio: number = 1.0;
     private _jointMass: number = 1;
 
-    constructor(scene: Scene)
+    staticAnchor: Circle;
+
+    override OnAwake(): void
     {
-        super(scene);
+        if (bare.gameMode == GameMode.Game)
+        {
+            bare.events.once(BareEvent.level_loaded, this.InitJointGame.bind(this));
+            return;
+        }
+
+        bare.events.once(BareEvent.level_loaded, this.CheckAddJoint.bind(this));
+        bare.events.on(BareEvent.level_preSavedToDisk, this.CheckAddJoint.bind(this), "joint_level_preSave");
     }
 
-    OnAwake(entity?: Entity): void
+    InitJointGame(): void
     {
-        this.bodyA = null;
-        this.bodyB = null;
-        this.joint = null;
-
-        if (bare.gameMode != GameMode.Game)
+        if (bare.gameMode == GameMode.Editor)
             return;
 
-        bare.events.once(BareEvent.level_loaded, this.AddJoint.bind(this));
+        var bodyA: RigidBody | null = null;
+        var bodyB: RigidBody | null = null;
+        
+        if (this.baseCustomName == "jointAnchor")
+            bodyA = this.CreateAnchor();
+        else
+            bodyA = bare.object.GetByCustomName(this.baseCustomName) as RigidBody;
+
+        bodyB = bare.object.GetByCustomName(this.targetCustomName) as RigidBody;
+
+        if (!bodyA || !bodyB)
+        {
+            console.warn("No bodies found for joint");
+            return;
+        }
+
+        this.joint = this.CreateJoint(bodyA, bodyB);
     }
 
-    private AddJoint(): void
+    override Remove(clear?: boolean): void
     {
-        var world = this.scene.Get("sopiro").world;
-        this.bodyA = null;
-        this.bodyB = null;
-        this.joint = null;
+        super.Remove(clear);
+        bare.events.offAlias("joint_level_preSave");
+    }
+
+    protected CheckAddJoint(): void
+    {
+        var world = this.scene.Get("sopiro").world as World;
+
+        // RESET
+        {
+            this.baseCustomName = "";
+            this.targetCustomName = "";
+
+            if (this.staticAnchor)
+                world.unregister(this.staticAnchor.id);
+
+            if (this.joint && bare.gameMode == GameMode.Game)
+            {
+                world.unregister(this.joint.id, true);
+            }
+            
+            this.joint = null;
+        }
+
+        var {bodyA, bodyB} = this.GetBodies();
+
+        if (!bodyA || !bodyB)
+            return;
+
+        this.joint = this.CreateJoint(bodyA, bodyB);
+        
+        if (!bodyA.customName)
+            bodyA.customName = ("body_" + bodyA.x + "_" + bodyA.y);
+
+        this.baseCustomName = bodyA.customName;
+        
+        if (!bodyB.customName)
+            bodyB.customName = ("body_" + bodyB.x + "_" + bodyB.y);
+
+        this.targetCustomName = bodyB.customName;
+    }
+
+    GetBodies(): { bodyA: RigidBody | null; bodyB: RigidBody | null; }
+    {
+        var world = this.scene.Get("sopiro").world as World;
+
+        var bodyA: RigidBody | null = null;
+        var bodyB: RigidBody | null = null;
 
         for (var body of world.bodies)
         {
             if (!testPointInside(body, this.position))
                 continue;
 
-            if (!this.bodyA)
+            if (!bodyA)
             {
-                this.bodyA = body;
+                bodyA = body;
             }
             else
             {
-                this.bodyB = body;
+                bodyB = body;
                 break;
             }
         }
 
-        if (!this.bodyA)
+        if (!bodyA)
         {
             this.Remove();
-            return;
+            return { bodyA: null, bodyB: null };
         }
 
-        if (!this.bodyB)
+        if (!bodyB)
         {
-            var staticAnchor = new Circle(this.scene, 0.01, Type.Static);
-            staticAnchor.SetPosition(this.position.x, this.position.y);
-            staticAnchor.save = false;
-            staticAnchor.visible = false;
-            staticAnchor.visibleInEditor = false;
+            var staticAnchor = this.CreateAnchor();
 
-            world.register(staticAnchor);
-
-            this.bodyB = this.bodyA;
-            this.bodyA = staticAnchor;
+            bodyB = bodyA;
+            bodyA = staticAnchor;
         }
 
-        if (!this.bodyA || !this.bodyB)
-            return;
-
-        this.joint = this.CreateJoint(this.bodyA, this.bodyB);
-
-        if (bare.gameMode == GameMode.Game)
-            world.register(this.joint, true);
+        return {bodyA: bodyA, bodyB: bodyB};
     }
 
-    protected CreateJoint(bodyA: RigidBody, bodyB: RigidBody): Joint
+    CreateAnchor(): RigidBody
     {
-        return new RevoluteJoint(bodyA, bodyB, this.position, this.frequency, this.dampingRatio, this.jointMass);
+        var staticAnchor = new Circle(this.scene, 0.01, Type.Static);
+        staticAnchor.SetPosition(this.position.x, this.position.y);
+        staticAnchor.name = "jointAnchor";
+        staticAnchor.customName = staticAnchor.name;
+        staticAnchor.save = false;
+        staticAnchor.visible = false;
+        staticAnchor.visibleInEditor = false;
+        staticAnchor.collide = false;
+
+        this.staticAnchor = staticAnchor;
+
+        var world = this.scene.Get("sopiro").world as World;
+        world.register(staticAnchor);
+
+        return staticAnchor;
     }
+
+    override Render(): void
+    {
+        if (bare.gameMode == GameMode.Editor)
+        {
+            super.Render();
+            return;
+        }
+
+        // DISABLE RENDERING TEXTURE FOR GAME
+        this.OnRender();
+    }
+
+    protected abstract CreateJoint(bodyA: RigidBody, bodyB: RigidBody): Joint;
 
     protected AwakeBodies(): void
     {
-        this.bodyA?.awake();
-        this.bodyB?.awake();
+        this.joint?.bodyA?.awake();
+        this.joint?.bodyB?.awake();
     }
 
     @InspectorField

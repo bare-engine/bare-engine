@@ -383,6 +383,8 @@ export class EditorScene extends Scene
     // DIFFERENT FROM LEVELCONTROLLER WHERE WE SAVE TO LOCALSTORAGE
     async SaveLevel(): Promise<LevelData>
     {
+        bare.SendEvent(BareEvent.level_preSavedToDisk, {levelStr: SaveData.currentLevelStr});
+        
         var level = this.currentLevel;
         var levelPath = this.currentLevelPath;
     
@@ -428,26 +430,21 @@ export class EditorScene extends Scene
 
     override AddGameObject<T extends GameObject = GameObject>(entityLevel: Entity | string, parent: int | string | GameObject = "objects"): T
     {
-        if (entityLevel instanceof GameObject || entityLevel instanceof Texture)
-        {
-            return super.AddGameObject<T>(entityLevel, parent); //
-        }
-        
-        var entity = this.ConstructEntity(entityLevel);
+        //var entity = this.ConstructEntity(entityLevel);
 
         // MAKE SURE IT'S NOT PERSISTENT, SO IT'S SERIALIZED/SAVED
-        entity.persistent = false;
+        //entity.persistent = false;
 
         //entity = { ...entity, hitbox: entity.hitbox, pivot: entity.pivot, imagePath: entity.imagePath};
 
         //entity.components = {}; // DON'T WANT TO LOAD COMPONENTS IN EDITOR
 
-        var gameObject = super.AddGameObject<T>(entity, parent);
+        var gameObject = super.AddGameObject<T>(entityLevel, parent);
 
         //gameObject.physicsHitbox.rectangle = {x: 0, y: 0, width: 0, height: 0};
 
         // Hitbox linkage
-        if (entity.interactableInEditor !== false) // UNDEFINED OR TRUE...
+        if (!gameObject.entity || gameObject.entity.interactableInEditor !== false) // UNDEFINED OR TRUE...
         {
             gameObject.tapHitbox ??= new Hitbox(gameObject, 0);
             gameObject.tapHitbox.shouldReleaseOnTop = false;
@@ -472,7 +469,7 @@ export class EditorScene extends Scene
             else
             {
                 // COULD GET HERE IF TEXTURE WAS SET TO "NONE" - EG FOR PIVOT
-                gameObject.tapHitbox.rectangle = {x: 0, y: 0, width: 0, height: 0};
+                gameObject.tapHitbox.rectangle = {x: 0, y: 0, width: gameObject.width, height: gameObject.height};
             }
         }
 
@@ -483,8 +480,13 @@ export class EditorScene extends Scene
 
     AddGameObjectAtPosition(x: number, y: number, entityOrName: Entity | string, layer: int = 0): GameObject
     {
+        // TURING ARG INTO AN ENTITY WITH POSITION - SO BY THE TIME GameObject REACHES OnStart(), ITS POSITION HAS BEEN SET
+        if (typeof entityOrName == "string")
+            entityOrName = {name: entityOrName, position: {x: x, y: y}};
+        else
+            entityOrName.position = {x: x, y: y};
+
         var gameObject = this.AddGameObject(entityOrName, layer);
-        gameObject.SetPosition(x, y);
         return gameObject;
     }
 

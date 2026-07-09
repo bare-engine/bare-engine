@@ -101,7 +101,15 @@ export class TransformToolHandler
     SetTargets(objs: GameObject[]): void
     {
         this.RestoreHitboxes();
-        this.targets = objs.filter(Boolean);
+
+        const targets = objs.filter(Boolean);
+        if (targets.length == 0)
+        {
+            this.Clear();
+            return;
+        }
+
+        this.targets = targets;
     }
 
     Clear(): void
@@ -129,7 +137,7 @@ export class TransformToolHandler
         const scene = this.GetScene();
         if (!scene) return;
 
-        const frame = this.GetFrame();
+        const frame = this.GetFrame(this.GetTransformableTargets(this.targets));
         if (!frame) return;
 
         const mouse = scene.mouse.world.position;
@@ -178,7 +186,7 @@ export class TransformToolHandler
             this.EndTransform(scene);
 
         // HOVER: pick the cursor + decide whether to suppress body-drag.
-        const frame = this.GetFrame();
+        const frame = this.GetFrame(this.GetTransformableTargets(this.targets));
         let cursor: string | null = null;
 
         if (frame)
@@ -207,14 +215,11 @@ export class TransformToolHandler
         const scene = this.GetScene();
         if (!scene) return;
 
-        const frame = this.GetFrame();
-        if (!frame) return;
-
         // The global render event fires after each scene's camera transform was popped,
         // so re-apply it to draw in world space (mirrors Scene.Render()).
         rapid.matrixStack.save();
         scene.camera?.SetTransform();
-        this.DrawGizmo(scene, frame);
+        this.DrawSelection(scene);
         rapid.matrixStack.restore();
     };
 
@@ -370,7 +375,7 @@ export class TransformToolHandler
 
     private RecordStarts(): void
     {
-        this.starts = this.targets.map(o => ({
+        this.starts = this.GetTransformableTargets(this.targets).map(o => ({
             obj: o,
             pos: o.parent ? o.parent.ToGlobal(new Vec2(o.x, o.y)) : new Vec2(o.x, o.y),
             scaleX: o.scale.x,
@@ -447,13 +452,13 @@ export class TransformToolHandler
 
     // A single textured object yields an oriented box that hugs and rotates with it.
     // Everything else (groups, textureless objects) yields an axis-aligned world AABB.
-    private GetFrame(): Frame | null
+    private GetFrame(targets: GameObject[] = this.targets): Frame | null
     {
-        if (this.targets.length == 0) return null;
+        if (targets.length == 0) return null;
 
-        if (this.targets.length == 1)
+        if (targets.length == 1)
         {
-            const o = this.targets[0];
+            const o = targets[0];
             const texW = o.texture?.width ?? 0;
             const texH = o.texture?.height ?? 0;
 
@@ -512,7 +517,7 @@ export class TransformToolHandler
         }
 
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        for (const o of this.targets)
+        for (const o of targets)
         {
             const b = o.GetBounds();
             minX = Math.min(minX, b.x);
@@ -597,23 +602,32 @@ export class TransformToolHandler
 
     // ================= DRAW =================
 
-    private DrawGizmo(scene: Scene, frame: Frame): void
+    private DrawSelection(scene: Scene): void
+    {
+        const color = Color.fromHex('#dda112');
+        color.a = 230;
+
+        const transformableTargets = this.GetTransformableTargets(this.targets);
+        const fixedTargets = this.targets.filter(o => o && o.resizeable === false);
+
+        for (const target of fixedTargets)
+        {
+            const frame = this.GetFrame([target]);
+            if (frame) this.DrawFrameOutline(scene, frame, color);
+        }
+
+        const frame = this.GetFrame(transformableTargets);
+        if (frame) this.DrawGizmo(scene, frame, color);
+    }
+
+    private DrawGizmo(scene: Scene, frame: Frame, color: Color): void
     {
         const pxToWorld = scene.ScreenPxToWorldScale();
         const lineWidth = 2 * pxToWorld;
 
-        const color = Color.fromHex('#dda112');
-        color.a = 230;
         const fill = new Color(255, 255, 255, 255);
 
-        // Oriented box outline.
-        const corners = [
-            this.FromFrameLocal(frame, -frame.hw, -frame.hh),
-            this.FromFrameLocal(frame,  frame.hw, -frame.hh),
-            this.FromFrameLocal(frame,  frame.hw,  frame.hh),
-            this.FromFrameLocal(frame, -frame.hw,  frame.hh),
-        ];
-        rapid.drawLine({ points: corners, width: lineWidth, roundCap: false, color, closed: true });
+        this.DrawFrameOutline(scene, frame, color);
 
         // Rotation stem + knob (above the top edge, following the box orientation).
         const topCenter = this.FromFrameLocal(frame, 0, -frame.hh);
@@ -654,6 +668,18 @@ export class TransformToolHandler
         }
     }
 
+    private DrawFrameOutline(scene: Scene, frame: Frame, color: Color): void
+    {
+        const lineWidth = 2 * scene.ScreenPxToWorldScale();
+        const corners = [
+            this.FromFrameLocal(frame, -frame.hw, -frame.hh),
+            this.FromFrameLocal(frame,  frame.hw, -frame.hh),
+            this.FromFrameLocal(frame,  frame.hw,  frame.hh),
+            this.FromFrameLocal(frame, -frame.hw,  frame.hh),
+        ];
+        rapid.drawLine({ points: corners, width: lineWidth, roundCap: false, color, closed: true });
+    }
+
     // ================= HELPERS =================
 
     private PruneTargets(): void
@@ -671,6 +697,11 @@ export class TransformToolHandler
         // select) must be matched via its top-level ancestor - otherwise it'd be pruned every frame.
         const all = scene.object.GetAll();
         this.targets = this.targets.filter(o => o && o.scene === scene && all.includes(this.RootOf(o)));
+    }
+
+    private GetTransformableTargets(targets: GameObject[]): GameObject[]
+    {
+        return targets.filter(o => o && o.resizeable !== false);
     }
 
     private RootOf(o: GameObject): GameObject
