@@ -1,11 +1,11 @@
 import type { Scene } from "../../scenes/scene";
+import { Entity } from "../../types/bareTypes";
 import { InspectorField, Range } from "../../utils/decorators";
 import { Vec2 } from "../new-rapid-render";
 import { RigidBody, Type } from "./rigidbody";
 import { Settings } from "./settings";
 import * as Util from "./util";
 
-// Children: Box
 export class Polygon extends RigidBody
 {
     public vertices: Vec2[];

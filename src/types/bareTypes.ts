@@ -161,6 +161,7 @@ export interface Entity
     rigidbodyRect?: Size;
     hitboxRadius?: number; // SHARED BY ARCADEOBJECT AND RIGIDBODY
     mass?: number;
+    density?: number;
     drag?: number;
     restitution?: number;
     polygonVertices?: number[];

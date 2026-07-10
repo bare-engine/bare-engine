@@ -8,7 +8,7 @@ import { Matrix3 } from "./math";
 import { GameMode, globalEvents } from "../../globals";
 import type { Scene } from "../../scenes/scene";
 import { BareEvent, Entity } from '../../types/bareTypes';
-import { Enum, InspectorField, Locked, Percentage } from "../../utils/decorators";
+import { Enum, InspectorField, Range, Locked, Percentage } from "../../utils/decorators";
 
 export enum Type
 {
@@ -97,13 +97,24 @@ export abstract class RigidBody extends GameObject
         return tex;
     }
 
-    // IN THE EDITOR THE PIVOT STAYS WHATEVER THE ENTITY SAYS, SO SAVING KEEPS POSITION/PIVOT UNTOUCHED
-    // IN GAME THE PIVOT MUST BE CENTERED (PHYSICS POSITION = CENTER OF MASS)
-    // ENTITY VARS (POSITION, PIVOT, SCALE) WERE JUST APPLIED, SO totalScale IS CORRECT AND THIS STAYS IDEMPOTENT
     override OnApplyEntityToGameObject(entity: Entity, addComponents: boolean): void
     {
+        // IN THE EDITOR THE PIVOT STAYS WHATEVER THE ENTITY SAYS, SO SAVING KEEPS POSITION/PIVOT UNTOUCHED
+        // IN GAME THE PIVOT MUST BE CENTERED (PHYSICS POSITION = CENTER OF MASS)
+        // ENTITY VARS (POSITION, PIVOT, SCALE) WERE JUST APPLIED, SO totalScale IS CORRECT AND THIS STAYS IDEMPOTENT
         if (bare.gameMode == GameMode.Game)
             this.CenterPivotKeepingVisualPosition();
+
+        // IN SerializeObject: MAKES THE origEntity FILL PROPER PHYSICS VALUES
+        // SO THEY'RE NOT SAVED IN THE LEVEL WHEN THEY'RE ACTUALLY DEFAULTS
+        //
+        // ONE PROBLEM: OBJECTS WITH SCALE > 1, WILL AWALYS HAVE THEIR MASS SAVED
+        // THE origEntity HAS SCALE 1,1 WHICH PRODUCES A CERTAIN MASS VALUE
+        // WHEN WE COMPARE THAT TO THE fullEntity, WITH EG SCALE 2,2, THE DENSITY IS DIFFERENT
+        // AND IT GETS SERIALIZED IN THE LEVEL. WHILE MASS/DENSITY WAS NOT CHANGED
+        // COULD FILTER FOR THIS AFTER, IN SerializeObject(), BUT SEEMS MESSY - TODO
+        if (this.type != Type.Static && entity.mass === undefined)
+            this.density = entity.density ?? Settings.defaultDensity;
     }
 
     // THE PIVOT OFFSET LIVES INSIDE THE ROTATED SPACE (render = pos -> rotate -> scale -> -pivot),
@@ -253,7 +264,7 @@ export abstract class RigidBody extends GameObject
         this._restitution = r;
     }
 
-    @InspectorField
+    @InspectorField @Range(0, Infinity)
     get friction(): number
     {
         return this._friction;
