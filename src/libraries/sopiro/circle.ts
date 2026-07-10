@@ -23,8 +23,7 @@ export class Circle extends RigidBody
         {
             Util.assert(density > 0);
 
-            this._density = density;
-            this.RefreshMassProperties();
+            this.density = density;
         }
     }
 
@@ -37,6 +36,14 @@ export class Circle extends RigidBody
         return this;
     }
     
+    override RefreshMassProperties(): void
+    {
+        if (this.type == Type.Static || this.area <= 0 || !(this._density > 0) || this._density == Number.MAX_VALUE)
+            return;
+
+        this.density = this._density;
+    }
+
     override OnApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
     {
         if (!entity.hitboxRadius)
@@ -49,7 +56,7 @@ export class Circle extends RigidBody
     {
         this.radius = radius;
         this.area = Math.PI * this.radius * this.radius;
-        this.RefreshMassProperties();
+        this.density = this._density;
     }
 
     get worldRadius(): number
@@ -63,15 +70,19 @@ export class Circle extends RigidBody
         return Math.PI * this.worldRadius * this.worldRadius;
     }
 
-    override RefreshMassProperties()
+    @InspectorField
+    override get density(): number
     {
-        if (this.type == Type.Static || this.radius <= 0)
-            return;
+        return this._density;
+    }
+    // This will automatically set the mass and inertia
+    override set density(density: number) //kg/m²
+    {
+        density = Math.max(density, 0);
+        //Util.assert(density > 0);
 
-        if (this._density <= 0 || this._density == Number.MAX_VALUE)
-            this._density = Settings.defaultDensity;
-
-        this._mass = this._density * this.worldArea;
+        this._density = density;
+        this._mass = (density * this.worldArea) / Settings.densityFactor;
         this._invMass = 1.0 / this._mass;
         this._inertia = Util.calculateCircleInertia(this.worldRadius, this._mass);
         this._invInertia = 1.0 / this._inertia;
@@ -87,25 +98,8 @@ export class Circle extends RigidBody
     {
         Util.assert(mass > 0);
 
-        this._density = mass / this.worldArea;
+        this._density = mass / this.worldArea * Settings.densityFactor;
         this._mass = mass;
-        this._invMass = 1.0 / this._mass;
-        this._inertia = Util.calculateCircleInertia(this.worldRadius, this._mass);
-        this._invInertia = 1.0 / this._inertia;
-    }
-
-    @InspectorField
-    override get density(): number
-    {
-        return this._density;
-    }
-    // This will automatically set the mass and inertia
-    override set density(density: number) //kg/m²
-    {
-        Util.assert(density > 0);
-
-        this._density = density;
-        this._mass = density * this.worldArea;
         this._invMass = 1.0 / this._mass;
         this._inertia = Util.calculateCircleInertia(this.worldRadius, this._mass);
         this._invInertia = 1.0 / this._inertia;

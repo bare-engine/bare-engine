@@ -1,11 +1,10 @@
-import { Type } from "./rigidbody";
-import { Vec2 } from "../new-rapid-render";
-import { Polygon } from "./polygon";
-import * as Util from "./util";
-import { Settings } from "./settings";
-import { Entity } from "../../types/bareTypes";
 import { GameObject } from "../../objects/gameObject";
 import type { Scene } from "../../scenes/scene";
+import { Entity } from "../../types/bareTypes";
+import { Vec2 } from "../new-rapid-render";
+import { Polygon } from "./polygon";
+import { Type } from "./rigidbody";
+import { Settings } from "./settings";
 
 export class Box extends Polygon
 {
@@ -43,39 +42,5 @@ export class Box extends Polygon
         
         this.phyWidth = value.width;
         this.phyHeight = value.height;
-    }
-
-    override get mass(): number
-    {
-        return this._mass;
-    }
-
-    // This will automatically set the inertia
-    override set mass(mass: number)
-    {
-        Util.assert(mass > 0);
-
-        this._density = mass / this.worldArea;
-        this._mass = mass;
-        this._invMass = 1.0 / this._mass;
-        this._inertia = Util.calculateBoxInertia(this.phyWidth * Math.abs(this.scale.x), this.phyHeight * Math.abs(this.scale.y), this._mass);
-        this._invInertia = 1.0 / this._inertia;
-    }
-
-    override get density(): number
-    {
-        return this._density;
-    }
-
-    // This will automatically set the mass and inertia
-    override set density(density: number)
-    {
-        Util.assert(density > 0);
-
-        this._density = density;
-        this._mass = density * this.worldArea;
-        this._invMass = 1.0 / this._mass;
-        this._inertia = Util.calculateBoxInertia(this.phyWidth * Math.abs(this.scale.x), this.phyHeight * Math.abs(this.scale.y), this._mass);
-        this._invInertia = 1.0 / this._inertia;
     }
 }

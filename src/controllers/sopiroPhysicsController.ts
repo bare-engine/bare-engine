@@ -15,11 +15,9 @@ import { BareEvent } from "../types/bareTypes";
 import { PhysicsControllerBase } from "./physicsControllerBase";
 import { AngleJointObject } from "../libraries/sopiro/objects/angleJointObject";
 import { DistanceJointObject } from "../libraries/sopiro/objects/distanceJointObject";
-import { DirectionalJointObject } from "../libraries/sopiro/objects/directionalJointObject";
 import { LineJointObject } from "../libraries/sopiro/objects/lineJointObject";
 import { MotorJointObject } from "../libraries/sopiro/objects/motorJointObject";
 import { JointObject } from "../libraries/sopiro/objects/jointObject";
-import { PrismaticJointObject } from "../libraries/sopiro/objects/prismaticJointObject";
 import { RevoluteJointObject } from "../libraries/sopiro/objects/revoluteJointObject";
 import { WeldJointObject } from "../libraries/sopiro/objects/weldJointObject";
 
@@ -66,13 +64,11 @@ export class SopiroPhysicsController extends PhysicsControllerBase
         bare.AddClass(Box);
         bare.AddClass(Circle);
         GameObject.RegisterEntityVars(JointObject);
-        GameObject.RegisterEntityVars(DirectionalJointObject);
         bare.AddClass(RevoluteJointObject);
         bare.AddClass(DistanceJointObject);
         bare.AddClass(WeldJointObject);
         bare.AddClass(AngleJointObject);
         bare.AddClass(LineJointObject);
-        bare.AddClass(PrismaticJointObject);
         bare.AddClass(MotorJointObject);
 
         super.Start();

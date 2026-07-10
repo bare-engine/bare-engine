@@ -598,7 +598,7 @@ export class SettingsHandler
         var baseEntity = entity.baseEntity || "ANY_ENTITY";
         while (baseEntity)
         {
-            var entityBase = this.raw.baseEntities[baseEntity];
+            var entityBase = this.raw.baseEntities[baseEntity] || defaultSettingsData.baseEntities[baseEntity];
 
             // INSERT MEMBERS FROM ENTITY BASE WE DIDN'T DEFINE ALREADY IN ENTITY
             for (const key of Object.keys(entityBase))

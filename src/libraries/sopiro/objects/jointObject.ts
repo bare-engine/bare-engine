@@ -33,6 +33,9 @@ export abstract class JointObject extends GameObject
             return;
         }
 
+        if (this.scene.constructor.name == "EntityScene")
+            return;
+
         bare.events.once(BareEvent.level_loaded, this.CheckAddJoint.bind(this));
         bare.events.on(BareEvent.level_preSavedToDisk, this.CheckAddJoint.bind(this), "joint_level_preSave");
     }

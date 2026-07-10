@@ -402,7 +402,7 @@ window.__GAME_DEBUG_API__ = {
 
     while (baseEntity)
     {
-        var entityBase = raw.baseEntities[baseEntity];
+        var entityBase = raw.baseEntities[baseEntity] || defaultSettingsData.baseEntities[baseEntity];
 
         // INSERT MEMBERS FROM ENTITY BASE WE DIDN'T DEFINE ALREADY IN ENTITY
         for (const key of Object.keys(entityBase))
@@ -482,7 +482,7 @@ window.__GAME_DEBUG_API__ = {
         data.innerScaleY = o.innerScale.y;
         data.persistent = o.persistent;
 
-        plugin.AddInspectorDataToObject(data, o);
+        plugin.AddInspectorDataToObject(data, o, false, false);
 
         if (data.children)
         {
@@ -493,7 +493,7 @@ window.__GAME_DEBUG_API__ = {
         }
     }
 
-    var data = plugin.GetCurrentScene().level.SerializeObjectFully(o, true) as any;
+    var data = plugin.GetCurrentScene().level.SerializeObjectFully(o, true, false) as any;
     AddExtraPropsToData(data, o);
     
     // ROUND NUMBERS
@@ -787,7 +787,7 @@ window.__GAME_DEBUG_API__ = {
     return defaultValue;
   },
 
-    async setEntityField(name: string, props: Record<string, any>, childPath: number[], save:boolean = false)
+    async setEntityField(name: string, props: Record<string, any>, childPath: number[], save:boolean = false, justAdded:boolean = false)
     {
         let entityScene = sceneController.Get(EntityScene);
 
@@ -868,13 +868,18 @@ window.__GAME_DEBUG_API__ = {
 
         // DELETE ANY PROPS FROM ENTITY THAT HAVE SAME VALUE AS DEFAULT, THEY'RE NOT NEEDED
         // EG: YOU SET scaleX TO 2, THEN BACK TO 1, IT WILL REMOVE THE scaleX PROPERTY
-        var entityWithDefaultValues = entityScene.GetEntityWithDefaultValues(entityCopy, entityScene.settingsData) as any;
-        for (var key in props)
+        if (!justAdded) // WILL NOT PASS IF USER CLICKED 'ADD FIELD'
         {
-            var val = props[key];
-            var defaultVal = entityWithDefaultValues[key];
-            if (val == defaultVal)
-                delete entity[key];
+            // THIS IS NICE OF CHANGED EXTENDED FIELDS
+            // NOT SO MUCH FOR OWN FIELDS, THEY JUST GET REMOVED
+            var entityWithDefaultValues = entityScene.GetEntityWithDefaultValues(entityCopy, entityScene.settingsData) as any;
+            for (var key in props)
+            {
+                var val = props[key];
+                var defaultVal = entityWithDefaultValues[key];
+                if (val == defaultVal)
+                    delete entity[key];
+            }
         }
         
         // SINCE WE JUST MODIFIED THE RAW ENTITY, WE RE-PROCESS THE settingsData AGAIN, SO IT'S UP TO DATE 
@@ -2034,14 +2039,14 @@ export class PluginHandler
 
     // onlyFieldsInData: only enrich @InspectorField info for fields that are actually present in `data`
     // (used by the entity/gotoEntity path, whose data only carries the entity's own keys).
-    AddInspectorDataToObject(data: any, o: GameObject, onlyFieldsInData: boolean = false): void
+    AddInspectorDataToObject(data: any, o: GameObject, onlyFieldsInData: boolean = false, includeSaveFields: boolean = true): void
     {
         // ADD DATA FOR @InspectorButton AND @InspectorField DECORATORS ON THE OBJECT ITSELF
         var objButtons = getButtons(o.constructor as any);
         if (objButtons.length > 0)
             data.__buttons = objButtons.map(b => ({ label: b.label, method: b.methodKey, order: b.order, source: b.source }));
 
-        var objFields = getInspectorFields(o);
+        var objFields = getInspectorFields(o, includeSaveFields);
         if (onlyFieldsInData)
             objFields = objFields.filter(f => Object.prototype.hasOwnProperty.call(data, f.name));
         if (objFields.length > 0)
@@ -2069,7 +2074,7 @@ export class PluginHandler
                 var comp = o.scene.component.Get(o, compCls);
                 if (comp)
                 {
-                    var fields = getInspectorFields(comp);
+                    var fields = getInspectorFields(comp, includeSaveFields);
                     if (fields.length > 0)
                         (compData as any).__fields = fields;
                 }
@@ -2082,7 +2087,7 @@ export class PluginHandler
             {
                 var child = o.children[i];
                 if (child)
-                    this.AddInspectorDataToObject(data.children[i], child, onlyFieldsInData);
+                    this.AddInspectorDataToObject(data.children[i], child, onlyFieldsInData, includeSaveFields);
             }
         }
     }

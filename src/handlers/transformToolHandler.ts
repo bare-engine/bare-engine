@@ -308,8 +308,7 @@ export class TransformToolHandler
             const o = st.obj;
             if (!o) continue;
 
-            o.scale.x = st.scaleX * sx;
-            o.scale.y = st.scaleY * sy;
+            o.SetScaleXY(st.scaleX * sx, st.scaleY * sy);
 
             // Scale the object's world origin about the fixed anchor, along the frame's axes:
             // new = anchor + R(angle) * diag(sx,sy) * R(-angle) * (start - anchor).

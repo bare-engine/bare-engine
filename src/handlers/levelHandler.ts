@@ -222,7 +222,8 @@ export class LevelHandler
         await Promise.all(this.LoadTextures(level));
 
         // CREATE ALL OBJECTS
-        for (var layerName in level.entitiesByLayer) {
+        for (var layerName in level.entitiesByLayer)
+        {
             var entities = level.entitiesByLayer[layerName];
             for(var levelEntity of entities)
             {
@@ -364,7 +365,7 @@ export class LevelHandler
         }
     }
 
-    SerializeObjectFully(obj: GameObject, forceAllEntityVars:boolean = false): Entity
+    SerializeObjectFully(obj: GameObject, forceAllEntityVars:boolean = false, includeSaveFields: boolean = true): Entity
     {
         var entity:Entity = {
             //name: obj.name,
@@ -424,6 +425,15 @@ export class LevelHandler
         if (!obj.parent)
             varsToSave.splice(varsToSave.indexOf("save"), 1);
 
+        if (includeSaveFields)
+        {
+            for (const saveField of getSaveFields(obj))
+            {
+                if (!varsToSave.includes(saveField))
+                    varsToSave.push(saveField);
+            }
+        }
+
         // 
         var customSerialize:Record<string, (currentValue) => any> = {};
     
@@ -458,7 +468,7 @@ export class LevelHandler
             for (var child of currentValue)
             {
                 if ((!child.persistent && child.save) || forceAllEntityVars)
-                    children.push(this.SerializeObjectFully(child));
+                    children.push(this.SerializeObjectFully(child, forceAllEntityVars, includeSaveFields));
             }
             return children;
         };

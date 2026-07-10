@@ -75,8 +75,7 @@ export class ResizableComponent extends Component
     {
         const texW = this.go.texture?.width ?? 1;
         const texH = this.go.texture?.height ?? 1;
-        this.go.scale.x = w / texW;
-        this.go.scale.y = h / texH;
+        this.go.SetScaleXY(w / texW, h / texH);
     }
 
     OnUpdate(): void

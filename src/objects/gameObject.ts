@@ -391,6 +391,11 @@ export class GameObject
         this.addedToLevel = false;
     }
 
+    OnResize()
+    {
+        // FOR OVERRIDE
+    }
+
     Update(deltaTime: number)
     {
         if (!this.active)
@@ -1110,8 +1115,10 @@ export class GameObject
 
     SetScale(scale: number): this
     {
-        this.transform.scale.x = scale
-        this.transform.scale.y = scale
+        this.transform.scale.x = scale;
+        this.transform.scale.y = scale;
+
+        this.OnResize();
 
         return this;
     }
@@ -1120,6 +1127,8 @@ export class GameObject
     {
         this.transform.scale.x = x;
         this.transform.scale.y = y;
+
+        this.OnResize();
 
         return this;
     }

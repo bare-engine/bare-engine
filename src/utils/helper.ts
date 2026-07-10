@@ -42,8 +42,7 @@ export class Helper
         }
 
         // Set scale uniformly
-        obj.scale.x = scale;
-        obj.scale.y = scale;
+        obj.SetScale(scale);
     }
 
     static DegreesToRadians(degrees: number): number

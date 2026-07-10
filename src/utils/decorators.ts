@@ -367,7 +367,9 @@ export function getOwnInspectorFieldNames(classOrPrototype: any): string[]
 // @Save ALSO SERVES AS @InspectorField
 export function Save(target: any, propertyKey: string): void
 {
-    const saveFields: string[] = target[SAVE_METADATA_KEY] || [];
+    const saveFields: string[] = Object.prototype.hasOwnProperty.call(target, SAVE_METADATA_KEY)
+        ? target[SAVE_METADATA_KEY]
+        : [];
     if (!saveFields.includes(propertyKey))
         saveFields.push(propertyKey);
 
@@ -376,7 +378,20 @@ export function Save(target: any, propertyKey: string): void
 
 export function getSaveFields(component: any): string[]
 {
-    return component.constructor.prototype[SAVE_METADATA_KEY] || [];
+    const proto = typeof component === "function" ? component.prototype : component.constructor.prototype;
+    const fields: string[] = [];
+
+    for (const p of prototypeChain(proto))
+    {
+        if (!Object.prototype.hasOwnProperty.call(p, SAVE_METADATA_KEY))
+            continue;
+
+        for (const field of (p[SAVE_METADATA_KEY] as string[]))
+            if (!fields.includes(field))
+                fields.push(field);
+    }
+
+    return fields;
 }
 
 export function Locked(target: any, propertyKey: string): void
@@ -587,7 +602,7 @@ function resolveDropdownValues(component: any, values: InspectorDropdownValues |
 }
 
 /** Returns all editor fields registered on a component instance and its ancestor classes. */
-export function getInspectorFields(component: any): InspectorFieldData[]
+export function getInspectorFields(component: any, includeSaveFields: boolean = true): InspectorFieldData[]
 {
     // AGGREGATE METADATA ACROSS THE WHOLE PROTOTYPE CHAIN (parent-first) SO INHERITED @InspectorField FIELDS ARE INCLUDED.
     // Each class declares its own metadata array/record (see addField etc.), which would otherwise shadow ancestors'.
@@ -624,7 +639,7 @@ export function getInspectorFields(component: any): InspectorFieldData[]
                 }
             }
         }
-        if (Object.prototype.hasOwnProperty.call(proto, SAVE_METADATA_KEY))
+        if (includeSaveFields && Object.prototype.hasOwnProperty.call(proto, SAVE_METADATA_KEY))
         {
             // @Save fields are shown in the inspector through serialized component data. Also surface
             // them through the inspector metadata pipeline so @Int/@Range/@Dropdown/etc. are respected.
