@@ -1051,6 +1051,40 @@ window.__GAME_DEBUG_API__ = {
         return true;
     },
 
+    moveObjectInHierarchy(id: string, direction: string) {
+        const scene = plugin.GetCurrentScene();
+        const obj = scene.object.GetById(id);
+        if (!obj) return false;
+
+        let siblings: GameObject[] | null = null;
+        if (obj.parent) {
+            siblings = obj.parent.children;
+        } else {
+            const layer = scene.object.GetLayerOf(obj);
+            if (layer < 0) return false;
+            siblings = scene.object.GetLayer(layer);
+        }
+
+        const currentIndex = siblings.indexOf(obj);
+        if (currentIndex < 0) return false;
+
+        let nextIndex = currentIndex;
+        if (direction === "up") nextIndex = Math.max(0, currentIndex - 1);
+        else if (direction === "down") nextIndex = Math.min(siblings.length - 1, currentIndex + 1);
+        else if (direction === "top") nextIndex = 0;
+        else if (direction === "bottom") nextIndex = siblings.length - 1;
+        else return false;
+
+        if (nextIndex === currentIndex) return true;
+
+        siblings.splice(currentIndex, 1);
+        siblings.splice(nextIndex, 0, obj);
+
+        (scene as EditorScene).saveLevelCallback?.();
+
+        return true;
+    },
+
     removeComponent(id: string, comp: string) {
         const o = plugin.GetCurrentScene().object.GetById(id);
         if (!o) return false;
