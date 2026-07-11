@@ -1396,9 +1396,9 @@ export class PluginHandler
 
     debugActions: Array<{label?: string, callback?: () => void}> = [];
     movingObj: GameObject;
-    // grabWorld is set when the dragged object is a dynamic body in a sopiro scene: the drag
-    // is driven through a physics GrabJoint on that world instead of teleporting via SetPosition.
-    draggedObjData: { obj: GameObject; offset: Vec2; hasMovedAwayEnough: boolean; grabWorld?: any };
+    // grabController is set when the dragged object is a dynamic body in a sopiro scene:
+    // the drag is driven through a physics GrabJoint instead of teleporting via SetPosition.
+    draggedObjData: { obj: GameObject; offset: Vec2; hasMovedAwayEnough: boolean; grabController?: /*SopiroPhysicsController*/ any | null }; // DONT WANT TO INCLUDE SopiroPhysicsController
     doNotifyAfterSave: boolean = true;
     notifyLeaveEntity: boolean = true;
     currentSceneClassString: string = "";
@@ -1583,23 +1583,23 @@ export class PluginHandler
               // instead of teleporting it. grab() returns false for non-bodies / static bodies,
               // in which case we fall back to the plain SetPosition drag below.
               var sopiroController = obj.scene.Get("sopiro");
-              var grabWorld = sopiroController && sopiroController.world.grab(obj, mouseWorldAtClick)
-                  ? sopiroController.world
+              var grabController = sopiroController && sopiroController.grab(obj, mouseWorldAtClick)
+                  ? sopiroController
                   : null;
 
               this.draggedObjData = {
                   obj,
                   offset: obj.position.subtract(mouseLocalAtClick),
                   hasMovedAwayEnough: false,
-                  grabWorld
+                  grabController
               };
 
               const updateDraggedObjectBound = this.UpdateDraggedObject.bind(this);
               obj.scene.events.on(BareEvent.scene_update, updateDraggedObjectBound);
               obj.scene.events.once(BareEvent.pointer_up_any, () => {
                   obj.scene.events.off(BareEvent.scene_update, updateDraggedObjectBound);
-                  if (grabWorld)
-                      grabWorld.releaseGrab();
+                  if (grabController)
+                      grabController.releaseGrab();
               });
           }
       }
@@ -1637,9 +1637,9 @@ export class PluginHandler
         var worldPos = data.obj.scene.ScreenToWorldPos(new Vec2(mouseX, mouseY));
 
         // Sopiro body: let the solver pull it toward the cursor via the grab joint.
-        if (data.grabWorld)
+        if (data.grabController)
         {
-            data.grabWorld.moveGrab(worldPos);
+            data.grabController.moveGrab(worldPos);
             return;
         }
 

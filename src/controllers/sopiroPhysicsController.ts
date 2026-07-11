@@ -5,11 +5,11 @@ import { GameObject } from "../objects/gameObject";
 // BareCollisionEventPairs AUGMENTATION, AND IMPORTING IT HERE WOULD PULL RigidBody INTO
 // EVERY PROJECT'S COLLISION EVENT PAYLOADS VIA scene.ts -> THIS FILE
 import { World } from "../libraries/sopiro/world";
-import { RigidBody } from "../libraries/sopiro/rigidbody";
+import { RigidBody, Type } from "../libraries/sopiro/rigidbody";
 import { Settings } from "../libraries/sopiro/settings";
 import { Polygon } from "../libraries/sopiro/polygon";
 import { Circle } from "../libraries/sopiro/circle";
-import { Color } from "../libraries/new-rapid-render";
+import { Color, Vec2 } from "../libraries/new-rapid-render";
 import { make_pair_natural } from "../libraries/sopiro/util";
 import { BareEvent } from "../types/bareTypes";
 import { PhysicsControllerBase } from "./physicsControllerBase";
@@ -20,6 +20,7 @@ import { MotorJointObject } from "../libraries/sopiro/objects/motorJointObject";
 import { JointObject } from "../libraries/sopiro/objects/jointObject";
 import { RevoluteJointObject } from "../libraries/sopiro/objects/revoluteJointObject";
 import { WeldJointObject } from "../libraries/sopiro/objects/weldJointObject";
+import { GrabJoint } from "../libraries/sopiro/grab";
 
 const sopiroPhysicsEventDefs = {
     collision_start: "collision_start",
@@ -45,6 +46,7 @@ export class SopiroPhysicsController extends PhysicsControllerBase
 {
     public world: World;
     public collisionsEnabled: boolean = true;
+    public grabJoint: GrabJoint | null = null;
 
     private activeCollisions: Map<number, { bodyA: RigidBody; bodyB: RigidBody }> = new Map();
 
@@ -82,6 +84,9 @@ export class SopiroPhysicsController extends PhysicsControllerBase
 
     override Remove(object: GameObject): void
     {
+        if (object === this.grabJoint?.bodyA)
+            this.releaseGrab();
+
         if (object instanceof RigidBody && !object.parent)
             this.world.unregister(object.id);
     }
@@ -123,7 +128,7 @@ export class SopiroPhysicsController extends PhysicsControllerBase
     // cursor target, with a circle at the target. Shown in-game, independent of debug.
     private RenderGrab(): void
     {
-        var grab = this.world.grabJoint;
+        var grab = this.grabJoint;
         if (!grab)
             return;
 
@@ -146,6 +151,38 @@ export class SopiroPhysicsController extends PhysicsControllerBase
             radius: 8,
             color: Color.Black
         });
+    }
+
+    grab(body: GameObject, worldTarget: Vec2): boolean
+    {
+        this.releaseGrab();
+
+        if (!(body instanceof RigidBody) || body.type == Type.Static || this.world.bodies.indexOf(body) < 0)
+            return false;
+
+        this.grabJoint = new GrabJoint(body, worldTarget, worldTarget.copy(), Settings.mouseStrength);
+        this.world.register(this.grabJoint);
+        body.awake();
+
+        return true;
+    }
+
+    moveGrab(worldTarget: Vec2): void
+    {
+        if (!this.grabJoint)
+            return;
+
+        this.grabJoint.target = worldTarget.copy();
+        this.grabJoint.bodyA.awake();
+    }
+
+    releaseGrab(): void
+    {
+        if (!this.grabJoint)
+            return;
+
+        this.world.unregister(this.grabJoint.id, true);
+        this.grabJoint = null;
     }
 
     setCollisionsEnabled(enabled: boolean): void
@@ -228,6 +265,7 @@ export class SopiroPhysicsController extends PhysicsControllerBase
 
     Clear(): void
     {
+        this.grabJoint = null;
         this.activeCollisions.clear();
         this.world.reset();
     }
