@@ -1069,10 +1069,10 @@ window.__GAME_DEBUG_API__ = {
         if (currentIndex < 0) return false;
 
         let nextIndex = currentIndex;
-        if (direction === "up") nextIndex = Math.max(0, currentIndex - 1);
-        else if (direction === "down") nextIndex = Math.min(siblings.length - 1, currentIndex + 1);
-        else if (direction === "top") nextIndex = 0;
-        else if (direction === "bottom") nextIndex = siblings.length - 1;
+        if (direction === "up") nextIndex = Math.min(siblings.length - 1, currentIndex + 1);
+        else if (direction === "down") nextIndex = Math.max(0, currentIndex - 1);
+        else if (direction === "top") nextIndex = siblings.length - 1;
+        else if (direction === "bottom") nextIndex = 0;
         else return false;
 
         if (nextIndex === currentIndex) return true;
