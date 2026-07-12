@@ -8,7 +8,7 @@ import { Matrix3 } from "./math";
 import { GameMode, globalEvents } from "../../globals";
 import type { Scene } from "../../scenes/scene";
 import { BareEvent, Entity } from '../../types/bareTypes';
-import { Enum, InspectorField, Range, Locked, Percentage } from "../../utils/decorators";
+import { Enum, InspectorField, Limit, Locked, Percentage } from "../../utils/decorators";
 
 export enum Type
 {
@@ -264,7 +264,7 @@ export abstract class RigidBody extends GameObject
         this._restitution = r;
     }
 
-    @InspectorField @Range(0, Infinity)
+    @InspectorField @Limit(0, Infinity)
     get friction(): number
     {
         return this._friction;

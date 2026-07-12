@@ -53,7 +53,7 @@ export interface InspectorFieldData
     current: any;
     values?: any[];
     locked?: boolean;
-    range?: InspectorRangeData;
+    range?: InspectorLimitData;
     decimals?: number;
     description?: string;
     /** Name of the class that declared this @InspectorField (the position-owning class, so an
@@ -65,11 +65,14 @@ export interface InspectorFieldData
     order?: number;
 }
 
-export interface InspectorRangeData
+export interface InspectorLimitData
 {
     min?: number;
     max?: number;
 }
+
+/** @deprecated Use InspectorLimitData. */
+export interface InspectorRangeData extends InspectorLimitData {}
 
 export type InspectorDropdownValues = any[] | (() => any[]);
 
@@ -401,11 +404,11 @@ export function Locked(target: any, propertyKey: string): void
     target[LOCKED_METADATA_KEY] = lockedFields;
 }
 
-export function Range(min?: number, max?: number): (target: any, propertyKey: string) => void
+export function Limit(min?: number, max?: number): (target: any, propertyKey: string) => void
 {
     return function (target: any, propertyKey: string): void
     {
-        const ranges: Record<string, InspectorRangeData> = target[RANGE_METADATA_KEY] || {};
+        const ranges: Record<string, InspectorLimitData> = target[RANGE_METADATA_KEY] || {};
         ranges[propertyKey] = {
             min: min !== undefined && Number.isFinite(min) ? min : undefined,
             max: max !== undefined && Number.isFinite(max) ? max : undefined,
@@ -414,13 +417,16 @@ export function Range(min?: number, max?: number): (target: any, propertyKey: st
     };
 }
 
-// @Percentage or @Percentage() — shorthand for @Range(0, 1) (a 0..1 value the inspector renders
+/** @deprecated Use Limit. */
+export const Range = Limit;
+
+// @Percentage or @Percentage() — shorthand for @Limit(0, 1) (a 0..1 value the inspector renders
 // with 2 decimals, see getInspectorFields).
 export function Percentage(target: any, propertyKey: string): void;
 export function Percentage(): (target: any, propertyKey: string) => void;
 export function Percentage(target?: any, propertyKey?: string): any
 {
-    const apply = Range(0, 1);
+    const apply = Limit(0, 1);
     if (typeof propertyKey === "string")
     {
         apply(target, propertyKey);
@@ -503,6 +509,22 @@ export function Int(target?: any, propertyKey?: string): any
 
     return apply;
 }
+
+export const Inspector = Object.freeze({
+    Button: InspectorButton,
+    Field: InspectorField,
+    BaseClass: InspectorBaseClass,
+    Class: InspectorClass,
+    Locked,
+    Limit,
+    Percentage,
+    Dropdown,
+    Enum,
+    Decimal,
+    Int,
+    Label,
+    Description,
+});
 
 export function Label(label: string): (target: any, propertyKey: string) => void
 {
@@ -611,7 +633,7 @@ export function getInspectorFields(component: any, includeSaveFields: boolean = 
     const sources: Record<string, string> = {};
     const orders: Record<string, number> = {};
     const lockedFields: string[] = [];
-    const ranges: Record<string, InspectorRangeData> = {};
+    const ranges: Record<string, InspectorLimitData> = {};
     const dropdowns: Record<string, InspectorDropdownValues> = {};
     const enums: Record<string, Record<string, any>> = {};
     const decimals: Record<string, number> = {};
@@ -642,7 +664,7 @@ export function getInspectorFields(component: any, includeSaveFields: boolean = 
         if (includeSaveFields && Object.prototype.hasOwnProperty.call(proto, SAVE_METADATA_KEY))
         {
             // @Save fields are shown in the inspector through serialized component data. Also surface
-            // them through the inspector metadata pipeline so @Int/@Range/@Dropdown/etc. are respected.
+            // them through the inspector metadata pipeline so @Int/@Limit/@Dropdown/etc. are respected.
             const source: string = proto.constructor?.name ?? "";
             for (const name of (proto[SAVE_METADATA_KEY] as string[]))
             {
@@ -688,7 +710,7 @@ export function getInspectorFields(component: any, includeSaveFields: boolean = 
 
         const range = ranges[entry.name];
 
-        // A @Range(0, 1) field defaults to 2 decimals (integer steps would be useless on a 0..1 range);
+        // A @Limit(0, 1) field defaults to 2 decimals (integer steps would be useless on a 0..1 range);
         // an explicit @Decimal always wins.
         let resolvedDecimals = decimals[entry.name];
         if (resolvedDecimals === undefined && range && range.min === 0 && range.max === 1)

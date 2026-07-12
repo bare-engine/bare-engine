@@ -9,8 +9,8 @@
 // RUN_MODES_KEY) - so it is never touched here and keeps working in prod.
 //
 // WHAT IT DOES (per source file), only when the file imports from the decorators module:
-//   1. Strips the @-decorator usages of the inspector decorators (@InspectorField, @Save,
-//      @Range, @Dropdown, @Enum, ...) from classes, properties, methods and accessors. Because
+//   1. Strips the @-decorator usages of the inspector decorators (@InspectorField, @Inspector.Field,
+//      @Save, @Limit/@Range, @Dropdown, @Enum, ...) from classes, properties, methods and accessors. Because
 //      this runs as a `before` transformer, TypeScript never emits the __decorate(...) helper
 //      for them, so no reference to the decorator function survives.
 //   2. Replaces calls to the runtime READER functions (getSaveFields, getInspectorFields, ...)
@@ -35,7 +35,28 @@ const DECORATOR_NAMES = new Set([
     "InspectorClass",
     "Save",
     "Locked",
+    "Limit",
     "Range",
+    "Percentage",
+    "Dropdown",
+    "Enum",
+    "Decimal",
+    "Int",
+    "Label",
+    "Description",
+]);
+
+const INSPECTOR_NAMESPACE_NAME = "Inspector";
+const INSPECTOR_DECORATOR_PROPERTIES = new Set([
+    "Button",
+    "Field",
+    "BaseClass",
+    "Class",
+    "Save",
+    "Locked",
+    "Limit",
+    "Range",
+    "Percentage",
     "Dropdown",
     "Enum",
     "Decimal",
@@ -108,8 +129,23 @@ function rebuildWithModifiers(node, modifiers, factory) {
     return node;
 }
 
+function isStrippedDecoratorExpression(expr, decoratorLocals, inspectorLocals) {
+    if (ts.isCallExpression(expr)) {
+        expr = expr.expression;
+    }
+
+    if (ts.isIdentifier(expr)) {
+        return decoratorLocals.has(expr.text);
+    }
+
+    return ts.isPropertyAccessExpression(expr)
+        && ts.isIdentifier(expr.expression)
+        && inspectorLocals.has(expr.expression.text)
+        && INSPECTOR_DECORATOR_PROPERTIES.has(expr.name.text);
+}
+
 // Drops every @-decorator whose (call-)expression identifier is a stripped decorator local.
-function withDecoratorsStripped(node, decoratorLocals, factory) {
+function withDecoratorsStripped(node, decoratorLocals, inspectorLocals, factory) {
     const modifiers = node.modifiers;
     if (!modifiers || modifiers.length === 0) {
         return node;
@@ -118,15 +154,9 @@ function withDecoratorsStripped(node, decoratorLocals, factory) {
     let changed = false;
     const kept = [];
     for (const modifier of modifiers) {
-        if (ts.isDecorator(modifier)) {
-            let expr = modifier.expression;
-            if (ts.isCallExpression(expr)) {
-                expr = expr.expression;
-            }
-            if (ts.isIdentifier(expr) && decoratorLocals.has(expr.text)) {
-                changed = true;
-                continue;
-            }
+        if (ts.isDecorator(modifier) && isStrippedDecoratorExpression(modifier.expression, decoratorLocals, inspectorLocals)) {
+            changed = true;
+            continue;
         }
         kept.push(modifier);
     }
@@ -143,6 +173,7 @@ function createDecoratorStripTransformer() {
 
         return (sourceFile) => {
             const decoratorLocals = new Set();   // local name -> stripped decorator
+            const inspectorLocals = new Set();   // local name -> Inspector namespace object
             const readerLocals = new Map();       // local name -> reader's original export name
             const statementReplacements = new Map(); // original import/export node -> replacement node | undefined (drop)
 
@@ -170,6 +201,10 @@ function createDecoratorStripTransformer() {
                     for (const spec of clause.namedBindings.elements) {
                         const original = (spec.propertyName || spec.name).text;
                         const local = spec.name.text;
+                        if (original === INSPECTOR_NAMESPACE_NAME) {
+                            inspectorLocals.add(local);
+                            continue;
+                        }
                         if (DECORATOR_NAMES.has(original)) {
                             decoratorLocals.add(local);
                             continue;
@@ -214,7 +249,10 @@ function createDecoratorStripTransformer() {
                 ) {
                     // The index.ts `export { ... } from "./utils/decorators"` re-export.
                     const keptSpecifiers = statement.exportClause.elements.filter(
-                        spec => !DECORATOR_NAMES.has((spec.propertyName || spec.name).text)
+                        spec => {
+                            const original = (spec.propertyName || spec.name).text;
+                            return original !== INSPECTOR_NAMESPACE_NAME && !DECORATOR_NAMES.has(original);
+                        }
                     );
                     if (keptSpecifiers.length === statement.exportClause.elements.length) {
                         continue;
@@ -234,7 +272,7 @@ function createDecoratorStripTransformer() {
                 }
             }
 
-            if (decoratorLocals.size === 0 && readerLocals.size === 0 && statementReplacements.size === 0) {
+            if (decoratorLocals.size === 0 && inspectorLocals.size === 0 && readerLocals.size === 0 && statementReplacements.size === 0) {
                 return sourceFile;
             }
 
@@ -256,8 +294,8 @@ function createDecoratorStripTransformer() {
                 }
 
                 const visited = ts.visitEachChild(node, visit, context);
-                if (decoratorLocals.size > 0) {
-                    return withDecoratorsStripped(visited, decoratorLocals, factory);
+                if (decoratorLocals.size > 0 || inspectorLocals.size > 0) {
+                    return withDecoratorsStripped(visited, decoratorLocals, inspectorLocals, factory);
                 }
                 return visited;
             };

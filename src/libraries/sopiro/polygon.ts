@@ -1,6 +1,6 @@
 import type { Scene } from "../../scenes/scene";
 import { Entity } from "../../types/bareTypes";
-import { InspectorField, Range } from "../../utils/decorators";
+import { InspectorField, Limit } from "../../utils/decorators";
 import { Vec2 } from "../new-rapid-render";
 import { RigidBody, Type } from "./rigidbody";
 import { Settings } from "./settings";
@@ -141,7 +141,7 @@ export class Polygon extends RigidBody
         this.density = this._density;
     }
 
-    @InspectorField @Range(0.0001, Infinity)
+    @InspectorField @Limit(0.0001, Infinity)
     override get density(): number
     {
         return this._density;
@@ -159,7 +159,7 @@ export class Polygon extends RigidBody
         this._invInertia = 1.0 / this._inertia;
     }
 
-    @InspectorField @Range(0.0001, Infinity)
+    @InspectorField @Limit(0.0001, Infinity)
     override get mass(): number
     {
         return this._mass;

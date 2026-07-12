@@ -1,7 +1,7 @@
 import { Component } from "../controllers/componentController";
 import { Scene } from "../globals";
 import { Color, ITextOptions, TextTexture, Vec2 } from "../libraries/new-rapid-render";
-import { Dropdown, InspectorField, Int, Range } from "../utils/decorators";
+import { Dropdown, InspectorField, Int, Limit } from "../utils/decorators";
 
 export class TextComponent extends Component
 {
@@ -13,7 +13,7 @@ export class TextComponent extends Component
         set: (text: string) => this.SetText(text),
     };
 
-    @InspectorField @Int @Range(0, Infinity)
+    @InspectorField @Int @Limit(0, Infinity)
     fontSize = {
         get: () => this.textTexture.style.fontSize,
         set: (fontSize: number) => {this.textTexture.style.fontSize = fontSize; this.UpdateText();},

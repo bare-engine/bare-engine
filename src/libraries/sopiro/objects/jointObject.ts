@@ -1,7 +1,7 @@
 import { GameMode } from "../../../globals";
 import { GameObject } from "../../../objects/gameObject";
 import { BareEvent } from "../../../types/bareTypes";
-import { InspectorField, Percentage, Range } from "../../../utils/decorators";
+import { InspectorField, Percentage, Limit } from "../../../utils/decorators";
 import { Circle } from "../circle";
 import { testPointInside } from "../detection";
 import { Joint } from "../joint";
@@ -218,7 +218,7 @@ export abstract class JointObject extends GameObject
             this.joint.dampingRatio = dampingRatio;
     }
 
-    @InspectorField @Range(1, Infinity)
+    @InspectorField @Limit(1, Infinity)
     get jointMass(): number
     {
         return this._jointMass;

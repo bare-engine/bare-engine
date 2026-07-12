@@ -1,5 +1,5 @@
 import { GameMode, Scene } from "../../../globals";
-import { InspectorField, Percentage, Range } from "../../../utils/decorators";
+import { InspectorField } from "../../../utils/decorators";
 import { Color, Vec2 } from "../../new-rapid-render";
 import { MotorJoint } from "../motor";
 import { RigidBody } from "../rigidbody";

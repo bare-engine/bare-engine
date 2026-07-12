@@ -151,9 +151,10 @@ function bareAutoRegisterClassesPlugin(options = {}) {
 
     function parseClasses(source) {
         // Optionally capture a leading decorator block (any number of decorators,
-        // each possibly with arguments) so we can tell whether @InspectorBaseClass
+        // each possibly with arguments) so we can tell whether @InspectorBaseClass /
+        // @Inspector.BaseClass
         // is applied to the class.
-        const classRegex = /((?:@[A-Za-z_$][\w$]*(?:\s*\([^)]*\))?\s+)*)(export\s+)?(?:abstract\s+)?class\s+([A-Za-z_$][\w$]*)(?:\s*<[^>]*>)?(?:\s+extends\s+([A-Za-z_$][\w$]*))?/g;
+        const classRegex = /((?:@[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*(?:\s*\([^)]*\))?\s+)*)?(export\s+)?(?:abstract\s+)?class\s+([A-Za-z_$][\w$]*)(?:\s*<[^>]*>)?(?:\s+extends\s+([A-Za-z_$][\w$]*))?/g;
         const out = [];
         let m;
         while ((m = classRegex.exec(source)) !== null) {
@@ -162,7 +163,7 @@ function bareAutoRegisterClassesPlugin(options = {}) {
                 name: m[3],
                 base: m[4] || "",
                 exported: !!m[2],
-                inspectorBase: /@InspectorBaseClass\b/.test(decorators)
+                inspectorBase: /@(?:InspectorBaseClass|Inspector\.BaseClass)\b/.test(decorators)
             });
         }
         return out;
@@ -290,7 +291,7 @@ function bareAutoRegisterClassesPlugin(options = {}) {
             if (!info.exported) continue;
             const kind = resolveKind(name);
             if (!kind) continue;
-            // GameObjects must opt in via @InspectorBaseClass; components register regardless.
+            // GameObjects must opt in via @InspectorBaseClass / @Inspector.BaseClass; components register regardless.
             if (kind === "gameobject" && !info.inspectorBase) continue;
             out.push({ name, filePath: info.filePath, kind });
             seen.add(name);
