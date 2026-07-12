@@ -170,7 +170,13 @@ export abstract class JointObject extends GameObject
     {
         if (bare.gameMode == GameMode.Editor)
         {
-            super.Render();
+            rapid.drawCircle({
+                x: this.position.x,
+                y: this.position.y,
+                radius: 13,
+                color: this.color
+            })
+            //super.Render();
             return;
         }
 

@@ -1,6 +1,6 @@
 import { GameMode, Scene } from "../../../globals";
 import { InspectorField, Percentage, Range } from "../../../utils/decorators";
-import { Vec2 } from "../../new-rapid-render";
+import { Color, Vec2 } from "../../new-rapid-render";
 import { MotorJoint } from "../motor";
 import { RigidBody } from "../rigidbody";
 import { World } from "../world";
@@ -22,6 +22,12 @@ export class MotorJointObject extends JointObject
     constructor(scene: Scene)
     {
         super(scene);
+    }
+
+    OnAwake(): void
+    {
+        super.OnAwake();
+        this.SetColor(Color.Orange);
     }
 
     protected CreateJoint(bodyA: RigidBody, bodyB: RigidBody): MotorJoint

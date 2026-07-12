@@ -40,6 +40,8 @@ export class DistanceJointObject extends JointObject
 
     override OnAwake(): void
     {
+        this.SetColor(Color.Blue);
+
         if (bare.gameMode == GameMode.Game)
         {
             super.OnAwake();

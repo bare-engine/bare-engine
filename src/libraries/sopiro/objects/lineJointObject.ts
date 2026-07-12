@@ -41,6 +41,8 @@ export class LineJointObject extends JointObject
 
     override OnStart(): void
     {
+        this.SetColor(Color.Lime);
+        
         this.resizeable = false;
 
         if (bare.gameMode == GameMode.Editor)
@@ -158,17 +160,26 @@ class DirectionTargetObject extends GameObject
 
     override OnRender(): void
     {
-        var color = this.owner.isConnectedInEditor ? Color.Blue : Color.Red;
-
-        rapid.drawCircle({
-            position: this.position,
-            radius: this.width / 2,
-            color: color
-        });
+        var color = this.owner.isConnectedInEditor ? Color.Lime : Color.Red;
 
         rapid.drawLine({
             points: [new Vec2(this.owner.x, this.owner.y), this.position],
             width: 4,
+            color: color
+        });
+
+        var direction = this.position.sub(this.owner.position).normalized();
+        var perpendicular = new Vec2(-direction.y, direction.x);
+        var tip = this.position;
+        var base = tip.sub(direction.mul(this.width));
+        var halfWidth = this.width / 2;
+
+        rapid.drawGraphic({
+            points: [
+                tip,
+                base.add(perpendicular.mul(halfWidth)),
+                base.sub(perpendicular.mul(halfWidth))
+            ],
             color: color
         });
     }

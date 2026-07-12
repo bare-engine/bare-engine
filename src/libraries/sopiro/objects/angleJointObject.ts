@@ -1,3 +1,4 @@
+import { Color } from "../../new-rapid-render";
 import { AngleJoint } from "../angle";
 import { RigidBody } from "../rigidbody";
 import { World } from "../world";
@@ -9,6 +10,7 @@ export class AngleJointObject extends JointObject
     {
         this.resizeable = false;
 
+        this.SetColor(new Color(159, 205, 254));
         super.OnStart();
     }
 
