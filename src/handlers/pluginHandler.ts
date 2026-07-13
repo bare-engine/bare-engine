@@ -12,6 +12,7 @@ import { OutlineShader } from "../shaders/outlineShader";
 import { defaultSettingsData } from "../types/bareData";
 import { BareEvent, Entity, EntityVarsNestedEntry, entityVarsNested, LevelData, Position, SaveData, Scalar, SettingsData } from "../types/bareTypes";
 import { applyInspectorField, getButtons, getInspectorClasses, getInspectorFieldDescriptions, getInspectorFields, resolveInspectorClassName } from "../utils/decorators";
+import { EntitySerializer } from "../utils/entitySerializer";
 import { Helper } from "../utils/helper";
 import { SaveDataHandler } from "./SaveDataHandler";
 import { TransformToolHandler } from "./transformToolHandler";
@@ -493,7 +494,7 @@ window.__GAME_DEBUG_API__ = {
         }
     }
 
-    var data = plugin.GetCurrentScene().level.SerializeObjectFully(o, true, false) as any;
+    var data = EntitySerializer.SerializeObjectFully(scene, o, true, false) as any;
     AddExtraPropsToData(data, o);
     
     // ROUND NUMBERS
@@ -561,7 +562,7 @@ window.__GAME_DEBUG_API__ = {
         // COMPONENTS
         {
             let comps = o.scene.component.GetAllFrom(o);
-            let components = o.scene.level.SerializeComponents(comps, false);
+            let components = EntitySerializer.SerializeComponents(scene, comps, false);
 
             for (var c of comps)
             {

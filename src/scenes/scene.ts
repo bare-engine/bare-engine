@@ -18,6 +18,7 @@ import { Bare } from "../types/bare";
 import { defaultSettingsData } from "../types/bareData";
 import { AwakePayload, BareEvent, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
 import { getInspectorFieldNames, InspectorClass, InspectorField, Label } from "../utils/decorators";
+import { EntitySerializer } from "../utils/entitySerializer";
 
 export class Scene implements SceneI
 {
@@ -742,7 +743,7 @@ export class Scene implements SceneI
         // ADDING FALSE TO PREVENT COMPONENTS CREATION...
         this.ApplyEntityToGameObject(entityConstructed, gameObject, false);
 
-        var entity = this.level!.SerializeObjectFully(gameObject); // SOFT (!.) - KEEPS LEVELHANDLER OUT OF BUNDLES THAT DON'T USE LEVELS
+        var entity = EntitySerializer.SerializeObjectFully(this, gameObject);
 
         // ... BUT ADDING IT BACK TO THE ENITY HERE, SO IT'S NOT LOST
         if (entityConstructed.components)
