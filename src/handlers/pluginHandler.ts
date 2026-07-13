@@ -1559,6 +1559,9 @@ export class PluginHandler
       {
         var isControlDown = keyboardController.IsKeyDown("control");
           const obj = isControlDown ? this.CheckClickDeepChild(ev) : this.CheckClickGameObject(ev);
+
+          if (obj)
+              this.SyncSceneMouseToPointerDown(obj.scene, ev);
         
           plugin.HandleClickObject(obj);
           
@@ -1608,12 +1611,27 @@ export class PluginHandler
       ev.preventDefault();
       return false;
   };
+
+    private SyncSceneMouseToPointerDown(scene: Scene, ev: PointerEvent): void
+    {
+        var p = bare.GetCanvasScreenPosition(ev.clientX, ev.clientY);
+        var mouse = scene.mouse;
+
+        mouse.screen.positionPrev.x = mouse.screen.position.x;
+        mouse.screen.positionPrev.y = mouse.screen.position.y;
+
+        mouse.screen.position.x = p.x;
+        mouse.screen.position.y = p.y;
+        mouse.SetPosition(p.x, p.y);
+
+        mouse.PointerDownAny({ mouseX: p.x, mouseY: p.y, event: ev, isLeftButton: ev.button == 0 });
+    }
     
     private UpdateDraggedObject(): void
     {
         var data = this.draggedObjData;
 
-        var scene = this.GetCurrentScene();
+        var scene = data.obj.scene;
         var mouseX = scene.mouse.screen.position.x;
         var mouseY = scene.mouse.screen.position.y;
 
