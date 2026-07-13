@@ -5,7 +5,7 @@ import type { Scene } from "../scenes/scene";
 import { GameObject } from "../objects/gameObject";
 import { ArcadeObject } from "../objects/arcadeObject";
 import { BareEvent, BlockedState } from "../types/bareTypes";
-import { RegisterController } from "../globals";
+import { globalEvents, RegisterController } from "../globals";
 import { PhysicsControllerBase } from "./physicsControllerBase";
 import { InspectorField } from "../utils/decorators";
 
@@ -51,10 +51,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
     {
         super(scene);
 
-        bare.AddClass(ArcadeObject);
-
         this.setDimensions(0, 0, bare.width, bare.height);
-        bare.RegisterGameObjectPool(ArcadeObject, 10);
     }
 
     // GETS CALLED BY EXTENDED CLASS (PhysicsControllerBase), ON BareEvent.game_objectAdded
@@ -1322,6 +1319,20 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         }
     }
 }
+
+// GAME OBJECT CLASS REGISTRATION (POOLS + registeredClasses) IS GLOBAL, NOT PER SCENE.
+// DONE AT MODULE LOAD (DEFERRED UNTIL bare EXISTS) SO LEVELS CAN SPAWN ArcadeObject
+// BEFORE ANY SCENE HAS TOUCHED THE LAZY scene.arcade CONTROLLER
+function RegisterArcadeClasses(): void
+{
+    bare.AddClass(ArcadeObject);
+    bare.RegisterGameObjectPool(ArcadeObject, 10);
+}
+
+if (window.bare)
+    RegisterArcadeClasses();
+else
+    globalEvents.persistent.on(BareEvent.game_awake, RegisterArcadeClasses);
 
 export var arcade:ArcadePhysicsController;
 RegisterController(ArcadePhysicsController);

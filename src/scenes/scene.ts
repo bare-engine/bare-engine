@@ -7,7 +7,7 @@ import type { ParticleController } from "../controllers/particleController";
 import { sceneController } from "../controllers/sceneController";
 import type { SopiroPhysicsController } from "../controllers/sopiroPhysicsController";
 import type { TweenController } from "../controllers/tweenController";
-import { controllerNames, GameMode, globalEvents, MakePath, MakePathForEntity, SetControllerReferencesOnScene } from "../globals";
+import { controllerNames, GameMode, globalEvents, MakePath, MakePathForEntity } from "../globals";
 import type { CameraHandler } from "../handlers/cameraHandler";
 import type { LevelHandler } from "../handlers/levelHandler";
 import { SettingsHandler } from "../handlers/settingsHandler";
@@ -52,16 +52,65 @@ export class Scene implements SceneI
     public secret: boolean = false; // IF TRUE, WILL MAKE THE SCENE NOT INCLUDE IN bare.scene.GetAll() - USED FOR PLUGIN ATM
     public isLevel: boolean = false;
 
-    @InspectorClass public object: ObjectController;
-    @InspectorClass public mouse: MouseController;
-    @InspectorClass public hitbox: HitboxController;
-    @InspectorClass public tween: TweenController;
-    @InspectorClass public component: ComponentController;
-    @InspectorClass public arcade: ArcadePhysicsController;
-    @InspectorClass public sopiro: SopiroPhysicsController;
-    @InspectorClass public particle: ParticleController;
-    @InspectorClass public level: LevelHandler;
-    @InspectorClass public camera: CameraHandler;
+    // CONTROLLERS ARE LAZY: FIRST ACCESS INSTANTIATES THE CLASS FROM THE globalThis[<name>Class]
+    // REGISTRY (FILLED BY RegisterController WHEN A CONTROLLER MODULE IS BUNDLED), SO A SCENE ONLY
+    // GETS THE CONTROLLERS IT ACTUALLY TOUCHES - AND UNUSED CONTROLLER MODULES STAY TREE-SHAKEN.
+    // ENGINE PLUMBING (Update/Render/LIFECYCLE LOOPS) READS THE _ BACKING FIELDS SO IT NEVER
+    // TRIGGERS CREATION; USER-FACING ACCESS GOES THROUGH THE GETTERS AND CREATES ON DEMAND
+    public _object: ObjectController;
+    @InspectorClass
+    get object(): ObjectController { return this._object ?? this.CreateController("object"); }
+    set object(value: ObjectController) { this._object = value; }
+
+    public _mouse: MouseController;
+    @InspectorClass
+    get mouse(): MouseController { return this._mouse ?? this.CreateController("mouse"); }
+    set mouse(value: MouseController) { this._mouse = value; }
+
+    public _hitbox: HitboxController;
+    @InspectorClass
+    get hitbox(): HitboxController { return this._hitbox ?? this.CreateController("hitbox"); }
+    set hitbox(value: HitboxController) { this._hitbox = value; }
+
+    public _tween: TweenController;
+    @InspectorClass
+    get tween(): TweenController { return this._tween ?? this.CreateController("tween"); }
+    set tween(value: TweenController) { this._tween = value; }
+
+    public _component: ComponentController;
+    @InspectorClass
+    get component(): ComponentController { return this._component ?? this.CreateController("component"); }
+    set component(value: ComponentController) { this._component = value; }
+
+    public _arcade: ArcadePhysicsController;
+    @InspectorClass
+    get arcade(): ArcadePhysicsController { return this._arcade ?? this.CreateController("arcade"); }
+    set arcade(value: ArcadePhysicsController) { this._arcade = value; }
+
+    public _sopiro: SopiroPhysicsController;
+    @InspectorClass
+    get sopiro(): SopiroPhysicsController { return this._sopiro ?? this.CreateController("sopiro"); }
+    set sopiro(value: SopiroPhysicsController) { this._sopiro = value; }
+
+    public _particle: ParticleController;
+    @InspectorClass
+    get particle(): ParticleController { return this._particle ?? this.CreateController("particle"); }
+    set particle(value: ParticleController) { this._particle = value; }
+
+    public _level: LevelHandler;
+    @InspectorClass
+    get level(): LevelHandler { return this._level ?? this.CreateController("level"); }
+    set level(value: LevelHandler) { this._level = value; }
+
+    public _camera: CameraHandler;
+    @InspectorClass
+    get camera(): CameraHandler { return this._camera ?? this.CreateController("camera"); }
+    set camera(value: CameraHandler) { this._camera = value; }
+
+    // TRACKS HOW FAR THE SCENE LIFECYCLE HAS RUN, SO A CONTROLLER CREATED LATE (FIRST TOUCH
+    // MID-GAME) CATCHES UP ON Awake/Start AT CREATION IN CreateController
+    private controllersAwoken: boolean = false;
+    private controllersStarted: boolean = false;
 
     @InspectorClass
     @Label("settings")
@@ -110,8 +159,66 @@ export class Scene implements SceneI
 
         bare.AddClass(GameObject);
         bare.AddClass(ObjectController);
-        
-        SetControllerReferencesOnScene(this);
+
+        Scene.DefineLazyControllerAccessors();
+    }
+
+    // CUSTOM CONTROLLERS (RegisterController WITH A DERIVED FIELD NAME) GET THE SAME LAZY
+    // ACCESSOR PATTERN AS THE BUILT-IN ONES, DEFINED ON THE PROTOTYPE ONCE
+    private static DefineLazyControllerAccessors(): void
+    {
+        for (const name of controllerNames)
+        {
+            if (name in Scene.prototype)
+                continue;
+
+            Object.defineProperty(Scene.prototype, name, {
+                get(this: Scene) { return this["_" + name] ?? this.CreateController(name); },
+                set(this: Scene, value: any) { this["_" + name] = value; },
+                configurable: true,
+            });
+        }
+    }
+
+    // LAZILY CONSTRUCTS A CONTROLLER FROM THE globalThis[<name>Class] REGISTRY (RegisterController).
+    // RETURNS undefined WHEN THE CONTROLLER MODULE ISN'T BUNDLED/REGISTERED.
+    // A CONTROLLER CREATED AFTER THE SCENE ALREADY AWOKE/STARTED CATCHES UP ON Awake/Start HERE
+    CreateController(propertyName: string): any
+    {
+        const Ctor = (globalThis as any)[propertyName + "Class"];
+
+        if (!Ctor)
+            return undefined;
+
+        const instance = new Ctor(this);
+        this["_" + propertyName] = instance; // SET BEFORE Awake/Start SO RE-ENTRANT ACCESS DOESN'T DOUBLE-CREATE
+
+        if (this.controllersAwoken)
+            instance.Awake?.();
+
+        if (this.controllersStarted)
+            instance.Start?.();
+
+        return instance;
+    }
+
+    // THE CONTROLLERS THIS SCENE HAS ACTUALLY INSTANTIATED - READS THE BACKING FIELDS,
+    // SO IT NEVER TRIGGERS LAZY CREATION
+    private GetInstantiatedControllers(exclude?: string): any[]
+    {
+        var instances: any[] = [];
+
+        for (var name of controllerNames)
+        {
+            if (name == exclude)
+                continue;
+
+            var instance = this["_" + name];
+            if (instance)
+                instances.push(instance);
+        }
+
+        return instances;
     }
 
     async Awake(payload?: any): Promise<void>
@@ -119,13 +226,17 @@ export class Scene implements SceneI
         this.enabled = true;
         this.paused = false;
         this.started = false;
+        this.controllersStarted = false;
 
         await this.settingsHandler.Process(payload?.settingsHandler?.GetRaw() || this.sceneOptionsSettingsData);//this.settingsData
 
-        var classes = controllerNames;
-        for (let i = 0; i < classes.length; i++)
+        // SNAPSHOT FIRST, FLAG SECOND: CONTROLLERS CREATED DURING THE LOOP (OR LATER)
+        // GET THEIR Awake AT CREATION IN CreateController INSTEAD
+        var controllers = this.GetInstantiatedControllers();
+        this.controllersAwoken = true;
+        for (var controller of controllers)
         {
-            this[classes[i]].Awake?.();
+            controller.Awake?.();
         }
 
         await this.OnAwake(payload);
@@ -149,10 +260,13 @@ export class Scene implements SceneI
     {
         this.started = false;
 
-        var classes = controllerNames;
-        for (let i = 0; i < classes.length; i++)
+        // SNAPSHOT FIRST, FLAG SECOND: CONTROLLERS CREATED DURING THE LOOP (OR LATER)
+        // GET THEIR Start AT CREATION IN CreateController INSTEAD
+        var controllers = this.GetInstantiatedControllers();
+        this.controllersStarted = true;
+        for (var controller of controllers)
         {
-            this[classes[i]].Start?.();
+            controller.Start?.();
         }
 
         await this.OnStart(payload);
@@ -893,27 +1007,28 @@ to package.json to keep the generated assets (can become large for big projects)
 
     Update(deltaTime: number): void
     {
-        this.mouse?.Update(deltaTime);
-        this.hitbox?.Update();
+        // BACKING FIELD (_) READS: ONLY TICK CONTROLLERS THAT EXIST, NEVER LAZY-CREATE THEM
+        this._mouse?.Update(deltaTime);
+        this._hitbox?.Update();
         this.OnPreUpdate(deltaTime); // NOT QUITE PRE-UPDATE HUH, BUT HERE JUST FOR EditorControlsHandler ATM, SO IT DRAGS OBJECTS AT POSITION AND AFTER THEY CAN BE SNAPPED TO OTHER POSITION
         this.object.Update(deltaTime);
-        this.tween?.Update(bare.time);
-        this.component?.Update(deltaTime);
-        this.particle?.Update(deltaTime);
+        this._tween?.Update(bare.time);
+        this._component?.Update(deltaTime);
+        this._particle?.Update(deltaTime);
 
         this.events.emit(BareEvent.scene_update, deltaTime);
         this.OnUpdate(deltaTime);
-        
-        this.arcade?.Update(deltaTime);
-        this.sopiro?.Update(deltaTime);
+
+        this._arcade?.Update(deltaTime);
+        this._sopiro?.Update(deltaTime);
     }
 
     FixedUpdate(fixedDeltaTime: number): void
     {
-        this.arcade?.FixedUpdate(fixedDeltaTime);
-        this.sopiro?.FixedUpdate(fixedDeltaTime);
+        this._arcade?.FixedUpdate(fixedDeltaTime);
+        this._sopiro?.FixedUpdate(fixedDeltaTime);
 
-        this.component?.FixedUpdate(fixedDeltaTime);
+        this._component?.FixedUpdate(fixedDeltaTime);
 
         this.OnFixedUpdate(fixedDeltaTime);
     }
@@ -951,25 +1066,25 @@ to package.json to keep the generated assets (can become large for big projects)
         rapid.matrixStack.save();
 
         if (!this.UI)
-            this.camera?.SetTransform();
+            this._camera?.SetTransform();
 
-        this.level?.PreRender();
+        this._level?.PreRender();
 
         this.OnPreRender();
 
-        this.component?.PreRender();
+        this._component?.PreRender();
         this.object.PreRender();
 
-        this.component?.Render();
+        this._component?.Render();
         this.object.Render();
-        this.arcade?.Render();
-        this.sopiro?.Render();
-        this.particle?.Render();
-        this.hitbox?.Render();
+        this._arcade?.Render();
+        this._sopiro?.Render();
+        this._particle?.Render();
+        this._hitbox?.Render();
 
         this.OnRender();
 
-        this.component?.PostRender();
+        this._component?.PostRender();
         this.object.PostRender();
 
         this.OnPostRender();
@@ -1040,10 +1155,10 @@ to package.json to keep the generated assets (can become large for big projects)
 
     ScreenToWorld(x:number, y:number)
     {
-        if (this.camera)
+        if (this._camera)
         {
             // THE CAMERA IS SET TO THIS SCENE EXCLUSIVELY
-            return this.camera?.ScreenToWorld(x, y);
+            return this._camera.ScreenToWorld(x, y);
         }
         else
         {
@@ -1053,10 +1168,10 @@ to package.json to keep the generated assets (can become large for big projects)
 
     WorldToScreen(x: number, y: number)
     {
-        if (this.camera)
+        if (this._camera)
         {
             // THE CAMERA IS SET TO THIS SCENE EXCLUSIVELY
-            return this.camera?.WorldToScreen(x, y);
+            return this._camera.WorldToScreen(x, y);
         }
         else
         {
@@ -1066,10 +1181,10 @@ to package.json to keep the generated assets (can become large for big projects)
 
     GetCameraZoom(): number
     {
-        if (this.camera)
+        if (this._camera)
         {
             // THE CAMERA IS SET TO THIS SCENE EXCLUSIVELY
-            return this.camera?.GetZoom();
+            return this._camera.GetZoom();
         }
         else
         {
@@ -1112,7 +1227,7 @@ to package.json to keep the generated assets (can become large for big projects)
     {
         this.isLevel = true;
 
-        this.component?.PostLoadLevel(persistenObjUIDs);
+        this._component?.PostLoadLevel(persistenObjUIDs);
         this.OnPostLoadLevel(level, persistenObjUIDs);
     }
     
@@ -1123,7 +1238,7 @@ to package.json to keep the generated assets (can become large for big projects)
 
     GetAllComponentsFrom(obj:GameObject):any[]
     {
-        return this.component?.GetAllFrom(obj);
+        return this._component?.GetAllFrom(obj);
     }
 
     Resize(prevWidth: number, prevHeight: number, newWidth: number, newHeight: number)
@@ -1139,7 +1254,7 @@ to package.json to keep the generated assets (can become large for big projects)
             }
         }
 
-        this.camera?.OnResize(prevWidth, prevHeight, newWidth, newHeight);
+        this._camera?.OnResize(prevWidth, prevHeight, newWidth, newHeight);
         this.OnResize(prevWidth, prevHeight, newWidth, newHeight);
     }
 
@@ -1169,13 +1284,9 @@ to package.json to keep the generated assets (can become large for big projects)
 
     RestartClasses()
     {
-        var classes = controllerNames;
-        for (let i = 0; i < classes.length; i++)
+        for (var controller of this.GetInstantiatedControllers("level")) // DO NOT RESTART LEVEL
         {
-            if (classes[i] == "level")
-                continue; // DO NOT RESTART LEVEL
-
-            this[classes[i]].Restart?.();
+            controller.Restart?.();
         }
     }
 
@@ -1185,10 +1296,9 @@ to package.json to keep the generated assets (can become large for big projects)
         // CAN STILL SUPPLY A persistent PARAMETER TO wait() TO PREVENT THIS
         window.cancelWaits();
 
-        var classes = controllerNames;
-        for (let i = 0; i < classes.length; i++)
+        for (var controller of this.GetInstantiatedControllers())
         {
-            this[classes[i]].Clear?.(includingPersistent);
+            controller.Clear?.(includingPersistent);
         }
 
         this.OnClear(includingPersistent);
@@ -1236,20 +1346,6 @@ to package.json to keep the generated assets (can become large for big projects)
         this.hitbox?.OnPointerLeave(gameObject, callback);
     }
 
-    CreateClassIfNotExist(propertyName: string, scene:Scene):void
-    {
-        if ((this as any)[propertyName])
-            return;
-
-        const classKey = propertyName + "Class";
-        const Ctor = (globalThis as any)[classKey];
-
-        if (Ctor)
-        {
-            (this as any)[propertyName] = new Ctor(scene);
-        }
-    }
-
     async Sleep(seconds: number): Promise<void>
     {
         this.paused = true;
@@ -1260,7 +1356,7 @@ to package.json to keep the generated assets (can become large for big projects)
     get currentLevel(): LevelData
     {
         /* @ AddClass(levelHandler) */
-        return this.level?.currentLevel;
+        return this._level?.currentLevel;
     }
 
     async LoadLevel(levelInput: string | LevelData = ""): Promise<LevelData>

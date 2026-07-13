@@ -63,9 +63,10 @@ export class EditorUIScene extends Scene
         {
             // HARDCODED THESE FOR NOW - NEEDED SO MOUSE IS NOT LOCKED TO DOWN AFTER CLICKING THIS BUTTON
             // HITBOX CONTROLLER FOR GOOD MEASURE TOO
-            // CALLING IT RESET, NOT CLEAR, SO this[classes[i]].Clear?.(); IS NOT CALLED IN SCENE
-            scene.hitbox?.Reset();
-            scene.mouse?.Reset();
+            // CALLING IT RESET, NOT CLEAR, SO THE SCENE'S CLEAR LOOP IS NOT CALLED
+            // BACKING FIELD (_) READS: ONLY RESET CONTROLLERS THE SCENE ACTUALLY HAS
+            scene._hitbox?.Reset();
+            scene._mouse?.Reset();
         }
         
         //sceneController.DisableAll();

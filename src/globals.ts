@@ -120,6 +120,9 @@ const controllerFieldNames: Record<string, string> = {
     CameraHandler: "camera",
 };
 
+// STORES THE CLASS ON globalThis AS <fieldName>Class - Scene'S LAZY CONTROLLER GETTERS
+// INSTANTIATE FROM THAT REGISTRY ON FIRST ACCESS (Scene.CreateController), SO SCENES DON'T
+// NEED VALUE IMPORTS OF THE CONTROLLERS AND UNUSED CONTROLLER MODULES STAY TREE-SHAKEN
 export function RegisterController(controllerClass: new (...args: any[]) => any): void
 {
     const name = controllerClass.name.replace(/^_/, "");
@@ -129,14 +132,6 @@ export function RegisterController(controllerClass: new (...args: any[]) => any)
     (globalThis as any)[classKey] = controllerClass;
 
     controllerNames.push(controllerName);
-}
-
-export function SetControllerReferencesOnScene(scene: Scene): void
-{
-    for (const controllerName of controllerNames)
-    {
-        scene.CreateClassIfNotExist(controllerName, scene);
-    }
 }
 
 

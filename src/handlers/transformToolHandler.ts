@@ -217,8 +217,9 @@ export class TransformToolHandler
 
         // The global render event fires after each scene's camera transform was popped,
         // so re-apply it to draw in world space (mirrors Scene.Render()).
+        // BACKING FIELD (_) READ: DON'T LAZY-CREATE A CAMERA ON A SCENE THAT NEVER USED ONE
         rapid.matrixStack.save();
-        scene.camera?.SetTransform();
+        scene._camera?.SetTransform();
         this.DrawSelection(scene);
         rapid.matrixStack.restore();
     };

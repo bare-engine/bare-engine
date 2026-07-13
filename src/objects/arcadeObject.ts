@@ -55,6 +55,15 @@ export class ArcadeObject extends GameObject
             this.physicsHitbox.rectangle = {x: 0, y: 0, width: this.texture!.width, height: this.texture!.height};
     }
 
+    override Added(): void
+    {
+        // TOUCH THE LAZY scene.arcade CONTROLLER SO IT EXISTS AND IS LISTENING BEFORE
+        // game_objectAdded FIRES FOR THIS OBJECT (IT TRACKS PHYSICS OBJECTS VIA THAT EVENT)
+        this.scene.arcade;
+
+        super.Added();
+    }
+
     override SetTexture(texture:Texture): this
     {
         if (this.physicsHitbox && this.physicsHitbox.rectangle.x == 0 && this.physicsHitbox.rectangle.y == 0 && this.physicsHitbox.rectangle.width == 0 && this.physicsHitbox.rectangle.height == 0)

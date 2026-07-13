@@ -325,9 +325,35 @@ export function resolveInspectorClassName(component: any, nameOrLabel: string): 
     return undefined;
 }
 
+/** Reads an @InspectorClass member without invoking a lazy accessor: getter-backed members
+ *  (Scene controllers) are peeked via their `_name` backing field, so inspecting a scene
+ *  doesn't instantiate controllers it never used. Plain fields are read directly. */
+function peekInspectorClassInstance(component: any, name: string): any
+{
+    const own = Object.getOwnPropertyDescriptor(component, name);
+    if (own && !own.get)
+        return component[name];
+
+    let proto = Object.getPrototypeOf(component);
+    while (proto)
+    {
+        const descriptor = Object.getOwnPropertyDescriptor(proto, name);
+        if (descriptor)
+        {
+            if (descriptor.get)
+                return component["_" + name];
+            break;
+        }
+        proto = Object.getPrototypeOf(proto);
+    }
+
+    return component[name];
+}
+
 /**
  * For each @InspectorClass member, reads the live instance and gathers its @InspectorField /
  * @InspectorButton members (traversing the instance's whole prototype chain via getInspectorFields).
+ * Lazy getter-backed members that were never instantiated are skipped, not created.
  */
 export function getInspectorClasses(component: any): InspectorClassData[]
 {
@@ -336,7 +362,7 @@ export function getInspectorClasses(component: any): InspectorClassData[]
     const orders = getInspectorClassOrders(component);
     for (const name of getInspectorClassNames(component))
     {
-        const instance = component[name];
+        const instance = peekInspectorClassInstance(component, name);
         if (instance == null || typeof instance !== "object")
             continue;
 

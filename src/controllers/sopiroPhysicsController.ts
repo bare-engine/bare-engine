@@ -1,5 +1,5 @@
 import { Box } from "../libraries/sopiro/box";
-import { RegisterController, Scene } from "../globals";
+import { globalEvents, RegisterController, Scene } from "../globals";
 import { GameObject } from "../objects/gameObject";
 // IMPORT FROM THE INDIVIDUAL FILES, NOT THE "../sopiro" BARREL - THE BARREL HOLDS THE
 // BareCollisionEventPairs AUGMENTATION, AND IMPORTING IT HERE WOULD PULL RigidBody INTO
@@ -60,18 +60,6 @@ export class SopiroPhysicsController extends PhysicsControllerBase
     override Start(): void
     {
         this.scene.events.on(BareEvent.physics_refreshBody, this.RefreshBody.bind(this));
-
-        bare.AddClass(RigidBody);
-        bare.AddClass(Polygon);
-        bare.AddClass(Box);
-        bare.AddClass(Circle);
-        GameObject.RegisterEntityVars(JointObject);
-        bare.AddClass(RevoluteJointObject);
-        bare.AddClass(DistanceJointObject);
-        bare.AddClass(WeldJointObject);
-        bare.AddClass(AngleJointObject);
-        bare.AddClass(LineJointObject);
-        bare.AddClass(MotorJointObject);
 
         super.Start();
     }
@@ -270,6 +258,29 @@ export class SopiroPhysicsController extends PhysicsControllerBase
         this.world.reset();
     }
 }
+
+// GAME OBJECT CLASS REGISTRATION (POOLS + registeredClasses) IS GLOBAL, NOT PER SCENE.
+// DONE AT MODULE LOAD (DEFERRED UNTIL bare EXISTS) SO LEVELS CAN SPAWN THESE baseClasses
+// BEFORE ANY SCENE HAS TOUCHED THE LAZY scene.sopiro CONTROLLER
+function RegisterSopiroClasses(): void
+{
+    bare.AddClass(RigidBody);
+    bare.AddClass(Polygon);
+    bare.AddClass(Box);
+    bare.AddClass(Circle);
+    GameObject.RegisterEntityVars(JointObject);
+    bare.AddClass(RevoluteJointObject);
+    bare.AddClass(DistanceJointObject);
+    bare.AddClass(WeldJointObject);
+    bare.AddClass(AngleJointObject);
+    bare.AddClass(LineJointObject);
+    bare.AddClass(MotorJointObject);
+}
+
+if (window.bare)
+    RegisterSopiroClasses();
+else
+    globalEvents.persistent.on(BareEvent.game_awake, RegisterSopiroClasses);
 
 export var sopiro:SopiroPhysicsController;
 RegisterController(SopiroPhysicsController);

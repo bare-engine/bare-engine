@@ -26,7 +26,11 @@ export class PhysicsControllerBase
 
     Start(): void
     {
-
+        // A LAZILY CREATED CONTROLLER MAY HAVE MISSED THE level_loaded EVENT - CATCH UP ON THE
+        // CURRENT LEVEL'S DIMENSIONS (BACKING _level READ, DON'T CREATE A LEVEL HANDLER FOR THIS)
+        var currentLevel = this.scene._level?.currentLevel;
+        if (currentLevel?.dimensions)
+            this.setDimensions(0, 0, currentLevel.dimensions.width, currentLevel.dimensions.height);
     }
 
     Restart(): void
