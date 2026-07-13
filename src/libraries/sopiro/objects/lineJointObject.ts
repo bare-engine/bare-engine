@@ -165,9 +165,9 @@ class DirectionTargetObject extends GameObject
 
         var direction = this.position.sub(this.owner.position).normalized();
         var perpendicular = new Vec2(-direction.y, direction.x);
-        var tip = this.position;
-        var base = tip.sub(direction.mul(this.width));
         var halfWidth = this.width / 2;
+        var tip = this.position.add(direction.mul(halfWidth));
+        var base = tip.sub(direction.mul(this.width));
 
         rapid.drawGraphic({
             points: [
