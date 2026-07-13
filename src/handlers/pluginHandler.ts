@@ -2129,7 +2129,17 @@ export class PluginHandler
                 {
                     var fields = getInspectorFields(comp, includeSaveFields);
                     if (fields.length > 0)
+                    {
                         (compData as any).__fields = fields;
+
+                        // REMOVE COMP FIELD THAT ARE NOT TAGGED WITH @InspectorField
+                        const fieldNames = new Set(fields.map(field => field.name));
+                        for (const propName of Object.keys(compData))
+                        {
+                            if (!propName.startsWith("__") && !fieldNames.has(propName))
+                                delete compData[propName];
+                        }
+                    }
                 }
             }
         }
