@@ -224,6 +224,9 @@ export class GameObject
     }
 
     get components(): Array<Component<this>> { 
+        if (!this.scene.Has("component"))
+            return new Array<Component<this>>();
+        
         var componentController = this.scene.Get("component"); // NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
 
         if (componentController)
