@@ -735,6 +735,8 @@ export class Scene implements SceneI
         gameObject.scene = this;
         gameObject.ResetValues();
 
+        gameObject.OnAwake();
+        
         gameObject.InitTexture(MakePathForEntity(entityConstructed)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
     
         // DON'T WANT COMPONENTS TO BE CREATED AT ApplyEntityToGameObject(). 

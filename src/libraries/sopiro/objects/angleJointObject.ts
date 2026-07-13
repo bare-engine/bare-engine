@@ -6,12 +6,10 @@ import { JointObject } from "./jointObject";
 
 export class AngleJointObject extends JointObject
 {
-    override OnStart(): void
+    override OnAwake(): void
     {
         this.resizeable = false;
-
         this.SetColor(new Color(159, 205, 254));
-        super.OnStart();
     }
 
     protected override CreateJoint(bodyA: RigidBody, bodyB: RigidBody): AngleJoint

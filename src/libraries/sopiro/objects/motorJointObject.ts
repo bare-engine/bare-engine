@@ -19,14 +19,9 @@ export class MotorJointObject extends JointObject
 
     @InspectorField private angularSpeed: number = 0;
 
-    constructor(scene: Scene)
-    {
-        super(scene);
-    }
-
     OnAwake(): void
     {
-        super.OnAwake();
+        this.resizeable = false;
         this.SetColor(Color.Orange);
     }
 

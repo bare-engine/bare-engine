@@ -40,20 +40,32 @@ export class DistanceJointObject extends JointObject
 
     override OnAwake(): void
     {
+        this.resizeable = false;
         this.SetColor(Color.Blue);
+    }
 
-        if (bare.gameMode == GameMode.Game)
+    override OnStart(): void
+    {
+        if (bare.gameMode == GameMode.Editor)
         {
-            super.OnAwake();
-            return;
+            // target object
+            this.targetObject = this.scene.AddGameObject(TargetObject);
+            this.targetObject.SetPosition(this.position.x, this.position.y + 200);
+
+            this.targetObject.owner = this;
+            this.targetObject.save = false;
+            this.targetObject.resizeable = false;
+
+            // events
+            bare.events.once(BareEvent.level_loaded, () => {
+                this.RestoreTargetPositionFromSavedBody();
+                super.CheckAddJoint();
+            });
+
+            bare.events.on(BareEvent.level_preSavedToDisk, () => super.CheckAddJoint(), "joint_level_preSave");
         }
 
-        bare.events.once(BareEvent.level_loaded, () => {
-            this.RestoreTargetPositionFromSavedBody();
-            super.CheckAddJoint();
-        });
-
-        bare.events.on(BareEvent.level_preSavedToDisk, () => super.CheckAddJoint(), "joint_level_preSave");
+        super.OnStart();
     }
 
     override OnRemove(): void
@@ -65,23 +77,6 @@ export class DistanceJointObject extends JointObject
         }
 
         bare.events.offAlias("joint_level_preSave");
-    }
-
-    override OnStart(): void
-    {
-        this.resizeable = false;
-
-        if (bare.gameMode == GameMode.Editor)
-        {
-            this.targetObject = this.scene.AddGameObject(TargetObject);
-            this.targetObject.SetPosition(this.position.x, this.position.y + 200);
-
-            this.targetObject.owner = this;
-            this.targetObject.save = false;
-            this.targetObject.resizeable = false;
-        }
-
-        super.OnStart();
     }
 
     override GetBodies(): { bodyA: RigidBody | null; bodyB: RigidBody | null; }

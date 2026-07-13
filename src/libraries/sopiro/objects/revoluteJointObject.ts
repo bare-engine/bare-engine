@@ -5,11 +5,9 @@ import { JointObject } from "./jointObject";
 
 export class RevoluteJointObject extends JointObject
 {
-    override OnStart(): void
+    OnAwake(): void
     {
         this.resizeable = false;
-
-        super.OnStart();
     }
 
     protected override CreateJoint(bodyA: RigidBody, bodyB: RigidBody): RevoluteJoint

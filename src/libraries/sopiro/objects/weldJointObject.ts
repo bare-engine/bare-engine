@@ -9,7 +9,6 @@ export class WeldJointObject extends JointObject
     {
         this.resizeable = false;
         this.frequency = -1; // MAKE IT RIGID BY DEFAULT
-        super.OnAwake();
     }
 
     protected override CreateJoint(bodyA: RigidBody, bodyB: RigidBody): WeldJoint

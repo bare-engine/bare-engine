@@ -226,7 +226,7 @@ export class GameObject
     get components(): Array<Component<this>> { 
         if (!this.scene.Has("component"))
             return new Array<Component<this>>();
-        
+
         var componentController = this.scene.Get("component"); // NO HARD REF TO COMPONENTCONTROLLER ON PURPOSE
 
         if (componentController)
@@ -374,11 +374,14 @@ export class GameObject
         this.OnTextureLoadedCallbacks.push(callback);
     }
 
+    // SET INITIAL VALUES HERE, NO ALLOCATIONS
+    // SINCE IT'S ALSO USED IN GetAppliedEntityWithDefaultValues() FOR DEFAULT VALUES
     OnAwake(entity?: Entity)
     {
         // FOR OVERRIDE
     }
 
+    // ALLOCATE VALUES HERE, CALLED WHEN GAMEOBJECT IS ACTUALLY ADDED TO SCENE
     OnStart()
     {
         // FOR OVERRIDE

@@ -25,34 +25,29 @@ export class LineJointObject extends JointObject
 
     override OnAwake(): void
     {
-        if (bare.gameMode == GameMode.Game)
-        {
-            super.OnAwake();
-            return;
-        }
-
-        bare.events.once(BareEvent.level_loaded, () => {
-            this.RestoreDirectionTargetPosition();
-            super.CheckAddJoint();
-        });
-
-        bare.events.on(BareEvent.level_preSavedToDisk, () => super.CheckAddJoint(), "joint_level_preSave");
+        this.resizeable = false;
+        this.SetColor(Color.Lime);
     }
 
     override OnStart(): void
     {
-        this.SetColor(Color.Lime);
-        
-        this.resizeable = false;
-
         if (bare.gameMode == GameMode.Editor)
         {
+            // DIRECTION OBJECT
             var currentLayer = bare.object.GetLayerOf(this);
             this.directionObject = this.scene.AddGameObject(DirectionTargetObject, currentLayer);
             this.directionObject.SetPosition(this.position.x + this.slideDirection.x, this.position.y + this.slideDirection.y);
             this.directionObject.owner = this;
             this.directionObject.save = false;
             this.directionObject.resizeable = false;
+            
+            // EVENTS
+            bare.events.once(BareEvent.level_loaded, () => {
+                this.RestoreDirectionTargetPosition();
+                super.CheckAddJoint();
+            });
+
+            bare.events.on(BareEvent.level_preSavedToDisk, () => super.CheckAddJoint(), "joint_level_preSave");
         }
 
         super.OnStart();
