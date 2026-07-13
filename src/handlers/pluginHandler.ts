@@ -1582,7 +1582,7 @@ export class PluginHandler
               // In a sopiro scene, manipulate a dynamic body through a physics grab joint
               // instead of teleporting it. grab() returns false for non-bodies / static bodies,
               // in which case we fall back to the plain SetPosition drag below.
-              var sopiroController = obj.scene.Get("sopiro");
+              var sopiroController = obj.scene.Has("sopiro") ? obj.scene.Get("sopiro") : null;
               var grabController = sopiroController && sopiroController.grab(obj, mouseWorldAtClick)
                   ? sopiroController
                   : null;

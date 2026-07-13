@@ -1268,6 +1268,11 @@ to package.json to keep the generated assets (can become large for big projects)
         return this[instanceName];
     }
 
+    Has(instanceName: string): boolean
+    {
+        return !!this["_" + instanceName];
+    }
+
     async Restart(full:boolean = false)
     {
         this.events.clear();
@@ -1366,4 +1371,3 @@ to package.json to keep the generated assets (can become large for big projects)
         return await this.level?.Load(levelInput);
     }
 }
-
