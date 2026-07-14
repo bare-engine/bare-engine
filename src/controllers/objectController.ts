@@ -25,6 +25,24 @@ export class ObjectController
         this.layers = [];
     }
 
+    FixedUpdate(fixedDeltaTime: number): void
+    {
+        if (!this.active)
+            return;
+
+        // PRETTY USELESS LOOPING THROUGH THIS IF NO GAMEOBJECTS HOOK INTO FIXED-UPDATE
+        // ONLY USEFUL IF USER GAMEOBJECTS DO - TODO: REMOVE? MAYBE NOT TOO HEAVY THOUGH
+        // CAN ADD A doFixedUpdate/doUpdate (AKA bCanEverTick UE4)
+        for (let i = 0; i < this.layers.length; i++)
+        {
+            for (let j = 0; j < this.layers[i].length; j++)
+            {
+                const object = this.layers[i][j];
+                object.FixedUpdate(fixedDeltaTime);
+            }
+        }
+    }
+
     Update(deltaTime: number)
     {
         if (!this.active)

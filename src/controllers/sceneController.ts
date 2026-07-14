@@ -250,14 +250,18 @@ export class SceneController
 
             // MOVE BETWEEN componentControllers
             var oldComponentController = gameObject.scene.component;
-            var newComponentController = scene.component;
-            if (oldComponentController && newComponentController)
+            if (oldComponentController)
             {
                 var components = oldComponentController.GetAllFrom(gameObject);
-                oldComponentController.RemoveAllFrom(gameObject);
-                for (var component of components)
+                if (components.length > 0)
                 {
-                    newComponentController.AddComponent(gameObject, component);
+                    var newComponentController = scene.component;
+                
+                    oldComponentController.RemoveAllFrom(gameObject);
+                    for (var component of components)
+                    {
+                        newComponentController.AddComponent(gameObject, component);
+                    }
                 }
             }
 

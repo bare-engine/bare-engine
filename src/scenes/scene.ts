@@ -272,8 +272,6 @@ export class Scene implements SceneI
 
         await this.OnStart(payload);
 
-        this.started = true;
-
         // START ALL GAME OBJECTS
         var StartGameObjectTree = (gameObject: GameObject) => 
         {
@@ -293,6 +291,8 @@ export class Scene implements SceneI
 
         // START ALL COMPONENTS
         this._component?.StartAll();
+
+        this.started = true;
     }
 
     OnStart(payload?: any): void | Promise<void>
@@ -1058,6 +1058,8 @@ to package.json to keep the generated assets (can become large for big projects)
 
     FixedUpdate(fixedDeltaTime: number): void
     {
+        this._object?.FixedUpdate(fixedDeltaTime);
+
         this._arcade?.FixedUpdate(fixedDeltaTime);
         this._sopiro?.FixedUpdate(fixedDeltaTime);
 

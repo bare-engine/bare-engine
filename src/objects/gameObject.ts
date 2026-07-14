@@ -442,6 +442,24 @@ export class GameObject
         }
     }
 
+    FixedUpdate(fixedDeltaTime: number)
+    {
+        if (!this.active)
+            return;
+
+        this.OnFixedUpdate(fixedDeltaTime);
+
+        for (var child of this.children)
+        {
+            child.FixedUpdate(fixedDeltaTime);
+        }
+    }
+
+    OnFixedUpdate(fixedDeltaTime: number)
+    {
+        // FOR OVERRIDE
+    }
+
     /** @virtual */
 	OnUpdate(deltaTime: number)
     {
