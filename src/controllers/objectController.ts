@@ -32,7 +32,7 @@ export class ObjectController
 
         // PRETTY USELESS LOOPING THROUGH THIS IF NO GAMEOBJECTS HOOK INTO FIXED-UPDATE
         // ONLY USEFUL IF USER GAMEOBJECTS DO - TODO: REMOVE? MAYBE NOT TOO HEAVY THOUGH
-        // CAN ADD A doFixedUpdate/doUpdate (AKA bCanEverTick UE4)
+        // CAN ADD A doFixedUpdate/doUpdate field
         for (let i = 0; i < this.layers.length; i++)
         {
             for (let j = 0; j < this.layers[i].length; j++)
