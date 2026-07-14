@@ -540,7 +540,7 @@ export class EditorUIHandler {
 
         data.layers.forEach((layerName) => {
             const info = data.layersInfo?.[layerName] as LayerInfo | undefined;
-            if (!info?.doSave)
+            if (!info?.save)
                 return;
 
             const shouldShow = this.GetLayerVisibilitySetting(layerName);

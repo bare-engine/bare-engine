@@ -329,8 +329,8 @@ export interface SourceSize {
 export interface LayerInfo {
     layerI: int;
     name: string;
-    isUI?: boolean;
-    doSave?: boolean;
+    ui?: boolean;
+    save?: boolean;
     pointerCollisionType?:CollisionHandlingType;
     showInEditor?: boolean;
     collidesWith?: string[];

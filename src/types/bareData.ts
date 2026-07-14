@@ -14,7 +14,7 @@ export const defaultSettingsData: SettingsData = {
   layers: ["objects"],
   layersInfo: {
     objects: {
-      doSave: true
+      save: true
     }
   },
   categories: {

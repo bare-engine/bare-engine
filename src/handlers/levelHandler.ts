@@ -331,7 +331,7 @@ export class LevelHandler
             var layerInfo = this.scene.settingsData.layersInfo[layerName];
 
             // SHOULD BE A SAVEABLE LAYER
-            if (!layerInfo.doSave)
+            if (!layerInfo.save)
                 continue;
 
             var gameObjs = gameLayers[i];

@@ -400,7 +400,7 @@ export class SettingsHandler
                     name: layerName,
                     layerI: j,
                     showInEditor: true,
-                    doSave: true,
+                    save: true,
                     pointerCollisionType: CollisionHandlingType.POINT,
                     ...currentLayerInfo // OVERRIDES ABOVE
                 };
