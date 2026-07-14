@@ -1385,7 +1385,8 @@ window.__GAME_DEBUG_API__ = {
             return;
         }
 
-        sceneController.Add(EditorScene);
+        const scene = sceneController.GetLevelScene(false) || sceneController.GetMainScene(false);
+        sceneController.Add(EditorScene, { settingsHandler: scene.settingsHandler });
     },
 };
 

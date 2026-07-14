@@ -69,7 +69,7 @@ export class EditorUIScene extends Scene
             scene._mouse?.Reset();
         }
         
-        //sceneController.DisableAll();
-        sceneController.Add(EditorScene);
+        const targetScene = sceneController.GetLevelScene();
+        sceneController.Add(EditorScene, { settingsHandler: targetScene.settingsHandler });
     }
 }
