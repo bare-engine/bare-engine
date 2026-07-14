@@ -1957,19 +1957,31 @@ function removePathExtension(value) {
     return ext ? value.slice(0, -ext.length) : value;
 }
 
-// Build { key, value } entries, giving any colliding key a numeric suffix.
+// Build { key, value } entries, skipping duplicate values and giving any
+// colliding key for a different value a numeric suffix.
 function toUniqueEntries(items, keyFn, valueFn) {
-    const used = new Set();
-    return items.map(item => {
+    const usedKeys = new Set();
+    const usedValues = new Set();
+    const entries = [];
+
+    for (const item of items) {
         const base = keyFn(item);
+        const value = valueFn(item);
+        if (usedValues.has(value)) {
+            continue;
+        }
+
         let key = base;
         let suffix = 2;
-        while (used.has(key)) {
+        while (usedKeys.has(key)) {
             key = `${base}_${suffix++}`;
         }
-        used.add(key);
-        return { key, value: valueFn(item) };
-    });
+        usedKeys.add(key);
+        usedValues.add(value);
+        entries.push({ key, value });
+    }
+
+    return entries;
 }
 
 // Asset files key off their CONSTANT_CASE base name, falling back to the full
