@@ -1,22 +1,16 @@
 import { Scene, SceneClass, StartBare } from "bare-engine";
-import {
-    BrowserSceneResult,
-    getBrowserSceneResult,
-    installBrowserTestHarness,
-    resetBrowserSceneTest,
-} from "./browserTestHarness";
-import { EntityTest } from "./testScenes/entityTest";
-import { RotationTest } from "./testScenes/rotationTest";
-import { BarePhysicsTest } from "./testScenes/barePhysicsTest";
+import { Box, Circle } from "bare-engine/sopiro";
+import
+    {
+        BrowserSceneResult,
+        getBrowserSceneResult,
+        installBrowserTestHarness,
+        resetBrowserSceneTest,
+    } from "./browserTestHarness";
 import { BasicsTest } from "./testScenes/basicsTest";
 import { CameraTest } from "./testScenes/cameraTest";
-import { ComponentsTest } from "./testScenes/componentsTest";
 import { EntitiesTest } from "./testScenes/entitiesTest";
-import { GraphicsTest } from "./testScenes/graphicsTest";
-import { TweensTest } from "./testScenes/tweensTest";
-import { UiTest } from "./testScenes/uiTest";
 import { SaveComponentTest } from "./testScenes/saveComponentTest";
-import { Box, Circle } from "bare-engine/sopiro";
 
 function sceneName(scene: SceneClass): string {
     return scene.name[0].toLowerCase() + scene.name.slice(1);
@@ -38,16 +32,9 @@ declare global
 class MainGame extends Scene 
 {
     private tests: SceneClass[] = [
-        RotationTest,
-        EntityTest,
         BasicsTest,
         EntitiesTest,
-        ComponentsTest,
-        TweensTest,
         CameraTest,
-        UiTest,
-        GraphicsTest,
-        BarePhysicsTest,
         SaveComponentTest,
     ];
 

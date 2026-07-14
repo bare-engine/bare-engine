@@ -1,7 +1,12 @@
-import { Component, Save, Scene } from "bare-engine";
+import { Component, ComponentController, Save, Scene } from "bare-engine";
 
 export class SaveComponentTest extends Scene
 {
+    OnAwake(): void
+    {
+        bare.AddClass(ComponentController);
+    }
+
     OnStart(): void
     {
         var obj = this.AddGameObject();

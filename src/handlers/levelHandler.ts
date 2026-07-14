@@ -422,7 +422,7 @@ export class LevelHandler
 
         // EDGE CASE, WANT TO ALWAYS SAVE (TOP LEVEL) OBJECT WITHOUT A PARENT, NO NEED TO SUPPLY THE SAVE PROPERTY
         // CHILDREN DO NEED IT
-        if (!obj.parent)
+        if (!obj.parent && varsToSave.includes("save"))
             varsToSave.splice(varsToSave.indexOf("save"), 1);
 
         if (includeSaveFields)
@@ -894,8 +894,10 @@ export class LevelHandler
     SerializeComponent(component: Component): Record<string, Scalar>
     {
         var componentData: Record<string, Scalar> = {};
-        var constructorVarNames = getSaveFields(component);
-        if (constructorVarNames.length == 0)
+        const saveFields = getSaveFields(component);
+        var constructorVarNames = saveFields;
+        const hasExplicitSaveFields = saveFields.length > 0;
+        if (!hasExplicitSaveFields)
             constructorVarNames = (component as any).__paramNames || Helper.GetConstructorParamNames(component.constructor);
         
         // Component classes have .name normalized at registration (AddClass), so read it directly.
@@ -914,7 +916,7 @@ export class LevelHandler
 
             // SKIP IF DEFAULT
             var defaultValue = defaultValues[paramName];
-            if (paramValue === defaultValue)
+            if (!hasExplicitSaveFields && paramValue === defaultValue)
                 continue;
 
             componentData[paramName] = paramValue;

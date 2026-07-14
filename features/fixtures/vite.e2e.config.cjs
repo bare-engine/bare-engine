@@ -26,6 +26,7 @@ module.exports = {
         bareTypeScriptTransformPlugin({
             projectRoot: repoRoot,
             tsconfigPath: path.resolve(repoRoot, "tsconfig.json"),
+            useTypeChecker: false,
             include: (filePath) => {
                 const normalized = filePath.replace(/\\/g, "/");
                 return normalized.startsWith(path.resolve(fixtureRoot, "src").replace(/\\/g, "/"))

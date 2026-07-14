@@ -737,10 +737,20 @@ function addControllerImports(sourceFile, controllerNames, factory, engineSrcInf
                 factory.createPropertyAccessExpression(factory.createIdentifier("Object"), "defineProperty"),
                 undefined,
                 [
-                    factory.createIdentifier(localName),
-                    factory.createStringLiteral("__bareControllerRef"),
+                    factory.createIdentifier("globalThis"),
+                    factory.createStringLiteral(`__bareControllerRef_${className}`),
                     factory.createObjectLiteralExpression([
-                        factory.createPropertyAssignment("value", factory.createTrue()),
+                        factory.createPropertyAssignment(
+                            "value",
+                            factory.createArrowFunction(
+                                undefined,
+                                undefined,
+                                [],
+                                undefined,
+                                factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+                                factory.createIdentifier(localName)
+                            )
+                        ),
                         factory.createPropertyAssignment("configurable", factory.createTrue())
                     ])
                 ]

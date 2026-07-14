@@ -49,7 +49,7 @@ export class EntitySerializer
             varsToSave.splice(varsToSave.indexOf("tapHitbox"), 1);
         }
 
-        if (!obj.parent)
+        if (!obj.parent && varsToSave.includes("save"))
             varsToSave.splice(varsToSave.indexOf("save"), 1);
 
         if (includeSaveFields)
@@ -143,8 +143,10 @@ export class EntitySerializer
     static SerializeComponent(scene: Scene, component: Component): Record<string, Scalar>
     {
         var componentData: Record<string, Scalar> = {};
-        var constructorVarNames = getSaveFields(component);
-        if (constructorVarNames.length == 0)
+        const saveFields = getSaveFields(component);
+        var constructorVarNames = saveFields;
+        const hasExplicitSaveFields = saveFields.length > 0;
+        if (!hasExplicitSaveFields)
             constructorVarNames = (component as any).__paramNames || Helper.GetConstructorParamNames(component.constructor);
 
         var className = component.constructor.name;
@@ -159,7 +161,7 @@ export class EntitySerializer
                 continue;
 
             var defaultValue = defaultValues[paramName];
-            if (paramValue === defaultValue)
+            if (!hasExplicitSaveFields && paramValue === defaultValue)
                 continue;
 
             componentData[paramName] = paramValue;
