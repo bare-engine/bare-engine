@@ -44,7 +44,7 @@ export class DistanceJointObject extends JointObject
         this.SetColor(Color.Blue);
     }
 
-    override OnStart(): void
+    override OnAdded(): void
     {
         if (bare.gameMode == GameMode.Editor)
         {
@@ -65,7 +65,7 @@ export class DistanceJointObject extends JointObject
             bare.events.on(BareEvent.level_preSavedToDisk, () => super.CheckAddJoint(), "joint_level_preSave");
         }
 
-        super.OnStart();
+        super.OnAdded();
     }
 
     override OnRemove(): void

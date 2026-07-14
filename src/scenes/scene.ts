@@ -273,6 +273,26 @@ export class Scene implements SceneI
         await this.OnStart(payload);
 
         this.started = true;
+
+        // START ALL GAME OBJECTS
+        var StartGameObjectTree = (gameObject: GameObject) => 
+        {
+            gameObject.Start();
+
+            for (var i = 0; i < gameObject.children.length; i++)
+            {
+                StartGameObjectTree(gameObject.children[i]);
+            }
+        }
+
+        var gameObjects = this.object.GetAll();
+        for (var i = 0; i < gameObjects.length; i++)
+        {
+            StartGameObjectTree(gameObjects[i]);
+        }
+
+        // START ALL COMPONENTS
+        this._component?.StartAll();
     }
 
     OnStart(payload?: any): void | Promise<void>
@@ -280,6 +300,10 @@ export class Scene implements SceneI
         // FOR OVERRIDE
 
         // OPTIONAL TO OVERRIDE AS ASYNC - TO LOAD SOME MORE ASSETS BEFORE THE LOADING SCREEN DISAPPEARS
+    }
+
+    private StartGameObjects(): void
+    {
     }
     
     get layerNames(): string[]
@@ -924,8 +948,13 @@ to package.json to keep the generated assets (can become large for big projects)
             }
 
             gameObject.Added();
+
+            if (this.started)
+            {
+                gameObject.Start();
+                this._component?.StartAllFromObject(gameObject);
+            }
         }
-        gameObject.Start();
         
         // NOTIFY
         globalEvents.emit(BareEvent.game_objectAdded, { gameObject: gameObject, layer: parent });

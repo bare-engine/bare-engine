@@ -52,6 +52,7 @@ export class GameObject
     parent: GameObject | null = null;
 
     addedToLevel:boolean = false;
+    started:boolean = false;
     pooled:boolean = false;
     revertPivotOnSave: boolean = false; // TODO
 
@@ -388,10 +389,13 @@ export class GameObject
 
     Start()
     {
+        if (this.started)
+            return;
+
+        this.started = true;
         this.OnStart();
     }
 
-    // ALLOCATE VALUES HERE, CALLED WHEN GAMEOBJECT IS ACTUALLY ADDED TO SCENE
     OnStart()
     {
         // FOR OVERRIDE
@@ -411,6 +415,7 @@ export class GameObject
     Removed()
     {
         this.addedToLevel = false;
+        this.started = false;
         this.OnRemoved();
     }
 
@@ -1491,6 +1496,7 @@ export class GameObject
         this.persistent = false;
         this.pooled = false;
         this.save = false;
+        this.started = false;
         this.color.setRGBA(255, 255, 255, 255);
         this.active = true;
         this.visible = true;

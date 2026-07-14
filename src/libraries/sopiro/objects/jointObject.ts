@@ -25,7 +25,7 @@ export abstract class JointObject extends GameObject
 
     staticAnchor: Circle;
 
-    override OnStart(): void
+    override OnAdded(): void
     {
         if (bare.gameMode == GameMode.Game)
         {

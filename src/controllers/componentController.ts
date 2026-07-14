@@ -13,15 +13,23 @@ export abstract class Component<T extends GameObject = GameObject>
     go!: T;
     save: boolean = true; // IF FALSE, DOES NOT SERIALIZE
     hasAdded: boolean = false;
+    hasStarted: boolean = false;
 
     constructor(scene: Scene)
     {
         this.scene = scene;
     }
 
+    Awake(go: T): void
+    {
+        this.go = go;
+        this.OnAwake?.(go);
+    }
+
     Added(go: T): void
     {
         this.go = go;
+        this.hasAdded = true;
         this.OnAdded?.(go);
     }
 
@@ -29,13 +37,21 @@ export abstract class Component<T extends GameObject = GameObject>
     {
         if (this.hasAdded)
             this.OnRemoved?.();
+
+        this.hasAdded = false;
+        this.hasStarted = false;
     }
 
     Start(): void
     {
+        if (!this.enabled || this.hasStarted)
+            return;
+
+        this.hasStarted = true;
         this.OnStart?.();
     }
 
+    OnAwake?(go: T): void;
     OnAdded?(go: T): void;
     OnRemoved?(): void;
     OnStart?(): void;
@@ -99,6 +115,23 @@ export class ComponentController
         }
     }
 
+    public StartAll(): void
+    {
+        this.CallMethodOnAllComponents('Start');
+        this.StartQueuedComponents();
+    }
+
+    public StartAllFromObject(obj: GameObject): void
+    {
+        var allCompsObject = this.GetAllFrom(obj);
+        for (const component of allCompsObject)
+        {
+            component.Start();
+        }
+        
+        this.queuedForStart = this.queuedForStart.filter(c => c.go != obj);
+    }
+
     private OnPreSaveLevel(): void
     {
         this.CallMethodOnAllComponents('OnPreSaveLevel');
@@ -152,14 +185,13 @@ export class ComponentController
         {
             component.enabled = true;
 
-            component.Added?.(go);
+            component.Awake(go);
+            component.Added(go);
 
-            component.hasAdded = true;
-
-            if (component.OnStart)
-            {
+            if (this.scene.started && go.addedToLevel)
+                component.Start();
+            else if (component.OnStart)
                 this.queuedForStart.push(component)
-            }
         }
         else
         {
@@ -467,15 +499,7 @@ export class ComponentController
 
     Update(deltaTime: number)
     {
-        // process queued for start
-        while (this.queuedForStart.length > 0)
-        {
-            const component = this.queuedForStart.shift()
-            if (component?.OnStart && component.enabled)
-            {
-                component.Start()
-            }
-        }
+        this.StartQueuedComponents();
 
         this.CallMethodOnAllComponents('OnUpdate', deltaTime);
     }
@@ -510,6 +534,16 @@ export class ComponentController
                     (method as Function).call(component, ...args);
                 }
             }
+        }
+    }
+
+    private StartQueuedComponents(): void
+    {
+        while (this.queuedForStart.length > 0)
+        {
+            const component = this.queuedForStart.shift();
+            if (component)
+                component.Start();
         }
     }
 

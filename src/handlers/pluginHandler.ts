@@ -1005,10 +1005,10 @@ window.__GAME_DEBUG_API__ = {
                 if (comp)
                 {
                     // WE APPLY THE COMPONENTS VALUES FROM THE PLUGIN TO THE ONES INGAME
-                    // BUT ALSO CALL OnRemoved() AND Added() AROUND IT, TO RESET THE COMPONENT AND LET THE NEW VALUES BE REPROCESSED IN Added()/OnAdded()
+                    // BUT ALSO CALL Removed(), Awake(), Added() AND Start() AROUND IT, TO RESET THE COMPONENT AND LET THE NEW VALUES BE REPROCESSED
                    
                     if (bare.gameMode == GameMode.Game)
-                        comp.OnRemoved?.();
+                        comp.Removed();
 
                     var compData:Record<string, Scalar> = props.components[compName];
                     for (let compProp in compData)
@@ -1023,7 +1023,11 @@ window.__GAME_DEBUG_API__ = {
                     }
 
                     if (bare.gameMode == GameMode.Game)
+                    {
+                        comp.Awake(comp.go);
                         comp.Added(comp.go); // CALLS OnAdded() AS WELL
+                        comp.Start();
+                    }
                 }
                 else
                 {
@@ -1031,8 +1035,6 @@ window.__GAME_DEBUG_API__ = {
                     o.AddComponent(compClass);
                 }
 
-                // COULD ALSO NOT GO THAT ROUTE, AND INSTEAD, CALL OnStart(), AFTER SETTING THE COMPONENT VALUES
-                // BUT THE COMPONENT'S CODE SHOULD THEN BE MUCH STRICTER WITH WHAT IT INITS AT OnAdded() and OnStart() TO MAKE THIS WORK - SEEMS ANNOYING
             }
         }
 

@@ -29,7 +29,7 @@ export class LineJointObject extends JointObject
         this.SetColor(Color.Lime);
     }
 
-    override OnStart(): void
+    override OnAdded(): void
     {
         if (bare.gameMode == GameMode.Editor)
         {
@@ -50,7 +50,7 @@ export class LineJointObject extends JointObject
             bare.events.on(BareEvent.level_preSavedToDisk, () => super.CheckAddJoint(), "joint_level_preSave");
         }
 
-        super.OnStart();
+        super.OnAdded();
     }
 
     override OnRemove(): void
