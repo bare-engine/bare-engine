@@ -85,13 +85,11 @@ export abstract class RigidBody extends GameObject
         }
     }
 
-    override Added(): void
+    override OnAdded(): void
     {
         // TOUCH THE LAZY scene.sopiro CONTROLLER SO IT EXISTS AND IS LISTENING BEFORE
         // game_objectAdded FIRES FOR THIS OBJECT (BODIES REGISTER INTO THE WORLD VIA THAT EVENT)
         this.scene.sopiro;
-
-        super.Added();
     }
 
     // CENTER PIVOT FOR RIGIDBODIES CREATED DYNAMICALLY BY CODE (NO ENTITY)

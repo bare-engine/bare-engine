@@ -735,7 +735,7 @@ export class Scene implements SceneI
         gameObject.scene = this;
         gameObject.ResetValues();
 
-        gameObject.OnAwake();
+        gameObject.Awake();
         
         gameObject.InitTexture(MakePathForEntity(entityConstructed)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
     
@@ -772,7 +772,7 @@ export class Scene implements SceneI
                 gameObject = bare.GetObjectFromPool("GameObject", this);
                 gameObject.pooled = true;
                 gameObject.name = "pooledGameObject";
-                gameObject.OnAwake();
+                gameObject.Awake();
             }
             else
             if (typeof input === "function")
@@ -788,21 +788,21 @@ export class Scene implements SceneI
                     gameObject.pooled = true;
 
                 gameObject.name = (pool ? "pooledGameObjectExtend" : "gameObjectExtend");
-                gameObject.OnAwake();
+                gameObject.Awake();
             }
             else
             if (input instanceof GameObject)
             {
                 // GameObject INSTANCE ALREADY PROVIDED
                 gameObject = input;
-                gameObject.OnAwake();
+                gameObject.Awake();
             }
             else
             if (input instanceof Texture)
             {
                 // TEXTURE
                 gameObject = bare.GetObjectFromPool("GameObject", this);
-                gameObject.OnAwake();
+                gameObject.Awake();
                 gameObject.SetTexture(input);
                 gameObject.pooled = true;
                 gameObject.name = input.texturePath || "PooledGameObjectFromTexture";
@@ -890,7 +890,7 @@ to package.json to keep the generated assets (can become large for big projects)
                 }
 
                 gameObject = bare.GetObjectFromPool(entity.baseClass!, this);
-                gameObject.OnAwake(entity);
+                gameObject.Awake(entity);
 
                 gameObject.Init(MakePathForEntity(entity)); // LOADS TEXTURE TOO
 
@@ -925,7 +925,7 @@ to package.json to keep the generated assets (can become large for big projects)
 
             gameObject.Added();
         }
-        gameObject.OnStart();
+        gameObject.Start();
         
         // NOTIFY
         globalEvents.emit(BareEvent.game_objectAdded, { gameObject: gameObject, layer: parent });
@@ -990,6 +990,8 @@ to package.json to keep the generated assets (can become large for big projects)
             globalEvents.emit(BareEvent.game_objectRemoved, gameObject);
             this.events.emit(BareEvent.game_objectRemoved, gameObject);
 
+            gameObject.Removed();
+
             gameObject.ResetValues();
 
             if (wasPooled)
@@ -1003,9 +1005,8 @@ to package.json to keep the generated assets (can become large for big projects)
         else
         {
             gameObject.pooled = wasPooled;
+            gameObject.Removed();
         }
-
-        gameObject.Removed();
     }
 
     Update(deltaTime: number): void

@@ -374,11 +374,21 @@ export class GameObject
         this.OnTextureLoadedCallbacks.push(callback);
     }
 
+    Awake(entity?: Entity)
+    {
+        this.OnAwake(entity);
+    }
+
     // SET INITIAL VALUES HERE, NO ALLOCATIONS
     // SINCE IT'S ALSO USED IN GetAppliedEntityWithDefaultValues() FOR DEFAULT VALUES
     OnAwake(entity?: Entity)
     {
         // FOR OVERRIDE
+    }
+
+    Start()
+    {
+        this.OnStart();
     }
 
     // ALLOCATE VALUES HERE, CALLED WHEN GAMEOBJECT IS ACTUALLY ADDED TO SCENE
@@ -390,11 +400,23 @@ export class GameObject
     Added()
     {
         this.addedToLevel = true;
+        this.OnAdded();
+    }
+
+    OnAdded()
+    {
+        // FOR OVERRIDE
     }
 
     Removed()
     {
         this.addedToLevel = false;
+        this.OnRemoved();
+    }
+
+    OnRemoved()
+    {
+        // FOR OVERRIDE
     }
 
     OnResize()

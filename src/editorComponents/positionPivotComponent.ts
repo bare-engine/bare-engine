@@ -1,5 +1,4 @@
 import { Component } from "../controllers/componentController";
-import { GameObject } from "../objects/gameObject";
 import { ArcadeObject } from "../objects/arcadeObject";
 import { Scene } from "../scenes/scene";
 import { Save } from "../utils/decorators";
@@ -15,11 +14,6 @@ export class PositionPivotComponent extends Component
     constructor(scene: Scene)
     {
         super(scene);
-    }
-
-    Added(go: GameObject):void
-    {
-        super.Added(go);
     }
 
     OnUpdate(deltaTime: number): void 

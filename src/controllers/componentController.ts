@@ -31,6 +31,11 @@ export abstract class Component<T extends GameObject = GameObject>
             this.OnRemoved?.();
     }
 
+    Start(): void
+    {
+        this.OnStart?.();
+    }
+
     OnAdded?(go: T): void;
     OnRemoved?(): void;
     OnStart?(): void;
@@ -468,7 +473,7 @@ export class ComponentController
             const component = this.queuedForStart.shift()
             if (component?.OnStart && component.enabled)
             {
-                component.OnStart()
+                component.Start()
             }
         }
 

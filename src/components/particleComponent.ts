@@ -95,10 +95,8 @@ export class ParticleComponent extends Component
         }
     }
 
-    Added(go: GameObject): void
+    OnAdded(go: GameObject): void
     {
-        super.Added(go);
-
         this.initEmitter();
         this.emitter.position.set(go.x + this.position.x, go.y + this.position.y);
     }
