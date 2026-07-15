@@ -35,6 +35,13 @@ const HANDLES: HandleDef[] = [
 // angle == 0 is a plain axis-aligned box (used for multi-selection groups).
 interface Frame { cx: number; cy: number; hw: number; hh: number; angle: number; }
 
+interface HandleMetrics
+{
+    fit: number;       // 1 at normal size, lower when the frame is small on screen
+    size: number;      // drawn square size, in screen px
+    hitRadius: number; // circular hit radius, in screen px
+}
+
 interface TargetStart
 {
     obj: GameObject;
@@ -46,6 +53,9 @@ interface TargetStart
 
 const HANDLE_SIZE = 5;        // drawn resize-handle size, in on-screen px (see Scene.ScreenPxToWorldScale)
 const HANDLE_HIT_PAD = 5;     // extra grab slack around a handle, in screen px
+const HANDLE_FIT_SCREEN_SIZE = 30; // below this on-screen width/height, shrink handles so body-drag stays reachable
+const MIN_HANDLE_SIZE = 2;    // keep tiny-object handles visible without letting them cover the object
+const MIN_HANDLE_HIT_RADIUS = 2;
 const MIN_SIZE = 1;           // smallest world-space frame dimension while resizing
 const ROT_HANDLE_GAP = 0.5;   // gap from the top edge to the rotation knob, as a fraction of the box half-height (box-relative, like the resize anchors)
 const ROT_HANDLE_RADIUS = 5;  // rotation knob radius, in screen px
@@ -569,7 +579,8 @@ export class TransformToolHandler
 
     private HitTest(scene: Scene, frame: Frame, mouse: Vec2): HandleDef | null
     {
-        const radius = (HANDLE_SIZE * 0.5 + HANDLE_HIT_PAD) * scene.ScreenPxToWorldScale();
+        const metrics = this.GetHandleMetrics(scene, frame);
+        const radius = metrics.hitRadius * scene.ScreenPxToWorldScale();
 
         let best: HandleDef | null = null;
         let bestSq = radius * radius;
@@ -590,10 +601,34 @@ export class TransformToolHandler
         return best;
     }
 
+    private GetHandleMetrics(scene: Scene, frame: Frame): HandleMetrics
+    {
+        const pxToWorld = scene.ScreenPxToWorldScale();
+        const screenW = pxToWorld > 0 ? (frame.hw * 2) / pxToWorld : HANDLE_FIT_SCREEN_SIZE;
+        const screenH = pxToWorld > 0 ? (frame.hh * 2) / pxToWorld : HANDLE_FIT_SCREEN_SIZE;
+        const smallestScreenSide = Math.min(Math.abs(screenW), Math.abs(screenH));
+
+        if (smallestScreenSide >= HANDLE_FIT_SCREEN_SIZE)
+        {
+            return {
+                fit: 1,
+                size: HANDLE_SIZE,
+                hitRadius: HANDLE_SIZE * 0.5 + HANDLE_HIT_PAD,
+            };
+        }
+
+        const fit = Math.max(0, smallestScreenSide) / HANDLE_FIT_SCREEN_SIZE;
+        const size = Math.max(MIN_HANDLE_SIZE, HANDLE_SIZE * fit);
+        const hitRadius = Math.max(MIN_HANDLE_HIT_RADIUS, (HANDLE_SIZE * 0.5 + HANDLE_HIT_PAD) * fit);
+
+        return { fit, size, hitRadius };
+    }
+
     private HitTestRotation(scene: Scene, frame: Frame, mouse: Vec2): boolean
     {
         const pxToWorld = scene.ScreenPxToWorldScale();
-        const radius = (ROT_HANDLE_RADIUS + HANDLE_HIT_PAD) * pxToWorld;
+        const metrics = this.GetHandleMetrics(scene, frame);
+        const radius = Math.max(MIN_HANDLE_HIT_RADIUS, (ROT_HANDLE_RADIUS + HANDLE_HIT_PAD) * metrics.fit) * pxToWorld;
         const p = this.RotHandlePos(frame);
         const dx = mouse.x - p.x;
         const dy = mouse.y - p.y;
@@ -624,6 +659,7 @@ export class TransformToolHandler
     {
         const pxToWorld = scene.ScreenPxToWorldScale();
         const lineWidth = 2 * pxToWorld;
+        const metrics = this.GetHandleMetrics(scene, frame);
 
         const fill = new Color(255, 255, 255, 255);
 
@@ -634,13 +670,14 @@ export class TransformToolHandler
         const knob = this.RotHandlePos(frame);
         rapid.drawLine({ points: [topCenter, knob], width: lineWidth, roundCap: false, color });
 
-        const knobR = ROT_HANDLE_RADIUS * pxToWorld;
+        const knobR = Math.max(MIN_HANDLE_SIZE, ROT_HANDLE_RADIUS * metrics.fit) * pxToWorld;
         rapid.drawCircle({ radius: knobR, color, position: knob });
         rapid.drawCircle({ radius: Math.max(0, knobR - lineWidth), color: fill, position: knob });
 
         // Resize handles (small screen-aligned squares at the rotated positions).
-        const size = HANDLE_SIZE * pxToWorld;
+        const size = metrics.size * pxToWorld;
         const half = size * 0.5;
+        const handleLineWidth = Math.min(lineWidth, Math.max(1, metrics.size * 0.35) * pxToWorld);
 
         for (const handle of HANDLES)
         {
@@ -660,7 +697,7 @@ export class TransformToolHandler
                     new Vec2(p.x + half, p.y + half),
                     new Vec2(p.x - half, p.y + half),
                 ],
-                width: lineWidth,
+                width: handleLineWidth,
                 roundCap: false,
                 color,
                 closed: true,
