@@ -625,10 +625,10 @@ export class EditorControlsHandler {
             return;
         }
 
-        var entityCopy = Object.assign({}, entity);
+        var entityCopy =  Object.assign({}, entity);//Helper.DeepCopy(entity); // Object.assign({}, entity);
 
         // THIS PREVIEW OBJECT IS JUST VISUAL, DON'T WANT ANY COMPONENTS ON IT (?)
-        delete entityCopy.components;
+        //delete entityCopy.components;
 
         this.currentPreviewEntity.ResetValues();
         this.currentPreviewEntity.Init(MakePathForEntity(entityCopy));

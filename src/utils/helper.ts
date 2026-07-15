@@ -2,7 +2,7 @@
 
 import { Vec2, Color } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
-import { Rectangle } from "../types/bareTypes";
+import { Entity, Rectangle } from "../types/bareTypes";
 
 export interface Size {
     width: number;
@@ -11,6 +11,11 @@ export interface Size {
 
 export class Helper
 {
+    static DeepCopy(obj: Object)
+    {
+        return JSON.parse(JSON.stringify(obj));
+    }
+
     static ToFixed(value: number, limit = 1e-13): number
     {
         return Math.round(value / limit) * limit;
