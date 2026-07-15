@@ -99,7 +99,7 @@ export class SettingsHandler
             if (rawValue === undefined)
             {
                 // Not set, use default
-                (settings as any)[key] = defaultValue;
+                (settings as any)[key] = this.clone(defaultValue);
             }
         }
 
