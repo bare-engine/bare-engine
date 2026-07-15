@@ -136,6 +136,10 @@ export class EditorControlsHandler {
         {
             this.RemoveSelectedObjects();
         }
+        if (key == 's' && allKeys.length == 1)
+        {
+            this.ActivateStampFromSelection();
+        }
     }
 
     KeyReleased({ key, allKeys }: BareEventPayload['key_released'])
@@ -398,6 +402,21 @@ export class EditorControlsHandler {
                 this.SetCurrentPreviewEntity(null);
             }
         }
+    }
+
+    private ActivateStampFromSelection(): void
+    {
+        if (this.currentPreviewActive)
+        {
+            this.SetCurrentPreviewEntity(null);
+            return;
+        }
+
+        const selectedObj = this.selectedObjects[this.selectedObjects.length - 1];
+        if (!selectedObj)
+            return;
+
+        this.SetCurrentPreviewEntity(selectedObj.entity);
     }
 
     GetSelectedLayer(): int
