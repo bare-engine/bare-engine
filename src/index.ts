@@ -16,20 +16,20 @@ export { Query, World, createQueue } from "./libraries/miniplex/index";
 export type { With, Without, Strict } from "./libraries/miniplex/index";
 
 // Controllers
-export { Component, ComponentController, component } from "./controllers/componentController";
-export { HitboxController, hitbox } from "./controllers/hitboxController";
+export { Component, ComponentController } from "./controllers/componentController";
+export { HitboxController } from "./controllers/hitboxController";
 export type { ButtonHandlers } from "./controllers/hitboxController";
 export { KeyboardController, keyboardController } from "./controllers/keyboardController";
-export { MouseController, mouse } from "./controllers/mouseController";
-export { ObjectController, object } from "./controllers/objectController";
-export { ParticleController, particle } from "./controllers/particleController";
+export { MouseController } from "./controllers/mouseController";
+export { ObjectController } from "./controllers/objectController";
+export { ParticleController } from "./controllers/particleController";
 export { SceneController } from "./controllers/sceneController";
-export { TweenController, TweenTo, tween } from "./controllers/tweenController";
+export { TweenController, TweenTo } from "./controllers/tweenController";
 
 // Handlers
-export { CameraHandler, camera } from "./handlers/cameraHandler";
+export { CameraHandler } from "./handlers/cameraHandler";
 export { FileDropHandler } from "./handlers/fileDropHandler";
-export { LevelHandler, level } from "./handlers/levelHandler";
+export { LevelHandler } from "./handlers/levelHandler";
 export { plugin, PluginHandler } from "./handlers/pluginHandler";
 export { PoolHandler } from "./handlers/poolHandler";
 export { SaveDataHandler } from "./handlers/SaveDataHandler";

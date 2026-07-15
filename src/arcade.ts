@@ -3,7 +3,7 @@
 import type { ArcadeObject } from "./objects/arcadeObject";
 
 // Controller
-export { ArcadePhysicsController, arcade } from "./controllers/arcadePhysicsController";
+export { ArcadePhysicsController } from "./controllers/arcadePhysicsController";
 
 // Object
 export { ArcadeObject } from "./objects/arcadeObject";

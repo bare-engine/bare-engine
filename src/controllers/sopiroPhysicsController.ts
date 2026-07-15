@@ -282,5 +282,4 @@ if (window.bare)
 else
     globalEvents.persistent.on(BareEvent.game_awake, RegisterSopiroClasses);
 
-export var sopiro:SopiroPhysicsController;
 RegisterController(SopiroPhysicsController);

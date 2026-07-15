@@ -62,26 +62,26 @@ export class LevelHandler
 
     async LoadData(levelStr: string): Promise<LevelData>
     {
-        var level: LevelData;
+        var levelData: LevelData;
 
         var hasCachedLevel = SaveData.levelCache.has(levelStr);
 
         if (hasCachedLevel)
         {
-            level = SaveData.levelCache.get(levelStr)!;
+            levelData = SaveData.levelCache.get(levelStr)!;
         }
         else
         {
             if (LevelHandler.levelCache.has(levelStr))
             {
-                level = LevelHandler.levelCache.get(levelStr)!;
+                levelData = LevelHandler.levelCache.get(levelStr)!;
             }
             else
             {
                 try
                 {
-                    level = await Helper.loadJSON<LevelData>(`${bare.levelPath}/${levelStr}.json`);
-                    LevelHandler.levelCache.set(levelStr, level);
+                    levelData = await Helper.loadJSON<LevelData>(`${bare.levelPath}/${levelStr}.json`);
+                    LevelHandler.levelCache.set(levelStr, levelData);
                 }
                 catch (error)
                 {
@@ -90,7 +90,7 @@ export class LevelHandler
             }
         }
 
-        return level;
+        return levelData;
     }
 
     async LoadCurrent(): Promise<LevelData>
@@ -952,5 +952,4 @@ export class LevelHandler
     }
 }
 
-export var level:LevelHandler;
 RegisterController(LevelHandler);

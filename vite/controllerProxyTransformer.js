@@ -222,13 +222,7 @@ function createControllerProxyTransformer(program) {
                 if (!firstArg) {
                     return callNode;
                 }
-                // CONTROLLER-AS-FIRST-ARG ONLY EXISTS IN ENGINE SOURCES (LEGACY IDENTIFIER STYLE)
-                const firstArgIsController = !isProjectSource
-                    && ts.isIdentifier(firstArg)
-                    && bareModuleControllerNames.has(firstArg.text)
-                    && resolvesToControllerModuleVar(firstArg, typeChecker);
-
-                if (!firstArgIsController && typeChecker) {
+                if (typeChecker) {
                     const argType = typeChecker.getTypeAtLocation(firstArg);
                     if (argType && argType.getProperty("scene")) {
                         const tweenControllerAccess = factory.createPropertyAccessExpression(
@@ -480,28 +474,6 @@ function createControllerProxyTransformer(program) {
                         }
 
                         if (name === "events") {
-                            if (extendsSceneDeep) {
-                                return createThisProperty(name);
-                            }
-                            if (canRewriteScene) {
-                                needsScene = true;
-                                return createThisSceneProperty(name);
-                            }
-                        }
-
-                        // LEGACY IDENTIFIER STYLE (mouse, camera, object, ...):
-                        // ONLY ENGINE SOURCES USE IT - PROJECT CODE USES THE bare.<module> SHORTHANDS,
-                        // SO IDENTIFIERS WITH THESE NAMES IN PROJECT CODE ARE LEFT ALONE.
-                        // THE SHORT MODULE NAME DOUBLES AS THE SCENE FIELD NAME, SO IT'S EMITTED DIRECTLY.
-                        // SCOPE-AWARE: ONLY REWRITE WHEN THE IDENTIFIER ACTUALLY RESOLVES TO THE MODULE-LEVEL
-                        // `export var <module>` ANCHOR (AN IMPORTED CONTROLLER VAR). LOCAL VARIABLES AND
-                        // PARAMETERS THAT SHARE THE NAME (const component, tween => ..., ...) RESOLVE TO THEIR
-                        // OWN DECLARATION AND ARE LEFT ALONE.
-                        // NO usedControllers.add: THE ENGINE FILE'S OWN `import { mouse } from ...` ALREADY
-                        // KEEPS THE CONTROLLER MODULE ALIVE, SO NO TREE-SHAKE IMPORT INJECTION IS NEEDED.
-                        if (!isProjectSource
-                            && bareModuleControllerNames.has(name)
-                            && resolvesToControllerModuleVar(n, typeChecker)) {
                             if (extendsSceneDeep) {
                                 return createThisProperty(name);
                             }
@@ -1454,35 +1426,6 @@ function getAliasedSymbol(symbol, checker) {
         return checker.getAliasedSymbol(symbol);
     }
     return symbol;
-}
-
-// TRUE WHEN AN IDENTIFIER RESOLVES TO ONE OF THE MODULE-LEVEL `export var <module>` ANCHORS
-// (mouse, camera, object, ...) - I.E. THE LEGACY IDENTIFIER STYLE, IMPORTED FROM A CONTROLLER
-// MODULE. A LOCAL VARIABLE OR PARAMETER THAT HAPPENS TO SHARE THE NAME RESOLVES TO ITS OWN
-// DECLARATION (NOT A MODULE-LEVEL VariableStatement) AND RETURNS false, SO IT'S LEFT ALONE.
-function resolvesToControllerModuleVar(node, typeChecker) {
-    if (!typeChecker) {
-        return false;
-    }
-    let symbol = typeChecker.getSymbolAtLocation(node);
-    if (!symbol) {
-        return false;
-    }
-    if (symbol.flags & ts.SymbolFlags.Alias) {
-        symbol = typeChecker.getAliasedSymbol(symbol);
-    }
-    const declarations = symbol.getDeclarations() || [];
-    return declarations.some((decl) => {
-        if (!ts.isVariableDeclaration(decl)) {
-            return false;
-        }
-        const declarationList = decl.parent;
-        const variableStatement = declarationList && declarationList.parent;
-        return variableStatement
-            && ts.isVariableStatement(variableStatement)
-            && variableStatement.parent
-            && ts.isSourceFile(variableStatement.parent);
-    });
 }
 
 function getBaseClassNames(node) {

@@ -3,7 +3,7 @@
 import type { RigidBody } from "./libraries/sopiro/rigidbody";
 
 // Controller
-export { SopiroPhysicsController, sopiro } from "./controllers/sopiroPhysicsController";
+export { SopiroPhysicsController } from "./controllers/sopiroPhysicsController";
 
 // Libraries: Sopiro
 export * from "./libraries/sopiro/aabb";

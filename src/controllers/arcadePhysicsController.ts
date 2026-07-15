@@ -1334,5 +1334,4 @@ if (window.bare)
 else
     globalEvents.persistent.on(BareEvent.game_awake, RegisterArcadeClasses);
 
-export var arcade:ArcadePhysicsController;
 RegisterController(ArcadePhysicsController);

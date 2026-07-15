@@ -351,5 +351,4 @@ export function TweenTo(object: any, seconds: number, props: any, overwrite: boo
     return scene['tween'].To(object, seconds, props, overwrite);
 }
 
-export var tween:TweenController;
 RegisterController(TweenController);
