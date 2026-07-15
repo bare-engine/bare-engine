@@ -1061,9 +1061,12 @@ function emitTransformedTs(filePath, code, compilerOptions, stripDecorators) {
     }
 
     const mapName = `${jsName}.map`;
+    const map = outputs.has(mapName) ? JSON.parse(outputs.get(mapName)) : null;
+    applyTransformedSourceContent(map, filePath, code, stripDecorators, program);
+
     return {
         code: outputs.get(jsName),
-        map: outputs.has(mapName) ? JSON.parse(outputs.get(mapName)) : null
+        map
     };
 }
 
@@ -1080,10 +1083,236 @@ function transpileTransformedTs(filePath, code, compilerOptions, stripDecorators
         }
     });
 
+    const map = result.sourceMapText ? JSON.parse(result.sourceMapText) : null;
+    applyTransformedSourceContent(map, filePath, code, stripDecorators);
+
     return {
         code: result.outputText,
-        map: result.sourceMapText ? JSON.parse(result.sourceMapText) : null
+        map
     };
+}
+
+function applyTransformedSourceContent(map, filePath, code, stripDecorators, program) {
+    if (!map || !Array.isArray(map.sources)) {
+        return;
+    }
+
+    const transformedSource = buildLinePreservingDebugSource(filePath, code, program);
+    if (!transformedSource) {
+        return;
+    }
+
+    map.sourcesContent ||= [];
+    for (let i = 0; i < map.sources.length; i++) {
+        if (sourceMapEntryMatchesFile(map.sources[i], filePath)) {
+            map.sourcesContent[i] = transformedSource;
+        }
+    }
+}
+
+function sourceMapEntryMatchesFile(source, filePath) {
+    const normalizedSource = normalize(source || "");
+    const normalizedFile = normalize(filePath);
+
+    if (normalizedSource === normalizedFile) {
+        return true;
+    }
+
+    const resolvedSource = normalize(path.resolve(path.dirname(filePath), source || ""));
+    return resolvedSource === normalizedFile
+        || normalizedSource.endsWith(`/${path.basename(filePath)}`);
+}
+
+const debugBareModuleFields = new Set([
+    "object",
+    "component",
+    "mouse",
+    "tween",
+    "particle",
+    "hitbox",
+    "arcade",
+    "sopiro",
+    "level",
+    "camera"
+]);
+
+function buildLinePreservingDebugSource(filePath, code, program) {
+    const sourceFile = ts.createSourceFile(filePath, code, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+    const ms = new MagicString(code);
+    const checker = program ? program.getTypeChecker() : null;
+    let changed = false;
+
+    function visit(node, classContext = null) {
+        if (ts.isClassDeclaration(node) || ts.isClassExpression(node)) {
+            const nextContext = getDebugClassContext(node, checker);
+            ts.forEachChild(node, child => visit(child, nextContext));
+            return;
+        }
+
+        if (classContext?.hasScene && ts.isPropertyAccessExpression(node)) {
+            const fieldName = node.name && ts.isIdentifier(node.name) ? node.name.text : "";
+            if (ts.isIdentifier(node.expression) && node.expression.text === "bare") {
+                if (fieldName === "events") {
+                    overwriteNode(ms, sourceFile, node, classContext.extendsScene ? "this.events" : "this.scene.events");
+                    changed = true;
+                    return;
+                }
+
+                if (debugBareModuleFields.has(fieldName)) {
+                    overwriteNode(ms, sourceFile, node, classContext.extendsScene ? `this.${fieldName}` : `this.scene.${fieldName}`);
+                    changed = true;
+                    return;
+                }
+            }
+        }
+
+        if (classContext?.hasScene && ts.isIdentifier(node) && isDebugIdentifierReference(node)) {
+            if (node.text === "bScene") {
+                overwriteNode(ms, sourceFile, node, classContext.extendsScene ? "this" : "this.scene");
+                changed = true;
+                return;
+            }
+            if (node.text === "events") {
+                overwriteNode(ms, sourceFile, node, classContext.extendsScene ? "this.events" : "this.scene.events");
+                changed = true;
+                return;
+            }
+        }
+
+        ts.forEachChild(node, child => visit(child, classContext));
+    }
+
+    visit(sourceFile);
+    return changed ? ms.toString() : code;
+}
+
+function getDebugClassContext(node, checker) {
+    const extendsScene = debugClassExtendsScene(node, checker);
+    return {
+        extendsScene,
+        hasScene: extendsScene || debugClassHasScene(node, checker)
+    };
+}
+
+function debugClassExtendsScene(node, checker) {
+    if (debugClassExtendsName(node, "Scene")) {
+        return true;
+    }
+
+    if (!checker) {
+        return false;
+    }
+
+    const visited = new Set();
+    function walk(type) {
+        if (!type || visited.has(type)) {
+            return false;
+        }
+        visited.add(type);
+
+        if (type.symbol && type.symbol.name === "Scene") {
+            return true;
+        }
+
+        const bases = type.getBaseTypes ? type.getBaseTypes() : [];
+        return bases && bases.some(walk);
+    }
+
+    return walk(checker.getTypeAtLocation(node));
+}
+
+function debugClassHasScene(node, checker) {
+    if (debugClassDeclaresScene(node) || debugClassExtendsName(node, "GameObject")) {
+        return true;
+    }
+
+    if (!checker) {
+        return false;
+    }
+
+    const type = checker.getTypeAtLocation(node);
+    return !!(type && type.getProperty && type.getProperty("scene"));
+}
+
+function debugClassExtendsName(node, name) {
+    if (!node.heritageClauses) {
+        return false;
+    }
+
+    for (const clause of node.heritageClauses) {
+        if (clause.token !== ts.SyntaxKind.ExtendsKeyword) {
+            continue;
+        }
+        for (const type of clause.types) {
+            const expression = type.expression;
+            if (ts.isIdentifier(expression) && expression.text === name) {
+                return true;
+            }
+            if (ts.isPropertyAccessExpression(expression) && expression.name.text === name) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+function debugClassDeclaresScene(node) {
+    return node.members.some(member => {
+        if (
+            (ts.isPropertyDeclaration(member)
+                || ts.isGetAccessorDeclaration(member)
+                || ts.isSetAccessorDeclaration(member)
+                || ts.isMethodDeclaration(member))
+            && member.name
+            && ts.isIdentifier(member.name)
+        ) {
+            return member.name.text === "scene";
+        }
+
+        if (ts.isConstructorDeclaration(member)) {
+            return member.parameters.some(param => param.name && ts.isIdentifier(param.name) && param.name.text === "scene" && hasDebugParamPropertyModifier(param));
+        }
+
+        return false;
+    });
+}
+
+function hasDebugParamPropertyModifier(param) {
+    return !!param.modifiers && param.modifiers.some(modifier =>
+        modifier.kind === ts.SyntaxKind.PublicKeyword
+        || modifier.kind === ts.SyntaxKind.PrivateKeyword
+        || modifier.kind === ts.SyntaxKind.ProtectedKeyword
+        || modifier.kind === ts.SyntaxKind.ReadonlyKeyword
+    );
+}
+
+function overwriteNode(ms, sourceFile, node, replacement) {
+    ms.overwrite(node.getStart(sourceFile), node.end, replacement);
+}
+
+function isDebugIdentifierReference(node) {
+    const parent = node.parent;
+    if (!parent) {
+        return true;
+    }
+
+    if (ts.isPropertyAccessExpression(parent) && parent.name === node) return false;
+    if (ts.isPropertyAssignment(parent) && parent.name === node) return false;
+    if (ts.isPropertyDeclaration(parent) && parent.name === node) return false;
+    if (ts.isBindingElement(parent) && parent.name === node) return false;
+    if (ts.isImportSpecifier(parent) || ts.isExportSpecifier(parent)) return false;
+    if (ts.isImportClause(parent) && parent.name === node) return false;
+    if (ts.isVariableDeclaration(parent) && parent.name === node) return false;
+    if (ts.isParameter(parent) && parent.name === node) return false;
+    if (ts.isFunctionDeclaration(parent) && parent.name === node) return false;
+    if (ts.isMethodDeclaration(parent) && parent.name === node) return false;
+    if (ts.isClassDeclaration(parent) && parent.name === node) return false;
+    if (ts.isInterfaceDeclaration(parent) && parent.name === node) return false;
+    if (ts.isTypeAliasDeclaration(parent) && parent.name === node) return false;
+    if (ts.isTypeReferenceNode(parent) && parent.typeName === node) return false;
+
+    return true;
 }
 
 function injectInitialAssets(html, folder) {
