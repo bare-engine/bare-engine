@@ -217,7 +217,7 @@ export class EditorControlsHandler {
 
         const layer = this.GetSelectedLayer();
 
-        if (this.currentPreviewActive && this.currentPreviewEntity.visible)
+        if (this.CanPlaceCurrentPreviewObject())
         {
             const altDown = keyboardController.IsKeyDown("alt");
             this.SetEditorPosition(this.currentPreviewEntity, bare.mouse.world.position.x, bare.mouse.world.position.y, altDown);
@@ -771,12 +771,20 @@ export class EditorControlsHandler {
         return obj;
     }
 
+    private CanPlaceCurrentPreviewObject(): boolean
+    {
+        return (
+            this.currentPreviewActive &&
+            this.currentPreviewEntity.visible &&
+            this.currentPreviewEntity.visibleInEditor
+        );
+    }
+
     private IsMultiPlaceGridEnabled(ignoreGrid: boolean = false): boolean
     {
         const settings = this.scene.settingsData.settings;
         return !!(
-            this.currentPreviewActive &&
-            this.currentPreviewEntity.visible &&
+            this.CanPlaceCurrentPreviewObject() &&
             keyboardController.IsKeyDown("shift") &&
             !ignoreGrid &&
             settings?.gridEnabled &&
