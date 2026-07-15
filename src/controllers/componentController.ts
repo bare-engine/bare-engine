@@ -202,18 +202,25 @@ export class ComponentController
         return component;
     }
     
-    Get<T extends Component>(go: GameObject, componentType: Ctor<T>): T | null
+    Get<T extends Component>(go: GameObject, componentClass: Ctor<T>): T | null;
+    Get<T extends Component>(go: GameObject, componentInstance: T): T | null;
+    Get<T extends Component>(go: GameObject, arg: Ctor<T> | T): T | null
     {
         const components = this.componentsByGameObject.get(go.uniqueID);
         if (!components) return null;
 
-        const component = components.find(c => c instanceof componentType);
+        const component = (typeof arg === "function")
+            ? components.find(c => c instanceof arg)
+            : components.find(c => c == arg);
+
         return (component as T) ?? null;
     }
 
-    Has<T extends Component>(go: GameObject, componentType: Ctor<T>): boolean
+    Has<T extends Component>(go: GameObject, componentClass: Ctor<T>): boolean;
+    Has<T extends Component>(go: GameObject, componentInstance: T): boolean;
+    Has<T extends Component>(go: GameObject, arg: Ctor<T> | T): boolean
     {
-        return this.Get<T>(go, componentType) != null;
+        return this.Get(go, arg as any) != null;
     }
 
     GetAllByType<ComponentType extends Component<any>>(componentType: Ctor<ComponentType>): ComponentType[]

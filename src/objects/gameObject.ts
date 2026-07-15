@@ -211,16 +211,40 @@ export class GameObject
         }
     }
 
-    GetComponent<T extends Component<any>>(componentClass: Ctor<T>): T | null
+    GetComponent<T extends Component<any>>(componentClass: Ctor<T>): T | null;
+    GetComponent<T extends Component<any>>(componentInstance: T): T | null;
+    GetComponent<T extends Component<any>>(arg: Ctor<T> | T): T | null
     {
         var componentController = this.scene.Get("component");
 
         if (componentController)
-            return componentController.Get(this, componentClass);
+        {
+            if (typeof arg === "function")
+                return componentController.Get(this, arg);
+
+            return componentController.Get(this, arg);
+        }
         else
         {
             console.error("ComponentController not registered. Call bare.AddClass(ComponentController) at OnAwake() of your game.");
             return null;
+        }
+    }
+
+    HasComponent<T extends Component<any>>(componentClass: Ctor<T>): boolean;
+    HasComponent<T extends Component<any>>(componentInstance: T): boolean;
+    HasComponent<T extends Component<any>>(arg: Ctor<T> | T): boolean
+    {
+        var componentController = this.scene.Get("component");
+
+        if (componentController)
+        {
+            return componentController.Has(this, arg as any);
+        }
+        else
+        {
+            console.error("ComponentController not registered. Call bare.AddClass(ComponentController) at OnAwake() of your game.");
+            return false;
         }
     }
 
@@ -236,14 +260,16 @@ export class GameObject
         return new Array<Component<this>>();
     }
     
-    RemoveComponent<T extends Component<this>>(componentClass: Ctor<T>): boolean;
-    RemoveComponent<T extends Component<this>>(componentInstance: T): boolean;
-    RemoveComponent<T extends Component<this>>(arg: Ctor<T> | T): boolean
+    RemoveComponent<T extends Component<any>>(componentClass: Ctor<T>): boolean;
+    RemoveComponent<T extends Component<any>>(componentInstance: T): boolean;
+    RemoveComponent<T extends Component<any>>(arg: Ctor<T> | T): boolean
     {
         var componentController = this.scene.Get("component");
 
         if (componentController)
-            return componentController.RemoveComponent(this, arg);
+        {
+            return componentController.RemoveComponent(this, arg as any);
+        }
         else
         {
             console.error("ComponentController not registered. Call bare.AddClass(ComponentController) at Awake() of your game.");
