@@ -887,8 +887,12 @@ export async function applyInspectorField(component: any, fieldName: string, val
         // If the field holds an object (eg a Vec2) and we got an {x,y} struct, write into the
         // existing object rather than replacing it — replacing would drop the Vec2 and its methods.
         const current = component[entry.name];
-        const isXY = resolvedValue && typeof resolvedValue === "object"
-            && ("x" in resolvedValue || "y" in resolvedValue);
+        const resolvedKeys = resolvedValue && typeof resolvedValue === "object"
+            ? Object.keys(resolvedValue)
+            : [];
+        const isXY = resolvedKeys.length === 2
+            && resolvedKeys.includes("x")
+            && resolvedKeys.includes("y");
 
         if (isXY && current && typeof current === "object")
         {

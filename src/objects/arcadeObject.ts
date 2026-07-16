@@ -36,6 +36,16 @@ export class ArcadeObject extends GameObject
         set: (type: string) => this.physicsHitbox.type = HitboxType[type as keyof typeof HitboxType],
     };
 
+    @InspectorField 
+    get hitboxRect(): Rectangle
+    {
+        return this.physicsHitbox.rectangle;
+    }
+    set hitboxRect(rect: Rectangle)
+    {
+        this.physicsHitbox.rectangle = rect;
+    }
+
     @InspectorField
     @Int
     get hitboxRadius(): number
