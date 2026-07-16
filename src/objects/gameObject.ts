@@ -509,7 +509,7 @@ export class GameObject
             // STILL RENDERS EVEN IF VISIBLE IS FALSE IN EDITOR 
         }
         else
-        if (!this.visibleInEditor || !this.visible || this.alpha == 0 || this.scale.x == 0 || this.scale.y == 0 || this.innerScale.x == 0 || this.innerScale.y == 0)
+        if (!this.visibleInEditor || !this.visible || this.alpha == 0 || this.scale.x == 0 || this.scale.y == 0)
             return;
         
         // UPDATE SHADERS

@@ -658,7 +658,7 @@ export class EditorControlsHandler {
 
         var ready = () => {
             // WILL END UP SETTING THE PIVOT CORRECTLY
-            this.scene.ApplyEntityToGameObject(entityCopy, this.currentPreviewEntity);
+            this.scene.ApplyEntityToGameObject(entityCopy, this.currentPreviewEntity, false);
             this.SetCurrentPreviewActive(true); // COULD HAVE BEEN SET TO VISIBLE FALSE ABOVE
             this.currentPreviewEntity.alpha = 0.5;
             this.currentPreviewEntity.customName = 'ignoreInPlugin';
