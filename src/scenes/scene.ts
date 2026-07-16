@@ -796,6 +796,7 @@ export class Scene implements SceneI
                 gameObject = bare.GetObjectFromPool("GameObject", this);
                 gameObject.pooled = true;
                 gameObject.name = "pooledGameObject";
+                gameObject.scene = this;
                 gameObject.Awake();
             }
             else
@@ -812,13 +813,16 @@ export class Scene implements SceneI
                     gameObject.pooled = true;
 
                 gameObject.name = (pool ? "pooledGameObjectExtend" : "gameObjectExtend");
+                gameObject.scene = this;
                 gameObject.Awake();
             }
             else
             if (input instanceof GameObject)
             {
                 // GameObject INSTANCE ALREADY PROVIDED
+                var origSceneGameObjectInstance = input.scene;
                 gameObject = input;
+                gameObject.scene = this;
                 gameObject.Awake();
             }
             else
@@ -923,8 +927,12 @@ to package.json to keep the generated assets (can become large for big projects)
 
                 this.ApplyEntityToGameObject(entity, gameObject); // SOING THIS AFTER TEXTURE LOAD, SO % PIVOT CAN BE SET CORRECTLY
             }
+        }
 
-            gameObject.scene = this;
+        // REMOVE FROM POSSIBLE LAYER/PARENT - CAN BE THE CASE IF GIVEN GAMEOBJECT INSTANCE
+        if (input instanceof GameObject && input.addedToLevel)
+        {
+            origSceneGameObjectInstance.RemoveGameObject(gameObject, gameObject.parent, false);
         }
 
         // ADD
