@@ -74,7 +74,7 @@ export class BareEngine
     asset:typeof assetsHandler = assetsHandler;
     storage:typeof SaveDataHandler;
     pool:Map<string, PoolHandler<GameObject>> = this.gameObjectPools;
-    ui:UIScene = uiScene; // PROXY - LAZILY CREATES THE UI SCENE ON FIRST USE
+    uiScene:UIScene = uiScene; // PROXY - LAZILY CREATES THE UI SCENE ON FIRST USE
 
     get util(): typeof Helper { return Helper; }
     get globalEvents(): Emitter<Events> { return globalEvents; }
