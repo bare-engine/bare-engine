@@ -13,9 +13,13 @@ export class CameraTest extends Scene
         this.camera.SetScaleMode(CameraScaleMode.Contain);
         const containZoom = this.camera.zoomFit;
 
+        this.camera.SetScaleMode(CameraScaleMode.None);
+        const noneZoom = this.camera.zoomFit;
+
         this.camera.SetPosition(120, 80);
 
         assert(coverZoom >= containZoom, "cover mode should fit at least as tightly as contain mode");
+        assert(noneZoom === 1, "none mode should not apply automatic fit scaling");
         assert(this.camera.target.x === 120 && this.camera.target.y === 80, "camera target position should update");
     }
 }

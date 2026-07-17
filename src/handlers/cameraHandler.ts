@@ -2,7 +2,7 @@ import { RegisterController } from "../globals";
 import { Vec2 } from "../libraries/new-rapid-render";
 import type { Scene } from "../scenes/scene";
 import { BareEvent, CameraScaleMode, Rectangle, type Size } from "../types/bareTypes";
-import { Enum, InspectorField } from "../utils/decorators";
+import { Enum, InspectorField, Locked } from "../utils/decorators";
 import { Helper } from "../utils/helper";
 
 export class CameraHandler {
@@ -32,7 +32,7 @@ export class CameraHandler {
     private set _scaleMode(mode: CameraScaleMode) { this.SetScaleMode(mode); }
 
     // derived
-    @InspectorField zoomFit: number = 1;
+    @InspectorField @Locked zoomFit: number = 1;
     offset: Vec2 = new Vec2(0, 0);
 
     scene: Scene;
@@ -227,7 +227,7 @@ export class CameraHandler {
         let finalScale = this.zoomFit * this.zoom;
 
         const hasBounds = this.bounds.width > 0 && this.bounds.height > 0;
-        if (hasBounds) {
+        if (hasBounds && this.scaleMode !== CameraScaleMode.None) {
             const screenW = Math.max(1, rapid.width);
             const screenH = Math.max(1, rapid.height);
 
@@ -267,8 +267,13 @@ export class CameraHandler {
         const sx = screenW / w;
         const sy = screenH / h;
 
-        const contain = (this.scaleMode == CameraScaleMode.Contain);
-        this.zoomFit = contain ? Math.min(sx, sy) : Math.max(sx, sy);
+        if (this.scaleMode == CameraScaleMode.None)
+            this.zoomFit = 1;
+        else
+        {
+            const contain = (this.scaleMode == CameraScaleMode.Contain);
+            this.zoomFit = contain ? Math.min(sx, sy) : Math.max(sx, sy);
+        }
 
         if (!Number.isFinite(this.zoomFit) || this.zoomFit <= 0)
             this.zoomFit = 1;

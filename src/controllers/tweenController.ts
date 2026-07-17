@@ -120,7 +120,7 @@ export class TweenController
         const tween = new Tween(object)
             .to(normalizedProps, seconds * 1000)
             .easing(props.ease || Easing.Quadratic.Out);
-        tween.persistent = props.persistent ?? false;
+        tween.persistent = (object.persistent || props.persistent) ?? false;
         
         // Apply TweenJS-style configuration
         if (props.yoyo) {

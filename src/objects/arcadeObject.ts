@@ -219,6 +219,11 @@ export class ArcadeObject extends GameObject
     {
         this.events.emit(BareEvent.collision_end, collidingObject, null);
     }
+
+    IsMoving(): boolean
+    {
+        return (this.velocity.x != 0 || this.velocity.y != 0);
+    }
     
     SetVelocity(velocity: Vec2): ArcadeObject
     {
