@@ -820,8 +820,8 @@ export class Scene implements SceneI
             if (input instanceof GameObject)
             {
                 // GameObject INSTANCE ALREADY PROVIDED
-                var origSceneGameObjectInstance = input.scene;
                 gameObject = input;
+                gameObject.scene.RemoveGameObject(gameObject, gameObject.parent, false); // REMOVE IF ADDED ALREADY
                 gameObject.scene = this;
                 gameObject.Awake();
             }
@@ -929,12 +929,6 @@ to package.json to keep the generated assets (can become large for big projects)
             }
         }
 
-        // REMOVE FROM POSSIBLE LAYER/PARENT - CAN BE THE CASE IF GIVEN GAMEOBJECT INSTANCE
-        if (input instanceof GameObject && input.addedToLevel)
-        {
-            origSceneGameObjectInstance.RemoveGameObject(gameObject, gameObject.parent, false);
-        }
-
         // ADD
         {
             if (parent instanceof GameObject)
@@ -984,7 +978,7 @@ to package.json to keep the generated assets (can become large for big projects)
     {
         if (!gameObject.addedToLevel)
         {
-            // GAMEOBJECT WAS ALREADY REMOVED - DOES THIS STOP A CHILD FROM GETTING THROUGH? TODO
+            // GAMEOBJECT WAS ALREADY REMOVED
             return;
         }
 
