@@ -91,6 +91,20 @@ window.__GAME_DEBUG_API__ = {
       (obj as any)[methodName]();
   },
 
+  traceInspectorTarget(uid: string | null, targetType: string, name: string, sceneClassString?: string)
+  {
+      if (targetType == "component")
+          return plugin.TraceComponent(uid, name);
+
+      if (targetType == "inspectorClass")
+          return plugin.TraceInspectorClass(name, sceneClassString);
+
+      if (targetType == "scene")
+          return plugin.TraceScene(name);
+
+      return false;
+  },
+
   selectedObject(uid: string)
   {
       let selected = getObjectByIdFromAllScenes(uid);
@@ -1770,6 +1784,64 @@ export class PluginHandler
     TraceObject(obj: GameObject)
     {
         trace('Bare Engine - Object Selected:', obj.name, obj);
+    }
+
+    TraceComponent(uid: string | null, compName: string): boolean
+    {
+        if (!uid || !compName)
+            return false;
+
+        var obj = getObjectByIdFromAllScenes(uid);
+        if (!obj)
+        {
+            console.error("Object not found");
+            return false;
+        }
+
+        var compClass = bare.componentClasses[Helper.CapitalizeFirstLetter(compName) + "Component"];
+        if (!compClass)
+        {
+            console.error("Component class not found");
+            return false;
+        }
+
+        var comp = obj.scene.component.Get(obj, compClass);
+        if (!comp)
+        {
+            console.error("Component not found");
+            return false;
+        }
+
+        trace('Bare Engine - Component Expanded:', compName, comp);
+        return true;
+    }
+
+    TraceInspectorClass(className: string, sceneClassString?: string): boolean
+    {
+        if (!className)
+            return false;
+
+        var scene = sceneClassString ? this.GetScene(sceneClassString) : this.GetCurrentScene();
+        if (!scene)
+            return false;
+
+        const inspectorClassName = resolveInspectorClassName(scene, className) ?? className;
+        var instance = (scene as any)[inspectorClassName];
+        if (!instance)
+            return false;
+
+        trace('Bare Engine - InspectorClass Expanded:', className, instance);
+        return true;
+    }
+
+    TraceScene(sceneClassString: string): boolean
+    {
+        var scene = this.GetScene(sceneClassString);
+        if (!scene)
+            return false;
+
+        trace('Bare Engine - Scene Selected:', scene.constructor.name, scene);
+        return true;
     }
 
     SelectObjectInPlugin(uid: string, openObjectsTab: boolean = false, parentIds: string[] = [])
