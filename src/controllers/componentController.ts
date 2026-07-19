@@ -142,7 +142,8 @@ export class ComponentController
     AddComponent<T extends GameObject, C extends Component<T>>(go: T, componentInstance: C): C;
     AddComponent<T extends GameObject, C extends Component<T>>(go: T, arg: Ctor<C> | C, ...args: any[]): C | null
     {
-        this.RemoveComponent(go, arg as any);
+        if (arg instanceof Component && arg.hasAdded)
+            this.RemoveComponent(arg.go, arg);
 
         // IF IT'S A componentClass, MAKE SURE IT'S REGISTERED
         // EG: AnimationComponent
