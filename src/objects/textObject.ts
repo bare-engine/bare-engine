@@ -1,6 +1,6 @@
 import { Color, ITextOptions, TextTexture, Vec2 } from "../libraries/new-rapid-render";
 import { Scene } from "../scenes/scene";
-import { Dropdown, InspectorField, Int, Limit } from "../utils/decorators";
+import { Dropdown, InspectorField, Int, Limit, Save } from "../utils/decorators";
 import { GameObject } from "./gameObject";
 
 export class TextObject extends GameObject
@@ -8,24 +8,24 @@ export class TextObject extends GameObject
     textTexture: TextTexture;
     pivotPercentage: Vec2 = new Vec2();
 
-    @InspectorField
+    @InspectorField @Save
     text = {
         get: () => this.textTexture.text,
         set: (text: string) => this.SetText(text),
     };
 
-    @InspectorField @Int @Limit(0, Infinity)
+    @InspectorField @Save @Int @Limit(0, Infinity)
     fontSize = {
         get: () => this.textTexture.style.fontSize,
         set: (fontSize: number) => {this.textTexture.style.fontSize = fontSize; this.UpdateText();},
     };
 
-    @InspectorField
+    @InspectorField @Save
     @Dropdown(["left", "center", "right"])
     get align():string {return this.textTexture.style.align;}
     set align(value:"left" | "center" | "right") {this.textTexture.style.align = value; this.UpdateText();}
     
-    @InspectorField
+    @InspectorField @Save
     get _color():Color {return Color.fromHex(this.textTexture.style.fill as string);}
     set _color(value:Color) { this.textTexture.style.fill = value.toHex(); this.UpdateText();}
     

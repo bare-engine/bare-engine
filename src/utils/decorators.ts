@@ -404,6 +404,14 @@ export function Save(target: any, propertyKey: string): void
     target[SAVE_METADATA_KEY] = saveFields;
 }
 
+export function getOwnSaveFieldNames(classOrPrototype: any): string[]
+{
+    const proto = typeof classOrPrototype === "function" ? classOrPrototype.prototype : classOrPrototype;
+    return Object.prototype.hasOwnProperty.call(proto, SAVE_METADATA_KEY)
+        ? [...(proto[SAVE_METADATA_KEY] as string[])]
+        : [];
+}
+
 export function getSaveFields(component: any): string[]
 {
     const proto = typeof component === "function" ? component.prototype : component.constructor.prototype;

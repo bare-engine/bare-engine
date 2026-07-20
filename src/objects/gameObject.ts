@@ -6,7 +6,7 @@ import type { Scene } from "../scenes/scene";
 import type { ComponentCtor, Ctor, DropFirst, Events, Rectangle, Shader } from "../types/bareTypes";
 import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';
 import { Hitbox } from '../types/hitbox';
-import { getOwnInspectorFieldNames, InspectorField, Percentage } from "../utils/decorators";
+import { getOwnSaveFieldNames, InspectorField, Percentage, Save } from "../utils/decorators";
 import { Helper } from '../utils/helper';
 
 export class Transform {
@@ -120,10 +120,10 @@ export class GameObject
     {
         const className = cls.name;
 
-        // ADDING FIELDS DECORATED WITH @InspectorField OF THIS CLASS TO entityVarsNested
-        // SO IT SHOWN IN PLUGIN DROPDOWN LATER
+        // ADD FIELDS EXPLICITLY MARKED FOR SERIALIZATION TO entityVarsNested.
+        // @InspectorField ONLY CONTROLS EDITOR EXPOSURE, AS IT DOES FOR COMPONENTS.
         // MAKE THIS ALSO WORK WITH INHERITANCE OF MULTIPLE CUSTOM CLASSES - TODOR
-        var vars = getOwnInspectorFieldNames(cls);
+        var vars = getOwnSaveFieldNames(cls);
         if (vars.length > 0)
         {
             var existingEntityVars = entityVarsNested.find(entry =>
@@ -711,7 +711,7 @@ export class GameObject
         this.mask = null;
     }
 
-    @InspectorField
+    @InspectorField @Save
     get position(): Vec2
     {
         return this.transform.position;
@@ -721,7 +721,7 @@ export class GameObject
         this.SetPosition(vec2.x, vec2.y);
     }
 
-    @InspectorField
+    @InspectorField @Save
     get scale(): Vec2
     {
         return this.transform.scale;
@@ -736,7 +736,7 @@ export class GameObject
     }
 
     // ROTATION IN DEGREES
-    @InspectorField
+    @InspectorField @Save
     get rotation(): number
     {
         return this.transform.rotation;
@@ -748,7 +748,7 @@ export class GameObject
 
     // OUTER pivot — anchors this object in its parent and offsets its children.
     // Lazily allocated so transform.pivot can stay null after Reset()/pooling.
-    @InspectorField
+    @InspectorField @Save
     get pivot(): Vec2
     {
         return this.transform.pivot ??= new Vec2();
@@ -758,7 +758,7 @@ export class GameObject
         this.transform.pivot = v;
     }
 
-    @InspectorField
+    @InspectorField @Save
     get innerPosition(): Vec2
     {
         return this.innerTransform.position;
@@ -769,7 +769,7 @@ export class GameObject
         this.innerTransform.position.y = vec2.y;
     }
 
-    @InspectorField
+    @InspectorField @Save
     get innerScale(): Vec2
     {
         return this.innerTransform.scale;
@@ -783,7 +783,7 @@ export class GameObject
         }
     }
 
-    @InspectorField
+    @InspectorField @Save
     get innerRotation(): number
     {
         return this.innerTransform.rotation;
@@ -794,7 +794,7 @@ export class GameObject
     }
 
     // INNER pivot — anchor for the sprite's inner transform. Inherits the outer pivot until set
-    @InspectorField
+    @InspectorField @Save
     get innerPivot(): Vec2
     {
         return this.innerTransform.pivot ??= new Vec2(this.pivot.x, this.pivot.y);
@@ -804,7 +804,7 @@ export class GameObject
         (this.innerTransform.pivot ??= new Vec2()).set(v.x, v.y);
     }
 
-    @InspectorField @Percentage
+    @InspectorField @Save @Percentage
     get alpha(): number
     {
         return this.color.a / 255;
@@ -815,13 +815,13 @@ export class GameObject
         this.color.a = value * 255;
     }
 
-    @InspectorField
+    @InspectorField @Save
     visible:boolean = true;
 
-    @InspectorField
+    @InspectorField @Save
     color:Color = new Color(255, 255, 255, 255);
 
-    @InspectorField
+    @InspectorField @Save
     get flipped(): boolean
     {
         return this.transform.flipped;
@@ -831,7 +831,7 @@ export class GameObject
         this.transform.flipped = value;
     }
 
-    @InspectorField
+    @InspectorField @Save
     get innerFlipped(): boolean
     {
         return this.innerTransform.flipped;
@@ -841,19 +841,19 @@ export class GameObject
         this.innerTransform.flipped = value;
     }
 
-    @InspectorField
+    @InspectorField @Save
     customName: string = "";
 
-    @InspectorField
+    @InspectorField @Save
     persistent: boolean = false;
 
-    @InspectorField
+    @InspectorField @Save
     save: boolean = false;
 
-    @InspectorField
+    @InspectorField @Save
     tags:Array<string> = [];
 
-    @InspectorField
+    @InspectorField @Save
     customData: Record<string, any> = {};
 
     get x(): number

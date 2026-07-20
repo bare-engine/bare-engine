@@ -3,7 +3,7 @@ import { Texture, Vec2 } from "../libraries/new-rapid-render";
 import { Scene } from "../scenes/scene";
 import { BareEvent, BlockedState, ConstructEntityOptions, Entity, HitboxType, Rectangle, Rectangle2Vec } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
-import { Dropdown, InspectorField, Int } from "../utils/decorators";
+import { Dropdown, InspectorField, Int, Save } from "../utils/decorators";
 import { GameObject } from "./gameObject";
 
 export class ArcadeObject extends GameObject
@@ -12,16 +12,14 @@ export class ArcadeObject extends GameObject
     
     physicsHitbox: Hitbox = new Hitbox(this, {x1 : 0, y1 : 0, x2 : 0, y2 : 0});
 
-    // THESE @InspectorField'S GET SAVED AS WELL, WANT TO ADD @SAVE?
-
-    @InspectorField static: boolean = false;
-    @InspectorField collide: boolean = true;
-    @InspectorField sensor:boolean = false; // IF TRUE, WILL NOT RESPECT stayInBounds
-    @InspectorField velocity: Vec2 = new Vec2(0, 0);
-    @InspectorField drag: number = 0//.15;
-    @InspectorField restitution: number = 0//.8;
-    @InspectorField stayInBounds: boolean = true;
-    @InspectorField removeOnOutOfBounds: boolean = false;
+    @InspectorField @Save static: boolean = false;
+    @InspectorField @Save collide: boolean = true;
+    @InspectorField @Save sensor:boolean = false; // IF TRUE, WILL NOT RESPECT stayInBounds
+    @InspectorField @Save velocity: Vec2 = new Vec2(0, 0);
+    @InspectorField @Save drag: number = 0//.15;
+    @InspectorField @Save restitution: number = 0//.8;
+    @InspectorField @Save stayInBounds: boolean = true;
+    @InspectorField @Save removeOnOutOfBounds: boolean = false;
     
     blocked:BlockedState = BlockedState.None;
     collidingObjects: ArcadeObject[] = [];
@@ -29,7 +27,7 @@ export class ArcadeObject extends GameObject
     static dummyPhysicsObjectBare: ArcadeObject = new ArcadeObject();
 
     // ENTITY VALUES ON OBJECT
-    @InspectorField
+    @InspectorField @Save
     @Dropdown(["Rectangle", "Circle"])
     hitboxType = {
         // physicsHitbox.type is a numeric HitboxType; map it to/from its key name so the
@@ -38,7 +36,7 @@ export class ArcadeObject extends GameObject
         set: (type: string) => this.physicsHitbox.type = HitboxType[type as keyof typeof HitboxType],
     };
 
-    @InspectorField 
+    @InspectorField @Save
     get hitbox(): Rectangle
     {
         return this.physicsHitbox.rectangle;
@@ -48,7 +46,7 @@ export class ArcadeObject extends GameObject
         this.physicsHitbox.rectangle = rect;
     }
 
-    @InspectorField
+    @InspectorField @Save
     @Int
     get hitboxRadius(): number
     {
