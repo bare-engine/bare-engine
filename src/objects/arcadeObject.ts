@@ -37,13 +37,24 @@ export class ArcadeObject extends GameObject
     };
 
     @InspectorField @Save
-    get hitbox(): Rectangle
+    get hitbox(): Rectangle2Vec
     {
-        return this.physicsHitbox.rectangle;
+        const rect = this.physicsHitbox.rectangle;
+        return {
+            x1: rect.x,
+            y1: rect.y,
+            x2: rect.x + rect.width,
+            y2: rect.y + rect.height,
+        };
     }
-    set hitbox(rect: Rectangle)
+    set hitbox(rect: Rectangle2Vec)
     {
-        this.physicsHitbox.rectangle = rect;
+        this.physicsHitbox.rectangle = {
+            x: rect.x1,
+            y: rect.y1,
+            width: rect.x2 - rect.x1,
+            height: rect.y2 - rect.y1
+        };
     }
 
     @InspectorField @Save
