@@ -12,6 +12,8 @@ export class ArcadeObject extends GameObject
     
     physicsHitbox: Hitbox = new Hitbox(this, {x1 : 0, y1 : 0, x2 : 0, y2 : 0});
 
+    // THESE @InspectorField'S GET SAVED AS WELL, WANT TO ADD @SAVE?
+
     @InspectorField static: boolean = false;
     @InspectorField collide: boolean = true;
     @InspectorField sensor:boolean = false; // IF TRUE, WILL NOT RESPECT stayInBounds
@@ -37,11 +39,11 @@ export class ArcadeObject extends GameObject
     };
 
     @InspectorField 
-    get hitboxRect(): Rectangle
+    get hitbox(): Rectangle
     {
         return this.physicsHitbox.rectangle;
     }
-    set hitboxRect(rect: Rectangle)
+    set hitbox(rect: Rectangle)
     {
         this.physicsHitbox.rectangle = rect;
     }

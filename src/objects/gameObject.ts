@@ -75,6 +75,8 @@ export class GameObject
 
     events = mitt<Events>();
 
+    private imagePath: string = "";
+
     //private cachedChildrenWidth: number = -1;
     //private cachedChildrenHeight: number = -1;
 
