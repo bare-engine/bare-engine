@@ -179,7 +179,7 @@ window.__GAME_DEBUG_API__ = {
     //scenes = scenes.filter(s => s.enabled); // DON'T SHOW DISABLED SCENES IN PLUGIN
     var sceneStrings = scenes.map(s => s.constructor.name);
 
-    sceneStrings = sceneStrings.reverse(); //
+    //sceneStrings = sceneStrings.reverse(); //
 
     return sceneStrings;
   },
