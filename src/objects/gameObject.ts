@@ -503,6 +503,8 @@ export class GameObject
     /** @virtual */
     Render(inheritedColor?: Color)
     {
+        inheritedColor = inheritedColor ? Helper.MultiplyColors(inheritedColor, this.color) : this.color;
+
         if (bare.levelEditorOpen)
         {
             if (!this.visibleInEditor)
@@ -527,15 +529,13 @@ export class GameObject
             }
         }
 
-        const effectiveColor = inheritedColor ? Helper.MultiplyColors(inheritedColor, this.color) : this.color;
-
         rapid.matrixStack.save();
         
         if (this.mask)
             this.renderParentTransform = rapid.matrixStack.getTransform();
         
         this.ApplyTransformToMatrixStack(this.transform);
-        this.RenderTransformed(effectiveColor);
+        this.RenderTransformed(inheritedColor);
 
         rapid.matrixStack.save();
         this.ApplyChildTransform();
@@ -543,14 +543,14 @@ export class GameObject
         // Render children with inherited color
         for (var i = 0; i < this.children.length; i++)
         {
-            this.children[i].Render(effectiveColor);
+            this.children[i].Render(inheritedColor);
         }
 
         rapid.matrixStack.restore();
 
         rapid.matrixStack.restore();
         
-        this.OnRender();
+        this.OnRender(inheritedColor);
     }
 
     // pos / rot / scale only. Pivot is applied separately at the content boundary:
@@ -591,7 +591,7 @@ export class GameObject
         rapid.matrixStack.restore();
     }
 
-    OnRender()
+    OnRender(inheritedColor?: Color)
     {
         // FOR OVERRIDE
     }
