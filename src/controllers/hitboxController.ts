@@ -16,6 +16,7 @@ export type ButtonHandlers<Arg extends GameObject = GameObject> = {
   OnRelease?: Handler<Arg>;
   OnEnter?: Handler<Arg>;
   OnLeave?: Handler<Arg>;
+  showPointer?: boolean;
 };
 
 export class HitboxController
@@ -454,7 +455,7 @@ export class HitboxController
         this.currentHitboxHover = newHoverPath.length > 0 ? newHoverPath[newHoverPath.length - 1] : null;
 
         if (updateCursor)
-            bare.SetCursor(this.currentHitboxHover ? 'pointer' : 'inherit');
+            bare.SetCursor(this.currentHitboxHover?.showPointer ? 'pointer' : 'inherit');
     }
 
     private GetAllObjectsWithChildren(): GameObject[]
@@ -570,6 +571,7 @@ export class HitboxController
         hitbox.OnRelease = (...a: any[]) => handlers.OnRelease?.(gameObject, ...a);
         hitbox.OnEnter   = (...a: any[]) => handlers.OnEnter?.(gameObject, ...a);
         hitbox.OnLeave   = (...a: any[]) => handlers.OnLeave?.(gameObject, ...a);
+        hitbox.showPointer = handlers.showPointer ?? true;
 
         gameObject.tapHitbox = hitbox;
         
@@ -594,6 +596,16 @@ export class HitboxController
     OnPointerLeave(gameobject: GameObject, callback: AnyPress): void
     {
         this.AssignCallback(gameobject, "OnLeave", callback);
+    }
+
+    SetShowPointerCursor(gameobject: GameObject, show: boolean): void
+    {
+        if (!gameobject.tapHitbox)
+        {
+            throw new Error("Cannot show pointer cursor for an object with no hitbox.");
+        }
+
+        gameobject.tapHitbox.showPointer = show;
     }
 
     AssignCallback(gameobject: GameObject, type: "OnPress" | "OnRelease" | "OnEnter" | "OnLeave", callback: AnyPress): void
