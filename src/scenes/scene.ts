@@ -343,6 +343,9 @@ export class Scene implements SceneI
     
     ConstructEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [] }): Entity
     {
+        if (typeof nameOrEntity === "object" && nameOrEntity.constructed)
+            return nameOrEntity;
+            
         if (options.fillPresets === undefined)
             options.fillPresets = true;
         if (options.propsToIgnoreInEntity === undefined)
@@ -483,6 +486,8 @@ export class Scene implements SceneI
 
         // NO USE FOR THIS ANYMORE, BUT GONNA REPURPOSE IT TO SHOW baseEntity PATH
         //delete entityConstructed.baseEntity;
+
+        entity.constructed = true;
 
         return entity;
     }

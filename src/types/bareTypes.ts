@@ -148,8 +148,6 @@ export interface Entity
     persistent?: any; // boolean
     save?: any; // boolean
 
-    baseEntityLog?: Record<string, any>
-
     // PHYSICS
     collide?: any; // boolean
     sensor?: any; // boolean
@@ -167,6 +165,9 @@ export interface Entity
 
     //tileDimensions?: {width: number; height: number};
     //numberOfTiles?: int; //
+
+    baseEntityLog?: Record<string, any>
+    constructed ?: boolean
 }
 
 export type ConstructEntityOptions = { propsToIgnoreInEntity?: string[], fillPresets?: boolean };
