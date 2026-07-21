@@ -1021,7 +1021,7 @@ window.__GAME_DEBUG_API__ = {
                     // WE APPLY THE COMPONENTS VALUES FROM THE PLUGIN TO THE ONES INGAME
                     // BUT ALSO CALL Removed(), Awake(), Added() AND Start() AROUND IT, TO RESET THE COMPONENT AND LET THE NEW VALUES BE REPROCESSED
                    
-                    if (bare.gameMode == GameMode.Game)
+                    if (bare.gameMode == GameMode.Play)
                         comp.Removed();
 
                     var compData:Record<string, Scalar> = props.components[compName];
@@ -1036,7 +1036,7 @@ window.__GAME_DEBUG_API__ = {
                         comp[compProp] = compData[compProp];
                     }
 
-                    if (bare.gameMode == GameMode.Game)
+                    if (bare.gameMode == GameMode.Play)
                     {
                         comp.Awake(comp.go);
                         comp.Added(comp.go); // CALLS OnAdded() AS WELL

@@ -98,7 +98,7 @@ export abstract class RigidBody extends GameObject
     {
         var tex = await super.InitTexture(texturePath);
 
-        if (bare.gameMode == GameMode.Game && !this.entity)
+        if (bare.gameMode == GameMode.Play && !this.entity)
             this.CenterPivotKeepingVisualPosition();
 
         return tex;
@@ -109,7 +109,7 @@ export abstract class RigidBody extends GameObject
         // IN THE EDITOR THE PIVOT STAYS WHATEVER THE ENTITY SAYS, SO SAVING KEEPS POSITION/PIVOT UNTOUCHED
         // IN GAME THE PIVOT MUST BE CENTERED (PHYSICS POSITION = CENTER OF MASS)
         // ENTITY VARS (POSITION, PIVOT, SCALE) WERE JUST APPLIED, SO totalScale IS CORRECT AND THIS STAYS IDEMPOTENT
-        if (bare.gameMode == GameMode.Game)
+        if (bare.gameMode == GameMode.Play)
             this.CenterPivotKeepingVisualPosition();
 
         // IN SerializeObject: MAKES THE origEntity FILL PROPER PHYSICS VALUES

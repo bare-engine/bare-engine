@@ -6,7 +6,7 @@ import { Scene } from "../scenes/scene";
 import { Helper } from "../utils/helper";
 import { Run } from "../utils/runModes";
 
-@Run(GameMode.Editor)
+@Run(GameMode.Edit)
 export class PivotRemoveComponent extends Component
 {
     constructor(scene: Scene)

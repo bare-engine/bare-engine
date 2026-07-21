@@ -31,7 +31,7 @@ export class LineJointObject extends JointObject
 
     override OnAdded(): void
     {
-        if (bare.gameMode == GameMode.Editor)
+        if (bare.gameMode == GameMode.Edit)
         {
             // DIRECTION OBJECT
             var currentLayer = bare.object.GetLayerOf(this);
@@ -98,7 +98,7 @@ export class LineJointObject extends JointObject
 
     private GetDirection(): Vec2
     {
-        if (bare.gameMode == GameMode.Editor && this.directionObject)
+        if (bare.gameMode == GameMode.Edit && this.directionObject)
         {
             this.slideDirection = this.directionObject.position.sub(this.position);
             return this.slideDirection;
@@ -109,7 +109,7 @@ export class LineJointObject extends JointObject
 
     private RestoreDirectionTargetPosition(): void
     {
-        if (bare.gameMode != GameMode.Editor || !this.directionObject)
+        if (bare.gameMode != GameMode.Edit || !this.directionObject)
             return;
 
         this.directionObject.SetPosition(this.position.x + this.slideDirection.x, this.position.y + this.slideDirection.y);

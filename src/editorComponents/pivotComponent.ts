@@ -11,7 +11,7 @@ import { Scene } from "../scenes/scene";
 import { Run } from "../utils/runModes";
 import { Save } from "../utils/decorators";
 
-@Run(GameMode.Editor)
+@Run(GameMode.Edit)
 export class PivotComponent extends Component
 {
     @Save

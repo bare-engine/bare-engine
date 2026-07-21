@@ -46,7 +46,7 @@ export class DistanceJointObject extends JointObject
 
     override OnAdded(): void
     {
-        if (bare.gameMode == GameMode.Editor)
+        if (bare.gameMode == GameMode.Edit)
         {
             // target object
             this.targetObject = this.scene.AddGameObject(TargetObject);
@@ -176,7 +176,7 @@ export class DistanceJointObject extends JointObject
 
     override OnRender(): void
     {
-        if (bare.gameMode == GameMode.Editor || !this.distanceJoint)
+        if (bare.gameMode == GameMode.Edit || !this.distanceJoint)
             return;
 
         rapid.drawLine({
@@ -188,7 +188,7 @@ export class DistanceJointObject extends JointObject
 
     protected GetAnchorB(bodyB: RigidBody): Vec2
     {
-        if (bare.gameMode == GameMode.Editor && this.targetObject)
+        if (bare.gameMode == GameMode.Edit && this.targetObject)
         {
             this.targetOffset = bodyB.globalToLocal.mulVector2(this.targetObject.position, 1);
             return this.targetObject.position;
@@ -199,7 +199,7 @@ export class DistanceJointObject extends JointObject
 
     private RestoreTargetPositionFromSavedBody(): void
     {
-        if (bare.gameMode != GameMode.Editor || !this.targetObject || !this.targetCustomName)
+        if (bare.gameMode != GameMode.Edit || !this.targetObject || !this.targetCustomName)
             return;
 
         var targetBody = bare.object.GetByCustomName(this.targetCustomName) as RigidBody;

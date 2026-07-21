@@ -6,7 +6,7 @@ import { Run } from '../utils/runModes';
 import { Helper } from '../utils/helper';
 import { PivotComponent } from './pivotComponent';
 
-@Run(GameMode.Editor)
+@Run(GameMode.Edit)
 export class ResizableRemoveComponent extends Component
 {
     OnRemoved(): void

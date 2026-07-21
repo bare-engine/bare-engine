@@ -27,7 +27,7 @@ type ResizeRect = {
     edge: Edge;
 };
 
-@Run(GameMode.Editor)
+@Run(GameMode.Edit)
 export class ResizableComponent extends Component
 {
     minSize = 0;

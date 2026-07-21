@@ -42,7 +42,7 @@ export class MotorJointObject extends JointObject
 
     override OnUpdate(deltaTime: number): void
     {
-        if (bare.gameMode == GameMode.Editor)
+        if (bare.gameMode == GameMode.Edit)
             return;
 
         if (this.angularSpeed == 0)
@@ -101,7 +101,7 @@ export class MotorJointObject extends JointObject
             this.motorJoint.linearOffset.y = linearOffset.y;
         }
 
-        if (bare.gameMode == GameMode.Game)
+        if (bare.gameMode == GameMode.Play)
             this.AwakeBodies();
     }
 
@@ -117,7 +117,7 @@ export class MotorJointObject extends JointObject
         if (this.motorJoint)
             this.motorJoint.angularOffset = angularOffset;
 
-        if (bare.gameMode == GameMode.Game)
+        if (bare.gameMode == GameMode.Play)
             this.AwakeBodies();
     }
 }

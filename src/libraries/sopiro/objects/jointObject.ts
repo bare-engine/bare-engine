@@ -27,7 +27,7 @@ export abstract class JointObject extends GameObject
 
     override OnAdded(): void
     {
-        if (bare.gameMode == GameMode.Game)
+        if (bare.gameMode == GameMode.Play)
         {
             bare.events.once(BareEvent.level_loaded, this.InitJointGame.bind(this));
             return;
@@ -42,7 +42,7 @@ export abstract class JointObject extends GameObject
 
     InitJointGame(): void
     {
-        if (bare.gameMode == GameMode.Editor)
+        if (bare.gameMode == GameMode.Edit)
             return;
 
         var bodyA: RigidBody | null = null;
@@ -81,7 +81,7 @@ export abstract class JointObject extends GameObject
             if (this.staticAnchor)
                 world.unregister(this.staticAnchor.id);
 
-            if (this.joint && bare.gameMode == GameMode.Game)
+            if (this.joint && bare.gameMode == GameMode.Play)
             {
                 world.unregister(this.joint.id, true);
             }
@@ -168,7 +168,7 @@ export abstract class JointObject extends GameObject
 
     override Render(): void
     {
-        if (bare.gameMode == GameMode.Editor)
+        if (bare.gameMode == GameMode.Edit)
         {
             rapid.drawCircle({
                 x: this.position.x,

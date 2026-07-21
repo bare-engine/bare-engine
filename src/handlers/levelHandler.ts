@@ -374,7 +374,7 @@ export class LevelHandler
         // GET VARS TO SAVE
         var varsToSave: string[] = [];
 
-        if (bare.gameMode == GameMode.Game && !forceAllEntityVars)
+        if (bare.gameMode == GameMode.Play && !forceAllEntityVars)
         {
             var saveVars = this.scene.settingsData.saveVars;
             if (saveVars) // WILL ALWAYS BE THERE REALLY
@@ -412,7 +412,7 @@ export class LevelHandler
             }
         }
         else
-        if (bare.gameMode == GameMode.Editor || forceAllEntityVars)
+        if (bare.gameMode == GameMode.Edit || forceAllEntityVars)
         {
             varsToSave = entityVars.slice();
             //varsToSave.splice(varsToSave.indexOf("position"), 1);
@@ -661,7 +661,7 @@ export class LevelHandler
         var specialCompare:Record<string, (currentValue, origValue) => boolean> = {};
         var specialValue:Record<string, (currentValue) => any> = {};
 
-        if (bare.gameMode == GameMode.Game)
+        if (bare.gameMode == GameMode.Play)
         {
             var saveVars = this.scene.settingsData.saveVars;
             if (saveVars) // WILL ALWAYS BE THERE REALLY
@@ -684,7 +684,7 @@ export class LevelHandler
             }
         }
         else
-        if (bare.gameMode == GameMode.Editor)
+        if (bare.gameMode == GameMode.Edit)
         {
             varsToSave = entityVars.slice();
             //varsToSave.splice(varsToSave.indexOf("position"), 1);

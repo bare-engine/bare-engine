@@ -12,8 +12,8 @@ export type { Scene } from './scenes/scene';
 
 export enum GameMode
 {
-  Game,
-  Editor
+  Play,
+  Edit
 }
 
 // SET UP GLOBALS

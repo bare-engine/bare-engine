@@ -16,7 +16,7 @@ export class EntitySerializer
         var entity: Entity = {};
         var varsToSave: string[] = [];
 
-        if (bare.gameMode == GameMode.Game && !forceAllEntityVars)
+        if (bare.gameMode == GameMode.Play && !forceAllEntityVars)
         {
             var saveVars = scene.settingsData.saveVars;
             if (saveVars)
@@ -43,7 +43,7 @@ export class EntitySerializer
                 }
             }
         }
-        else if (bare.gameMode == GameMode.Editor || forceAllEntityVars)
+        else if (bare.gameMode == GameMode.Edit || forceAllEntityVars)
         {
             varsToSave = entityVars.slice();
             varsToSave.splice(varsToSave.indexOf("tapHitbox"), 1);

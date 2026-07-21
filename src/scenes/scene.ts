@@ -380,7 +380,7 @@ export class Scene implements SceneI
                     
                     // BIT OF A HACK TO MAKE SURE SOPIRO RIGIDBODIES HAVE A CENTER PIVOT
                     // PUT HERE TO LET THE EDITOR PREVIEW ALSO INHERIT IT
-                    if (bare.gameMode == GameMode.Game)
+                    if (bare.gameMode == GameMode.Play)
                     {
                         var sopiroPhysicsClasses = ["Circle", "Box", "Polygon"];
                         if (sopiroPhysicsClasses.includes(entityArg.baseClass))

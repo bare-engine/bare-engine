@@ -183,7 +183,7 @@ export class ComponentController
 
         component.enabled = false;
 
-        const shouldActivate = (runsInCurrentMode || bare.gameMode == GameMode.Game);
+        const shouldActivate = (runsInCurrentMode || bare.gameMode == GameMode.Play);
         if (shouldActivate)
         {
             component.enabled = true;

@@ -44,7 +44,7 @@ export class EditorScene extends Scene
 
     override Awake(payload?: any): Promise<void>
     {
-        bare.gameMode = GameMode.Editor;
+        bare.gameMode = GameMode.Edit;
         return super.Awake(payload);
     }
 
@@ -84,7 +84,7 @@ export class EditorScene extends Scene
         // COULD SEND ALONG THE PAYLOAD (CONTAINING settingsHandler) TO SCENE CONTRUCTOR, BUT NOT SURE IF THAT WILL PLAY WELL WITH EditorSceneAwakePayload
         // WILL CREATE MORE CONTRAINTS TO ALIGN WITH CONSTRUCTOR ARG TYPE
 
-        bare.gameMode = GameMode.Editor;
+        bare.gameMode = GameMode.Edit;
         
         this.backgroundColorOrig = rapid.backgroundColor;
         
@@ -113,7 +113,7 @@ export class EditorScene extends Scene
         
         var level = await this.LoadLevel(levelNameOrData);
 
-        bare.gameMode = GameMode.Editor; // JUST SET TO GAME IN OnClear()
+        bare.gameMode = GameMode.Edit; // JUST SET TO GAME IN OnClear()
         if (!this.opened)
             this.gameResolution = bare.resolution;
 
@@ -183,7 +183,7 @@ export class EditorScene extends Scene
         if (this.opened) // CHECKING, SINCE THIS ALSO RUNS ON INIT WHEN CALLING LoadLevel()
         {
             this.opened = false;
-            bare.gameMode = GameMode.Game; // SETTING IT IN BARE.START() NOW, BUT ALSO KINDA MAKES SENSE HERE
+            bare.gameMode = GameMode.Play; // SETTING IT IN BARE.START() NOW, BUT ALSO KINDA MAKES SENSE HERE
             
             if (this.gameResolution)
                 bare.SetResolution(this.gameResolution);
@@ -215,7 +215,7 @@ export class EditorScene extends Scene
 
     async Toggle(settingsHandler: SettingsHandler, levelPathOrData: string | LevelData = '', saveLevelCallback: () => Promise<LevelData> = this.SaveLevel)
     {
-        if (this.settingsHandler == settingsHandler && bare.gameMode == GameMode.Editor)
+        if (this.settingsHandler == settingsHandler && bare.gameMode == GameMode.Edit)
         {
             await this.Close();
             return;
