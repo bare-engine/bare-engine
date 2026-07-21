@@ -63,47 +63,47 @@ export class Scene implements SceneI
     get object(): ObjectController { return this._object ?? this.CreateController("object"); }
     set object(value: ObjectController) { this._object = value; }
 
-    public _mouse: MouseController;
+    private _mouse: MouseController;
     @InspectorClass
     get mouse(): MouseController { return this._mouse ?? this.CreateController("mouse"); }
     set mouse(value: MouseController) { this._mouse = value; }
 
-    public _hitbox: HitboxController;
+    private _hitbox: HitboxController;
     @InspectorClass
     get hitbox(): HitboxController { return this._hitbox ?? this.CreateController("hitbox"); }
     set hitbox(value: HitboxController) { this._hitbox = value; }
 
-    public _tween: TweenController;
+    private _tween: TweenController;
     @InspectorClass
     get tween(): TweenController { return this._tween ?? this.CreateController("tween"); }
     set tween(value: TweenController) { this._tween = value; }
 
-    public _component: ComponentController;
+    private _component: ComponentController;
     @InspectorClass
     get component(): ComponentController { return this._component ?? this.CreateController("component"); }
     set component(value: ComponentController) { this._component = value; }
 
-    public _arcade: ArcadePhysicsController;
+    private _arcade: ArcadePhysicsController;
     @InspectorClass
     get arcade(): ArcadePhysicsController { return this._arcade ?? this.CreateController("arcade"); }
     set arcade(value: ArcadePhysicsController) { this._arcade = value; }
 
-    public _sopiro: SopiroPhysicsController;
+    private _sopiro: SopiroPhysicsController;
     @InspectorClass
     get sopiro(): SopiroPhysicsController { return this._sopiro ?? this.CreateController("sopiro"); }
     set sopiro(value: SopiroPhysicsController) { this._sopiro = value; }
 
-    public _particle: ParticleController;
+    private _particle: ParticleController;
     @InspectorClass
     get particle(): ParticleController { return this._particle ?? this.CreateController("particle"); }
     set particle(value: ParticleController) { this._particle = value; }
 
-    public _level: LevelHandler;
+    private _level: LevelHandler;
     @InspectorClass
     get level(): LevelHandler { return this._level ?? this.CreateController("level"); }
     set level(value: LevelHandler) { this._level = value; }
 
-    public _camera: CameraHandler;
+    private _camera: CameraHandler;
     @InspectorClass
     get camera(): CameraHandler { return this._camera ?? this.CreateController("camera"); }
     set camera(value: CameraHandler) { this._camera = value; }

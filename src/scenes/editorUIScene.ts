@@ -65,8 +65,8 @@ export class EditorUIScene extends Scene
             // HITBOX CONTROLLER FOR GOOD MEASURE TOO
             // CALLING IT RESET, NOT CLEAR, SO THE SCENE'S CLEAR LOOP IS NOT CALLED
             // BACKING FIELD (_) READS: ONLY RESET CONTROLLERS THE SCENE ACTUALLY HAS
-            scene._hitbox?.Reset();
-            scene._mouse?.Reset();
+            scene.Get("_hitbox")?.Reset();
+            scene.Get("_mouse")?.Reset();
         }
         
         sceneController.Add(EditorScene);

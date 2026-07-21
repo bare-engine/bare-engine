@@ -229,7 +229,7 @@ export class TransformToolHandler
         // so re-apply it to draw in world space (mirrors Scene.Render()).
         // BACKING FIELD (_) READ: DON'T LAZY-CREATE A CAMERA ON A SCENE THAT NEVER USED ONE
         rapid.matrixStack.save();
-        scene._camera?.SetTransform();
+        scene.Get("_camera")?.SetTransform();
         this.DrawSelection(scene);
         rapid.matrixStack.restore();
     };
