@@ -60,6 +60,22 @@ export class LevelHandler
         return bare.object.GetLayerByName("objects");
     }
 
+    get width(): int
+    {
+        if (!this.currentLevel)
+            throw "Can't get level width before level is loaded";
+
+        return this.currentLevel.dimensions.width
+    }
+
+    get height(): int
+    {
+        if (!this.currentLevel)
+            throw "Can't get level height before level is loaded";
+
+        return this.currentLevel.dimensions.height
+    }
+
     async LoadData(levelStr: string): Promise<LevelData>
     {
         var levelData: LevelData;
