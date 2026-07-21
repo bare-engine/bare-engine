@@ -990,7 +990,8 @@ window.__GAME_DEBUG_API__ = {
             {
                 scene.ApplyEntityToGameObject(props as Entity, o, false);
             }
-            o.entity.pivot = props.pivot; //
+            if (o.entity)
+                o.entity.pivot = props.pivot; //
         }
         if (props.hitbox !== undefined) {
             if ((props.hitbox.x >= 0 && props.hitbox.x < 1) || (props.hitbox.y >= 0 && props.hitbox.y < 1) ||
@@ -998,7 +999,8 @@ window.__GAME_DEBUG_API__ = {
             {
                 scene.ApplyEntityToGameObject(props as Entity, o, false);
             }
-            o.entity.hitbox = props.hitbox; //
+            if (o.entity)
+                o.entity.hitbox = props.hitbox; //
         }
 
         //if (props.pivotBasedOnHitbox !== undefined) { o.pivotBasedOnHitbox.x = props.pivotBasedOnHitbox.x; o.pivotBasedOnHitbox.y = props.pivotBasedOnHitbox.y; }
