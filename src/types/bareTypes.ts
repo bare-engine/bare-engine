@@ -99,73 +99,72 @@ export type ComponentCtor<T extends Component<GameObject> = Component<GameObject
 
 export type GameObjectClass = { new (...args: any[]): GameObject };
 
-// SOME TYPE ARE CHANGED TO 'any', SO THEY CAN HAVE A PRESET STRING AS WELL, EG: "pivot": "CENTER"
+// TYPES ARE CHANGED TO 'any', SO THEY CAN HAVE A PRESET STRING AS WELL, EG: {"pivot": "CENTER"}
+// BIT ANNOYING, TODO: NOT SURE
 export interface Entity
 {
-    name?: string;
-    customName?: string;
-    tags?: Array<string>;
-    customData?: Record<string, Scalar>;
+    name?: any; // string
+    customName?: any; // string
+    tags?: any; // Array<string>
+    customData?: any; // Record<string, Scalar>
 
-    position?: Position; // ONLY USED WITHIN LEVEL DATA AND FOR CHILDREN
-    x?: number;
-    y?: number;
+    position?: any; // Position; ONLY USED WITHIN LEVEL DATA AND FOR CHILDREN
+    x?: any; // number
+    y?: any; // number
     //scaleX?: number;
     //scaleY?: number;
-    scale?: Position;
-    rotation?: number;
-    flipped?: boolean;
-    pivot?: any; //Position | String;
-    innerPivot?: any; //Position | String;
-    pivotBasedOnHitbox?: any; //Position | String;
+    scale?: any; // Position
+    rotation?: any; // number
+    flipped?: any; // boolean
+    pivot?: any; // Position
+    innerPivot?: any; // Position
+    pivotBasedOnHitbox?: any; // Position
     //innerX?: number;
     //innerY?: number;
-    innerPosition?: Position;
+    innerPosition?: any; // Position
     //innerScaleX?: number;
     //innerScaleY?: number;
-    innerScale?: Position;
-    innerRotation?: number;
+    innerScale?: any; // Position
+    innerRotation?: any; // number
 
-    texture?: string;
-    color?: string;
-    alpha?: number;
-    visible?: boolean;
+    texture?: any; // string
+    color?: any; // string
+    alpha?: any; // number
+    visible?: any; // boolean
 
-    hitbox?: any; //Rectangle2Vec | String;
-    tapHitbox?: any; //Rectangle2Vec | String;
-    hitboxType?: string;
+    hitbox?: any; // Rectangle2Vec
+    tapHitbox?: any; // Rectangle2Vec
+    hitboxType?: any; // string
 
-    children?: Entity[];
+    children?: any; // Entity[]
 
-    //components?: Record<string, Record<string, any> | string>;
-    components?: Record<string, any>;
-    //editorComponents?: Record<string, Record<string, any>>;
-    componentsRemoved?: string[];
-    propertiesRemoved?: string[];
+    components?: any; // Record<string, any>
+    componentsRemoved?: any; // string[]
+    propertiesRemoved?: any; // string[]
 
-    baseClass?: string;
-    baseEntity?: string;
-    imagePath?: string;
-    interactableInEditor?:boolean;
-    persistent?:boolean;
-    save?:boolean;
+    baseClass?: any; // string
+    baseEntity?: any; // string
+    imagePath?: any; // string
+    interactableInEditor?: any; // boolean
+    persistent?: any; // boolean
+    save?: any; // boolean
 
-    baseEntityLog?: Record<string, any>;
+    baseEntityLog?: Record<string, any>
 
     // PHYSICS
-    collide?: boolean;
-    sensor?: boolean;
-    static?: boolean;
-    stayInBounds?: boolean;
-    removeOnOutOfBounds?: boolean;
+    collide?: any; // boolean
+    sensor?: any; // boolean
+    static?: any; // boolean
+    stayInBounds?: any; // boolean
+    removeOnOutOfBounds?: any; // boolean
 
-    rigidbodyRect?: Size;
-    hitboxRadius?: number; // SHARED BY ARCADEOBJECT AND RIGIDBODY
-    mass?: number;
-    density?: number;
-    drag?: number;
-    restitution?: number;
-    polygonVertices?: number[];
+    rigidbodyRect?: any; // Size
+    hitboxRadius?: any; // number; SHARED BY ARCADEOBJECT AND RIGIDBODY
+    mass?: any; // number
+    density?: any; // number
+    drag?: any; // number
+    restitution?: any; // number
+    polygonVertices?: any; // number[]
 
     //tileDimensions?: {width: number; height: number};
     //numberOfTiles?: int; //
