@@ -108,7 +108,7 @@ export class LevelHandler
 
     async Load(levelInput: string | LevelData = ""):Promise<LevelData>
     {
-        // WHEN IN PRODUCTION, WE DON'T LOAD LEVELS FROM DISK INITIALLY
+        // WHEN IN PRODUCTION, WE DON'T LOAD LEVELS FROM CACHE
         // BUT ONCE PLAYER EDITS IT IN LEVEL EDITOR, IT'S LOADED FROM CACHE (SINCE IN PROD WE CAN'T SAVE EDITS TO DISK)
         if (!window.isLocalhost)
         {
@@ -950,6 +950,8 @@ export class LevelHandler
         //     rapid.drawRect({ width: this.currentLevel.dimensions.width, height: this.currentLevel.dimensions.height, color: this.backgroundColor });
     }
 
+    // NOT MEANT TO CLEAR THE CURRENT LEVEL, EG REMOVE THE OBJECTS
+    // FOR THAT USE: bare.object.Clear(false);
     Clear()
     {
         //this.backgroundColor = null;

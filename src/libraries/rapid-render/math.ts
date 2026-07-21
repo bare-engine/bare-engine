@@ -1036,7 +1036,7 @@ export class Vec2 implements IMathObject<Vec2> {
      *
      * @return {Phaser.Math.Vector2} This Vector2.
      */
-    setToPolar(azimuth, radius) {
+    setToPolar(azimuth: number, radius: number = 1): this {
         if (radius == null) {
         radius = 1
         }

@@ -809,7 +809,7 @@ export class GameObject
     {
         return this.color.a / 255;
     }
-    set alpha(value: number)
+    set alpha(value: number) // THIS ONLY HAS EFFECT OVER THE TEXTURE, NOT ANYTHING RENDERED BY USER (GRAPHIC/TEXTURE) IN OnRender() - TODO?
     {
         value = Math.min(Math.max(value, 0), 1);
         this.color.a = value * 255;
