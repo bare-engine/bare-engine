@@ -222,6 +222,12 @@ export class CameraHandler {
         this.SetDimensions(dims.width, dims.height);
     }
 
+    SetBoundsAndDimensionsToLevel()
+    {
+        this.SetBoundsToLevel();
+        this.SetDimensionsToLevel();
+    }
+
     GetZoom(): number
     {
         let finalScale = this.zoomFit * this.zoom;
