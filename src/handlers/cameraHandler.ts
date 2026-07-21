@@ -24,6 +24,9 @@ export class CameraHandler {
     // world bounds the camera is allowed to show
     @InspectorField bounds: Rectangle = { x: 0, y: 0, width: 0, height: 0 };
 
+    // screen-space size content is fit/centered into, top-left anchored; {0,0} = use the actual render target size (rapid.width/height)
+    @InspectorField viewportSize: Size = { width: 0, height: 0 };
+
     scaleMode: CameraScaleMode = CameraScaleMode.Cover;
    
     @InspectorField
@@ -228,14 +231,22 @@ export class CameraHandler {
         this.SetDimensionsToLevel();
     }
 
+    // screen-space size to fit/center content into; falls back to the actual render target size
+    private GetViewport(): Size
+    {
+        if (this.viewportSize.width > 0 && this.viewportSize.height > 0)
+            return this.viewportSize;
+
+        return { width: Math.max(1, rapid.width), height: Math.max(1, rapid.height) };
+    }
+
     GetZoom(): number
     {
         let finalScale = this.zoomFit * this.zoom;
 
         const hasBounds = this.bounds.width > 0 && this.bounds.height > 0;
         if (hasBounds && this.scaleMode !== CameraScaleMode.None) {
-            const screenW = Math.max(1, rapid.width);
-            const screenH = Math.max(1, rapid.height);
+            const { width: screenW, height: screenH } = this.GetViewport();
 
             const coverFit = Math.max(
                 screenW / this.bounds.width,
@@ -267,8 +278,7 @@ export class CameraHandler {
         const w = Math.max(1, this.dimensions.width);
         const h = Math.max(1, this.dimensions.height);
 
-        const screenW = Math.max(1, rapid.width);
-        const screenH = Math.max(1, rapid.height);
+        const { width: screenW, height: screenH } = this.GetViewport();
 
         const sx = screenW / w;
         const sy = screenH / h;
@@ -298,8 +308,7 @@ export class CameraHandler {
 
         const scale = this.GetZoom();
 
-        const screenW = Math.max(1, rapid.width);
-        const screenH = Math.max(1, rapid.height);
+        const { width: screenW, height: screenH } = this.GetViewport();
 
         let cx = this.target.x;
         let cy = this.target.y;
@@ -354,8 +363,7 @@ export class CameraHandler {
         const p = new Vec2();
         const scale = this.GetZoom();
 
-        const screenW = Math.max(1, rapid.width);
-        const screenH = Math.max(1, rapid.height);
+        const { width: screenW, height: screenH } = this.GetViewport();
 
         p.x = (x - screenW / 2) / scale + this.position.x;
         p.y = (y - screenH / 2) / scale + this.position.y;
@@ -368,8 +376,7 @@ export class CameraHandler {
         const p = new Vec2();
         const scale = this.GetZoom();
 
-        const screenW = Math.max(1, rapid.width);
-        const screenH = Math.max(1, rapid.height);
+        const { width: screenW, height: screenH } = this.GetViewport();
 
         p.x = (x - this.position.x) * scale + screenW / 2;
         p.y = (y - this.position.y) * scale + screenH / 2;
