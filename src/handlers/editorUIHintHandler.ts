@@ -21,18 +21,20 @@ export class EditorUIHintHandler {
 
     private readonly hintsPerMode: Record<EditorMode, string[]> = {
         stamp: [
+            'left click: add',
+            'right click: cancel stamp / remove object',
+            '<br>',
             'ctrl: ignore selection',
             'alt: disable grid',
             'shift: place multiple',
-            'left click: add',
-            'right click: cancel stamp / remove object'
         ],
         edit: [
+            'left click: select',
+            'right click: remove',
+            '<br>',
             'ctrl: select object layer below',
             'alt: disable grid',
             'shift: select multiple',
-            'left click: select',
-            'right click: remove'
         ]
     };
 
@@ -133,6 +135,11 @@ export class EditorUIHintHandler {
         this.infoPopup.appendChild(header);
 
         for (const hint of this.GetHintsForMode(this.mode)) {
+            if (hint == '<br>') {
+                this.infoPopup.appendChild(document.createElement('br'));
+                continue;
+            }
+
             const line = document.createElement('div');
             line.className = 'hint-popup-line';
 
