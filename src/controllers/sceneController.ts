@@ -61,7 +61,8 @@ export class SceneController
 
     async Add<T extends Scene>(scene: Scene | SceneClass<T>, payload?: AwakePayload<T>): Promise<T>
     {
-        if (this.Has(scene as SceneClass<T>))
+        const sceneClass: SceneClass<T> = typeof scene === "function" ? scene : scene.constructor as SceneClass<T>;
+        if (this.Has(sceneClass))
         {
             //console.warn("SceneController: Scene already added: " + (scene as SceneClass<T>).name + ". It will be replaced");
             this.Remove(scene);
