@@ -114,6 +114,8 @@ export class ObjectController
         
         var layerAr = this.GetLayer(layerInt);
         layerAr.push(obj);
+
+        obj.layer = this.scene.layerNames[layerInt];//
     }
 
 	Remove(obj: GameObject, layer?: int): boolean

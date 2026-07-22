@@ -75,6 +75,8 @@ export class GameObject
 
     events = mitt<Events>();
 
+    layer:string = "";
+
     private imagePath: string = "";
 
     //private cachedChildrenWidth: number = -1;
@@ -1538,6 +1540,7 @@ export class GameObject
 
         this.name = "";
         this.pluginName = "";
+        this.layer = "";
         this.texture = null;
         this.persistent = false;
         this.pooled = false;

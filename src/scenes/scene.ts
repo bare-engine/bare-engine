@@ -332,7 +332,7 @@ export class Scene implements SceneI
 
         // ADJUSTING PROCESSED DATA NOW, WILL ALL BE LOST IT ITS RE-PROCESSSED
         // BUT WILL PROBABLY NOT HAPPEN AFTER INIT? TODO
-        
+
         return;
         this.settingsHandler.UpdateRaw((raw) => {
             raw.layers ??= [];
@@ -990,6 +990,8 @@ to package.json to keep the generated assets (can become large for big projects)
                 // ADDING TO PARENT
                 var child = gameObject;
                 parent.AddChild(child);
+                
+                child.layer = parent.layer;
             }
             else
             {
