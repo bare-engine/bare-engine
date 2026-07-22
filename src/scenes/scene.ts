@@ -329,7 +329,8 @@ export class Scene implements SceneI
                 showInEditor: true,
                 save: true,
                 pointerCollisionType: CollisionHandlingType.POINT,
-                
+                collidesWith: [name],//
+
                 ...layerInfo // OVERRIDES ABOVE
             };
 
