@@ -431,7 +431,7 @@ export class SettingsHandler
             // SET DEFAULTS
             for (var j = 0; j < settings.layers.length; j++)
             {
-                const layerName = settings.layers[j].toLowerCase();
+                const layerName = settings.layers[j];
                 const currentLayerInfo = settings.layersInfo[layerName] ?? {};
 
                 const newLayerInfo:LayerInfo = {
