@@ -78,7 +78,7 @@ export class ObjectController
         if (!this.active)
             return;
 
-        for (let i = this.layers.length - 1; i >= 0; i--)
+        for (let i = 0; i < this.layers.length; i++)
         {
             for (let j = 0; j < this.layers[i].length; j++)
             {
