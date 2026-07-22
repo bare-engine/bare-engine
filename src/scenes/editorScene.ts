@@ -1,4 +1,5 @@
 import { sceneController } from "../controllers/sceneController";
+import { keyboardController } from "../controllers/keyboardController";
 import { GameMode, globalEvents } from "../globals";
 import { EditorControlsHandler } from "../handlers/editorControlsHandler";
 import { EditorUIHandler } from "../handlers/editorUIHandler";
@@ -335,7 +336,7 @@ export class EditorScene extends Scene
 
         this.editorControlsHandler.PostRender();
 
-        if (!this.settingsData?.settings?.gridEnabled)
+        if (!this.settingsData?.settings?.gridEnabled || keyboardController.IsKeyDown("alt"))
             return;
         
         // DRAW GRID
