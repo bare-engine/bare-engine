@@ -316,6 +316,24 @@ export class Scene implements SceneI
 
     AddLayer(name: string, layerInfo?: Partial<LayerInfo>): void
     {
+        this.settingsData.layers.push(name);
+        
+        // DUPLICATE FROM SETTINGSDATA - TODO
+        const newLayerInfo:LayerInfo = {
+            name: name,
+            layerI: this.settingsData.layers.length - 1,
+            showInEditor: true,
+            save: true,
+            pointerCollisionType: CollisionHandlingType.POINT,
+            ...layerInfo // OVERRIDES ABOVE
+        };
+
+        this.settingsData.layersInfo[name] = newLayerInfo;
+
+        // ADJUSTING PROCESSED DATA NOW, WILL ALL BE LOST IT ITS RE-PROCESSSED
+        // BUT WILL PROBABLY NOT HAPPEN AFTER INIT? TODO
+        
+        return;
         this.settingsHandler.UpdateRaw((raw) => {
             raw.layers ??= [];
             raw.layersInfo ??= {};
@@ -329,7 +347,6 @@ export class Scene implements SceneI
                 showInEditor: true,
                 save: true,
                 pointerCollisionType: CollisionHandlingType.POINT,
-                collidesWith: [name],//
 
                 ...layerInfo // OVERRIDES ABOVE
             };
