@@ -180,8 +180,9 @@ export class LevelHandler
         this.scene.PostLoadLevel(level, persistenObjUIDs);
         
         //bare.SendEvent(BareEvent.level_loaded, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
-        // NOT USING bare.SendEvent, SINCE THAT SENDS IT TO ALL, TRIGGERING ENGINE CODE LIKE CAMERA HANDLER EVENT LISTENER THAT RESETS THE BOUNDS TO THE LEVEL
+        // NOT USING bare.SendEvent, SINCE THAT SENDS IT TO ALL SCENES, TRIGGERING ENGINE CODE LIKE CAMERA HANDLER EVENT LISTENER THAT RESETS THE BOUNDS TO THE LEVEL
         bare.events.emit(BareEvent.level_loaded, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
+        bare.globalEvents.emit(BareEvent.level_loaded, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
 
         return level;
     }
