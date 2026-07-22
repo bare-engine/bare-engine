@@ -15,7 +15,7 @@ import { Color, RenderTexture, Texture, Vec2 } from "../libraries/new-rapid-rend
 import { GameObject } from "../objects/gameObject";
 import { Bare } from "../types/bare";
 import { defaultSettingsData } from "../types/bareData";
-import { AwakePayload, BareEvent, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
+import { AwakePayload, BareEvent, CollisionHandlingType, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LayerInfo, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
 import { getInspectorFieldNames, InspectorClass, InspectorField, Label } from "../utils/decorators";
 import { EntitySerializer } from "../utils/entitySerializer";
 
@@ -312,6 +312,29 @@ export class Scene implements SceneI
     get layerNames(): string[]
     {
         return this.settingsData.layers;
+    }
+
+    AddLayer(name: string, layerInfo?: Partial<LayerInfo>): void
+    {
+        this.settingsHandler.UpdateRaw((raw) => {
+            raw.layers ??= [];
+            raw.layersInfo ??= {};
+
+            raw.layers.push(name);
+        
+            // DUPLICATE FROM SETTINGSDATA - TODO
+            const newLayerInfo:LayerInfo = {
+                name: name,
+                layerI: raw.layers.length - 1,
+                showInEditor: true,
+                save: true,
+                pointerCollisionType: CollisionHandlingType.POINT,
+                
+                ...layerInfo // OVERRIDES ABOVE
+            };
+
+            raw.layersInfo[name] = newLayerInfo;
+        });
     }
 
     HideLoadingText()

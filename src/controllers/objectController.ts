@@ -108,7 +108,7 @@ export class ObjectController
         var layerInt = 0;
 
         if (typeof layer === 'string')
-            layerInt = this.scene.layerNames.indexOf(layer as string);
+            layerInt = this.scene.layerNames.indexOf(layer);
         else
             layerInt = layer;
         
@@ -163,12 +163,9 @@ export class ObjectController
     GetLayer(layer: int): GameObject[]
     {
         // ADD MORE LAYERS IF NEEDED - TODO: PUT AT INITIALIZATION?
-        if (layer >= this.layers.length)
+        while (layer >= this.layers.length)
         {
-            for (let i = this.layers.length; i <= layer; i++)
-            {
-                this.layers.push([]);
-            }
+            this.layers.push([]);
         }
 
         return this.layers[layer];

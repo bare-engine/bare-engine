@@ -440,6 +440,7 @@ export class SettingsHandler
                     showInEditor: true,
                     save: true,
                     pointerCollisionType: CollisionHandlingType.POINT,
+                    
                     ...currentLayerInfo // OVERRIDES ABOVE
                 };
 
