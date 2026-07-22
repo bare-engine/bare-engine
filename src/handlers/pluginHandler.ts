@@ -268,13 +268,15 @@ window.__GAME_DEBUG_API__ = {
 
     return scene.object
                 .GetLayers()
-                .flat()
-                .filter(o => o.customName !== 'ignoreInPlugin')
-                .map(o => ({
-                    id: o.uniqueID,
-                    name: o.pluginName ? o.pluginName : o.name,
-                    hasChildren: (o.children.length > 0)
-                }))
+                .flatMap((objects, layerIndex) => objects
+                    .filter(o => o.customName !== 'ignoreInPlugin')
+                    .map(o => ({
+                        id: o.uniqueID,
+                        name: o.pluginName ? o.pluginName : o.name,
+                        hasChildren: (o.children.length > 0),
+                        layerIndex,
+                        layerName: scene.layerNames[layerIndex] ?? `Layer ${layerIndex}`
+                    })))
   },
 
   async GetLevelFiles() {
