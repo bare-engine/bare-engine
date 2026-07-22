@@ -523,48 +523,6 @@ export class SettingsHandler
     // THIS METHOD MUTATES THE entity ARGUMENT ITSELF
     ConstructEntity(entity:Entity, rawSettingsData:SettingsData, options:ConstructEntityOptions): Entity
     {
-        // (MOSTLY THE SAME AS SCENE Construct(), COULD GENERALIZE SOME PARTS)
-        var final = (entity:Entity) => {
-            // CONSTRUCT ALL CHILDREN
-            if (entity.children)
-            {
-                for (var i = 0; i < entity.children.length; i++)
-                {
-                    var child = entity.children[i];
-                    this.ConstructEntity(child, rawSettingsData, options);
-                }
-            }
-
-            // ANYTHING WITH A HITBOX IS A PHYSICS OBJECT
-            //if ((entity.hitbox || entity.hitboxRadius) && entity.baseClass == "GameObject") 
-            //    entity.baseClass = "ArcadeObject";
-
-            // FILL PRESETS - LIKE hitbox: "FULL"                
-            //                     hitbox: {x1: 0, y1: 0, x2: 1, y2: 1}
-            if (options.fillPresets !== false)
-                this.FillPresets(entity, rawSettingsData);
-
-            // REMOVE PROPERTIES SPECIFICALLY LISTED TO REMOVE IN ENTITY
-            if (entity.propertiesRemoved)
-            {
-                for (const propertyName of entity.propertiesRemoved)
-                {
-                    delete entity[propertyName];
-                }
-            }
-
-            // REMOVE COMPONENTS SPECIFICALLY LISTED IN ENTITY
-            if (entity.components && entity.componentsRemoved)
-            {
-                for (const componentName of entity.componentsRemoved)
-                {
-                    delete entity.components[componentName];
-                }
-            }
-
-            return entity
-        }
-
         // RECURSIVELY EXTEND DATA
         var baseEntity = entity.baseEntity;
         while (baseEntity)
@@ -588,7 +546,45 @@ export class SettingsHandler
             baseEntity = entityBase.baseEntity;
         }
 
-        return final(entity);
+        // CONSTRUCT ALL CHILDREN
+        // (MOSTLY THE SAME AS SCENE ConstructEntity(), COULD GENERALIZE SOME PARTS)
+        if (entity.children)
+        {
+            for (var i = 0; i < entity.children.length; i++)
+            {
+                var child = entity.children[i];
+                this.ConstructEntity(child, rawSettingsData, options);
+            }
+        }
+
+        // ANYTHING WITH A HITBOX IS A PHYSICS OBJECT
+        //if ((entity.hitbox || entity.hitboxRadius) && entity.baseClass == "GameObject") 
+        //    entity.baseClass = "ArcadeObject";
+
+        // FILL PRESETS - LIKE hitbox: "FULL"                
+        //                     hitbox: {x1: 0, y1: 0, x2: 1, y2: 1}
+        if (options.fillPresets !== false)
+            this.FillPresets(entity, rawSettingsData);
+
+        // REMOVE PROPERTIES SPECIFICALLY LISTED TO REMOVE IN ENTITY
+        if (entity.propertiesRemoved)
+        {
+            for (const propertyName of entity.propertiesRemoved)
+            {
+                delete entity[propertyName];
+            }
+        }
+
+        // REMOVE COMPONENTS SPECIFICALLY LISTED IN ENTITY
+        if (entity.components && entity.componentsRemoved)
+        {
+            for (const componentName of entity.componentsRemoved)
+            {
+                delete entity.components[componentName];
+            }
+        }
+
+        return entity;
     }
 
     GetExtendedEntity(entityName: string)

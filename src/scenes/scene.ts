@@ -343,7 +343,7 @@ export class Scene implements SceneI
     
     // CONSTRUCTS AN ENTITY OUT OF A ENITTY NAME OR ENTITY OBJECT
     // FOR AN ENTITY NAME: IT RETURNS THE ENTITY FOUND IN SETTINGSDATA, OR CREATES A NEW ONE IF NOT THERE
-    // FOR AN ENTITY OBJECT: IT FINDS THE baseEntity FROM SETTINGSDATA MERGES IT IN FOR A NEW ENTITY
+    // FOR AN ENTITY OBJECT: IT FINDS THE baseEntity FROM SETTINGSDATA AND MERGES IT IN FOR A NEW ENTITY
     ConstructEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [] }): Entity
     {
         if (typeof nameOrEntity === "object" && nameOrEntity.constructed)
