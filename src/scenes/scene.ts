@@ -229,7 +229,9 @@ export class Scene implements SceneI
         this.started = false;
         this.controllersStarted = false;
 
-        await this.settingsHandler.Process(payload?.settingsHandler?.GetRaw() || this.sceneOptionsSettingsData);//this.settingsData
+        const settingsResult = this.settingsHandler.Process(payload?.settingsHandler?.GetRaw() || this.sceneOptionsSettingsData);//this.settingsData
+        if (settingsResult instanceof Promise)
+            await settingsResult;
 
         // SNAPSHOT FIRST, FLAG SECOND: CONTROLLERS CREATED DURING THE LOOP (OR LATER)
         // GET THEIR Awake AT CREATION IN CreateController INSTEAD
@@ -240,7 +242,9 @@ export class Scene implements SceneI
             controller.Awake?.();
         }
 
-        await this.OnAwake(payload);
+        const awakeResult = this.OnAwake(payload);
+        if (awakeResult instanceof Promise)
+            await awakeResult;
 
         this.settingsHandler.ProcessAnimations(); // NEEDED SINCE AN ATLAS WITH ANIMATIONS CAN BE LOADED IN AT AWAKE() ABOVE
 

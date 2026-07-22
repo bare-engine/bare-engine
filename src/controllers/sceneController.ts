@@ -59,6 +59,7 @@ export class SceneController
         return scene;
     }
 
+    /** Recommended to await this method */
     async Add<T extends Scene>(scene: Scene | SceneClass<T>, payload?: AwakePayload<T>): Promise<T>
     {
         const sceneClass: SceneClass<T> = typeof scene === "function" ? scene : scene.constructor as SceneClass<T>;

@@ -38,7 +38,45 @@ export class SettingsHandler
         this.scene = scene;
     }
 
-    async Process(raw: SettingsData = this.raw, options:ConstructEntityOptions = {}): Promise<SettingsData>
+    Process(raw: SettingsData = this.raw, options:ConstructEntityOptions = {}): SettingsData | Promise<SettingsData>
+    {
+        const folderPaths = this.GetCategoryFolderPaths(raw);
+        if (folderPaths.length === 0)
+            return this.ProcessSync(raw, options);
+
+        return Promise.all(folderPaths.map(async folderPath =>
+            [folderPath, await Helper.GetFilesInFolder(folderPath)] as const
+        )).then(folderEntries =>
+            this.ProcessSync(raw, options, new Map(folderEntries))
+        );
+    }
+
+    private GetCategoryFolderPaths(raw: SettingsData): string[]
+    {
+        const defaultCategories = defaultSettingsData.categories ?? {};
+        const rawCategories = raw?.categories ?? {};
+        const categoryNames = new Set([...Object.keys(defaultCategories), ...Object.keys(rawCategories)]);
+        const folderPaths = new Set<string>();
+
+        for (const categoryName of categoryNames)
+        {
+            const category = {
+                ...defaultCategories[categoryName],
+                ...rawCategories[categoryName],
+            };
+            const entries = category?.entries;
+            if (typeof entries !== "string")
+                continue;
+
+            const match = entries.match(/(.+)_\[(.+)\]/);
+            if (match)
+                folderPaths.add(`${bare.imagePath}/` + match[2]);
+        }
+
+        return [...folderPaths];
+    }
+
+    private ProcessSync(raw: SettingsData, options:ConstructEntityOptions, folderFiles = new Map<string, string[]>()): SettingsData
     {
         if (raw?.processed)
             throw new Error('Process() received already-processed data — caller passed Get()/settingsData instead of GetRaw()');
@@ -183,7 +221,7 @@ export class SettingsHandler
 
                             var entityBaseName = prefix + "_*";
                             var entity = this.scene.ConstructEntity(entityBaseName, settings, options);
-                            var files = await Helper.GetFilesInFolder(`${bare.imagePath}/` + imagePath);
+                            var files = folderFiles.get(`${bare.imagePath}/` + imagePath) ?? [];
 
                             // TURN ENTRIES INTO ARRAY
                             categoryData.entries = [];
