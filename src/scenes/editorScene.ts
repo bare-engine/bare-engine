@@ -1,4 +1,3 @@
-import { sceneController } from "../controllers/sceneController";
 import { keyboardController } from "../controllers/keyboardController";
 import { GameMode, globalEvents } from "../globals";
 import { EditorControlsHandler } from "../handlers/editorControlsHandler";
@@ -36,7 +35,7 @@ export class EditorScene extends Scene
     
     saveLevelCallback: () => Promise<LevelData>;
 
-    constructor(sceneOptions: SceneOptions | SettingsData = {solo: true, persistent: true, settingsData: sceneController.GetLevelScene()?.settingsHandler.GetRaw()})
+    constructor(sceneOptions: SceneOptions | SettingsData = {solo: true, persistent: true, settingsData: bare.scene.GetLevelScene()?.settingsHandler.GetRaw()})
     {  
         super(sceneOptions);
         
@@ -200,10 +199,10 @@ export class EditorScene extends Scene
 
     async Close()
     {
-        sceneController.Remove(EditorScene); // CALLS ONCLEAR
-        sceneController.EnableAll(); // COULD ENABLE SCENES THAT WERE PREVIOUSLY DISABLED - TODO
+        bare.scene.Remove(EditorScene); // CALLS ONCLEAR
+        bare.scene.EnableAll(); // COULD ENABLE SCENES THAT WERE PREVIOUSLY DISABLED - TODO
 
-        var level = sceneController.GetLevelScene();
+        var level = bare.scene.GetLevelScene();
 
         if (level)
         {                   
@@ -211,7 +210,7 @@ export class EditorScene extends Scene
             await level.level.Restart();
         }
         else
-            sceneController.Restart(); // CAN GET HERE WHEN LOADED LEVEL FROM PLUGIN, BUT LAST GAME SCENE DOESN'T LOAD LEVEL
+            bare.scene.Restart(); // CAN GET HERE WHEN LOADED LEVEL FROM PLUGIN, BUT LAST GAME SCENE DOESN'T LOAD LEVEL
     }
 
     async Toggle(settingsHandler: SettingsHandler, levelPathOrData: string | LevelData = '', saveLevelCallback: () => Promise<LevelData> = this.SaveLevel)

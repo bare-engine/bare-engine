@@ -11,12 +11,12 @@ export class UIScene extends Scene
 
 function GetOrCreateUIScene(): UIScene
 {
-    if (!sceneController.Has(UIScene))
+    if (!bare.scene.Has(UIScene))
     {
-        sceneController.Add(UIScene);
+        bare.scene.Add(UIScene);
     }
 
-    return sceneController.Get(UIScene);
+    return bare.scene.Get(UIScene);
 }
 
 export const uiScene = new Proxy({} as UIScene, {

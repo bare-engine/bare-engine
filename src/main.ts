@@ -4,7 +4,6 @@ import { BaseTexture, Color, CustomGlShader, Rapid, Texture, TextureFilterMode }
 import { supportsWebGL } from './libraries/new-rapid-render/webgl/utils';
 import { BareEvent, BareOptions, SceneClass } from './types/bareTypes';
 import { globalEvents, Scene } from './globals';
-import { sceneController } from './controllers/sceneController';
 export { MakePath, MakePathForEntity } from "./globals";
 
 var canvas = document.querySelector<HTMLCanvasElement>("canvas.canvas");
@@ -28,7 +27,7 @@ function GetBareOptions(options?: BareOptions): BareOptions
         debugKeys: [
             {e: () => window.debug = !window.debug},
             {r: () => bare.Restart()},
-            {l: () => sceneController.GetLevelScene()?.level.Restart()},
+            {l: () => bare.scene.GetLevelScene()?.level.Restart()},
         ],
     }, ...options };
 }
@@ -199,7 +198,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Scene
                     return;
 
                 globalEvents.emit(BareEvent.game_focusChange, window.hasFocus);
-                //sceneController.SendEvent(BareEvent.game_focusChange, window.hasFocus);
+                //bare.scene.SendEvent(BareEvent.game_focusChange, window.hasFocus);
 
                 // HANDLE VISUAL OF focusOverlay
                 if (window.hasFocus) {
@@ -249,7 +248,8 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Scene
 
             // START!
             var start = async () => {
-                window.bare = new BareEngine(gameClass, options);
+                window.bare = new BareEngine();
+                window.bare.Init(gameClass, options);
             };
 
             var testGetElementById = document.getElementById('editor-overlay');
@@ -280,6 +280,6 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Scene
         window.initialAssetsReady(window.initialAssets);
     }
 
-    return sceneController.Get(gameClass);
+    return bare.scene.Get(gameClass);
 }
 

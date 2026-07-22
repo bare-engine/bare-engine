@@ -4,7 +4,6 @@ import type { HitboxController } from "../controllers/hitboxController";
 import type { MouseController } from "../controllers/mouseController";
 import { ObjectController } from "../controllers/objectController";
 import type { ParticleController } from "../controllers/particleController";
-import { sceneController } from "../controllers/sceneController";
 import type { SopiroPhysicsController } from "../controllers/sopiroPhysicsController";
 import type { TweenController } from "../controllers/tweenController";
 import { controllerNames, GameMode, globalEvents, MakePath, MakePathForEntity } from "../globals";
@@ -38,13 +37,13 @@ export class Scene implements SceneI
     set _solo(solo: boolean) {
         if (solo)
         {
-            sceneController.DisableAll();
-            sceneController.GetAll().forEach(scene => scene.solo = false);
+            bare.scene.DisableAll();
+            bare.scene.GetAll().forEach(scene => scene.solo = false);
             this.enabled = true;
         }
         else
         {
-            sceneController.EnableAll();
+            bare.scene.EnableAll();
         }
 
         this.solo = solo;
@@ -1368,13 +1367,13 @@ to package.json to keep the generated assets (can become large for big projects)
     // SCENES
     async GotoScene<T extends Scene>(sceneClass: SceneClass<T>, payload?: AwakePayload<T>): Promise<T>
     {
-        sceneController.Remove(this);
-        return sceneController.Add(sceneClass, payload);
+        bare.scene.Remove(this);
+        return bare.scene.Add(sceneClass, payload);
     }
 
     async AddScene<T extends Scene>(scene: Scene | SceneClass<T>, payload?: AwakePayload<T>): Promise<T>
     {
-        return sceneController.Add(scene, payload);
+        return bare.scene.Add(scene, payload);
     }
 
     // POINTERS

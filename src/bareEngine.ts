@@ -5,7 +5,7 @@ import { KeyboardController } from "./controllers/keyboardController";
 import type { MouseController } from "./controllers/mouseController";
 import type { ObjectController } from "./controllers/objectController";
 import type { ParticleController } from "./controllers/particleController";
-import { SceneController, sceneController } from "./controllers/sceneController";
+import { SceneController } from "./controllers/sceneController";
 import type { SopiroPhysicsController } from "./controllers/sopiroPhysicsController";
 import type { TweenController } from "./controllers/tweenController";
 import { GameMode, globalEvents } from "./globals";
@@ -70,7 +70,7 @@ export class BareEngine
     // GLOBAL MODULES
     keyboard:KeyboardController;
     sound:SoundHandler;
-    scene:SceneController = sceneController;
+    scene:SceneController;
     asset:typeof assetsHandler = assetsHandler;
     storage:typeof SaveDataHandler;
     pool:Map<string, PoolHandler<GameObject>> = this.gameObjectPools;
@@ -78,7 +78,7 @@ export class BareEngine
 
     get util(): typeof Helper { return Helper; }
     get globalEvents(): Emitter<Events> { return globalEvents; }
-    get editor(): EditorScene { return sceneController.GetAll().find(scene => scene.constructor.name == "EditorScene") as any; }
+    get editor(): EditorScene { return bare.scene.GetAll().find(scene => scene.constructor.name == "EditorScene") as any; }
 
     // ANYTHING THAT CALLS bare.[module]. EG bare.object
     // GETS TRANSFORMERD BY controllerProxyTransformer.js
@@ -131,9 +131,9 @@ export class BareEngine
         return rapid.drawSprite.bind(rapid);
     }
 
-    constructor(sceneClass: SceneClass, options?: BareOptions)
+    constructor()
     {
-        this.Init(sceneClass, options);
+        this.scene = new SceneController();
     }
 
     private MakeRootPath(dir: string): string
@@ -205,7 +205,7 @@ export class BareEngine
     }
 
     // SEPARATE METHOD TO MAKE ASYNC
-    private async Init(sceneClass: SceneClass, options?: BareOptions) 
+    public async Init(sceneClass: SceneClass, options?: BareOptions) 
     {
         this.ApplyOptions(options);
 
@@ -231,7 +231,7 @@ export class BareEngine
 
         globalEvents.emit(BareEvent.game_awake);
 
-        var scene = await sceneController.Goto(sceneClass);
+        var scene = await bare.scene.Goto(sceneClass);
 
         this.dummyGameObject = new GameObject(scene); // TOO LATE IF USER WANTS TO USE IT IN sceneClass, BUT FINE FOR MY CURRENT USAGE
         
@@ -351,7 +351,7 @@ export class BareEngine
         this.SendEvent(BareEvent.game_resize, { prevWidth: prevWidth, prevHeight: prevHeight, newWidth: gameWidth, newHeight: gameHeight });
 
         // PERSIST UI LAYOUT
-        sceneController.OnResize(prevWidth, prevHeight, gameWidth, gameHeight);
+        bare.scene.OnResize(prevWidth, prevHeight, gameWidth, gameHeight);
     }
 
     GetViewportSize(): { width: number, height: number }
@@ -476,14 +476,14 @@ export class BareEngine
 
     FixedUpdate(fixedDeltaTime: number)
     {
-        sceneController.FixedUpdate(fixedDeltaTime);
+        bare.scene.FixedUpdate(fixedDeltaTime);
     }
 
     Update(deltaTime:number)
     {
         globalEvents.emit(BareEvent.game_preUpdate, { deltaTime: deltaTime });
 
-        sceneController.Update(deltaTime);
+        bare.scene.Update(deltaTime);
 
         globalEvents.emit(BareEvent.game_update, { deltaTime: deltaTime });
     }
@@ -496,7 +496,7 @@ export class BareEngine
         
         globalEvents.emit(BareEvent.game_preRender);
 
-        sceneController.Render();
+        bare.scene.Render();
 
         globalEvents.emit(BareEvent.game_postRender);
         rapid.matrixStack.restore();
@@ -711,13 +711,13 @@ export class BareEngine
 
             globalEvents.emit(BareEvent.game_completeClear);
             
-            sceneController.Clear(true);
+            bare.scene.Clear(true);
             
             if (options)
                 this.ApplyOptions(options);
 
             this.ResizeCanvas(this.resolution);
-            await sceneController.Goto(this.initialSceneClass);
+            await bare.scene.Goto(this.initialSceneClass);
             this.lastUpdateTimeRef = performance.now();
 
             this.SendEvent(BareEvent.game_started);
@@ -730,7 +730,7 @@ export class BareEngine
         globalEvents.emit(type, ...event);
 
         // SEND LOCALLY - TO ACTIVE SCENES
-        var scenes = sceneController.GetAll(true);
+        var scenes = bare.scene.GetAll(true);
         for (var scene of scenes)
         {
             if (!scene.enabled || scene.paused) // HERE TO PREVENT INPUT ON DISABLED SCENES, FOR ONE

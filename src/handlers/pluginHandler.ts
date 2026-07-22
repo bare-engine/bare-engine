@@ -1,5 +1,4 @@
 import { keyboardController } from "../controllers/keyboardController";
-import { sceneController } from "../controllers/sceneController";
 import { GameMode, globalEvents } from "../globals";
 import { Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
@@ -27,7 +26,7 @@ declare global {
 
 function getObjectByIdFromAllScenes(uid: string): GameObject | null
 {
-    for (const scene of sceneController.GetAll(true))
+    for (const scene of bare.scene.GetAll(true))
     {
         const objectController = scene.object;
         const obj = objectController.GetById(uid);
@@ -50,10 +49,10 @@ window.__GAME_DEBUG_API__ = {
         // AND IT CAUSED ENTITY SCREEN TO RESET IN PLUGIN?
         /*if (__DEV__)
         if (connected)
-            sceneController.Remove(EditorUIScene);*/
+            bare.scene.Remove(EditorUIScene);*/
     },
     getShowEditorButton() {
-        return !!sceneController.GetLevelScene();
+        return !!bare.scene.GetLevelScene();
     },
   clickedComponentButton(uid: string, compName: string, methodName: string)
   {
@@ -144,21 +143,21 @@ window.__GAME_DEBUG_API__ = {
   },
 
   gotoLevelView(levelPath: string) {
-    sceneController.Remove(EditorScene); // REMOVES IT IF IT EXISTS
-    sceneController.GetMainScene().LoadLevel(levelPath);
+    bare.scene.Remove(EditorScene); // REMOVES IT IF IT EXISTS
+    bare.scene.GetMainScene().LoadLevel(levelPath);
   },
 
   async gotoLevelEdit(levelPathOrData: string | LevelData) {
-    //sceneController.DisableAll();
+    //bare.scene.DisableAll();
 
     if (typeof levelPathOrData === 'string')
     {
         levelPathOrData = bare.levelPath + "/" + levelPathOrData + ".json"
     }
     
-    var scene = sceneController.GetMainScene(false); // WILL NOT ALWAYS FIND CORRECT ONE? TODO, CACHE IT, OR SEND IT ALONG
-    sceneController.Add(EditorScene, {levelPathOrData: levelPathOrData, settingsHandler: scene.settingsHandler});
-    //sceneController.Goto(EditorScene, {levelInput: levelPath});
+    var scene = bare.scene.GetMainScene(false); // WILL NOT ALWAYS FIND CORRECT ONE? TODO, CACHE IT, OR SEND IT ALONG
+    bare.scene.Add(EditorScene, {levelPathOrData: levelPathOrData, settingsHandler: scene.settingsHandler});
+    //bare.scene.Goto(EditorScene, {levelInput: levelPath});
   },
 
 
@@ -175,7 +174,7 @@ window.__GAME_DEBUG_API__ = {
   },
 
   getAllScenes() {
-    var scenes = sceneController.GetAll();
+    var scenes = bare.scene.GetAll();
     //scenes = scenes.filter(s => s.enabled); // DON'T SHOW DISABLED SCENES IN PLUGIN
     var sceneStrings = scenes.map(s => s.constructor.name);
 
@@ -375,14 +374,14 @@ window.__GAME_DEBUG_API__ = {
         return;
     }*/
 
-    const sceneMain = sceneController.GetMainScene();
+    const sceneMain = bare.scene.GetMainScene();
     
-    if (!sceneController.Get(EntityScene))
-        sceneController.Remove(EditorScene); // WILL REMOVE LEVEL EDITOR IF EXISTS
+    if (!bare.scene.Get(EntityScene))
+        bare.scene.Remove(EditorScene); // WILL REMOVE LEVEL EDITOR IF EXISTS
 
     plugin.notifyLeaveEntity = false;
-    var entityScene = await sceneController.Add(EntityScene, {name: name, isBase: isBase, settingsHandler: sceneMain.settingsHandler});
-    //sceneController.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
+    var entityScene = await bare.scene.Add(EntityScene, {name: name, isBase: isBase, settingsHandler: sceneMain.settingsHandler});
+    //bare.scene.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
     plugin.notifyLeaveEntity = true;
 
     var entity:Entity;
@@ -804,7 +803,7 @@ window.__GAME_DEBUG_API__ = {
 
     async setEntityField(name: string, props: Record<string, any>, childPath: number[], save:boolean = false, justAdded:boolean = false)
     {
-        let entityScene = sceneController.Get(EntityScene);
+        let entityScene = bare.scene.Get(EntityScene);
 
         if (!save)
         {
@@ -1121,7 +1120,7 @@ window.__GAME_DEBUG_API__ = {
     },
 
   getEntityData():SettingsData {
-    const scene = sceneController.GetMainScene();
+    const scene = bare.scene.GetMainScene();
     var settingsData = scene.settingsHandler.GetRaw();
 
     //return settingsData; // ADDED TO MAKE DEFAULT GAME NOT HAVE BELOW
@@ -1231,7 +1230,7 @@ window.__GAME_DEBUG_API__ = {
       if (plugin.lastEntity)
       {
           globalEvents.persistent.once(BareEvent.game_started, () => {
-              if (plugin.lastEntity && !sceneController.Get(EntityScene))
+              if (plugin.lastEntity && !bare.scene.Get(EntityScene))
               {
                   window.postMessage({ __fromGame: true, type: "gotoEntity", name: plugin.lastEntity.name, isBase: plugin.lastEntity.isBase }, "*");
               }
@@ -1296,7 +1295,7 @@ window.__GAME_DEBUG_API__ = {
         if (SaveData.currentLevelStr == levelName)
         {
             SaveData.currentLevelStr = '';
-            sceneController.Remove(EditorScene); // REMOVES IT, IN CASES WE'RE IN THERE. ELSE WE RESTART BACK INTO IT
+            bare.scene.Remove(EditorScene); // REMOVES IT, IN CASES WE'RE IN THERE. ELSE WE RESTART BACK INTO IT
             plugin.GetCurrentScene().Restart(); // DON'T HAVE LEVEL TO GO TO, SINCE WE JUST REMOVED IT, SO JUST RESTART GAME
         }
         return { ok: res.ok, saved: res.ok, response: json };
@@ -1308,7 +1307,7 @@ window.__GAME_DEBUG_API__ = {
         
     async updateLevelData(changes: { name?: string, width?: number, height?: number, backgroundColor?: string }) {
         try {
-            var levelHandler = sceneController.GetLevelScene().level;
+            var levelHandler = bare.scene.GetLevelScene().level;
             var data = levelHandler.currentLevel;
             levelHandler.Serialize(data);
 
@@ -1323,7 +1322,7 @@ window.__GAME_DEBUG_API__ = {
                 return { ok: true };
             }
 
-            //sceneController.Add(EditorScene, {levelPathOrData: data});
+            //bare.scene.Add(EditorScene, {levelPathOrData: data});
             return { ok: true };
         } catch (error: any) {
             console.error('Failed to update level data', error);
@@ -1333,7 +1332,7 @@ window.__GAME_DEBUG_API__ = {
 
     async saveLevelData(levelName: string, changes: { name?: string, width?: number, height?: number, backgroundColor?: string }) {
         try {
-            var levelHandler = sceneController.GetLevelScene().level;
+            var levelHandler = bare.scene.GetLevelScene().level;
             var data = levelHandler.currentLevel;
             levelHandler.Serialize(data);
 
@@ -1396,12 +1395,12 @@ window.__GAME_DEBUG_API__ = {
                 console.warn('[Bare Engine] No levels found, creating one called "level"');
                 var res = await window.__GAME_DEBUG_API__.createLevel('level');
                 var level = res.level;
-                //sceneController.Add(EditorScene, {levelPathOrData: level}); // OVERWRITES THE SETTINGSDATA WITH DEFAULT, NO GOOD
+                //bare.scene.Add(EditorScene, {levelPathOrData: level}); // OVERWRITES THE SETTINGSDATA WITH DEFAULT, NO GOOD
             }
             return;
         }
 
-        sceneController.Add(EditorScene);
+        bare.scene.Add(EditorScene);
     },
 };
 
@@ -1441,11 +1440,11 @@ export class PluginHandler
         var check = async () => {
             if (this.isPluginConnected && showEditorButton === false)
             {
-                sceneController.Remove(EditorUIScene);
+                bare.scene.Remove(EditorUIScene);
                 return;
             }
 
-            var levelScene = sceneController.GetLevelScene();
+            var levelScene = bare.scene.GetLevelScene();
             if (levelScene)
             {
                 var _showEditorButton = true;
@@ -1459,15 +1458,15 @@ export class PluginHandler
                 if (showEditorButton == false)
                     _showEditorButton = false;
 
-                if (!sceneController.Has(EditorUIScene) && _showEditorButton)
+                if (!bare.scene.Has(EditorUIScene) && _showEditorButton)
                 {
-                    var scene = await sceneController.Add(EditorUIScene, {openEditorButtonPosition: this.openEditorButtonPosition});
-                    sceneController.MoveToFront(scene);
+                    var scene = await bare.scene.Add(EditorUIScene, {openEditorButtonPosition: this.openEditorButtonPosition});
+                    bare.scene.MoveToFront(scene);
                 }
             }
             else
             {
-                sceneController.Remove(EditorUIScene);
+                bare.scene.Remove(EditorUIScene);
             }
         };
         check();
@@ -1491,12 +1490,12 @@ export class PluginHandler
             // IF REMOVED SCENE WAS CURRENT, PICK NEW ONE
             if (type === "removed" && this.currentSceneClassString == scene.constructor.name)
             {
-                const scene = sceneController.GetMainScene();
+                const scene = bare.scene.GetMainScene();
                 if (scene)
                     this.SetCurrentScene(scene.constructor.name);
             }
 
-            var isAnyEntityScene = sceneController.Get(EntityScene);
+            var isAnyEntityScene = bare.scene.Get(EntityScene);
             if (!isAnyEntityScene && plugin.notifyLeaveEntity)
             {
                 window.__GAME_DEBUG_API__.notifyLeaveEntity();
@@ -1528,7 +1527,7 @@ export class PluginHandler
 
         // RESTART
         this.AddDebugAction("Restart Game", () => bare.Restart());
-        //this.AddDebugAction("Restart Level", () => sceneController.Get(LevelScene).Restart()); //
+        //this.AddDebugAction("Restart Level", () => bare.scene.Get(LevelScene).Restart()); //
         this.AddDebugAction("Clear Save Data", () => SaveDataHandler.Clear());
         this.AddDebugBreak();
 
@@ -1540,7 +1539,7 @@ export class PluginHandler
 
     HandleClickObject(obj: GameObject)
     {
-        var editorScene = sceneController.Get(EditorScene);
+        var editorScene = bare.scene.Get(EditorScene);
         if (editorScene)
         {
             editorScene.editorControlsHandler.SelectGameObjects([obj]);
@@ -1694,7 +1693,7 @@ export class PluginHandler
     {
         //var objs = this.GetCurrentScene().object.GetAll();
         var foundObj:GameObject | null = null;
-        var scenes = sceneController.GetAll();
+        var scenes = bare.scene.GetAll();
         var p = bare.GetCanvasScreenPosition(ev.clientX, ev.clientY);
         for (var i = scenes.length - 1; i >= 0; i--)
         {
@@ -1733,7 +1732,7 @@ export class PluginHandler
     {
         //var objs = this.GetCurrentScene().object.GetAll();
 
-        var scenes = sceneController.GetAll();
+        var scenes = bare.scene.GetAll();
         var p = bare.GetCanvasScreenPosition(ev.clientX, ev.clientY);
         for (var i = scenes.length - 1; i >= 0; i--)
         {
@@ -1868,7 +1867,7 @@ export class PluginHandler
 
     GetSceneClasses(): any[]
     {
-        var sceneInstances = sceneController.GetAll();
+        var sceneInstances = bare.scene.GetAll();
         var sceneClasses = [];
         for (var i in sceneInstances)
         {
@@ -1893,12 +1892,12 @@ export class PluginHandler
     {
         if (!sceneClassString) return null;
 
-        const scenes = sceneController.GetAll();
+        const scenes = bare.scene.GetAll();
         const byName = scenes.find(s => s.constructor?.name === sceneClassString);
         if (byName) return byName;
 
         const sceneClass = (globalThis as any)[sceneClassString] as any;
-        if (sceneClass) return sceneController.Get(sceneClass) ?? null;
+        if (sceneClass) return bare.scene.Get(sceneClass) ?? null;
 
         return null;
     }
@@ -1908,7 +1907,7 @@ export class PluginHandler
         const resolved = this.ResolveSceneByName(sceneClassString);
         if (resolved) return resolved;
 
-        const fallback = sceneController.GetMainScene();
+        const fallback = bare.scene.GetMainScene();
         if (!fallback)
             throw new Error("PluginHandler.GetScene: no active scenes to resolve.");
 
@@ -2277,12 +2276,12 @@ export class PluginHandler
             throw new Error('Cannot save processed data. Something went really wrong!');
         }
 
-        sceneController.GetMainScene().settingsHandler.FilterSettingsDataDefaults(newData);
+        bare.scene.GetMainScene().settingsHandler.FilterSettingsDataDefaults(newData);
 
         plugin.doNotifyAfterSave = false;
 
         //var scene = plugin.GetCurrentScene();
-        const scene = sceneController.GetMainScene();
+        const scene = bare.scene.GetMainScene();
         if (scene instanceof EditorScene)
         {
             await (plugin.GetCurrentScene() as EditorScene).SaveEntityData(newData);

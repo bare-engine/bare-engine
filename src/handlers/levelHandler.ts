@@ -218,7 +218,7 @@ export class LevelHandler
         // THIS IS NOW ONLY USED WHEN SELECTING A LEVEL FROM THE PLUGIN AND LOADING IT
         // FOR INGAME USE, YOU MORE LIKELY SUPPLY THE settingsData DIRECTLY INSTEAD OF LOADING IT
         // EG:
-        // await sceneController.Add(EditorScene, {
+        // await bare.scene.Add(EditorScene, {
         //     levelPathOrData: "data/levels/map.json",
         //     settingsHandler: game.mapSettingsHandler,
         // });

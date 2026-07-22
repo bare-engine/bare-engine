@@ -138,7 +138,7 @@ export class SceneController
 
     Restart()
     {
-        for (var scene of sceneController.currentScenes)
+        for (var scene of this.currentScenes)
         {
             if (!scene.persistent)
             {
@@ -146,7 +146,7 @@ export class SceneController
                 scene.Clear(false);
             }
         }
-        for (var scene of sceneController.currentScenes)
+        for (var scene of this.currentScenes)
         {
             if (!scene.persistent)
             {
@@ -300,7 +300,7 @@ export class SceneController
             .flatMap(controller => controller.GetLayers().flat());
     }
 
-    GetLevelScene(checkEnabled: boolean = true): Scene | null
+    GetLevelScene(checkEnabled: boolean = true): Scene | undefined
     {
         if (checkEnabled)
         {
@@ -350,6 +350,3 @@ export class SceneController
         }
     }
 }
-
-export const sceneController = new SceneController();
-globalThis.sceneController = sceneController;

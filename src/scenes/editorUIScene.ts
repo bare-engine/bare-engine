@@ -1,4 +1,3 @@
-import { sceneController } from "../controllers/sceneController";
 import { Button } from "../objects/button";
 import { BareEvent, Position, SaveData } from "../types/bareTypes";
 import { EditorScene } from "./editorScene";
@@ -40,12 +39,12 @@ export class EditorUIScene extends Scene
     {
         this.editorButton.visible = false;
         
-        for (var scene of sceneController.GetAll())
+        for (var scene of bare.scene.GetAll())
         {
             if (scene.isLevel)
             {
                 this.editorButton.visible = true;
-                sceneController.MoveToFront(this);
+                bare.scene.MoveToFront(this);
                 break;
             }
         }
@@ -59,7 +58,7 @@ export class EditorUIScene extends Scene
             return;
         }
 
-        for (var scene of sceneController.GetAll())
+        for (var scene of bare.scene.GetAll())
         {
             // HARDCODED THESE FOR NOW - NEEDED SO MOUSE IS NOT LOCKED TO DOWN AFTER CLICKING THIS BUTTON
             // HITBOX CONTROLLER FOR GOOD MEASURE TOO
@@ -69,6 +68,6 @@ export class EditorUIScene extends Scene
             scene.Get("_mouse")?.Reset();
         }
         
-        sceneController.Add(EditorScene);
+        bare.scene.Add(EditorScene);
     }
 }
