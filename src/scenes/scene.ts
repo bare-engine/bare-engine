@@ -341,6 +341,9 @@ export class Scene implements SceneI
         return merged;
     }
     
+    // CONSTRUCTS AN ENTITY OUT OF A ENITTY NAME OR ENTITY OBJECT
+    // FOR AN ENTITY NAME: IT RETURNS THE ENTITY FOUND IN SETTINGSDATA, OR CREATES A NEW ONE IF NOT THERE
+    // FOR AN ENTITY OBJECT: IT FINDS THE baseEntity FROM SETTINGSDATA MERGES IT IN FOR A NEW ENTITY
     ConstructEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [] }): Entity
     {
         if (typeof nameOrEntity === "object" && nameOrEntity.constructed)
@@ -391,8 +394,8 @@ export class Scene implements SceneI
                     }
                 }
 
-                // entityArg HAS BEEN CONSTRUCTED, NOW MERGE IT WITH (ALREADY CONSTRUCTED) ENTITY FROM DATA
-                var possibleEntity = settingsData.entities[entityArg.name] as Entity;
+                // entityArg HAS BEEN CONSTRUCTED, NOW MERGE IT WITH (ALREADY CONSTRUCTED) ENTITY FROM SETTINGSDATA
+                var possibleEntity = settingsData.entities[entityArg.name];
                 if (possibleEntity)
                 {
                     // ENTITY WAS FOUND IN ENTITIES ARRAY IN DATA, DELETE SPECIFIED IGNORED PROPS FROM IT
@@ -402,7 +405,7 @@ export class Scene implements SceneI
                         delete entityArg[prop as keyof Entity];
                     }
                     
-                    // MERGE WITH ENTITY IN DATA
+                    // MERGE WITH ENTITY IN SETTINGSDATA
                     entity = {
                         ...possibleEntity, // OVERRIDE
                         ...entityArg, // START
@@ -478,6 +481,8 @@ export class Scene implements SceneI
 
         // FILL PRESETS - LIKE hitbox: "FULL"                     
         //                     hitbox: {x1: 0, y1: 0, x2: 1, y2: 1}
+        //
+        // SOME OF THESE ALREADY EXSIST IN defaultSettingsData
         if (options.fillPresets)
             this.settingsHandler.FillPresets(entity, settingsData); // ALREADY DONE IN SETTINGS CONSTRUCT - BUT COULD HAVE NEW PROPS IN ENTITY
 

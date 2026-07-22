@@ -519,8 +519,8 @@ export class SettingsHandler
         return match ? match[1] + "#" : name;
     }
     
-    // THIS MUTATES THE entity ITSELF
-    // GOING DOWN IT'S constructData RECURSIVELY AND ASSIGNING VALUES
+    // THIS CONSTRUCTS AN ENTITY BY GOING DOWN IT'S baseEntity RECURSIVELY AND ASSIGNING VALUES
+    // THIS METHOD MUTATES THE entity ARGUMENT ITSELF
     ConstructEntity(entity:Entity, rawSettingsData:SettingsData, options:ConstructEntityOptions): Entity
     {
         // (MOSTLY THE SAME AS SCENE Construct(), COULD GENERALIZE SOME PARTS)
