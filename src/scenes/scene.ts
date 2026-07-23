@@ -392,8 +392,10 @@ export class Scene implements SceneI
     // FOR AN ENTITY OBJECT: IT FINDS THE baseEntity FROM SETTINGSDATA AND MERGES IT IN FOR A NEW ENTITY
     ConstructEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [] }): Entity
     {
+        // The entity no longer needs inheritance/preset processing, but callers still need
+        // their own copy because applying entity values to a GameObject may mutate the input.
         if (typeof nameOrEntity === "object" && nameOrEntity.constructed)
-            return nameOrEntity;
+            return cloneEntityData(nameOrEntity);
             
         if (options.fillPresets === undefined)
             options.fillPresets = true;
@@ -563,6 +565,7 @@ export class Scene implements SceneI
         {
             // THIS SHOULD BE A POLYGON OBJECT, BUT SETTING AS ANY SINCE I DON'T WANT TO IMPORT POLYGON CLASS HERE
             (obj as any).polygonVertices = entity.polygonVertices;
+            delete entity.polygonVertices;
         }
 
         // PUT MASS AFTER THE OTHER PHYSICS PROPS (SCALE, DENSITY, rigidbodyRect/hitboxRadius)
@@ -617,12 +620,6 @@ export class Scene implements SceneI
 
         for (const key in entity) {
             if (key == "components" && !addComponents)
-                continue;
-
-            // Polygon vertices are applied before the remaining properties so area-dependent
-            // physics values (density/mass/inertia) are calculated from the restored shape.
-            // Keep them on the entity for cached level reloads, but do not apply them twice.
-            if (key == "polygonVertices")
                 continue;
 
             const value = entity[key];
