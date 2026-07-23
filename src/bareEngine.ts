@@ -702,6 +702,11 @@ export class BareEngine
         return onEditor;
     }
 
+    TogglePause()
+    {
+        bare.paused = !bare.paused;
+        globalEvents.emit(BareEvent.game_pauseToggled, bare.paused);
+    }
 
 
     Restart(sceneClass?: SceneClass, options?: BareOptions): void

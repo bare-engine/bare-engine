@@ -1440,6 +1440,7 @@ export class PluginHandler
     public TogglePause(): boolean
     {
         bare.paused = !bare.paused;
+        globalEvents.emit(BareEvent.game_pauseToggled, bare.paused);
         return bare.paused;
     }
 
@@ -1490,6 +1491,9 @@ export class PluginHandler
         };
         check();
         globalEvents.on(BareEvent.scene_changed, check);
+        globalEvents.persistent.on(BareEvent.game_pauseToggled, (paused) => {
+            window.postMessage({ __fromGame: true, type: "pauseChanged", paused }, "*");
+        });
 
         globalEvents.persistent.once(BareEvent.game_started, () => {
             // RIGHT CLICK FOR PLUGIN SELECT

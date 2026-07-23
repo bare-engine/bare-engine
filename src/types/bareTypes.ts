@@ -357,6 +357,7 @@ const eventDefs = {
     game_objectAdded: ev<{ gameObject: GameObject; layer: int | string | GameObject }>(),
     game_objectRemoved: ev<GameObject>(),
     game_focusChange: ev<boolean>(),
+    game_pauseToggled: ev<boolean>(),
     game_completeClear: undefined,
     game_resize: ev<{ prevWidth: number; prevHeight: number; newWidth: number; newHeight: number }>(),
 
