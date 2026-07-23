@@ -1223,6 +1223,8 @@ export class GameObject
     }
 
     // CAN PASS IN PERCENTAGES TOO
+    // THESE ARE RELATIVE TO THE SIZE OF THE TEXTURE, NOT THE SIZE OF THE GAMEOBJECT (INCLUDING CHILDREN)
+    // MIGHT BE CONFUSING - TODO?
     SetPivot(x: number, y: number): this
     {
         if (!this.texture)
@@ -1279,6 +1281,12 @@ export class GameObject
         else
             this.color.setRGBA(color.r, color.g, color.b, color.a);
 
+        return this;
+    }
+
+    SetAlpha(alpha: number): this
+    {
+        this.color.a = alpha * 255;
         return this;
     }
 
@@ -1346,6 +1354,12 @@ export class GameObject
         this.innerTransform.pivot.x = x;
         this.innerTransform.pivot.y = y;
 
+        return this;
+    }
+    
+    SetName(name: string): this
+    {
+        this.name = name;
         return this;
     }
 
