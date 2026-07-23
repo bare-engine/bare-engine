@@ -563,7 +563,6 @@ export class Scene implements SceneI
         {
             // THIS SHOULD BE A POLYGON OBJECT, BUT SETTING AS ANY SINCE I DON'T WANT TO IMPORT POLYGON CLASS HERE
             (obj as any).polygonVertices = entity.polygonVertices;
-            delete entity.polygonVertices;
         }
 
         // PUT MASS AFTER THE OTHER PHYSICS PROPS (SCALE, DENSITY, rigidbodyRect/hitboxRadius)
@@ -618,6 +617,12 @@ export class Scene implements SceneI
 
         for (const key in entity) {
             if (key == "components" && !addComponents)
+                continue;
+
+            // Polygon vertices are applied before the remaining properties so area-dependent
+            // physics values (density/mass/inertia) are calculated from the restored shape.
+            // Keep them on the entity for cached level reloads, but do not apply them twice.
+            if (key == "polygonVertices")
                 continue;
 
             const value = entity[key];
