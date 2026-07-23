@@ -1,17 +1,16 @@
 import type { CameraHandler } from "src/handlers/cameraHandler";
+import { Color } from "../libraries/new-rapid-render";
 import type { GameObject } from "../objects/gameObject";
 import { Shader } from "../types/bareTypes";
 
-type OutlineColor = [number, number, number, number];
-
-export type OutlineShaderPayload = { color: OutlineColor, width: number };
+export type OutlineShaderPayload = { color: Color, width: number };
 
 export class OutlineShader extends Shader
 {
-    color: OutlineColor;
+    color: Color;
     width: number;
 
-    constructor(args: OutlineShaderPayload = { color: [0.867, 0.631, 0.071, 1.0], width: 8.0 })
+    constructor(args: OutlineShaderPayload = { color: Color.fromNorm(0.867, 0.631, 0.071), width: 8.0 })
     {
         const outlineVertexShaderSource = `
             void vertex(inout vec4 position, inout vec2 region) {
@@ -57,7 +56,7 @@ export class OutlineShader extends Shader
         this.width = args.width;
 
         this.SetUniforms({
-            uOutlineColor: this.color,
+            uOutlineColor: this.normalizedColor,
             uOutlineWidth: this.width,
             uTextureSize: [512.0, 512.0],
         });
@@ -81,7 +80,7 @@ export class OutlineShader extends Shader
         const padding = this.width / globalScale;
 
         this.SetUniforms({
-            uOutlineColor: this.color,
+            uOutlineColor: this.normalizedColor,
             uTextureSize: [textureWidth, textureHeight],
             uOutlineWidth: this.width * lpscale / globalScale // pixel size
         });
@@ -89,5 +88,10 @@ export class OutlineShader extends Shader
         this.SetPadding(padding); // pixel size
 
         return false;
+    }
+
+    private get normalizedColor(): [number, number, number, number]
+    {
+        return [this.color.r / 255, this.color.g / 255, this.color.b / 255, this.color.a / 255];
     }
 }
