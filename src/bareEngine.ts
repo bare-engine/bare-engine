@@ -719,6 +719,7 @@ export class BareEngine
 
         this.restartTimeout = setTimeout(async () => {
             this.restartTimeout = null;
+            bare.paused = false;
 
             globalEvents.emit(BareEvent.game_completeClear);
             
