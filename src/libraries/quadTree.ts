@@ -6,6 +6,12 @@ export interface QuadTreeItem<T>
     value: T;
 }
 
+export interface QuadTreePair<T>
+{
+    p1: T;
+    p2: T;
+}
+
 export class QuadTree<T>
 {
     private items: QuadTreeItem<T>[] = [];
@@ -69,10 +75,17 @@ export class QuadTree<T>
         return results;
     }
 
-    private queryInto(region: Rectangle, results: QuadTreeItem<T>[]): void
+    queryInto(region: Rectangle, results: QuadTreeItem<T>[]): void
     {
+        const regionRight = region.x + region.width;
+        const regionBottom = region.y + region.height;
+
         for (const item of this.items) {
-            if (QuadTree.intersects(item.bounds, region)) {
+            const bounds = item.bounds;
+            if (bounds.x < regionRight &&
+                bounds.x + bounds.width > region.x &&
+                bounds.y < regionBottom &&
+                bounds.y + bounds.height > region.y) {
                 results.push(item);
             }
         }
@@ -89,8 +102,58 @@ export class QuadTree<T>
         }
 
         for (const node of this.nodes) {
-            if (QuadTree.intersects(node.bounds, region)) {
+            const bounds = node.bounds;
+            if (bounds.x < regionRight &&
+                bounds.x + bounds.width > region.x &&
+                bounds.y < regionBottom &&
+                bounds.y + bounds.height > region.y) {
                 node.queryInto(region, results);
+            }
+        }
+    }
+
+    getPairsInto(results: QuadTreePair<T>[]): void
+    {
+        // Pairs stored directly in this node.
+        for (let i = 0; i < this.items.length - 1; i++) {
+            const item1 = this.items[i];
+
+            for (let j = i + 1; j < this.items.length; j++) {
+                const item2 = this.items[j];
+                if (QuadTree.intersects(item1.bounds, item2.bounds)) {
+                    results.push({ p1: item1.value, p2: item2.value });
+                }
+            }
+        }
+
+        // Items retained by a parent straddle its split. Compare each one once
+        // against potentially intersecting descendants.
+        for (const item of this.items) {
+            for (const node of this.nodes) {
+                if (QuadTree.intersects(item.bounds, node.bounds)) {
+                    node.getPairsAgainstItem(item, results);
+                }
+            }
+        }
+
+        // Objects fully contained by different children cannot overlap, so only
+        // recurse within each child.
+        for (const node of this.nodes) {
+            node.getPairsInto(results);
+        }
+    }
+
+    private getPairsAgainstItem(item: QuadTreeItem<T>, results: QuadTreePair<T>[]): void
+    {
+        for (const other of this.items) {
+            if (QuadTree.intersects(item.bounds, other.bounds)) {
+                results.push({ p1: item.value, p2: other.value });
+            }
+        }
+
+        for (const node of this.nodes) {
+            if (QuadTree.intersects(item.bounds, node.bounds)) {
+                node.getPairsAgainstItem(item, results);
             }
         }
     }

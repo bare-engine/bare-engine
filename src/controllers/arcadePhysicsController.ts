@@ -1,6 +1,6 @@
 import { HitboxType, Rectangle } from "../types/bareTypes";
 import { Vec2 } from "../libraries/new-rapid-render";
-import { QuadTree, QuadTreeItem } from "../libraries/quadTree";
+import { QuadTree, QuadTreeItem, QuadTreePair } from "../libraries/quadTree";
 import type { Scene } from "../scenes/scene";
 import { GameObject } from "../objects/gameObject";
 import { ArcadeObject } from "../objects/arcadeObject";
@@ -372,11 +372,15 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
                 if (collision && collisionInfo)
                 {
-                    this.HandleCollision(obj1, obj2, emitEvents);
+                    if (!pair.collisionHandled)
+                    {
+                        this.HandleCollision(obj1, obj2, emitEvents);
+                        pair.collisionHandled = true;
 
-                    // collide COULD HAVE CHANGED SINCE HandleCollision() SENT OUT EVENTS
-                    if (!obj1.collide || !obj2.collide) {
-                        continue;
+                        // collide COULD HAVE CHANGED SINCE HandleCollision() SENT OUT EVENTS
+                        if (!obj1.collide || !obj2.collide) {
+                            continue;
+                        }
                     }
 
                     // Skip physical response for sensors or non-solid objects
@@ -482,14 +486,13 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         }
     }
 
-    private getBroadPhasePairs(): { p1: ArcadeObject; p2: ArcadeObject }[]
+    private getBroadPhasePairs(): { p1: ArcadeObject; p2: ArcadeObject; collisionHandled?: boolean }[]
     {
         const collisionObjects = this.getCollisionObjects();
-        const pairs: { p1: ArcadeObject; p2: ArcadeObject }[] = [];
-        const pairKeys = new Set<string>();
+        const pairs: { p1: ArcadeObject; p2: ArcadeObject; collisionHandled?: boolean }[] = [];
 
         if (!this.hasLayerCollisionRules()) {
-            this.addBroadPhasePairs(collisionObjects, pairs, pairKeys);
+            this.addBroadPhasePairs(collisionObjects, pairs);
             return pairs;
         }
 
@@ -522,12 +525,11 @@ export class ArcadePhysicsController extends PhysicsControllerBase
                 const layer2Objects = objectsByLayer.get(layer2)!;
 
                 if (layer1 === layer2) {
-                    this.addBroadPhasePairs(layer1Objects, pairs, pairKeys);
+                    this.addBroadPhasePairs(layer1Objects, pairs);
                 } else {
                     this.addBroadPhasePairs(
                         [...layer1Objects, ...layer2Objects],
                         pairs,
-                        pairKeys,
                         new Set(layer1Objects)
                     );
                 }
@@ -539,8 +541,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
     private addBroadPhasePairs(
         collisionObjects: ArcadeObject[],
-        pairs: { p1: ArcadeObject; p2: ArcadeObject }[],
-        pairKeys: Set<string>,
+        pairs: { p1: ArcadeObject; p2: ArcadeObject; collisionHandled?: boolean }[],
         firstLayerObjects?: Set<ArcadeObject>
     ): void
     {
@@ -551,7 +552,6 @@ export class ArcadePhysicsController extends PhysicsControllerBase
                         collisionObjects[i],
                         collisionObjects[j],
                         pairs,
-                        pairKeys,
                         firstLayerObjects
                     );
                 }
@@ -561,8 +561,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         }
 
         const entries: QuadTreeItem<ArcadeObject>[] = [];
-        const objectIndexes = new Map<ArcadeObject, number>();
-        const bounds = this.getBroadPhaseBounds(entries, objectIndexes, collisionObjects);
+        const bounds = this.getBroadPhaseBounds(entries, collisionObjects);
 
         if (entries.length < 2) {
             return;
@@ -578,29 +577,18 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             tree.insert(entry);
         }
 
-        for (const entry of entries) {
-            const obj1 = entry.value;
-            const obj1Index = objectIndexes.get(obj1)!;
-            const candidates = tree.query(entry.bounds);
+        const candidates: QuadTreePair<ArcadeObject>[] = [];
+        tree.getPairsInto(candidates);
 
-            for (const candidate of candidates) {
-                const obj2 = candidate.value;
-                const obj2Index = objectIndexes.get(obj2)!;
-
-                if (obj2Index <= obj1Index) {
-                    continue;
-                }
-
-                this.addCollisionPair(obj1, obj2, pairs, pairKeys, firstLayerObjects);
-            }
+        for (const candidate of candidates) {
+            this.addCollisionPair(candidate.p1, candidate.p2, pairs, firstLayerObjects);
         }
     }
 
     private addCollisionPair(
         obj1: ArcadeObject,
         obj2: ArcadeObject,
-        pairs: { p1: ArcadeObject; p2: ArcadeObject }[],
-        pairKeys: Set<string>,
+        pairs: { p1: ArcadeObject; p2: ArcadeObject; collisionHandled?: boolean }[],
         firstLayerObjects?: Set<ArcadeObject>
     ): void
     {
@@ -614,17 +602,11 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             return;
         }
 
-        const key = this.getCollisionKey(obj1, obj2);
-        if (pairKeys.has(key)) {
-            return;
-        }
-
         const obj1SpeedSq = this.getVelocityMagnitudeSquared(obj1);
         const obj2SpeedSq = this.getVelocityMagnitudeSquared(obj2);
         const firstObj = obj1SpeedSq > obj2SpeedSq ? obj1 : obj2;
         const secondObj = obj1SpeedSq > obj2SpeedSq ? obj2 : obj1;
 
-        pairKeys.add(key);
         pairs.push({ p1: firstObj, p2: secondObj });
     }
 
@@ -686,6 +668,10 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
     private shouldSkipInternalCollision(obj1: ArcadeObject, obj2: ArcadeObject): boolean
     {
+        if (!obj1.parent && !obj2.parent) {
+            return false;
+        }
+
         if (this.isAncestorOf(obj1, obj2) || this.isAncestorOf(obj2, obj1)) {
             return true;
         }
@@ -738,7 +724,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         return obj.velocity.x * obj.velocity.x + obj.velocity.y * obj.velocity.y;
     }
 
-    private getBroadPhaseBounds(entries: QuadTreeItem<ArcadeObject>[], objectIndexes: Map<ArcadeObject, number>, collisionObjects: ArcadeObject[]): Rectangle
+    private getBroadPhaseBounds(entries: QuadTreeItem<ArcadeObject>[], collisionObjects: ArcadeObject[]): Rectangle
     {
         // Fit each layer tree to its own objects instead of the whole viewport.
         // This makes every subdivision level useful for spatial separation.
@@ -756,7 +742,6 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             }
 
             entries.push({ bounds, value: obj });
-            objectIndexes.set(obj, i);
 
             left = Math.min(left, bounds.x);
             top = Math.min(top, bounds.y);
