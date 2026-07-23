@@ -87,6 +87,8 @@ export default function mitt<Events extends object>(
   };
 
   const emit = (type: any, ...evt: any[]) => {
+    if (bare.paused) 
+      return;
     const list = all!.get(type);
     if (list && list.length) {
       for (const entry of list.slice()) {
