@@ -507,6 +507,8 @@ export class GameObject
     {
         inheritedColor = inheritedColor ? Helper.MultiplyColors(inheritedColor, this.color) : this.color;
 
+        // MAYBE WANT TO MOVE THIS OUTSIDE THE RENDER CALL, 
+        // SO USER CODE CAN CALL IT DESPITE VISIBLE BOOL - TODO?
         if (bare.levelEditorOpen)
         {
             if (!this.visibleInEditor)

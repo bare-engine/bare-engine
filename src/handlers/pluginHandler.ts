@@ -265,17 +265,17 @@ window.__GAME_DEBUG_API__ = {
 
   getAllObjects() {
     const scene = plugin.GetCurrentScene();
+    const layers = scene.object.GetLayers();
 
-    return scene.object
-                .GetLayers()
-                .flatMap((objects, layerIndex) => objects
+    return layers.flatMap((objects, layerIndex) => objects
                     .filter(o => o.customName !== 'ignoreInPlugin')
                     .map(o => ({
                         id: o.uniqueID,
                         name: o.pluginName ? o.pluginName : o.name,
                         hasChildren: (o.children.length > 0),
                         layerIndex,
-                        layerName: scene.layerNames[layerIndex] ?? `Layer ${layerIndex}`
+                        layerName: scene.layerNames[layerIndex] ?? `Layer ${layerIndex}`,
+                        layerCount: layers.length
                     })))
   },
 

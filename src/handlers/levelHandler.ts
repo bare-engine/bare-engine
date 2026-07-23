@@ -5,8 +5,7 @@ import { Color, Texture, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { Scene } from "../scenes/scene";
 import { defaultSettingsData } from "../types/bareData";
-import { BareEvent, BareEventPayload, ConstructEntityOptions, Entity, entityVars, LevelData, SaveData, Scalar, SettingsData } from '../types/bareTypes';
-import { Hitbox } from "../types/hitbox";
+import { BareEvent, BareEventPayload, ConstructEntityOptions, Entity, entityVars, LevelData, Rectangle2Vec, SaveData, Scalar, SettingsData } from '../types/bareTypes';
 import { getSaveFields, InspectorField } from "../utils/decorators";
 import { Helper, Size } from "../utils/helper";
 import { assetsHandler } from "./assetsHandler";
@@ -479,11 +478,11 @@ export class LevelHandler
                 return innerPivot;
         };*/
 
-        customSerialize["hitbox"] = (physicsHitbox:Hitbox) => {
+        customSerialize["hitbox"] = (hitbox:Rectangle2Vec) => {
             if (obj.entity?.hitbox)
                 return obj.entity.hitbox;
             else
-                return {x: physicsHitbox.rectangle.x, y: physicsHitbox.rectangle.y, width: physicsHitbox.rectangle.width, height: physicsHitbox.rectangle.height};
+                return hitbox;
         };
 
         customSerialize["texture"] = (currentValue:Texture) => { return currentValue.texturePath; };
