@@ -1592,7 +1592,7 @@ export class PluginHandler
 
     private OnRightClickPointerDown = async (ev: PointerEvent) =>
     {
-      if (bare.levelEditorOpen)
+      if (bare.paused || bare.levelEditorOpen)
           return;
 
       if (ev.button === 2)

@@ -630,6 +630,9 @@ export class BareEngine
         if (!this.IsFirstTouch(event))
             return;
 
+        if (this.paused)
+            return;
+
         var pos = this.GetCanvasScreenPosition(event.clientX, event.clientY);
         var isLeftButton = (event.button == 0);
 
@@ -644,6 +647,9 @@ export class BareEngine
     private PointerUp(event: PointerEvent)
     {
         if (!this.IsFirstTouch(event))
+            return;
+
+        if (this.paused)
             return;
         
         var pos = this.GetCanvasScreenPosition(event.clientX, event.clientY);
@@ -662,6 +668,9 @@ export class BareEngine
         if (!this.IsFirstTouch(event))
             return;
 
+        if (this.paused)
+            return;
+
         var pos = this.GetCanvasScreenPosition(event.clientX, event.clientY);
         var moved = this.GetCanvasScreenDelta(event.movementX, event.movementY);
         bare.SendEvent(BareEvent.pointer_move, {mouseX: pos.x, mouseY: pos.y, movedX: moved.x, movedY: moved.y, event: event, isLeftButton: event.button == 0});
@@ -671,6 +680,9 @@ export class BareEngine
 
     private DoubleClick(event: MouseEvent)
     {
+        if (this.paused)
+            return;
+        
         var pos = this.GetCanvasScreenPosition(event.clientX, event.clientY);
         bare.SendEvent(BareEvent.pointer_doubleClick, {mouseX: pos.x, mouseY: pos.y, event: event});
     }
