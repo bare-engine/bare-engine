@@ -8,6 +8,7 @@ import type { SopiroPhysicsController } from "../controllers/sopiroPhysicsContro
 import type { TweenController } from "../controllers/tweenController";
 import { controllerNames, GameMode, globalEvents, MakePath, MakePathForEntity } from "../globals";
 import type { CameraHandler } from "../handlers/cameraHandler";
+import { assetsHandler } from "../handlers/assetsHandler";
 import type { LevelHandler } from "../handlers/levelHandler";
 import { SettingsHandler } from "../handlers/settingsHandler";
 import mitt from "../libraries/mitt";
@@ -946,17 +947,10 @@ export class Scene implements SceneI
                 // THIS IS ONLY CHECKED FOR DEV, FOR PRODUCTION Bare.assets.images.length = 0 ALWAYS SINCE assets.ts IS NOT INCLUDED
                 if (Bare.assets.images.length > 0 && entity.texture != "NONE" && entity.texture != "placeHolder" /*&& entity.texture*/)
                 {
-                    var hasEntityImage = false;
-
-                    if (entity.texture)
-                    {
-                        hasEntityImage = Bare.assets.images.includes(entity.texture) || entity.texture == "whitePixel";
-                    }
-                    else
-                    {
-                        var path = MakePathForEntity(entity);
-                        hasEntityImage = Bare.assets.images.includes(path);
-                    }
+                    var texturePath = MakePathForEntity(entity);
+                    var hasEntityImage =
+                        Bare.assets.images.includes(texturePath) ||
+                        assetsHandler.HasTexture(texturePath);
                     
                     if (!hasEntityImage)
                     {
