@@ -38,6 +38,8 @@ export class BareEngine
     public time: number = 0;
     public count: int = 0;
 
+    public paused: boolean = false;
+    
     public fixedTimestep: number = 1 / 60;
     public maxDeltaTime: number = 1 / 15; // CAPS FRAME DELTA, USEFUL AFTER LAG OR TAB REFOCUS
     private accumulator: number = 0;
@@ -458,16 +460,20 @@ export class BareEngine
             this.accumulator += this.deltaTime;
 
             // CAPPING ACCUMULATOR - TO PREVENT TOO MANY FIXED UPDATES AFTER LAG
-            if (this.accumulator > this.fixedTimestep * 5)
-                this.accumulator = this.fixedTimestep * 5;
-
-            while (this.accumulator >= this.fixedTimestep)
+            if (!this.paused)
             {
-                this.FixedUpdate(this.fixedTimestep);
-                this.accumulator -= this.fixedTimestep;
+                if (this.accumulator > this.fixedTimestep * 5)
+                    this.accumulator = this.fixedTimestep * 5;
+
+                while (this.accumulator >= this.fixedTimestep)
+                {
+                    this.FixedUpdate(this.fixedTimestep);
+                    this.accumulator -= this.fixedTimestep;
+                }
+
+                this.Update(this.deltaTime);
             }
 
-            this.Update(this.deltaTime);
             this.Render();
         }   
 

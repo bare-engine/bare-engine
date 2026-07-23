@@ -26,10 +26,7 @@ function GetBareOptions(options?: BareOptions): BareOptions
         showEditorButton: undefined,
         debugKeys: [
             {e: () => window.debug = !window.debug},
-            {p: () => {
-                const scene = bare.scene.GetMainScene();
-                scene.paused = !scene.paused;
-            }},
+            {p: () => {bare.paused = !bare.paused;}},
             {r: () => bare.Restart()},
             {l: () => bare.scene.GetLevelScene()?.level.Restart()},
         ],
