@@ -31,6 +31,11 @@ declare module "../types/bareTypes" {
 
 export class ArcadePhysicsController extends PhysicsControllerBase
 {
+    static MAX_ITERATIONS: int = 8;
+    static USE_QUAD_TREE: boolean = true;
+    static QUAD_TREE_MAX_ITEMS: int = 8;
+    static QUAD_TREE_MAX_LEVELS: int = 6;
+
     public objects: ArcadeObject[] = [];
 
     private x: number = 0;
@@ -41,9 +46,6 @@ export class ArcadePhysicsController extends PhysicsControllerBase
     public activeCollisions: Set<string> = new Set();
     private currentFrameCollisions: Set<string> = new Set();
     public OnPreCollisionResolve: ((obj1: ArcadeObject, obj2: ArcadeObject) => boolean) | null = null;
-    private broadPhaseMaxItems: number = 8;
-    private broadPhaseMaxLevels: number = 6;
-
     @InspectorField
     private get objectsNum():int { return this.objects.length; }
 
@@ -270,12 +272,15 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
     public handleObjectCollisions(emitEvents: boolean = true): void
     {
-        const maxIterations = 8;
+        const maxIterations = ArcadePhysicsController.MAX_ITERATIONS;
+        // Positional solver passes operate on the same candidates. Rebuilding every
+        // layer quadtree for each pass multiplied broad-phase cost by MAX_ITERATIONS.
+        // Newly-created contacts are picked up on the next fixed update.
+        const broadPhasePairs = this.getBroadPhasePairs();
 
         for (let iteration = 0; iteration < maxIterations; iteration++)
         {
             let resolvedAny = false;
-            const broadPhasePairs = this.getBroadPhasePairs();
 
             for (const pair of broadPhasePairs)
             {
@@ -462,23 +467,99 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
     private getBroadPhasePairs(): { p1: ArcadeObject; p2: ArcadeObject }[]
     {
+        const collisionObjects = this.getCollisionObjects();
+        const pairs: { p1: ArcadeObject; p2: ArcadeObject }[] = [];
+        const pairKeys = new Set<string>();
+
+        if (!this.hasLayerCollisionRules()) {
+            this.addBroadPhasePairs(collisionObjects, pairs, pairKeys);
+            return pairs;
+        }
+
+        const objectsByLayer = new Map<string, ArcadeObject[]>();
+
+        for (const object of collisionObjects) {
+            const layerName = this.getCollisionLayerName(object);
+            if (!layerName) continue;
+
+            let layerObjects = objectsByLayer.get(layerName);
+            if (!layerObjects) {
+                layerObjects = [];
+                objectsByLayer.set(layerName, layerObjects);
+            }
+
+            layerObjects.push(object);
+        }
+
+        const layerNames = Array.from(objectsByLayer.keys());
+        for (let i = 0; i < layerNames.length; i++) {
+            const layer1 = layerNames[i];
+
+            for (let j = i; j < layerNames.length; j++) {
+                const layer2 = layerNames[j];
+                if (!this.layerAllowsCollision(layer1, layer2) && !this.layerAllowsCollision(layer2, layer1)) {
+                    continue;
+                }
+
+                const layer1Objects = objectsByLayer.get(layer1)!;
+                const layer2Objects = objectsByLayer.get(layer2)!;
+
+                if (layer1 === layer2) {
+                    this.addBroadPhasePairs(layer1Objects, pairs, pairKeys);
+                } else {
+                    this.addBroadPhasePairs(
+                        [...layer1Objects, ...layer2Objects],
+                        pairs,
+                        pairKeys,
+                        new Set(layer1Objects)
+                    );
+                }
+            }
+        }
+
+        return pairs;
+    }
+
+    private addBroadPhasePairs(
+        collisionObjects: ArcadeObject[],
+        pairs: { p1: ArcadeObject; p2: ArcadeObject }[],
+        pairKeys: Set<string>,
+        firstLayerObjects?: Set<ArcadeObject>
+    ): void
+    {
+        if (!ArcadePhysicsController.USE_QUAD_TREE) {
+            for (let i = 0; i < collisionObjects.length - 1; i++) {
+                for (let j = i + 1; j < collisionObjects.length; j++) {
+                    this.addCollisionPair(
+                        collisionObjects[i],
+                        collisionObjects[j],
+                        pairs,
+                        pairKeys,
+                        firstLayerObjects
+                    );
+                }
+            }
+
+            return;
+        }
+
         const entries: QuadTreeItem<ArcadeObject>[] = [];
         const objectIndexes = new Map<ArcadeObject, number>();
-        const collisionObjects = this.getCollisionObjects();
         const bounds = this.getBroadPhaseBounds(entries, objectIndexes, collisionObjects);
 
         if (entries.length < 2) {
-            return [];
+            return;
         }
 
-        const tree = new QuadTree<ArcadeObject>(bounds, this.broadPhaseMaxItems, this.broadPhaseMaxLevels);
+        const tree = new QuadTree<ArcadeObject>(
+            bounds,
+            ArcadePhysicsController.QUAD_TREE_MAX_ITEMS,
+            ArcadePhysicsController.QUAD_TREE_MAX_LEVELS
+        );
 
         for (const entry of entries) {
             tree.insert(entry);
         }
-
-        const pairs: { p1: ArcadeObject; p2: ArcadeObject }[] = [];
-        const pairKeys = new Set<string>();
 
         for (const entry of entries) {
             const obj1 = entry.value;
@@ -493,30 +574,41 @@ export class ArcadePhysicsController extends PhysicsControllerBase
                     continue;
                 }
 
-                if (this.shouldSkipInternalCollision(obj1, obj2)) {
-                    continue;
-                }
-
-                if (!this.canObjectsCollideByLayer(obj1, obj2)) {
-                    continue;
-                }
-
-                const key = this.getCollisionKey(obj1, obj2);
-                if (pairKeys.has(key)) {
-                    continue;
-                }
-
-                const obj1SpeedSq = this.getVelocityMagnitudeSquared(obj1);
-                const obj2SpeedSq = this.getVelocityMagnitudeSquared(obj2);
-                const firstObj = obj1SpeedSq > obj2SpeedSq ? obj1 : obj2;
-                const secondObj = obj1SpeedSq > obj2SpeedSq ? obj2 : obj1;
-
-                pairKeys.add(key);
-                pairs.push({ p1: firstObj, p2: secondObj });
+                this.addCollisionPair(obj1, obj2, pairs, pairKeys, firstLayerObjects);
             }
         }
+    }
 
-        return pairs;
+    private addCollisionPair(
+        obj1: ArcadeObject,
+        obj2: ArcadeObject,
+        pairs: { p1: ArcadeObject; p2: ArcadeObject }[],
+        pairKeys: Set<string>,
+        firstLayerObjects?: Set<ArcadeObject>
+    ): void
+    {
+        // A candidate set made for two different layers must only emit cross-layer
+        // pairs. Same-layer pairs are handled by that layer's own rule/group.
+        if (firstLayerObjects && firstLayerObjects.has(obj1) === firstLayerObjects.has(obj2)) {
+            return;
+        }
+
+        if (this.shouldSkipInternalCollision(obj1, obj2)) {
+            return;
+        }
+
+        const key = this.getCollisionKey(obj1, obj2);
+        if (pairKeys.has(key)) {
+            return;
+        }
+
+        const obj1SpeedSq = this.getVelocityMagnitudeSquared(obj1);
+        const obj2SpeedSq = this.getVelocityMagnitudeSquared(obj2);
+        const firstObj = obj1SpeedSq > obj2SpeedSq ? obj1 : obj2;
+        const secondObj = obj1SpeedSq > obj2SpeedSq ? obj2 : obj1;
+
+        pairKeys.add(key);
+        pairs.push({ p1: firstObj, p2: secondObj });
     }
 
     private hasLayerCollisionRules(): boolean
@@ -671,10 +763,12 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
     private getBroadPhaseBounds(entries: QuadTreeItem<ArcadeObject>[], objectIndexes: Map<ArcadeObject, number>, collisionObjects: ArcadeObject[]): Rectangle
     {
-        let left = this.x;
-        let top = this.y;
-        let right = this.x + this.width;
-        let bottom = this.y + this.height;
+        // Fit each layer tree to its own objects instead of the whole viewport.
+        // This makes every subdivision level useful for spatial separation.
+        let left = Infinity;
+        let top = Infinity;
+        let right = -Infinity;
+        let bottom = -Infinity;
 
         for (let i = 0; i < collisionObjects.length; i++) {
             const obj = collisionObjects[i];
@@ -691,6 +785,10 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             top = Math.min(top, bounds.y);
             right = Math.max(right, bounds.x + bounds.width);
             bottom = Math.max(bottom, bounds.y + bounds.height);
+        }
+
+        if (entries.length === 0) {
+            return { x: this.x, y: this.y, width: Math.max(1, this.width), height: Math.max(1, this.height) };
         }
 
         const width = Math.max(1, right - left);
@@ -777,6 +875,34 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
         if (radius <= 0) {
             return null;
+        }
+
+        // Root physics objects do not need a matrix-stack traversal. The pivot in
+        // localCenter cancels the outer transform's -pivot translation, leaving
+        // only circleOffset to transform around obj.position.
+        if (!obj.parent) {
+            const scaleX = obj.scale.x * (obj.transform.flipped ? -1 : 1);
+            const scaleY = obj.scale.y;
+            const offsetX = obj.physicsHitbox.circleOffset.x * scaleX;
+            const offsetY = obj.physicsHitbox.circleOffset.y * scaleY;
+
+            if (obj.rotation === 0) {
+                return {
+                    x: obj.x + offsetX,
+                    y: obj.y + offsetY,
+                    radius: Math.abs(radius * scaleX)
+                };
+            }
+
+            const radians = obj.rotation * (Math.PI / 180);
+            const cos = Math.cos(radians);
+            const sin = Math.sin(radians);
+
+            return {
+                x: obj.x + offsetX * cos - offsetY * sin,
+                y: obj.y + offsetX * sin + offsetY * cos,
+                radius: Math.abs(radius * scaleX)
+            };
         }
 
         // Match hitboxController.GetCircleCenter / GetRadius exactly so physics aligns
@@ -1223,7 +1349,11 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         let penetration = 0;
 
         if (obj1.physicsHitbox.type === HitboxType.Circle && obj2.physicsHitbox.type === HitboxType.Circle) {
-            penetration = (obj1.physicsHitbox.radius + obj2.physicsHitbox.radius) - collisionInfo.distance;
+            const circle1 = this.getWorldCircle(obj1);
+            const circle2 = this.getWorldCircle(obj2);
+            if (!circle1 || !circle2) return null;
+
+            penetration = (circle1.radius + circle2.radius) - collisionInfo.distance;
         } else if (obj1.physicsHitbox.type === HitboxType.Rectangle && obj2.physicsHitbox.type === HitboxType.Rectangle) {
             penetration = collisionInfo.distance; // already overlap depth
         } else {

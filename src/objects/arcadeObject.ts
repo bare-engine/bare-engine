@@ -29,7 +29,7 @@ export class ArcadeObject extends GameObject
     // ENTITY VALUES ON OBJECT
     @InspectorField @Save
     @Dropdown(["Rectangle", "Circle"])
-    hitboxType = {
+    private hitboxType = {
         // physicsHitbox.type is a numeric HitboxType; map it to/from its key name so the
         // dropdown value matches the options.
         get: () => HitboxType[this.physicsHitbox.type] ?? "Rectangle",
