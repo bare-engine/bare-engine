@@ -38,6 +38,12 @@ function getObjectByIdFromAllScenes(uid: string): GameObject | null
 }
 
 window.__GAME_DEBUG_API__ = {
+    getPaused() {
+        return plugin.GetPaused();
+    },
+    togglePause() {
+        return plugin.TogglePause();
+    },
     setPluginConnected(connected: boolean) {
         if (connected)
         {
@@ -1425,6 +1431,17 @@ export class PluginHandler
     // The entity being edited, remembered across a recompile/restart so setPluginConnected
     // can re-open it (the restart drops back to the main scene).
     lastEntity: { name: string, isBase: boolean } | null = null;
+
+    public GetPaused(): boolean
+    {
+        return !!bare.paused;
+    }
+
+    public TogglePause(): boolean
+    {
+        bare.paused = !bare.paused;
+        return bare.paused;
+    }
 
     static Init(showEditorButton: boolean, editorButtonPosition: Position)
     {
