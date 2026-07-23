@@ -1,5 +1,5 @@
 import { HitboxType, Rectangle } from "../types/bareTypes";
-import { Vec2 } from "../libraries/new-rapid-render";
+import { Color, Vec2 } from "../libraries/new-rapid-render";
 import { QuadTree, QuadTreeItem, QuadTreePair } from "../libraries/quadTree";
 import type { Scene } from "../scenes/scene";
 import { GameObject } from "../objects/gameObject";
@@ -115,6 +115,47 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             this.CheckCollisionEnd();
             this.activeCollisions.clear();
             this.clearCollidingObjects();
+        }
+    }
+
+    Render(): void
+    {
+        if (__DEV__ && window.debug)
+        {
+            const color = Color.fromHex('#f700ff57');
+
+            for (const obj of this.collisionObjects)
+            {
+                if (!obj.collide || !obj.physicsHitbox?.active)
+                    continue;
+
+                if (obj.physicsHitbox.type === HitboxType.Circle)
+                {
+                    const circle = this.getWorldCircle(obj);
+                    if (!circle)
+                        continue;
+
+                    rapid.drawCircle({
+                        radius: circle.radius,
+                        color,
+                        segments: 32,
+                        position: new Vec2(circle.x, circle.y),
+                    });
+                }
+                else if (obj.physicsHitbox.type === HitboxType.Rectangle)
+                {
+                    const rect = this.getWorldHitboxRect(obj);
+                    if (!rect)
+                        continue;
+
+                    rapid.drawRect({
+                        width: rect.width,
+                        height: rect.height,
+                        color,
+                        position: new Vec2(rect.x, rect.y),
+                    });
+                }
+            }
         }
     }
 

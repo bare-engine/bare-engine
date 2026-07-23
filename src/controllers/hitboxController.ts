@@ -101,14 +101,6 @@ export class HitboxController
             var hitbox = obj.tapHitbox;
 
             var color = Color.fromHex('#f700ff57');
-
-            // physicsHitbox SHOULD NOT REALLY BE HANDLED HERE - TODO
-            if ((obj as any).isPhysicsObject)
-            {
-                hitbox = (obj as any).physicsHitbox;
-                if (!(obj as any).collide)
-                    continue;
-            }
             
             if (!hitbox?.active)
                 continue;
