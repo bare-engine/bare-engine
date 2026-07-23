@@ -37,6 +37,8 @@ export class ArcadePhysicsController extends PhysicsControllerBase
     static QUAD_TREE_MAX_LEVELS: int = 6;
 
     public objects: ArcadeObject[] = [];
+    private collisionObjects: ArcadeObject[] = [];
+    private collisionObjectSet: Set<ArcadeObject> = new Set();
 
     private x: number = 0;
     private y: number = 0;
@@ -59,22 +61,37 @@ export class ArcadePhysicsController extends PhysicsControllerBase
     // GETS CALLED BY EXTENDED CLASS (PhysicsControllerBase), ON BareEvent.game_objectAdded
     override Add(object: GameObject): void
     {
-        if (object instanceof ArcadeObject && !object.parent) // SHOULD BE ArcadeObject AND NOT A CHILD
+        if (!(object instanceof ArcadeObject))
+            return;
+
+        if (!this.collisionObjectSet.has(object))
+        {
+            this.collisionObjectSet.add(object);
+            this.collisionObjects.push(object);
+        }
+
+        if (!object.parent) // ONLY ROOT OBJECTS ARE INTEGRATED
             this.objects.push(object);
     }
 
     // GETS CALLED BY EXTENDED CLASS (PhysicsControllerBase), ON BareEvent.game_objectRemoved
     override Remove(object: ArcadeObject): void
     {
-        if (object instanceof ArcadeObject && !object.parent)
-        {
-            this.removeAllCollidingObjectReferences(object);
+        if (!(object instanceof ArcadeObject))
+            return;
 
-            const index = this.objects.indexOf(object);
-            if (index > -1) {
-                this.objects.splice(index, 1);
-            }
+        this.removeAllCollidingObjectReferences(object);
+
+        if (this.collisionObjectSet.delete(object))
+        {
+            const collisionIndex = this.collisionObjects.indexOf(object);
+            if (collisionIndex > -1)
+                this.collisionObjects.splice(collisionIndex, 1);
         }
+
+        const index = this.objects.indexOf(object);
+        if (index > -1)
+            this.objects.splice(index, 1);
     }
 
     setDimensions(x: number = 0, y: number = 0, width: number = 0, height: number = 0) {
@@ -664,47 +681,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
     private getCollisionObjects(): ArcadeObject[]
     {
-        const collisionObjects: ArcadeObject[] = [];
-        const seen = new Set<ArcadeObject>();
-
-        const addPhysicsObject = (obj: ArcadeObject): void => {
-            if (seen.has(obj)) {
-                return;
-            }
-
-            seen.add(obj);
-            collisionObjects.push(obj);
-        };
-
-        const collectChildren = (obj: GameObject): void => {
-            for (const child of obj.children) {
-                if (child instanceof ArcadeObject) {
-                    addPhysicsObject(child);
-                }
-
-                collectChildren(child);
-            }
-        };
-
-        const sceneObjects = this.scene.object?.GetAll?.() ?? [];
-
-        for (const obj of sceneObjects) {
-            if (obj instanceof ArcadeObject) {
-                addPhysicsObject(obj);
-            }
-
-            collectChildren(obj);
-        }
-
-        for (const obj of this.objects) {
-            if (obj instanceof ArcadeObject) {
-                addPhysicsObject(obj);
-            }
-
-            collectChildren(obj);
-        }
-
-        return collisionObjects;
+        return this.collisionObjects;
     }
 
     private shouldSkipInternalCollision(obj1: ArcadeObject, obj2: ArcadeObject): boolean
@@ -1439,6 +1416,8 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         if (includingPersistent)
         {
             this.objects.length = 0;
+            this.collisionObjects.length = 0;
+            this.collisionObjectSet.clear();
             return;
         }
 
@@ -1446,6 +1425,15 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         {
             if (!this.objects[i].persistent)
                 this.objects.splice(i, 1);
+        }
+
+        for (let i = this.collisionObjects.length - 1; i >= 0; i--)
+        {
+            if (!this.collisionObjects[i].persistent)
+            {
+                this.collisionObjectSet.delete(this.collisionObjects[i]);
+                this.collisionObjects.splice(i, 1);
+            }
         }
     }
 }
