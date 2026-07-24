@@ -70,7 +70,7 @@ export class CameraHandler {
         this.scene = scene;
         //events.persistent.on(BareEvent.gameStarted, () => this.ResetForStart());
 
-        this.scene.events.persistent.on(BareEvent.level_loaded, ({ level }) => {
+        bare.events.persistent.on(BareEvent.level_loaded, ({ level }) => {
             if (this.scene.UI)
                 return; //
 

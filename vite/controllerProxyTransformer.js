@@ -473,16 +473,6 @@ function createControllerProxyTransformer(program) {
                         }
                         }
 
-                        if (name === "events") {
-                            if (extendsSceneDeep) {
-                                return createThisProperty(name);
-                            }
-                            if (canRewriteScene) {
-                                needsScene = true;
-                                return createThisSceneProperty(name);
-                            }
-                        }
-
                         if (usedControllers && isProjectSource) {
                             const externalControllers = externalUsageMap.get(name);
                             if (externalControllers && externalControllers.size > 0) {

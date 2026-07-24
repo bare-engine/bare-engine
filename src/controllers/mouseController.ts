@@ -65,11 +65,11 @@ export class MouseController
         this.scene = scene;
         
         // MOVED HERE FROM Start(), SINCE IT NEEDS TO BE THE FIRST POINTER EVENT THAT FIRES
-        this.scene.events.persistent.on(BareEvent.pointer_down, this.PointerDown.bind(this));
-        this.scene.events.persistent.on(BareEvent.pointer_down_any, this.PointerDownAny.bind(this));
-        this.scene.events.persistent.on(BareEvent.pointer_move, this.PointerMove.bind(this));
-        this.scene.events.persistent.on(BareEvent.pointer_up, this.PointerUp.bind(this));
-        this.scene.events.persistent.on(BareEvent.pointer_up_any, this.PointerUpAny.bind(this));
+        bare.events.persistent.on(BareEvent.pointer_down, this.PointerDown.bind(this));
+        bare.events.persistent.on(BareEvent.pointer_down_any, this.PointerDownAny.bind(this));
+        bare.events.persistent.on(BareEvent.pointer_move, this.PointerMove.bind(this));
+        bare.events.persistent.on(BareEvent.pointer_up, this.PointerUp.bind(this));
+        bare.events.persistent.on(BareEvent.pointer_up_any, this.PointerUpAny.bind(this));
     }
 
     Start()

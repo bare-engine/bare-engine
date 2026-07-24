@@ -87,13 +87,13 @@ export class ComponentController
     
 	Start(): void
 	{
-        this.scene.events.on(BareEvent.collision_start, this.OnCollisionStart.bind(this));
-        this.scene.events.on(BareEvent.collision_update, this.OnCollisionUpdate.bind(this));
-        this.scene.events.on(BareEvent.collision_end, this.OnCollisionEnd.bind(this));
+        bare.events.on(BareEvent.collision_start, this.OnCollisionStart.bind(this));
+        bare.events.on(BareEvent.collision_update, this.OnCollisionUpdate.bind(this));
+        bare.events.on(BareEvent.collision_end, this.OnCollisionEnd.bind(this));
 
-        this.scene.events.on(BareEvent.game_objectRemoved, this.RemoveAllFrom.bind(this));
+        bare.events.on(BareEvent.game_objectRemoved, this.RemoveAllFrom.bind(this));
 
-        this.scene.events.on(BareEvent.level_preSave, this.OnPreSaveLevel.bind(this));
+        bare.events.on(BareEvent.level_preSave, this.OnPreSaveLevel.bind(this));
     }
 
     // PROBALY SHOULD JUST LISTEN TO BareEvent.level_loaded? TODO

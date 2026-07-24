@@ -59,7 +59,7 @@ export class SopiroPhysicsController extends PhysicsControllerBase
 
     override Start(): void
     {
-        this.scene.events.on(BareEvent.physics_refreshBody, this.RefreshBody.bind(this));
+        bare.events.on(BareEvent.physics_refreshBody, this.RefreshBody.bind(this));
 
         super.Start();
     }
@@ -187,7 +187,7 @@ export class SopiroPhysicsController extends PhysicsControllerBase
             {
                 for (const [, pair] of this.activeCollisions)
                 {
-                    events.emit(BareEvent.collision_end, pair.bodyA, pair.bodyB);
+                    bare.events.emit(BareEvent.collision_end, pair.bodyA, pair.bodyB);
                 }
 
                 this.activeCollisions.clear();
@@ -231,12 +231,12 @@ export class SopiroPhysicsController extends PhysicsControllerBase
                 this.activeCollisions.set(key, { bodyA, bodyB });
                 bodyA.OnCollisionStart(bodyB);
                 bodyB.OnCollisionStart(bodyA);
-                events.emit(BareEvent.collision_start, bodyA, bodyB);
+                bare.events.emit(BareEvent.collision_start, bodyA, bodyB);
             }
 
             bodyA.OnCollisionUpdate(bodyB);
             bodyB.OnCollisionUpdate(bodyA);
-            events.emit(BareEvent.collision_update, bodyA, bodyB); // NOT SENDING TO globalEvents, PROBABLY NEVER NEEDED? AND COULD COST MORE
+            bare.events.emit(BareEvent.collision_update, bodyA, bodyB); // NOT SENDING TO globalEvents, PROBABLY NEVER NEEDED? AND COULD COST MORE
         }
 
         for (const [key, pair] of this.activeCollisions)
@@ -246,7 +246,7 @@ export class SopiroPhysicsController extends PhysicsControllerBase
 
             pair.bodyA.OnCollisionEnd(pair.bodyB);
             pair.bodyB.OnCollisionEnd(pair.bodyA);
-            events.emit(BareEvent.collision_end, pair.bodyA, pair.bodyB);
+            bare.events.emit(BareEvent.collision_end, pair.bodyA, pair.bodyB);
             this.activeCollisions.delete(key);
         }
     }

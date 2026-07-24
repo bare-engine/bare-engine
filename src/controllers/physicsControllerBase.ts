@@ -12,7 +12,7 @@ export class PhysicsControllerBase
     {
         this.scene = scene;
 
-        this.scene.events.persistent.on(BareEvent.game_completeClear, () => {
+        bare.events.persistent.on(BareEvent.game_completeClear, () => {
                 //pipes.remove("physicsController_Update");
                 //pipes.remove("physicsController_Render");
             });
@@ -40,10 +40,10 @@ export class PhysicsControllerBase
 
     ListenToEvents(): void
     {
-        this.scene.events.on(BareEvent.game_resize, this.OnResize.bind(this));
-        this.scene.events.on(BareEvent.game_objectAdded, this.OnGameObjectAdded.bind(this));
-        this.scene.events.on(BareEvent.game_objectRemoved, this.OnGameObjectRemoved.bind(this));
-        this.scene.events.on(BareEvent.level_loaded, this.OnLevelLoaded.bind(this));
+        bare.events.on(BareEvent.game_resize, this.OnResize.bind(this));
+        bare.events.on(BareEvent.game_objectAdded, this.OnGameObjectAdded.bind(this));
+        bare.events.on(BareEvent.game_objectRemoved, this.OnGameObjectRemoved.bind(this));
+        bare.events.on(BareEvent.level_loaded, this.OnLevelLoaded.bind(this));
 
         //pipes.set("physicsController_Update", this.Update.bind(this));
         //pipes.set("physicsController_Render", this.Render.bind(this));

@@ -57,16 +57,16 @@ export class EditorControlsHandler {
 
     init()
     {
-        this.scene.events.on(BareEvent.pointer_down_any, this.AnyPointerDown.bind(this));
-        this.scene.events.on(BareEvent.pointer_down, this.PointerDown.bind(this));
-        this.scene.events.on(BareEvent.pointer_move, this.PointerMove.bind(this));
-        this.scene.events.on(BareEvent.pointer_up_any, this.AnyPointerUp.bind(this));
-        this.scene.events.on(BareEvent.pointer_up, this.PointerUp.bind(this));
-        this.scene.events.on(BareEvent.pointer_doubleClick, this.DoubleClick.bind(this));
-        //this.scene.events.on(BareEvent.game_postRender, this.PostRender.bind(this));
-        this.scene.events.on(BareEvent.key_pressed, this.KeyPressed.bind(this));
-        this.scene.events.on(BareEvent.key_released, this.KeyReleased.bind(this));
-        this.scene.events.on(BareEvent.editor_layerSelected, this.LayerSelected.bind(this));
+        bare.events.on(BareEvent.pointer_down_any, this.AnyPointerDown.bind(this));
+        bare.events.on(BareEvent.pointer_down, this.PointerDown.bind(this));
+        bare.events.on(BareEvent.pointer_move, this.PointerMove.bind(this));
+        bare.events.on(BareEvent.pointer_up_any, this.AnyPointerUp.bind(this));
+        bare.events.on(BareEvent.pointer_up, this.PointerUp.bind(this));
+        bare.events.on(BareEvent.pointer_doubleClick, this.DoubleClick.bind(this));
+        //bare.events.on(BareEvent.game_postRender, this.PostRender.bind(this));
+        bare.events.on(BareEvent.key_pressed, this.KeyPressed.bind(this));
+        bare.events.on(BareEvent.key_released, this.KeyReleased.bind(this));
+        bare.events.on(BareEvent.editor_layerSelected, this.LayerSelected.bind(this));
     }
 
     SetActive(active: boolean)

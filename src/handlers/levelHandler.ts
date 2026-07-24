@@ -43,7 +43,7 @@ export class LevelHandler
 
         defaultSettingsData.saveVars.GameObject.push("save");
 
-        this.scene.events.on(BareEvent.game_objectAdded, this.OnGameObjectAdded.bind(this));
+        bare.events.on(BareEvent.game_objectAdded, this.OnGameObjectAdded.bind(this));
     }
 
     OnGameObjectAdded({ gameObject, layer }: BareEventPayload['game_objectAdded']): void

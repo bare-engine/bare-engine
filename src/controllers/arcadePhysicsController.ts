@@ -1227,14 +1227,14 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         {
             object1.OnCollisionStart(object2);
             object2.OnCollisionStart(object1);
-            events.emit(BareEvent.collision_start, object1, object2);
+            bare.events.emit(BareEvent.collision_start, object1, object2);
         }
 
         if (!alreadyTrackedThisFrame) {
             // Emit ongoing collision once per frame, even if the solver needs multiple passes.
             object1.OnCollisionUpdate(object2);
             object2.OnCollisionUpdate(object1);
-            events.emit(BareEvent.collision_update, object1, object2);
+            bare.events.emit(BareEvent.collision_update, object1, object2);
         }
         //bareEngine.SendEvent(BareEvent.collision_update, object1, object2); // A LOT HEAVIER, AND UNNECESSARY?
     }
@@ -1257,7 +1257,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
                 this.removeCollidingObjects(object1, object2);
                 object1.OnCollisionEnd(object2);
                 object2.OnCollisionEnd(object1);
-                events.emit(BareEvent.collision_end, object1 as ArcadeObject, object2 as ArcadeObject);
+                bare.events.emit(BareEvent.collision_end, object1 as ArcadeObject, object2 as ArcadeObject);
             }
 
             this.activeCollisions.delete(collisionKey);

@@ -62,8 +62,8 @@ export class HitboxController
 	{
         bare.SetCursor('inherit');
 
-        this.scene.events.on(BareEvent.pointer_down, this.PointerDown.bind(this));
-        this.scene.events.on(BareEvent.pointer_up, this.PointerUp.bind(this));
+        bare.events.on(BareEvent.pointer_down, this.PointerDown.bind(this));
+        bare.events.on(BareEvent.pointer_up, this.PointerUp.bind(this));
     }
 
     Update(): void
