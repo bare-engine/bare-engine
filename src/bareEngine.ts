@@ -207,7 +207,7 @@ export class BareEngine
     }
 
     // SEPARATE METHOD TO MAKE ASYNC
-    public async Init(sceneClass: SceneClass, options?: BareOptions) 
+    public async Init(sceneClass: SceneClass, options?: BareOptions): Promise<Scene>
     {
         this.ApplyOptions(options);
 
@@ -251,6 +251,8 @@ export class BareEngine
         this.lastUpdateTimeRef = performance.now();
         
         this.SendEvent(BareEvent.game_started);
+
+        return scene;
     }
 
     ImplementInitialTextures()

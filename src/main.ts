@@ -35,15 +35,18 @@ function GetBareOptions(options?: BareOptions): BareOptions
     }, ...options };
 }
 
-export function StartBare(gameClass: SceneClass, options?: BareOptions): Scene
+export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise<Scene>
 {
     // DEFAULTS + OVERRIDE OPTIONS
     options = GetBareOptions(options);
 
     if (__DEV__ && window.bare) {
         bare.Restart(gameClass, options);
-        return;
+        return Promise.resolve(undefined); // RESTART IS DEBOUNCED (setTimeout), NEW SCENE ISN'T READY YET
     }
+
+    let resolveReady: (scene: Scene) => void;
+    const ready = new Promise<Scene>(resolve => { resolveReady = resolve; });
 
     window.initialAssetsReady = (assets:any[] = []) => {
         const doesSupportWebGL = supportsWebGL(canvas);
@@ -252,8 +255,8 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Scene
             // START!
             var start = async () => {
                 window.bare = new BareEngine();
-                window.bare.Init(gameClass, options);
-                console.log("BARE ENGINE INITIALIZED");
+                const scene = await window.bare.Init(gameClass, options);
+                resolveReady(scene);
             };
 
             var testGetElementById = document.getElementById('editor-overlay');
@@ -284,6 +287,6 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Scene
         window.initialAssetsReady(window.initialAssets);
     }
 
-    return bare.scene.Get(gameClass);
+    return ready;
 }
 
