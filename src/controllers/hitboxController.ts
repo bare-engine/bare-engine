@@ -575,9 +575,19 @@ export class HitboxController
         this.AssignCallback(gameobject, "OnPress", callback);
     }
 
+    OffPointerDown(gameobject: GameObject): void
+    {
+        this.AssignCallback(gameobject, "OnPress", null);
+    }
+
     OnPointerUp(gameobject: GameObject, callback: AnyPress): void
     {
         this.AssignCallback(gameobject, "OnRelease", callback);
+    }
+
+    OffPointerUp(gameobject: GameObject): void
+    {
+        this.AssignCallback(gameobject, "OnRelease", null);
     }
 
     OnPointerEnter(gameobject: GameObject, callback: AnyPress): void
@@ -585,9 +595,33 @@ export class HitboxController
         this.AssignCallback(gameobject, "OnEnter", callback);
     }
 
+    OffPointerEnter(gameobject: GameObject): void
+    {
+        this.AssignCallback(gameobject, "OnEnter", null);
+    }
+
     OnPointerLeave(gameobject: GameObject, callback: AnyPress): void
     {
         this.AssignCallback(gameobject, "OnLeave", callback);
+    }
+
+    OffPointerLeave(gameobject: GameObject): void
+    {
+        this.AssignCallback(gameobject, "OnLeave", null);
+    }
+
+    OffPointers(gameobject: GameObject): void
+    {
+        gameobject.tapHitbox = null;
+    }
+
+    OffAllPointers(): void
+    {
+        var objects = this.GetAllObjectsWithChildren();
+        for (var i = objects.length - 1; i >= 0; i--)
+        {
+            this.OffPointers(objects[i]);
+        }
     }
 
     SetShowPointerCursor(gameobject: GameObject, show: boolean): void
