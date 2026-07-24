@@ -225,6 +225,10 @@ function isSettingsDataPublicImportWarning(message) {
 
 function bareIndexOutputPlugin() {
     let outDir = "";
+    // Same purpose as the initial-assets version stamp: entryFileNames is a fixed
+    // "bundle.min.js" (not content-hashed), so without this a redeploy can leave
+    // browsers serving a stale cached bundle against fresh index.html/assets
+    const version = Date.now().toString(36);
 
     return {
         name: "bare:index-output",
@@ -250,7 +254,7 @@ function bareIndexOutputPlugin() {
             }
 
             const html = fs.readFileSync(nestedPath, "utf8")
-                .replace(/src="\.\.\/\.\.\/bundle\.min\.js"/g, 'src="./bundle.min.js"');
+                .replace(/src="\.\.\/\.\.\/bundle\.min\.js"/g, `src="./bundle.min.js?v=${version}"`);
 
             fs.writeFileSync(outputPath, html);
             fs.rmSync(path.join(outDir, "node_modules"), { recursive: true, force: true });

@@ -42,7 +42,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise
 
     if (__DEV__ && window.bare) {
         bare.Restart(gameClass, options);
-        return Promise.resolve(undefined); // RESTART IS DEBOUNCED (setTimeout), NEW SCENE ISN'T READY YET
+        return Promise.resolve(undefined); // Restart is debounced (setTimeout), new scene isn't ready yet
     }
 
     let resolveReady: (scene: Scene) => void;

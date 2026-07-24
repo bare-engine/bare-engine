@@ -646,13 +646,16 @@ function resolveFirstLevelLoad(value) {
 function bareInitialAssetsPlugin(options = {}) {
     const projectRoot = options.projectRoot || process.cwd();
     const folder = path.join(projectRoot, "public/initial");
+    // One stamp per build (or per dev server start) so the whole initial-asset set
+    // busts cache together on every deploy, instead of each file caching independently
+    const version = Date.now().toString(36);
 
     return {
         name: "bare:initial-assets",
         transformIndexHtml: {
             order: "post",
             handler(html) {
-                return injectInitialAssets(html, folder);
+                return injectInitialAssets(html, folder, version);
             }
         },
         configureServer(server) {
@@ -1315,7 +1318,7 @@ function isDebugIdentifierReference(node) {
     return true;
 }
 
-function injectInitialAssets(html, folder) {
+function injectInitialAssets(html, folder, version) {
     if (html.includes('data-initial-asset="true"')) {
         return html;
     }
@@ -1324,7 +1327,10 @@ function injectInitialAssets(html, folder) {
     if (fs.existsSync(folder)) {
         for (const filePath of getFilesRecursive(folder)) {
             const relativePath = path.relative(folder, filePath).replace(/\\/g, "/");
-            const url = `./initial/${relativePath}`;
+            // Versioned so a new build can't end up with a fresh atlas JSON paired
+            // against a browser-cached stale image (or vice versa) - see getInitialAssetKey()
+            // in index.html, which already strips the query string before keying the asset
+            const url = `./initial/${relativePath}?v=${version}`;
             if (filePath.endsWith(".js")) {
                 tags += `<script data-initial-asset="true" src="${url}" async onload="this.dataset.loaded='true'" onerror="this.dataset.loaded='true'"></script>\n`;
             } else if (/\.(png|jpe?g|gif|webp|svg)$/i.test(filePath)) {
