@@ -11,6 +11,18 @@ export class KeyboardController
     {
         globalEvents.once(BareEvent.game_awake, this.setupEventListeners.bind(this));
         globalEvents.persistent.on(BareEvent.game_update, this.Update.bind(this));
+        globalEvents.on(BareEvent.game_focusChange, this.OnFocusChange.bind(this));  
+    }
+
+    OnFocusChange(hasFocus: boolean)
+    {
+        // HANDLE VISUAL OF focusOverlay
+        const focusOverlay = document.getElementById('focusOverlay') as HTMLElement;
+
+        if (hasFocus)
+            focusOverlay.classList.remove('show');
+        else
+            focusOverlay.classList.add('show');
     }
 
     private setupEventListeners(): void

@@ -197,21 +197,13 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise
             }, false);
 
             // HANDLE FOCUS FEEDBACK
-            const focusOverlay = document.getElementById('focusOverlay') as HTMLElement;
-
             var updateFocus = () => {
                 if (bare.levelEditorOpen)
                     return;
 
+                // SENDS TO KEYBOARD CONTROLLER
                 globalEvents.emit(BareEvent.game_focusChange, window.hasFocus);
                 //bare.scene.SendEvent(BareEvent.game_focusChange, window.hasFocus);
-
-                // HANDLE VISUAL OF focusOverlay
-                if (window.hasFocus) {
-                    focusOverlay.classList.remove('show');
-                } else {
-                    focusOverlay.classList.add('show');
-                }
             };
 
             window.hasFocus = true;
