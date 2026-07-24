@@ -82,7 +82,8 @@ module.exports = ({ mode }) => {
                 projectRoot,
                 runOnStart: true
             }),
-            ...(!isDev && stripOptions !== false ? [stripUnusedMethodsPlugin(typeof stripOptions === "object" ? stripOptions : {})] : [])
+            ...(!isDev && stripOptions !== false ? [stripUnusedMethodsPlugin(typeof stripOptions === "object" ? stripOptions : {})] : []),
+            ...(!isDev ? [bareRemoveBuildPlaceholdersPlugin()] : [])
         ],
         server: {
             open: false,
@@ -178,6 +179,41 @@ function bareFilterSettingsDataWarningPlugin() {
             };
         }
     };
+}
+
+function bareRemoveBuildPlaceholdersPlugin() {
+    let outDir = "";
+
+    return {
+        name: "bare:remove-build-placeholders",
+        apply: "build",
+        configResolved(config) {
+            outDir = path.resolve(config.build.outDir);
+        },
+        closeBundle() {
+            removeBuildPlaceholders(outDir, true);
+        }
+    };
+}
+
+function removeBuildPlaceholders(directory, isRoot = false) {
+    if (!fs.existsSync(directory)) {
+        return;
+    }
+
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+        const entryPath = path.join(directory, entry.name);
+
+        if (entry.isDirectory()) {
+            removeBuildPlaceholders(entryPath);
+        } else if (entry.isFile() && entry.name === ".gitkeep") {
+            fs.rmSync(entryPath);
+        }
+    }
+
+    if (!isRoot && fs.readdirSync(directory).length === 0) {
+        fs.rmdirSync(directory);
+    }
 }
 
 function isSettingsDataPublicImportWarning(message) {
