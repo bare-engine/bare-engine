@@ -71,7 +71,7 @@ export class OutlineShader extends Shader
         const scaleY = Math.abs(gameObject.totalScaleY);
         const camera: CameraHandler = gameObject.scene.camera;
         
-        const globalScale = Math.max(scaleX, scaleY, 0.0001) * camera.zoom;
+        const globalScale = Math.max(scaleX, scaleY, 0.0001) * (camera?.zoom ?? 1);
         const lpscale = Math.max(rapid.logicHeight / rapid.physicsHeight, rapid.logicWidth / rapid.physicsWidth);
 
         const texture = gameObject.texture;

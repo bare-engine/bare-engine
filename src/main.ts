@@ -41,7 +41,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Scene
     options = GetBareOptions(options);
 
     if (__DEV__ && window.bare) {
-        window.bare.Restart(gameClass, options);
+        bare.Restart(gameClass, options);
         return;
     }
 
@@ -253,6 +253,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Scene
             var start = async () => {
                 window.bare = new BareEngine();
                 window.bare.Init(gameClass, options);
+                console.log("BARE ENGINE INITIALIZED");
             };
 
             var testGetElementById = document.getElementById('editor-overlay');
