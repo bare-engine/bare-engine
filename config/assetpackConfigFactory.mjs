@@ -90,9 +90,9 @@ export async function createAssetPackConfig(options = {}) {
             }),
             compress({
                 png: "skip",
-                webp: {
-                    lossless: true
-                }
+                webp: texturePackImages.webpQuality === undefined
+                    ? { lossless: true }
+                    : { quality: texturePackImages.webpQuality }
             }),
             textureJsonToWebp(),
             movePackedFromParent()

@@ -27,6 +27,9 @@ function resolveTexturePackImagesConfig(projectPackage = {}, options = {}) {
     const nameStyle = newOptions
         ? readString(newOptions.nameStyle, "bareEngine.texturePackImages.nameStyle", "relative")
         : "relative";
+    const webpQuality = newOptions
+        ? readWebpQuality(newOptions.webpQuality, "bareEngine.texturePackImages.webpQuality")
+        : undefined;
 
     if (!stripUnused && alwaysInclude.length > 0) {
         throw new Error("bareEngine.texturePackImages.alwaysInclude requires bareEngine.texturePackImages.stripUnused to be true.");
@@ -35,8 +38,21 @@ function resolveTexturePackImagesConfig(projectPackage = {}, options = {}) {
     return {
         stripUnused,
         alwaysInclude,
-        nameStyle
+        nameStyle,
+        webpQuality
     };
+}
+
+function readWebpQuality(value, name) {
+    if (value === undefined) {
+        return undefined;
+    }
+
+    if (!Number.isInteger(value) || value < 0 || value > 100) {
+        throw new Error(`${name} must be an integer between 0 and 100.`);
+    }
+
+    return value;
 }
 
 function readBoolean(value, name) {
@@ -90,5 +106,6 @@ function isObject(value) {
 module.exports = {
     resolveTexturePackImagesConfig,
     readStringArray,
-    readString
+    readString,
+    readWebpQuality
 };
