@@ -101,6 +101,28 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         this.height = height;
     }
 
+    /**
+     * Sets the world-space physics bounds from a rectangle expressed in screen
+     * coordinates. This is useful when a scene camera uses Contain/Cover and
+     * physics walls should remain aligned with a portion of the screen.
+     */
+    setDimensionsFromScreenRect(
+        x: number = 0,
+        y: number = 0,
+        width: number = bare.width,
+        height: number = bare.height
+    ) {
+        const topLeft = this.scene.ScreenToWorld(x, y);
+        const bottomRight = this.scene.ScreenToWorld(x + width, y + height);
+
+        this.setDimensions(
+            Math.min(topLeft.x, bottomRight.x),
+            Math.min(topLeft.y, bottomRight.y),
+            Math.abs(bottomRight.x - topLeft.x),
+            Math.abs(bottomRight.y - topLeft.y)
+        );
+    }
+
     getDimensions(): {x: number, y: number, width: number, height: number} {
         return {x: this.x, y: this.y, width: this.width, height: this.height};
     }
