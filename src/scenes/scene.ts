@@ -866,7 +866,7 @@ export class Scene implements SceneI
                 if (pool)
                     gameObject = pool.Grab();
                 else
-                    gameObject = new input();
+                    gameObject = new input(this);
 
                 if (pool)
                     gameObject.pooled = true;
