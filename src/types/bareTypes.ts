@@ -14,6 +14,7 @@ export type BareOptions =
     premultipliedAlpha?: boolean;
     gameObjectPoolSize?: number;
     fixedTimestep?: number;
+    freezeOnUnfocus?: boolean;
     imagePath?: string;
     levelPath?: string;
     editorButtonPosition?: Position;

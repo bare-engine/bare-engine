@@ -39,6 +39,7 @@ export class BareEngine
     public count: int = 0;
 
     public paused: boolean = false;
+    public freezeOnUnfocus: boolean = true;
     
     public fixedTimestep: number = 1 / 60;
     public maxDeltaTime: number = 1 / 15; // CAPS FRAME DELTA, USEFUL AFTER LAG OR TAB REFOCUS
@@ -147,6 +148,7 @@ export class BareEngine
     private ApplyOptions(options?: BareOptions): void
     {
         this.fixedTimestep = options.fixedTimestep ?? 1 / 60;
+        this.freezeOnUnfocus = options.freezeOnUnfocus ?? true;
         this.resolution = options.resolution;
 
         if (options.textureFilter !== undefined)
@@ -449,7 +451,7 @@ export class BareEngine
 
     RunMainLoop()
     {
-        if (window.isLocalhost || hasFocus)
+        if (!this.freezeOnUnfocus || hasFocus)
         {
             const currentTime = performance.now();
             this.deltaTime = Math.min((currentTime - this.lastUpdateTimeRef) / 1000, this.maxDeltaTime);

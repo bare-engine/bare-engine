@@ -19,7 +19,7 @@ export class KeyboardController
         // HANDLE VISUAL OF focusOverlay
         const focusOverlay = document.getElementById('focusOverlay') as HTMLElement;
 
-        if (hasFocus)
+        if (hasFocus || !bare.freezeOnUnfocus)
             focusOverlay.classList.remove('show');
         else
             focusOverlay.classList.add('show');

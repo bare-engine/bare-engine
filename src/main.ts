@@ -19,6 +19,7 @@ function GetBareOptions(options?: BareOptions): BareOptions
         antiAlias: true,
         premultipliedAlpha: true,
         gameObjectPoolSize: 50,
+        freezeOnUnfocus: true,
         imagePath: '',
         levelPath: '',
         textureFilter: TextureFilterMode.LINEAR,
@@ -228,10 +229,9 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise
                 updateFocus();
             });*/
 
-            // NO FOCUS EVENTS FOR MOBILE OR LOCALHOST
+            // NO FOCUS EVENTS FOR MOBILE
             // SINCE SOMETIMES THEY FIRE ON MOBILE
-            // ALSO CAN BE ANNOYING TO LOSE GAME FOCUS DURING DEVELOPEMENT
-            if (!isMobile && !window.isLocalhost)
+            if (!isMobile)
             {
                 rapid.canvas.addEventListener('focus', function() {
                     window.hasFocus = true;
