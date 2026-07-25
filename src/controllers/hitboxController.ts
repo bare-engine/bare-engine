@@ -25,6 +25,7 @@ export class HitboxController
 
     private currentHitboxHover: Hitbox | null = null;
     private currentHitboxDown: Hitbox | null = null;
+    private currentTouchHitboxesDown = new Map<number, Hitbox>();
     private currentHitboxHoverPath: Hitbox[] = [];
 
     private exclusiveLayers: int[] = [];
@@ -138,8 +139,12 @@ export class HitboxController
     HandleUpdate(layers: GameObject[][])
     {
         const mouse = bare.mouse.world.position;
-        var foundHover = false;
+        this.SetHover(this.GetHitboxAt(layers, mouse));
+    }
 
+    private GetHitboxAt(layers: GameObject[][], mouse: Vec2): Hitbox | null
+    {
+        var foundHitbox: Hitbox | null = null;
         var layersSettings = this.scene.settingsData.layers;
         var l = layersSettings.length;
         for (var i = 0; i < layers.length; i++)
@@ -157,8 +162,6 @@ export class HitboxController
             var layerCollisionHandlingType = layerInfo.pointerCollisionType;
 
             var objs = layers[i];
-            var fullBreak = false;
-
             var closestDistSqr = 100000;
             var curClosestHitbox: Hitbox | null = null;
             
@@ -171,10 +174,7 @@ export class HitboxController
                     const hitbox = this.GetTopInObject(obj, mouse);
                     if (hitbox)
                     {
-                        this.SetHover(hitbox);
-                        foundHover = true;
-                        fullBreak = true;
-                        break;
+                        return hitbox;
                     }
                 }
                 else if (layerCollisionHandlingType == CollisionHandlingType.RADIUS)
@@ -193,25 +193,13 @@ export class HitboxController
                         }
                     }
                 }
-
-                if (fullBreak)
-                    break;
             }
 
             if (layerCollisionHandlingType == CollisionHandlingType.RADIUS && curClosestHitbox)
-            {
-                this.SetHover(curClosestHitbox);
-                foundHover = true;
-            }
-
-            if (layerCollisionHandlingType == CollisionHandlingType.POINT && fullBreak)
-                break;
+                foundHitbox = curClosestHitbox;
         }
 
-        if (!foundHover)
-        {
-            this.SetHover(null);
-        }
+        return foundHitbox;
     }
 
     private GetCircleCenter(hitbox: Hitbox): Vec2
@@ -478,15 +466,45 @@ export class HitboxController
     private PointerDown({ mouseX, mouseY, event }: BareEventPayload['pointer_down']): void
     {
         this.Update();
-        
-        this.currentHitboxDown = this.currentHitboxHover;
-        this.currentHitboxDown?.OnPress?.(this.currentHitboxDown.parent, event);
+
+        const hitbox = this.currentHitboxHover;
+        if (bare.multiTouch && event.pointerType === 'touch')
+        {
+            if (hitbox)
+                this.currentTouchHitboxesDown.set(event.pointerId, hitbox);
+        }
+        else
+        {
+            this.currentHitboxDown = hitbox;
+        }
+
+        hitbox?.OnPress?.(hitbox.parent, event);
 
         event.preventDefault();
     }
 
     private PointerUp({ mouseX, mouseY, event }: BareEventPayload['pointer_up']): void
     {
+        if (bare.multiTouch && event.pointerType === 'touch')
+        {
+            const hitboxDown = this.currentTouchHitboxesDown.get(event.pointerId);
+            if (!hitboxDown)
+                return;
+
+            const worldPosition = this.scene.ScreenToWorld(mouseX, mouseY);
+            const hitboxUp = this.GetHitboxAt(this.scene.object.GetLayers(), worldPosition);
+
+            if (!hitboxDown.shouldReleaseOnTop || hitboxUp === hitboxDown)
+                hitboxDown.OnRelease?.(hitboxDown.parent, event);
+
+            this.currentTouchHitboxesDown.delete(event.pointerId);
+            if (isMobile && this.currentTouchHitboxesDown.size === 0)
+                this.SetHover(null);
+
+            event.preventDefault();
+            return;
+        }
+
         if (!this.currentHitboxDown)
             return;
 
@@ -494,6 +512,7 @@ export class HitboxController
             this.currentHitboxDown?.OnRelease?.(this.currentHitboxDown.parent, event);
 
         this.currentHitboxDown = null;
+        this.currentTouchHitboxesDown.clear();
 
         if (isMobile)
         {
@@ -516,6 +535,7 @@ export class HitboxController
         this.ClearExclusiveLayers();
         this.ResetCurrentHover();
         this.currentHitboxDown = null;
+        this.currentTouchHitboxesDown.clear();
     }
 
     SetExclusiveLayer(...layers: int[])

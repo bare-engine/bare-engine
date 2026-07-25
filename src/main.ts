@@ -20,6 +20,7 @@ function GetBareOptions(options?: BareOptions): BareOptions
         premultipliedAlpha: true,
         gameObjectPoolSize: 50,
         freezeOnUnfocus: true,
+        multiTouch: false,
         imagePath: '',
         levelPath: '',
         textureFilter: TextureFilterMode.LINEAR,
