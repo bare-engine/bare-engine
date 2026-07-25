@@ -40,6 +40,7 @@ export class BareEngine
 
     public paused: boolean = false;
     public freezeOnUnfocus: boolean = true;
+    public multiTouch: boolean = false;
     
     public fixedTimestep: number = 1 / 60;
     public maxDeltaTime: number = 1 / 15; // CAPS FRAME DELTA, USEFUL AFTER LAG OR TAB REFOCUS
@@ -149,6 +150,7 @@ export class BareEngine
     {
         this.fixedTimestep = options.fixedTimestep ?? 1 / 60;
         this.freezeOnUnfocus = options.freezeOnUnfocus ?? true;
+        this.multiTouch = options.multiTouch ?? false;
         this.resolution = options.resolution;
 
         if (options.textureFilter !== undefined)
@@ -243,6 +245,7 @@ export class BareEngine
 
         document.addEventListener('pointerdown', this.PointerDown.bind(this), { passive: false });
         document.addEventListener('pointerup', this.PointerUp.bind(this), { passive: false });
+        document.addEventListener('pointercancel', this.PointerUp.bind(this), { passive: false });
         document.addEventListener('pointerenter', this.PointerEnter.bind(this), { passive: false });
         document.addEventListener('pointerleave', this.PointerLeave.bind(this), { passive: false });
         document.addEventListener('dblclick', this.DoubleClick.bind(this), { passive: false });
@@ -638,7 +641,7 @@ export class BareEngine
             return;
 
         var pos = this.GetCanvasScreenPosition(event.clientX, event.clientY);
-        var isLeftButton = (event.button == 0);
+        var isLeftButton = (event.button == 0 || event.pointerType == 'touch');
 
         bare.SendEvent(BareEvent.pointer_down_any, {mouseX: pos.x, mouseY: pos.y, event: event, isLeftButton: isLeftButton});
 
@@ -657,7 +660,7 @@ export class BareEngine
             return;
         
         var pos = this.GetCanvasScreenPosition(event.clientX, event.clientY);
-        var isLeftButton = (event.button == 0);
+        var isLeftButton = (event.button == 0 || event.pointerType == 'touch');
 
         bare.SendEvent(BareEvent.pointer_up_any, {mouseX: pos.x, mouseY: pos.y, event: event, isLeftButton: isLeftButton});
         
@@ -696,7 +699,7 @@ export class BareEngine
         if (event.pointerType == 'mouse')
             return true;
 
-        return (event.pointerType == 'touch' && event.isPrimary);
+        return (event.pointerType == 'touch' && (event.isPrimary || this.multiTouch));
     }
     
     SetCursor(cursorStr: string): void
