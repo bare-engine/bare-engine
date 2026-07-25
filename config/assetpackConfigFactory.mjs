@@ -78,7 +78,9 @@ export async function createAssetPackConfig(options = {}) {
             tagRootAsTps(),
             texturePacker({
                 texturePacker: {
-                    nameStyle: texturePackImages.nameStyle,
+                    nameStyle: texturePackImages.flattenNames
+                        ? "short"
+                        : texturePackImages.nameStyle,
                     removeFileExtension: true,
                     allowRotation: false,
                     allowTrim: false

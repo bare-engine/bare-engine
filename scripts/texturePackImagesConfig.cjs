@@ -27,6 +27,9 @@ function resolveTexturePackImagesConfig(projectPackage = {}, options = {}) {
     const nameStyle = newOptions
         ? readString(newOptions.nameStyle, "bareEngine.texturePackImages.nameStyle", "relative")
         : "relative";
+    const flattenNames = newOptions
+        ? readBoolean(newOptions.flattenNames, "bareEngine.texturePackImages.flattenNames")
+        : false;
     const webpQuality = newOptions
         ? readWebpQuality(newOptions.webpQuality, "bareEngine.texturePackImages.webpQuality")
         : undefined;
@@ -39,6 +42,7 @@ function resolveTexturePackImagesConfig(projectPackage = {}, options = {}) {
         stripUnused,
         alwaysInclude,
         nameStyle,
+        flattenNames,
         webpQuality
     };
 }
