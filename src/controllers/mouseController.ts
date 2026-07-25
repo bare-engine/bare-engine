@@ -38,7 +38,6 @@ export class MouseController
     };
 
     private mouseIsDown:boolean = false;
-    private pointersDown = new Set<number>();
     private middleMouseIsDown:boolean = false;
     private rightMouseIsDown:boolean = false;
 
@@ -137,7 +136,6 @@ export class MouseController
         this.screen.positionOnDown.x = this.screen.position.x;
         this.screen.positionOnDown.y = this.screen.position.y;
 
-        this.pointersDown.add(event.pointerId);
         this.mouseFramesDown = 0;
         this.mouseIsDown = true;
     }
@@ -161,8 +159,7 @@ export class MouseController
         
         const screenPosition = new Vec2(mouseX, mouseY);
 
-        this.pointersDown.delete(event.pointerId);
-        this.mouseIsDown = this.pointersDown.size > 0;
+        this.mouseIsDown = false;
 
         this.screen.positionPrev.x = this.screen.position.x;
         this.screen.positionPrev.y = this.screen.position.y;
@@ -252,7 +249,6 @@ export class MouseController
         this.mouseDirectionVec2Delayed.y = 0;
 
         this.mouseFramesDown = 0;
-        this.pointersDown.clear();
         this.mouseIsDown = false;
         this.middleMouseIsDown = false;
         this.rightMouseIsDown = false;
