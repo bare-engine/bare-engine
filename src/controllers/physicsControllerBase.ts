@@ -12,11 +12,6 @@ export class PhysicsControllerBase
     {
         this.scene = scene;
 
-        bare.events.persistent.on(BareEvent.game_completeClear, () => {
-                //pipes.remove("physicsController_Update");
-                //pipes.remove("physicsController_Render");
-            });
-
         if (__DEV__)
             globalThis.plugin?.AddDebugAction("Toggle Collision", () => this.setCollisionsEnabled(!this.collisionsEnabled));
 
@@ -28,7 +23,7 @@ export class PhysicsControllerBase
     {
         // A LAZILY CREATED CONTROLLER MAY HAVE MISSED THE level_loaded EVENT - CATCH UP ON THE
         // CURRENT LEVEL'S DIMENSIONS (BACKING _level READ, DON'T CREATE A LEVEL HANDLER FOR THIS)
-        var currentLevel = this.scene._level?.currentLevel;
+        var currentLevel = this.scene.Get("_level")?.currentLevel;
         if (currentLevel?.dimensions)
             this.setDimensions(0, 0, currentLevel.dimensions.width, currentLevel.dimensions.height);
     }
