@@ -315,6 +315,15 @@ export class Scene implements SceneI
         return this.settingsData.layers;
     }
 
+    SetPointerCollisionTypeForLayer(type: CollisionHandlingType, layerName: string = "objects"): void
+    {
+        const layerInfo = this.settingsData.layersInfo[layerName];
+        if (!layerInfo)
+            throw new Error(`Cannot set pointer collision type for unknown layer "${layerName}".`);
+
+        layerInfo.pointerCollisionType = type;
+    }
+
     AddLayer(name: string, layerInfo?: Partial<LayerInfo>): void
     {
         this.settingsData.layers.push(name);

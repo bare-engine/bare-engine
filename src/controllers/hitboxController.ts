@@ -594,6 +594,22 @@ export class HitboxController
         return hitbox;
     }
 
+    SetCircleHitbox(gameobject: GameObject, radius?: number): Hitbox
+    {
+        const rect = this.GetLocalRect(gameobject);
+        const circleRadius = radius ?? Math.min(rect.x2 - rect.x1, rect.y2 - rect.y1) / 2;
+
+        if (circleRadius <= 0)
+            throw new Error("Cannot add circle hitbox to an object with no size. GameObject likely has not loaded its texture yet. Load the texture before adding the GameObject, or provide a radius.");
+
+        const hitbox = gameobject.tapHitbox ?? new Hitbox(gameobject, circleRadius);
+        hitbox.type = HitboxType.Circle;
+        hitbox.radius = circleRadius;
+        gameobject.tapHitbox = hitbox;
+
+        return hitbox;
+    }
+
     OnPointerDown(gameobject: GameObject, callback: AnyPress): void
     {
         this.AssignCallback(gameobject, "OnPress", callback);
