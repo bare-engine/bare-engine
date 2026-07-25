@@ -495,10 +495,12 @@ class RenderTexture extends Texture {
      */
     resize(width: number, height: number, force: boolean = false): void {
 
-        width = Math.max(Math.round(width), 1);
-        height = Math.max(Math.round(height), 1);
+        // A render target must never be smaller than the requested logical area.
+        // Fractional filter padding otherwise loses pixels on the right/bottom edge.
+        width = Math.max(Math.ceil(width), 1);
+        height = Math.max(Math.ceil(height), 1);
 
-        const sameLogical = this.rawWidth === width && this.rawWidth === height;
+        const sameLogical = this.rawWidth === width && this.rawHeight === height;
         if (!force && sameLogical) return;
 
         const gl = this.gl;
