@@ -26,6 +26,13 @@ import { BareEvent, BareOptions, CanvasPosition, CanvasScale, Events, GameObject
 import { getSaveFields } from "./utils/decorators";
 import { Helper } from "./utils/helper";
 
+export interface BareRestartOptions
+{
+    sceneClass?: SceneClass;
+    bareOptions?: BareOptions;
+    clearSaveData?: boolean;
+}
+
 export class BareEngine
 {
     private initialSceneClass: SceneClass;
@@ -728,8 +735,14 @@ export class BareEngine
     }
 
 
-    Restart(sceneClass?: SceneClass, options?: BareOptions): void
+    Restart(options: BareRestartOptions = {}): void
     {
+        const {
+            sceneClass,
+            bareOptions,
+            clearSaveData = false
+        } = options;
+
         if (sceneClass)
             this.initialSceneClass = sceneClass;
 
@@ -739,13 +752,14 @@ export class BareEngine
         this.restartTimeout = setTimeout(async () => {
             this.restartTimeout = null;
             bare.paused = false;
-
-            globalEvents.emit(BareEvent.game_completeClear);
             
             bare.scene.Clear(true);
+
+            if (clearSaveData)
+                globalEvents.emit(BareEvent.game_completeClear);
             
-            if (options)
-                this.ApplyOptions(options);
+            if (bareOptions)
+                this.ApplyOptions(bareOptions);
 
             this.ResizeCanvas(this.resolution);
             await bare.scene.Goto(this.initialSceneClass);
