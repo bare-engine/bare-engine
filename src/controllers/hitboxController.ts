@@ -62,6 +62,10 @@ export class HitboxController
 	{
         bare.SetCursor('inherit');
 
+        // THE MOUSE LISTENER MUST RUN BEFORE HIT TESTING SO POINTERDOWN USES THIS EVENT'S
+        // POSITION. FORCE THE LAZY CONTROLLER TO EXIST BEFORE REGISTERING OUR LISTENER.
+        void this.scene.mouse;
+
         bare.events.on(BareEvent.pointer_down, this.PointerDown.bind(this));
         bare.events.on(BareEvent.pointer_up, this.PointerUp.bind(this));
     }
