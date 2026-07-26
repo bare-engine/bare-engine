@@ -267,6 +267,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise
         else
         {
             var el = document.getElementById("loading-text")!;
+            document.getElementById("loading-progress")?.remove();
             el.innerHTML = "Can't play this game.<br>No support for WebGL.<br><br>Update your browser if possible.<br>Or try another one.";
             el.style.display = "block";
             el.style.opacity = "1";

@@ -94,12 +94,9 @@ export class Helper
         return Math.min(Math.max(value, min), max);
     }
 
-    // In handlers/helper.ts
     static MobileAndTabletCheck(): boolean
     {
-        return (('ontouchstart' in window) ||
-            (navigator.maxTouchPoints > 0) ||
-            ((navigator as any).msMaxTouchPoints > 0));
+        return (('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || ((navigator as any).msMaxTouchPoints > 0));
     }
 
     static HasNotch(): boolean

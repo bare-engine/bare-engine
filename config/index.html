@@ -143,6 +143,25 @@
           animation-timing-function: ease-in-out; /* Smooth start/end */
           animation-iteration-count: infinite; /* Loop forever */
       }
+
+      #loading-progress {
+          position: fixed;
+          top: calc(50% + 37px);
+          left: 50%;
+          width: 160px;
+          height: 4px;
+          box-sizing: border-box;
+          overflow: hidden;
+          transform: translateX(-50%);
+          background-color: #ececec;
+      }
+
+      #loading-progress-bar {
+          width: 0;
+          height: 100%;
+          background: #00e96d;
+          transition: width 150ms ease-out;
+      }
       
 
       /* Test button for demo */
@@ -239,14 +258,27 @@
               opacity: 0.6;
               %BARE_LOADING_TEXT_STYLE%"
           id="loading-text">Loading...</div>
+      <div id="loading-progress"
+           role="progressbar"
+           aria-label="Loading"
+           aria-valuemin="0"
+           aria-valuemax="100"
+           aria-valuenow="0">
+        <div id="loading-progress-bar"></div>
+      </div>
   </body>
 
   <script>
     var centerText = document.getElementById('loading-text');
+    var loadingProgress = document.getElementById('loading-progress');
+    var loadingProgressBar = document.getElementById('loading-progress-bar');
 
     window.destroyTextFunc = function() {
         if (centerText) {
             centerText.remove();
+        }
+        if (loadingProgress) {
+            loadingProgress.remove();
         }
     };
 
@@ -257,6 +289,26 @@
       var assets = Array.prototype.slice.call(
           head.querySelectorAll('[data-initial-asset]')
       );
+
+      var processingAssetCount = assets.filter(function(asset) {
+          var url = asset.src || asset.href || '';
+          return (asset.tagName === 'LINK' && asset.getAttribute('as') === 'image') ||
+              getInitialAssetKey(url).endsWith('.json');
+      }).length;
+      var totalWork = assets.length + processingAssetCount;
+      var completedWork = 0;
+
+      function updateLoadingProgress() {
+          var progress = totalWork === 0 ? 1 : completedWork / totalWork;
+          var percentage = Math.min(100, Math.round(progress * 100));
+
+          if (loadingProgressBar) {
+              loadingProgressBar.style.width = percentage + '%';
+          }
+          if (loadingProgress) {
+              loadingProgress.setAttribute('aria-valuenow', String(percentage));
+          }
+      }
 
       function getInitialAssetKey(url) {
           var cleanUrl = (url || '').split(/[?#]/)[0].replace(/\\/g, '/');
@@ -323,7 +375,16 @@
               }
           });
 
-          Promise.all(jsonPromises).then(function() {
+          var trackedJsonPromises = jsonPromises.map(function(promise) {
+              return promise.then(function() {
+                  completedWork++;
+                  updateLoadingProgress();
+              });
+          });
+
+          Promise.all(trackedJsonPromises).then(function() {
+                completedWork = totalWork;
+                updateLoadingProgress();
                 window.initialAssets = assetsObj;
 
                 if (window.initialAssetsReady)
@@ -338,6 +399,7 @@
       }
 
       if (assets.length === 0) {
+          updateLoadingProgress();
           fireReady();
           return;
       }
@@ -346,6 +408,8 @@
 
       function markDone(asset) {
           remaining--;
+          completedWork++;
+          updateLoadingProgress();
           if (remaining <= 0) fireReady();
       }
 
