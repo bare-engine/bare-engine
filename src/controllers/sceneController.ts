@@ -287,7 +287,7 @@ export class SceneController
         return this.currentScenes.some(current => current instanceof sceneClass);
     }
 
-    Get<T extends Scene>(sceneClass: SceneClass<T>): T
+    Get<T extends Scene>(sceneClass: abstract new (...args: any[]) => T): T
     {
         return this.currentScenes.find(current => current instanceof sceneClass) as T;
     }
