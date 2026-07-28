@@ -204,7 +204,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise
                     return;
 
                 // SENDS TO KEYBOARD CONTROLLER
-                globalEvents.emit(BareEvent.game_focusChange, window.hasFocus);
+                globalEvents.emit(BareEvent.game_focusChange, window.hasFocus);//
                 //bare.scene.SendEvent(BareEvent.game_focusChange, window.hasFocus);
             };
 
@@ -232,7 +232,8 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise
 
             // NO FOCUS EVENTS FOR MOBILE
             // SINCE SOMETIMES THEY FIRE ON MOBILE
-            if (!isMobile)
+            // ALSO NOT IN DEV BECAUSE BIT ANNOYING TO SEE THIS OVERLAY EVERY TIME
+            if (!isMobile && !window.isLocalhost)
             {
                 rapid.canvas.addEventListener('focus', function() {
                     window.hasFocus = true;
