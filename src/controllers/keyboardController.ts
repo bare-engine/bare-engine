@@ -16,6 +16,9 @@ export class KeyboardController
 
     OnFocusChange(hasFocus: boolean)
     {
+        if (window.isLocalhost)
+            return; // BIT ANNOYING TO SEE THIS OVERLAY EVERY TIME DURING DEV, SO NOT SHOWING IT
+
         // HANDLE VISUAL OF focusOverlay
         const focusOverlay = document.getElementById('focusOverlay') as HTMLElement;
 
