@@ -767,19 +767,30 @@ class TextTexture extends Texture {
         let maxWidth = 0;
         let totalHeight = 0;
 
+        // "top" is positioned inconsistently across browser text engines.
+        // Measure a stable set of ascenders and descenders, then render from
+        // the alphabetic baseline, following Pixi's canvas text approach.
         ctx.textBaseline = "alphabetic";
-        const textMetrics = ctx.measureText(lines[0]);
-        
-        const lineHeight = textMetrics.fontBoundingBoxAscent
-        const lineGap = textMetrics.fontBoundingBoxDescent
+        const fontMetrics = ctx.measureText("|ÉqÅM");
+        const ascent = fontMetrics.actualBoundingBoxAscent
+            || fontMetrics.fontBoundingBoxAscent
+            || fontSize;
+        const descent = fontMetrics.actualBoundingBoxDescent
+            || fontMetrics.fontBoundingBoxDescent
+            || Math.ceil(fontSize * 0.25);
+        const fontHeight = ascent + descent;
+        const lineHeight = this._style.lineHeight || fontHeight;
+        const linePositionYShift = Math.max(0, (lineHeight - fontHeight) / 2);
 
         for (const line of lines) {
             const metrics = ctx.measureText(line);
             if (metrics.width > maxWidth) maxWidth = metrics.width;
-            totalHeight += lineHeight + lineGap;
         }
 
-        totalHeight -= lineGap;
+        // Keep enough room for the final line's descent. If lineHeight is
+        // smaller than the font itself, lines may overlap but are not clipped.
+        totalHeight = Math.max(lineHeight, fontHeight)
+            + ((lines.length - 1) * lineHeight);
 
         const padding = (this._style.strokeThickness || 0) * 2;
         const logicalWidth = Math.ceil(maxWidth + padding) || 1;
@@ -798,11 +809,11 @@ class TextTexture extends Texture {
         ctx.clearRect(0, 0, logicalWidth, logicalHeight);
 
         ctx.font = font;
-        ctx.textBaseline = "top";
+        ctx.textBaseline = "alphabetic";
         ctx.textAlign = "left";
         this.updateOffset(logicalWidth, logicalHeight);
 
-        let y = padding / 2;
+        let y = padding / 2 + linePositionYShift + ascent;
         for (const line of lines) {
             let x = padding / 2;
 
@@ -817,7 +828,7 @@ class TextTexture extends Texture {
                 ctx.fillText(line, x, y);
             }
 
-            y += lineHeight + lineGap;
+            y += lineHeight;
         }
 
         this.base?.updateSource(this.render.gl, this.canvas, this.options);
