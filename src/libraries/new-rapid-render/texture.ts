@@ -770,22 +770,16 @@ class TextTexture extends Texture {
         ctx.textBaseline = "alphabetic";
         const textMetrics = ctx.measureText(lines[0]);
         
-        // Drawing with the "top" baseline is not consistent across browsers
-        // (notably Safari). Anchor text to the measured alphabetic baseline
-        // instead, and keep room for descenders on the final line.
-        const ascent = textMetrics.fontBoundingBoxAscent
-            || textMetrics.actualBoundingBoxAscent
-            || fontSize;
-        const descent = textMetrics.fontBoundingBoxDescent
-            || textMetrics.actualBoundingBoxDescent
-            || Math.ceil(fontSize * .25);
-        const lineHeight = this._style.lineHeight || ascent + descent;
+        const lineHeight = textMetrics.fontBoundingBoxAscent
+        const lineGap = textMetrics.fontBoundingBoxDescent
 
         for (const line of lines) {
             const metrics = ctx.measureText(line);
             if (metrics.width > maxWidth) maxWidth = metrics.width;
-            totalHeight += lineHeight;
+            totalHeight += lineHeight + lineGap;
         }
+
+        totalHeight -= lineGap;
 
         const padding = (this._style.strokeThickness || 0) * 2;
         const logicalWidth = Math.ceil(maxWidth + padding) || 1;
@@ -804,11 +798,11 @@ class TextTexture extends Texture {
         ctx.clearRect(0, 0, logicalWidth, logicalHeight);
 
         ctx.font = font;
-        ctx.textBaseline = "alphabetic";
+        ctx.textBaseline = "top";
         ctx.textAlign = "left";
         this.updateOffset(logicalWidth, logicalHeight);
 
-        let y = padding / 2 + ascent;
+        let y = padding / 2;
         for (const line of lines) {
             let x = padding / 2;
 
@@ -823,7 +817,7 @@ class TextTexture extends Texture {
                 ctx.fillText(line, x, y);
             }
 
-            y += lineHeight;
+            y += lineHeight + lineGap;
         }
 
         this.base?.updateSource(this.render.gl, this.canvas, this.options);
