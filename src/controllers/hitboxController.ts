@@ -321,7 +321,8 @@ export class HitboxController
                 collect(current.children[i]);
             }
 
-            hitboxes.push(current.tapHitbox);
+            if (current.tapHitbox)
+                hitboxes.push(current.tapHitbox);
         };
 
         var layers = this.scene.object.GetLayers();
