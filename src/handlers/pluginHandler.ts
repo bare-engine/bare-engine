@@ -1721,7 +1721,7 @@ export class PluginHandler
         for (var i = scenes.length - 1; i >= 0; i--)
         {
             var scene = scenes[i];
-            var objs = scene.object.GetLayers().slice().reverse().flat();
+            var objs = scene.object.GetLayers().flat();
             var pWorld = scene.ScreenToWorldPos(p);
             
             for (var j = objs.length - 1; j >= 0; j--)
@@ -1764,7 +1764,7 @@ export class PluginHandler
         
             var pWorld = scene.ScreenToWorldPos(p);
 
-            for (var j in objs)
+            for (var j = objs.length - 1; j >= 0; j--)
             {
                 var obj = objs[j];
 

@@ -144,10 +144,9 @@ export class HitboxController
 
     private GetHitboxAt(layers: GameObject[][], mouse: Vec2): Hitbox | null
     {
-        var foundHitbox: Hitbox | null = null;
         var layersSettings = this.scene.settingsData.layers;
         var l = layersSettings.length;
-        for (var i = 0; i < layers.length; i++)
+        for (var i = layers.length - 1; i >= 0; i--)
         {
             const layer = i;
 
@@ -196,10 +195,10 @@ export class HitboxController
             }
 
             if (layerCollisionHandlingType == CollisionHandlingType.RADIUS && curClosestHitbox)
-                foundHitbox = curClosestHitbox;
+                return curClosestHitbox;
         }
 
-        return foundHitbox;
+        return null;
     }
 
     private GetCircleCenter(hitbox: Hitbox): Vec2
