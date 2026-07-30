@@ -285,6 +285,20 @@ class Texture {
         return (this.isRotated ? this.rawWidth : this.rawHeight) * this.scale;
     }
 
+    /**
+     * The quad occupied by this texture in an object's local coordinate space.
+     * Use this instead of assuming the texture starts at (0, 0),
+     * since text alignment and render effects can offset the visible quad.
+     */
+    get localBounds(): { x: number; y: number; width: number; height: number } {
+        return {
+            x: this.offsetX,
+            y: this.offsetY,
+            width: this.width,
+            height: this.height,
+        };
+    }
+
     // Stored pixel-space region (before UV conversion), used by getSubTexture()
     protected _px: number = 0;
     protected _py: number = 0;

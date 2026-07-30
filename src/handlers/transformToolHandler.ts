@@ -469,10 +469,9 @@ export class TransformToolHandler
         if (targets.length == 1)
         {
             const o = targets[0];
-            const texW = o.texture?.width ?? 0;
-            const texH = o.texture?.height ?? 0;
+            const bounds = o.texture?.localBounds;
 
-            if (texW > 0 && texH > 0)
+            if (bounds && bounds.width > 0 && bounds.height > 0)
             {
                 // The box is aligned to the object's OUTER transform (object rotation + ancestors),
                 // NOT the inner transform - the gizmo must not tilt with an inner rotation, since
@@ -498,10 +497,10 @@ export class TransformToolHandler
                 // Enclose the inner-transformed sprite corners by projecting them onto the outer
                 // axes - so an inner rotation/scale/flip only widens the bounds, never tilts the box.
                 const corners = [
-                    o.ToGlobal(new Vec2(0,    0),    true),
-                    o.ToGlobal(new Vec2(texW, 0),    true),
-                    o.ToGlobal(new Vec2(texW, texH), true),
-                    o.ToGlobal(new Vec2(0,    texH), true),
+                    o.ToGlobal(new Vec2(bounds.x,                bounds.y),                 true),
+                    o.ToGlobal(new Vec2(bounds.x + bounds.width, bounds.y),                 true),
+                    o.ToGlobal(new Vec2(bounds.x + bounds.width, bounds.y + bounds.height), true),
+                    o.ToGlobal(new Vec2(bounds.x,                bounds.y + bounds.height), true),
                 ];
 
                 let minU = Infinity, maxU = -Infinity, minV = Infinity, maxV = -Infinity;

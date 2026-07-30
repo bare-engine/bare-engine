@@ -569,7 +569,15 @@ export class HitboxController
     private GetLocalRect(gameObject: GameObject)
     {
         if (gameObject.texture)
-            return { x1: 0, y1: 0, x2: gameObject.texture.width, y2: gameObject.texture.height };
+        {
+            const bounds = gameObject.texture.localBounds;
+            return {
+                x1: bounds.x,
+                y1: bounds.y,
+                x2: bounds.x + bounds.width,
+                y2: bounds.y + bounds.height
+            };
+        }
 
         return { x1: 0, y1: 0, x2: gameObject.width, y2: gameObject.height };
     }

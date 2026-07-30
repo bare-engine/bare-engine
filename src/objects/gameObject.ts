@@ -1051,13 +1051,13 @@ export class GameObject
         return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
     }
 
-    private getCorners(m: MatrixStack, px: number, py: number, w: number, h: number): {x: number, y: number}[]
+    private getCorners(m: MatrixStack, x: number, y: number, w: number, h: number): {x: number, y: number}[]
     {
         return [
-            m.localToWorld(px, py),
-            m.localToWorld(w, py),
-            m.localToWorld(w, h),
-            m.localToWorld(px, h)
+            m.localToWorld(x, y),
+            m.localToWorld(x + w, y),
+            m.localToWorld(x + w, y + h),
+            m.localToWorld(x, y + h)
         ];
     }
 
@@ -1068,11 +1068,12 @@ export class GameObject
 
         if (!global || !this.parent)
         {
+            const bounds = this.texture.localBounds;
             return {
-                x: this.x - this.pivot.x * this.totalScaleX,
-                y: this.y - this.pivot.y * this.totalScaleY,
-                width: this.texture!.width * this.totalScaleX,
-                height: this.texture!.height * this.totalScaleY
+                x: this.x + (bounds.x - this.pivot.x) * this.totalScaleX,
+                y: this.y + (bounds.y - this.pivot.y) * this.totalScaleY,
+                width: bounds.width * this.totalScaleX,
+                height: bounds.height * this.totalScaleY
             };
         }
 
@@ -1087,7 +1088,8 @@ export class GameObject
         m.translate(-this.pivot.x, -this.pivot.y);
         this.applyInnerTransform(m, this);
 
-        var corners = this.getCorners(m, 0, 0, this.texture!.width, this.texture!.height);
+        const bounds = this.texture.localBounds;
+        var corners = this.getCorners(m, bounds.x, bounds.y, bounds.width, bounds.height);
         m.restore();
         
         m.restore();
@@ -1113,8 +1115,9 @@ export class GameObject
             var ow = 0, oh = 0;
             if (obj.texture)
             {
-                ow = obj.texture.width;
-                oh = obj.texture.height;
+                const bounds = obj.texture.localBounds;
+                ow = bounds.width;
+                oh = bounds.height;
             }
             else
             {
@@ -1123,7 +1126,8 @@ export class GameObject
             }
             if (ow === 0 && oh === 0) return;
 
-            var corners = this.getCorners(m, 0, 0, ow, oh);
+            const bounds = obj.texture?.localBounds;
+            var corners = this.getCorners(m, bounds?.x ?? 0, bounds?.y ?? 0, ow, oh);
 
             for (var c of corners)
             {
