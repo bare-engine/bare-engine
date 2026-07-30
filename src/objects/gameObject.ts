@@ -551,10 +551,10 @@ export class GameObject
         }
 
         rapid.matrixStack.restore();
-
-        rapid.matrixStack.restore();
         
         this.OnRender(inheritedColor);
+
+        rapid.matrixStack.restore();
     }
 
     // pos / rot / scale only. Pivot is applied separately at the content boundary:
