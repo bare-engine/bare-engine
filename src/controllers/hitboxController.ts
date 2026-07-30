@@ -1,7 +1,7 @@
 import { Color, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
-import { BareEvent, BareEventPayload, CollisionHandlingType, HitboxType } from '../types/bareTypes';
+import { BareEvent, BareEventPayload, CollisionHandlingType, HitboxType, Rectangle2Vec } from '../types/bareTypes';
 import { Hitbox } from "../types/hitbox";
 import { Helper } from "../utils/helper";
 import { RegisterController } from "../globals";
@@ -565,12 +565,12 @@ export class HitboxController
         bare.SetCursor('inherit');
     }
 
-    // HITBOX RECTS LIVE IN TEXTURE SPACE (UNSCALED) - SCALE/INNERSCALE GET APPLIED WHEN CONVERTING TO WORLD SPACE
-    private GetLocalRect(gameObject: GameObject)
+    // Hitboxes are stored unscaled; GetRect applies the object's world transform.
+    private GetLocalRect(gameObject: GameObject): Rectangle2Vec
     {
-        if (gameObject.texture)
+        const bounds = gameObject.texture?.localBounds;
+        if (bounds)
         {
-            const bounds = gameObject.texture.localBounds;
             return {
                 x1: bounds.x,
                 y1: bounds.y,
@@ -579,7 +579,25 @@ export class HitboxController
             };
         }
 
-        return { x1: 0, y1: 0, x2: gameObject.width, y2: gameObject.height };
+        const childBounds = gameObject.GetBoundsWithChildren(false, false);
+        if (childBounds.width !== 0 || childBounds.height !== 0)
+        {
+            return {
+                x1: childBounds.x,
+                y1: childBounds.y,
+                x2: childBounds.x + childBounds.width,
+                y2: childBounds.y + childBounds.height
+            };
+        }
+
+        // Procedural objects such as Button have no texture or children, but
+        // expose their local dimensions through width and height.
+        return {
+            x1: 0,
+            y1: 0,
+            x2: gameObject.width,
+            y2: gameObject.height
+        };
     }
 
     AssignButton<T extends GameObject>(gameObject: T, onPress: (go: T, ...args: any[]) => any): Hitbox;

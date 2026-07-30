@@ -964,46 +964,17 @@ export class GameObject
         this.pivot.y = value;
     }
 
+    // RETURNED this.texture!.width * this.totalScaleX; BEFORE
+    // NOW THIS TO GET RID OF widthIncludingChildren get. 
+    // THIS CAN BE HEAVY THOUGH, BETTER CACHE THE RESULT IF YOU NEED IT OFTEN
     get width(): number
     {
-        if (!this.texture)
-        {
-            return 0;
-        }
-
-        return this.texture!.width * this.totalScaleX;
+        return this.GetBoundsWithChildren(false).width;
     }
 
     get height(): number
     {
-        if (!this.texture)
-        {
-            return 0;
-        }
-
-        return this.texture!.height * this.totalScaleY;
-    }
-
-    get widthIncludingChildren()
-    {
-        // COMMENTED OUT, TOO HARD TO CATCH ALL CASES OF CHILDREN
-        //if (this.cachedChildrenWidth != -1)
-        //    return this.cachedChildrenWidth;
-        
-        //this.cachedChildrenWidth = computedWidth;
-
-        return this.GetBoundsWithChildren().width;
-    }
-
-    get heightIncludingChildren()
-    {
-        // COMMENTED OUT, TOO HARD TO CATCH ALL CASES OF CHILDREN
-        //if (this.cachedChildrenHeight != -1)
-        //    return this.cachedChildrenHeight;
-
-        //this.cachedChildrenHeight = computedHeight;
-
-        return this.GetBoundsWithChildren().height;
+        return this.GetBoundsWithChildren(false).height;
     }
 
     private buildAncestorMatrix(m: MatrixStack)
@@ -1097,7 +1068,7 @@ export class GameObject
         return this.cornersToRect(corners);
     }
 
-    GetBoundsWithChildren(global:boolean = true): Rectangle
+    GetBoundsWithChildren(global:boolean = true, includeRootTransform:boolean = true): Rectangle
     {
         var minX = Infinity;
         var minY = Infinity;
@@ -1112,22 +1083,14 @@ export class GameObject
             this.buildAncestorMatrix(m);
 
         var updateBounds = (obj: GameObject) => {
-            var ow = 0, oh = 0;
-            if (obj.texture)
-            {
-                const bounds = obj.texture.localBounds;
-                ow = bounds.width;
-                oh = bounds.height;
-            }
-            else
-            {
-                ow = obj.width;
-                oh = obj.height;
-            }
-            if (ow === 0 && oh === 0) return;
+            if (!obj.texture)
+                return;
 
-            const bounds = obj.texture?.localBounds;
-            var corners = this.getCorners(m, bounds?.x ?? 0, bounds?.y ?? 0, ow, oh);
+            const bounds = obj.texture.localBounds;
+            if (bounds.width === 0 && bounds.height === 0)
+                return;
+
+            var corners = this.getCorners(m, bounds.x, bounds.y, bounds.width, bounds.height);
 
             for (var c of corners)
             {
@@ -1138,24 +1101,28 @@ export class GameObject
             }
         };
 
-        var recurse = (obj: GameObject) => {
+        var recurse = (obj: GameObject, isRoot:boolean = false) => {
             m.save();
-            this.applyTransform(m, obj.transform);
+            const applyObjectTransform = !isRoot || includeRootTransform;
+            if (applyObjectTransform)
+                this.applyTransform(m, obj.transform);
 
             m.save();
-            m.translate(-obj.pivot.x, -obj.pivot.y);
+            if (applyObjectTransform)
+                m.translate(-obj.pivot.x, -obj.pivot.y);
             this.applyInnerTransform(m, obj);
             updateBounds(obj);
             m.restore();
 
-            m.translate(-obj.pivot.x, -obj.pivot.y);
+            if (applyObjectTransform)
+                m.translate(-obj.pivot.x, -obj.pivot.y);
             for (var child of obj.children)
                 recurse(child);
 
             m.restore();
         };
 
-        recurse(this);
+        recurse(this, true);
         
         m.restore();
 
