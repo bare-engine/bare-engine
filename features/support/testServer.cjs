@@ -7,6 +7,7 @@ const { Builder, Browser } = require("selenium-webdriver");
 const chrome = require("selenium-webdriver/chrome");
 const edge = require("selenium-webdriver/edge");
 const firefox = require("selenium-webdriver/firefox");
+const { renderFixtureHtml } = require("../fixtures/renderFixtureHtml.cjs");
 
 const publicDir = path.resolve(__dirname, "../fixtures/public");
 
@@ -95,7 +96,14 @@ BeforeAll(async function () {
       return;
     }
 
-    const fileName = url.pathname === "/" ? "/index.html" : url.pathname;
+    if (url.pathname === "/" || url.pathname === "/index.html") {
+      response.setHeader("Access-Control-Allow-Origin", "*");
+      response.setHeader("Content-Type", "text/html; charset=utf-8");
+      response.end(renderFixtureHtml('<script defer src="/browser-tests.js"></script>'));
+      return;
+    }
+
+    const fileName = url.pathname;
     const filePath = path.join(publicDir, fileName);
 
     if (!filePath.startsWith(publicDir)) {
@@ -106,19 +114,7 @@ BeforeAll(async function () {
 
     response.setHeader("Access-Control-Allow-Origin", "*");
 
-    if (filePath.endsWith(".html")) {
-      response.setHeader("Content-Type", "text/html; charset=utf-8");
-      fs.readFile(filePath, "utf8", (error, html) => {
-        if (error) {
-          response.writeHead(404);
-          response.end("Not found");
-          return;
-        }
-
-        response.end(html.replace("<!-- js:bootstrap -->", '<script src="/browser-tests.js"></script>'));
-      });
-      return;
-    } else if (filePath.endsWith(".js")) {
+    if (filePath.endsWith(".js")) {
       response.setHeader("Content-Type", "text/javascript; charset=utf-8");
     }
 

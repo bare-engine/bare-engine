@@ -2,6 +2,7 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
+const { renderFixtureHtml } = require("../features/fixtures/renderFixtureHtml.cjs");
 
 const fixtureDir = path.resolve(__dirname, "../features/fixtures");
 const publicDir = path.join(fixtureDir, "public");
@@ -11,7 +12,7 @@ const requestedScene = process.argv[2] || "";
 const startPort = Number(process.env.PORT || 5173);
 const shouldOpen = process.env.OPEN !== "0";
 
-function injectBrowserScript(html) {
+function renderIndexHtml() {
   const sceneScript = requestedScene
     ? `
 <script>
@@ -39,9 +40,8 @@ function injectBrowserScript(html) {
 </script>`
     : "";
 
-  return html.replace(
-    "<!-- js:bootstrap -->",
-    `<script src="/browser-tests.js"></script>${sceneScript}`
+  return renderFixtureHtml(
+    `<script defer src="/browser-tests.js"></script>${sceneScript}`
   );
 }
 
@@ -114,7 +114,14 @@ const server = http.createServer((request, response) => {
     return;
   }
 
-  const fileName = url.pathname === "/" ? "/index.html" : url.pathname;
+  if (url.pathname === "/" || url.pathname === "/index.html") {
+    response.setHeader("Access-Control-Allow-Origin", "*");
+    response.setHeader("Content-Type", "text/html; charset=utf-8");
+    response.end(renderIndexHtml());
+    return;
+  }
+
+  const fileName = url.pathname;
   const filePath = path.normalize(path.join(publicDir, fileName));
 
   if (!filePath.startsWith(publicDir)) {
@@ -125,19 +132,6 @@ const server = http.createServer((request, response) => {
 
   response.setHeader("Access-Control-Allow-Origin", "*");
   response.setHeader("Content-Type", contentType(filePath));
-
-  if (filePath.endsWith(".html")) {
-    fs.readFile(filePath, "utf8", (readError, html) => {
-      if (readError) {
-        response.writeHead(404);
-        response.end("Not found");
-        return;
-      }
-
-      response.end(injectBrowserScript(html));
-    });
-    return;
-  }
 
   fs.createReadStream(filePath)
     .on("error", () => {
