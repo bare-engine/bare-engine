@@ -1478,9 +1478,16 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
         for (let i = this.collisionObjects.length - 1; i >= 0; i--)
         {
-            if (!this.collisionObjects[i].persistent)
+            const collisionObject = this.collisionObjects[i];
+            let persistenceRoot: GameObject = collisionObject;
+            while (persistenceRoot.parent)
+                persistenceRoot = persistenceRoot.parent;
+
+            // Children of a persistent root survive level clears with that root,
+            // even when the child itself does not repeat the persistent flag.
+            if (!persistenceRoot.persistent)
             {
-                this.collisionObjectSet.delete(this.collisionObjects[i]);
+                this.collisionObjectSet.delete(collisionObject);
                 this.collisionObjects.splice(i, 1);
             }
         }
