@@ -277,7 +277,7 @@ window.__GAME_DEBUG_API__ = {
                     .filter(o => o.customName !== 'ignoreInPlugin')
                     .map(o => ({
                         id: o.uniqueID,
-                        name: o.pluginName ? o.pluginName : o.name,
+                        name: o.pluginName || o.name || "gameObject",
                         hasChildren: (o.children.length > 0),
                         layerIndex,
                         layerName: scene.layerNames[layerIndex] ?? `Layer ${layerIndex}`,
@@ -493,7 +493,7 @@ window.__GAME_DEBUG_API__ = {
     var AddExtraPropsToData = (data: any, o: GameObject) => {
         data.id = o.uniqueID;
         data.hasChildren = o.children.length > 0;
-        data.name = o.name;
+        data.name = o.pluginName || o.name || "gameObject";
         data.x = o.x;
         data.y = o.y;
         data.scaleX = o.scaleX;

@@ -6,7 +6,7 @@ import { GameObject } from "./gameObject";
 export class TextObject extends GameObject
 {
     textTexture: TextTexture;
-    pivotPercentage: Vec2 = new Vec2();
+    pivotPercentage: Vec2 = new Vec2(); // SHOULD GAMEOBJECT HAVE THIS? - SOME MORE COMPLEXITY WITH SERIALIZE - TODO
 
     @InspectorField @Save
     text = {
