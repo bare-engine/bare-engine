@@ -1,7 +1,7 @@
 import { GameMode } from "../../../globals";
 import { GameObject } from "../../../objects/gameObject";
-import { BareEvent } from "../../../types/bareTypes";
-import { InspectorField, Percentage, Limit } from "../../../utils/decorators";
+import { BareEvent, Entity } from "../../../types/bareTypes";
+import { InspectorField, Percentage, Limit, Save } from "../../../utils/decorators";
 import { Circle } from "../circle";
 import { testPointInside } from "../detection";
 import { Joint } from "../joint";
@@ -10,10 +10,10 @@ import { World } from "../world";
 
 export abstract class JointObject extends GameObject
 {
-    @InspectorField
+    @InspectorField @Save
     baseCustomName: string = "";
 
-    @InspectorField
+    @InspectorField @Save
     targetCustomName: string = "";
     
     protected joint: Joint | null = null;
@@ -25,9 +25,13 @@ export abstract class JointObject extends GameObject
 
     staticAnchor: Circle;
 
-    override OnAdded(): void
+    override OnAwake(entity?: Entity): void
     {
         this.visible = false;
+    }
+
+    override OnAdded(): void
+    {
         if (bare.gameMode == GameMode.Play)
         {
             bare.events.once(BareEvent.level_loaded, this.InitJointGame.bind(this));
@@ -73,12 +77,9 @@ export abstract class JointObject extends GameObject
     protected CheckAddJoint(): void
     {
         var world = this.scene.Get("sopiro").world as World;
-
+        
         // RESET
         {
-            this.baseCustomName = "";
-            this.targetCustomName = "";
-
             if (this.staticAnchor)
                 world.unregister(this.staticAnchor.id);
 
@@ -133,7 +134,6 @@ export abstract class JointObject extends GameObject
 
         if (!bodyA)
         {
-            this.Remove();
             return { bodyA: null, bodyB: null };
         }
 
@@ -161,7 +161,7 @@ export abstract class JointObject extends GameObject
 
         this.staticAnchor = staticAnchor;
 
-        var world = this.scene.Get("sopiro").world as World;
+        var world = this.scene.Get("sopiro").world as World;// .sopiro TODO - ALL
         world.register(staticAnchor);
 
         return staticAnchor;
@@ -186,7 +186,7 @@ export abstract class JointObject extends GameObject
         this.joint?.bodyB?.awake();
     }
 
-    @InspectorField
+    @InspectorField @Save
     get frequency(): number
     {   
         return this._frequency;
@@ -199,7 +199,7 @@ export abstract class JointObject extends GameObject
             this.joint.frequency = frequency;
     }
 
-    @InspectorField @Percentage
+    @InspectorField @Save @Percentage
     get dampingRatio(): number
     {
         return this._dampingRatio;
@@ -212,7 +212,7 @@ export abstract class JointObject extends GameObject
             this.joint.dampingRatio = dampingRatio;
     }
 
-    @InspectorField @Limit(1, Infinity)
+    @InspectorField @Save @Limit(1, Infinity)
     get jointMass(): number
     {
         return this._jointMass;

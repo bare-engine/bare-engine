@@ -18,7 +18,7 @@ export class LineJointObject extends JointObject
     @Save
     slideDirection: Vec2 = new Vec2(200, 0); // LENGTH DOES NOT MATTER
 
-    @InspectorField
+    @InspectorField @Save
     lockRotation: boolean = false;
 
     directionObject: DirectionTargetObject;

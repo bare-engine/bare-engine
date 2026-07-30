@@ -2,7 +2,7 @@ import { keyboardController } from "../../../controllers/keyboardController";
 import { GameMode, Scene } from "../../../globals";
 import { GameObject } from "../../../objects/gameObject";
 import { BareEvent } from "../../../types/bareTypes";
-import { Enum, InspectorField } from "../../../utils/decorators";
+import { Enum, InspectorField, Save } from "../../../utils/decorators";
 import { Color, Vec2 } from "../../new-rapid-render";
 import { testPointInside } from "../detection";
 import { DistanceJoint } from "../distance";
@@ -23,13 +23,13 @@ export enum DistanceMode
 
 export class DistanceJointObject extends JointObject
 {
-    @InspectorField
+    @InspectorField @Save
     lineColor: Color = Color.Black;
 
-    @InspectorField
+    @InspectorField @Save
     lineWidth: number = 6;
 
-    @InspectorField
+    @InspectorField @Save
     targetOffset: Vec2 = new Vec2();
 
     // -1 = derive from the anchor distance at creation time.
@@ -124,7 +124,7 @@ export class DistanceJointObject extends JointObject
         return joint;
     }
 
-    @InspectorField @Enum(DistanceMode)
+    @InspectorField @Save @Enum(DistanceMode)
     get mode(): DistanceMode
     {
         return this._mode;
@@ -138,7 +138,7 @@ export class DistanceJointObject extends JointObject
         this.RebuildJoint();
     }
 
-    @InspectorField
+    @InspectorField @Save
     get distance(): number
     {
         return this._distance;

@@ -1,5 +1,5 @@
 import { GameMode, Scene } from "../../../globals";
-import { InspectorField } from "../../../utils/decorators";
+import { InspectorField, Save } from "../../../utils/decorators";
 import { Color, Vec2 } from "../../new-rapid-render";
 import { MotorJoint } from "../motor";
 import { RigidBody } from "../rigidbody";
@@ -17,7 +17,7 @@ export class MotorJointObject extends JointObject
     private _linearOffset: Vec2 = new Vec2();
     private _angularOffset: number = 0.0;
 
-    @InspectorField private angularSpeed: number = 0;
+    @InspectorField @Save private angularSpeed: number = 0;
 
     OnAwake(): void
     {
@@ -59,7 +59,7 @@ export class MotorJointObject extends JointObject
         return this.joint as MotorJoint | null;
     }
 
-    @InspectorField
+    @InspectorField @Save
     get maxForce(): number
     {
         return this._maxForce;
@@ -72,7 +72,7 @@ export class MotorJointObject extends JointObject
             this.motorJoint.maxForce = maxForce;
     }
 
-    @InspectorField
+    @InspectorField @Save
     get maxTorque(): number
     {
         return this._maxTorque;
@@ -85,7 +85,7 @@ export class MotorJointObject extends JointObject
             this.motorJoint.maxTorque = maxTorque;
     }
 
-    @InspectorField
+    @InspectorField @Save
     get linearOffset(): Vec2
     {
         return this._linearOffset;
@@ -105,7 +105,7 @@ export class MotorJointObject extends JointObject
             this.AwakeBodies();
     }
 
-    @InspectorField
+    @InspectorField @Save
     get angularOffset(): number
     {
         return this._angularOffset;

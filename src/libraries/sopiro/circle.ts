@@ -5,7 +5,7 @@ import { Entity } from "../../types/bareTypes";
 import { RigidBody, Type } from "./rigidbody";
 import { Settings } from "./settings";
 import * as Util from "./util";
-import { InspectorField } from "../../utils/decorators";
+import { InspectorField, Save } from "../../utils/decorators";
 
 export class Circle extends RigidBody
 {
@@ -70,7 +70,7 @@ export class Circle extends RigidBody
         return Math.PI * this.worldRadius * this.worldRadius;
     }
 
-    @InspectorField
+    @InspectorField @Save
     override get density(): number
     {
         return this._density;
@@ -88,7 +88,7 @@ export class Circle extends RigidBody
         this._invInertia = 1.0 / this._inertia;
     }
 
-    @InspectorField
+    @InspectorField @Save
     override get mass(): number
     {
         return this._mass;

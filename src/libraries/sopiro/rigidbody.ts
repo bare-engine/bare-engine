@@ -8,7 +8,7 @@ import { Matrix3 } from "./math";
 import { GameMode, globalEvents } from "../../globals";
 import type { Scene } from "../../scenes/scene";
 import { BareEvent, Entity } from '../../types/bareTypes';
-import { Enum, InspectorField, Limit, Locked, Percentage } from "../../utils/decorators";
+import { Enum, InspectorField, Limit, Locked, Percentage, Save } from "../../utils/decorators";
 
 export enum Type
 {
@@ -40,7 +40,7 @@ export abstract class RigidBody extends GameObject
     private _restitution: number;
     private _surfaceSpeed: number;      // m/s (Tangential speed)
 
-    @InspectorField @Enum(Type) @Locked 
+    @InspectorField @Save @Enum(Type) @Locked 
     public /*readonly*/ type: Type;
 
     public id: number = -1;//
@@ -239,7 +239,7 @@ export abstract class RigidBody extends GameObject
         return this._invInertia;
     }
 
-    @InspectorField
+    @InspectorField @Save
     get linearVelocity(): Vec2
     {
         return this._linearVelocity;
@@ -249,7 +249,7 @@ export abstract class RigidBody extends GameObject
         this._linearVelocity = v.copy();
     }
 
-    @InspectorField
+    @InspectorField @Save
     get angularVelocity(): number
     {
         return this._angularVelocity;
@@ -259,7 +259,7 @@ export abstract class RigidBody extends GameObject
         this._angularVelocity = w;
     }
 
-    @InspectorField @Percentage
+    @InspectorField @Save @Percentage
     get restitution(): number
     {
         return this._restitution;
@@ -271,7 +271,7 @@ export abstract class RigidBody extends GameObject
         this._restitution = r;
     }
 
-    @InspectorField @Limit(0, Infinity)
+    @InspectorField @Save @Limit(0, Infinity)
     get friction(): number
     {
         return this._friction;
@@ -283,7 +283,7 @@ export abstract class RigidBody extends GameObject
         this._friction = f;
     }
 
-    @InspectorField
+    @InspectorField @Save
     get surfaceSpeed(): number
     {
         return this._surfaceSpeed;
