@@ -1445,23 +1445,7 @@ export class GameObject
         //this.cachedChildrenWidth = -1;
         //this.cachedChildrenHeight = -1;
 
-        if (input instanceof GameObject)
-        {
-            // REMOVE GameObject FROM ITS PARENT OR SCENE FIRST
-            input.Remove(false); // DON'T WANT TO CLEAR!
-
-            // THEN ADD IT AS NEW CHILD
-            var child = input;
-            child.parent = this;
-            this.children.push(child);
-
-            return child;
-        }
-        else
-        {
-            // NO GameObject SUPPLIED, A NEW one WILL BE CREATED AND ADDED (FROM POOL)
-            return this.scene.AddGameObject(input, this);
-        }
+        return this.scene.AddGameObject(input, this);
     }
 
     RemoveChild(child: GameObject)
@@ -1481,12 +1465,12 @@ export class GameObject
         //this.cachedChildrenWidth = -1;
         //this.cachedChildrenHeight = -1;
 
-        if (!child.pooled)
+        /*if (!child.pooled)
         {
             child.parent = null;
             this.children.splice(this.children.indexOf(child), 1);
         }
-        else
+        else*/
         {
             this.scene.RemoveGameObject(child, this);
         }

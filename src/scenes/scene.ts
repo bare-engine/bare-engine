@@ -996,7 +996,8 @@ to package.json to keep the generated assets (can become large for big projects)
             {
                 // ADDING TO PARENT
                 var child = gameObject;
-                parent.AddChild(child);
+                child.parent = parent;
+                parent.children.push(child);
                 
                 child.layer = parent.layer;
             }
@@ -1024,7 +1025,6 @@ to package.json to keep the generated assets (can become large for big projects)
         // NOTIFY
         globalEvents.emit(BareEvent.game_objectAdded, { gameObject: gameObject, layer: parent });
         this.events.emit(BareEvent.game_objectAdded, { gameObject: gameObject, layer: parent });
-
 
         return gameObject as T;
     }
@@ -1058,8 +1058,12 @@ to package.json to keep the generated assets (can become large for big projects)
             {
                 // REMOVING FROM PARENT
                 var child = gameObject;
-                removed = parent.children.includes(child);
-                parent.RemoveChild(child);
+                var childIndex = parent.children.indexOf(child);
+                if (childIndex != -1)
+                    parent.children.splice(parent.children.indexOf(child), 1);
+                child.parent = null;//
+
+                removed = (childIndex != -1);
             }
             else
             {
