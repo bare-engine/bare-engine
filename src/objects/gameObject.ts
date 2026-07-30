@@ -47,6 +47,7 @@ export class GameObject
 
     transform: Transform = new Transform();
     innerTransform: Transform = new Transform();
+    childrenInheritInnerTransform: boolean = true;
 
     children: Array<GameObject> = [];
     parent: GameObject | null = null;
@@ -539,7 +540,12 @@ export class GameObject
             this.renderParentTransform = rapid.matrixStack.getTransform();
         
         this.ApplyTransformToMatrixStack(this.transform);
+
+        rapid.matrixStack.save();
+        rapid.matrixStack.translate(-this.pivot.x, -this.pivot.y);
+        this.ApplyInnerTransformToMatrixStack();
         this.RenderTransformed(inheritedColor);
+        rapid.matrixStack.restore();
 
         rapid.matrixStack.save();
         this.ApplyChildTransform();
@@ -565,12 +571,14 @@ export class GameObject
     }
 
     // Establishes the space children render in, relative to this object's already-applied
-    // outer transform. By default children are anchored at the outer pivot (the same origin
-    // the sprite content starts from), but NOT the inner transform. Override to fold the inner
-    // transform in as well, so children track the sprite's inner squash / flip / rotate.
+    // outer transform. Children inherit the sprite's inner transform by default; disable
+    // childrenInheritInnerTransform to keep them in outer-transform space.
     protected ApplyChildTransform()
     {
         rapid.matrixStack.translate(-this.pivot.x, -this.pivot.y);
+
+        if (this.childrenInheritInnerTransform)
+            this.ApplyInnerTransformToMatrixStack();
     }
 
     protected ApplyInnerTransformToMatrixStack()
@@ -583,16 +591,7 @@ export class GameObject
         if (!this.texture)
             return;
 
-        rapid.matrixStack.save();
-
-        // Sprite is anchored at the OUTER pivot; the inner transform pivots around the inner pivot.
-        rapid.matrixStack.translate(-this.pivot.x, -this.pivot.y);
-        this.applyInnerTransform(rapid.matrixStack, this);
-
-        if (this.texture)
-            this.RenderSprite(inheritedColor);
-
-        rapid.matrixStack.restore();
+        this.RenderSprite(inheritedColor);
     }
 
     OnRender(inheritedColor?: Color)
@@ -991,6 +990,8 @@ export class GameObject
             var ancestor = chain[i];
             this.applyTransform(m, ancestor.transform);
             m.translate(-ancestor.pivot.x, -ancestor.pivot.y);
+            if (ancestor.childrenInheritInnerTransform)
+                this.applyInnerTransform(m, ancestor);
         }
     }
 
@@ -1116,6 +1117,8 @@ export class GameObject
 
             if (applyObjectTransform)
                 m.translate(-obj.pivot.x, -obj.pivot.y);
+            if (obj.childrenInheritInnerTransform)
+                this.applyInnerTransform(m, obj);
             for (var child of obj.children)
                 recurse(child);
 
@@ -1359,7 +1362,7 @@ export class GameObject
     }*/
 
     // Convert a point from this object's child space to world space.
-    // Pass includeInnerTransform to convert from texture space instead (the space the sprite is rendered in).
+    // Pass includeInnerTransform to force texture space when child inheritance is disabled.
     ToGlobal(localPoint: Vec2 = new Vec2(), includeInnerTransform: boolean = false): Vec2
     {
         const m = rapid.matrixStack;
@@ -1371,7 +1374,7 @@ export class GameObject
 
         m.translate(-this.pivot.x, -this.pivot.y);
 
-        if (includeInnerTransform)
+        if (includeInnerTransform || this.childrenInheritInnerTransform)
             this.applyInnerTransform(m, this);
 
         const {x, y} = m.localToWorld(localPoint.x, localPoint.y);
@@ -1392,6 +1395,8 @@ export class GameObject
         this.buildAncestorMatrix(m);
         this.applyTransform(m, this.transform);
         m.translate(-this.pivot.x, -this.pivot.y);
+        if (this.childrenInheritInnerTransform)
+            this.applyInnerTransform(m, this);
         
         const {x, y} = m.worldToLocal(globalPoint.x, globalPoint.y);
         
@@ -1549,6 +1554,7 @@ export class GameObject
 
         this.transform.Reset();
         this.innerTransform.Reset();
+        this.childrenInheritInnerTransform = true;
         this.renderParentTransform = null;
 
         this.OnTextureLoadedCallbacks = [];

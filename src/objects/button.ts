@@ -39,13 +39,13 @@ export class Button extends GameObject
             width: this.width,
             height: this.height,
             color: buttonColor,
-            position: new Vec2(-this.pivot.x, -this.pivot.y),
+            position: new Vec2(),
         });
 
         bare.drawSprite({
             texture: this.text,
             color: inheritedColor,
-            position: new Vec2(this.marge - this.pivot.x, this.height / 2),
+            position: new Vec2(this.marge, this.height / 2),
         });
     }
 
