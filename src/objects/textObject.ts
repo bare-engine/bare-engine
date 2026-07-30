@@ -45,10 +45,17 @@ export class TextObject extends GameObject
         this.SetNameBasedOnText(options.text || "");
     }
 
+    OnStart(): void
+    {
+        if (this.name)
+            this.pluginName = this.name;
+    }
+
     SetNameBasedOnText(text: string)
     {
         // LIMIT TEXT BY 20 CHARS, ELSE ADD ...
-        this.pluginName = text.length > 20 ? text.substring(0, 17) + "..." : text;
+        if (!this.name)
+            this.pluginName = text.length > 20 ? text.substring(0, 17) + "..." : text;
     }
 
     SetText(text: string)
