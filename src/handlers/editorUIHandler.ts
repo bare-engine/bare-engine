@@ -194,32 +194,27 @@ export class EditorUIHandler {
             return;
         }
 
-        try {
-            const res: Response = await fetch('editor.html');
-            const html: string = await res.text();
+        const res: Response = await fetch('editor.html');
+        const html: string = await res.text();
 
-            const temp: HTMLDivElement = document.createElement('div');
-            temp.innerHTML = html;
+        const temp: HTMLDivElement = document.createElement('div');
+        temp.innerHTML = html;
 
-            while (temp.firstChild) {
-                const child = temp.firstChild as HTMLElement;
-                if (child.tagName === 'SCRIPT') {
-                    const script: HTMLScriptElement = document.createElement('script');
-                    const scriptElement = child as HTMLScriptElement;
-                    if (scriptElement.src) {
-                        script.src = scriptElement.src;
-                    } else {
-                        script.textContent = scriptElement.textContent;
-                    }
-                    document.body.appendChild(script);
-                    temp.removeChild(child);
+        while (temp.firstChild) {
+            const child = temp.firstChild as HTMLElement;
+            if (child.tagName === 'SCRIPT') {
+                const script: HTMLScriptElement = document.createElement('script');
+                const scriptElement = child as HTMLScriptElement;
+                if (scriptElement.src) {
+                    script.src = scriptElement.src;
                 } else {
-                    container.appendChild(child);
+                    script.textContent = scriptElement.textContent;
                 }
+                document.body.appendChild(script);
+                temp.removeChild(child);
+            } else {
+                container.appendChild(child);
             }
-
-        } catch (error) {
-            console.error('Failed to load editor:', error);
         }
     }
 

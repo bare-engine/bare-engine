@@ -1314,27 +1314,19 @@ window.__GAME_DEBUG_API__ = {
   },
         
     async updateLevelData(changes: { name?: string, width?: number, height?: number, backgroundColor?: string }) {
-        try {
-            var levelHandler = bare.scene.GetLevelScene().level;
-            var data = levelHandler.currentLevel;
-            levelHandler.Serialize(data);
+        var levelHandler = bare.scene.GetLevelScene().level;
+        var data = levelHandler.currentLevel;
+        levelHandler.Serialize(data);
 
-            if (changes.width !== undefined || changes.height !== undefined) {
-                data.dimensions = data.dimensions ?? { width: 800, height: 600 };
-                if (changes.width !== undefined) data.dimensions.width = changes.width;
-                if (changes.height !== undefined) data.dimensions.height = changes.height;
-                return { ok: true };
-            }
-            if (changes.backgroundColor !== undefined) {
-                data.backgroundColor = changes.backgroundColor;
-                return { ok: true };
-            }
-
-            //bare.scene.Add(EditorScene, {levelPathOrData: data});
+        if (changes.width !== undefined || changes.height !== undefined) {
+            data.dimensions = data.dimensions ?? { width: 800, height: 600 };
+            if (changes.width !== undefined) data.dimensions.width = changes.width;
+            if (changes.height !== undefined) data.dimensions.height = changes.height;
             return { ok: true };
-        } catch (error: any) {
-            console.error('Failed to update level data', error);
-            return { ok: false, error: error?.message ?? String(error) };
+        }
+        if (changes.backgroundColor !== undefined) {
+            data.backgroundColor = changes.backgroundColor;
+            return { ok: true };
         }
     },
 
