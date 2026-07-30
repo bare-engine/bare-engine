@@ -3,8 +3,15 @@ import { SaveData, BareEvent } from '../types/bareTypes';
 export class SaveDataHandler
 {
     static saveEnabled: boolean = true;
+    static readonly gameId: string = __BARE_GAME_ID__;
 
     private static defaults: Map<string, any> = new Map();
+    private static readonly storagePrefix = `bare:${this.gameId}:`;
+
+    public static GetStorageKey(key: string): string
+    {
+        return `${this.storagePrefix}${key}`;
+    }
 
     // Allow game code to attach additional SaveData fields without modifying the engine class
     static SetDefaults(defaults: Record<string, any>)
@@ -85,7 +92,13 @@ export class SaveDataHandler
             return;
             
         SaveData.levelCache.clear();
-        localStorage.clear();
+
+        for (let index = localStorage.length - 1; index >= 0; index--)
+        {
+            const key = localStorage.key(index);
+            if (key?.startsWith(this.storagePrefix))
+                localStorage.removeItem(key);
+        }
         
         // Reset all properties to their default values
         for (const [key, defaultValue] of this.defaults)
@@ -104,6 +117,8 @@ export class SaveDataHandler
 
     private static SaveItem<T>(key: string, value: T): void
     {
+        key = this.GetStorageKey(key);
+
         if (typeof value === 'string') {
             localStorage.setItem(key, value);
         } else if (typeof value === 'boolean' || typeof value === 'number') {
@@ -119,6 +134,7 @@ export class SaveDataHandler
 
     private static LoadItem<T>(key: string, defaultValue: T): T
     {
+        key = this.GetStorageKey(key);
         const item = localStorage.getItem(key);
         
         if (item === null) {

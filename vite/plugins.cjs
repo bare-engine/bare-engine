@@ -583,6 +583,7 @@ function bareHtmlPlugin(options = {}) {
     const projectRoot = options.projectRoot || process.cwd();
     const indexHtmlPath = options.indexHtmlPath || path.resolve(__dirname, "../config/index.html");
     const projectPackage = readProjectPackage(projectRoot);
+    const gameId = options.gameId || projectPackage.bareEngine?.gameId || "";
     const htmlOptions = projectPackage.bareEngine?.index || {};
     const title = htmlOptions.title || projectPackage.bareEngine?.name || projectPackage.name || "Bare Game";
     const backgroundColor = htmlOptions.backgroundColor || "rgb(255, 255, 255)";
@@ -623,6 +624,7 @@ function bareHtmlPlugin(options = {}) {
                     .replace(/%BARE_TEXT_COLOR%/g, textColor)
                     .replace(/%BARE_LOADING_TEXT_STYLE%/g, loadingTextStyle)
                     .replace(/%BARE_FIRST_LEVEL_LOAD%/g, JSON.stringify(firstLevelLoad))
+                    .replace(/%BARE_GAME_ID%/g, JSON.stringify(gameId))
                     .replace("<!-- js:bootstrap -->", '<script type="module" src="/src/game.ts"></script>');
             }
         }

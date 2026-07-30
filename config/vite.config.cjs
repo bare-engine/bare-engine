@@ -1,5 +1,6 @@
 const path = require("node:path");
 const fs = require("node:fs");
+const { randomUUID } = require("node:crypto");
 const entryShaking = require("vite-plugin-entry-shaking");
 const {
     bareAutoRegisterClassesPlugin,
@@ -26,6 +27,7 @@ module.exports = ({ mode }) => {
     const engineIndexPath = path.resolve(__dirname, "index.html");
     const buildIndexPath = ensureLocalBuildIndex(projectRoot, engineIndexPath);
     const projectPackage = readProjectPackage(projectRoot);
+    const gameId = ensureGameId(projectRoot, projectPackage);
     const stripOptions = projectPackage.bareEngine?.stripUnusedMethods;
     const stripGeneratedAssets = projectPackage.bareEngine?.stripGeneratedAssets;
     // Strip the editor-only inspector decorators in prod so decorators.ts tree-shakes away.
@@ -41,6 +43,7 @@ module.exports = ({ mode }) => {
         publicDir: path.join(projectRoot, "public"),
         define: {
             __DEV__: JSON.stringify(isDev),
+            __BARE_GAME_ID__: JSON.stringify(gameId),
             __STRIP_GENERATED_ASSETS__: JSON.stringify(stripGeneratedAssets !== false)
         },
         resolve: {
@@ -67,7 +70,8 @@ module.exports = ({ mode }) => {
             bareIgnoreLevelJsonHotUpdatesPlugin({ projectRoot }),
             bareHtmlPlugin({
                 projectRoot,
-                indexHtmlPath: engineIndexPath
+                indexHtmlPath: engineIndexPath,
+                gameId
             }),
             bareIndexOutputPlugin(),
             bareInitialAssetsPlugin({ projectRoot }),
@@ -121,6 +125,33 @@ module.exports = ({ mode }) => {
         }
     };
 };
+
+function ensureGameId(projectRoot, projectPackage) {
+    const configuredGameId = typeof projectPackage.bareEngine?.gameId === "string"
+        ? projectPackage.bareEngine.gameId.trim()
+        : "";
+
+    if (configuredGameId && configuredGameId !== "ID") {
+        return configuredGameId;
+    }
+
+    const gameId = randomUUID();
+    projectPackage.bareEngine = {
+        ...(projectPackage.bareEngine || {}),
+        gameId
+    };
+
+    const packagePath = path.join(projectRoot, "package.json");
+    const original = fs.readFileSync(packagePath, "utf8");
+    const indentMatch = original.match(/^[\t ]+(?=")/m);
+    const indent = indentMatch?.[0] || "  ";
+    const newline = original.includes("\r\n") ? "\r\n" : "\n";
+    const serialized = JSON.stringify(projectPackage, null, indent).replace(/\n/g, newline) + newline;
+    fs.writeFileSync(packagePath, serialized, "utf8");
+
+    console.info(`[bare] Generated bareEngine.gameId "${gameId}" and saved it to package.json.`);
+    return gameId;
+}
 
 function ensureLocalBuildIndex(projectRoot, engineIndexPath) {
     const outputPath = path.join(projectRoot, "node_modules/.bare-engine/index.html");

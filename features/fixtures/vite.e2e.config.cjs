@@ -11,7 +11,8 @@ module.exports = {
     root: fixtureRoot,
     publicDir: false,
     define: {
-        __DEV__: "true"
+        __DEV__: "true",
+        __BARE_GAME_ID__: JSON.stringify("bare-engine-e2e")
     },
     resolve: {
         extensions: [".ts", ".js", ".json"],

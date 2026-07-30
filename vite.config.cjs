@@ -4,7 +4,8 @@ const {
 
 module.exports = {
     define: {
-        __DEV__: "false"
+        __DEV__: "false",
+        __BARE_GAME_ID__: JSON.stringify("bare-engine-library")
     },
     plugins: [
         bareShaderRawPlugin()

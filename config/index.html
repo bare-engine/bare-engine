@@ -15,7 +15,7 @@
             var firstLevelLoad = %BARE_FIRST_LEVEL_LOAD%;
 
             try {
-                levelStr = localStorage.getItem("currentLevelStr") || "";
+                levelStr = localStorage.getItem("bare:" + %BARE_GAME_ID% + ":currentLevelStr") || "";
             } catch (error) {
                 levelStr = "";
             }
