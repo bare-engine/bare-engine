@@ -42,6 +42,8 @@ export class DistanceJointObject extends JointObject
     {
         this.resizeable = false;
         this.SetColor(Color.Blue);
+        
+        super.OnAwake();
     }
 
     override OnAdded(): void

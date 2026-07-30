@@ -27,6 +27,8 @@ export class LineJointObject extends JointObject
     {
         this.resizeable = false;
         this.SetColor(Color.Lime);
+
+        super.OnAwake();
     }
 
     override OnAdded(): void
