@@ -124,6 +124,7 @@ export class Scene implements SceneI
     // MOVE OUT? HAS SaveData REFERENCE - TODO
     get currentLevelStr(): string { return SaveData.currentLevelStr; }
 
+    @InspectorClass
     public events = mitt<Events>();
     
     //private pipes = matt<Pipes>();

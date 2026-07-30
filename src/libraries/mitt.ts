@@ -1,3 +1,5 @@
+import { InspectorField, Int } from "../utils/decorators";
+
 export type EventType = string | symbol;
 
 export type EventArgs<T> = T extends any[] ? T : [T];
@@ -19,6 +21,22 @@ type EntryOptions = {
 };
 
 type List = Entry[];
+
+class MittInspector {
+  declare all: Map<any, List>;
+
+  @InspectorField
+  @Int
+  public get listenerCount(): number {
+    let count = 0;
+
+    for (const handlers of this.all.values()) {
+      count += handlers.length;
+    }
+
+    return count;
+  }
+}
 
 export interface EventSubscriber<Events extends object> {
   on<K extends keyof Events>(type: K, handler: Handler<Events[K]>, alias?: string): void;
@@ -160,18 +178,22 @@ export default function mitt<Events extends object>(
     },
   });
 
-  const api: any = {
-    all,
+  const subscriber = createSubscriber(false);
+  const apiPrototype = Object.create(MittInspector.prototype);
 
-    ...createSubscriber(false),
+  Object.defineProperties(apiPrototype, {
+    on: { value: subscriber.on },
+    once: { value: subscriber.once },
+    off: { value: subscriber.off },
+    offAlias: { value: subscriber.offAlias },
+    emit: { value: emit },
+    clear: { value: clear },
+    clearAll: { value: clearAll },
+    persistent: { value: createSubscriber(true) },
+  });
 
-    emit: emit as any,
-
-    clear,
-    clearAll,
-  };
-
-  api.persistent = createSubscriber(true);
+  const api: any = Object.create(apiPrototype);
+  api.all = all;
 
   return api as Emitter<Events>;
 }
