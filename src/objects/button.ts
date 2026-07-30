@@ -30,7 +30,7 @@ export class Button extends GameObject
         scene.hitbox.AssignButton(this, options);
     }
 
-    override RenderTransformed(inheritedColor?: Color): void
+    override OnRender(inheritedColor?: Color): void
     {
         const buttonColor = this.buttonColor;
         buttonColor.a = this.buttonColor.a * ((inheritedColor?.a ?? 255)/255);

@@ -48,6 +48,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
     public activeCollisions: Set<string> = new Set();
     private currentFrameCollisions: Set<string> = new Set();
     public OnPreCollisionResolve: ((obj1: ArcadeObject, obj2: ArcadeObject) => boolean) | null = null;
+    
     @InspectorField
     private get objectsNum():int { return this.objects.length; }
 

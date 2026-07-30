@@ -1048,8 +1048,6 @@ to package.json to keep the generated assets (can become large for big projects)
         var wasPooled = gameObject.pooled;
         gameObject.pooled = false; // SETTING TO FALSE ALREADY HERE TO PREVENT RECURSION LOOP IN RemoveChild
 
-        gameObject.OnRemove();
-        
         var removed = false;
 
         if (parent !== undefined)

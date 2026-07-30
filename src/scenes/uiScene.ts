@@ -1,4 +1,3 @@
-import { sceneController } from "../controllers/sceneController";
 import { Scene } from "./scene";
 
 export class UIScene extends Scene

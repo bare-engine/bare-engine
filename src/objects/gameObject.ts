@@ -543,8 +543,15 @@ export class GameObject
 
         rapid.matrixStack.save();
         rapid.matrixStack.translate(-this.pivot.x, -this.pivot.y);
+        
         this.ApplyInnerTransformToMatrixStack();
-        this.RenderTransformed(inheritedColor);
+
+        if (this.texture)
+            this.RenderSprite(inheritedColor);
+
+        if (this.visible)
+            this.OnRender(inheritedColor);
+
         rapid.matrixStack.restore();
 
         rapid.matrixStack.save();
@@ -557,10 +564,24 @@ export class GameObject
         }
 
         rapid.matrixStack.restore();
-        
-        this.OnRender(inheritedColor);
 
         rapid.matrixStack.restore();
+    }
+    
+    RenderWorld(inheritedColor?: Color)
+    {
+        if (!this.visible)
+            return;
+
+        this.OnRenderWorld(inheritedColor);
+
+        for (const child of this.children)
+            child.RenderWorld(inheritedColor);
+    }
+
+    OnRenderWorld(inheritedColor?: Color)
+    {
+        // For override
     }
 
     // pos / rot / scale only. Pivot is applied separately at the content boundary:
@@ -584,14 +605,6 @@ export class GameObject
     protected ApplyInnerTransformToMatrixStack()
     {
         this.applyInnerTransform(rapid.matrixStack, this);
-    }
-
-    public RenderTransformed(inheritedColor?: Color)
-    {
-        if (!this.texture)
-            return;
-
-        this.RenderSprite(inheritedColor);
     }
 
     OnRender(inheritedColor?: Color)
@@ -1384,6 +1397,24 @@ export class GameObject
         return new Vec2(x, y);
     }
 
+    // Convert a world point to the outer-transform space used by OnRender().
+    // Unlike ToLocal(), this excludes the pivot and inner transform.
+    ToOuterLocal(globalPoint: Vec2): Vec2
+    {
+        const m = rapid.matrixStack;
+        m.save();
+        m.identity();
+
+        this.buildAncestorMatrix(m);
+        this.applyTransform(m, this.transform);
+
+        const {x, y} = m.worldToLocal(globalPoint.x, globalPoint.y);
+
+        m.restore();
+
+        return new Vec2(x, y);
+    }
+
     // Convert a world point to this object's child space
     // (the space where child.SetPosition(x, y) operates).
     ToLocal(globalPoint: Vec2): Vec2
@@ -1596,10 +1627,5 @@ export class GameObject
         }*/
 
         this.scene.RemoveGameObject(this, this.parent || undefined, clear);
-    }
-
-    OnRemove()
-    {
-        // FOR OVERRIDE
     }
 }

@@ -53,7 +53,7 @@ export class LineJointObject extends JointObject
         super.OnAdded();
     }
 
-    override OnRemove(): void
+    override OnRemoved(): void
     {
         bare.events.offAlias("joint_level_preSave");
     }
@@ -153,20 +153,22 @@ class DirectionTargetObject extends GameObject
         return super.SetPosition(x, y);
     }
 
-    override OnRender(): void
+    override OnRenderWorld(): void
     {
         var color = this.owner.isConnectedInEditor ? Color.Lime : Color.Red;
+        var ownerPosition =  this.owner.position;
+        var targetPosition = this.position;
 
         rapid.drawLine({
-            points: [new Vec2(this.owner.x, this.owner.y), this.position],
+            points: [ownerPosition, targetPosition],
             width: 4,
             color: color
         });
 
-        var direction = this.position.sub(this.owner.position).normalized();
+        var direction = targetPosition.sub(ownerPosition).normalized();
         var perpendicular = new Vec2(-direction.y, direction.x);
         var halfWidth = this.width / 2;
-        var tip = this.position.add(direction.mul(halfWidth));
+        var tip = targetPosition.add(direction.mul(halfWidth));
         var base = tip.sub(direction.mul(this.width));
 
         rapid.drawGraphic({

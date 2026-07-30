@@ -27,6 +27,7 @@ export abstract class JointObject extends GameObject
 
     override OnAdded(): void
     {
+        this.visible = false;
         if (bare.gameMode == GameMode.Play)
         {
             bare.events.once(BareEvent.level_loaded, this.InitJointGame.bind(this));
@@ -64,7 +65,7 @@ export abstract class JointObject extends GameObject
         this.joint = this.CreateJoint(bodyA, bodyB);
     }
 
-    override OnRemove(): void
+    override OnRemoved(): void
     {
         bare.events.offAlias("joint_level_preSave");
     }
@@ -166,22 +167,15 @@ export abstract class JointObject extends GameObject
         return staticAnchor;
     }
 
-    override Render(): void
+    override OnRender(): void
     {
-        if (bare.gameMode == GameMode.Edit)
-        {
-            rapid.drawCircle({
-                x: this.position.x,
-                y: this.position.y,
-                radius: 13,
-                color: this.color
-            })
-            //super.Render();
+        if (bare.gameMode != GameMode.Edit)
             return;
-        }
 
-        // DISABLE RENDERING TEXTURE FOR GAME
-        this.OnRender();
+        rapid.drawCircle({
+            radius: 13,
+            color: this.color
+        });
     }
 
     protected abstract CreateJoint(bodyA: RigidBody, bodyB: RigidBody): Joint;

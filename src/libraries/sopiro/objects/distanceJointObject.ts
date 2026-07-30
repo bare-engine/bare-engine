@@ -68,7 +68,7 @@ export class DistanceJointObject extends JointObject
         super.OnAdded();
     }
 
-    override OnRemove(): void
+    override OnRemoved(): void
     {
         if (this.targetObject)
         {
@@ -174,7 +174,7 @@ export class DistanceJointObject extends JointObject
             this.CreateJoint(bodyA, bodyB);
     }
 
-    override OnRender(): void
+    override OnRenderWorld(): void
     {
         if (bare.gameMode == GameMode.Edit || !this.distanceJoint)
             return;
@@ -264,7 +264,7 @@ class TargetObject extends GameObject
         return super.SetPosition(x, y);
     }
 
-    override OnRender(): void
+    override OnRenderWorld(): void
     {
         var color = this.owner.isConnectedInEditor ? Color.Blue : Color.Red;
 
