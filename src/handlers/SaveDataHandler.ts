@@ -6,7 +6,7 @@ export class SaveDataHandler
     static readonly gameId: string = __BARE_GAME_ID__;
 
     private static defaults: Map<string, any> = new Map();
-    private static readonly storagePrefix = `bare:${this.gameId}:`;
+    private static readonly storagePrefix = `${this.gameId}:`;
 
     public static GetStorageKey(key: string): string
     {
