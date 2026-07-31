@@ -127,6 +127,7 @@ export interface Entity
     //innerScaleY?: number;
     innerScale?: any; // Position
     innerRotation?: any; // number
+    childrenInheritInnerTransform?: any; // boolean
 
     texture?: any; // string
     color?: any; // string

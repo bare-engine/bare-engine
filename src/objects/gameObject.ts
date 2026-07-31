@@ -862,7 +862,7 @@ export class GameObject
         this.innerTransform.flipped = value;
     }
     
-    @InspectorField
+    @InspectorField @Save
     childrenInheritInnerTransform: boolean = true;
 
     @InspectorField @Save
