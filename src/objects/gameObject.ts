@@ -47,7 +47,6 @@ export class GameObject
 
     transform: Transform = new Transform();
     innerTransform: Transform = new Transform();
-    childrenInheritInnerTransform: boolean = true;
 
     children: Array<GameObject> = [];
     parent: GameObject | null = null;
@@ -1397,7 +1396,7 @@ export class GameObject
         return new Vec2(x, y);
     }
 
-    // Convert a world point to the outer-transform space used by OnRender().
+    // Convert a world point to the outer-transform space.
     // Unlike ToLocal(), this excludes the pivot and inner transform.
     ToOuterLocal(globalPoint: Vec2): Vec2
     {
@@ -1628,4 +1627,6 @@ export class GameObject
 
         this.scene.RemoveGameObject(this, this.parent || undefined, clear);
     }
+    
+    @InspectorField childrenInheritInnerTransform: boolean = true;
 }
