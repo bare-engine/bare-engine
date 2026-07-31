@@ -393,6 +393,7 @@ export function getOwnInspectorFieldNames(classOrPrototype: any): string[]
     return entries.map(entry => entry.name);
 }
 
+// USED FOR BOTH LEVEL SAVING AND SAVEDATA - ALWAYS WANTED?
 export function Save(target: any, propertyKey: string): void
 {
     const saveFields: string[] = Object.prototype.hasOwnProperty.call(target, SAVE_METADATA_KEY)

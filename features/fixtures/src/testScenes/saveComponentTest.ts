@@ -17,7 +17,7 @@ export class SaveComponentTest extends Scene
         var entity = this.level.SerializeObject(obj);
 
         assert(entity.components.testSave.valueNoSave === undefined, "test value should not be saved");
-        assert(entity.components.testSave.valueSave == "test", "testSave value should be saved");
+        assert(entity.components.testSave.valueSave === undefined, "default @Save value should not be saved");
         assert(entity.components.testSave.valueSaveChanged == "testChanged", "saveChanged value should be saved and changed");
         assert(entity.components.testNoSave === undefined, "testNoSave component should not be saved");
     }

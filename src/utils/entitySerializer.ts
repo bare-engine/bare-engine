@@ -155,7 +155,7 @@ export class EntitySerializer
                 continue;
 
             var defaultValue = defaultValues[paramName];
-            if (!hasExplicitSaveFields && paramValue === defaultValue)
+            if (paramValue === defaultValue)
                 continue;
 
             componentData[paramName] = paramValue;

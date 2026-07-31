@@ -942,7 +942,7 @@ export class LevelHandler
 
             // SKIP IF DEFAULT
             var defaultValue = defaultValues[paramName];
-            if (!hasExplicitSaveFields && paramValue === defaultValue)
+            if (paramValue === defaultValue)
                 continue;
 
             componentData[paramName] = paramValue;
