@@ -537,13 +537,9 @@ export class GameObject
         
         if (this.mask)
             this.renderParentTransform = rapid.matrixStack.getTransform();
-        
-        this.ApplyTransformToMatrixStack(this.transform);
 
         rapid.matrixStack.save();
-        rapid.matrixStack.translate(-this.pivot.x, -this.pivot.y);
-        
-        this.ApplyInnerTransformToMatrixStack();
+        this.ApplyContentTransform();
 
         if (this.texture)
             this.RenderSprite(inheritedColor);
@@ -591,14 +587,24 @@ export class GameObject
     }
 
     // Establishes the space children render in, relative to this object's already-applied
-    // outer transform. Children inherit the sprite's inner transform by default; disable
-    // childrenInheritInnerTransform to keep them in outer-transform space.
+    // parent transform. Children inherit the complete content transform by default.
     protected ApplyChildTransform()
     {
-        rapid.matrixStack.translate(-this.pivot.x, -this.pivot.y);
-
         if (this.childrenInheritInnerTransform)
-            this.ApplyInnerTransformToMatrixStack();
+        {
+            this.ApplyContentTransform();
+            return;
+        }
+
+        this.ApplyTransformToMatrixStack(this.transform);
+        rapid.matrixStack.translate(-this.pivot.x, -this.pivot.y);
+    }
+
+    protected ApplyContentTransform()
+    {
+        this.applyUnflippedTransform(rapid.matrixStack, this.transform);
+        rapid.matrixStack.translate(-this.pivot.x, -this.pivot.y);
+        this.ApplyInnerTransformToMatrixStack();
     }
 
     protected ApplyInnerTransformToMatrixStack()
@@ -855,6 +861,9 @@ export class GameObject
     {
         this.innerTransform.flipped = value;
     }
+    
+    @InspectorField
+    childrenInheritInnerTransform: boolean = true;
 
     @InspectorField @Save
     customName: string = "";
@@ -998,28 +1007,55 @@ export class GameObject
             obj = obj.parent;
         }
         for (var i = chain.length - 1; i >= 0; i--)
-        {
-            var ancestor = chain[i];
-            this.applyTransform(m, ancestor.transform);
-            m.translate(-ancestor.pivot.x, -ancestor.pivot.y);
-            if (ancestor.childrenInheritInnerTransform)
-                this.applyInnerTransform(m, ancestor);
-        }
+            this.applyChildSpaceTransform(m, chain[i]);
+    }
+
+    private applyUnflippedTransform(m: MatrixStack, t: Transform)
+    {
+        m.translate(t.position.x, t.position.y);
+        m.rotate(t.rotation * (Math.PI / 180));
+        m.scale(t.scale.x, t.scale.y);
     }
 
     private applyTransform(m: MatrixStack, t: Transform)
     {
-        m.translate(t.position.x, t.position.y);
-        m.rotate(t.rotation * (Math.PI / 180));
-        m.scale(t.scale.x * (t.flipped ? -1 : 1), t.scale.y);
+        this.applyUnflippedTransform(m, t);
+
+        if (t.flipped)
+            m.scale(-1, 1);
     }
 
+    // Visual inner transform: outer and inner flips share one transform stage.
     private applyInnerTransform(m: MatrixStack, obj: GameObject)
     {
         var pivot = obj.innerPivot;
         m.translate(pivot.x, pivot.y);
-        this.applyTransform(m, obj.innerTransform);
+        this.applyUnflippedTransform(m, obj.innerTransform);
+
+        const contentFlipped = obj.flipped !== obj.innerFlipped;
+        if (contentFlipped)
+            m.scale(-1, 1);
+
         m.translate(-pivot.x, -pivot.y);
+    }
+
+    private applyContentTransform(m: MatrixStack, obj: GameObject)
+    {
+        this.applyUnflippedTransform(m, obj.transform);
+        m.translate(-obj.pivot.x, -obj.pivot.y);
+        this.applyInnerTransform(m, obj);
+    }
+
+    private applyChildSpaceTransform(m: MatrixStack, obj: GameObject)
+    {
+        if (obj.childrenInheritInnerTransform)
+        {
+            this.applyContentTransform(m, obj);
+            return;
+        }
+
+        this.applyTransform(m, obj.transform);
+        m.translate(-obj.pivot.x, -obj.pivot.y);
     }
 
     private cornersToRect(corners: {x: number, y: number}[]): Rectangle
@@ -1066,11 +1102,8 @@ export class GameObject
         m.identity();
         
         this.buildAncestorMatrix(m);
-        this.applyTransform(m, this.transform);
-
         m.save();
-        m.translate(-this.pivot.x, -this.pivot.y);
-        this.applyInnerTransform(m, this);
+        this.applyContentTransform(m, this);
 
         const bounds = this.texture.localBounds;
         var corners = this.getCorners(m, bounds.x, bounds.y, bounds.width, bounds.height);
@@ -1117,20 +1150,22 @@ export class GameObject
         var recurse = (obj: GameObject, isRoot:boolean = false) => {
             m.save();
             const applyObjectTransform = !isRoot || includeRootTransform;
-            if (applyObjectTransform)
-                this.applyTransform(m, obj.transform);
 
+            // Object texture.
             m.save();
             if (applyObjectTransform)
-                m.translate(-obj.pivot.x, -obj.pivot.y);
-            this.applyInnerTransform(m, obj);
+                this.applyContentTransform(m, obj);
+            else
+                this.applyInnerTransform(m, obj);
             updateBounds(obj);
             m.restore();
 
+            // Child space.
             if (applyObjectTransform)
-                m.translate(-obj.pivot.x, -obj.pivot.y);
-            if (obj.childrenInheritInnerTransform)
+                this.applyChildSpaceTransform(m, obj);
+            else if (obj.childrenInheritInnerTransform)
                 this.applyInnerTransform(m, obj);
+
             for (var child of obj.children)
                 recurse(child);
 
@@ -1373,21 +1408,22 @@ export class GameObject
         return out;
     }*/
 
-    // Convert a point from this object's child space to world space.
-    // Pass includeInnerTransform to force texture space when child inheritance is disabled.
-    ToGlobal(localPoint: Vec2 = new Vec2(), includeInnerTransform: boolean = false): Vec2
+    // Convert a point from this object's child space to world space by default.
+    // Pass true/false explicitly to include/exclude the inner transform.
+    ToGlobal(localPoint: Vec2 = new Vec2(), includeInnerTransform: boolean = this.childrenInheritInnerTransform): Vec2
     {
         const m = rapid.matrixStack;
         m.save();
         m.identity();
 
         this.buildAncestorMatrix(m);
-        this.applyTransform(m, this.transform);
-
-        m.translate(-this.pivot.x, -this.pivot.y);
-
-        if (includeInnerTransform || this.childrenInheritInnerTransform)
-            this.applyInnerTransform(m, this);
+        if (includeInnerTransform)
+            this.applyContentTransform(m, this);
+        else
+        {
+            this.applyTransform(m, this.transform);
+            m.translate(-this.pivot.x, -this.pivot.y);
+        }
 
         const {x, y} = m.localToWorld(localPoint.x, localPoint.y);
         
@@ -1423,10 +1459,7 @@ export class GameObject
         m.identity();
         
         this.buildAncestorMatrix(m);
-        this.applyTransform(m, this.transform);
-        m.translate(-this.pivot.x, -this.pivot.y);
-        if (this.childrenInheritInnerTransform)
-            this.applyInnerTransform(m, this);
+        this.applyChildSpaceTransform(m, this);
         
         const {x, y} = m.worldToLocal(globalPoint.x, globalPoint.y);
         
@@ -1627,6 +1660,4 @@ export class GameObject
 
         this.scene.RemoveGameObject(this, this.parent || undefined, clear);
     }
-    
-    @InspectorField childrenInheritInnerTransform: boolean = true;
 }
