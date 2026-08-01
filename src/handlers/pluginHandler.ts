@@ -44,6 +44,9 @@ window.__GAME_DEBUG_API__ = {
     togglePause() {
         return plugin.TogglePause();
     },
+    restart() {
+        return bare.Restart();
+    },
     setPluginConnected(connected: boolean) {
         if (connected)
         {
