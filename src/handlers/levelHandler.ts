@@ -407,35 +407,15 @@ export class LevelHandler
             {
                 var constructorName = this.scene.GetContructorName(obj);
 
-                if (saveVars[constructorName])
-                {
-                    varsToSave = saveVars[constructorName];
-                }
-                else
-                {
-                    if (constructorName == "GameObject")
-                        varsToSave = defaultSettingsData.saveVars!["GameObject"];
-                    //else
-                    //    console.warn("NO VARS TO SAVE FOR " + constructorName);
-                }
+                // Class save vars extend the GameObject defaults. Keep this merge here
+                // as well as in SettingsHandler so serialization remains correct when
+                // settings data has not gone through preprocessing.
+                const gameObjectSaveVars = saveVars.GameObject ?? defaultSettingsData.saveVars!["GameObject"];
+                const classSaveVars = saveVars[constructorName] ?? [];
+                varsToSave = [...new Set([...gameObjectSaveVars, ...classSaveVars])];
             }
 
             varsToSave = varsToSave.slice();
-
-            // CHECK levelEntity TO SEE IF THERE ARE ADDITIONAL VARS TO SAVE
-            // EG: IF A LEVEL ENTITY WITH ALPHA 0.5 IS DEFINED IN A LEVEL,
-            // WE WANT TO SAVE THAT, EVEN THOUGH IT MIGHT NOT BE SET IN saveVars
-            if (obj.levelEntity)
-            {
-                for (var varName in obj.levelEntity)
-                {
-                    if (varName == "name")
-                        continue;
-
-                    if (!varsToSave.includes(varName))
-                        varsToSave.push(varName);
-                }
-            }
         }
         else
         if (bare.gameMode == GameMode.Edit || forceAllEntityVars)
@@ -542,7 +522,7 @@ export class LevelHandler
         };
 
         var origEntity = this.scene.GetAppliedEntityWithDefaultValues(obj.name, this.scene.settingsData, options);
-        var fullEntity = this.SerializeObjectFully(obj);
+        var fullEntity = this.SerializeObjectFully(obj, false, false);
         var diffEntity = this.GetEntitiesDiff(origEntity, fullEntity);
 
         if (diffEntity)

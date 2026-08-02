@@ -1295,6 +1295,8 @@ export class GameObject
         return this;
     }
 
+    // COLOR DECIDES ALPHA AS WELL
+    // SO IT CAN OVERRIDE, EG IF ALPHA IS .5, YOU SET COLOR TO COLOR.WHITE, ALPHA IS NOW 1 - TODO?
     SetColor(color: Color | string): this
     {
         if(typeof color === 'string')
