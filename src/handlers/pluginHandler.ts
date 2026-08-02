@@ -15,6 +15,7 @@ import { EntitySerializer } from "../utils/entitySerializer";
 import { Helper } from "../utils/helper";
 import { SaveDataHandler } from "./SaveDataHandler";
 import { TransformToolHandler } from "./transformToolHandler";
+import { SettingsHandler } from "./settingsHandler";
 
 // THIS PLUGIN CODE DOES NOT GET INCLUDED IN PRODUCTION
 
@@ -372,9 +373,12 @@ window.__GAME_DEBUG_API__ = {
     await plugin.SaveSettingsData(raw);
   },
   
-  async gotoEntity(name: string, isBase: boolean = false)
+async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: string)
   {
     window.postMessage({ __fromGame: true, type: "lockObjectsTab", flag: true }, "*");
+
+    const settingsHandler = plugin.GetSettingsDataHandler(settingsDataName);
+    plugin.currentSettingsDataName = settingsHandler.GetRaw()?.name ?? "";
 
     // Remember it so setPluginConnected can re-open it after a recompile/restart.
     plugin.lastEntity = { name, isBase };
@@ -385,13 +389,11 @@ window.__GAME_DEBUG_API__ = {
         return;
     }*/
 
-    const sceneMain = bare.scene.GetMainScene();
-    
     if (!bare.scene.Get(EntityScene))
         bare.scene.Remove(EditorScene); // WILL REMOVE LEVEL EDITOR IF EXISTS
 
     plugin.notifyLeaveEntity = false;
-    var entityScene = await bare.scene.Add(EntityScene, {name: name, isBase: isBase, settingsHandler: sceneMain.settingsHandler});
+    var entityScene = await bare.scene.Add(EntityScene, {name: name, isBase: isBase, settingsHandler: settingsHandler});
     //bare.scene.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
     plugin.notifyLeaveEntity = true;
 
@@ -1128,11 +1130,20 @@ window.__GAME_DEBUG_API__ = {
                 c.replace(/Component$/, "")
             )
         );
+    }, 
+    
+    getSettingsDataList() {
+        return plugin.LoadSettingsDataJSONs();
     },
 
-  getEntityData():SettingsData {
-    const scene = bare.scene.GetMainScene();
-    var settingsData = scene.settingsHandler.GetRaw();
+  getCurrentSettingsDataName(): string {
+    return plugin.currentSettingsDataName;
+  },
+
+  getEntityData(settingsDataName?: string):SettingsData {
+    const settingsHandler = plugin.GetSettingsDataHandler(settingsDataName);
+    plugin.currentSettingsDataName = settingsHandler.GetRaw()?.name ?? "";
+    var settingsData = settingsHandler.GetRaw();
 
     //return settingsData; // ADDED TO MAKE DEFAULT GAME NOT HAVE BELOW
     // SHOULD HAVE IT AGAIN WHEN I START WORK ON PLUGIN ENTITIES
@@ -1207,8 +1218,11 @@ window.__GAME_DEBUG_API__ = {
     scene.settingsHandler.Process(newRawData);
   },
 
-  async setEntityData(newData: SettingsData)
+  async setEntityData(newData: SettingsData, settingsDataName?: string)
   {
+    const settingsHandler = plugin.GetSettingsDataHandler(settingsDataName);
+    settingsHandler.SetRaw(newData);
+    await settingsHandler.Process(newData);
     await plugin.SaveSettingsData(newData);
   },
 
@@ -1409,6 +1423,9 @@ window.__GAME_DEBUG_API__ = {
 
 export class PluginHandler
 {
+    currentSettingsDataName: string = "";
+    private settingsDataHandlers = new Map<string, SettingsHandler>();
+
     lastRightClickedObject: GameObject;
 
     public openEditorButtonPosition: Position;
@@ -1493,6 +1510,8 @@ export class PluginHandler
         globalEvents.persistent.once(BareEvent.game_started, () => {
             // RIGHT CLICK FOR PLUGIN SELECT
             document.addEventListener('pointerdown', this.OnRightClickPointerDown, false);
+
+            this.LoadSettingsDataJSONs();
             
             window.__GAME_DEBUG_API__.gameStartedNotify();
             window.__GAME_DEBUG_API__.refreshLevelFiles();
@@ -2287,6 +2306,53 @@ export class PluginHandler
         return keysToRemove;
     }
 
+    GetSettingsDataHandler(settingsDataName: string = this.currentSettingsDataName): SettingsHandler
+    {
+        return this.settingsDataHandlers.get(settingsDataName) ?? bare.scene.GetMainScene().settingsHandler;
+    }
+    
+    async LoadSettingsDataJSONs(): Promise<string[]>
+    {
+        // Keep handler identity stable while an EntityScene is editing it. Recreating handlers
+        // here makes the scene write to the old instance while gotoEntity reads a fresh copy from
+        // disk, causing edited values to snap back in the plugin.
+        const mainScene = bare.scene.GetMainScene();
+        if (mainScene?.settingsHandler)
+        {
+            const mainName = mainScene.settingsHandler.GetRaw()?.name ?? "";
+            this.settingsDataHandlers.set(mainName, mainScene.settingsHandler);
+        }
+
+        const files = await Helper.GetFilesInFolder(`${bare.dataPath}/`, false);
+        for (const file of files.filter(file => /\.json$/i.test(file)))
+        {
+            const fileName = file.split(/[\\/]/).pop() ?? file;
+            const isDefault = fileName.toLowerCase() === "settingsdata.json";
+
+            try
+            {
+                const raw = await Helper.loadJSON<SettingsData>(`${bare.dataPath}/${file}`);
+                const name = raw?.name ?? "";
+
+                if (!isDefault && !name)
+                    continue;
+
+                if (!this.settingsDataHandlers.has(name))
+                {
+                    const handler = new SettingsHandler(bare.scene.GetMainScene());
+                    await handler.Process(raw);
+                    this.settingsDataHandlers.set(name, handler);
+                }
+            }
+            catch (error)
+            {
+                console.warn(`Could not load settings data file '${file}'.`, error);
+            }
+        }
+
+        return Array.from(this.settingsDataHandlers.keys());
+    }
+
     async SaveSettingsData(newData: SettingsData): Promise<void>
     {
         if (newData.processed)
@@ -2294,7 +2360,7 @@ export class PluginHandler
             throw new Error('Cannot save processed data. Something went really wrong!');
         }
 
-        bare.scene.GetMainScene().settingsHandler.FilterSettingsDataDefaults(newData);
+        this.GetSettingsDataHandler(newData.name ?? "").FilterSettingsDataDefaults(newData);
 
         plugin.doNotifyAfterSave = false;
 
