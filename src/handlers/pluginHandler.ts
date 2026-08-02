@@ -2360,7 +2360,8 @@ export class PluginHandler
             throw new Error('Cannot save processed data. Something went really wrong!');
         }
 
-        this.GetSettingsDataHandler(newData.name ?? "").FilterSettingsDataDefaults(newData);
+        const settingsHandler = this.GetSettingsDataHandler(newData.name ?? "");
+        settingsHandler.FilterSettingsDataDefaults(newData);
 
         plugin.doNotifyAfterSave = false;
 
@@ -2382,9 +2383,12 @@ export class PluginHandler
                 })
             });
 
-            scene.settingsHandler.SetRaw(newData);
-            await scene.settingsHandler.Process(newData);
         }
+
+        // Update only the handler for the file that was saved. Assigning named settings data to
+        // the main scene's handler makes the default dropdown entry resolve to that named file.
+        settingsHandler.SetRaw(newData);
+        await settingsHandler.Process(newData);
 
         plugin.doNotifyAfterSave = true;
 
