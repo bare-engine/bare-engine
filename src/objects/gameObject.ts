@@ -1581,6 +1581,7 @@ export class GameObject
         this.name = "";
         this.pluginName = "";
         this.layer = "";
+        this.imagePath = "";
         this.texture = null;
         this.persistent = false;
         this.pooled = false;
