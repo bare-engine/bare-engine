@@ -2,7 +2,7 @@ import { RegisterController } from "../globals";
 import { Vec2 } from "../libraries/new-rapid-render";
 import type { Scene } from "../scenes/scene";
 import { BareEvent, CameraScaleMode, Rectangle, type Size } from "../types/bareTypes";
-import { Enum, InspectorField, Locked } from "../utils/decorators";
+import { Enum, InspectorField, Limit, Locked } from "../utils/decorators";
 import { Helper } from "../utils/helper";
 
 export class CameraHandler {
@@ -12,7 +12,8 @@ export class CameraHandler {
     // target camera center
     @InspectorField target: Vec2 = new Vec2(0, 0);
 
-    @InspectorField zoom: number = 1;
+    @InspectorField @Limit(0.1)
+    zoom: number = 1;
 
     // "logical area" you want to fit/cover on screen when zoomFit is applied
     dimensions: Size = { width: 0, height: 0 };
