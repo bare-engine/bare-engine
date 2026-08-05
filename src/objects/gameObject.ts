@@ -66,8 +66,7 @@ export class GameObject
 
     private renderParentTransform: Float32Array | null = null;
 
-    levelEntity: Entity | null = null; 
-    entity: Entity | null = null; 
+    entity: Entity | null = null;
     
     visibleInEditor:boolean = true;
 

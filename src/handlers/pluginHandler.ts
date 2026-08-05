@@ -539,7 +539,7 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
     }
 
     {
-        var origEntity = o.scene.GetAppliedEntityWithDefaultValues(o.entity || o.levelEntity, o.scene.settingsData);
+        var origEntity = o.scene.GetAppliedEntityWithDefaultValues(o.entity, o.scene.settingsData);
         var fullEntity = o.scene.level.SerializeObjectFully(o, true, true);
         var diffEntity = o.scene.level.GetEntitiesDiff(origEntity, fullEntity);
 

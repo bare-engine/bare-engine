@@ -30,9 +30,9 @@ export class EntitySerializer
 
             varsToSave = varsToSave.slice();
 
-            if (obj.levelEntity)
+            if (obj.entity)
             {
-                for (var varName in obj.levelEntity)
+                for (var varName in obj.entity)
                 {
                     if (varName == "name")
                         continue;

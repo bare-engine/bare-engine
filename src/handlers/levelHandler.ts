@@ -257,12 +257,6 @@ export class LevelHandler
             {
                 var gameObject = this.scene.AddGameObject(levelEntity, layerName);
 
-                // WHEN IN EDITOR, WE WANT TO USE levelEntity
-                // BUT IT'S KIND OF MESSED UP AND CONSTRUCTED BY ABOVE NOW
-                // SO HERE WE ALIGN IT AGAIN TO ITS CHILDREN
-                //this.AssignEntityToChildren(gameObject, levelEntity);
-                
-                gameObject.levelEntity = levelEntity;
                 gameObject.save = true;
             }
         }
