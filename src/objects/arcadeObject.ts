@@ -291,10 +291,13 @@ export class ArcadeObject extends GameObject
         if (this.physicsHitbox)
         {
             this.physicsHitbox.type = HitboxType.Rectangle;
+            this.physicsHitbox.radius = 0;
             this.physicsHitbox.rectangle.x = 0;
             this.physicsHitbox.rectangle.y = 0;
             this.physicsHitbox.rectangle.width = 0;
             this.physicsHitbox.rectangle.height = 0;
+            this.physicsHitbox.circleOffset.x = 0;
+            this.physicsHitbox.circleOffset.y = 0;
             this.physicsHitbox.parent = this;
             this.physicsHitbox.active = true;
         }
