@@ -539,9 +539,20 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
     }
 
     {
-        var origEntity = o.scene.GetAppliedEntityWithDefaultValues(o.entity || {name: o.name, texture: "NONE"}, o.scene.settingsData);
-        var fullEntity = o.scene.level.SerializeObjectFully(o, true, true);
-        var diffEntity = o.scene.level.GetEntitiesDiff(origEntity, fullEntity);
+        var origEntity;
+        if (o.entity)
+        {
+            origEntity = o.scene.GetAppliedEntityWithDefaultValues(o.entity, o.scene.settingsData);
+        }
+        else
+        {
+            var gameObjectClass = o.constructor as new (scene: Scene) => GameObject;
+            var gameObject = new gameObjectClass(o.scene);
+            origEntity = o.scene.level.SerializeObjectFully(gameObject, true, true);
+        }
+        
+        var curEntity = o.scene.level.SerializeObjectFully(o, true, true);
+        var diffEntity = o.scene.level.GetEntitiesDiff(origEntity, curEntity);
 
         delete diffEntity.name;
         delete diffEntity.save;
