@@ -538,6 +538,27 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
         }
     }
 
+    {
+        var origEntity = o.scene.GetAppliedEntityWithDefaultValues(o.entity || o.levelEntity, o.scene.settingsData);
+        var fullEntity = o.scene.level.SerializeObjectFully(o, true, true);
+        var diffEntity = o.scene.level.GetEntitiesDiff(origEntity, fullEntity);
+
+        delete diffEntity.name;
+        delete diffEntity.save;
+        delete diffEntity.imagePath;
+        delete diffEntity.texture;
+
+        var changedFields = diffEntity;
+        data.__changedFields = changedFields;
+
+        var defaultValues = {};
+        for (var field in changedFields)
+        {
+            defaultValues[field] = origEntity[field];
+        }
+        data.__defaultValues = defaultValues;
+    }
+
     return data;
 
     var serializeChildren = (children: GameObject[]) => {

@@ -173,7 +173,7 @@ export interface Entity
     constructed ?: boolean
 }
 
-export type ConstructEntityOptions = { propsToIgnoreInEntity?: string[], fillPresets?: boolean };
+export type ConstructEntityOptions = { propsToIgnoreInEntity?: string[], fillPresets?: boolean, forceAllEntityVars?: boolean, includeSaveFields?: boolean };
 export type EntityVarsNestedGroup = Record<string, string[]>;
 export type EntityVarsNestedEntry = string | EntityVarsNestedGroup;
 

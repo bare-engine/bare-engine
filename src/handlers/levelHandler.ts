@@ -476,7 +476,11 @@ export class LevelHandler
                 if ((!child.persistent && child.save) || forceAllEntityVars)
                     children.push(this.SerializeObjectFully(child, forceAllEntityVars, includeSaveFields));
             }
-            return children;
+
+            if (children.length > 0)
+                return children;
+            else
+                return null;
         };
 
         customSerialize["components"] = (currentValue:Component[]):Record<string, any> => {
@@ -490,7 +494,11 @@ export class LevelHandler
                     comps[name] = compData;
                 }
             }
-            return comps;
+
+            if (Object.keys(comps).length > 0)
+                return comps;
+            else
+                return null;
         };
 
         for (var varName of varsToSave)
@@ -505,7 +513,8 @@ export class LevelHandler
             else
                 serializedValue = this.scene.GetSerializedValueFromObject(obj, key);
 
-            entity[varName] = serializedValue;
+            if (serializedValue != null) // PREVENTS ADDING EMPTY CHILDREN OF COMPONENTS
+                entity[varName] = serializedValue;
         }
 
         return entity;
@@ -515,14 +524,14 @@ export class LevelHandler
     // THIS IS A VERY INEFFICIENT WAY TO IT, BUT... EASY TO FOLLOW AND IN ONE PLACE
     // COME BACK LATER TO OPTIMIZE/CACHE - TODO
     // USED levelEntity BEFORE, KEEPING TRACK CHANGES, BUT KEPT GETTING EDGE CASES ALL OVER
-    SerializeObject(obj: GameObject, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true }): Entity
+    SerializeObject(obj: GameObject, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false, includeSaveFields: false }): Entity
     {
         var entity:Entity = {
             name: obj.name,
         };
 
         var origEntity = this.scene.GetAppliedEntityWithDefaultValues(obj.name, this.scene.settingsData, options);
-        var fullEntity = this.SerializeObjectFully(obj, false, false);
+        var fullEntity = this.SerializeObjectFully(obj, options.forceAllEntityVars, options.includeSaveFields);
         var diffEntity = this.GetEntitiesDiff(origEntity, fullEntity);
 
         if (diffEntity)
