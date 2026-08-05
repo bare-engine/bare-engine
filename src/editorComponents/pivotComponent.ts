@@ -42,7 +42,7 @@ export class PivotComponent extends Component
 
         //this.go.innerScale = 1/zoom;
 
-        if (!this.hitboxObj.addedToLevel)
+        if (!this.hitboxObj.addedToScene)
         {
             this.UpdateHitboxReferences();
         }

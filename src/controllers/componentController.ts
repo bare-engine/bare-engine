@@ -191,7 +191,7 @@ export class ComponentController
             component.Awake(go);
             component.Added(go);
 
-            if (this.scene.started && go.addedToLevel)
+            if (this.scene.started && go.addedToScene)
                 component.Start();
             else if (component.OnStart)
                 this.queuedForStart.push(component)

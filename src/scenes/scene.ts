@@ -1040,7 +1040,7 @@ to package.json to keep the generated assets (can become large for big projects)
 
     RemoveGameObject(gameObject: GameObject, parent?: int | GameObject, clear:boolean = true)
     {
-        if (!gameObject.addedToLevel)
+        if (!gameObject.addedToScene)
         {
             // GAMEOBJECT WAS ALREADY REMOVED
             return;

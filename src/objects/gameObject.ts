@@ -51,7 +51,7 @@ export class GameObject
     children: Array<GameObject> = [];
     parent: GameObject | null = null;
 
-    addedToLevel:boolean = false;
+    addedToScene:boolean = false;
     started:boolean = false;
     pooled:boolean = false;
     revertPivotOnSave: boolean = false; // TODO
@@ -432,7 +432,7 @@ export class GameObject
 
     Added()
     {
-        this.addedToLevel = true;
+        this.addedToScene = true;
         this.OnAdded();
     }
 
@@ -443,7 +443,7 @@ export class GameObject
 
     Removed()
     {
-        this.addedToLevel = false;
+        this.addedToScene = false;
         this.started = false;
         this.OnRemoved();
     }
