@@ -538,6 +538,9 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
         }
     }
 
+    // GET ORIGINAL VALUES OF OBJECT
+    // GET CURRENT VALUES
+    // PUT DIFFERENCE IN __changedFields FOR PLUGIN TO SHOW BLUE AND OPTION TO REVERT
     {
         var origEntity;
         if (o.entity)
@@ -546,6 +549,8 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
         }
         else
         {
+            // MAKE A NEW INSTANCE OF OBJECT, TO GET START ORIGINAL VALUES
+            // IF IT'S A USER OBJECT EXTENDING GAMEOBJECT, THAT CONSTRUCTOR WOULD NEED TO WORK WITH ONLY THE SCENE ARGUMENT
             var gameObjectClass = o.constructor as new (scene: Scene) => GameObject;
             var gameObject = new gameObjectClass(o.scene);
             origEntity = o.scene.level.SerializeObjectFully(gameObject, true, true);
@@ -554,10 +559,12 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
         var curEntity = o.scene.level.SerializeObjectFully(o, true, true);
         var diffEntity = o.scene.level.GetEntitiesDiff(origEntity, curEntity);
 
+        // FIELDS TO IGNORE - NOT IN INSPECTOR
         delete diffEntity.name;
-        delete diffEntity.save;
         delete diffEntity.imagePath;
         delete diffEntity.texture;
+
+        delete diffEntity.save; // EDGE CASE FROM LEVEL
 
         var changedFields = diffEntity;
         data.__changedFields = changedFields;
