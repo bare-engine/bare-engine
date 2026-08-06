@@ -785,6 +785,9 @@ export class Scene implements SceneI
         if (objValue instanceof Vec2)
             serializedValue = { x: objValue.x, y: objValue.y };
         else
+        if (objValue instanceof Color)
+            serializedValue = objValue.toHex();
+        else
             serializedValue = objValue;
 
         // Only emit serializable values - had problem with DiamondUI.text before - todo
