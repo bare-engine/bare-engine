@@ -348,9 +348,24 @@ function bareAutoRegisterClassesPlugin(options = {}) {
         if (!filePath.startsWith(`${srcDir}/`)) return;
         if (!/\.[cm]?[jt]sx?$/.test(filePath) || /\.d\.ts$/.test(filePath)) return;
 
+        const registeredBefore = new Set(getRegisteredClasses().map(c => c.name));
         const changed = kind === "unlink" ? unscanFile(filePath) : scanFile(filePath);
-        if (changed) {
-            invalidateStartBareModule();
+        if (!changed) return;
+
+        invalidateStartBareModule();
+
+        // A component/gameobject class just appeared or disappeared (eg a freshly
+        // created or deleted component file). Nothing else naturally reloads the page
+        // for that - the invalidate above is inert until *something* re-requests the
+        // StartBare module - so without this, the panel's "Add Component" list would
+        // only pick up the change after some unrelated later reload. Editing an
+        // existing class's body doesn't change this set, so ordinary saves still skip
+        // the reload.
+        const registeredAfter = new Set(getRegisteredClasses().map(c => c.name));
+        const registrationSetChanged = registeredAfter.size !== registeredBefore.size
+            || [...registeredAfter].some(name => !registeredBefore.has(name));
+        if (registrationSetChanged && serverRef) {
+            serverRef.ws.send({ type: "full-reload", path: "*" });
         }
     }
 
