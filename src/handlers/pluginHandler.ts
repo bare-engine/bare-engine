@@ -545,7 +545,11 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
         var origEntity;
         if (o.entity)
         {
-            origEntity = o.scene.GetAppliedEntityWithDefaultValues(o.entity, o.scene.settingsData);
+            // pivot/hitbox ARE KEPT MIRRORED ONTO o.entity WITH THE LIVE VALUE (SEE THE "PIVOT / HITBOX"
+            // BLOCK BELOW), SO THEY'D ALWAYS "WIN" AS THEIR OWN BASELINE HERE AND NEVER SHOW UP AS
+            // CHANGED. STRIP THEM SO THE PRESET DEFAULT IS USED AS THE BASELINE FOR THOSE TWO INSTEAD.
+            var { pivot, hitbox, ...entityForOrigin } = o.entity;
+            origEntity = o.scene.GetAppliedEntityWithDefaultValues(entityForOrigin, o.scene.settingsData);
         }
         else
         {
@@ -1059,7 +1063,7 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
         if (props.pivot !== undefined) {
             if ((props.pivot.x >= 0 && props.pivot.x < 1) || (props.pivot.y >= 0 && props.pivot.y < 1))
             {
-                scene.ApplyEntityToGameObject(props as Entity, o, false);
+                scene.ApplyEntityVarsToGameObject(props as Entity, o, false);
             }
             if (o.entity)
                 o.entity.pivot = props.pivot; //
@@ -1068,7 +1072,7 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
             if ((props.hitbox.x >= 0 && props.hitbox.x < 1) || (props.hitbox.y >= 0 && props.hitbox.y < 1) ||
                 (props.hitbox.width >= 0 && props.hitbox.width < 1) || (props.hitbox.height >= 0 && props.hitbox.height < 1))
             {
-                scene.ApplyEntityToGameObject(props as Entity, o, false);
+                scene.ApplyEntityVarsToGameObject(props as Entity, o, false);
             }
             if (o.entity)
                 o.entity.hitbox = props.hitbox; //
