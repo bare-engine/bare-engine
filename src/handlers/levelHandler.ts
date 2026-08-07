@@ -297,9 +297,10 @@ export class LevelHandler
                 var fullPath = MakePathForEntity(entity);
 
                 var hasEntityImage = Bare.assets.images.includes(fullPath) || assetsHandler.HasTexture(fullPath);
-                    
+                
                 if (!hasEntityImage)
                 {
+                    if (entity.baseClass != "TextObject")
                     if (__STRIP_GENERATED_ASSETS__)
                     {
                         console.warn(`Could not find image for entity: ${entity.name}\n

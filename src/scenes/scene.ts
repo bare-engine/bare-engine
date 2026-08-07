@@ -966,6 +966,8 @@ export class Scene implements SceneI
                     if (!hasEntityImage)
                     {
                         entity.texture = "NONE";
+
+                        if (entity.baseClass != "TextObject") // GETS TEXTURE FROM TEXT
                         if (__STRIP_GENERATED_ASSETS__)
                         {
                             console.warn(`Could not find image for entity: ${entity.name}\n
