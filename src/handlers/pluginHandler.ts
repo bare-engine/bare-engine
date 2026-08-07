@@ -937,11 +937,20 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
 
                 // if special mapping exists — use it
                 const special = obj.specialMap[prop];
-                if (special) 
+                if (special)
                 {
                     special(obj, value);
                     continue;
                 }
+
+                // FIELDS DECLARED AS { get, set } DESCRIPTORS (EG TextObject.text/fontSize) NEED THEIR OWN SETTER INVOKED 
+                const current = obj[prop];
+                if (current && typeof current === "object" && typeof current.set === "function")
+                {
+                    current.set(value);
+                    continue;
+                }
+
                 obj[prop] = value;
             }
 
