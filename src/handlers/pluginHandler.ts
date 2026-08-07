@@ -691,7 +691,7 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
   },
 
   // GIVES SUGGESTION FIELDS, TAKES OFF ONES THAT ARE LOCKED/ALREADY IN HUSE
-  getFieldsSuggestions(entityName: string, childPath: string[]): string[]
+  getFieldsSuggestions(entityName: string, childPath: string[], baseClass: string = "GameObject"): string[]
   {
     var suggestions = [
         "baseEntity",
@@ -705,8 +705,31 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
         "rotation",
         "hitbox",
     ];
-    
+
     var limitNumber = 7;
+
+    // NON-GAMEOBJECT BASE CLASSES (EG: TextObject) GET THEIR OWN @InspectorField/@Save MEMBERS
+    // SUGGESTED FIRST, THEN FALL BACK TO THE GENERIC GAMEOBJECT LIST TO FILL REMAINING SLOTS.
+    // READ THEM OFF THE LIVE INSTANCE (SAME AS NORMAL OBJECT INSPECTION), NOT THE BARE CLASS -
+    // DECORATOR METADATA ISN'T RELIABLY READABLE THROUGH A FAKE {constructor: cls} WRAPPER.
+    if (baseClass && baseClass !== "GameObject")
+    {
+        var entityScene = bare.scene.Get(EntityScene);
+        var liveObj: any = entityScene?.object.GetByName(entityName);
+        for (var i = 0; liveObj && i < childPath.length; i++)
+            liveObj = liveObj.children?.[childPath[i]];
+
+        if (liveObj)
+        {
+            // ONLY FIELDS DECLARED BY baseClass ITSELF (OR A CLASS BETWEEN IT AND GameObject),
+            // NOT THE INHERITED GameObject FIELDS (position, scale, alpha, etc.) - THOSE ARE
+            // ALREADY COVERED BY THE GENERIC SUGGESTIONS LIST ABOVE.
+            var classFieldNames = getInspectorFields(liveObj, true)
+                .filter(f => f.source !== "GameObject" && !f.name.startsWith("_"))
+                .map(f => f.name);
+            suggestions = [...classFieldNames, ...suggestions.filter(s => !classFieldNames.includes(s))];
+        }
+    }
 
     var possibleVarsNested = window.__GAME_DEBUG_API__.getNestedEntityVars(entityName, childPath);
     var lockedVars = new Set<string>();
