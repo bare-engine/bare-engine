@@ -11,6 +11,7 @@ import { GameObject } from "../objects/gameObject";
 import { BareEvent, BareOptions, CameraScaleMode, Entity, HitboxType, LevelData, SaveData, SceneOptions, SettingsData, Size } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
 import { Helper } from "../utils/helper";
+import { EntityScene } from "./entityScene";
 import { Scene } from "./scene";
 
 type EditorSceneAwakePayload = {

@@ -961,9 +961,7 @@ export class Scene implements SceneI
                 if (Bare.assets.images.length > 0 && entity.texture != "NONE" && entity.texture != "placeHolder" /*&& entity.texture*/)
                 {
                     var texturePath = MakePathForEntity(entity);
-                    var hasEntityImage =
-                        Bare.assets.images.includes(texturePath) ||
-                        assetsHandler.HasTexture(texturePath);
+                    var hasEntityImage = Bare.assets.images.includes(texturePath) || assetsHandler.HasTexture(texturePath);
                     
                     if (!hasEntityImage)
                     {

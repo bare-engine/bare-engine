@@ -1,11 +1,11 @@
 import { assetsHandler } from "../handlers/assetsHandler";
 import { SettingsHandler } from "../handlers/settingsHandler";
 import { Color, RenderTexture, Vec2 } from "../libraries/new-rapid-render";
+import { GameObject } from "../objects/gameObject";
 import { TextObject } from "../objects/textObject";
-import { ArcadeObject } from "../objects/arcadeObject";
+import { AwakePayload, Entity, LevelData, SettingsData } from "../types/bareTypes";
 import { EditorScene } from "./editorScene";
-import { AwakePayload, Entity, entityVars, LevelData, Rectangle, SettingsData, Size } from "../types/bareTypes";
-import { MakePathForEntity } from "../globals";
+import { Scene } from "./scene";
 
 type EditorScenePayload = AwakePayload<EditorScene>;
 type EntitySceneAwakePayload = EditorScenePayload & {
@@ -227,6 +227,12 @@ export class EntityScene extends EditorScene
         bare.camera.SetPosition(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
         
         return ret;
+    }
+
+    override AddGameObject<T extends GameObject = GameObject>(entityLevel: Entity | string, parent?: int | string | GameObject): T
+    {
+        var gameObject = Scene.prototype.AddGameObject.call(this, entityLevel, parent) as T;
+        return gameObject;
     }
 
     async SaveEntityDataToSettingsData(): Promise<LevelData>

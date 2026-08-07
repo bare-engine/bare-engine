@@ -341,7 +341,7 @@ window.__GAME_DEBUG_API__ = {
     return info;
   },
 
-  onBaseClassChange(baseClass: string): string[]
+  onBaseClassChange(baseClass: string, childPath: number[] = []): string[]
   {
     // GET CURRENT ENTITY KEYS
     var scene = (plugin.GetCurrentScene() as EntityScene);
@@ -349,7 +349,12 @@ window.__GAME_DEBUG_API__ = {
     var isBase = scene.isBase;
     var raw = scene.settingsHandler.GetRaw();
     var entity = (isBase ? raw.baseEntities[name] : raw.entities[name]);
-    var entityKeys = Object.keys(entity);
+
+    // GET THE CHILD
+    for (var i = 0; i < childPath.length; i++)
+        entity = entity.children[childPath[i]];
+
+    var entityKeys = Object.keys(entity).filter(k => !k.startsWith("__"));
 
     // GET EXTRA KEYS
     var extraKeys = plugin.GetExtraKeys(entityKeys, baseClass);
@@ -358,7 +363,7 @@ window.__GAME_DEBUG_API__ = {
     // IF EXTRA KEYS > 0, PLUGIN WILL WILL ASK FOR CONFIRMATION YES/NO
   },
 
-  async onPressYesChangeBaseClass(extraKeys: string[])
+  async onPressYesChangeBaseClass(extraKeys: string[], childPath: number[] = [])
   {
     // REMOVE FROM ENTITY EXTRA KEYS
     var scene = (plugin.GetCurrentScene() as EntityScene);
@@ -366,6 +371,10 @@ window.__GAME_DEBUG_API__ = {
     var isBase = scene.isBase;
     var raw = scene.settingsHandler.GetRaw();
     var entity = (isBase ? raw.baseEntities[name] : raw.entities[name]);
+
+    // GET THE CHILD
+    for (var i = 0; i < childPath.length; i++)
+        entity = entity.children[childPath[i]];
 
     for (var key of extraKeys)
         delete entity[key];
@@ -696,7 +705,8 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
         "rotation",
         "hitbox",
     ];
-    var limitNumber = 5;
+    
+    var limitNumber = 7;
 
     var possibleVarsNested = window.__GAME_DEBUG_API__.getNestedEntityVars(entityName, childPath);
     var lockedVars = new Set<string>();

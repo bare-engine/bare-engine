@@ -228,7 +228,7 @@ export class BareEngine
         this.initialSceneClass = sceneClass;
         
         // REGISTER THE whitePixelTexture, HANDY FOR MANY THINGS
-        assetsHandler.AddTexture("whitePixel", window.whitePixelTexture);
+        assetsHandler.AddTexture("PIXEL", window.whitePixelTexture);
         // GETS USED FOR COLLISION RECT ATM
         // DOWNSIDE IS THAT IT'S NOT PART OF THE ATLAS GENERATED FROM INITIAL TEXTURES (texturePackImages)
         // SO YOU GET EXTRA DRAW CALL(S)

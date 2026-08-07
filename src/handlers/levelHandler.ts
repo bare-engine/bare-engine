@@ -4,6 +4,7 @@ import { GameMode, MakePathForEntity, RegisterController } from "../globals";
 import { Color, Texture, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { Scene } from "../scenes/scene";
+import { Bare } from "../types/bare";
 import { defaultSettingsData } from "../types/bareData";
 import { BareEvent, BareEventPayload, ConstructEntityOptions, Entity, entityVars, LevelData, Rectangle2Vec, SaveData, Scalar, SettingsData } from '../types/bareTypes';
 import { getSaveFields, InspectorField } from "../utils/decorators";
@@ -291,10 +292,29 @@ export class LevelHandler
         var texturesFound = new Set<string>();
 
         var collectTextures = (entity: any) => {
-            if (entity.texture != "NONE")
+            if (Bare.assets.images.length > 0 && entity.texture != "NONE" && entity.texture != "placeHolder")
             {
                 var fullPath = MakePathForEntity(entity);
 
+                var hasEntityImage = Bare.assets.images.includes(fullPath) || assetsHandler.HasTexture(fullPath);
+                    
+                if (!hasEntityImage)
+                {
+                    if (__STRIP_GENERATED_ASSETS__)
+                    {
+                        console.warn(`Could not find image for entity: ${entity.name}\n
+This is fine for dev, but for production you need to provide an exsiting image name for this entity. Or you get a failed image request.\n
+Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("-${entity.name}")\n
+Or, add:
+"bareEngine": {
+"stripGeneratedAssets": false
+}
+to package.json to keep the generated assets (can become large for big projects).`);
+                    }
+
+                    return;
+                }
+                
                 if (!texturesFound.has(fullPath) && !assetsHandler.HasTexture(fullPath))
                 {
                     promisesAr.push(assetsHandler.LoadTexture(fullPath));
