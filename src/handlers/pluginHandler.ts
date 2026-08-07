@@ -935,19 +935,21 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
             {
                 var value = props[prop];
 
+                // @InspectorField DESCRIPTORS (EG TextObject.text/fontSize, DECLARED AS { get, set })
+                // NEED THEIR OWN SETTER INVOKED - A DIRECT ASSIGNMENT WOULD JUST OVERWRITE THE
+                // DESCRIPTOR OBJECT ITSELF, SO THE LIVE PREVIEW NEVER ACTUALLY APPLIED THE CHANGE.
+                // USES THE SAME applyInspectorField HELPER AS THE REGULAR OBJECT-EDIT PATH, WHICH
+                // ONLY MATCHES REAL { get, set } DESCRIPTOR LITERALS - NOT CLASS INSTANCES LIKE Vec2
+                // THAT HAPPEN TO ALSO EXPOSE A .set() METHOD (EG scale/position), SO IT WON'T
+                // MISFIRE ON THOSE THE WAY A NAIVE "HAS A .set METHOD" CHECK WOULD.
+                if (await applyInspectorField(obj, prop, value))
+                    continue;
+
                 // if special mapping exists — use it
                 const special = obj.specialMap[prop];
                 if (special)
                 {
                     special(obj, value);
-                    continue;
-                }
-
-                // FIELDS DECLARED AS { get, set } DESCRIPTORS (EG TextObject.text/fontSize) NEED THEIR OWN SETTER INVOKED 
-                const current = obj[prop];
-                if (current && typeof current === "object" && typeof current.set === "function")
-                {
-                    current.set(value);
                     continue;
                 }
 
