@@ -875,14 +875,14 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
         return plugin.ToggleEntityRemovedArray("componentsRemoved", compName, removed, childPath);
   },
 
-  getDefaultValueForEntityField(entityName: string, field: string)
+  getDefaultValueForEntityField(entityName: string, field: string, childPath: number[] = [])
   {
     if (field == "pivotBasedOnHitbox")
         return {x: 0, y: 0};
 
     var scene = plugin.GetCurrentScene();
     let entityScene = scene as EntityScene;
-    
+
     var rawSettingsData = entityScene.settingsHandler.GetRaw();
 
     var entity:Entity;
@@ -890,7 +890,11 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
         entity = rawSettingsData.baseEntities[entityScene.objectName]; // USE id?
     else
         entity = rawSettingsData.entities[entityScene.objectName];
-    
+
+    // GET THE CHILD
+    for (var i = 0; i < childPath.length; i++)
+        entity = entity.children[childPath[i]];
+
     // COMMENTED OUT, SINCE I WANT TO KEEP VALUE IN PLUGIN, EVEN IF IT'S DEFAULT
     var entityWithDefaultValues = scene.GetEntityWithDefaultValues(entity, scene.settingsData) as any;
     if (entityWithDefaultValues.position)
