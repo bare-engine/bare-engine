@@ -385,10 +385,15 @@ export class EntityScene extends EditorScene
                     continue;
 
                 // TransformTool operates on the outer/local transform, which maps directly to
-                // the canonical entity fields used by the inspector.
-                entity.position = { x: obj.x, y: obj.y };
-                entity.scale = { x: obj.scale.x, y: obj.scale.y };
-                entity.rotation = obj.rotation;
+                // the canonical entity fields used by the inspector. Only write a field when it
+                // differs from the engine's built-in default - a drag that only changes position
+                // shouldn't also bake scale/rotation onto an entity that was relying on inherited
+                // defaults for them (eg dragging without rotating used to add rotation: 0).
+                const fields = this.BuildTransformFields(obj);
+
+                if (fields.position) entity.position = fields.position; else delete entity.position;
+                if (fields.scale) entity.scale = fields.scale; else delete entity.scale;
+                if (fields.rotation !== undefined) entity.rotation = fields.rotation; else delete entity.rotation;
 
                 // Do not leave legacy aliases competing with the canonical vector fields.
                 delete entity.x;
@@ -418,6 +423,28 @@ export class EntityScene extends EditorScene
         return this.currentLevel;
     }
 
+    // ONLY THE FIELDS THAT DIFFER FROM THE ENGINE'S BUILT-IN DEFAULT (POSITION 0,0 / SCALE 1,1 /
+    // ROTATION 0). USED BY BOTH THE LIVE PREVIEW AND THE ACTUAL SAVE, SO A FIELD SITTING AT ITS
+    // DEFAULT NEVER GETS SENT AS IF IT WERE EXPLICITLY SET - THE PLUGIN MERGES WHATEVER FIELDS
+    // ARE PRESENT IN A MESSAGE INTO ITS LOCAL ENTITY CACHE AND TREATS THEIR PRESENCE AS "THIS
+    // FIELD IS EXPLICIT", AND THAT MERGE NEVER CLEARS A FIELD THAT WAS SENT ONCE, SO A PREVIEW
+    // TICK THAT INCLUDED rotation: 0 WOULD OTHERWISE STICK IN THE PANEL FOREVER.
+    private BuildTransformFields(obj: GameObject): { position?: { x: number, y: number }, scale?: { x: number, y: number }, rotation?: number }
+    {
+        const fields: { position?: { x: number, y: number }, scale?: { x: number, y: number }, rotation?: number } = {};
+
+        if (obj.x != 0 || obj.y != 0)
+            fields.position = { x: obj.x, y: obj.y };
+
+        if (obj.scale.x != 1 || obj.scale.y != 1)
+            fields.scale = { x: obj.scale.x, y: obj.scale.y };
+
+        if (obj.rotation != 0)
+            fields.rotation = obj.rotation;
+
+        return fields;
+    }
+
     NotifyTransformToolPreview(): void
     {
         const rootObject = this.object.GetByName(this.objectName);
@@ -427,9 +454,7 @@ export class EntityScene extends EditorScene
         const transforms = (this.editorControlsHandler?.selectedObjects ?? [])
             .map(obj => ({
                 childPath: this.GetChildPath(rootObject, obj),
-                position: { x: obj.x, y: obj.y },
-                scale: { x: obj.scale.x, y: obj.scale.y },
-                rotation: obj.rotation,
+                ...this.BuildTransformFields(obj),
             }))
             .filter(transform => transform.childPath !== null);
 
