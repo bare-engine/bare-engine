@@ -252,7 +252,7 @@ export class EditorControlsHandler {
 
     CopySelectedObjects()
     {
-        this.copiedObjects = this.selectedObjects.map(obj => bare.level.SerializeObject(obj));
+        this.copiedObjects = this.selectedObjects.map(obj => bare.level.SerializeObjectSnapshot(obj));
     }
 
     RemoveSelectedObjects()

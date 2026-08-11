@@ -519,6 +519,10 @@ to package.json to keep the generated assets (can become large for big projects)
         for (var varName of varsToSave)
         {
             const key = (varName as keyof GameObject);
+
+            if (key.startsWith("_"))
+                continue;
+
             var serializedValue;
 
             var objValue = obj[key];
@@ -533,6 +537,32 @@ to package.json to keep the generated assets (can become large for big projects)
         }
 
         return entity;
+    }
+
+    // CREATE A SELF-CONTAINED ENTITY FOR CLONING/COPY-PASTE.
+    // UNLIKE SerializeObject(), THIS DOES NOT USE obj.name AS A SETTINGS ENTITY KEY.
+    SerializeObjectSnapshot(obj: GameObject): Entity
+    {
+        const snapshot = this.SerializeObjectFully(obj, false, true);
+
+        const makeSelfContained = (gameObject: GameObject, entity: Entity): void => {
+            entity.name = gameObject.name;
+            entity.baseClass = this.scene.GetContructorName(gameObject);
+
+            // The snapshot already contains the applied values. Prevent ConstructEntity()
+            // from merging a same-named settings entity back into it when it is restored.
+            entity.constructed = true;
+
+            if (!entity.children)
+                return;
+
+            const savedChildren = gameObject.children.filter(child => !child.persistent && child.save);
+            for (var i = 0; i < Math.min(savedChildren.length, entity.children.length); i++)
+                makeSelfContained(savedChildren[i], entity.children[i]);
+        };
+
+        makeSelfContained(obj, snapshot);
+        return snapshot;
     }
 
     // SERIALIZE OBJECT DIFF
