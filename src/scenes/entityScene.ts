@@ -1,9 +1,10 @@
+import { keyboardController } from "../controllers/keyboardController";
 import { assetsHandler } from "../handlers/assetsHandler";
 import { SettingsHandler } from "../handlers/settingsHandler";
 import { Color, RenderTexture, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { TextObject } from "../objects/textObject";
-import { AwakePayload, Entity, LevelData, SettingsData } from "../types/bareTypes";
+import { AwakePayload, Entity, LevelData, Rectangle, SettingsData } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
 import { EditorScene } from "./editorScene";
 import { Scene } from "./scene";
@@ -180,6 +181,11 @@ export class EntityScene extends EditorScene
         //obj.x += obj.pivot.x;
         //obj.y += obj.pivot.y;
 
+        // THE ROOT ENTITY OBJECT REPRESENTS THE ENTITY BEING EDITED ITSELF - IT HAS NO MEANINGFUL
+        // POSITION/SCALE/ROTATION OF ITS OWN TO SAVE, SO IT SHOULDN'T BE DRAGGABLE VIA THE
+        // TRANSFORM TOOL (SAME MECHANISM THE SOPIRO JOINT HELPER OBJECTS USE TO OPT OUT).
+        obj.resizeable = false;
+
         // COLLISION RECT
         /*if (obj instanceof ArcadeObject)
         {
@@ -303,7 +309,10 @@ export class EntityScene extends EditorScene
 
         const transforms = selectedObjects
             .map(obj => ({ obj, childPath: this.GetChildPath(rootObject, obj) }))
-            .filter(entry => entry.childPath !== null) as Array<{ obj: GameObject, childPath: number[] }>;
+            // childPath.length == 0 MEANS obj IS THE ROOT ITSELF - IT HAS NO POSITION/SCALE/
+            // ROTATION OF ITS OWN TO PERSIST (SEE THE resizeable = false SET IN Open(), WHICH
+            // SHOULD ALREADY KEEP IT OUT OF selectedObjects AS A DRAG TARGET; THIS IS A BACKSTOP).
+            .filter(entry => entry.childPath !== null && entry.childPath.length > 0) as Array<{ obj: GameObject, childPath: number[] }>;
 
         if (transforms.length == 0 && removedChildPaths.length == 0)
             return this.currentLevel;
@@ -440,7 +449,16 @@ export class EntityScene extends EditorScene
     override NotifySelectionToPlugin(objs: GameObject[]): void
     {
         if (objs.length == 0)
+        {
+            // NOTHING LEFT SELECTED (EG SHIFT-CLICK TOGGLED THE LAST REMAINING CHILD OFF) - TELL
+            // THE PANEL TO DROP ITS FOCUSED NODE THE SAME WAY AN EMPTY-SPACE CLICK DOES.
+            window.__GAME_DEBUG_API__?.selectEntityObjectInPlugin({
+                name: this.objectName,
+                isBase: this.isBase,
+                clearSelection: true,
+            });
             return;
+        }
 
         const rootObject = this.object.GetByName(this.objectName);
         if (!rootObject)
@@ -456,11 +474,20 @@ export class EntityScene extends EditorScene
         });
     }
 
+    // THE PANEL CAN ONLY FOCUS ONE NODE AT A TIME (SEE THE game-view-only SCOPE DECISION), SO A
+    // MULTI-SELECT CLICK STILL FOCUSES WHICHEVER CHILD WAS JUST CLICKED/TOGGLED ON, AND FALLS
+    // BACK TO THE GENERIC NotifySelectionToPlugin (LAST-SELECTED, OR clearSelection) WHEN A
+    // SHIFT-CLICK TOGGLES A CHILD OFF INSTEAD.
     SelectTransformToolTargetAt(worldPosition: Vec2): GameObject | null
     {
         const selected = this.GetTransformToolTargetAt(worldPosition);
+        const multiSelect = keyboardController.IsKeyDown("shift");
+
         if (!selected)
         {
+            if (multiSelect)
+                return null; // SHIFT+CLICK ON EMPTY SPACE LEAVES THE CURRENT SELECTION ALONE
+
             this.editorControlsHandler.ClearSelection();
             window.__GAME_DEBUG_API__?.selectEntityObjectInPlugin({
                 name: this.objectName,
@@ -471,7 +498,19 @@ export class EntityScene extends EditorScene
         }
 
         const rootObject = this.object.GetByName(this.objectName)!;
-        this.editorControlsHandler.SelectGameObjects([selected], true, true, false);
+
+        if (multiSelect)
+            this.editorControlsHandler.ToggleGameObjectSelection(selected, false);
+        else
+            this.editorControlsHandler.SelectGameObjects([selected], true, true, false);
+
+        if (!this.editorControlsHandler.selectedObjects.includes(selected))
+        {
+            // JUST TOGGLED selected OFF.
+            this.NotifySelectionToPlugin(this.editorControlsHandler.selectedObjects);
+            return selected;
+        }
+
         const childPath = this.GetChildPath(rootObject, selected) ?? [];
         window.__GAME_DEBUG_API__?.selectEntityObjectInPlugin({
             name: this.objectName,
@@ -486,6 +525,37 @@ export class EntityScene extends EditorScene
     {
         const rootObject = this.object.GetByName(this.objectName);
         return rootObject ? this.FindDeepestObjectAt(rootObject, worldPosition) : null;
+    }
+
+    override AllowsRectSelection(): boolean
+    {
+        return true;
+    }
+
+    // ENTITY CHILDREN HAVE NO TAP HITBOX (SEE EntityScene.AddGameObject), SO CANDIDATES ARE
+    // GATHERED BY WALKING THE ROOT ENTITY'S SUBTREE DIRECTLY, USING THE SAME BOUNDS-BASED
+    // VISIBILITY RULES AS FindDeepestObjectAt.
+    override GetRectSelectionCandidates(_includeAllLayers: boolean): Array<{ obj: GameObject, rect: Rectangle }>
+    {
+        const rootObject = this.object.GetByName(this.objectName);
+        if (!rootObject)
+            return [];
+
+        const candidates: Array<{ obj: GameObject, rect: Rectangle }> = [];
+
+        const collect = (obj: GameObject) => {
+            for (const child of obj.children)
+            {
+                if (!child.visible || !child.visibleInEditor || child.alpha == 0)
+                    continue;
+
+                candidates.push({ obj: child, rect: child.GetBounds() });
+                collect(child);
+            }
+        };
+        collect(rootObject);
+
+        return candidates;
     }
 
     private FindDeepestObjectAt(obj: GameObject, worldPosition: Vec2): GameObject | null

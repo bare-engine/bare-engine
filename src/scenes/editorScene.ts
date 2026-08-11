@@ -8,7 +8,7 @@ import { SaveDataHandler } from "../handlers/SaveDataHandler";
 import { SettingsHandler } from "../handlers/settingsHandler";
 import { Color, Texture, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
-import { BareEvent, BareOptions, CameraScaleMode, Entity, HitboxType, LevelData, SaveData, SceneOptions, SettingsData, Size } from "../types/bareTypes";
+import { BareEvent, BareOptions, CameraScaleMode, Entity, HitboxType, LevelData, Rectangle, SaveData, SceneOptions, SettingsData, Size } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
 import { Helper } from "../utils/helper";
 import { EntityScene } from "./entityScene";
@@ -326,6 +326,49 @@ export class EditorScene extends Scene
     // INTACT. OVERRIDDEN BY SCENES (EG EntityScene) THAT NEED TO RECORD THE OBJECT'S LOCATION
     // (EG ITS CHILDPATH) BEFORE IT BECOMES UNREACHABLE, TO PERSIST THE REMOVAL ON SAVE.
     OnBeforeGameObjectRemoved(_gameObject: GameObject): void {}
+
+    // WHETHER EditorControlsHandler MAY START A MARQUEE/RECT SELECTION DRAG (AND WHETHER
+    // TransformToolHandler MAY DEFER AN EMPTY-SPACE CLICK TO LET ONE START - SEE ITS
+    // OnPointerDown). SEPARATE FROM settingsData.selectionEnabled, WHICH ALSO GATES THE OLDER
+    // PER-OBJECT TAP-HITBOX CLICK/DRAG PATH THAT ENTITY-STYLE SCENES DELIBERATELY DON'T USE.
+    AllowsRectSelection(): boolean
+    {
+        return this.settingsData.selectionEnabled !== false;
+    }
+
+    // CANDIDATE OBJECTS AND THEIR SELECTION BOUNDS FOR RECT/MARQUEE SELECTION. DEFAULT USES THE
+    // EDITOR TAP HITBOX OF OBJECTS ON THE SELECTED LAYER (OR ALL OBJECTS WITH includeAllLayers).
+    // OVERRIDDEN BY EntityScene, WHOSE OBJECTS HAVE NO TAP HITBOX (SEE EditorScene.AddGameObject
+    // VS EntityScene.AddGameObject).
+    GetRectSelectionCandidates(includeAllLayers: boolean): Array<{ obj: GameObject, rect: Rectangle }>
+    {
+        var objs: GameObject[];
+        if (includeAllLayers)
+        {
+            objs = bare.object.GetAll();
+        }
+        else
+        {
+            var selectedLayer = document.querySelector('.selected-layer');
+            var layerName = selectedLayer?.id;
+            objs = layerName ? bare.object.GetLayerByName(layerName) : [];
+        }
+
+        var candidates: Array<{ obj: GameObject, rect: Rectangle }> = [];
+        for (const obj of objs)
+        {
+            if (!obj.tapHitbox)
+                continue; // COULD BE THE PREVIEW OBJECT
+
+            const hitboxRect = bare.hitbox.GetRect(obj.tapHitbox);
+            candidates.push({
+                obj,
+                rect: { x: hitboxRect.x1, y: hitboxRect.y1, width: hitboxRect.width, height: hitboxRect.height }
+            });
+        }
+
+        return candidates;
+    }
 
     OnPreRender()
     {

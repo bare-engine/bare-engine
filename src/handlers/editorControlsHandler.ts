@@ -231,7 +231,7 @@ export class EditorControlsHandler {
             this.lastMultiPlaceGridKey = this.GetCurrentPreviewPlacementKey(layer);
         }
         
-        if (this.actionThisFrame == '' && this.scene.settingsData.selectionEnabled !== false)
+        if (this.actionThisFrame == '' && this.scene.AllowsRectSelection())
         {
             var w = bare.mouse.world.position.x - bare.mouse.world.positionOnDown.x;
             var h = bare.mouse.world.position.y - bare.mouse.world.positionOnDown.y;
@@ -453,37 +453,20 @@ export class EditorControlsHandler {
 
         if (rect.width != 0 && rect.height != 0)
         {
-            var selectedLayer = document.querySelector('.selected-layer')!;
-            var layerName = selectedLayer.id;
-            var objs = bare.object.GetLayerByName(layerName);
+            const includeAllLayers = keyboardController.IsKeyDown("control");
+            const candidates = this.scene.GetRectSelectionCandidates(includeAllLayers);
 
-            if (keyboardController.IsKeyDown("control"))
-                objs = bare.object.GetAll();
-
-            for (var i = objs.length - 1; i >= 0; i--)
+            for (const candidate of candidates)
             {
-                var obj = objs[i];
-
-                if (!obj.tapHitbox)
-                    continue; // COULD BE THE PREVIEW OBJECT
-
-                const hitboxRect = bare.hitbox.GetRect(obj.tapHitbox);
-                const otherRect = {
-                    x: hitboxRect.x1,
-                    y: hitboxRect.y1,
-                    width: hitboxRect.width,
-                    height: hitboxRect.height
-                };
-
-                if (this.RectsIntersect(otherRect, rect))
-                {
-                    objsToSelect.push(obj);
-                }
+                if (this.RectsIntersect(candidate.rect, rect))
+                    objsToSelect.push(candidate.obj);
             }
         }
 
         var multiSelect = keyboardController.IsKeyDown("shift");
-        this.SelectGameObjects(objsToSelect, !multiSelect);
+        // FORCE SELECT: EntityScene DISABLES ORDINARY selectionEnabled-GATED SELECTION (SEE
+        // SelectGameObjects), BUT A MARQUEE RESULT SHOULD STILL APPLY THERE.
+        this.SelectGameObjects(objsToSelect, !multiSelect, true);
     }
 
     private RectsIntersect(a: Rectangle, b: Rectangle): boolean
@@ -544,6 +527,26 @@ export class EditorControlsHandler {
         {
             this.scene.NotifySelectionToPlugin(this.selectedObjects);
         }
+    }
+
+    // ADDS obj TO THE CURRENT SELECTION, OR REMOVES IT IF ALREADY SELECTED - FOR SHIFT+CLICK
+    // TOGGLE SELECTION (MIRRORS SelectGameObjects' FORCE-SELECT BEHAVIOR FOR SCENES LIKE
+    // EntityScene THAT DISABLE ORDINARY selectionEnabled-GATED SELECTION).
+    ToggleGameObjectSelection(obj: GameObject, notifyPlugin: boolean = true)
+    {
+        if (!this.selectedObjects.includes(obj))
+        {
+            this.SelectGameObjects([obj], false, true, notifyPlugin);
+            return;
+        }
+
+        obj.RemoveShader(OutlineShader);
+        this.selectedObjects = this.selectedObjects.filter(o => o !== obj);
+
+        TransformToolHandler.Get().SetTargets(this.selectedObjects);
+
+        if (notifyPlugin)
+            this.scene.NotifySelectionToPlugin(this.selectedObjects);
     }
 
     private OnScroll(ev: WheelEvent)

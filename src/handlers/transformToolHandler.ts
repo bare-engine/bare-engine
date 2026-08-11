@@ -188,6 +188,16 @@ export class TransformToolHandler
                 // selection while dragging, but let a stationary click select that child on up.
                 this.pendingTargetPick = { mouseX, mouseY, moved: false };
             }
+            else if (pointedTarget == null && pickerScene && this.AllowsRectSelection(pickerScene))
+            {
+                // Empty space in a scene that supports marquee selection: defer the click-to-
+                // deselect until pointer-up so a drag can become a marquee instead of clearing
+                // the selection immediately. Return now, skipping the body-move fallthrough below -
+                // there's no object here to drag, and the current selection's frame could otherwise
+                // swallow the drag as a move if this point happens to fall inside its bounds.
+                this.pendingTargetPick = { mouseX, mouseY, moved: false };
+                return;
+            }
             else
             {
                 this.PickTransformTarget(mouseX, mouseY);
@@ -290,6 +300,19 @@ export class TransformToolHandler
             this.SetHitboxesActive(false); // keep body-drag suppressed for the whole gesture
             this.SuppressEditorControls(true); // suppress editor placement/selection during the gesture
             this.SetCursor(this.moving ? 'move' : this.rotating ? 'grabbing' : this.CursorFor(this.handle!.name));
+            return;
+        }
+
+        // A deferred pick (eg a possible marquee-select drag from empty space) is still being
+        // decided - don't let the old selection's frame show a move cursor or suppress editor
+        // controls while the mouse passes over it mid-drag; OnPointerUp settles it. Left-button-
+        // only IsDown is correct here (unlike the gesture branch above) since pendingTargetPick
+        // is only ever set from OnPointerDown, which only fires for the left button/touch.
+        if (this.pendingTargetPick && scene.mouse.IsDown())
+        {
+            this.SetHitboxesActive(true);
+            this.SuppressEditorControls(false);
+            this.SetCursor(null);
             return;
         }
 
@@ -550,6 +573,13 @@ export class TransformToolHandler
 
     private EndTransform(scene: Scene): void
     {
+        // A click that selects a new target trivially satisfies FrameContains at mouse-down (the
+        // point that picked it is inside its own frame), so it starts a move gesture even with
+        // zero actual movement. Check before clearing starts/targets below, so a stationary click
+        // doesn't persist a no-op transform - that would bake explicit position/scale/rotation
+        // fields onto an object that was relying on inherited defaults.
+        const changed = this.HasTransformChanged();
+
         this.ReleaseMoveGrab();
         this.resizing = false;
         this.rotating = false;
@@ -562,10 +592,26 @@ export class TransformToolHandler
         this.RestoreHitboxes();
         this.SuppressEditorControls(false);
 
+        if (!changed)
+            return;
+
         // Persist in the level editor (EditorScene exposes saveLevelCallback). In-game it's live-only.
         const save = (scene as any).saveLevelCallback;
         if (typeof save == 'function')
             save();
+    }
+
+    private HasTransformChanged(): boolean
+    {
+        return this.starts.some(st => {
+            const o = st.obj;
+            if (!o) return false;
+
+            const pos = o.parent ? o.parent.ToGlobal(new Vec2(o.x, o.y)) : new Vec2(o.x, o.y);
+            return pos.x != st.pos.x || pos.y != st.pos.y ||
+                o.scale.x != st.scaleX || o.scale.y != st.scaleY ||
+                o.rotation != st.rotation;
+        });
     }
 
     private ReleaseMoveGrab(): void
@@ -662,6 +708,12 @@ export class TransformToolHandler
             return null;
 
         return getTarget.call(scene, scene.ScreenToWorld(mouseX, mouseY));
+    }
+
+    private AllowsRectSelection(scene: Scene): boolean
+    {
+        const allows = (scene as any).AllowsRectSelection;
+        return typeof allows == 'function' && allows.call(scene);
     }
 
     private IsDescendantOrSelf(obj: GameObject, possibleAncestor: GameObject): boolean
