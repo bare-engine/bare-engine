@@ -589,7 +589,7 @@ export class EditorControlsHandler {
             this.SelectGameObjects([obj], !multiSelect);
         }
 
-        if (transformTool.StartMoveFromPointer(this.scene, this.scene.mouse.world.position))
+        if (transformTool.StartMoveFromPointer(this.scene, this.scene.mouse.world.position, obj))
         {
             this.draggingObject = obj;
             this.actionThisFrame = 'objDrag';
@@ -782,6 +782,17 @@ export class EditorControlsHandler {
     {
         const position = this.GetGridAlignedPosition(obj, x, y, ignoreGrid);
         obj.SetPosition(position.x, position.y);
+    }
+
+    // PUBLIC ENTRY POINT FOR TransformToolHandler'S BODY-MOVE GESTURE: IT LIVES OUTSIDE THIS
+    // HANDLER AND HAS NO ACCESS TO THE GRID/PIVOT SNAP SETTINGS OTHERWISE. MIRRORS THE GUIDE-POINT
+    // LOGIC THAT USED TO RUN INLINE IN THE OLD PER-FRAME DRAG UPDATE.
+    GetGridAlignedDragPosition(obj: GameObject, desiredX: number, desiredY: number, mouseX: number, mouseY: number, ignoreGrid: boolean): Vec2
+    {
+        const guideX = this.scene.settingsData.editorObjectSnapToPivot === false ? mouseX : desiredX;
+        const guideY = this.scene.settingsData.editorObjectSnapToPivot === false ? mouseY : desiredY;
+
+        return this.GetGridAlignedPosition(obj, desiredX, desiredY, ignoreGrid, guideX, guideY);
     }
 
     private PlaceCurrentPreviewObject(layer: int): GameObject

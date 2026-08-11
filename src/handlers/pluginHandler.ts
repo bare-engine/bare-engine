@@ -1798,7 +1798,7 @@ export class PluginHandler
               this.SelectObjectInPlugin(obj.uniqueID, openObjectsTab, parentIds);
 
               var mouseWorldAtClick = obj.scene.ScreenToWorldPos(bare.GetCanvasScreenPosition(ev.clientX, ev.clientY));
-              TransformToolHandler.Get().StartMoveFromPointer(obj.scene, mouseWorldAtClick);
+              TransformToolHandler.Get().StartMoveFromPointer(obj.scene, mouseWorldAtClick, obj);
           }
       }
 

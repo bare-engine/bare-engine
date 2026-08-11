@@ -24,6 +24,13 @@ export class EditorScene extends Scene
 {
     readonly transformToolHandlesBodyMove: boolean = true;
     public opened: boolean = false; // DOUBLES TRUTH WITH this.levelEditorOpen
+
+    // DUCK-TYPED HOOK TransformToolHandler CALLS DURING A BODY-MOVE GESTURE TO GRID/PIVOT-SNAP THE
+    // PRIMARY DRAGGED OBJECT. EntityScene INHERITS THIS SINCE IT EXTENDS EditorScene.
+    GetTransformToolMovePosition(obj: GameObject, desiredX: number, desiredY: number, mouseX: number, mouseY: number, ignoreGrid: boolean): Vec2
+    {
+        return this.editorControlsHandler.GetGridAlignedDragPosition(obj, desiredX, desiredY, mouseX, mouseY, ignoreGrid);
+    }
     
     // Component classes
     public editorControlsHandler: EditorControlsHandler;

@@ -104,6 +104,7 @@ export class TransformToolHandler
     private startMouseAngle = 0;
     private startMousePosition = new Vec2();
     private starts: TargetStart[] = [];
+    private movePrimaryObj: GameObject | null = null;
     private moveGrabController: any | null = null;
     private completedPointerEvents = new WeakSet<PointerEvent>();
     private pendingTargetPick: PendingTargetPick | null = null;
@@ -143,6 +144,7 @@ export class TransformToolHandler
         this.SuppressEditorControls(false); // re-enable editor placement/selection (uses current targets' scene)
         this.targets = [];
         this.starts = [];
+        this.movePrimaryObj = null;
         this.resizing = false;
         this.rotating = false;
         this.moving = false;
@@ -483,14 +485,15 @@ export class TransformToolHandler
 
     // ================= MOVE =================
 
-    private BeginMove(scene: Scene, mouse: Vec2): void
+    private BeginMove(scene: Scene, mouse: Vec2, primaryObj: GameObject | null): void
     {
         this.moving = true;
         this.resizing = false;
         this.rotating = false;
         this.handle = null;
-        this.startMousePosition = this.GetResizeMouse(scene, mouse);
+        this.startMousePosition = mouse;
         this.RecordStarts();
+        this.movePrimaryObj = primaryObj;
 
         const target = this.starts.length == 1 ? this.starts[0].obj : null;
         const sopiroController = target && scene.Has("sopiro") ? scene.Get("sopiro") : null;
@@ -499,12 +502,17 @@ export class TransformToolHandler
             : null;
     }
 
-    StartMoveFromPointer(scene: Scene, mouse: Vec2): boolean
+    // primaryObj IS THE SPECIFIC OBJECT UNDER THE CURSOR WHEN THE GESTURE STARTED (EG THE
+    // HITBOX THAT WAS CLICKED) - IT DRIVES GRID/PIVOT SNAPPING EVEN IF IT ISN'T FIRST IN A
+    // MULTI-SELECTION (EG A SHIFT-CLICK APPEND). OMIT IT WHEN THE GESTURE GRABBED THE WHOLE
+    // TRANSFORM FRAME RATHER THAN ONE OBJECT (EG A BODY-DRAG THAT STARTS FROM THE GIZMO ITSELF);
+    // THE FIRST TARGET IS THEN USED AS THE SNAP REFERENCE.
+    StartMoveFromPointer(scene: Scene, mouse: Vec2, primaryObj: GameObject | null = null): boolean
     {
         if (this.resizing || this.rotating || this.moving) return false;
         if (this.targets.length == 0 || this.GetScene() !== scene) return false;
 
-        this.BeginMove(scene, mouse);
+        this.BeginMove(scene, mouse, primaryObj);
         this.SetHitboxesActive(false);
         this.SuppressEditorControls(true);
         this.SetCursor('move');
@@ -523,22 +531,42 @@ export class TransformToolHandler
 
     private ApplyMove(scene: Scene, pointerPosition: Vec2 = scene.mouse.world.position): void
     {
-        const mouse = this.GetResizeMouse(scene, pointerPosition);
-
         if (this.moveGrabController)
         {
-            this.moveGrabController.moveGrab(mouse);
+            this.moveGrabController.moveGrab(pointerPosition);
             return;
         }
 
-        const dx = mouse.x - this.startMousePosition.x;
-        const dy = mouse.y - this.startMousePosition.y;
+        const dx = pointerPosition.x - this.startMousePosition.x;
+        const dy = pointerPosition.y - this.startMousePosition.y;
+        const delta = this.GetSnappedMoveDelta(scene, dx, dy, pointerPosition);
 
         for (const st of this.starts)
         {
-            this.SetWorldPosition(st.obj, st.pos.x + dx, st.pos.y + dy);
+            this.SetWorldPosition(st.obj, st.pos.x + delta.x, st.pos.y + delta.y);
             (st.obj as any).ResetVelocity?.();
         }
+    }
+
+    // GRID/PIVOT SNAPPING IS OWNED BY THE SCENE (SEE EditorScene.GetTransformToolMovePosition):
+    // IT NEEDS THE DRAGGED OBJECT'S TEXTURE/HITBOX RECT AND THE EDITOR'S SNAP-TO-PIVOT SETTING,
+    // NEITHER OF WHICH THIS GENERIC HANDLER KNOWS ABOUT. SNAP ONLY THE PRIMARY TARGET (THE OBJECT
+    // THAT WAS ACTUALLY CLICKED, SEE movePrimaryObj) AND APPLY THE SAME RESULTING DELTA TO THE
+    // REST, SO A MULTI-SELECTION MOVES AS ONE RIGID GROUP. SCENES THAT DON'T EXPOSE THE HOOK
+    // (EG A PLAIN GAME SCENE DRAGGED VIA THE PLUGIN) GET THE RAW POINTER DELTA, UNSNAPPED.
+    private GetSnappedMoveDelta(scene: Scene, dx: number, dy: number, pointerPosition: Vec2): Vec2
+    {
+        const primary = (this.movePrimaryObj && this.starts.find(st => st.obj === this.movePrimaryObj)) || this.starts[0];
+        const getSnapped = primary && (scene as any).GetTransformToolMovePosition;
+        if (typeof getSnapped != 'function')
+            return new Vec2(dx, dy);
+
+        const desiredX = primary.pos.x + dx;
+        const desiredY = primary.pos.y + dy;
+        const ignoreGrid = keyboardController.IsKeyDown('alt');
+        const snapped: Vec2 = getSnapped.call(scene, primary.obj, desiredX, desiredY, pointerPosition.x, pointerPosition.y, ignoreGrid);
+
+        return new Vec2(snapped.x - primary.pos.x, snapped.y - primary.pos.y);
     }
 
     private ApplyRotate(scene: Scene, pointerPosition: Vec2 = scene.mouse.world.position): void
@@ -596,6 +624,7 @@ export class TransformToolHandler
         this.moving = false;
         this.handle = null;
         this.starts = [];
+        this.movePrimaryObj = null;
 
         // The scene-local pointer-up handlers run after this global handler. Restore their input
         // now so EditorControls can clear objDrag/selectionRect state on this same release.
