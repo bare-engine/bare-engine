@@ -136,6 +136,7 @@ export class EditorControlsHandler {
         if (allKeys[0] == 'delete')
         {
             this.RemoveSelectedObjects();
+            this.scene.saveLevelCallback();
         }
         if (key == 's' && allKeys.length == 1)
         {
@@ -188,7 +189,7 @@ export class EditorControlsHandler {
                 }
                 else
                 {
-                    this.scene.RemoveGameObject(hover.parent);
+                    this.RemoveGameObjectTracked(hover.parent);
                 }
 
                 bare.hitbox.ResetCurrentHover();
@@ -270,8 +271,17 @@ export class EditorControlsHandler {
         for (var i = 0; i < objsToRemove.length; i++)
         {
             const obj = objsToRemove[i];
-            this.scene.RemoveGameObject(obj);
+            this.RemoveGameObjectTracked(obj);
         }
+    }
+
+    // GOES THROUGH THE SCENE'S OnBeforeGameObjectRemoved HOOK SO SCENES THAT PERSIST A SPARSE/
+    // STRUCTURAL REPRESENTATION (EG EntityScene) CAN RECORD WHERE THE OBJECT LIVED BEFORE IT'S
+    // DETACHED - USE THIS INSTEAD OF this.scene.RemoveGameObject FOR ANY EDITOR-DRIVEN REMOVAL.
+    private RemoveGameObjectTracked(obj: GameObject)
+    {
+        this.scene.OnBeforeGameObjectRemoved(obj);
+        this.scene.RemoveGameObject(obj);
     }
 
     private SnapPastedObjectsToGrid(objs: GameObject[])
@@ -881,7 +891,7 @@ export class EditorControlsHandler {
         if (bare.mouse.IsRightDown() && distMouseMoved > 5) {
             var hover = bare.hitbox.GetCurrentHover();
             if (hover) {
-                this.scene.RemoveGameObject(hover.parent);
+                this.RemoveGameObjectTracked(hover.parent);
                 bare.hitbox.ResetCurrentHover();
                 return;
             }

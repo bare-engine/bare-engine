@@ -322,6 +322,11 @@ export class EditorScene extends Scene
             globalThis.plugin?.SelectObjectsInPlugin(selectedIds);
     }
 
+    // CALLED RIGHT BEFORE A LIVE GAMEOBJECT LEAVES THE TREE, WHILE ITS PARENT LINK IS STILL
+    // INTACT. OVERRIDDEN BY SCENES (EG EntityScene) THAT NEED TO RECORD THE OBJECT'S LOCATION
+    // (EG ITS CHILDPATH) BEFORE IT BECOMES UNREACHABLE, TO PERSIST THE REMOVAL ON SAVE.
+    OnBeforeGameObjectRemoved(_gameObject: GameObject): void {}
+
     OnPreRender()
     {
         if (!this.opened)

@@ -21,6 +21,7 @@ export class EntityScene extends EditorScene
     isBase: boolean = false;
     readonly transformToolHandlesBodyMove: boolean = true;
     private pendingPastedEntities = new Map<string, Entity>();
+    private pendingRemovedChildPaths: number[][] = [];
     
     lastPayload: EntitySceneAwakePayload;
     degugAtStart: boolean;
@@ -97,6 +98,7 @@ export class EntityScene extends EditorScene
     override OnClear(): void
     {
         this.pendingPastedEntities.clear();
+        this.pendingRemovedChildPaths = [];
 
         if (this.opened)
         {
@@ -294,14 +296,16 @@ export class EntityScene extends EditorScene
     {
         const selectedObjects = this.editorControlsHandler?.selectedObjects ?? [];
         const rootObject = this.object.GetByName(this.objectName);
-        if (!rootObject || selectedObjects.length == 0)
+        const removedChildPaths = this.PruneDescendantPaths(this.pendingRemovedChildPaths);
+
+        if (!rootObject || (selectedObjects.length == 0 && removedChildPaths.length == 0))
             return this.currentLevel;
 
         const transforms = selectedObjects
             .map(obj => ({ obj, childPath: this.GetChildPath(rootObject, obj) }))
             .filter(entry => entry.childPath !== null) as Array<{ obj: GameObject, childPath: number[] }>;
 
-        if (transforms.length == 0)
+        if (transforms.length == 0 && removedChildPaths.length == 0)
             return this.currentLevel;
 
         var structureChanged = false;
@@ -314,6 +318,23 @@ export class EntityScene extends EditorScene
 
             if (!rootEntity)
                 return;
+
+            // REMOVE DELETED CHILDREN BEFORE APPLYING TRANSFORMS/ADDITIONS BELOW - transforms'
+            // CHILDPATHS WERE COMPUTED FROM THE LIVE TREE, WHICH ALREADY REFLECTS THE REMOVAL.
+            const sortedRemovals = removedChildPaths.slice().sort(EntityScene.CompareChildPathsDescending);
+            for (const childPath of sortedRemovals)
+            {
+                var parentEntity: Entity | undefined = rootEntity;
+                for (var depth = 0; depth < childPath.length - 1; depth++)
+                    parentEntity = parentEntity?.children?.[childPath[depth]];
+
+                const lastIndex = childPath[childPath.length - 1];
+                if (parentEntity?.children && lastIndex >= 0 && lastIndex < parentEntity.children.length)
+                {
+                    parentEntity.children.splice(lastIndex, 1);
+                    structureChanged = true;
+                }
+            }
 
             for (const { obj, childPath } of transforms)
             {
@@ -367,6 +388,8 @@ export class EntityScene extends EditorScene
                 delete (entity as any).scaleY;
             }
         });
+
+        this.pendingRemovedChildPaths = [];
 
         await this.SaveEntityData(newRawSettingsData);
         this.HideEditorUIForScene();
@@ -500,6 +523,48 @@ export class EntityScene extends EditorScene
         }
 
         return path;
+    }
+
+    // CHILDPATH CAN ONLY BE COMPUTED WHILE THE OBJECT IS STILL PARENTED, SO WE RECORD IT HERE
+    // (CALLED BY EditorControlsHandler RIGHT BEFORE Scene.RemoveGameObject DETACHES IT) AND
+    // SPLICE THE MATCHING ENTRY OUT OF RAW SETTINGS LATER, ON SaveEntityDataToSettingsData.
+    override OnBeforeGameObjectRemoved(gameObject: GameObject): void
+    {
+        // NEVER PERSISTED TO RAW SETTINGS - NOTHING TO SPLICE OUT, JUST DROP THE PENDING PASTE.
+        if (this.pendingPastedEntities.delete(gameObject.uniqueID))
+            return;
+
+        const rootObject = this.object.GetByName(this.objectName);
+        if (!rootObject || gameObject === rootObject)
+            return;
+
+        const childPath = this.GetChildPath(rootObject, gameObject);
+        if (childPath !== null)
+            this.pendingRemovedChildPaths.push(childPath);
+    }
+
+    // KEEPS ONLY THE OUTERMOST PATHS - IF A PARENT AND ITS CHILD ARE BOTH PENDING REMOVAL, THE
+    // PARENT'S SPLICE ALREADY TAKES THE CHILD WITH IT.
+    private PruneDescendantPaths(paths: number[][]): number[][]
+    {
+        const isPrefixOf = (prefix: number[], path: number[]) =>
+            prefix.length < path.length && prefix.every((value, i) => value == path[i]);
+
+        return paths.filter(path => !paths.some(other => other !== path && isPrefixOf(other, path)));
+    }
+
+    // DESCENDING ORDER SO A SIBLING AT A HIGHER INDEX IS SPLICED BEFORE ONE AT A LOWER INDEX -
+    // OTHERWISE REMOVING THE LOWER-INDEX SIBLING FIRST WOULD SHIFT THE HIGHER ONE'S INDEX DOWN.
+    private static CompareChildPathsDescending(a: number[], b: number[]): number
+    {
+        const len = Math.min(a.length, b.length);
+        for (var i = 0; i < len; i++)
+        {
+            if (a[i] != b[i])
+                return b[i] - a[i];
+        }
+
+        return b.length - a.length;
     }
 
     private HideEditorUIForScene(): void
