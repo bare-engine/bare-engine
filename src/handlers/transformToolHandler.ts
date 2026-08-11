@@ -473,21 +473,14 @@ export class TransformToolHandler
             deltaDeg = snapped - baseDeg;
         }
 
-        const delta = deltaDeg * Math.PI / 180;
-        const cos = Math.cos(delta);
-        const sin = Math.sin(delta);
-
         for (const st of this.starts)
         {
             const o = st.obj;
             if (!o) continue;
 
+            // Position is the object's pivot in parent space. Leaving it untouched makes the
+            // outer transform rotate around that pivot instead of orbiting the frame centre.
             o.rotation = st.rotation + deltaDeg;
-
-            // Rotate the object's world origin about the frame centre by the same delta.
-            const dx = st.pos.x - f.cx;
-            const dy = st.pos.y - f.cy;
-            this.SetWorldPosition(o, f.cx + dx * cos - dy * sin, f.cy + dx * sin + dy * cos);
         }
     }
 
