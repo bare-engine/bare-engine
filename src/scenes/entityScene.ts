@@ -326,7 +326,15 @@ export class EntityScene extends EditorScene
     {
         const selected = this.GetTransformToolTargetAt(worldPosition);
         if (!selected)
+        {
+            this.editorControlsHandler.ClearSelection();
+            window.__GAME_DEBUG_API__?.selectEntityObjectInPlugin({
+                name: this.objectName,
+                isBase: this.isBase,
+                clearSelection: true,
+            });
             return null;
+        }
 
         const rootObject = this.object.GetByName(this.objectName)!;
 

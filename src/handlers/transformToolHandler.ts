@@ -161,6 +161,17 @@ export class TransformToolHandler
         this.pendingTargetPick = null;
 
         const hitsCurrentHandle = this.PointerHitsCurrentHandle(mouseX, mouseY);
+        const hitsCurrentBody = this.PointerHitsCurrentBody(mouseX, mouseY);
+
+        if (!hitsCurrentHandle && !hitsCurrentBody)
+        {
+            // Hover state is updated on the game tick and can still reflect the previous mouse
+            // position. Release it from the actual pointer coordinates so EditorControls receives
+            // this same outside click instead of requiring a second one.
+            this.SetHitboxesActive(true);
+            this.SuppressEditorControls(false);
+            this.SetCursor(null);
+        }
 
         if (!hitsCurrentHandle)
         {
@@ -546,6 +557,11 @@ export class TransformToolHandler
         this.handle = null;
         this.starts = [];
 
+        // The scene-local pointer-up handlers run after this global handler. Restore their input
+        // now so EditorControls can clear objDrag/selectionRect state on this same release.
+        this.RestoreHitboxes();
+        this.SuppressEditorControls(false);
+
         // Persist in the level editor (EditorScene exposes saveLevelCallback). In-game it's live-only.
         const save = (scene as any).saveLevelCallback;
         if (typeof save == 'function')
@@ -674,6 +690,19 @@ export class TransformToolHandler
 
         const mouse = scene.ScreenToWorld(mouseX, mouseY);
         return this.HitTestRotation(scene, frame, mouse) || this.HitTest(scene, frame, mouse) !== null;
+    }
+
+    private PointerHitsCurrentBody(mouseX: number, mouseY: number): boolean
+    {
+        const scene = this.GetScene();
+        if (!scene)
+            return false;
+
+        const frame = this.GetFrame(this.GetTransformableTargets(this.targets));
+        if (!frame)
+            return false;
+
+        return this.FrameContains(frame, scene.ScreenToWorld(mouseX, mouseY));
     }
 
     private SceneHandlesBodyMove(scene: Scene): boolean
