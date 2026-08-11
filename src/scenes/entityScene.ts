@@ -20,6 +20,7 @@ export class EntityScene extends EditorScene
     objectName: string = "";
     isBase: boolean = false;
     readonly transformToolHandlesBodyMove: boolean = true;
+    private pendingPastedEntities = new Map<string, Entity>();
     
     lastPayload: EntitySceneAwakePayload;
     degugAtStart: boolean;
@@ -95,6 +96,8 @@ export class EntityScene extends EditorScene
 
     override OnClear(): void
     {
+        this.pendingPastedEntities.clear();
+
         if (this.opened)
         {
             window.debug = this.degugAtStart;
@@ -237,6 +240,56 @@ export class EntityScene extends EditorScene
         return gameObject;
     }
 
+    override AddGameObjectAtPosition(x: number, y: number, entityOrName: Entity | string, parent: int | GameObject = 0): GameObject
+    {
+        const rootObject = this.object.GetByName(this.objectName);
+        if (!rootObject)
+            return super.AddGameObjectAtPosition(x, y, entityOrName, parent);
+
+        // EntityScene edits one entity tree. New objects belong to that tree rather than becoming
+        // unrelated top-level level objects. Convert the editor's world-space paste position to
+        // the root entity's local space before parenting it.
+        const localPosition = rootObject.ToLocal(new Vec2(x, y));
+        const rawEntity = typeof entityOrName == "string"
+            ? { name: entityOrName }
+            : structuredClone(entityOrName);
+        rawEntity.position = { x: localPosition.x, y: localPosition.y };
+
+        const gameObject = super.AddGameObjectAtPosition(localPosition.x, localPosition.y, entityOrName, rootObject);
+        this.pendingPastedEntities.set(gameObject.uniqueID, rawEntity);
+        return gameObject;
+    }
+
+    override SerializeObjectForCopy(obj: GameObject): Entity
+    {
+        const pendingEntity = this.pendingPastedEntities.get(obj.uniqueID);
+        if (pendingEntity)
+            return structuredClone(pendingEntity);
+
+        const rootObject = this.object.GetByName(this.objectName);
+        const childPath = rootObject ? this.GetChildPath(rootObject, obj) : null;
+        var rawEntity = this.isBase
+            ? this.settingsHandler.GetRaw().baseEntities?.[this.objectName]
+            : this.settingsHandler.GetRaw().entities?.[this.objectName];
+
+        if (childPath !== null && rawEntity)
+        {
+            for (const childIndex of childPath)
+            {
+                rawEntity = rawEntity.children?.[childIndex];
+                if (!rawEntity)
+                    break;
+            }
+        }
+
+        // EntityScene has a canonical sparse representation in raw settings. Copy that instead
+        // of obj.entity, which contains constructed/inherited defaults. A newly-created object may
+        // not be in raw settings yet, so retain the normal compact serializer as a fallback.
+        return childPath !== null && rawEntity
+            ? structuredClone(rawEntity)
+            : super.SerializeObjectForCopy(obj);
+    }
+
     async SaveEntityDataToSettingsData(): Promise<LevelData>
     {
         const selectedObjects = this.editorControlsHandler?.selectedObjects ?? [];
@@ -251,6 +304,9 @@ export class EntityScene extends EditorScene
         if (transforms.length == 0)
             return this.currentLevel;
 
+        var structureChanged = false;
+        var addedChildPath: number[] | null = null;
+
         const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
             var rootEntity = this.isBase
                 ? draft.baseEntities?.[this.objectName]
@@ -261,10 +317,36 @@ export class EntityScene extends EditorScene
 
             for (const { obj, childPath } of transforms)
             {
-                var entity = rootEntity;
-                for (const childIndex of childPath)
+                var entity: Entity | undefined = rootEntity;
+                for (var depth = 0; depth < childPath.length; depth++)
                 {
-                    entity = entity.children?.[childIndex];
+                    const childIndex = childPath[depth];
+                    const children = entity.children as Entity[] | undefined;
+                    var childEntity = children?.[childIndex];
+
+                    if (!childEntity)
+                    {
+                        // A pasted object is appended to its live parent. Mirror that structural
+                        // addition into raw settings before applying its transform.
+                        const isLastPathPart = depth == childPath.length - 1;
+                        const isAppend = childIndex == (children?.length ?? 0);
+                        if (!isLastPathPart || !isAppend)
+                        {
+                            entity = undefined;
+                            break;
+                        }
+
+                        childEntity = this.pendingPastedEntities.get(obj.uniqueID)
+                            ? structuredClone(this.pendingPastedEntities.get(obj.uniqueID)!)
+                            : this.SerializeObjectForCopy(obj);
+                        entity.children ??= [];
+                        entity.children.push(childEntity);
+                        this.pendingPastedEntities.delete(obj.uniqueID);
+                        structureChanged = true;
+                        addedChildPath = childPath.slice();
+                    }
+
+                    entity = childEntity;
                     if (!entity)
                         break;
                 }
@@ -289,9 +371,17 @@ export class EntityScene extends EditorScene
         await this.SaveEntityData(newRawSettingsData);
         this.HideEditorUIForScene();
 
-        // Push the fresh raw settings to the plugin. Unlike gotoEntity(), this does not rebuild
-        // EntityScene, so the live object and TransformTool selection remain intact.
         window.__GAME_DEBUG_API__?.notifyEntityDataChanged(newRawSettingsData);
+
+        if (structureChanged)
+        {
+            window.__GAME_DEBUG_API__?.reloadEntityInPlugin({
+                name: this.objectName,
+                isBase: this.isBase,
+                settingsDataName: newRawSettingsData.name,
+                childPath: addedChildPath,
+            });
+        }
 
         return this.currentLevel;
     }
@@ -322,6 +412,27 @@ export class EntityScene extends EditorScene
         });
     }
 
+    // ENTITY PANEL SELECTION IS CHILDPATH-BASED (THE ENTITY TREE), NOT UNIQUEID-BASED LIKE THE
+    // FLAT LEVEL EDITOR'S OBJECT LIST - SO IT NEEDS ITS OWN PLUGIN MESSAGE SHAPE.
+    override NotifySelectionToPlugin(objs: GameObject[]): void
+    {
+        if (objs.length == 0)
+            return;
+
+        const rootObject = this.object.GetByName(this.objectName);
+        if (!rootObject)
+            return;
+
+        const primary = objs[objs.length - 1];
+        const childPath = this.GetChildPath(rootObject, primary) ?? [];
+
+        window.__GAME_DEBUG_API__?.selectEntityObjectInPlugin({
+            name: this.objectName,
+            isBase: this.isBase,
+            childPath,
+        });
+    }
+
     SelectTransformToolTargetAt(worldPosition: Vec2): GameObject | null
     {
         const selected = this.GetTransformToolTargetAt(worldPosition);
@@ -337,9 +448,7 @@ export class EntityScene extends EditorScene
         }
 
         const rootObject = this.object.GetByName(this.objectName)!;
-
         this.editorControlsHandler.SelectGameObjects([selected], true, true, false);
-
         const childPath = this.GetChildPath(rootObject, selected) ?? [];
         window.__GAME_DEBUG_API__?.selectEntityObjectInPlugin({
             name: this.objectName,

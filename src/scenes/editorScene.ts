@@ -311,6 +311,17 @@ export class EditorScene extends Scene
             this.editorControlsHandler.SetCurrentPreviewEntity(null);*/
     }
 
+    // NOTIFIES THE PLUGIN OF THE CURRENT SELECTION. OVERRIDDEN BY SCENES (EG EntityScene) THAT
+    // NEED A DIFFERENT PLUGIN MESSAGE SHAPE FOR THEIR SELECTION (EG CHILDPATH-BASED).
+    NotifySelectionToPlugin(objs: GameObject[]): void
+    {
+        var selectedIds = objs.map(o => o.uniqueID);
+        if (selectedIds.length == 1)
+            globalThis.plugin?.SelectObjectInPlugin(selectedIds[0], true);
+        else if (selectedIds.length > 1)
+            globalThis.plugin?.SelectObjectsInPlugin(selectedIds);
+    }
+
     OnPreRender()
     {
         if (!this.opened)
@@ -480,16 +491,25 @@ export class EditorScene extends Scene
         return gameObject;
     }
 
-    AddGameObjectAtPosition(x: number, y: number, entityOrName: Entity | string, layer: int = 0): GameObject
+    AddGameObjectAtPosition(x: number, y: number, entityOrName: Entity | string, parent: int | GameObject = 0): GameObject
     {
         // TURING ARG INTO AN ENTITY WITH POSITION - SO BY THE TIME GameObject REACHES OnStart(), ITS POSITION HAS BEEN SET
         if (typeof entityOrName == "string")
             entityOrName = {name: entityOrName, position: {x: x, y: y}};
         else
+        {
+            // Placement changes the position, so keep clipboard/preview entity data immutable.
+            entityOrName = structuredClone(entityOrName);
             entityOrName.position = {x: x, y: y};
+        }
 
-        var gameObject = this.AddGameObject(entityOrName, layer);
+        var gameObject = this.AddGameObject(entityOrName, parent);
         return gameObject;
+    }
+
+    SerializeObjectForCopy(obj: GameObject): Entity
+    {
+        return this.level.SerializeObject(obj);
     }
 
     GetTilesheetEntity(name: string): Entity

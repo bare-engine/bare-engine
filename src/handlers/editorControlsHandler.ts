@@ -127,7 +127,9 @@ export class EditorControlsHandler {
             });
             this.SnapPastedObjectsToGrid(objsCreated);
 
-            this.SelectGameObjects(objsCreated);
+            // FORCE SELECT: EntityScene DISABLES ORDINARY selectionEnabled-GATED SELECTION,
+            // BUT A JUST-PASTED OBJECT SHOULD STILL BE SELECTED AND GET THE TRANSFORM TOOL.
+            this.SelectGameObjects(objsCreated, true, true);
 
             this.scene.saveLevelCallback();
         }
@@ -252,7 +254,12 @@ export class EditorControlsHandler {
 
     CopySelectedObjects()
     {
-        this.copiedObjects = this.selectedObjects.map(obj => bare.level.SerializeObjectSnapshot(obj));
+        this.copiedObjects = this.selectedObjects.map(obj => {
+            const snapshot = this.scene.SerializeObjectForCopy(obj);
+            const worldPosition = obj.parent ? obj.parent.ToGlobal(obj.position) : obj.position;
+            snapshot.position = { x: worldPosition.x, y: worldPosition.y };
+            return snapshot;
+        });
     }
 
     RemoveSelectedObjects()
@@ -523,13 +530,9 @@ export class EditorControlsHandler {
 
         // NOTIFY THE PLUGIN OF THE FULL CURRENT SELECTION. SINGLE SELECTION SHOWS THAT OBJECT;
         // MULTI SELECTION SHOWS THE LAST ONE BUT APPLIES FIELD EDITS TO ALL SELECTED.
-        if (notifyPlugin)
+        if (notifyPlugin && this.selectedObjects.length > 0)
         {
-            var selectedIds = this.selectedObjects.map(o => o.uniqueID);
-            if (selectedIds.length == 1)
-                globalThis.plugin?.SelectObjectInPlugin(selectedIds[0], true);
-            else if (selectedIds.length > 1)
-                globalThis.plugin?.SelectObjectsInPlugin(selectedIds);
+            this.scene.NotifySelectionToPlugin(this.selectedObjects);
         }
     }
 
@@ -773,27 +776,28 @@ export class EditorControlsHandler {
         const obj = this.scene.AddGameObjectAtPosition(this.currentPreviewEntity.x, this.currentPreviewEntity.y, this.currentPreviewEntity.entity, layer);
         const multiSelect = keyboardController.IsKeyDown("shift");
 
+        // FORCE SELECT: SEE NOTE ON THE PASTE HANDLER ABOVE - APPLIES HERE TOO.
         if (!multiSelect)
         {
             this.firstMultiPlacedObject = null;
             this.multiPlaceSelectionReset = false;
-            this.SelectGameObjects([obj], true);
+            this.SelectGameObjects([obj], true, true);
         }
         else
         if (!this.firstMultiPlacedObject)
         {
             this.firstMultiPlacedObject = obj;
-            this.SelectGameObjects([obj], false);
+            this.SelectGameObjects([obj], false, true);
         }
         else
         if (!this.multiPlaceSelectionReset)
         {
-            this.SelectGameObjects([this.firstMultiPlacedObject, obj], true);
+            this.SelectGameObjects([this.firstMultiPlacedObject, obj], true, true);
             this.multiPlaceSelectionReset = true;
         }
         else
         {
-            this.SelectGameObjects([obj], false);
+            this.SelectGameObjects([obj], false, true);
         }
 
         this.actionThisFrame = 'objCreation';

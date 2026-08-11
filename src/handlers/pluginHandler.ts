@@ -186,6 +186,10 @@ window.__GAME_DEBUG_API__ = {
     window.postMessage({ __fromGame: true, type: "selectEntityObject", data }, "*");
   },
 
+  reloadEntityInPlugin(data) {
+    window.postMessage({ __fromGame: true, type: "gotoEntity", ...data }, "*");
+  },
+
   gotoLevelView(levelPath: string) {
     bare.scene.Remove(EditorScene); // REMOVES IT IF IT EXISTS
     bare.scene.GetMainScene().LoadLevel(levelPath);
@@ -440,9 +444,7 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
     //bare.scene.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
     plugin.notifyLeaveEntity = true;
 
-    // The entity panel represents the live root object in EntityScene. Select it in the
-    // scene as well so TransformTool is available immediately, without echoing the
-    // selection back to the plugin that initiated it.
+    // The entity panel represents the root entity immediately after opening/reloading it.
     var liveEntityObject = entityScene.object.GetByName(name);
     if (liveEntityObject)
         entityScene.editorControlsHandler.SelectGameObjects([liveEntityObject], true, true, false);
