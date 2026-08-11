@@ -51,6 +51,13 @@ interface TargetStart
     rotation: number; // degrees, at grab time
 }
 
+interface PendingTargetPick
+{
+    mouseX: number;
+    mouseY: number;
+    moved: boolean;
+}
+
 const HANDLE_SIZE = 5;        // drawn resize-handle size, in on-screen px (see Scene.ScreenPxToWorldScale)
 const HANDLE_HIT_PAD = 5;     // extra grab slack around a handle, in screen px
 const HANDLE_FIT_SCREEN_SIZE = 30; // below this on-screen width/height, shrink handles so body-drag stays reachable
@@ -99,6 +106,7 @@ export class TransformToolHandler
     private starts: TargetStart[] = [];
     private moveGrabController: any | null = null;
     private completedPointerEvents = new WeakSet<PointerEvent>();
+    private pendingTargetPick: PendingTargetPick | null = null;
 
     private cursorSet = false;
     private editorControlsSuppressed = false;
@@ -139,6 +147,7 @@ export class TransformToolHandler
         this.rotating = false;
         this.moving = false;
         this.handle = null;
+        this.pendingTargetPick = null;
         this.SetCursor(null);
     }
 
@@ -149,10 +158,30 @@ export class TransformToolHandler
         if (this.resizing || this.rotating || this.moving) return;
         if (bare.MouseIsOnEditor(event)) return;
 
-        // Entity-style scenes can pick their own hierarchy before the gizmo tests this click.
-        // This lets the same pointer-down select a root/child and immediately begin dragging it.
-        if (!this.PointerHitsCurrentHandle(mouseX, mouseY))
-            this.PickTransformTarget(mouseX, mouseY);
+        this.pendingTargetPick = null;
+
+        const hitsCurrentHandle = this.PointerHitsCurrentHandle(mouseX, mouseY);
+
+        if (!hitsCurrentHandle)
+        {
+            const pickerScene = this.GetTransformTargetPickerScene();
+            const pointedTarget = pickerScene
+                ? this.GetTransformTargetAt(pickerScene, mouseX, mouseY)
+                : null;
+            const pointsIntoCurrentHierarchy = pointedTarget != null &&
+                this.targets.some(target => this.IsDescendantOrSelf(pointedTarget, target));
+
+            if (pickerScene && this.SceneHandlesBodyMove(pickerScene) && pointsIntoCurrentHierarchy)
+            {
+                // Descendants belong to the current drag target's hierarchy. Keep the current
+                // selection while dragging, but let a stationary click select that child on up.
+                this.pendingTargetPick = { mouseX, mouseY, moved: false };
+            }
+            else
+            {
+                this.PickTransformTarget(mouseX, mouseY);
+            }
+        }
 
         if (this.targets.length == 0) return;
 
@@ -190,6 +219,10 @@ export class TransformToolHandler
 
     private OnPointerMove = ({ mouseX, mouseY }: BareEventPayload['pointer_move']): void =>
     {
+        if (this.pendingTargetPick &&
+            (mouseX != this.pendingTargetPick.mouseX || mouseY != this.pendingTargetPick.mouseY))
+            this.pendingTargetPick.moved = true;
+
         if (!this.resizing && !this.rotating && !this.moving) return;
 
         const scene = this.GetScene();
@@ -208,14 +241,21 @@ export class TransformToolHandler
 
     private OnPointerUp = ({ event }: BareEventPayload['pointer_up_any']): void =>
     {
-        if (!this.resizing && !this.rotating && !this.moving) return;
+        const pendingTargetPick = this.pendingTargetPick;
+        this.pendingTargetPick = null;
+
+        const wasTransforming = this.resizing || this.rotating || this.moving;
+        if (!wasTransforming && !pendingTargetPick) return;
 
         const scene = this.GetScene();
-        if (scene)
+        if (scene && wasTransforming)
         {
             this.EndTransform(scene);
             this.completedPointerEvents.add(event);
         }
+
+        if (pendingTargetPick && !pendingTargetPick.moved)
+            this.PickTransformTarget(pendingTargetPick.mouseX, pendingTargetPick.mouseY);
     };
 
     private OnUpdate = (): void =>
@@ -580,17 +620,46 @@ export class TransformToolHandler
 
     private PickTransformTarget(mouseX: number, mouseY: number): void
     {
+        const scene = this.GetTransformTargetPickerScene();
+        if (!scene) return;
+
+        (scene as any).SelectTransformToolTargetAt(scene.ScreenToWorld(mouseX, mouseY));
+    }
+
+    private GetTransformTargetPickerScene(): Scene | null
+    {
         const scenes = bare.scene.GetAll(true);
         for (var i = scenes.length - 1; i >= 0; i--)
         {
             const scene = scenes[i];
-            const pick = (scene as any).SelectTransformToolTargetAt;
-            if (!scene.enabled || typeof pick != 'function')
-                continue;
-
-            pick.call(scene, scene.ScreenToWorld(mouseX, mouseY));
-            return;
+            if (scene.enabled && typeof (scene as any).SelectTransformToolTargetAt == 'function')
+                return scene;
         }
+
+        return null;
+    }
+
+    private GetTransformTargetAt(scene: Scene, mouseX: number, mouseY: number): GameObject | null
+    {
+        const getTarget = (scene as any).GetTransformToolTargetAt;
+        if (typeof getTarget != 'function')
+            return null;
+
+        return getTarget.call(scene, scene.ScreenToWorld(mouseX, mouseY));
+    }
+
+    private IsDescendantOrSelf(obj: GameObject, possibleAncestor: GameObject): boolean
+    {
+        var current: GameObject | null = obj;
+        while (current)
+        {
+            if (current === possibleAncestor)
+                return true;
+
+            current = current.parent;
+        }
+
+        return false;
     }
 
     private PointerHitsCurrentHandle(mouseX: number, mouseY: number): boolean

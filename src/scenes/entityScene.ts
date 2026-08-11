@@ -324,13 +324,11 @@ export class EntityScene extends EditorScene
 
     SelectTransformToolTargetAt(worldPosition: Vec2): GameObject | null
     {
-        const rootObject = this.object.GetByName(this.objectName);
-        if (!rootObject)
-            return null;
-
-        const selected = this.FindDeepestObjectAt(rootObject, worldPosition);
+        const selected = this.GetTransformToolTargetAt(worldPosition);
         if (!selected)
             return null;
+
+        const rootObject = this.object.GetByName(this.objectName)!;
 
         this.editorControlsHandler.SelectGameObjects([selected], true, true, false);
 
@@ -342,6 +340,12 @@ export class EntityScene extends EditorScene
         });
 
         return selected;
+    }
+
+    GetTransformToolTargetAt(worldPosition: Vec2): GameObject | null
+    {
+        const rootObject = this.object.GetByName(this.objectName);
+        return rootObject ? this.FindDeepestObjectAt(rootObject, worldPosition) : null;
     }
 
     private FindDeepestObjectAt(obj: GameObject, worldPosition: Vec2): GameObject | null
