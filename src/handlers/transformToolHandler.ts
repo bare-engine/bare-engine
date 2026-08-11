@@ -801,8 +801,10 @@ export class TransformToolHandler
         return (scene as any).transformToolHandlesBodyMove === true;
     }
 
-    // A single textured object yields an oriented box that hugs and rotates with it.
-    // Everything else (groups, textureless objects) yields an axis-aligned world AABB.
+    // A single textured object (or a texture-less container of textured descendants, eg an
+    // entity built entirely from children) yields an oriented box that hugs and rotates with it.
+    // Everything else (groups, or a container with no textured descendant at all) yields an
+    // axis-aligned world AABB.
     private GetFrame(targets: GameObject[] = this.targets): Frame | null
     {
         if (targets.length == 0) return null;
@@ -814,27 +816,6 @@ export class TransformToolHandler
 
             if (bounds && bounds.width > 0 && bounds.height > 0)
             {
-                // The box is aligned to the object's OUTER transform (object rotation + ancestors),
-                // NOT the inner transform - the gizmo must not tilt with an inner rotation, since
-                // resize/rotate drive the outer transform (o.scale / o.rotation).
-                const origin = o.ToGlobal(new Vec2(0, 0), false);
-                const xPt    = o.ToGlobal(new Vec2(1, 0), false);
-                let ax = xPt.x - origin.x;
-                let ay = xPt.y - origin.y;
-                const len = Math.hypot(ax, ay) || 1;
-                ax /= len; ay /= len;          // outer X axis (unit)
-
-                // `flipped` mirrors the sprite through the outer transform's X axis. The gizmo
-                // should still treat the object's unmirrored orientation as "top", otherwise the
-                // frame angle jumps by 180 degrees and the rotation knob appears below the box.
-                if (o.scale.x * (o.flipped ? -1 : 1) < 0)
-                {
-                    ax = -ax;
-                    ay = -ay;
-                }
-
-                const bx = -ay, by = ax;       // outer Y axis (perpendicular, unit)
-
                 // Enclose the inner-transformed sprite corners by projecting them onto the outer
                 // axes - so an inner rotation/scale/flip only widens the bounds, never tilts the box.
                 const corners = [
@@ -844,26 +825,17 @@ export class TransformToolHandler
                     o.ToGlobal(new Vec2(bounds.x,                bounds.y + bounds.height), true),
                 ];
 
-                let minU = Infinity, maxU = -Infinity, minV = Infinity, maxV = -Infinity;
-                for (const c of corners)
-                {
-                    const u = c.x * ax + c.y * ay;
-                    const v = c.x * bx + c.y * by;
-                    minU = Math.min(minU, u); maxU = Math.max(maxU, u);
-                    minV = Math.min(minV, v); maxV = Math.max(maxV, v);
-                }
-
-                const cu = (minU + maxU) * 0.5;
-                const cv = (minV + maxV) * 0.5;
-
-                return {
-                    cx: cu * ax + cv * bx,
-                    cy: cu * ay + cv * by,
-                    hw: (maxU - minU) * 0.5,
-                    hh: (maxV - minV) * 0.5,
-                    angle: Math.atan2(ay, ax),
-                };
+                return this.FrameFromWorldCorners(corners, this.GetOuterAxes(o));
             }
+
+            // The object has no texture of its own (eg an entity whose root is just a container -
+            // see BareMonopoly's 'tile' entity, whose sprite lives entirely on child objects). Hug
+            // it the same way, using every textured descendant's world-space corners instead of the
+            // object's own - otherwise this falls through to the world AABB below, which never tilts,
+            // so the gizmo box appears frozen (not tracking rotation) while the object itself rotates.
+            const descendantCorners = this.CollectDescendantTextureCorners(o);
+            if (descendantCorners.length > 0)
+                return this.FrameFromWorldCorners(descendantCorners, this.GetOuterAxes(o));
         }
 
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -885,6 +857,86 @@ export class TransformToolHandler
             hh: (maxY - minY) * 0.5,
             angle: 0,
         };
+    }
+
+    // The box is aligned to the object's OUTER transform (object rotation + ancestors), NOT the
+    // inner transform - the gizmo must not tilt with an inner rotation, since resize/rotate drive
+    // the outer transform (o.scale / o.rotation).
+    private GetOuterAxes(o: GameObject): { ax: number, ay: number, bx: number, by: number }
+    {
+        const origin = o.ToGlobal(new Vec2(0, 0), false);
+        const xPt    = o.ToGlobal(new Vec2(1, 0), false);
+        let ax = xPt.x - origin.x;
+        let ay = xPt.y - origin.y;
+        const len = Math.hypot(ax, ay) || 1;
+        ax /= len; ay /= len;          // outer X axis (unit)
+
+        // `flipped` mirrors the sprite through the outer transform's X axis. The gizmo should
+        // still treat the object's unmirrored orientation as "top", otherwise the frame angle
+        // jumps by 180 degrees and the rotation knob appears below the box.
+        if (o.scale.x * (o.flipped ? -1 : 1) < 0)
+        {
+            ax = -ax;
+            ay = -ay;
+        }
+
+        return { ax, ay, bx: -ay, by: ax };  // bx/by: outer Y axis (perpendicular, unit)
+    }
+
+    // Reduces a set of world-space corner points to a Frame oriented along the given outer axes.
+    private FrameFromWorldCorners(corners: Vec2[], axes: { ax: number, ay: number, bx: number, by: number }): Frame
+    {
+        const { ax, ay, bx, by } = axes;
+
+        let minU = Infinity, maxU = -Infinity, minV = Infinity, maxV = -Infinity;
+        for (const c of corners)
+        {
+            const u = c.x * ax + c.y * ay;
+            const v = c.x * bx + c.y * by;
+            minU = Math.min(minU, u); maxU = Math.max(maxU, u);
+            minV = Math.min(minV, v); maxV = Math.max(maxV, v);
+        }
+
+        const cu = (minU + maxU) * 0.5;
+        const cv = (minV + maxV) * 0.5;
+
+        return {
+            cx: cu * ax + cv * bx,
+            cy: cu * ay + cv * by,
+            hw: (maxU - minU) * 0.5,
+            hh: (maxV - minV) * 0.5,
+            angle: Math.atan2(ay, ax),
+        };
+    }
+
+    // Walks o's descendants (not o itself, which the caller has already established has no
+    // texture) collecting the world-space corners of every textured descendant's sprite. Each
+    // descendant's own ToGlobal() already walks its full ancestor chain (through o), so this
+    // needs no transform math of its own - just the tree walk.
+    private CollectDescendantTextureCorners(o: GameObject): Vec2[]
+    {
+        const corners: Vec2[] = [];
+
+        const visit = (obj: GameObject) => {
+            const bounds = obj.texture?.localBounds;
+            if (bounds && bounds.width > 0 && bounds.height > 0)
+            {
+                corners.push(
+                    obj.ToGlobal(new Vec2(bounds.x,                bounds.y),                 true),
+                    obj.ToGlobal(new Vec2(bounds.x + bounds.width, bounds.y),                 true),
+                    obj.ToGlobal(new Vec2(bounds.x + bounds.width, bounds.y + bounds.height), true),
+                    obj.ToGlobal(new Vec2(bounds.x,                bounds.y + bounds.height), true),
+                );
+            }
+
+            for (const child of obj.children)
+                visit(child);
+        };
+
+        for (const child of o.children)
+            visit(child);
+
+        return corners;
     }
 
     // Frame-local point (along the box's own axes) -> world.
