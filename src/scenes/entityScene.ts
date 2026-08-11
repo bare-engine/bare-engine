@@ -4,6 +4,7 @@ import { Color, RenderTexture, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { TextObject } from "../objects/textObject";
 import { AwakePayload, Entity, LevelData, SettingsData } from "../types/bareTypes";
+import { Helper } from "../utils/helper";
 import { EditorScene } from "./editorScene";
 import { Scene } from "./scene";
 
@@ -18,6 +19,7 @@ export class EntityScene extends EditorScene
 {
     objectName: string = "";
     isBase: boolean = false;
+    readonly transformToolHandlesBodyMove: boolean = true;
     
     lastPayload: EntitySceneAwakePayload;
     degugAtStart: boolean;
@@ -237,151 +239,146 @@ export class EntityScene extends EditorScene
 
     async SaveEntityDataToSettingsData(): Promise<LevelData>
     {
-        return;
-        var obj = this.object.GetByName(this.objectName);
-        
-        var entityFromSettingsData:Entity;
-        if (this.isBase)
-        {
-            entityFromSettingsData = this.settingsHandler.GetRaw().baseEntities[this.objectName];
-        }
-        else
-        {
-            entityFromSettingsData = this.settingsHandler.GetRaw().entities[this.objectName];
-        }
+        const selectedObjects = this.editorControlsHandler?.selectedObjects ?? [];
+        const rootObject = this.object.GetByName(this.objectName);
+        if (!rootObject || selectedObjects.length == 0)
+            return this.currentLevel;
 
-        //var diff = bare.level.GetChangedValues(obj, entityFromSettingsData);
+        const transforms = selectedObjects
+            .map(obj => ({ obj, childPath: this.GetChildPath(rootObject, obj) }))
+            .filter(entry => entry.childPath !== null) as Array<{ obj: GameObject, childPath: number[] }>;
 
-        var entityFromSettingsDataModified = {...entityFromSettingsData};
+        if (transforms.length == 0)
+            return this.currentLevel;
 
-        // SUPPLY PLACEHOLDER TEXTURE FOR BASE AGAIN, SO PIVOT CAN BE SET ON IT
-        if (this.isBase)
-        {
-            entityFromSettingsDataModified.texture = "placeHolder";
-            entityFromSettingsDataModified.imagePath = "";
-        }
+        const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
+            var rootEntity = this.isBase
+                ? draft.baseEntities?.[this.objectName]
+                : draft.entities?.[this.objectName];
 
-        var fullEntity = bare.level.SerializeObjectFully(obj);
-        var origEntity = this.GetAppliedEntityWithDefaultValues(entityFromSettingsDataModified);
+            if (!rootEntity)
+                return;
 
-        // UNDO THE TEXTURE/PATH FOR BASE 
-        if (this.isBase)
-        {
-            if (entityFromSettingsData.texture)
-                origEntity.texture = entityFromSettingsData.texture;
-            else
-                origEntity.texture = undefined;
-            
-            if (entityFromSettingsData.imagePath)
-                origEntity.imagePath = entityFromSettingsData.imagePath;
-            else
-                origEntity.imagePath = undefined;
-        }
-
-        var diffEntity = bare.level.GetEntitiesDiff(origEntity, fullEntity);
-
-        delete diffEntity.name;
-
-        // DON'T SAVE PLACEHOLDER TEXTURE FOR BASE
-        if (this.isBase)
-            delete diffEntity.texture;
-
-        // LITTLE HACK TO FIX DUPLICATE SCALING ENTRIES
-        delete diffEntity.scale;
-        delete diffEntity.innerPosition;
-        delete diffEntity.innerScale;
-
-        const deepMerge = (base: any, override: any): any => {
-            const result = {...base};
-            for (const key in override) {
-                if (override[key] !== null && typeof override[key] === 'object' && !Array.isArray(override[key]) && key in base) {
-                    result[key] = deepMerge(base[key], override[key]);
-                } else {
-                    result[key] = override[key];
+            for (const { obj, childPath } of transforms)
+            {
+                var entity = rootEntity;
+                for (const childIndex of childPath)
+                {
+                    entity = entity.children?.[childIndex];
+                    if (!entity)
+                        break;
                 }
+
+                if (!entity)
+                    continue;
+
+                // TransformTool operates on the outer/local transform, which maps directly to
+                // the canonical entity fields used by the inspector.
+                entity.position = { x: obj.x, y: obj.y };
+                entity.scale = { x: obj.scale.x, y: obj.scale.y };
+                entity.rotation = obj.rotation;
+
+                // Do not leave legacy aliases competing with the canonical vector fields.
+                delete entity.x;
+                delete entity.y;
+                delete (entity as any).scaleX;
+                delete (entity as any).scaleY;
             }
-            return result;
-        };
-        var combinedEntity = deepMerge(entityFromSettingsData, diffEntity);
-
-        // TAKE OFF PROPS FROM combinedEntity IF THEY ARE DEFAULT VALUE
-        var entityFromSettingsDataDiffPropsRemoved = {...entityFromSettingsDataModified};
-        for (var prop in combinedEntity)
-        {
-            delete entityFromSettingsDataDiffPropsRemoved[prop];
-        }
-        var defaultEntity = this.GetAppliedEntityWithDefaultValues(entityFromSettingsDataDiffPropsRemoved);
-        for (var prop in combinedEntity)
-        {
-            var value = combinedEntity[prop];
-            if (defaultEntity[prop] === value)
-                delete combinedEntity[prop];
-        }
-
-        // APPLY NEW VALUES TO THE RAW ENTITY SETTING
-        const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
-            if (this.isBase)
-                draft.baseEntities[this.objectName] = combinedEntity;
-            else
-                draft.entities[this.objectName] = combinedEntity;
         });
 
-        // SAVE TO FILE
         await this.SaveEntityData(newRawSettingsData);
+        this.HideEditorUIForScene();
+
+        // Push the fresh raw settings to the plugin. Unlike gotoEntity(), this does not rebuild
+        // EntityScene, so the live object and TransformTool selection remain intact.
+        window.__GAME_DEBUG_API__?.notifyEntityDataChanged(newRawSettingsData);
 
         return this.currentLevel;
+    }
 
-        var origPivot = obj.pivot;
-        var currentPivot = this.object.GetByName("dot")!.position;
+    NotifyTransformToolPreview(): void
+    {
+        const rootObject = this.object.GetByName(this.objectName);
+        if (!rootObject)
+            return;
 
-        var madeChangeToEntity = false;
+        const transforms = (this.editorControlsHandler?.selectedObjects ?? [])
+            .map(obj => ({
+                childPath: this.GetChildPath(rootObject, obj),
+                position: { x: obj.x, y: obj.y },
+                scale: { x: obj.scale.x, y: obj.scale.y },
+                rotation: obj.rotation,
+            }))
+            .filter(transform => transform.childPath !== null);
 
-        var entity = {...obj.entity};
-        if (!currentPivot.equals(origPivot))
-        {
-            entity.pivot = currentPivot;
-            madeChangeToEntity = true;
-        }
+        if (transforms.length == 0)
+            return;
 
-        if (madeChangeToEntity)
-        {
-            // APPLY NEW VALUES TO THE RAW ENTITY SETTING
-            const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
-                if (this.isBase)
-                    draft.baseEntities[this.objectName] = entity;
-                else
-                    draft.entities[this.objectName] = entity;
-            });
+        // Preview only: the raw settings data and disk are still updated once on pointer release.
+        window.__GAME_DEBUG_API__?.notifyEntityTransformPreview({
+            name: this.objectName,
+            isBase: this.isBase,
+            transforms,
+        });
+    }
 
-            // RELOAD THE ENTITY PANEL IN PLUGIN
-            window.__GAME_DEBUG_API__.gotoEntity(this.objectName, this.isBase);
+    SelectTransformToolTargetAt(worldPosition: Vec2): GameObject | null
+    {
+        const rootObject = this.object.GetByName(this.objectName);
+        if (!rootObject)
+            return null;
 
-            // SAVE TO FILE
-            await this.SaveEntityData(newRawSettingsData);
-        }
-        
-        return this.currentLevel;
+        const selected = this.FindDeepestObjectAt(rootObject, worldPosition);
+        if (!selected)
+            return null;
 
-        return;
+        this.editorControlsHandler.SelectGameObjects([selected], true, true, false);
 
-        // SERIALIZE, TODO, NOT REALLY NEEDED, JUST FOR THE RETURN
-        /*var level = this.currentLevel;
-        //bare.level.Serialize(level);
-
-        var obj = this.object.GetByName(this.objectName);
-        var entity = bare.level.SerializeObject(obj, {propsToIgnoreInEntity: entityVars, fillPresets: true});
-        delete entity.name;
-        delete entity.position;
-        
-        // APPLY NEW VALUES TO THE INITIAL ENTITY SETTING
-        const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
-            draft.entities[this.objectName] = entity;
+        const childPath = this.GetChildPath(rootObject, selected) ?? [];
+        window.__GAME_DEBUG_API__?.selectEntityObjectInPlugin({
+            name: this.objectName,
+            isBase: this.isBase,
+            childPath,
         });
 
-        // SAVE TO FILE
-        await this.SaveEntityData(newRawSettingsData);
+        return selected;
+    }
 
-        return level;*/
+    private FindDeepestObjectAt(obj: GameObject, worldPosition: Vec2): GameObject | null
+    {
+        if (!obj.visible || !obj.visibleInEditor || obj.alpha == 0)
+            return null;
+
+        for (var i = obj.children.length - 1; i >= 0; i--)
+        {
+            const selectedChild = this.FindDeepestObjectAt(obj.children[i], worldPosition);
+            if (selectedChild)
+                return selectedChild;
+        }
+
+        return Helper.IsPointInRectangle(worldPosition, obj.GetBounds()) ? obj : null;
+    }
+
+    private GetChildPath(root: GameObject, target: GameObject): number[] | null
+    {
+        const path: number[] = [];
+        var current = target;
+
+        while (current !== root)
+        {
+            const parent = current.parent;
+            if (!parent)
+                return null;
+
+            const childIndex = parent.children.indexOf(current);
+            if (childIndex < 0)
+                return null;
+
+            path.unshift(childIndex);
+            current = parent;
+        }
+
+        return path;
     }
 
     private HideEditorUIForScene(): void

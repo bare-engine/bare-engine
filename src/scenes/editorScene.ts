@@ -22,6 +22,7 @@ type EditorSceneAwakePayload = {
 
 export class EditorScene extends Scene
 {
+    readonly transformToolHandlesBodyMove: boolean = true;
     public opened: boolean = false; // DOUBLES TRUTH WITH this.levelEditorOpen
     
     // Component classes

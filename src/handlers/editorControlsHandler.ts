@@ -19,7 +19,6 @@ export class EditorControlsHandler {
     public currentPreviewEntity: GameObject;
     public currentPreviewActive:boolean = false;
     private draggingObject: GameObject | null = null;
-    private dragOffset: Vec2;
     
     public scene: EditorScene;
 
@@ -375,7 +374,10 @@ export class EditorControlsHandler {
         if (!(event.button == 0 || event.button == 2))
             return;
         
-        this.scene.saveLevelCallback();
+        // TransformTool owns persistence for move/resize/rotate. Its global pointer-up runs
+        // before this scene-local handler, so avoid saving the same gesture a second time.
+        if (!TransformToolHandler.Get().HandledPointerUp(event))
+            this.scene.saveLevelCallback();
     }
     
     private DoubleClick({ mouseX, mouseY, event }: BareEventPayload['pointer_doubleClick']): void
@@ -489,9 +491,14 @@ export class EditorControlsHandler {
         TransformToolHandler.Get().Clear();
     }
 
-    SelectGameObjects(objs: GameObject[], clearPrevious: boolean = true)
+    SelectGameObjects(
+        objs: GameObject[],
+        clearPrevious: boolean = true,
+        forceSelection: boolean = false,
+        notifyPlugin: boolean = true
+    )
     {
-        if (this.scene.settingsData.selectionEnabled === false)
+        if (this.scene.settingsData.selectionEnabled === false && !forceSelection)
             return;
 
         // CLEAR PREVIOUS
@@ -516,11 +523,14 @@ export class EditorControlsHandler {
 
         // NOTIFY THE PLUGIN OF THE FULL CURRENT SELECTION. SINGLE SELECTION SHOWS THAT OBJECT;
         // MULTI SELECTION SHOWS THE LAST ONE BUT APPLIES FIELD EDITS TO ALL SELECTED.
-        var selectedIds = this.selectedObjects.map(o => o.uniqueID);
-        if (selectedIds.length == 1)
-            globalThis.plugin?.SelectObjectInPlugin(selectedIds[0], true);
-        else if (selectedIds.length > 1)
-            globalThis.plugin?.SelectObjectsInPlugin(selectedIds);
+        if (notifyPlugin)
+        {
+            var selectedIds = this.selectedObjects.map(o => o.uniqueID);
+            if (selectedIds.length == 1)
+                globalThis.plugin?.SelectObjectInPlugin(selectedIds[0], true);
+            else if (selectedIds.length > 1)
+                globalThis.plugin?.SelectObjectsInPlugin(selectedIds);
+        }
     }
 
     private OnScroll(ev: WheelEvent)
@@ -553,10 +563,21 @@ export class EditorControlsHandler {
         if (keyboardController.IsKeyDown("control") && this.currentPreviewActive)
             return;
         
-        this.draggingObject = obj;
-        this.dragOffset = bare.mouse.world.position.subtract(obj.position);
-        
-        this.actionThisFrame = 'objDrag';
+        const transformTool = TransformToolHandler.Get();
+        if (transformTool.IsTransforming())
+            return;
+
+        if (!this.selectedObjects.includes(obj))
+        {
+            const multiSelect = keyboardController.IsKeyDown("shift");
+            this.SelectGameObjects([obj], !multiSelect);
+        }
+
+        if (transformTool.StartMoveFromPointer(this.scene, this.scene.mouse.world.position))
+        {
+            this.draggingObject = obj;
+            this.actionThisFrame = 'objDrag';
+        }
     }
 
     public EndDrag(obj: GameObject)
@@ -584,17 +605,6 @@ export class EditorControlsHandler {
                 this.scene.SelectEntity(entity);
             }
 
-            var multiSelect = keyboardController.IsKeyDown("shift");
-            this.SelectGameObjects([obj], !multiSelect);
-        }
-        else
-        if (this.draggingObject)
-        {
-            //var draggingLevelEntityIsOutsideScreen = this.draggingLevelEntity.x < 0 || this.draggingLevelEntity.x > this.editorController.currentLevel.dimensions.width || this.draggingLevelEntity.y < 0 || this.draggingLevelEntity.y > this.editorController.currentLevel.dimensions.height;
-            /*if (draggingLevelEntityIsOutsideScreen) {
-                bare.hitbox.Remove(this.draggingLevelEntity.hitbox!);
-                bare.object.Remove(this.draggingLevelEntity);
-            }*/
         }
 
         this.draggingObject = null;
@@ -852,51 +862,6 @@ export class EditorControlsHandler {
 
         var altDown = keyboardController.IsKeyDown("alt");
             
-        if (this.draggingObject && Helper.Distance(bare.mouse.screen.position, bare.mouse.screen.positionOnDown) != 0)
-        {
-            var movedX = 0;
-            var movedY = 0;
-            var origPosX = this.draggingObject.x;
-            var origPosY = this.draggingObject.y;
-
-            // Calculate the desired position
-            const desiredX = bare.mouse.world.position.x - this.dragOffset.x;
-            const desiredY = bare.mouse.world.position.y - this.dragOffset.y;
-
-            const guideX = this.scene.settingsData.editorObjectSnapToPivot === false
-                ? bare.mouse.world.position.x
-                : desiredX;
-            const guideY = this.scene.settingsData.editorObjectSnapToPivot === false
-                ? bare.mouse.world.position.y
-                : desiredY;
-
-            const position = this.GetGridAlignedPosition(this.draggingObject, desiredX, desiredY, altDown, guideX, guideY);
-            this.draggingObject.SetPosition(position.x, position.y);
-
-            // Calculate the distance moved
-            movedX = this.draggingObject.x - origPosX;
-            movedY = this.draggingObject.y - origPosY;
-
-            var draggedEntityIsSelected = this.selectedObjects.includes(this.draggingObject);
-            if (draggedEntityIsSelected)
-            {
-                for (var i = 0; i < this.selectedObjects.length; i++)
-                {
-                    const obj = this.selectedObjects[i];
-
-                    if (obj == this.draggingObject)
-                        continue;
-
-                    obj.x += movedX;
-                    obj.y += movedY;
-                }
-            }
-            else
-            {
-                //this.SelectGameObjectsInRect(); // DOESN'T REALLY NEED TO HAPPEN EACH FRAME, BUT SELECTEDOBJS IS EMPTY AFTER ONE FRAME ANYWAY, CHEAP
-            }
-        }
-        
         if (!bare.mouse.IsRightDown())
             if (this.currentPreviewActive)
                 this.currentPreviewEntity.visibleInEditor = !(bare.hitbox.GetCurrentHover() && !keyboardController.IsKeyDown("control"));

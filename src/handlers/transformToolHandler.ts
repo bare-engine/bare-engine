@@ -90,11 +90,15 @@ export class TransformToolHandler
 
     private resizing = false;
     private rotating = false;
+    private moving = false;
     private handle: HandleDef | null = null;
 
     private startFrame: Frame = { cx: 0, cy: 0, hw: 0, hh: 0, angle: 0 };
     private startMouseAngle = 0;
+    private startMousePosition = new Vec2();
     private starts: TargetStart[] = [];
+    private moveGrabController: any | null = null;
+    private completedPointerEvents = new WeakSet<PointerEvent>();
 
     private cursorSet = false;
     private editorControlsSuppressed = false;
@@ -104,6 +108,8 @@ export class TransformToolHandler
         // "BARE EVENT" DRIVEN: mouse-down to grab a handle, update to drag/release, render to draw.
         // PERSISTENT SO IT SURVIVES GAME RESTARTS (THE SINGLETON IS ONLY EVER CREATED ONCE).
         globalEvents.persistent.on(BareEvent.pointer_down, this.OnPointerDown);
+        globalEvents.persistent.on(BareEvent.pointer_move, this.OnPointerMove);
+        globalEvents.persistent.on(BareEvent.pointer_up_any, this.OnPointerUp);
         globalEvents.persistent.on(BareEvent.game_update, this.OnUpdate);
         globalEvents.persistent.on(BareEvent.game_postRender, this.OnRender);
     }
@@ -124,23 +130,31 @@ export class TransformToolHandler
 
     Clear(): void
     {
+        this.ReleaseMoveGrab();
         this.RestoreHitboxes();
         this.SuppressEditorControls(false); // re-enable editor placement/selection (uses current targets' scene)
         this.targets = [];
         this.starts = [];
         this.resizing = false;
         this.rotating = false;
+        this.moving = false;
         this.handle = null;
         this.SetCursor(null);
     }
 
     // ================= EVENTS =================
 
-    private OnPointerDown = ({ event }: BareEventPayload['pointer_down']): void =>
+    private OnPointerDown = ({ mouseX, mouseY, event }: BareEventPayload['pointer_down']): void =>
     {
-        if (this.resizing || this.rotating) return;
-        if (this.targets.length == 0) return;
+        if (this.resizing || this.rotating || this.moving) return;
         if (bare.MouseIsOnEditor(event)) return;
+
+        // Entity-style scenes can pick their own hierarchy before the gizmo tests this click.
+        // This lets the same pointer-down select a root/child and immediately begin dragging it.
+        if (!this.PointerHitsCurrentHandle(mouseX, mouseY))
+            this.PickTransformTarget(mouseX, mouseY);
+
+        if (this.targets.length == 0) return;
 
         this.PruneTargets();
 
@@ -150,7 +164,9 @@ export class TransformToolHandler
         const frame = this.GetFrame(this.GetTransformableTargets(this.targets));
         if (!frame) return;
 
-        const mouse = scene.mouse.world.position;
+        // Global events are emitted before the scene MouseController receives the same event.
+        // Convert the event coordinates directly so grabbing never uses the previous mouse position.
+        const mouse = scene.ScreenToWorld(mouseX, mouseY);
 
         // Rotation knob takes priority - it sits outside the box, above the top edge.
         if (this.HitTestRotation(scene, frame, mouse))
@@ -160,9 +176,46 @@ export class TransformToolHandler
         }
 
         const handle = this.HitTest(scene, frame, mouse);
-        if (!handle) return;
+        if (handle)
+        {
+            this.BeginResize(handle, frame);
+            return;
+        }
 
-        this.BeginResize(handle, frame);
+        // Entity-style editors opt in to body movement because their objects deliberately
+        // have no editor hitbox/drag behavior. Other scenes keep their existing drag path.
+        if (this.SceneHandlesBodyMove(scene) && this.FrameContains(frame, mouse))
+            this.StartMoveFromPointer(scene, mouse);
+    };
+
+    private OnPointerMove = ({ mouseX, mouseY }: BareEventPayload['pointer_move']): void =>
+    {
+        if (!this.resizing && !this.rotating && !this.moving) return;
+
+        const scene = this.GetScene();
+        if (!scene) return;
+
+        const mouse = scene.ScreenToWorld(mouseX, mouseY);
+        if (this.moving) this.ApplyMove(scene, mouse);
+        else if (this.rotating) this.ApplyRotate(scene, mouse);
+        else this.ApplyResize(scene, mouse);
+
+        this.NotifyTransformPreview(scene);
+
+        this.SetHitboxesActive(false);
+        this.SuppressEditorControls(true);
+    };
+
+    private OnPointerUp = ({ event }: BareEventPayload['pointer_up_any']): void =>
+    {
+        if (!this.resizing && !this.rotating && !this.moving) return;
+
+        const scene = this.GetScene();
+        if (scene)
+        {
+            this.EndTransform(scene);
+            this.completedPointerEvents.add(event);
+        }
     };
 
     private OnUpdate = (): void =>
@@ -179,21 +232,15 @@ export class TransformToolHandler
         const scene = this.GetScene();
         if (!scene) return;
 
-        // Active gesture (mouse still held): apply the transform and keep the gesture cursor.
-        if ((this.resizing || this.rotating) && scene.mouse.IsDown())
+        // PointerMove applies the gesture and pointer_up_any ends it. Do not use the scene's
+        // left-button-only IsDown state here: PluginHandler starts the same gesture with right-click.
+        if (this.resizing || this.rotating || this.moving)
         {
-            if (this.rotating) this.ApplyRotate(scene);
-            else this.ApplyResize(scene);
-
             this.SetHitboxesActive(false); // keep body-drag suppressed for the whole gesture
             this.SuppressEditorControls(true); // suppress editor placement/selection during the gesture
-            this.SetCursor(this.rotating ? 'grabbing' : this.CursorFor(this.handle!.name));
+            this.SetCursor(this.moving ? 'move' : this.rotating ? 'grabbing' : this.CursorFor(this.handle!.name));
             return;
         }
-
-        // Gesture just released: finish it, then fall through to normal hover handling.
-        if (this.resizing || this.rotating)
-            this.EndTransform(scene);
 
         // HOVER: pick the cursor + decide whether to suppress body-drag.
         const frame = this.GetFrame(this.GetTransformableTargets(this.targets));
@@ -210,6 +257,7 @@ export class TransformToolHandler
             {
                 const handle = this.HitTest(scene, frame, mouse);
                 if (handle) cursor = this.CursorFor(handle.name);
+                else if (this.SceneHandlesBodyMove(scene) && this.FrameContains(frame, mouse)) cursor = 'move';
             }
         }
 
@@ -240,18 +288,19 @@ export class TransformToolHandler
     {
         this.resizing = true;
         this.rotating = false;
+        this.moving = false;
         this.handle = handle;
         this.startFrame = { ...frame };
         this.RecordStarts();
     }
 
-    private ApplyResize(scene: Scene): void
+    private ApplyResize(scene: Scene, pointerPosition: Vec2 = scene.mouse.world.position): void
     {
         const handle = this.handle!;
         const f = this.startFrame;
         const fromCenter = keyboardController.IsKeyDown('alt');
         const keepAspect = !keyboardController.IsKeyDown('shift') && !this.IsSinglePixelTextureResize(); // ratio by default; shift or 1x1 textures scale freely
-        const m = this.GetResizeMouse(scene, scene.mouse.world.position);
+        const m = this.GetResizeMouse(scene, pointerPosition);
 
         // Mouse in the frame's local space (box spans [-hw,hw] x [-hh,hh], centred at 0).
         const ml = this.ToFrameLocal(f, m);
@@ -341,16 +390,77 @@ export class TransformToolHandler
     {
         this.rotating = true;
         this.resizing = false;
+        this.moving = false;
         this.handle = null;
         this.startFrame = { ...frame };
         this.startMouseAngle = Math.atan2(mouse.y - frame.cy, mouse.x - frame.cx);
         this.RecordStarts();
     }
 
-    private ApplyRotate(scene: Scene): void
+    // ================= MOVE =================
+
+    private BeginMove(scene: Scene, mouse: Vec2): void
+    {
+        this.moving = true;
+        this.resizing = false;
+        this.rotating = false;
+        this.handle = null;
+        this.startMousePosition = this.GetResizeMouse(scene, mouse);
+        this.RecordStarts();
+
+        const target = this.starts.length == 1 ? this.starts[0].obj : null;
+        const sopiroController = target && scene.Has("sopiro") ? scene.Get("sopiro") : null;
+        this.moveGrabController = sopiroController && sopiroController.grab(target, mouse)
+            ? sopiroController
+            : null;
+    }
+
+    StartMoveFromPointer(scene: Scene, mouse: Vec2): boolean
+    {
+        if (this.resizing || this.rotating || this.moving) return false;
+        if (this.targets.length == 0 || this.GetScene() !== scene) return false;
+
+        this.BeginMove(scene, mouse);
+        this.SetHitboxesActive(false);
+        this.SuppressEditorControls(true);
+        this.SetCursor('move');
+        return true;
+    }
+
+    IsTransforming(): boolean
+    {
+        return this.resizing || this.rotating || this.moving;
+    }
+
+    HandledPointerUp(event: PointerEvent): boolean
+    {
+        return this.completedPointerEvents.has(event);
+    }
+
+    private ApplyMove(scene: Scene, pointerPosition: Vec2 = scene.mouse.world.position): void
+    {
+        const mouse = this.GetResizeMouse(scene, pointerPosition);
+
+        if (this.moveGrabController)
+        {
+            this.moveGrabController.moveGrab(mouse);
+            return;
+        }
+
+        const dx = mouse.x - this.startMousePosition.x;
+        const dy = mouse.y - this.startMousePosition.y;
+
+        for (const st of this.starts)
+        {
+            this.SetWorldPosition(st.obj, st.pos.x + dx, st.pos.y + dy);
+            (st.obj as any).ResetVelocity?.();
+        }
+    }
+
+    private ApplyRotate(scene: Scene, pointerPosition: Vec2 = scene.mouse.world.position): void
     {
         const f = this.startFrame;
-        const m = scene.mouse.world.position;
+        const m = pointerPosition;
 
         let deltaDeg = (Math.atan2(m.y - f.cy, m.x - f.cx) - this.startMouseAngle) * 180 / Math.PI;
 
@@ -396,8 +506,10 @@ export class TransformToolHandler
 
     private EndTransform(scene: Scene): void
     {
+        this.ReleaseMoveGrab();
         this.resizing = false;
         this.rotating = false;
+        this.moving = false;
         this.handle = null;
         this.starts = [];
 
@@ -405,6 +517,19 @@ export class TransformToolHandler
         const save = (scene as any).saveLevelCallback;
         if (typeof save == 'function')
             save();
+    }
+
+    private ReleaseMoveGrab(): void
+    {
+        this.moveGrabController?.releaseGrab?.();
+        this.moveGrabController = null;
+    }
+
+    private NotifyTransformPreview(scene: Scene): void
+    {
+        const notify = (scene as any).NotifyTransformToolPreview;
+        if (typeof notify == 'function')
+            notify.call(scene);
     }
 
     private SetWorldPosition(o: GameObject, worldX: number, worldY: number): void
@@ -458,6 +583,40 @@ export class TransformToolHandler
     private GetScene(): Scene | null
     {
         return this.targets[0]?.scene ?? null;
+    }
+
+    private PickTransformTarget(mouseX: number, mouseY: number): void
+    {
+        const scenes = bare.scene.GetAll(true);
+        for (var i = scenes.length - 1; i >= 0; i--)
+        {
+            const scene = scenes[i];
+            const pick = (scene as any).SelectTransformToolTargetAt;
+            if (!scene.enabled || typeof pick != 'function')
+                continue;
+
+            pick.call(scene, scene.ScreenToWorld(mouseX, mouseY));
+            return;
+        }
+    }
+
+    private PointerHitsCurrentHandle(mouseX: number, mouseY: number): boolean
+    {
+        const scene = this.GetScene();
+        if (!scene)
+            return false;
+
+        const frame = this.GetFrame(this.GetTransformableTargets(this.targets));
+        if (!frame)
+            return false;
+
+        const mouse = scene.ScreenToWorld(mouseX, mouseY);
+        return this.HitTestRotation(scene, frame, mouse) || this.HitTest(scene, frame, mouse) !== null;
+    }
+
+    private SceneHandlesBodyMove(scene: Scene): boolean
+    {
+        return (scene as any).transformToolHandlesBodyMove === true;
     }
 
     // A single textured object yields an oriented box that hugs and rotates with it.
@@ -562,6 +721,12 @@ export class TransformToolHandler
         const dx = p.x - f.cx;
         const dy = p.y - f.cy;
         return new Vec2(dx * cos + dy * sin, -dx * sin + dy * cos);
+    }
+
+    private FrameContains(frame: Frame, point: Vec2): boolean
+    {
+        const local = this.ToFrameLocal(frame, point);
+        return Math.abs(local.x) <= frame.hw && Math.abs(local.y) <= frame.hh;
     }
 
     private HandlePos(f: Frame, handle: HandleDef): Vec2

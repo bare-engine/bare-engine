@@ -2,7 +2,6 @@ import { keyboardController } from "../controllers/keyboardController";
 import { GameMode, globalEvents } from "../globals";
 import { Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
-import { ArcadeObject } from "../objects/arcadeObject";
 import { EditorScene } from "../scenes/editorScene";
 import { EditorUIScene } from "../scenes/editorUIScene";
 import { EntityScene } from "../scenes/entityScene";
@@ -126,11 +125,42 @@ window.__GAME_DEBUG_API__ = {
       return true;
   },
 
+  selectEntityObject(childPath: number[] = [])
+  {
+      const entityScene = bare.scene.Get(EntityScene);
+      if (!entityScene)
+          return false;
+
+      let selected = entityScene.object.GetByName(entityScene.objectName);
+      for (const childIndex of childPath)
+      {
+          if (!selected || !Number.isInteger(childIndex))
+              return false;
+
+          selected = selected.children?.[childIndex];
+      }
+
+      if (!selected)
+          return false;
+
+      // EntityScene disables ordinary editor hitbox selection. Panel tree selection is
+      // authoritative here, so force-select the matching live object without echoing it back.
+      entityScene.editorControlsHandler.SelectGameObjects([selected], true, true, false);
+      return selected.uniqueID;
+  },
+
   unselectedObject(uid: string)
   {
       let selected = getObjectByIdFromAllScenes(uid);
 
       if (!selected) return false;
+
+      const entityScene = bare.scene.Get(EntityScene);
+      if (entityScene && selected.scene === entityScene)
+      {
+          entityScene.editorControlsHandler.ClearSelection();
+          return true;
+      }
 
       selected.RemoveShader(OutlineShader);
       TransformToolHandler.Get().Clear();
@@ -150,6 +180,10 @@ window.__GAME_DEBUG_API__ = {
   {
     var primaryId = uids[uids.length - 1];
     window.postMessage({ __fromGame: true, type: "selectObject", id: primaryId, openObjectsTab, parentIds: [], selectedIds: uids }, "*");
+  },
+
+  selectEntityObjectInPlugin(data) {
+    window.postMessage({ __fromGame: true, type: "selectEntityObject", data }, "*");
   },
 
   gotoLevelView(levelPath: string) {
@@ -405,6 +439,13 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
     var entityScene = await bare.scene.Add(EntityScene, {name: name, isBase: isBase, settingsHandler: settingsHandler});
     //bare.scene.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
     plugin.notifyLeaveEntity = true;
+
+    // The entity panel represents the live root object in EntityScene. Select it in the
+    // scene as well so TransformTool is available immediately, without echoing the
+    // selection back to the plugin that initiated it.
+    var liveEntityObject = entityScene.object.GetByName(name);
+    if (liveEntityObject)
+        entityScene.editorControlsHandler.SelectGameObjects([liveEntityObject], true, true, false);
 
     var entity:Entity;
     var raw = entityScene.settingsHandler.GetRaw();
@@ -1343,6 +1384,10 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
       window.postMessage({ __fromGame: true, type: "settingsData", data: newData }, "*");
   },
 
+  notifyEntityTransformPreview(data) {
+    window.postMessage({ __fromGame: true, type: "entityTransformPreview", data }, "*");
+  },
+
   notifyLeaveEntity() {
     window.postMessage({ __fromGame: true, type: "notifyLeaveEntity2" }, "*");
   },
@@ -1544,10 +1589,6 @@ export class PluginHandler
     public isPluginConnected: boolean = false;
 
     debugActions: Array<{label?: string, callback?: () => void}> = [];
-    movingObj: GameObject;
-    // grabController is set when the dragged object is a dynamic body in a sopiro scene:
-    // the drag is driven through a physics GrabJoint instead of teleporting via SetPosition.
-    draggedObjData: { obj: GameObject; offset: Vec2; hasMovedAwayEnough: boolean; grabController?: /*SopiroPhysicsController*/ any | null }; // DONT WANT TO INCLUDE SopiroPhysicsController
     doNotifyAfterSave: boolean = true;
     notifyLeaveEntity: boolean = true;
     currentSceneClassString: string = "";
@@ -1687,6 +1728,15 @@ export class PluginHandler
 
     HandleClickObject(obj: GameObject)
     {
+        var entityScene = bare.scene.Get(EntityScene);
+        if (entityScene && obj?.scene === entityScene)
+        {
+            // EntityScene deliberately disables canvas-driven selection. A selection coming
+            // from the plugin is still authoritative and should drive TransformTool.
+            entityScene.editorControlsHandler.SelectGameObjects([obj], true, true, false);
+            return;
+        }
+
         var editorScene = bare.scene.Get(EditorScene);
         if (editorScene)
         {
@@ -1746,30 +1796,7 @@ export class PluginHandler
               this.SelectObjectInPlugin(obj.uniqueID, openObjectsTab, parentIds);
 
               var mouseWorldAtClick = obj.scene.ScreenToWorldPos(bare.GetCanvasScreenPosition(ev.clientX, ev.clientY));
-              var mouseLocalAtClick = obj.parent ? obj.parent.ToLocal(mouseWorldAtClick) : mouseWorldAtClick;
-
-              // In a sopiro scene, manipulate a dynamic body through a physics grab joint
-              // instead of teleporting it. grab() returns false for non-bodies / static bodies,
-              // in which case we fall back to the plain SetPosition drag below.
-              var sopiroController = obj.scene.Has("sopiro") ? obj.scene.Get("sopiro") : null;
-              var grabController = sopiroController && sopiroController.grab(obj, mouseWorldAtClick)
-                  ? sopiroController
-                  : null;
-
-              this.draggedObjData = {
-                  obj,
-                  offset: obj.position.subtract(mouseLocalAtClick),
-                  hasMovedAwayEnough: false,
-                  grabController
-              };
-
-              const updateDraggedObjectBound = this.UpdateDraggedObject.bind(this);
-              obj.scene.events.on(BareEvent.scene_update, updateDraggedObjectBound);
-              obj.scene.events.once(BareEvent.pointer_up_any, () => {
-                  obj.scene.events.off(BareEvent.scene_update, updateDraggedObjectBound);
-                  if (grabController)
-                      grabController.releaseGrab();
-              });
+              TransformToolHandler.Get().StartMoveFromPointer(obj.scene, mouseWorldAtClick);
           }
       }
 
@@ -1792,51 +1819,6 @@ export class PluginHandler
         mouse.PointerDownAny({ mouseX: p.x, mouseY: p.y, event: ev, isLeftButton: ev.button == 0 });
     }
     
-    private UpdateDraggedObject(): void
-    {
-        var data = this.draggedObjData;
-
-        var scene = data.obj.scene;
-        var mouseX = scene.mouse.screen.position.x;
-        var mouseY = scene.mouse.screen.position.y;
-
-        //mouseX = data.obj.scene.mouse.screen.position.x;
-        //mouseY = data.obj.scene.mouse.screen.position.y;
-
-        if (!this.draggedObjData.hasMovedAwayEnough)
-        {
-            var mouseScreen = data.obj.scene.mouse.screen;
-            var dist = Helper.Distance(mouseScreen.position, mouseScreen.positionOnRightDown);
-            if (dist > 10)
-            {
-                this.draggedObjData.hasMovedAwayEnough = true;
-                //this.movingObjData.offset = this.movingObjData.obj.position.subtract(mouseController.worldMouse);
-            }
-            else
-            {
-                return;
-            }
-        }
-        
-        var worldPos = data.obj.scene.ScreenToWorldPos(new Vec2(mouseX, mouseY));
-
-        // Sopiro body: let the solver pull it toward the cursor via the grab joint.
-        if (data.grabController)
-        {
-            data.grabController.moveGrab(worldPos);
-            return;
-        }
-
-        var ref = data.obj.parent ? data.obj.parent.ToLocal(worldPos) : worldPos;
-        data.obj.SetPosition(ref.x + data.offset.x, ref.y + data.offset.y);
-
-        if (data.obj instanceof ArcadeObject)
-            data.obj.ResetVelocity();
-
-        //var worldPos = data.obj.scene.ScreenToWorldPos(new Vec2(mouseX, mouseY));
-        //data.obj.SetPosition(worldPos.x + data.offset.x, worldPos.y + data.offset.y);
-    }
-
     CheckClickGameObject(ev: PointerEvent): GameObject | null
     {
         //var objs = this.GetCurrentScene().object.GetAll();
