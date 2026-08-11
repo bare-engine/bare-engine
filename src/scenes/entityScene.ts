@@ -549,7 +549,12 @@ export class EntityScene extends EditorScene
                 if (!child.visible || !child.visibleInEditor || child.alpha == 0)
                     continue;
 
-                candidates.push({ obj: child, rect: child.GetBounds() });
+                // SAME REASON AS FindDeepestObjectAt: A TEXTURELESS CONTAINER'S GetBounds() FALLS
+                // BACK TO ITS CHILDREN'S COMBINED BOUNDS, WHICH WOULD OTHERWISE MARQUEE-SELECT IT
+                // FOR A DRAG THAT ONLY GRAZES THE GAP BETWEEN ITS CHILDREN.
+                if (child.texture)
+                    candidates.push({ obj: child, rect: child.GetBounds() });
+
                 collect(child);
             }
         };
@@ -569,6 +574,13 @@ export class EntityScene extends EditorScene
             if (selectedChild)
                 return selectedChild;
         }
+
+        // GameObject.GetBounds() falls back to GetBoundsWithChildren() when the object has no
+        // texture of its own - a textureless container has nothing to click ON, and shouldn't
+        // steal a click that lands in a gap between its children just because that gap falls
+        // inside their combined bounds.
+        if (!obj.texture)
+            return null;
 
         return Helper.IsPointInRectangle(worldPosition, obj.GetBounds()) ? obj : null;
     }

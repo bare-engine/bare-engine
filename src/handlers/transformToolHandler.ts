@@ -182,7 +182,17 @@ export class TransformToolHandler
             const pointsIntoCurrentHierarchy = pointedTarget != null &&
                 this.targets.some(target => this.IsDescendantOrSelf(pointedTarget, target));
 
-            if (pickerScene && this.SceneHandlesBodyMove(pickerScene) && pointsIntoCurrentHierarchy)
+            // A click can land inside the current selection's own frame without resolving to a
+            // pickable object there (eg a textureless container's area not covered by any child -
+            // FindDeepestObjectAt/GetTransformToolTargetAt intentionally returns null for that, so
+            // it doesn't steal clicks in gaps between children). That's still "inside the current
+            // selection", not empty space - the object is already selected, so dragging there
+            // should move it, not fall through to a marquee-select that clears the selection.
+            const currentFrame = pickerScene ? this.GetFrame(this.GetTransformableTargets(this.targets)) : null;
+            const pointsWithinCurrentFrame = !!currentFrame &&
+                this.FrameContains(currentFrame, pickerScene!.ScreenToWorld(mouseX, mouseY));
+
+            if (pickerScene && this.SceneHandlesBodyMove(pickerScene) && (pointsIntoCurrentHierarchy || pointsWithinCurrentFrame))
             {
                 // Descendants belong to the current drag target's hierarchy. Keep the current
                 // selection while dragging, but let a stationary click select that child on up.
