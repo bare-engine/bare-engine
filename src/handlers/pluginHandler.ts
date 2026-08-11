@@ -436,14 +436,6 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
         return;
     }*/
 
-    // A reload of the SAME already-open entity (eg the round trip after a live edit like paste
-    // or delete) should preserve whatever selection that edit already left - empty after a
-    // delete, the new child after a paste - rather than jumping back to the root object.
-    const existingEntityScene = bare.scene.Get(EntityScene);
-    const isReopeningSameEntity = !!existingEntityScene &&
-        existingEntityScene.objectName == name &&
-        existingEntityScene.isBase == isBase;
-
     if (!bare.scene.Get(EntityScene))
         bare.scene.Remove(EditorScene); // WILL REMOVE LEVEL EDITOR IF EXISTS
 
@@ -452,13 +444,10 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
     //bare.scene.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
     plugin.notifyLeaveEntity = true;
 
-    // The entity panel represents the root entity immediately after first opening it.
-    if (!isReopeningSameEntity)
-    {
-        var liveEntityObject = entityScene.object.GetByName(name);
-        if (liveEntityObject)
-            entityScene.editorControlsHandler.SelectGameObjects([liveEntityObject], true, true, false);
-    }
+    // Opening/reloading an entity no longer auto-selects the root object live in-scene - the
+    // panel still defaults to showing the root's own fields (that's separate, panel-side logic),
+    // but the transform tool stays empty until the user actually clicks something. EditorControlsHandler
+    // is freshly constructed in OnStart() on every (re)open, so selection is already empty here.
 
     var entity:Entity;
     var raw = entityScene.settingsHandler.GetRaw();
