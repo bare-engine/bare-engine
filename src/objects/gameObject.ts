@@ -6,7 +6,7 @@ import type { Scene } from "../scenes/scene";
 import type { ComponentCtor, Ctor, DropFirst, Events, Rectangle, Shader } from "../types/bareTypes";
 import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';
 import { Hitbox } from '../types/hitbox';
-import { getOwnSaveFieldNames, InspectorField, Percentage, Save } from "../utils/decorators";
+import { getOwnSaveFieldNames, InspectorField, isInspectorFieldDescriptor, Percentage, Save } from "../utils/decorators";
 import { Helper } from '../utils/helper';
 
 export class Transform {
@@ -319,7 +319,22 @@ export class GameObject
                     var componentInstance = new ComponentClass(o.scene);
                     for (const key in componentValues)
                     {
-                        componentInstance[key] = componentValues[key];
+                        const value = componentValues[key];
+
+                        // @InspectorField DESCRIPTORS (EG TextComponent.fontSize, DECLARED AS
+                        // { get, set }) HOLD A PLAIN {get,set} OBJECT ON THE INSTANCE - A DIRECT
+                        // ASSIGNMENT WOULD JUST OVERWRITE THAT OBJECT INSTEAD OF INVOKING IT, SO
+                        // THE VALUE WOULD SILENTLY NEVER TAKE EFFECT. MIRRORS
+                        // Scene.ApplyEntityVarsToGameObject, WHICH DOES THE SAME FOR THE OUTER
+                        // GAMEOBJECT'S OWN FIELDS (EG TextObject.fontSize).
+                        const descriptor = (componentInstance as any)[key];
+                        if (isInspectorFieldDescriptor(descriptor) && typeof descriptor.set === "function")
+                        {
+                            descriptor.set.call(componentInstance, value);
+                            continue;
+                        }
+
+                        componentInstance[key] = value;
                     }
                     componentInstance.__paramNames = Object.keys(componentValues);
                     o.AddComponent(componentInstance);

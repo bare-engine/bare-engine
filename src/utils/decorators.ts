@@ -596,7 +596,7 @@ function getFieldValue(component: any, entry: FieldEntry): any
     return typeof field === "function" ? field.call(component) : field;
 }
 
-function isInspectorFieldDescriptor(value: any): boolean
+export function isInspectorFieldDescriptor(value: any): boolean
 {
     // Only treat a PLAIN object literal (e.g. `{ get: () => ... }`) as a descriptor. A class instance
     // such as Vec2 has its own `set`/`get` methods but is a real field value, not a descriptor wrapper.
