@@ -35,7 +35,7 @@ export class EntityScene extends EditorScene
     override async OnStart(payload: EntitySceneAwakePayload = this.lastPayload): Promise<void>
     {
         this.degugAtStart = window.debug;
-        window.debug = true;
+        //window.debug = true;
         
         if (!assetsHandler.HasTexture("placeHolder"))
         {

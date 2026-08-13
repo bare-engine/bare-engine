@@ -25,10 +25,14 @@ export class TextObject extends GameObject
     get align():string {return this.textTexture.style.align;}
     set align(value:"left" | "center" | "right") {this.textTexture.style.align = value; this.UpdateText();}
     
-    @InspectorField @Save
-    get _color():Color {return Color.fromHex(this.textTexture.style.fill as string);}
-    set _color(value:Color) { this.textTexture.style.fill = value.toHex(); this.UpdateText();}
-    
+    override get specialMap(): Record<string, (obj: TextObject, value: any) => void>
+    {
+        return {
+            ...super.specialMap,
+            color: (o, v) => { o.textTexture.style.fill = v; o.UpdateText();}
+        };
+    }
+
     constructor(scene: Scene, options: ITextOptions = {})
     {
         super(scene);

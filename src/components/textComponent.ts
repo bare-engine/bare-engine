@@ -1,8 +1,10 @@
 import { Component } from "../controllers/componentController";
-import { Scene } from "../globals";
+import { GameMode, Scene } from "../globals";
 import { Color, ITextOptions, TextTexture, Vec2 } from "../libraries/new-rapid-render";
-import { Dropdown, InspectorField, Int, Limit } from "../utils/decorators";
+import { Dropdown, InspectorField, Int, Limit, Save } from "../utils/decorators";
+import { Run } from "../utils/runModes";
 
+@Run(GameMode.Edit, GameMode.Play)
 export class TextComponent extends Component
 {
     private textTexture: TextTexture;
@@ -13,7 +15,7 @@ export class TextComponent extends Component
         set: (text: string) => this.SetText(text),
     };
 
-    @InspectorField @Int @Limit(0, Infinity)
+    @InspectorField @Int @Limit(0, Infinity) @Save
     fontSize = {
         get: () => this.textTexture.style.fontSize,
         set: (fontSize: number) => {this.textTexture.style.fontSize = fontSize; this.UpdateText();},
@@ -29,7 +31,7 @@ export class TextComponent extends Component
     
     @InspectorField
     get _color():Color {return Color.fromHex(this.textTexture.style.fill as string);}
-    set _color(value:Color) { this.textTexture.style.fill = value.toHex(); this.UpdateText();}
+    set _color(value:string) { this.textTexture.style.fill = value; this.UpdateText();}
     
     constructor(scene: Scene, options:ITextOptions = {})
     {
