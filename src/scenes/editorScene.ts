@@ -334,6 +334,12 @@ export class EditorScene extends Scene
     // (EG ITS CHILDPATH) BEFORE IT BECOMES UNREACHABLE, TO PERSIST THE REMOVAL ON SAVE.
     OnBeforeGameObjectRemoved(_gameObject: GameObject): void {}
 
+    // CALLED RIGHT AFTER A COMPONENT IS ADDED TO / REMOVED FROM A LIVE GAMEOBJECT (EG VIA THE
+    // PLUGIN'S "ADD"/REMOVE COMPONENT ACTIONS). OVERRIDDEN BY SCENES (EG EntityScene) THAT NEED
+    // TO PERSIST THE CHANGE BACK TO THEIR SPARSE ENTITY DATA.
+    OnComponentAdded(_gameObject: GameObject, _compName: string): void {}
+    OnComponentRemoved(_gameObject: GameObject, _compName: string): void {}
+
     // WHETHER EditorControlsHandler MAY START A MARQUEE/RECT SELECTION DRAG (AND WHETHER
     // TransformToolHandler MAY DEFER AN EMPTY-SPACE CLICK TO LET ONE START - SEE ITS
     // OnPointerDown). SEPARATE FROM settingsData.selectionEnabled, WHICH ALSO GATES THE OLDER

@@ -650,6 +650,72 @@ export class EntityScene extends EditorScene
             this.pendingRemovedChildPaths.push(childPath);
     }
 
+    // UNLIKE TRANSFORMS/REMOVALS (WHICH BATCH UP AND ONLY GET PUSHED BACK ON THE NEXT
+    // SaveEntityDataToSettingsData), A COMPONENT ADD/REMOVE PERSISTS AND RELOADS RIGHT AWAY - SEE
+    // PersistComponentChange FOR WHY.
+    override OnComponentAdded(gameObject: GameObject, compName: string): void
+    {
+        this.PersistComponentChange(gameObject, compName, true);
+    }
+
+    override OnComponentRemoved(gameObject: GameObject, compName: string): void
+    {
+        this.PersistComponentChange(gameObject, compName, false);
+    }
+
+    // writes the component add/remove into the raw entity at gameobject's childpath, saves it, then
+    // asks the plugin to reload the entity - the same reloadentityinplugin message a pasted/removed
+    // child sends (see structurechanged in saveentitydatatosettingsdata). the plugin's response to
+    // that message is what actually calls gotoentity() and rebuilds the live scene - we don't call
+    // it directly here, since that would double-reload it.
+    //
+    // an ordinary save only pushes back a handful of fields (see saveentitydatatosettingsdata) and
+    // has no concept of components at all, so without this a component change would only exist on
+    // the live gameobject and vanish on the next real reload (eg re-opening the entity) instead of
+    // showing up in the plugin right away.
+    private async PersistComponentChange(gameObject: GameObject, compName: string, added: boolean): Promise<void>
+    {
+        const rootObject = this.object.GetByName(this.objectName);
+        if (!rootObject)
+            return;
+
+        const childPath = this.GetChildPath(rootObject, gameObject);
+        if (childPath === null)
+            return;
+
+        const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
+            var entity: Entity | undefined = this.isBase
+                ? draft.baseEntities?.[this.objectName]
+                : draft.entities?.[this.objectName];
+
+            for (const childIndex of childPath)
+                entity = entity?.children?.[childIndex];
+
+            if (!entity)
+                return;
+
+            if (added)
+            {
+                entity.components ??= {};
+                entity.components[compName] ??= {};
+            }
+            else if (entity.components)
+            {
+                delete entity.components[compName];
+            }
+        });
+
+        await this.SaveEntityData(newRawSettingsData);
+
+        window.__GAME_DEBUG_API__?.notifyEntityDataChanged(newRawSettingsData);
+        window.__GAME_DEBUG_API__?.reloadEntityInPlugin({
+            name: this.objectName,
+            isBase: this.isBase,
+            settingsDataName: newRawSettingsData.name,
+            childPath,
+        });
+    }
+
     // KEEPS ONLY THE OUTERMOST PATHS - IF A PARENT AND ITS CHILD ARE BOTH PENDING REMOVAL, THE
     // PARENT'S SPLICE ALREADY TAKES THE CHILD WITH IT.
     private PruneDescendantPaths(paths: number[][]): number[][]

@@ -1231,6 +1231,11 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
                 {
                     // JUST CREATED A COMPONENT
                     o.AddComponent(compClass);
+
+                    // ENTITY SCENES TAKE THEIR ENTITY DATA AS BASE TRUTH (SEE THE setEntityField
+                    // COMMENT ABOVE) - WITHOUT THIS, A COMPONENT ADDED HERE ONLY EXISTS ON THE LIVE
+                    // GAMEOBJECT AND IS LOST/HIDDEN FROM THE PLUGIN AS SOON AS THE ENTITY RELOADS.
+                    (o.scene as EditorScene).OnComponentAdded?.(o, compName);
                 }
 
             }
@@ -1292,6 +1297,9 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
 
         var compRef = bare.componentClasses[Helper.CapitalizeFirstLetter(comp) + "Component"];
         o.RemoveComponent(compRef);
+
+        // SEE THE NOTE ON THE ADD PATH IN setObject() - ENTITY SCENES NEED THIS TO PERSIST/RELOAD.
+        (o.scene as EditorScene).OnComponentRemoved?.(o, comp);
     },
 
     getAllComponentNames():string[] {
