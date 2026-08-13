@@ -458,7 +458,7 @@ export class EditorControlsHandler {
 
             for (const candidate of candidates)
             {
-                if (this.RectsIntersect(candidate.rect, rect))
+                if (this.RectContains(rect, candidate.rect))
                     objsToSelect.push(candidate.obj);
             }
         }
@@ -469,12 +469,12 @@ export class EditorControlsHandler {
         this.SelectGameObjects(objsToSelect, !multiSelect, true);
     }
 
-    private RectsIntersect(a: Rectangle, b: Rectangle): boolean
+    private RectContains(container: Rectangle, target: Rectangle): boolean
     {
-        return a.x < b.x + b.width &&
-            a.x + a.width > b.x &&
-            a.y < b.y + b.height &&
-            a.y + a.height > b.y;
+        return target.x >= container.x &&
+            target.x + target.width <= container.x + container.width &&
+            target.y >= container.y &&
+            target.y + target.height <= container.y + container.height;
     }
 
     ClearSelection()
