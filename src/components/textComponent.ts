@@ -30,8 +30,18 @@ export class TextComponent extends Component
     set align(value:"left" | "center" | "right") {this.textTexture.style.align = value; this.UpdateText();}
     
     @InspectorField
-    get _color():Color {return Color.fromHex(this.textTexture.style.fill as string);}
-    set _color(value:string) { this.textTexture.style.fill = value; this.UpdateText();}
+    get _color():Color
+    {
+        const fill = this.textTexture.style.fill;
+
+        // Keep this tolerant of instances that received a Color before the setter was fixed.
+        return fill instanceof Color ? fill : Color.fromHex(fill as string);
+    }
+    set _color(value:Color | string)
+    {
+        this.textTexture.style.fill = typeof value === "string" ? value : value.toHex();
+        this.UpdateText();
+    }
     
     constructor(scene: Scene, options:ITextOptions = {})
     {

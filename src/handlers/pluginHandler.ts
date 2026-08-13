@@ -994,6 +994,37 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
             {
                 var value = props[prop];
 
+                // component field preview (eg textcomponent.fontsize while dragging the inspector
+                // field) - must apply onto the existing live component instance's setter, not
+                // through obj.specialmap.components below: that handler is for constructing an
+                // entity's components from scratch (see gameobject.specialmap), so calling it here
+                // would `new` a second, unrelated component instance and leave the one actually
+                // being rendered untouched - the preview would silently do nothing visually until
+                // the edit was saved (which reloads the entity from scratch and self-corrects).
+                if (prop === "components")
+                {
+                    for (var compName in value)
+                    {
+                        var compClass = bare.componentClasses[Helper.CapitalizeFirstLetter(compName) + "Component"];
+                        var comp = obj.scene.component.Get(obj, compClass);
+                        if (!comp)
+                            continue; // COMPONENT NOT LIVE YET (EG STILL BEING ADDED) - NOTHING TO PREVIEW ONTO
+
+                        var compData: Record<string, Scalar> = value[compName];
+                        for (var compProp in compData)
+                        {
+                            if (compProp.startsWith("__"))
+                                continue;
+
+                            if (await applyInspectorField(comp, compProp, compData[compProp]))
+                                continue;
+
+                            comp[compProp] = compData[compProp];
+                        }
+                    }
+                    continue;
+                }
+
                 // @InspectorField DESCRIPTORS (EG TextObject.text/fontSize, DECLARED AS { get, set })
                 // NEED THEIR OWN SETTER INVOKED - A DIRECT ASSIGNMENT WOULD JUST OVERWRITE THE
                 // DESCRIPTOR OBJECT ITSELF, SO THE LIVE PREVIEW NEVER ACTUALLY APPLIED THE CHANGE.
