@@ -263,12 +263,8 @@ export class EntityScene extends EditorScene
     {
         var rootObject = this.object.GetByName(this.objectName);
         
-        // Persistence and panel visualization deliberately use separate snapshots. Runtime-only
-        // children (save === false) belong in the panel hierarchy, but never in entityData JSON.
         var entity = this.GetEnitityFromObject(rootObject);
-        var panelEntity = this.GetEnitityFromObject(rootObject, true);
         delete entity.name;//
-        delete panelEntity.name;//
 
         const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
             const collection = this.isBase ? draft.baseEntities : draft.entities;
@@ -283,25 +279,43 @@ export class EntityScene extends EditorScene
         window.__GAME_DEBUG_API__?.notifyEntityDataChanged({
             name: this.objectName,
             isBase: this.isBase,
-            entity: panelEntity,
+            entity,
         });
         
         return this.currentLevel; // NOT USED IN THIS CASE, BUT EXPECTED FOR METHOD, BIT HACKY
     }
 
-    NotifyTransformToolPreview(): void
+    NotifyTransformToolPreview(operation: "move" | "resize" | "rotate"): void
     {
         const rootObject = this.object.GetByName(this.objectName);
         if (!rootObject)
             return;
 
+        const fields = operation === "move"
+            ? ["position"]
+            : operation === "rotate"
+                ? ["rotation"]
+                : ["position", "scale"];
+
         const transforms = (this.editorControlsHandler?.selectedObjects ?? [])
-            .map(obj => ({
-                childPath: this.GetChildPath(rootObject, obj),
-                position: { x: obj.x, y: obj.y },
-                scale: { x: obj.scale.x, y: obj.scale.y },
-                rotation: obj.rotation,
-            }))
+            .map(obj => {
+                // Use the same entity diff used for persistence. This keeps default, unauthored
+                // transform fields absent instead of making a move preview explicitly author
+                // scale {1,1} and rotation 0 in the panel.
+                const serialized = this.GetEnitityFromObject(obj) as any;
+                const transform: any = {
+                    childPath: this.GetChildPath(rootObject, obj),
+                    fields,
+                };
+
+                for (const field of fields)
+                {
+                    if (Object.prototype.hasOwnProperty.call(serialized, field))
+                        transform[field] = serialized[field];
+                }
+
+                return transform;
+            })
             .filter(transform => transform.childPath !== null);
 
         if (transforms.length == 0)
@@ -336,7 +350,9 @@ export class EntityScene extends EditorScene
             return;
 
         const primary = objs[objs.length - 1];
-        const childPath = this.GetChildPath(rootObject, primary) ?? [];
+        const childPath = this.GetChildPath(rootObject, primary);
+        if (!childPath)
+            return;
 
         window.__GAME_DEBUG_API__?.selectEntityObjectInPlugin({
             name: this.objectName,
@@ -417,7 +433,7 @@ export class EntityScene extends EditorScene
         const collect = (obj: GameObject) => {
             for (const child of obj.children)
             {
-                if (!child.visible || !child.visibleInEditor || child.alpha == 0)
+                if (!child.save || !child.visible || !child.visibleInEditor || child.alpha == 0)
                     continue;
 
                 // SAME REASON AS FindDeepestObjectAt: A TEXTURELESS CONTAINER'S GetBounds() FALLS
@@ -436,7 +452,7 @@ export class EntityScene extends EditorScene
 
     private FindDeepestObjectAt(obj: GameObject, worldPosition: Vec2): GameObject | null
     {
-        if (!obj.visible || !obj.visibleInEditor || obj.alpha == 0)
+        if (!obj.save || !obj.visible || !obj.visibleInEditor || obj.alpha == 0)
             return null;
 
         for (var i = obj.children.length - 1; i >= 0; i--)
@@ -463,11 +479,14 @@ export class EntityScene extends EditorScene
 
         while (current !== root)
         {
+            if (!current.save)
+                return null;
+
             const parent = current.parent;
             if (!parent)
                 return null;
 
-            const childIndex = parent.children.indexOf(current);
+            const childIndex = parent.children.filter(child => child.save).indexOf(current);
             if (childIndex < 0)
                 return null;
 

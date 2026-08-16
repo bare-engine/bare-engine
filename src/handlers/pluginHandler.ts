@@ -137,7 +137,7 @@ window.__GAME_DEBUG_API__ = {
           if (!selected || !Number.isInteger(childIndex))
               return false;
 
-          selected = selected.children?.[childIndex];
+          selected = selected.children?.filter(child => child.save)[childIndex];
       }
 
       if (!selected)
@@ -518,25 +518,12 @@ window.__GAME_DEBUG_API__ = {
         }
     }
 
-    // gotoEntity's settings-derived data intentionally excludes runtime-only children. Overlay
-    // the live hierarchy so save:false helper objects are visible as soon as the panel opens,
-    // before the first EntityScene save/notification occurs.
-    var rootObject = entityScene.object.GetByName(name);
-    if (rootObject)
-    {
-        var runtimePanelEntity = entityScene.GetEnitityFromObject(rootObject, true);
-        if (runtimePanelEntity.children)
-            entityWithLog.children = runtimePanelEntity.children;
-        else
-            delete entityWithLog.children;
-    }
-
     // BUILD THE ENTITY TO PASS TO PLUGIN RIGHT AWAY
     //var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(entityWithLog, scene.settingsData, {fillPresets: false});
     //levelEntityWithDefaultValues.name = name;
 
     // ADD INFO OF @InspectorField DECORATORS TO ENTITY - SO PLUGIN CAN SHOW SHOW THESE DECORATED FIELS
-    var obj = rootObject;
+    var obj = entityScene.object.GetByName(name);
     if (obj)
         plugin.AddInspectorDataToObject(entityWithLog, obj, true);
 
@@ -754,6 +741,7 @@ window.__GAME_DEBUG_API__ = {
         "baseClass",
         "imagePath",
         "texture",
+        "position",
         "pivot",
         "alpha",
         "visible",
@@ -773,7 +761,7 @@ window.__GAME_DEBUG_API__ = {
         var entityScene = bare.scene.Get(EntityScene);
         var liveObj: any = entityScene?.object.GetByName(entityName);
         for (var i = 0; liveObj && i < childPath.length; i++)
-            liveObj = liveObj.children?.[childPath[i]];
+            liveObj = liveObj.children?.filter(child => child.save)[childPath[i]];
 
         if (liveObj)
         {
@@ -817,38 +805,16 @@ window.__GAME_DEBUG_API__ = {
   getNestedEntityVars(entityName: string, childPath: string[])
   {
         var scene = plugin.GetCurrentScene();
-        var entity: Entity;
-        var liveObj: GameObject | undefined;
-        var entityScene = scene instanceof EntityScene ? scene : null;
-
-        // The panel hierarchy may contain runtime-only (save:false) children, which do not exist
-        // in settings data. Resolve the same childPath against the live EntityScene first so
-        // clicking one can still build its field suggestions without indexing a missing raw child.
-        if (entityScene)
+        var entity = scene.settingsHandler.GetExtendedEntity(entityName);
+        
+        // GET THE CHILD
+        if (childPath.length > 0)
         {
-            liveObj = entityScene.object.GetByName(entityName);
             for (var i = 0; i < childPath.length; i++)
             {
-                liveObj = liveObj?.children?.[childPath[i]];
-                if (!liveObj)
-                    break;
+                entity = entity.children[childPath[i]];
             }
         }
-
-        if (liveObj && entityScene)
-        {
-            entity = entityScene.GetEnitityFromObject(liveObj, true);
-            entity.baseClass ??= liveObj.constructor.name;
-        }
-        else
-        {
-            entity = scene.settingsHandler.GetExtendedEntity(entityName);
-            for (var i = 0; entity && i < childPath.length; i++)
-                entity = entity.children?.[childPath[i]];
-        }
-
-        if (!entity)
-            return [];
 
         var baseClass = entity.baseClass || "GameObject";
         var allPossibleEntityKeys = plugin.GetAllPossibleEntityKeys(baseClass);
@@ -1006,27 +972,9 @@ window.__GAME_DEBUG_API__ = {
     {
         let entityScene = bare.scene.Get(EntityScene);
         var obj = entityScene.object.GetByName(name);
-        var rawChildPath: number[] = [];
-        var runtimeOnly = !obj?.save;
-
-        // childPath indexes the live hierarchy, which includes save:false objects. Translate it
-        // to a raw-data path by skipping unsaved siblings, and remember when the selected object
-        // itself (or one of its ancestors) has no raw entity counterpart at all.
         for (const childIndex of childPath)
         {
-            if (!obj || !Number.isInteger(childIndex) || !obj.children?.[childIndex])
-                throw new Error(`Could not find runtime entity child at path [${childPath.join(", ")}]`);
-
-            if (!runtimeOnly)
-            {
-                rawChildPath.push(obj.children
-                    .slice(0, childIndex)
-                    .filter(child => child.save)
-                    .length);
-            }
-
-            obj = obj.children[childIndex];
-            runtimeOnly ||= !obj.save;
+            obj = obj?.children.filter(child => child.save)[childIndex];
         }
 
         if (!obj)
@@ -1093,15 +1041,6 @@ window.__GAME_DEBUG_API__ = {
             return;
         }
 
-        if (runtimeOnly)
-        {
-            // There is deliberately no raw child to mutate. Apply the commit to the live object
-            // (also covers controls that save without a preview), then emit a fresh panel snapshot.
-            await window.__GAME_DEBUG_API__.setEntityField(name, props, childPath, false, justAdded);
-            await entityScene.SaveEntityDataToSettingsData();
-            return { runtimeOnly: true };
-        }
-        
         var rawSettingsData = entityScene.settingsHandler.GetRaw();
 
         // MAKE SURE ANY OR ANY_ENTITY EXISTS, IF WE'RE GONNA WRITE TO IT
@@ -1122,11 +1061,11 @@ window.__GAME_DEBUG_API__ = {
             entity = rawSettingsData.entities[entityScene.objectName];
 
         // GET THE CHILD
-        if (rawChildPath.length > 0)
+        if (childPath.length > 0)
         {
-            for (var i = 0; i < rawChildPath.length; i++)
+            for (var i = 0; i < childPath.length; i++)
             {
-                entity = entity.children[rawChildPath[i]];
+                entity = entity.children[childPath[i]];
             }
         }
         

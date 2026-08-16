@@ -682,7 +682,10 @@ export class TransformToolHandler
     {
         const notify = (scene as any).NotifyTransformToolPreview;
         if (typeof notify == 'function')
-            notify.call(scene);
+        {
+            const operation = this.moving ? "move" : this.rotating ? "rotate" : "resize";
+            notify.call(scene, operation);
+        }
     }
 
     private SetWorldPosition(o: GameObject, worldX: number, worldY: number): void
