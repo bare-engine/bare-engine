@@ -411,7 +411,26 @@ export class EntityScene extends EditorScene
     GetTransformToolTargetAt(worldPosition: Vec2): GameObject | null
     {
         const rootObject = this.object.GetByName(this.objectName);
-        return rootObject ? this.FindDeepestObjectAt(rootObject, worldPosition) : null;
+        if (!rootObject)
+            return null;
+
+        // Canvas picking in an EntityScene is intentionally one level deep. Descendants may be
+        // runtime-generated helpers (for example MoneyComponent's save:false dollar sprites), so
+        // use them only through their direct parent's combined bounds and select that parent.
+        for (var i = rootObject.children.length - 1; i >= 0; i--)
+        {
+            const child = rootObject.children[i];
+            if (!child.save || !child.visible || !child.visibleInEditor || child.alpha == 0)
+                continue;
+
+            if (Helper.IsPointInRectangle(worldPosition, child.GetBounds()))
+                return child;
+        }
+
+        if (!rootObject.visible || !rootObject.visibleInEditor || rootObject.alpha == 0 || !rootObject.texture)
+            return null;
+
+        return Helper.IsPointInRectangle(worldPosition, rootObject.GetBounds()) ? rootObject : null;
     }
 
     override AllowsRectSelection(): boolean
@@ -419,57 +438,17 @@ export class EntityScene extends EditorScene
         return true;
     }
 
-    // ENTITY CHILDREN HAVE NO TAP HITBOX (SEE EntityScene.AddGameObject), SO CANDIDATES ARE
-    // GATHERED BY WALKING THE ROOT ENTITY'S SUBTREE DIRECTLY, USING THE SAME BOUNDS-BASED
-    // VISIBILITY RULES AS FindDeepestObjectAt.
+    // Match click selection: only the root's direct, saved children are selectable. Their bounds
+    // may include deeper runtime-generated descendants, but those descendants are never targets.
     override GetRectSelectionCandidates(_includeAllLayers: boolean): Array<{ obj: GameObject, rect: Rectangle }>
     {
         const rootObject = this.object.GetByName(this.objectName);
         if (!rootObject)
             return [];
 
-        const candidates: Array<{ obj: GameObject, rect: Rectangle }> = [];
-
-        const collect = (obj: GameObject) => {
-            for (const child of obj.children)
-            {
-                if (!child.save || !child.visible || !child.visibleInEditor || child.alpha == 0)
-                    continue;
-
-                // SAME REASON AS FindDeepestObjectAt: A TEXTURELESS CONTAINER'S GetBounds() FALLS
-                // BACK TO ITS CHILDREN'S COMBINED BOUNDS, WHICH WOULD OTHERWISE MARQUEE-SELECT IT
-                // FOR A DRAG THAT ONLY GRAZES THE GAP BETWEEN ITS CHILDREN.
-                if (child.texture)
-                    candidates.push({ obj: child, rect: child.GetBounds() });
-
-                collect(child);
-            }
-        };
-        collect(rootObject);
-
-        return candidates;
-    }
-
-    private FindDeepestObjectAt(obj: GameObject, worldPosition: Vec2): GameObject | null
-    {
-        if (!obj.save || !obj.visible || !obj.visibleInEditor || obj.alpha == 0)
-            return null;
-
-        for (var i = obj.children.length - 1; i >= 0; i--)
-        {
-            const selectedChild = this.FindDeepestObjectAt(obj.children[i], worldPosition);
-            if (selectedChild)
-                return selectedChild;
-        }
-
-        // GameObject.GetBounds() falls back to GetBoundsWithChildren() when the object has no
-        // texture of its own - a textureless container has nothing to click ON, and shouldn't
-        // steal a click that lands in a gap between its children just because that gap falls
-        // inside their combined bounds.
-        if (!obj.texture)
-            return null;
-
-        return Helper.IsPointInRectangle(worldPosition, obj.GetBounds()) ? obj : null;
+        return rootObject.children
+            .filter(child => child.save && child.visible && child.visibleInEditor && child.alpha != 0)
+            .map(child => ({ obj: child, rect: child.GetBounds() }));
     }
 
     private GetChildPath(root: GameObject, target: GameObject): number[] | null
