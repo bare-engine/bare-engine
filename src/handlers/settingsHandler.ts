@@ -809,6 +809,14 @@ export class SettingsHandler
         // STRIP INSPECTOR-ONLY METADATA (__fields / __buttons) THAT THE PLUGIN INJECTS FOR DISPLAY
         // (SEE AddInspectorDataToObject) AND CAN ECHO BACK INTO THE DATA WE SAVE
         this.StripInspectorMeta(settingsData);
+
+        // EntityScene assigns temporary numeric IDs while constructing its runtime object graph.
+        // They are never part of entity source data. Remove IDs that leaked from an older scene
+        // instance as well, so the next plugin edit cleans existing files automatically.
+        for (const entity of Object.values(settingsData.entities ?? {}))
+            this.StripEntityRuntimeIds(entity);
+        for (const entity of Object.values(settingsData.baseEntities ?? {}))
+            this.StripEntityRuntimeIds(entity);
     }
 
     // RECURSIVELY REMOVE INSPECTOR-DISPLAY KEYS SO THEY NEVER GET PERSISTED INTO settingsData
@@ -825,6 +833,20 @@ export class SettingsHandler
             delete value.__buttons;
             for (var key in value)
                 this.StripInspectorMeta(value[key]);
+        }
+    }
+
+    private StripEntityRuntimeIds(entity: any)
+    {
+        if (!entity || typeof entity !== "object")
+            return;
+
+        delete entity.id;
+
+        if (Array.isArray(entity.children))
+        {
+            for (const child of entity.children)
+                this.StripEntityRuntimeIds(child);
         }
     }
 }

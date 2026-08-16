@@ -518,12 +518,25 @@ window.__GAME_DEBUG_API__ = {
         }
     }
 
+    // gotoEntity's settings-derived data intentionally excludes runtime-only children. Overlay
+    // the live hierarchy so save:false helper objects are visible as soon as the panel opens,
+    // before the first EntityScene save/notification occurs.
+    var rootObject = entityScene.object.GetByName(name);
+    if (rootObject)
+    {
+        var runtimePanelEntity = entityScene.GetEnitityFromObject(rootObject, true);
+        if (runtimePanelEntity.children)
+            entityWithLog.children = runtimePanelEntity.children;
+        else
+            delete entityWithLog.children;
+    }
+
     // BUILD THE ENTITY TO PASS TO PLUGIN RIGHT AWAY
     //var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(entityWithLog, scene.settingsData, {fillPresets: false});
     //levelEntityWithDefaultValues.name = name;
 
     // ADD INFO OF @InspectorField DECORATORS TO ENTITY - SO PLUGIN CAN SHOW SHOW THESE DECORATED FIELS
-    var obj = entityScene.object.GetByName(name);
+    var obj = rootObject;
     if (obj)
         plugin.AddInspectorDataToObject(entityWithLog, obj, true);
 
@@ -804,16 +817,38 @@ window.__GAME_DEBUG_API__ = {
   getNestedEntityVars(entityName: string, childPath: string[])
   {
         var scene = plugin.GetCurrentScene();
-        var entity = scene.settingsHandler.GetExtendedEntity(entityName);
-        
-        // GET THE CHILD
-        if (childPath.length > 0)
+        var entity: Entity;
+        var liveObj: GameObject | undefined;
+        var entityScene = scene instanceof EntityScene ? scene : null;
+
+        // The panel hierarchy may contain runtime-only (save:false) children, which do not exist
+        // in settings data. Resolve the same childPath against the live EntityScene first so
+        // clicking one can still build its field suggestions without indexing a missing raw child.
+        if (entityScene)
         {
+            liveObj = entityScene.object.GetByName(entityName);
             for (var i = 0; i < childPath.length; i++)
             {
-                entity = entity.children[childPath[i]];
+                liveObj = liveObj?.children?.[childPath[i]];
+                if (!liveObj)
+                    break;
             }
         }
+
+        if (liveObj && entityScene)
+        {
+            entity = entityScene.GetEnitityFromObject(liveObj, true);
+            entity.baseClass ??= liveObj.constructor.name;
+        }
+        else
+        {
+            entity = scene.settingsHandler.GetExtendedEntity(entityName);
+            for (var i = 0; entity && i < childPath.length; i++)
+                entity = entity.children?.[childPath[i]];
+        }
+
+        if (!entity)
+            return [];
 
         var baseClass = entity.baseClass || "GameObject";
         var allPossibleEntityKeys = plugin.GetAllPossibleEntityKeys(baseClass);
@@ -970,20 +1005,35 @@ window.__GAME_DEBUG_API__ = {
     async setEntityField(name: string, props: Record<string, any>, childPath: number[], save:boolean = false, justAdded:boolean = false)
     {
         let entityScene = bare.scene.Get(EntityScene);
+        var obj = entityScene.object.GetByName(name);
+        var rawChildPath: number[] = [];
+        var runtimeOnly = !obj?.save;
+
+        // childPath indexes the live hierarchy, which includes save:false objects. Translate it
+        // to a raw-data path by skipping unsaved siblings, and remember when the selected object
+        // itself (or one of its ancestors) has no raw entity counterpart at all.
+        for (const childIndex of childPath)
+        {
+            if (!obj || !Number.isInteger(childIndex) || !obj.children?.[childIndex])
+                throw new Error(`Could not find runtime entity child at path [${childPath.join(", ")}]`);
+
+            if (!runtimeOnly)
+            {
+                rawChildPath.push(obj.children
+                    .slice(0, childIndex)
+                    .filter(child => child.save)
+                    .length);
+            }
+
+            obj = obj.children[childIndex];
+            runtimeOnly ||= !obj.save;
+        }
+
+        if (!obj)
+            throw new Error(`Could not find runtime entity '${name}'`);
 
         if (!save)
         {
-            var obj = entityScene.object.GetByName(name);
-
-            // GET THE CHILD
-            if (childPath.length > 0)
-            {
-                for (var i = 0; i < childPath.length; i++)
-                {
-                    obj = obj.children[childPath[i]];
-                }
-            }
-
             for (var prop in props)
             {
                 var value = props[prop];
@@ -1042,6 +1092,15 @@ window.__GAME_DEBUG_API__ = {
 
             return;
         }
+
+        if (runtimeOnly)
+        {
+            // There is deliberately no raw child to mutate. Apply the commit to the live object
+            // (also covers controls that save without a preview), then emit a fresh panel snapshot.
+            await window.__GAME_DEBUG_API__.setEntityField(name, props, childPath, false, justAdded);
+            await entityScene.SaveEntityDataToSettingsData();
+            return { runtimeOnly: true };
+        }
         
         var rawSettingsData = entityScene.settingsHandler.GetRaw();
 
@@ -1063,11 +1122,11 @@ window.__GAME_DEBUG_API__ = {
             entity = rawSettingsData.entities[entityScene.objectName];
 
         // GET THE CHILD
-        if (childPath.length > 0)
+        if (rawChildPath.length > 0)
         {
-            for (var i = 0; i < childPath.length; i++)
+            for (var i = 0; i < rawChildPath.length; i++)
             {
-                entity = entity.children[childPath[i]];
+                entity = entity.children[rawChildPath[i]];
             }
         }
         
@@ -1421,10 +1480,9 @@ window.__GAME_DEBUG_API__ = {
     await plugin.SaveSettingsData(newData);
   },
 
-  notifyEntityDataChanged(newData) {
-    //window.postMessage({ __fromGame: true, type: "entityDataChanged" }, "*");
+  notifyEntityDataChanged(data: { name: string, isBase: boolean, entity: Entity }) {
     if (plugin.doNotifyAfterSave)
-      window.postMessage({ __fromGame: true, type: "settingsData", data: newData }, "*");
+      window.postMessage({ __fromGame: true, type: "entityData", data }, "*");
   },
 
   notifyEntityTransformPreview(data) {

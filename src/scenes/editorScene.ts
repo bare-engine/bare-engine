@@ -592,7 +592,7 @@ export class EditorScene extends Scene
         return gameObject;
     }
 
-    GetEnitityFromObject(rootObject: GameObject): Entity
+    GetEnitityFromObject(rootObject: GameObject, includeUnsavedChildren: boolean = false): Entity
     {
         // SERIALIZE ORIGINAL GAMEOBJECT USING STARTING ENTITY
         var serializedRootObjectOrig = this.ConstructEntityWithDefaultValues(rootObject.entity);
@@ -616,8 +616,8 @@ export class EditorScene extends Scene
                 {
                     var child = rootObject.children[i];
 
-                    if (child.save)
-                        diff.children.push(this.GetEnitityFromObject(child));
+                    if (child.save || includeUnsavedChildren)
+                        diff.children.push(this.GetEnitityFromObject(child, includeUnsavedChildren));
                 }
 
                 if (diff.children.length == 0)

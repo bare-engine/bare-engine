@@ -7,7 +7,6 @@ import { TextObject } from "../objects/textObject";
 import { AwakePayload, Entity, LevelData, Rectangle, SettingsData } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
 import { EditorScene } from "./editorScene";
-import { Scene } from "./scene";
 
 type EditorScenePayload = AwakePayload<EditorScene>;
 type EntitySceneAwakePayload = EditorScenePayload & {
@@ -127,7 +126,7 @@ export class EntityScene extends EditorScene
             entityFromSettingsData = this.settingsHandler.GetRaw().entities[objectName];
         }
 
-        entityFromSettingsData = {...entityFromSettingsData};
+        entityFromSettingsData = Helper.DeepCopy(entityFromSettingsData);
         
         entityFromSettingsData.name = objectName;
 
@@ -255,16 +254,6 @@ export class EntityScene extends EditorScene
         return ret;
     }
 
-    override AddGameObject<T extends GameObject = GameObject>(entity: Entity | string, parent?: int | string | GameObject): T
-    {
-        var gameObject = Scene.prototype.AddGameObject.call(this, entity, parent) as T;
-        gameObject.save = true;
-
-        this.AddGameObjectEntityId(gameObject, entity);
-        
-        return gameObject;
-    }
-
     // FIRES EVERY TIME USER RELEASES LEFT MOUSE BUTTON
     // SERIALIZES RUNTIME GAMEOBJECTS, USING THEIR ORIGINAL ENTITY AS COMPARISON
     //
@@ -274,15 +263,28 @@ export class EntityScene extends EditorScene
     {
         var rootObject = this.object.GetByName(this.objectName);
         
-        // GET FULL ENTITY, RECURSING INTO CHILDREN
+        // Persistence and panel visualization deliberately use separate snapshots. Runtime-only
+        // children (save === false) belong in the panel hierarchy, but never in entityData JSON.
         var entity = this.GetEnitityFromObject(rootObject);
+        var panelEntity = this.GetEnitityFromObject(rootObject, true);
         delete entity.name;//
+        delete panelEntity.name;//
 
         const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
-            draft.entities[this.objectName] = entity;
+            const collection = this.isBase ? draft.baseEntities : draft.entities;
+            collection[this.objectName] = entity;
         });
 
         await this.SaveEntityData(newRawSettingsData);
+
+        // The runtime object graph is authoritative in EntityScene. Send the exact entity we
+        // just serialized to the panel so it can update both the inspector and its hierarchy
+        // without reopening (and consequently rebuilding) the scene.
+        window.__GAME_DEBUG_API__?.notifyEntityDataChanged({
+            name: this.objectName,
+            isBase: this.isBase,
+            entity: panelEntity,
+        });
         
         return this.currentLevel; // NOT USED IN THIS CASE, BUT EXPECTED FOR METHOD, BIT HACKY
     }
