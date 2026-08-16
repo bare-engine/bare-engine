@@ -62,7 +62,7 @@ export class EntitySerializer
 
         var customSerialize: Record<string, (currentValue: any) => any> = {};
 
-        customSerialize["pivot"] = (pivot: Vec2) => obj.entity?.pivot ?? pivot;
+        //customSerialize["pivot"] = (pivot: Vec2) => obj.entity?.pivot ?? pivot;
 
         customSerialize["hitbox"] = (hitbox: Rectangle2Vec) => {
             if (obj.entity?.hitbox)

@@ -16,6 +16,35 @@ export class Helper
         return JSON.parse(JSON.stringify(obj));
     }
 
+    static DeepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T
+    {
+        const mutableTarget = target as Record<string, any>;
+
+        for (const key of Object.keys(source))
+        {
+            const sourceValue = source[key];
+            const targetValue = mutableTarget[key];
+
+            if (
+                sourceValue !== null &&
+                targetValue !== null &&
+                typeof sourceValue === "object" &&
+                typeof targetValue === "object" &&
+                !Array.isArray(sourceValue) &&
+                !Array.isArray(targetValue)
+            )
+            {
+                Helper.DeepMerge(targetValue, sourceValue);
+            }
+            else
+            {
+                mutableTarget[key] = sourceValue;
+            }
+        }
+
+        return target;
+    }
+
     static ToFixed(value: number, limit = 1e-13): number
     {
         return Math.round(value / limit) * limit;

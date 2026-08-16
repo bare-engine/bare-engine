@@ -366,7 +366,7 @@ export class ObjectController
                 if (!includingPersistent && obj.persistent)
                     continue;
 
-                this.scene.RemoveGameObject(obj, i);
+                this.scene.RemoveGameObjectFromLayer(obj, i);
             }
         }
 

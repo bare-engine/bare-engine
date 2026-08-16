@@ -459,12 +459,12 @@ to package.json to keep the generated assets (can become large for big projects)
         var customSerialize:Record<string, (currentValue) => any> = {};
     
         // MAKING SURE TO SAVE THE ORIGINAL PIVOT, COULD BE % VALUE, WHILE FINAL PIVOT IS ABSOLUTE
-        customSerialize["pivot"] = (pivot:Vec2) => {
+        /*customSerialize["pivot"] = (pivot:Vec2) => {
             if (obj.entity?.pivot)
                 return obj.entity.pivot;
             else
                 return pivot;
-        };
+        };*/
 
         /*customSerialize["innerPivot"] = (innerPivot:Vec2) => {
             if (obj.entity?.innerPivot)
@@ -536,11 +536,12 @@ to package.json to keep the generated assets (can become large for big projects)
                 entity[varName] = serializedValue;
         }
 
+        delete entity.save;
+
         return entity;
     }
 
-    // CREATE A SELF-CONTAINED ENTITY FOR CLONING/COPY-PASTE.
-    // UNLIKE SerializeObject(), THIS DOES NOT USE obj.name AS A SETTINGS ENTITY KEY.
+    // CREATE A SELF-CONTAINED ENTITY FOR CLONING/COPY-PASTE
     SerializeObjectSnapshot(obj: GameObject): Entity
     {
         const snapshot = this.SerializeObjectFully(obj, false, true);
@@ -575,7 +576,7 @@ to package.json to keep the generated assets (can become large for big projects)
             name: obj.name,
         };
 
-        var origEntity = this.scene.GetAppliedEntityWithDefaultValues(obj.name, this.scene.settingsData, options);
+        var origEntity = this.scene.ConstructEntityWithDefaultValues(obj.name, this.scene.settingsData, options);
         var fullEntity = this.SerializeObjectFully(obj, options.forceAllEntityVars, options.includeSaveFields);
         var diffEntity = this.GetEntitiesDiff(origEntity, fullEntity);
 
@@ -594,9 +595,12 @@ to package.json to keep the generated assets (can become large for big projects)
             Object.assign(entity, diffEntity);
         }
 
+        //delete entity.name;
+
         return entity;
     }
 
+    // BELONGS HERE? TODO
     GetEntitiesDiff(orig: Entity, updated: Entity): any
     {
         var diff = this.GetObjectDiff(orig, updated) ?? {};
@@ -606,6 +610,7 @@ to package.json to keep the generated assets (can become large for big projects)
         return Object.keys(diff).length > 0 ? diff : undefined;
     }
 
+    // BELONGS HERE? TODO
     AddRemovedComponents(orig: Entity, updated: Entity, diff: any)
     {
         if (orig.components)

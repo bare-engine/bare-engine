@@ -55,6 +55,8 @@ export class BareEngine
     public resolutionScale: number = 1;
     public resolution: BareOptions['resolution'];
     
+    public sendEvents: boolean = true;
+    
     private RunMainLoopBound: () => void;
 
     public dummyGameObject: GameObject; // JUST USED FOR DEFAULT VALUES AND DUMMY CONSTRUCTION

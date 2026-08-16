@@ -416,7 +416,8 @@ window.__GAME_DEBUG_API__ = {
     await plugin.SaveSettingsData(raw);
   },
   
-async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: string)
+  // FIND THE ENTITY IN CURRENT entityData JSON, CONTRUCT IT, ADD EXTRA INFO, RETURN IT FOR PLUGIN VISUALIZATION
+  async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: string)
   {
     window.postMessage({ __fromGame: true, type: "lockObjectsTab", flag: true }, "*");
 
@@ -470,7 +471,8 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
 
     // COPY ENTITY AND FIND EXTENDS TO CONSTRUCT IT - BUT WITH RAW VALUES - NEED THOSE IN PLUGIN
     // (SAME THING HAPPENS IN settingsHandler PROCESS, JUST NOT FILLING PRESETS)
-    var entityCopy = {...entity};
+    //var entityCopy = {...entity};
+    var entityCopy = Helper.DeepCopy(entity);
     var defaultBaseEntity = (isBase ? "ANY" : "ANY_ENTITY");
     let baseEntity = entityCopy.baseEntity || defaultBaseEntity;
     var scene = plugin.GetCurrentScene();
@@ -493,6 +495,7 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
         baseEntity = raw.baseEntities[baseEntity]?.baseEntity;
     }
 
+    // ADD baseEntityLog DATA TO ENTITY - STORING WHICH FIELDS COME FROM WHICH ENTITY
     var entityWithLog = plugin.BuildExtendDataLog(entity, entityCopy, name, processedEntity, raw, processed);
 
     // WE'VE SET entity.baseEntity = "ANY_ENTITY"; WHEN CONSTRUCTING ENTITY, BUT DON'T WANT TO SHOW THIS IN PLUGIN (NOT USER VALUE)
@@ -519,6 +522,7 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
     //var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(entityWithLog, scene.settingsData, {fillPresets: false});
     //levelEntityWithDefaultValues.name = name;
 
+    // ADD INFO OF @InspectorField DECORATORS TO ENTITY - SO PLUGIN CAN SHOW SHOW THESE DECORATED FIELS
     var obj = entityScene.object.GetByName(name);
     if (obj)
         plugin.AddInspectorDataToObject(entityWithLog, obj, true);
@@ -597,7 +601,7 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
             // BLOCK BELOW), SO THEY'D ALWAYS "WIN" AS THEIR OWN BASELINE HERE AND NEVER SHOW UP AS
             // CHANGED. STRIP THEM SO THE PRESET DEFAULT IS USED AS THE BASELINE FOR THOSE TWO INSTEAD.
             var { pivot, hitbox, ...entityForOrigin } = o.entity;
-            origEntity = o.scene.GetAppliedEntityWithDefaultValues(entityForOrigin, o.scene.settingsData);
+            origEntity = o.scene.ConstructEntityWithDefaultValues(entityForOrigin, o.scene.settingsData);
         }
         else
         {
@@ -953,12 +957,14 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
     return defaultValue;
   },
 
-    // THIS CHANGES THE PROPERTIES ON THE ENTITY, SAVES ITS SETTINGSDATA AND RELOADS THE ENTITY WITH gotoEntity()
-    // THIS MAKES IT DIFFERENT FROM LEVEL SERIALIZATION, WHERE THE OBJECTS INGAME ARE SERIALIZED AND SAVED TO DISK
+    // THIS CHANGES THE PROPERTIES ON THE ENTITY, SAVES ITS SETTINGSDATA AND RELOADS THE ENTITY WITH gotoEntity(), WHERE IT GETS CONSTRUCTED AGAIN
+    // THIS HAPPENS SINCE THE ENITTY CAN CHANGE DRASTICLY FROM CERTAIN CHANGES, EG: CHANGING THE BASE ENTITY. NOT ALL CHANGES ARE SO DRASTIC
+    // BUT IT'S RELOADED EVERY TIME JUST IN CASE (COULD OPTIMIZE, BUT ALSO A GOOD WAY OF CATCHING BUGS CURRENTLY).
+    // WHEN CHANGES ARE MADE IN-EDITOR TO THE ENTITY GAMEOBJECT, IT IS SERIALIZED AND COMPARED WITH THE SERIALIZED ORIGINAL ENTITY
+    // ANY CHANGES ARE APPLIED TO THE ORIGINAL ENTITY
     //
-    // HAVE A COMBINATION OF STARTING WITH ENTITY DATA TO CREATE THE ENTIY SCENE
-    // AND SERIALZING BACK THE SCENE AFTER, BUT WILL HAVE ITS OWN CHALLENGES.
-    // WILL PROBABLY NEED TO READ THE ENTITY FIELD FROM GAMEOBJECT DURING SERIALIZATION TO PRESERSE SOME DATA, EG PIVOT PERCENTAGES - TODO
+    // THIS MAKES IT DIFFERENT FROM LEVEL SERIALIZATION, WHERE THE ENTITY DOESN'T RELOAD AND RECONSTRUCT ON CHANGES TO ITS FIELD.
+    // INSTEAD, THE CHANGE ARE SENT STRAIGHT TO THE GAMEOBJECT IN THE SCENE. SINCE CHANGING THE GAMEOBJECT FIELDS HAVE NO BIG EFFECT ON THE STRUCTURE ITSELF.
     //
     // SHOULD MAKE THE CHANGE TO THE ENTITY, REBUILD SCENE, WHICH SHOULD RE-FEED PLUGIN WITH NEW DATA. SHOULD STAY AT SOME ENTITY (IF NOT DELETED)
     async setEntityField(name: string, props: Record<string, any>, childPath: number[], save:boolean = false, justAdded:boolean = false)

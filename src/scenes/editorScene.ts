@@ -6,12 +6,11 @@ import { FileDropHandler } from "../handlers/fileDropHandler";
 import { LevelHandler } from "../handlers/levelHandler";
 import { SaveDataHandler } from "../handlers/SaveDataHandler";
 import { SettingsHandler } from "../handlers/settingsHandler";
-import { Color, Texture, Vec2 } from "../libraries/new-rapid-render";
+import { Color, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { BareEvent, BareOptions, CameraScaleMode, Entity, HitboxType, LevelData, Rectangle, SaveData, SceneOptions, SettingsData, Size } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
 import { Helper } from "../utils/helper";
-import { EntityScene } from "./entityScene";
 import { Scene } from "./scene";
 
 type EditorSceneAwakePayload = {
@@ -41,6 +40,8 @@ export class EditorScene extends Scene
     private gameResolution: BareOptions['resolution'] = undefined;
     public draggingLevelEntity: GameObject | null = null;
     public currentLevelPath: string = '';
+
+    entitiesUnconstructedOrderedById: Entity[] = [];
     
     saveLevelCallback: () => Promise<LevelData>;
 
@@ -491,7 +492,7 @@ export class EditorScene extends Scene
         return level;
     }
 
-    override AddGameObject<T extends GameObject = GameObject>(entityLevel: Entity | string, parent: int | string | GameObject = "objects"): T
+    override AddGameObject<T extends GameObject = GameObject>(entity: Entity | string, parent: int | string | GameObject = "objects"): T
     {
         //var entity = this.ConstructEntity(entityLevel);
 
@@ -502,7 +503,7 @@ export class EditorScene extends Scene
 
         //entity.components = {}; // DON'T WANT TO LOAD COMPONENTS IN EDITOR
 
-        var gameObject = super.AddGameObject<T>(entityLevel, parent);
+        var gameObject = super.AddGameObject<T>(entity, parent);
 
         //gameObject.physicsHitbox.rectangle = {x: 0, y: 0, width: 0, height: 0};
 
@@ -538,10 +539,48 @@ export class EditorScene extends Scene
 
         gameObject.save = true; //
 
+        // NEEDED FOR ENTITY SCENE AND COPY PASTE
+        this.AddGameObjectEntityId(gameObject, entity);
+
         return gameObject;
     }
 
-    AddGameObjectAtPosition(x: number, y: number, entityOrName: Entity | string, layer: int = 0): GameObject
+    AddGameObjectEntityId(gameObject: GameObject, entity: Entity | string)
+    {
+        // IF ENTITY IS STRING OR DOESN'T HAVE AN ID, IT'S NOT FROM ROOT ENTITY DATA
+        // A USER HAS CALLED THIS METHOD, OR SOME COMPONENT DID
+        // NOW WE DON'T HAVE AN UNCONSTRUCTED ENTITY FOR IT, SO WE HAVE TO CREATE ONE. SO SERIALIZATION WORKS LATER
+        if (typeof entity === "string")
+        {
+            // MADE THIS ENTITY BEFORE? SHARE MATCHING ID
+            for (var i = 0; i < this.entitiesUnconstructedOrderedById.length; i++)
+            {
+                if (Object.keys(this.entitiesUnconstructedOrderedById[i]).length == 1 &&this.entitiesUnconstructedOrderedById[i].name == entity)
+                {
+                    gameObject.entity.id = i;
+                    return gameObject; //////////// RETURN
+                }
+            }
+            
+            var unconstructedEntity = {name: entity};
+            gameObject.entity.id = this.entitiesUnconstructedOrderedById.length;
+            this.entitiesUnconstructedOrderedById.push(unconstructedEntity);
+        }
+        else
+        {
+            if (entity.id === undefined)
+            {
+                //if (entity.constructed)
+                //    throw new Error("Cannot add constructed entity to EntityScene.");
+
+                entity.id = this.entitiesUnconstructedOrderedById.length;
+                this.entitiesUnconstructedOrderedById.push(entity);
+                gameObject.entity.id = entity.id;
+            }
+        }
+    }
+
+    AddGameObjectAtPosition(x: number, y: number, entityOrName: Entity | string, parent?: int | string | GameObject): GameObject
     {
         // TURING ARG INTO AN ENTITY WITH POSITION - SO BY THE TIME GameObject REACHES OnStart(), ITS POSITION HAS BEEN SET
         if (typeof entityOrName == "string")
@@ -549,8 +588,59 @@ export class EditorScene extends Scene
         else
             entityOrName.position = {x: x, y: y};
 
-        var gameObject = this.AddGameObject(entityOrName, layer);
+        var gameObject = this.AddGameObject(entityOrName, parent);
         return gameObject;
+    }
+
+    GetEnitityFromObject(rootObject: GameObject): Entity
+    {
+        // SERIALIZE ORIGINAL GAMEOBJECT USING STARTING ENTITY
+        var serializedRootObjectOrig = this.ConstructEntityWithDefaultValues(rootObject.entity);
+
+        // SERIALIZE CURRENT GAMEOBJECT
+        var serializedRootObject = this.level.SerializeObjectFully(rootObject);
+
+        // STORE THE DIFFERENCES IN AN OBJECT (SHOULD BE EMPTY IF NO CHANGES WERE MADE)
+        var diff = this.level.GetEntitiesDiff(serializedRootObjectOrig, serializedRootObject);
+
+        diff ??= {};
+
+        // REDO CHILDREN - NEEDED FOR IF A CHILD IS REMOVED THE ABOVE DIFF IS NOT CORRECT, SINCE IT'S COMPARING DIFFERENT CHILDREN THEN
+        // THIS DOES MAKE THE ABOVE DIFF FINDING ALL DIFFERENCES IN CHILDREN REDUNDANT - OPTIMIZE
+        {
+            if (rootObject.children.length > 0)
+            {
+                diff.children = [];
+
+                for (var i = 0; i < rootObject.children.length; i++)
+                {
+                    var child = rootObject.children[i];
+
+                    if (child.save)
+                        diff.children.push(this.GetEnitityFromObject(child));
+                }
+
+                if (diff.children.length == 0)
+                    delete diff.children;
+            }
+        }
+
+        // FIND UNCONSTRUCTED ENTITY
+        {
+            var unconstructedEntity: Entity;
+
+            if (rootObject.entity) // SHOULD ALWAYS BE TRUE
+                unconstructedEntity = this.entitiesUnconstructedOrderedById[rootObject.entity.id];
+
+            unconstructedEntity = Helper.DeepCopy(unconstructedEntity);
+        }
+
+        // APPLY DIFF TO unconstructedEntity
+        Helper.DeepMerge(unconstructedEntity, diff);
+
+        delete unconstructedEntity.id;
+
+        return unconstructedEntity;
     }
 
     GetTilesheetEntity(name: string): Entity

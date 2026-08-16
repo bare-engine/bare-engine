@@ -76,8 +76,6 @@ export class GameObject
 
     layer:string = "";
 
-    private imagePath: string = "";
-
     //private cachedChildrenWidth: number = -1;
     //private cachedChildrenHeight: number = -1;
 
@@ -791,6 +789,7 @@ export class GameObject
     set pivot(v: Vec2)
     {
         this.transform.pivot = v;
+        this.innerTransform.pivot = v.clone();
     }
 
     @InspectorField @Save
@@ -986,6 +985,9 @@ export class GameObject
     }
     set pivotX(value: number)
     {
+        this.innerTransform.pivot ??= new Vec2();
+        this.innerTransform.pivot.x = value;
+
         this.pivot.x = value;
     }
 
@@ -995,6 +997,9 @@ export class GameObject
     }
     set pivotY(value: number)
     {
+        this.innerTransform.pivot ??= new Vec2();
+        this.innerTransform.pivot.y = value;
+
         this.pivot.y = value;
     }
 
@@ -1297,6 +1302,9 @@ export class GameObject
         this.pivot.x = x;
         this.pivot.y = y;
 
+        // SET PIVOT OVERRIDES INNER PIVOT
+        this.innerTransform.pivot = new Vec2(x, y);
+
         return this;
     }
 
@@ -1551,7 +1559,7 @@ export class GameObject
         }
         else*/
         {
-            this.scene.RemoveGameObject(child, this);
+            this.scene.RemoveGameObject(child);
         }
     }
 
@@ -1596,7 +1604,6 @@ export class GameObject
         this.name = "";
         this.pluginName = "";
         this.layer = "";
-        this.imagePath = "";
         this.texture = null;
         this.persistent = false;
         this.pooled = false;
@@ -1675,6 +1682,6 @@ export class GameObject
             return;
         }*/
 
-        this.scene.RemoveGameObject(this, this.parent || undefined, clear);
+        this.scene.RemoveGameObject(this, clear);
     }
 }

@@ -117,7 +117,7 @@ export class Scene implements SceneI
     @Label("settings")
     public settingsHandler: SettingsHandler = new SettingsHandler(this);
     
-    get settingsData(): SettingsData { return this.settingsHandler.Get(); }
+    get settingsData(): SettingsData { return this.settingsHandler.Get(); } // PROCESSED SETTINGSDATA
 
     sceneOptionsSettingsData: SettingsData;
 
@@ -403,10 +403,8 @@ export class Scene implements SceneI
     // FOR AN ENTITY OBJECT: IT FINDS THE baseEntity FROM SETTINGSDATA AND MERGES IT IN FOR A NEW ENTITY
     ConstructEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [] }): Entity
     {
-        // The entity no longer needs inheritance/preset processing, but callers still need
-        // their own copy because applying entity values to a GameObject may mutate the input.
         if (typeof nameOrEntity === "object" && nameOrEntity.constructed)
-            return cloneEntityData(nameOrEntity);
+            return cloneEntityData(nameOrEntity); // ALREADY CONSTRUCTED BEFORE
             
         if (options.fillPresets === undefined)
             options.fillPresets = true;
@@ -809,7 +807,8 @@ export class Scene implements SceneI
         return serializedValue;
     }
 
-    GetAppliedEntityWithDefaultValues(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true }): Entity
+    // CONSTRUCT ENTITY FROM SETTINGSDATA AND CONSTRUCT IT INTO A GAMEOBJECT TO GET ALL ITS VALUES
+    ConstructEntityWithDefaultValues(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true }): Entity
     {
         var entityConstructed = this.ConstructEntity(nameOrEntity, settingsData, options);
 
@@ -839,13 +838,17 @@ export class Scene implements SceneI
         //delete entityConstructed.components;
 
         // ADDING FALSE TO PREVENT COMPONENTS CREATION...
+        bare.sendEvents = false;
         this.ApplyEntityToGameObject(entityConstructed, gameObject, false);
+        bare.sendEvents = true;
 
         var entity = EntitySerializer.SerializeObjectFully(this, gameObject);
 
         // ... BUT ADDING IT BACK TO THE ENITY HERE, SO IT'S NOT LOST
         if (entityConstructed.components)
             entity.components = entityConstructed.components;
+
+        delete entity.save;
 
         return entity;
     }
@@ -893,7 +896,7 @@ export class Scene implements SceneI
             {
                 // GameObject INSTANCE ALREADY PROVIDED
                 gameObject = input;
-                gameObject.scene.RemoveGameObject(gameObject, gameObject.parent, false); // REMOVE IF ADDED ALREADY
+                gameObject.scene.RemoveGameObject(gameObject, false); // REMOVE IF ADDED ALREADY
                 gameObject.scene = this;
                 gameObject.Awake();
             }
@@ -1026,9 +1029,10 @@ to package.json to keep the generated assets (can become large for big projects)
             }
         }
         
-        // NOTIFY
-        globalEvents.emit(BareEvent.game_objectAdded, { gameObject: gameObject, layer: parent });
-        this.events.emit(BareEvent.game_objectAdded, { gameObject: gameObject, layer: parent });
+        {
+            globalEvents.emit(BareEvent.game_objectAdded, { gameObject: gameObject, layer: parent });
+            this.events.emit(BareEvent.game_objectAdded, { gameObject: gameObject, layer: parent });
+        }
 
         return gameObject as T;
     }
@@ -1041,7 +1045,7 @@ to package.json to keep the generated assets (can become large for big projects)
         return this.AddGameObject(image, parent) as GameObject;
     }
 
-    RemoveGameObject(gameObject: GameObject, parent?: int | GameObject, clear:boolean = true)
+    RemoveGameObjectFromLayer(gameObject: GameObject, layer: int = -1, clear:boolean = true)
     {
         if (!gameObject.addedToScene)
         {
@@ -1049,39 +1053,53 @@ to package.json to keep the generated assets (can become large for big projects)
             return;
         }
 
-        var wasPooled = gameObject.pooled;
-        gameObject.pooled = false; // SETTING TO FALSE ALREADY HERE TO PREVENT RECURSION LOOP IN RemoveChild
-
         var removed = false;
 
-        if (parent !== undefined)
+        // REMOVING FROM LAYER
+        if (layer != -1)
         {
-            if (parent instanceof GameObject)
-            {
-                // REMOVING FROM PARENT
-                var child = gameObject;
-                var childIndex = parent.children.indexOf(child);
-                if (childIndex != -1)
-                    parent.children.splice(parent.children.indexOf(child), 1);
-                child.parent = null;//
-
-                removed = (childIndex != -1);
-            }
-            else
-            {
-                // REMOVING FROM LAYER
-                var layer = parent;
-                removed = this.object.Remove(gameObject, layer);
-            }
+            removed = this.object.Remove(gameObject, layer);
         }
         else
         {
-            removed = this.object.Remove(gameObject);
+            if (!gameObject.parent)
+                removed = this.object.Remove(gameObject);
         }
         
         if (!removed)
             trace("FAILED TO REMOVE GAMEOBJECT");
-        
+
+        this.RemoveGameObject(gameObject, clear);
+    }
+
+    RemoveGameObject(gameObject: GameObject, clear:boolean = true)
+    {
+        if (!gameObject.addedToScene)
+        {
+            // GAMEOBJECT WAS ALREADY REMOVED
+            return;
+        }
+
+        if (gameObject.parent)
+        {
+            // REMOVING FROM PARENT
+            var child = gameObject;
+            var parent = child.parent;
+            var childIndex = parent.children.indexOf(child);
+
+            if (childIndex != -1)
+                parent.children.splice(parent.children.indexOf(child), 1);
+
+            child.parent = null;
+
+            var removed = (childIndex != -1);
+            if (!removed)
+                trace("FAILED TO REMOVE GAMEOBJECT");
+        }
+
+        var wasPooled = gameObject.pooled;
+        gameObject.pooled = false; // SETTING TO FALSE ALREADY HERE TO PREVENT RECURSION LOOP IN RemoveChild
+
         if (clear)
         {
             // NOTIFY

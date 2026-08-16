@@ -105,6 +105,7 @@ export type GameObjectClass = { new (...args: any[]): GameObject };
 export interface Entity
 {
     name?: any; // string
+    id?: int;
     customName?: any; // string
     tags?: any; // Array<string>
     customData?: any; // Record<string, Scalar>

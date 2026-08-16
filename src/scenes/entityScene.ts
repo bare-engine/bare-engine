@@ -120,22 +120,40 @@ export class EntityScene extends EditorScene
 
         if (isBase)
         {
-            entityFromSettingsData = this.settingsData.baseEntities[objectName];
+            entityFromSettingsData = this.settingsHandler.GetRaw().baseEntities[objectName];
         }
         else
         {
-            entityFromSettingsData = this.settingsData.entities[objectName];
+            entityFromSettingsData = this.settingsHandler.GetRaw().entities[objectName];
         }
 
         entityFromSettingsData = {...entityFromSettingsData};
         
+        entityFromSettingsData.name = objectName;
+
         if (isBase)
         {
-            entityFromSettingsData.name = objectName;
+            //entityFromSettingsData.name = objectName;
             entityFromSettingsData.texture = "placeHolder";
             entityFromSettingsData.imagePath = "";
         }
         
+        // ASSIGN IDS
+        {
+            var assignId = (entity: Entity) => {
+                entity.id = this.entitiesUnconstructedOrderedById.length;
+                this.entitiesUnconstructedOrderedById.push(entity);
+                if (entity.children)
+                {
+                    for (let i = 0; i < entity.children.length; i++)
+                    {
+                        assignId(entity.children[i]);
+                    }
+                }
+            };
+            assignId(entityFromSettingsData)
+        }
+
         // SET UP LEVEL
         return {
             name: objectName,
@@ -237,25 +255,36 @@ export class EntityScene extends EditorScene
         return ret;
     }
 
-    override AddGameObject<T extends GameObject = GameObject>(entityLevel: Entity | string, parent?: int | string | GameObject): T
+    override AddGameObject<T extends GameObject = GameObject>(entity: Entity | string, parent?: int | string | GameObject): T
     {
-        var gameObject = Scene.prototype.AddGameObject.call(this, entityLevel, parent) as T;
+        var gameObject = Scene.prototype.AddGameObject.call(this, entity, parent) as T;
+        gameObject.save = true;
+
+        this.AddGameObjectEntityId(gameObject, entity);
+        
         return gameObject;
     }
 
     // FIRES EVERY TIME USER RELEASES LEFT MOUSE BUTTON
-    // POSSIBLE SETUP: - GET ENTITY FROM SETTINGSDATA AND CONSTRUCT IT INTO A GAMEOBJECT
-    //                 - SERIALIZE THE CURRENT ENTITY SCENE GAMEOBJECT 
-    //                 - STORE THE DIFFERENCES IN AN OBJECT - (SHOULD BE EMPTY IF NO CHANGES WERE MADE)
-    //                 - APPLY THE DIFFERENCES TO THE ORIGINAL ENTITY AND SAVE IT
+    // SERIALIZES RUNTIME GAMEOBJECTS, USING THEIR ORIGINAL ENTITY AS COMPARISON
     //
+    // TOOK SETTINGSDATA ENITY AS BASE TRUTH BEFORE, APPLYING PATCHES WHEN CHANGES TO RUNTIME OBJECT WERE MADE, EG TRANSFORMS.
+    // BUT MORE PATCHES WERE NEEDED EVERY TIME, EG CHILDREN ADD/REMOVE, SO I TAKE RUNTIME OBJECT AS BASE TRUTH NOW AND SERIALIZE IT.
     async SaveEntityDataToSettingsData(): Promise<LevelData>
     {
-        // Push the fresh raw settings to the plugin. Unlike gotoEntity(), this does not rebuild
-        // EntityScene, so the live object and TransformTool selection remain intact.
-        //window.__GAME_DEBUG_API__?.notifyEntityDataChanged(newRawSettingsData);
+        var rootObject = this.object.GetByName(this.objectName);
+        
+        // GET FULL ENTITY, RECURSING INTO CHILDREN
+        var entity = this.GetEnitityFromObject(rootObject);
+        delete entity.name;//
 
-        return this.currentLevel; // NOT USED IN THIS CASE, BIT HACKY
+        const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
+            draft.entities[this.objectName] = entity;
+        });
+
+        await this.SaveEntityData(newRawSettingsData);
+        
+        return this.currentLevel; // NOT USED IN THIS CASE, BUT EXPECTED FOR METHOD, BIT HACKY
     }
 
     NotifyTransformToolPreview(): void

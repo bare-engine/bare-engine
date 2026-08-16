@@ -21,6 +21,8 @@ export class ArcadeObject extends GameObject
     @InspectorField @Save stayInBounds: boolean = true;
     @InspectorField @Save removeOnOutOfBounds: boolean = false;
     
+    @InspectorField @Save hitboxInheritsInnerTransform: boolean = true;
+    
     blocked:BlockedState = BlockedState.None;
     collidingObjects: ArcadeObject[] = [];
 
@@ -159,17 +161,21 @@ export class ArcadeObject extends GameObject
 
                     if (entity.pivotBasedOnHitbox)
                     {
+                        var pivot = new Vec2();
+
                         // X
                         if (entity.pivotBasedOnHitbox.x > 0 && entity.pivotBasedOnHitbox.x <= 1)
-                            this.pivot.x = (hbRect.x + hbRect.width * entity.pivotBasedOnHitbox.x); // RELATIVE
+                            pivot.x = (hbRect.x + hbRect.width * entity.pivotBasedOnHitbox.x); // RELATIVE
                         else
-                            this.pivot.x = (hbRect.x + entity.pivotBasedOnHitbox.x); // ABSOLUTE (IF YOU'D WANT THIS FOR SOME REASON!)
+                            pivot.x = (hbRect.x + entity.pivotBasedOnHitbox.x); // ABSOLUTE (IF YOU'D WANT THIS FOR SOME REASON!)
 
                         // Y
                         if (entity.pivotBasedOnHitbox.y > 0 && entity.pivotBasedOnHitbox.y <= 1)
-                            this.pivot.y = (hbRect.y + hbRect.height * entity.pivotBasedOnHitbox.y); // RELATIVE
+                            pivot.y = (hbRect.y + hbRect.height * entity.pivotBasedOnHitbox.y); // RELATIVE
                         else
-                            this.pivot.y = (hbRect.y + entity.pivotBasedOnHitbox.y); // ABSOLUTE (IF YOU'D WANT THIS FOR SOME REASON!)
+                            pivot.y = (hbRect.y + entity.pivotBasedOnHitbox.y); // ABSOLUTE (IF YOU'D WANT THIS FOR SOME REASON!)
+
+                        this.SetPivot(pivot.x, pivot.y);
 
                         //if (this.levelEntity)
                         //    this.levelEntity.pivot = this.pivot.clone();

@@ -120,9 +120,10 @@ export class EditorControlsHandler {
             //offset = new Vec2(0,0);
             
             var objsCreated: GameObject[] = [];
-            const layer = this.GetSelectedLayer();
+            const parent = this.GetPasteParent();
             this.copiedObjects.forEach(entity => {
-                var objCreated = this.scene.AddGameObjectAtPosition(entity.position.x + offset.x, entity.position.y + offset.y, entity, layer);
+                var objCreated = this.scene.AddGameObjectAtPosition(entity.position.x + offset.x, entity.position.y + offset.y, entity, parent);
+                objCreated.entity.id = entity.id;
                 objsCreated.push(objCreated);
             });
             this.SnapPastedObjectsToGrid(objsCreated);
@@ -252,7 +253,7 @@ export class EditorControlsHandler {
 
     CopySelectedObjects()
     {
-        this.copiedObjects = this.selectedObjects.map(obj => bare.level.SerializeObjectSnapshot(obj));
+        this.copiedObjects = this.selectedObjects.map(obj => this.scene.GetEnitityFromObject(obj));
     }
 
     RemoveSelectedObjects()
@@ -420,6 +421,17 @@ export class EditorControlsHandler {
 
         this.SetCurrentPreviewEntity(selectedObj.entity);
     }
+    
+    private GetPasteParent(): int | GameObject
+    {
+        const selectedObject =
+            this.selectedObjects[this.selectedObjects.length - 1];
+
+        if (selectedObject?.parent)
+            return selectedObject.parent;
+
+        return this.GetSelectedLayer();
+    }
 
     GetSelectedLayer(): int
     {
@@ -481,8 +493,8 @@ export class EditorControlsHandler {
         notifyPlugin: boolean = true
     )
     {
-        if (this.scene.settingsData.selectionEnabled === false && !forceSelection)
-            return;
+        //if (this.scene.settingsData.selectionEnabled === false && !forceSelection)
+        //    return;
 
         // CLEAR PREVIOUS
         if (clearPrevious)

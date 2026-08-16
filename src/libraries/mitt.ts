@@ -105,6 +105,8 @@ export default function mitt<Events extends object>(
   };
 
   const emit = (type: any, ...evt: any[]) => {
+    if (!bare.sendEvents)
+      return
     //if (bare.paused) 
     //  return;
     
