@@ -127,16 +127,13 @@ export class EditorControlsHandler {
             });
             this.SnapPastedObjectsToGrid(objsCreated);
 
-            // FORCE SELECT: EntityScene DISABLES ORDINARY selectionEnabled-GATED SELECTION,
-            // BUT A JUST-PASTED OBJECT SHOULD STILL BE SELECTED AND GET THE TRANSFORM TOOL.
-            this.SelectGameObjects(objsCreated, true, true);
+            this.SelectGameObjects(objsCreated);
 
             this.scene.saveLevelCallback();
         }
         if (allKeys[0] == 'delete')
         {
             this.RemoveSelectedObjects();
-            this.scene.saveLevelCallback();
         }
         if (key == 's' && allKeys.length == 1)
         {
@@ -189,7 +186,7 @@ export class EditorControlsHandler {
                 }
                 else
                 {
-                    this.RemoveGameObjectTracked(hover.parent);
+                    this.scene.RemoveGameObject(hover.parent);
                 }
 
                 bare.hitbox.ResetCurrentHover();
@@ -255,12 +252,7 @@ export class EditorControlsHandler {
 
     CopySelectedObjects()
     {
-        this.copiedObjects = this.selectedObjects.map(obj => {
-            const snapshot = this.scene.SerializeObjectForCopy(obj);
-            const worldPosition = obj.parent ? obj.parent.ToGlobal(obj.position) : obj.position;
-            snapshot.position = { x: worldPosition.x, y: worldPosition.y };
-            return snapshot;
-        });
+        this.copiedObjects = this.selectedObjects.map(obj => bare.level.SerializeObjectSnapshot(obj));
     }
 
     RemoveSelectedObjects()
@@ -271,17 +263,8 @@ export class EditorControlsHandler {
         for (var i = 0; i < objsToRemove.length; i++)
         {
             const obj = objsToRemove[i];
-            this.RemoveGameObjectTracked(obj);
+            this.scene.RemoveGameObject(obj);
         }
-    }
-
-    // GOES THROUGH THE SCENE'S OnBeforeGameObjectRemoved HOOK SO SCENES THAT PERSIST A SPARSE/
-    // STRUCTURAL REPRESENTATION (EG EntityScene) CAN RECORD WHERE THE OBJECT LIVED BEFORE IT'S
-    // DETACHED - USE THIS INSTEAD OF this.scene.RemoveGameObject FOR ANY EDITOR-DRIVEN REMOVAL.
-    private RemoveGameObjectTracked(obj: GameObject)
-    {
-        this.scene.OnBeforeGameObjectRemoved(obj);
-        this.scene.RemoveGameObject(obj);
     }
 
     private SnapPastedObjectsToGrid(objs: GameObject[])
@@ -800,28 +783,27 @@ export class EditorControlsHandler {
         const obj = this.scene.AddGameObjectAtPosition(this.currentPreviewEntity.x, this.currentPreviewEntity.y, this.currentPreviewEntity.entity, layer);
         const multiSelect = keyboardController.IsKeyDown("shift");
 
-        // FORCE SELECT: SEE NOTE ON THE PASTE HANDLER ABOVE - APPLIES HERE TOO.
         if (!multiSelect)
         {
             this.firstMultiPlacedObject = null;
             this.multiPlaceSelectionReset = false;
-            this.SelectGameObjects([obj], true, true);
+            this.SelectGameObjects([obj], true);
         }
         else
         if (!this.firstMultiPlacedObject)
         {
             this.firstMultiPlacedObject = obj;
-            this.SelectGameObjects([obj], false, true);
+            this.SelectGameObjects([obj], false);
         }
         else
         if (!this.multiPlaceSelectionReset)
         {
-            this.SelectGameObjects([this.firstMultiPlacedObject, obj], true, true);
+            this.SelectGameObjects([this.firstMultiPlacedObject, obj], true);
             this.multiPlaceSelectionReset = true;
         }
         else
         {
-            this.SelectGameObjects([obj], false, true);
+            this.SelectGameObjects([obj], false);
         }
 
         this.actionThisFrame = 'objCreation';
@@ -905,7 +887,7 @@ export class EditorControlsHandler {
         if (bare.mouse.IsRightDown() && distMouseMoved > 5) {
             var hover = bare.hitbox.GetCurrentHover();
             if (hover) {
-                this.RemoveGameObjectTracked(hover.parent);
+                this.scene.RemoveGameObject(hover.parent);
                 bare.hitbox.ResetCurrentHover();
                 return;
             }

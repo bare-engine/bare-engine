@@ -21,8 +21,6 @@ export class EntityScene extends EditorScene
     objectName: string = "";
     isBase: boolean = false;
     readonly transformToolHandlesBodyMove: boolean = true;
-    private pendingPastedEntities = new Map<string, Entity>();
-    private pendingRemovedChildPaths: number[][] = [];
     
     lastPayload: EntitySceneAwakePayload;
     degugAtStart: boolean;
@@ -98,9 +96,6 @@ export class EntityScene extends EditorScene
 
     override OnClear(): void
     {
-        this.pendingPastedEntities.clear();
-        this.pendingRemovedChildPaths = [];
-
         if (this.opened)
         {
             window.debug = this.degugAtStart;
@@ -248,201 +243,19 @@ export class EntityScene extends EditorScene
         return gameObject;
     }
 
-    override AddGameObjectAtPosition(x: number, y: number, entityOrName: Entity | string, parent: int | GameObject = 0): GameObject
-    {
-        const rootObject = this.object.GetByName(this.objectName);
-        if (!rootObject)
-            return super.AddGameObjectAtPosition(x, y, entityOrName, parent);
-
-        // EntityScene edits one entity tree. New objects belong to that tree rather than becoming
-        // unrelated top-level level objects. Convert the editor's world-space paste position to
-        // the root entity's local space before parenting it.
-        const localPosition = rootObject.ToLocal(new Vec2(x, y));
-        const rawEntity = typeof entityOrName == "string"
-            ? { name: entityOrName }
-            : structuredClone(entityOrName);
-        rawEntity.position = { x: localPosition.x, y: localPosition.y };
-
-        const gameObject = super.AddGameObjectAtPosition(localPosition.x, localPosition.y, entityOrName, rootObject);
-        this.pendingPastedEntities.set(gameObject.uniqueID, rawEntity);
-        return gameObject;
-    }
-
-    override SerializeObjectForCopy(obj: GameObject): Entity
-    {
-        const pendingEntity = this.pendingPastedEntities.get(obj.uniqueID);
-        if (pendingEntity)
-            return structuredClone(pendingEntity);
-
-        const rootObject = this.object.GetByName(this.objectName);
-        const childPath = rootObject ? this.GetChildPath(rootObject, obj) : null;
-        var rawEntity = this.isBase
-            ? this.settingsHandler.GetRaw().baseEntities?.[this.objectName]
-            : this.settingsHandler.GetRaw().entities?.[this.objectName];
-
-        if (childPath !== null && rawEntity)
-        {
-            for (const childIndex of childPath)
-            {
-                rawEntity = rawEntity.children?.[childIndex];
-                if (!rawEntity)
-                    break;
-            }
-        }
-
-        // EntityScene has a canonical sparse representation in raw settings. Copy that instead
-        // of obj.entity, which contains constructed/inherited defaults. A newly-created object may
-        // not be in raw settings yet, so retain the normal compact serializer as a fallback.
-        return childPath !== null && rawEntity
-            ? structuredClone(rawEntity)
-            : super.SerializeObjectForCopy(obj);
-    }
-
+    // FIRES EVERY TIME USER RELEASES LEFT MOUSE BUTTON
+    // POSSIBLE SETUP: - GET ENTITY FROM SETTINGSDATA AND CONSTRUCT IT INTO A GAMEOBJECT
+    //                 - SERIALIZE THE CURRENT ENTITY SCENE GAMEOBJECT 
+    //                 - STORE THE DIFFERENCES IN AN OBJECT - (SHOULD BE EMPTY IF NO CHANGES WERE MADE)
+    //                 - APPLY THE DIFFERENCES TO THE ORIGINAL ENTITY AND SAVE IT
+    //
     async SaveEntityDataToSettingsData(): Promise<LevelData>
     {
-        const selectedObjects = this.editorControlsHandler?.selectedObjects ?? [];
-        const rootObject = this.object.GetByName(this.objectName);
-        const removedChildPaths = this.PruneDescendantPaths(this.pendingRemovedChildPaths);
+        // Push the fresh raw settings to the plugin. Unlike gotoEntity(), this does not rebuild
+        // EntityScene, so the live object and TransformTool selection remain intact.
+        //window.__GAME_DEBUG_API__?.notifyEntityDataChanged(newRawSettingsData);
 
-        if (!rootObject || (selectedObjects.length == 0 && removedChildPaths.length == 0))
-            return this.currentLevel;
-
-        const transforms = selectedObjects
-            .map(obj => ({ obj, childPath: this.GetChildPath(rootObject, obj) }))
-            // childPath.length == 0 MEANS obj IS THE ROOT ITSELF - IT HAS NO POSITION/SCALE/
-            // ROTATION OF ITS OWN TO PERSIST (SEE THE resizeable = false SET IN Open(), WHICH
-            // SHOULD ALREADY KEEP IT OUT OF selectedObjects AS A DRAG TARGET; THIS IS A BACKSTOP).
-            .filter(entry => entry.childPath !== null && entry.childPath.length > 0) as Array<{ obj: GameObject, childPath: number[] }>;
-
-        if (transforms.length == 0 && removedChildPaths.length == 0)
-            return this.currentLevel;
-
-        var structureChanged = false;
-        var addedChildPath: number[] | null = null;
-
-        const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
-            var rootEntity = this.isBase
-                ? draft.baseEntities?.[this.objectName]
-                : draft.entities?.[this.objectName];
-
-            if (!rootEntity)
-                return;
-
-            // REMOVE DELETED CHILDREN BEFORE APPLYING TRANSFORMS/ADDITIONS BELOW - transforms'
-            // CHILDPATHS WERE COMPUTED FROM THE LIVE TREE, WHICH ALREADY REFLECTS THE REMOVAL.
-            const sortedRemovals = removedChildPaths.slice().sort(EntityScene.CompareChildPathsDescending);
-            for (const childPath of sortedRemovals)
-            {
-                var parentEntity: Entity | undefined = rootEntity;
-                for (var depth = 0; depth < childPath.length - 1; depth++)
-                    parentEntity = parentEntity?.children?.[childPath[depth]];
-
-                const lastIndex = childPath[childPath.length - 1];
-                if (parentEntity?.children && lastIndex >= 0 && lastIndex < parentEntity.children.length)
-                {
-                    parentEntity.children.splice(lastIndex, 1);
-                    structureChanged = true;
-                }
-            }
-
-            for (const { obj, childPath } of transforms)
-            {
-                var entity: Entity | undefined = rootEntity;
-                for (var depth = 0; depth < childPath.length; depth++)
-                {
-                    const childIndex = childPath[depth];
-                    const children = entity.children as Entity[] | undefined;
-                    var childEntity = children?.[childIndex];
-
-                    if (!childEntity)
-                    {
-                        // A pasted object is appended to its live parent. Mirror that structural
-                        // addition into raw settings before applying its transform.
-                        const isLastPathPart = depth == childPath.length - 1;
-                        const isAppend = childIndex == (children?.length ?? 0);
-                        if (!isLastPathPart || !isAppend)
-                        {
-                            entity = undefined;
-                            break;
-                        }
-
-                        childEntity = this.pendingPastedEntities.get(obj.uniqueID)
-                            ? structuredClone(this.pendingPastedEntities.get(obj.uniqueID)!)
-                            : this.SerializeObjectForCopy(obj);
-                        entity.children ??= [];
-                        entity.children.push(childEntity);
-                        this.pendingPastedEntities.delete(obj.uniqueID);
-                        structureChanged = true;
-                        addedChildPath = childPath.slice();
-                    }
-
-                    entity = childEntity;
-                    if (!entity)
-                        break;
-                }
-
-                if (!entity)
-                    continue;
-
-                // TransformTool operates on the outer/local transform, which maps directly to
-                // the canonical entity fields used by the inspector. Only write a field when it
-                // differs from the engine's built-in default - a drag that only changes position
-                // shouldn't also bake scale/rotation onto an entity that was relying on inherited
-                // defaults for them (eg dragging without rotating used to add rotation: 0).
-                const fields = this.BuildTransformFields(obj);
-
-                if (fields.position) entity.position = fields.position; else delete entity.position;
-                if (fields.scale) entity.scale = fields.scale; else delete entity.scale;
-                if (fields.rotation !== undefined) entity.rotation = fields.rotation; else delete entity.rotation;
-
-                // Do not leave legacy aliases competing with the canonical vector fields.
-                delete entity.x;
-                delete entity.y;
-                delete (entity as any).scaleX;
-                delete (entity as any).scaleY;
-            }
-        });
-
-        this.pendingRemovedChildPaths = [];
-
-        await this.SaveEntityData(newRawSettingsData);
-        this.HideEditorUIForScene();
-
-        window.__GAME_DEBUG_API__?.notifyEntityDataChanged(newRawSettingsData);
-
-        if (structureChanged)
-        {
-            window.__GAME_DEBUG_API__?.reloadEntityInPlugin({
-                name: this.objectName,
-                isBase: this.isBase,
-                settingsDataName: newRawSettingsData.name,
-                childPath: addedChildPath,
-            });
-        }
-
-        return this.currentLevel;
-    }
-
-    // ONLY THE FIELDS THAT DIFFER FROM THE ENGINE'S BUILT-IN DEFAULT (POSITION 0,0 / SCALE 1,1 /
-    // ROTATION 0). USED BY BOTH THE LIVE PREVIEW AND THE ACTUAL SAVE, SO A FIELD SITTING AT ITS
-    // DEFAULT NEVER GETS SENT AS IF IT WERE EXPLICITLY SET - THE PLUGIN MERGES WHATEVER FIELDS
-    // ARE PRESENT IN A MESSAGE INTO ITS LOCAL ENTITY CACHE AND TREATS THEIR PRESENCE AS "THIS
-    // FIELD IS EXPLICIT", AND THAT MERGE NEVER CLEARS A FIELD THAT WAS SENT ONCE, SO A PREVIEW
-    // TICK THAT INCLUDED rotation: 0 WOULD OTHERWISE STICK IN THE PANEL FOREVER.
-    private BuildTransformFields(obj: GameObject): { position?: { x: number, y: number }, scale?: { x: number, y: number }, rotation?: number }
-    {
-        const fields: { position?: { x: number, y: number }, scale?: { x: number, y: number }, rotation?: number } = {};
-
-        if (obj.x != 0 || obj.y != 0)
-            fields.position = { x: obj.x, y: obj.y };
-
-        if (obj.scale.x != 1 || obj.scale.y != 1)
-            fields.scale = { x: obj.scale.x, y: obj.scale.y };
-
-        if (obj.rotation != 0)
-            fields.rotation = obj.rotation;
-
-        return fields;
+        return this.currentLevel; // NOT USED IN THIS CASE, BIT HACKY
     }
 
     NotifyTransformToolPreview(): void
@@ -454,7 +267,9 @@ export class EntityScene extends EditorScene
         const transforms = (this.editorControlsHandler?.selectedObjects ?? [])
             .map(obj => ({
                 childPath: this.GetChildPath(rootObject, obj),
-                ...this.BuildTransformFields(obj),
+                position: { x: obj.x, y: obj.y },
+                scale: { x: obj.scale.x, y: obj.scale.y },
+                rotation: obj.rotation,
             }))
             .filter(transform => transform.childPath !== null);
 
@@ -630,114 +445,6 @@ export class EntityScene extends EditorScene
         }
 
         return path;
-    }
-
-    // CHILDPATH CAN ONLY BE COMPUTED WHILE THE OBJECT IS STILL PARENTED, SO WE RECORD IT HERE
-    // (CALLED BY EditorControlsHandler RIGHT BEFORE Scene.RemoveGameObject DETACHES IT) AND
-    // SPLICE THE MATCHING ENTRY OUT OF RAW SETTINGS LATER, ON SaveEntityDataToSettingsData.
-    override OnBeforeGameObjectRemoved(gameObject: GameObject): void
-    {
-        // NEVER PERSISTED TO RAW SETTINGS - NOTHING TO SPLICE OUT, JUST DROP THE PENDING PASTE.
-        if (this.pendingPastedEntities.delete(gameObject.uniqueID))
-            return;
-
-        const rootObject = this.object.GetByName(this.objectName);
-        if (!rootObject || gameObject === rootObject)
-            return;
-
-        const childPath = this.GetChildPath(rootObject, gameObject);
-        if (childPath !== null)
-            this.pendingRemovedChildPaths.push(childPath);
-    }
-
-    // UNLIKE TRANSFORMS/REMOVALS (WHICH BATCH UP AND ONLY GET PUSHED BACK ON THE NEXT
-    // SaveEntityDataToSettingsData), A COMPONENT ADD/REMOVE PERSISTS AND RELOADS RIGHT AWAY - SEE
-    // PersistComponentChange FOR WHY.
-    override OnComponentAdded(gameObject: GameObject, compName: string): void
-    {
-        this.PersistComponentChange(gameObject, compName, true);
-    }
-
-    override OnComponentRemoved(gameObject: GameObject, compName: string): void
-    {
-        this.PersistComponentChange(gameObject, compName, false);
-    }
-
-    // writes the component add/remove into the raw entity at gameobject's childpath, saves it, then
-    // asks the plugin to reload the entity - the same reloadentityinplugin message a pasted/removed
-    // child sends (see structurechanged in saveentitydatatosettingsdata). the plugin's response to
-    // that message is what actually calls gotoentity() and rebuilds the live scene - we don't call
-    // it directly here, since that would double-reload it.
-    //
-    // an ordinary save only pushes back a handful of fields (see saveentitydatatosettingsdata) and
-    // has no concept of components at all, so without this a component change would only exist on
-    // the live gameobject and vanish on the next real reload (eg re-opening the entity) instead of
-    // showing up in the plugin right away.
-    private async PersistComponentChange(gameObject: GameObject, compName: string, added: boolean): Promise<void>
-    {
-        const rootObject = this.object.GetByName(this.objectName);
-        if (!rootObject)
-            return;
-
-        const childPath = this.GetChildPath(rootObject, gameObject);
-        if (childPath === null)
-            return;
-
-        const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
-            var entity: Entity | undefined = this.isBase
-                ? draft.baseEntities?.[this.objectName]
-                : draft.entities?.[this.objectName];
-
-            for (const childIndex of childPath)
-                entity = entity?.children?.[childIndex];
-
-            if (!entity)
-                return;
-
-            if (added)
-            {
-                entity.components ??= {};
-                entity.components[compName] ??= {};
-            }
-            else if (entity.components)
-            {
-                delete entity.components[compName];
-            }
-        });
-
-        await this.SaveEntityData(newRawSettingsData);
-
-        window.__GAME_DEBUG_API__?.notifyEntityDataChanged(newRawSettingsData);
-        window.__GAME_DEBUG_API__?.reloadEntityInPlugin({
-            name: this.objectName,
-            isBase: this.isBase,
-            settingsDataName: newRawSettingsData.name,
-            childPath,
-        });
-    }
-
-    // KEEPS ONLY THE OUTERMOST PATHS - IF A PARENT AND ITS CHILD ARE BOTH PENDING REMOVAL, THE
-    // PARENT'S SPLICE ALREADY TAKES THE CHILD WITH IT.
-    private PruneDescendantPaths(paths: number[][]): number[][]
-    {
-        const isPrefixOf = (prefix: number[], path: number[]) =>
-            prefix.length < path.length && prefix.every((value, i) => value == path[i]);
-
-        return paths.filter(path => !paths.some(other => other !== path && isPrefixOf(other, path)));
-    }
-
-    // DESCENDING ORDER SO A SIBLING AT A HIGHER INDEX IS SPLICED BEFORE ONE AT A LOWER INDEX -
-    // OTHERWISE REMOVING THE LOWER-INDEX SIBLING FIRST WOULD SHIFT THE HIGHER ONE'S INDEX DOWN.
-    private static CompareChildPathsDescending(a: number[], b: number[]): number
-    {
-        const len = Math.min(a.length, b.length);
-        for (var i = 0; i < len; i++)
-        {
-            if (a[i] != b[i])
-                return b[i] - a[i];
-        }
-
-        return b.length - a.length;
     }
 
     private HideEditorUIForScene(): void

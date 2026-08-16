@@ -329,17 +329,6 @@ export class EditorScene extends Scene
             globalThis.plugin?.SelectObjectsInPlugin(selectedIds);
     }
 
-    // CALLED RIGHT BEFORE A LIVE GAMEOBJECT LEAVES THE TREE, WHILE ITS PARENT LINK IS STILL
-    // INTACT. OVERRIDDEN BY SCENES (EG EntityScene) THAT NEED TO RECORD THE OBJECT'S LOCATION
-    // (EG ITS CHILDPATH) BEFORE IT BECOMES UNREACHABLE, TO PERSIST THE REMOVAL ON SAVE.
-    OnBeforeGameObjectRemoved(_gameObject: GameObject): void {}
-
-    // CALLED RIGHT AFTER A COMPONENT IS ADDED TO / REMOVED FROM A LIVE GAMEOBJECT (EG VIA THE
-    // PLUGIN'S "ADD"/REMOVE COMPONENT ACTIONS). OVERRIDDEN BY SCENES (EG EntityScene) THAT NEED
-    // TO PERSIST THE CHANGE BACK TO THEIR SPARSE ENTITY DATA.
-    OnComponentAdded(_gameObject: GameObject, _compName: string): void {}
-    OnComponentRemoved(_gameObject: GameObject, _compName: string): void {}
-
     // WHETHER EditorControlsHandler MAY START A MARQUEE/RECT SELECTION DRAG (AND WHETHER
     // TransformToolHandler MAY DEFER AN EMPTY-SPACE CLICK TO LET ONE START - SEE ITS
     // OnPointerDown). SEPARATE FROM settingsData.selectionEnabled, WHICH ALSO GATES THE OLDER
@@ -552,25 +541,16 @@ export class EditorScene extends Scene
         return gameObject;
     }
 
-    AddGameObjectAtPosition(x: number, y: number, entityOrName: Entity | string, parent: int | GameObject = 0): GameObject
+    AddGameObjectAtPosition(x: number, y: number, entityOrName: Entity | string, layer: int = 0): GameObject
     {
         // TURING ARG INTO AN ENTITY WITH POSITION - SO BY THE TIME GameObject REACHES OnStart(), ITS POSITION HAS BEEN SET
         if (typeof entityOrName == "string")
             entityOrName = {name: entityOrName, position: {x: x, y: y}};
         else
-        {
-            // Placement changes the position, so keep clipboard/preview entity data immutable.
-            entityOrName = structuredClone(entityOrName);
             entityOrName.position = {x: x, y: y};
-        }
 
-        var gameObject = this.AddGameObject(entityOrName, parent);
+        var gameObject = this.AddGameObject(entityOrName, layer);
         return gameObject;
-    }
-
-    SerializeObjectForCopy(obj: GameObject): Entity
-    {
-        return this.level.SerializeObject(obj);
     }
 
     GetTilesheetEntity(name: string): Entity

@@ -186,10 +186,6 @@ window.__GAME_DEBUG_API__ = {
     window.postMessage({ __fromGame: true, type: "selectEntityObject", data }, "*");
   },
 
-  reloadEntityInPlugin(data) {
-    window.postMessage({ __fromGame: true, type: "gotoEntity", ...data }, "*");
-  },
-
   gotoLevelView(levelPath: string) {
     bare.scene.Remove(EditorScene); // REMOVES IT IF IT EXISTS
     bare.scene.GetMainScene().LoadLevel(levelPath);
@@ -959,20 +955,12 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
 
     // THIS CHANGES THE PROPERTIES ON THE ENTITY, SAVES ITS SETTINGSDATA AND RELOADS THE ENTITY WITH gotoEntity()
     // THIS MAKES IT DIFFERENT FROM LEVEL SERIALIZATION, WHERE THE OBJECTS INGAME ARE SERIALIZED AND SAVED TO DISK
-    // HERE IT TAKES THE ENITY DATA AS BASE TRUTH, TO NOT LOSE DATA IF YOU WOULD SERIALIZE THE OBJECT BACK
-    // LIKE PIVOTS THAT WERE PREVIOUSLY SET TO .5, .5 THAT WOULD BE LOST. 
-    // HOWEVER, SOME DATA IS PUSHED BACK: POSITION, ROTATION, SCALE AND NOTIFICATIONS OF OBJECT REMOVAL. 
-    // GAMEOBJECTS THAT GET ADDED, EG FROM A COMPONENT, DO NOT GET SERIALIZED CURRENTLY (TODO - THOUGHT MOSTLY THIS IS DESIRED BEHAVIOUR).
     //
-    // IT IS ALL A BIT HACKY. COULD ALSO WORK TO HAVE A COMBINATION OF STARTING WITH ENTITY DATA TO CREATE THE ENTIY SCENE
+    // HAVE A COMBINATION OF STARTING WITH ENTITY DATA TO CREATE THE ENTIY SCENE
     // AND SERIALZING BACK THE SCENE AFTER, BUT WILL HAVE ITS OWN CHALLENGES.
     // WILL PROBABLY NEED TO READ THE ENTITY FIELD FROM GAMEOBJECT DURING SERIALIZATION TO PRESERSE SOME DATA, EG PIVOT PERCENTAGES - TODO
     //
-    // POSSIBLE SETUP: - GET ENTITY FROM SETTINGSDATA AND CONSTRUCT IT INTO A GAMEOBJECT
-    //                 - SERIALIZE THE CURRENT ENTITY SCENE GAMEOBJECT 
-    //                 - STORE THE DIFFERENCES IN AN OBJECT - (SHOULD BE EMPTY IF NO CHANGES WERE MADE, ERROR PRONE)
-    //                 - APPLY THE DIFFERENCES TO THE ORIGINAL ENTITY AND SAVE IT
-    //
+    // SHOULD MAKE THE CHANGE TO THE ENTITY, REBUILD SCENE, WHICH SHOULD RE-FEED PLUGIN WITH NEW DATA. SHOULD STAY AT SOME ENTITY (IF NOT DELETED)
     async setEntityField(name: string, props: Record<string, any>, childPath: number[], save:boolean = false, justAdded:boolean = false)
     {
         let entityScene = bare.scene.Get(EntityScene);
@@ -1262,11 +1250,6 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
                 {
                     // JUST CREATED A COMPONENT
                     o.AddComponent(compClass);
-
-                    // ENTITY SCENES TAKE THEIR ENTITY DATA AS BASE TRUTH (SEE THE setEntityField
-                    // COMMENT ABOVE) - WITHOUT THIS, A COMPONENT ADDED HERE ONLY EXISTS ON THE LIVE
-                    // GAMEOBJECT AND IS LOST/HIDDEN FROM THE PLUGIN AS SOON AS THE ENTITY RELOADS.
-                    (o.scene as EditorScene).OnComponentAdded?.(o, compName);
                 }
 
             }
@@ -1328,9 +1311,6 @@ async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: strin
 
         var compRef = bare.componentClasses[Helper.CapitalizeFirstLetter(comp) + "Component"];
         o.RemoveComponent(compRef);
-
-        // SEE THE NOTE ON THE ADD PATH IN setObject() - ENTITY SCENES NEED THIS TO PERSIST/RELOAD.
-        (o.scene as EditorScene).OnComponentRemoved?.(o, comp);
     },
 
     getAllComponentNames():string[] {
