@@ -153,6 +153,25 @@ export class TransformToolHandler
         this.SetCursor(null);
     }
 
+    TryRemoveTargetsAtPointer(scene: Scene, mouseX: number, mouseY: number): boolean
+    {
+        if (this.targets.length == 0 || this.GetScene() !== scene)
+            return false;
+
+        this.PruneTargets();
+
+        const frame = this.GetFrame(this.GetTransformableTargets(this.targets));
+        if (!frame || !this.FrameContains(frame, scene.ScreenToWorld(mouseX, mouseY)))
+            return false;
+
+        const controls = (scene as any).editorControlsHandler;
+        if (!controls || typeof controls.RemoveSelectedObjects != 'function')
+            return false;
+
+        controls.RemoveSelectedObjects();
+        return true;
+    }
+
     // ================= EVENTS =================
 
     private OnPointerDown = ({ mouseX, mouseY, event }: BareEventPayload['pointer_down']): void =>

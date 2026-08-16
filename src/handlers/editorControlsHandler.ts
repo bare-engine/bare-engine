@@ -165,7 +165,10 @@ export class EditorControlsHandler {
         if (!this.scene.opened)
             return;
 
-        if (!this.active)
+        // TransformTool suppresses editor controls while its frame/body is hovered. Keep right-click
+        // removal available in that state; otherwise a selected object's disabled hitbox and the
+        // inactive controls gate make it impossible to remove by right-clicking.
+        if (!this.active && event.button != 2)
             return;
 
         if (this.draggingObject)
@@ -176,7 +179,16 @@ export class EditorControlsHandler {
         var isRightButton = (event.button == 2);
         if (isRightButton)
         {
+            const transformTool = TransformToolHandler.Get();
+            if (transformTool.TryRemoveTargetsAtPointer(this.scene, mouseX, mouseY))
+            {
+                bare.hitbox.ResetCurrentHover();
+                this.actionThisFrame = 'objRemoval';
+                return;
+            }
+
             var hover = bare.hitbox.GetCurrentHover();
+
             if (hover)
             {
                 // ALSO REMOVE OTHER SELECTED ENTITIES
@@ -513,20 +525,20 @@ export class EditorControlsHandler {
             this.selectedObjects.push(obj);
         }
 
-        // TRANSFORM GIZMO REPLACES THE OUTLINE - DRAW IT AROUND THE CURRENT SELECTION
+        // transform gizmo replaces the outline - draw it around the current selection
         TransformToolHandler.Get().SetTargets(this.selectedObjects);
 
-        // NOTIFY THE PLUGIN OF THE FULL CURRENT SELECTION. SINGLE SELECTION SHOWS THAT OBJECT;
-        // MULTI SELECTION SHOWS THE LAST ONE BUT APPLIES FIELD EDITS TO ALL SELECTED.
+        // notify the plugin of the full current selection. single selection shows that object;
+        // multi selection shows the last one but applies field edits to all selected.
         if (notifyPlugin && this.selectedObjects.length > 0)
         {
             this.scene.NotifySelectionToPlugin(this.selectedObjects);
         }
     }
 
-    // ADDS obj TO THE CURRENT SELECTION, OR REMOVES IT IF ALREADY SELECTED - FOR SHIFT+CLICK
-    // TOGGLE SELECTION (MIRRORS SelectGameObjects' FORCE-SELECT BEHAVIOR FOR SCENES LIKE
-    // EntityScene THAT DISABLE ORDINARY selectionEnabled-GATED SELECTION).
+    // adds obj to the current selection, or removes it if already selected - for shift+click
+    // toggle selection (mirrors selectgameobjects' force-select behavior for scenes like
+    // entityscene that disable ordinary selectionenabled-gated selection).
     ToggleGameObjectSelection(obj: GameObject, notifyPlugin: boolean = true)
     {
         if (!this.selectedObjects.includes(obj))
@@ -652,8 +664,8 @@ export class EditorControlsHandler {
         this.currentPreviewEntity.visible = active;
         this.currentPreviewEntity.visibleInEditor = active;
 
-        // STAMP MODE WHILE A PREVIEW ENTITY IS SELECTED, EDIT MODE OTHERWISE
-        // OPTIONAL CHAINING SINCE THIS ALSO RUNS IN OUR CONSTRUCTOR, BEFORE editorUIHandler EXISTS
+        // stamp mode while a preview entity is selected, edit mode otherwise
+        // optional chaining since this also runs in our constructor, before editoruihandler exists
         this.scene.editorUIHandler?.editorUIHintHandler?.SetMode(active ? 'stamp' : 'edit');
     }
 
@@ -895,12 +907,13 @@ export class EditorControlsHandler {
         this.SetEditorPosition(this.currentPreviewEntity, previewX, previewY, altDown);
         this.PlaceCurrentPreviewObjectOnNewGridSquare(altDown);
 
-        var distMouseMoved = Helper.Distance(bare.mouse.world.position, bare.mouse.world.positionOnDown);
-        if (bare.mouse.IsRightDown() && distMouseMoved > 5) {
+        var distRightMouseMoved = Helper.Distance(bare.mouse.world.position, bare.mouse.world.positionOnRightDown);
+        if (this.actionThisFrame != 'objRemoval' && bare.mouse.IsRightDown() && distRightMouseMoved > 5) {
             var hover = bare.hitbox.GetCurrentHover();
             if (hover) {
                 this.scene.RemoveGameObject(hover.parent);
                 bare.hitbox.ResetCurrentHover();
+                this.actionThisFrame = 'objRemoval';
                 return;
             }
         }
