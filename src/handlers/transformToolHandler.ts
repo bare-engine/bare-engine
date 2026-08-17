@@ -67,6 +67,7 @@ const MIN_SIZE = 1;           // smallest world-space frame dimension while resi
 const ROT_HANDLE_GAP = 0.5;   // gap from the top edge to the rotation knob, as a fraction of the box half-height (box-relative, like the resize anchors)
 const ROT_HANDLE_RADIUS = 5;  // rotation knob radius, in screen px
 const ROT_SNAP_DEG = 15;      // rotation snap step while holding shift
+const DRAG_ACTIVATION_DISTANCE = 3; // screen px required before a transform is applied
 
 /*
     TRANSFORM GIZMO
@@ -103,6 +104,8 @@ export class TransformToolHandler
     private startFrame: Frame = { cx: 0, cy: 0, hw: 0, hh: 0, angle: 0 };
     private startMouseAngle = 0;
     private startMousePosition = new Vec2();
+    private dragStartScreenPosition = new Vec2();
+    private dragActivated = false;
     private starts: TargetStart[] = [];
     private movePrimaryObj: GameObject | null = null;
     private moveGrabController: any | null = null;
@@ -148,6 +151,7 @@ export class TransformToolHandler
         this.resizing = false;
         this.rotating = false;
         this.moving = false;
+        this.dragActivated = false;
         this.handle = null;
         this.pendingTargetPick = null;
         this.SetCursor(null);
@@ -248,6 +252,8 @@ export class TransformToolHandler
         // Global events are emitted before the scene MouseController receives the same event.
         // Convert the event coordinates directly so grabbing never uses the previous mouse position.
         const mouse = scene.ScreenToWorld(mouseX, mouseY);
+        this.dragStartScreenPosition = new Vec2(mouseX, mouseY);
+        this.dragActivated = false;
 
         // Rotation knob takes priority - it sits outside the box, above the top edge.
         if (this.HitTestRotation(scene, frame, mouse))
@@ -271,14 +277,21 @@ export class TransformToolHandler
 
     private OnPointerMove = ({ mouseX, mouseY }: BareEventPayload['pointer_move']): void =>
     {
-        if (this.pendingTargetPick &&
-            (mouseX != this.pendingTargetPick.mouseX || mouseY != this.pendingTargetPick.mouseY))
+        if (this.pendingTargetPick && this.HasPassedDragThreshold(
+            mouseX, mouseY, this.pendingTargetPick.mouseX, this.pendingTargetPick.mouseY))
             this.pendingTargetPick.moved = true;
 
         if (!this.resizing && !this.rotating && !this.moving) return;
 
         const scene = this.GetScene();
         if (!scene) return;
+
+        if (!this.dragActivated)
+        {
+            if (!this.HasPassedDragThreshold(mouseX, mouseY, this.dragStartScreenPosition.x, this.dragStartScreenPosition.y))
+                return;
+            this.dragActivated = true;
+        }
 
         const mouse = scene.ScreenToWorld(mouseX, mouseY);
         if (this.moving) this.ApplyMove(scene, mouse);
@@ -531,6 +544,9 @@ export class TransformToolHandler
         if (this.resizing || this.rotating || this.moving) return false;
         if (this.targets.length == 0 || this.GetScene() !== scene) return false;
 
+        const screen = scene.WorldToScreenPos(mouse);
+        this.dragStartScreenPosition = new Vec2(screen.x, screen.y);
+        this.dragActivated = false;
         this.BeginMove(scene, mouse, primaryObj);
         this.SetHitboxesActive(false);
         this.SuppressEditorControls(true);
@@ -628,6 +644,13 @@ export class TransformToolHandler
         }));
     }
 
+    private HasPassedDragThreshold(x: number, y: number, startX: number, startY: number): boolean
+    {
+        const dx = x - startX;
+        const dy = y - startY;
+        return dx * dx + dy * dy >= DRAG_ACTIVATION_DISTANCE * DRAG_ACTIVATION_DISTANCE;
+    }
+
     private EndTransform(scene: Scene): void
     {
         // A click that selects a new target trivially satisfies FrameContains at mouse-down (the
@@ -641,6 +664,7 @@ export class TransformToolHandler
         this.resizing = false;
         this.rotating = false;
         this.moving = false;
+        this.dragActivated = false;
         this.handle = null;
         this.starts = [];
         this.movePrimaryObj = null;
