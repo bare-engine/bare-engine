@@ -8,6 +8,8 @@ import { RenderTexture, Texture, TextureManager } from "./texture";
 import { Color } from "./color";
 import {
     ICircleOptions,
+    IDrawParticleOptions,
+    IDrawParticleBatchOptions,
     IGraphicOptions,
     ILineOptions,
     IMaskImageOptions,
@@ -17,11 +19,14 @@ import {
     drawGraphic,
     drawLine,
     drawMaskImage,
+    drawParticle,
+    drawParticles,
     drawRect,
     drawSprite,
 } from "./draw";
 import { Vec2 } from "./math";
-import { AtlasSpriteRegion } from "./region/atlasSpriteRegion";
+import { AtlasSprtieRegion } from "./region/atlasSpriteRegion";
+import { ParticleRegion } from "./region/particleRegion";
 
 /**
  * Options for initializing the Rapid application.
@@ -29,6 +34,11 @@ import { AtlasSpriteRegion } from "./region/atlasSpriteRegion";
 export interface IAppOptions {
     /** The HTML canvas element to render onto. */
     canvas: HTMLCanvasElement;
+
+    /** Alias ​​for logicWidth */
+    width?: number,
+    /** Alias ​​for logicHeight */
+    height?: number,
 
     /** The logical width of the application (CSS pixels). */
     logicWidth?: number;
@@ -154,7 +164,9 @@ export class Rapid {
     /** Region dedicated to arbitrary geometry and shapes rendering. */
     graphicRegion: GraphicRegion;
 
-    atlasSpriteRegion: AtlasSpriteRegion;
+    atlasSpriteRegion: AtlasSprtieRegion;
+
+    particleRegion: ParticleRegion;
 
     /** Counts the number of WebGL draw calls made in the current frame. */
     drawcallCount: number = 0;
@@ -207,7 +219,8 @@ export class Rapid {
 
         this.spriteRegion = new SpriteRegion(this);
         this.graphicRegion = new GraphicRegion(this);
-        this.atlasSpriteRegion = new AtlasSpriteRegion(this);
+        this.atlasSpriteRegion = new AtlasSprtieRegion(this);
+        this.particleRegion = new ParticleRegion(this);
 
         const cssW = this.canvas.clientWidth || this.canvas.width;
         const cssH = this.canvas.clientHeight || this.canvas.height;
@@ -216,8 +229,8 @@ export class Rapid {
         this.physicsWidth = options.physicsWidth || Math.round(cssW * this.dpr);
         this.physicsHeight = options.physicsHeight || Math.round(cssH * this.dpr);
 
-        this.logicWidth = options.logicWidth || (this.physicsWidth / this.dpr);
-        this.logicHeight = options.logicHeight || (this.physicsHeight / this.dpr);
+        this.logicWidth = options.logicWidth || options.width || (this.physicsWidth / this.dpr);
+        this.logicHeight = options.logicHeight || options.height || (this.physicsHeight / this.dpr);
 
         this.resize(this.logicWidth, this.logicHeight, this.physicsWidth, this.physicsHeight);
 
@@ -268,6 +281,14 @@ export class Rapid {
         this.flush();
         this.currentRegion = region;
         region.enter(customShader);
+    }
+
+    drawParticle(options: IDrawParticleOptions): void {
+        drawParticle(this, options)
+    }
+
+    drawParticles(options: IDrawParticleBatchOptions): void {
+        drawParticles(this, options)
     }
 
     drawSprite(options: ISpriteOptions): void {
@@ -903,7 +924,27 @@ export class Rapid {
         return p.mul(this.dpr)
     }
 
+    cssToLogic(p: Vec2){
+        const devicePixel = this.cssToDevicePixel(p);
+        const logicPoint = this.physicsToLogic(devicePixel);
+        return logicPoint
+    }
+
     devicePixelToCss(p: Vec2) {
         return p.divide(this.dpr)
+    }
+
+    /**
+     * Exports a world matrix as a CSS `matrix(...)` string, ready to assign
+     * directly to a DOM element's `style.transform`.
+     * Unlike `matrixStack.toCSSMatrix()`, this bakes in the logic-pixel → CSS-pixel
+     * scale (accounting for dpr and a custom `logicWidth`/`logicHeight`), so the
+     * result lines up with the canvas without any extra `scale(...)` on your end.
+     * @param index - Matrix index to export. Defaults to the current world matrix.
+     */
+    toCSSMatrix(index?: number): string {
+        const scaleX = (this.physicsWidth / this.dpr) / this.logicWidth;
+        const scaleY = (this.physicsHeight / this.dpr) / this.logicHeight;
+        return this.matrix.toCSSMatrix(index ?? this.matrixStack.curWorldM, scaleX, scaleY);
     }
 }

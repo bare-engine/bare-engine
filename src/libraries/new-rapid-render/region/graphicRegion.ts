@@ -4,11 +4,11 @@ import GLShader from "../webgl/glshader";
 import { ArrayType, WebglBufferArray } from "../buffer";
 import { Texture } from "../texture";
 
-import VsShaderSource from "../shader/graphic.vert";
-import FsShaderSource from "../shader/graphic.frag";
+import VsShaderSource from "../shader/graphic.vert?raw";
+import FsShaderSource from "../shader/graphic.frag?raw";
 
-import MaskVsShaderSource from "../shader/mask.vert";
-import MaskFsShaderSource from "../shader/mask.frag";
+import MaskVsShaderSource from "../shader/mask.vert?raw";
+import MaskFsShaderSource from "../shader/mask.frag?raw";
 
 // Per-vertex layout (stride = 20 bytes): 8 + 4 + 8
 //   aPosition  vec2   float32×2  offset  0
@@ -102,6 +102,11 @@ export class GraphicRegion extends Region {
         this.matrixIndex = matrixIndex;
         this.drawMode = drawMode;
         this.texture = texture;
+        if (this.texture?.glTexture) {
+            // It does not rely on the region to set the texture;
+            // it merely occupies a texture unit to prevent the custom shader from overwriting it
+            this.useTexture(this.texture.glTexture, 0, 0)
+        }
     }
 
     /**
@@ -176,6 +181,7 @@ export class GraphicRegion extends Region {
 
         gl.drawArrays(this.drawMode, 0, this.vertexCount);
         this.rapid.drawcallCount++;
+        this.texture = undefined;
     }
 
     override hasPendingContent(): boolean {
