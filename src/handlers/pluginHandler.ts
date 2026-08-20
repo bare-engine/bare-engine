@@ -468,60 +468,10 @@ window.__GAME_DEBUG_API__ = {
     {
         delete processedEntityCopy[key];
     }*/
-    var defaultFieldsToIgnore = [];
-
-    // COPY ENTITY AND FIND EXTENDS TO CONSTRUCT IT - BUT WITH RAW VALUES - NEED THOSE IN PLUGIN
-    // (SAME THING HAPPENS IN settingsHandler PROCESS, JUST NOT FILLING PRESETS)
-    var entityCopy = Helper.DeepCopy(entity);
-    var defaultBaseEntity = (isBase ? "ANY" : "ANY_ENTITY");
-    if (!entityCopy.entity)
-    {
-        entityCopy.entity = defaultBaseEntity;
-        defaultFieldsToIgnore.push("entity"); // DON'T SHOW ENTITY WE'VE CUSTOM SET HERE, NOT INHERENT PART OF ENTITY
-    }
-    let baseEntity = entityCopy.entity || defaultBaseEntity;
-    var scene = plugin.GetCurrentScene();
-
-    while (baseEntity)
-    {
-        var entityBase = raw.baseEntities[baseEntity] || defaultSettingsData.baseEntities[baseEntity];
-
-        // INSERT MEMBERS FROM ENTITY BASE WE DIDN'T DEFINE ALREADY IN ENTITY
-        for (const key of Object.keys(entityBase))
-        {
-            if (!(key in entityCopy))
-            {
-                entityCopy[key] = entityBase[key];
-            }
-        }
-
-        entityCopy.components = scene.MergeComponents(entityBase.components, entityCopy.components);
-
-        baseEntity = raw.baseEntities[baseEntity]?.entity;
-    }
-
-    // ADD baseEntityLog DATA TO ENTITY - STORING WHICH FIELDS COME FROM WHICH ENTITY
-    var entityWithLog = plugin.BuildExtendDataLog(entity, entityCopy, name, processedEntity, raw, processed);
-
-    // WE'VE SET entity.baseEntity = "ANY_ENTITY"; WHEN CONSTRUCTING ENTITY, BUT DON'T WANT TO SHOW THIS IN PLUGIN (NOT USER VALUE)
-    // ALONG WITH THE VALUES ANY_ENTITY SETS (EG: baseClass)
-    // PASSING THIS INFO TO __defaultFieldsToIgnore__
-
-    if (!isBase)
-    {
-        if (entityWithLog.entity == "ANY_ENTITY")
-        {
-            //entityWithLog["__defaultFieldsToIgnore__"] = ["baseEntity"];
-
-            var defaultBaseClass = defaultSettingsData.baseEntities.ANY_ENTITY.baseClass;
-            if (entityWithLog.baseClass == defaultBaseClass)
-            {
-                defaultFieldsToIgnore.push("baseClass");
-            }
-        }
-    }
-
-    entityWithLog["__defaultFieldsToIgnore__"] = defaultFieldsToIgnore;
+    // Build the complete editor payload recursively. Child entities need the same inherited
+    // fields, extend provenance, defaults, and removal metadata as the root entity; otherwise
+    // the panel cannot render their extend badges or inherited-field controls.
+    var entityWithLog = plugin.BuildEntityEditorData(entity, name, processedEntity, raw, processed, isBase);
 
     // BUILD THE ENTITY TO PASS TO PLUGIN RIGHT AWAY
     //var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(entityWithLog, scene.settingsData, {fillPresets: false});
@@ -531,8 +481,6 @@ window.__GAME_DEBUG_API__ = {
     var obj = entityScene.object.GetByName(name);
     if (obj)
         plugin.AddInspectorDataToObject(entityWithLog, obj, true);
-
-    entityWithLog.name ??= name;
 
     // PARSE PRESETS
     entityScene.settingsHandler.FillPresets(entityWithLog, raw, (parentRecord, keyWithPreset, presetName)=>{
@@ -976,6 +924,8 @@ window.__GAME_DEBUG_API__ = {
     async setEntityField(name: string, props: Record<string, any>, childPath: number[], save:boolean = false, justAdded:boolean = false)
     {
         let entityScene = bare.scene.Get(EntityScene);
+        const entityReferenceChanged = Object.prototype.hasOwnProperty.call(props, "entity");
+        const selectedChildPath = [...childPath];
         var obj = entityScene.object.GetByName(name);
         for (const childIndex of childPath)
         {
@@ -1118,6 +1068,22 @@ window.__GAME_DEBUG_API__ = {
             entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase);
             
             await plugin.SaveSettingsData(rawSettingsData);
+
+            // The child entity dropdown is saved asynchronously by the panel, so its direct API
+            // response is not consumed there. Ask the panel to reopen the same root/child after the
+            // new base has been processed; gotoEntity will then resend the freshly rebuilt recursive
+            // baseEntityLog (including the updated extend chain and field/component provenance).
+            if (entityReferenceChanged && selectedChildPath.length > 0 && plugin.lastEntity)
+            {
+                window.postMessage({
+                    __fromGame: true,
+                    type: "gotoEntity",
+                    name: plugin.lastEntity.name,
+                    isBase: plugin.lastEntity.isBase,
+                    settingsDataName: plugin.currentSettingsDataName,
+                    childPath: selectedChildPath
+                }, "*");
+            }
         }
 
         // ADD DEFAULTS TO RAW SETTINGS AGAIN, SO PROPS CAN BE ADDED TO IT
@@ -2158,9 +2124,20 @@ export class PluginHandler
     BuildExtendDataLog(entity: Entity, entityToApplyTo: Entity, entityName: string, processedEntity: Entity, settingsDataRaw: SettingsData, settingsDataProcessed: SettingsData): Entity
     {
         var newEntity = entityToApplyTo;//{...newEntity}; // SHALLOW COPY, MORE IS NOT NEEDED, SINCE WE ONLY ADD baseEntityLog TO IT
+        var getRawEntity = (name: string): Entity | undefined =>
+            settingsDataRaw.entities[name]
+            || settingsDataRaw.baseEntities[name]
+            || defaultSettingsData.baseEntities[name];
+        var getProcessedEntity = (name: string): Entity | undefined =>
+            settingsDataProcessed.entities[name]
+            || settingsDataProcessed.baseEntities[name]
+            || defaultSettingsData.baseEntities[name];
 
-        // GET BASE ENTITIES ALL THE WAY DOWN, PUSH IN extendOrder
-        let baseEntity = processedEntity.entity;
+        // GET EXTENDED ENTITIES ALL THE WAY DOWN, PUSH IN extendOrder. For nested entities the
+        // authored `entity` field is authoritative. entityToApplyTo also carries the ANY_ENTITY
+        // default synthesized by BuildEntityEditorData, which must be logged when none was authored.
+        // Fall back to processed data for callers that did not construct an editor entity first.
+        let baseEntity = entity.entity || entityToApplyTo.entity || processedEntity.entity;
 
         var extendOrder = [entityName];
         newEntity.baseEntityLog = {};
@@ -2169,7 +2146,7 @@ export class PluginHandler
         while (baseEntity)
         {
             extendOrder.push(baseEntity);
-            baseEntity = settingsDataProcessed.baseEntities[baseEntity]?.entity;
+            baseEntity = getProcessedEntity(baseEntity)?.entity;
         }
 
         // FILL INFO ABOUT WHAT ENTITY PROPERTIES ARE EXTENDED BY WHY WHICH DATA - USING extendOrder
@@ -2189,7 +2166,7 @@ export class PluginHandler
         {
             for (var b = 1; b < extendOrder.length; b++)
             {
-                var baseEnt = settingsDataRaw.baseEntities[extendOrder[b]] || defaultSettingsData.baseEntities[extendOrder[b]];
+                var baseEnt = getRawEntity(extendOrder[b]);
                 if (baseEnt && Object.prototype.hasOwnProperty.call(baseEnt, prop))
                     return { found: true, value: baseEnt[prop] };
             }
@@ -2241,7 +2218,9 @@ export class PluginHandler
         {
             // LOG EXTENDED PROPERTIES - SHOULD NOT HAVE BEEN FOUND BEFORE
             var extendEntityName = extendOrder[i];
-            var extendEntity = settingsDataRaw.baseEntities[extendEntityName] || defaultSettingsData.baseEntities[extendEntityName]; // THIS CAUSES A PROBLEM WITH FIELD THAT CAN ALSO BE STRING, settingsDataRaw IS DIFFERENT THEN PROCESSED, DOESN'T END UP UNDER RIGHT BASE ENTITY. EG pivotPercOnHitbox CENTER - TODO
+            var extendEntity = getRawEntity(extendEntityName); // THIS CAUSES A PROBLEM WITH FIELD THAT CAN ALSO BE STRING, settingsDataRaw IS DIFFERENT THEN PROCESSED, DOESN'T END UP UNDER RIGHT BASE ENTITY. EG pivotPercOnHitbox CENTER - TODO
+            if (!extendEntity)
+                continue;
             var propsExtended = Object.keys(extendEntity);
             var propsExtendedFiltered = propsExtended.filter(p => !propsFound.includes(p));
 
@@ -2261,7 +2240,7 @@ export class PluginHandler
             {
                 var sourceEntity = sourceName == entityName
                     ? entity
-                    : settingsDataRaw.baseEntities[sourceName] || defaultSettingsData.baseEntities[sourceName];
+                    : getRawEntity(sourceName);
                 var sourceComponents = sourceEntity?.[componentType];
                 if (!sourceComponents) continue;
 
@@ -2284,11 +2263,11 @@ export class PluginHandler
             for (var p = 1; p < extendOrder.length; p++)
             {
                 var propSrc = extendOrder[p];
-                var propRawBase = settingsDataRaw.baseEntities[propSrc] || defaultSettingsData.baseEntities[propSrc];
+                var propRawBase = getRawEntity(propSrc);
                 if (propRawBase && Object.prototype.hasOwnProperty.call(propRawBase, removedProp))
                 {
                     propSource = propSrc;
-                    propValue = settingsDataProcessed.baseEntities[propSrc]?.[removedProp] ?? propRawBase[removedProp];
+                    propValue = getProcessedEntity(propSrc)?.[removedProp] ?? propRawBase[removedProp];
                     break;
                 }
             }
@@ -2296,7 +2275,7 @@ export class PluginHandler
             if (!propSource && extendOrder.length > 1)
             {
                 propSource = extendOrder[1];
-                propValue = settingsDataProcessed.baseEntities[propSource]?.[removedProp];
+                propValue = getProcessedEntity(propSource)?.[removedProp];
             }
             if (!propSource)
                 continue;
@@ -2317,18 +2296,18 @@ export class PluginHandler
             for (var c = 1; c < extendOrder.length; c++)
             {
                 var compSrc = extendOrder[c];
-                var compRawBase = settingsDataRaw.baseEntities[compSrc] || defaultSettingsData.baseEntities[compSrc];
+                var compRawBase = getRawEntity(compSrc);
                 if (compRawBase?.components && Object.prototype.hasOwnProperty.call(compRawBase.components, removedComp))
                 {
                     compSource = compSrc;
-                    compValue = settingsDataProcessed.baseEntities[compSrc]?.components?.[removedComp] ?? compRawBase.components[removedComp];
+                    compValue = getProcessedEntity(compSrc)?.components?.[removedComp] ?? compRawBase.components[removedComp];
                     break;
                 }
             }
             if (!compSource && extendOrder.length > 1)
             {
                 compSource = extendOrder[1];
-                compValue = settingsDataProcessed.baseEntities[compSource]?.components?.[removedComp];
+                compValue = getProcessedEntity(compSource)?.components?.[removedComp];
             }
             if (!compSource)
                 continue;
@@ -2338,6 +2317,68 @@ export class PluginHandler
         }
 
         return newEntity;
+    }
+
+    // Construct the data shown by the entity editor without expanding presets yet, then attach
+    // inheritance metadata to every node. This mirrors gotoEntity's former root-only work and is
+    // deliberately recursive so inline/inherited children receive the same panel capabilities.
+    BuildEntityEditorData(entity: Entity, entityName: string, processedEntity: Entity, settingsDataRaw: SettingsData, settingsDataProcessed: SettingsData, isBase: boolean = false): Entity
+    {
+        var entityCopy = Helper.DeepCopy(entity);
+        var defaultFieldsToIgnore: string[] = [];
+        var defaultBaseEntity = isBase ? "ANY" : "ANY_ENTITY";
+
+        if (!entityCopy.entity)
+        {
+            entityCopy.entity = defaultBaseEntity;
+            defaultFieldsToIgnore.push("entity");
+        }
+
+        let baseEntity = entityCopy.entity || defaultBaseEntity;
+        while (baseEntity)
+        {
+            var entityBase = settingsDataRaw.entities[baseEntity]
+                || settingsDataRaw.baseEntities[baseEntity]
+                || defaultSettingsData.baseEntities[baseEntity];
+            if (!entityBase)
+                break;
+
+            for (const key of Object.keys(entityBase))
+            {
+                if (!(key in entityCopy))
+                    entityCopy[key] = Helper.DeepCopy(entityBase[key]);
+            }
+
+            entityCopy.components = this.GetCurrentScene().MergeComponents(entityBase.components, entityCopy.components);
+            baseEntity = settingsDataRaw.entities[baseEntity]?.entity
+                || settingsDataRaw.baseEntities[baseEntity]?.entity
+                || defaultSettingsData.baseEntities[baseEntity]?.entity;
+        }
+
+        var entityWithLog = this.BuildExtendDataLog(entity, entityCopy, entityName, processedEntity, settingsDataRaw, settingsDataProcessed);
+
+        if (!isBase && entityWithLog.entity == "ANY_ENTITY")
+        {
+            var defaultBaseClass = defaultSettingsData.baseEntities.ANY_ENTITY.baseClass;
+            if (entityWithLog.baseClass == defaultBaseClass)
+                defaultFieldsToIgnore.push("baseClass");
+        }
+
+        entityWithLog["__defaultFieldsToIgnore__"] = defaultFieldsToIgnore;
+        entityWithLog.name ??= entityName;
+
+        if (entityWithLog.children)
+        {
+            for (var i = 0; i < entityWithLog.children.length; i++)
+            {
+                var child = entityWithLog.children[i];
+                var processedChild = processedEntity?.children?.[i] || child;
+                var childName = child.name || processedChild.name || child.entity || "GameObject";
+                entityWithLog.children[i] = this.BuildEntityEditorData(child, childName, processedChild, settingsDataRaw, settingsDataProcessed, false);
+            }
+        }
+
+        return entityWithLog;
     }
 
     // onlyFieldsInData: only enrich @InspectorField info for fields that are actually present in `data`
