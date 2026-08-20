@@ -226,12 +226,11 @@ export class HitboxScene extends EditorScene
 
     async OnPreSaveEntityData(rawData: SettingsData): Promise<void>
     {
-        this.settingsHandler.Process(rawData);
-
-        this.settingsHandler.UpdateRaw((raw) => {
-            delete raw.showUI;
-            delete raw.selectionEnabled;
-        });
+        // Only sanitize the persistence copy. Processing it here would replace the
+        // handler's live raw data and restore defaults that were intentionally stripped
+        // from the JSON representation.
+        delete rawData.showUI;
+        delete rawData.selectionEnabled;
     }
 
     async OnPostSaveEntityData(rawData: SettingsData): Promise<void>

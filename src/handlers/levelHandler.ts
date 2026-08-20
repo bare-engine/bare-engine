@@ -292,7 +292,7 @@ export class LevelHandler
         var texturesFound = new Set<string>();
 
         var collectTextures = (entity: any) => {
-            if (Bare.assets.images.length > 0 && entity.texture != "NONE" && entity.texture != "placeHolder")
+            if (Bare.assets.images.length > 0 && entity.texture && entity.texture != "NONE" && entity.texture != "placeHolder")
             {
                 var fullPath = MakePathForEntity(entity);
 
@@ -567,16 +567,17 @@ to package.json to keep the generated assets (can become large for big projects)
     }
 
     // SERIALIZE OBJECT DIFF
-    // THIS IS A VERY INEFFICIENT WAY TO IT, BUT... EASY TO FOLLOW AND IN ONE PLACE
+    // THIS IS A VERY INEFFICIENT WAY TO IT, BUT... EASY TO FOLLOW
     // COME BACK LATER TO OPTIMIZE/CACHE - TODO
-    // USED levelEntity BEFORE, KEEPING TRACK CHANGES, BUT KEPT GETTING EDGE CASES ALL OVER
+    // USED levelEntity BEFORE, KEEPING TRACK OF CHANGES, BUT KEPT GETTING EDGE CASES ALL OVER
     SerializeObject(obj: GameObject, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false, includeSaveFields: false }): Entity
     {
-        var entity:Entity = {
-            name: obj.name,
-        };
+        var entity:Entity = {};
 
-        var origEntity = this.scene.ConstructEntityWithDefaultValues(obj.name, this.scene.settingsData, options);
+        if (obj.entity && obj.entity.entity)
+            entity.entity = obj.entity.entity; // obj.entity.entity IS NAME OF ENTITY IT'S EXTENDING
+
+        var origEntity = this.scene.ConstructEntityWithDefaultValues(obj.entity.entity, this.scene.settingsData, options);
         var fullEntity = this.SerializeObjectFully(obj, options.forceAllEntityVars, options.includeSaveFields);
         var diffEntity = this.GetEntitiesDiff(origEntity, fullEntity);
 

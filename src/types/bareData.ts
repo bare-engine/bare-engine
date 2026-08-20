@@ -5,7 +5,7 @@ export const defaultSettingsData: SettingsData = {
     ANY: {
     },
     ANY_ENTITY: {
-      baseEntity: "ANY",
+      entity: "ANY",
     },
     NONE: {
     }

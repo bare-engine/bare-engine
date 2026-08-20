@@ -93,11 +93,11 @@ export class GameObject
 
         if (Number.isNaN(x) || Number.isNaN(y))
             trace('isNaN SetPosition')
-        
+
+        this.Init("gameObject");
+
         if (texturePath != "")
-        {
-            this.Init(texturePath);
-        }
+            this.InitTexture(texturePath);
     }
  
     // ONLY FOR PLUGIN - MOVE - TODO
@@ -352,14 +352,10 @@ export class GameObject
         this.startPosition.y = y;
     }
 
-    async Init(texturePath: string): Promise<void> 
+    Init(name: string): void
     {
-        var split = texturePath.split("/");
-        this.name = split[split.length - 1]; //
-
+        this.name = name;
         this.SetStartPosition(this.x, this.y);
-
-        await this.InitTexture(texturePath);
     }
 
     async InitTexture(texturePath: string):Promise<Texture>

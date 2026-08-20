@@ -104,9 +104,9 @@ export type GameObjectClass = { new (...args: any[]): GameObject };
 // BIT ANNOYING, TODO: NOT SURE
 export interface Entity
 {
-    name?: any; // string
+    name?: string;
     id?: int;
-    customName?: any; // string
+    customName?: string;
     tags?: any; // Array<string>
     customData?: any; // Record<string, Scalar>
 
@@ -130,14 +130,14 @@ export interface Entity
     innerRotation?: any; // number
     childrenInheritInnerTransform?: any; // boolean
 
-    texture?: any; // string
-    color?: any; // string
+    texture?: string;
+    color?: string;
     alpha?: any; // number
     visible?: any; // boolean
 
     hitbox?: any; // Rectangle2Vec
     tapHitbox?: any; // Rectangle2Vec
-    hitboxType?: any; // string
+    hitboxType?: string;
 
     children?: any; // Entity[]
 
@@ -145,9 +145,9 @@ export interface Entity
     componentsRemoved?: any; // string[]
     propertiesRemoved?: any; // string[]
 
-    baseClass?: any; // string
-    baseEntity?: any; // string
-    imagePath?: any; // string
+    baseClass?: string;
+    entity?: string;
+    imagePath?: string;
     interactableInEditor?: any; // boolean
     persistent?: any; // boolean
     save?: any; // boolean
@@ -258,7 +258,7 @@ export interface Category
     image?: string;
     expanded?: boolean;
     entries?: Array<string> | string;
-    baseEntity?: string;
+    entity?: string;
     showLabels?: boolean;
 }
 

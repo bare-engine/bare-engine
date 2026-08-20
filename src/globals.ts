@@ -149,5 +149,5 @@ export function MakePath(...args: string[]): string
 
 export function MakePathForEntity(entity: Entity): string
 {
-    return MakePath(entity.imagePath!, (entity.texture || entity.name || ""));
+    return MakePath(entity.imagePath!, (entity.texture || ""));
 }

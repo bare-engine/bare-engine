@@ -19,6 +19,7 @@ import { defaultSettingsData } from "../types/bareData";
 import { AwakePayload, BareEvent, CollisionHandlingType, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LayerInfo, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
 import { getInspectorFieldNames, InspectorClass, InspectorField, Label } from "../utils/decorators";
 import { EntitySerializer } from "../utils/entitySerializer";
+import { Helper } from "../utils/helper";
 
 export class Scene implements SceneI
 {
@@ -404,17 +405,14 @@ export class Scene implements SceneI
     ConstructEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [] }): Entity
     {
         if (typeof nameOrEntity === "object" && nameOrEntity.constructed)
-            return cloneEntityData(nameOrEntity); // ALREADY CONSTRUCTED BEFORE
+            return Helper.DeepCopy(nameOrEntity); // ALREADY CONSTRUCTED BEFORE
             
         if (options.fillPresets === undefined)
             options.fillPresets = true;
         if (options.propsToIgnoreInEntity === undefined)
             options.propsToIgnoreInEntity = [];
 
-        function cloneEntityData<T>(data: T): T
-        {
-            return JSON.parse(JSON.stringify(data));
-        }
+        var extendsBaseEntity = false;
 
         var entity:Entity;
         
@@ -422,10 +420,11 @@ export class Scene implements SceneI
         {
             if (typeof nameOrEntity === "object")
             {
+                // ARG IS ENTITY OBJECT
+
                 // CONSTRUCT - GENERALIZE THIS? SHOULD BE SAME FOR BASE
                 {
-                    // ARG IS ENTITY
-                    var entityArg = cloneEntityData(nameOrEntity);
+                    var entityArg = Helper.DeepCopy(nameOrEntity);
 
                     // CONSTRUCT ALL CHILDREN
                     if (entityArg.children)
@@ -451,69 +450,65 @@ export class Scene implements SceneI
                     }
                 }
 
-                // entityArg HAS BEEN CONSTRUCTED, NOW MERGE IT WITH (ALREADY CONSTRUCTED) ENTITY FROM SETTINGSDATA
-                var possibleEntity = settingsData.entities[entityArg.name];
-                if (possibleEntity)
+                // CONSTRUCT: MERGE entityArg WITH (ALREADY CONSTRUCTED) ENTITY FROM SETTINGSDATA
                 {
-                    // ENTITY WAS FOUND IN ENTITIES ARRAY IN DATA, DELETE SPECIFIED IGNORED PROPS FROM IT
-                    // USING IT ATM TO FIND THE PROPS SET ON THE BASE
-                    for (var prop of options.propsToIgnoreInEntity)
+                    if (entityArg.name == "ANY")
                     {
-                        delete entityArg[prop as keyof Entity];
-                    }
-                    
-                    // MERGE WITH ENTITY IN SETTINGSDATA
-                    entity = {
-                        ...possibleEntity, // OVERRIDE
-                        ...entityArg, // START
-                        components: this.MergeComponents(possibleEntity.components, entityArg.components),
-                    };
-
-                    // REMOVE COMPONENTS SPECIFICALLY LISTED IN ENTITY
-                    if (entity.components && entity.componentsRemoved)
-                    {
-                        for (const componentName of entity.componentsRemoved)
-                        {
-                            delete entity.components[componentName];
-                        }
-                    }
-                }
-                else
-                {
-                    if (entityArg.name != "ANY") // ANY IS ONLY ENTITY THAT DOES NOT NEED A BASE ENTITY
-                    {
-                        // NO ENTITY IN DATA - MERGE WITH baseEntity BASE
-                        if (!entityArg.baseEntity)
-                            if (!entityArg.name)
-                                entityArg.baseEntity = "ANY_ENTITY";
-                            else
-                                if (settingsData.baseEntities[entityArg.name])
-                                    entityArg.baseEntity = "ANY";
-                                else
-                                    entityArg.baseEntity = "ANY_ENTITY";
-
-                        var entityBase = settingsData.baseEntities[entityArg.baseEntity];
-
-                        entity = {
-                            ...entityBase, // OVERRIDE
-                            ...entityArg, // START
-                            components: this.MergeComponents(entityBase.components, entityArg.components),
-                        };
-
-                        entity = cloneEntityData(entity);
-
-                        // REMOVE COMPONENTS SPECIFICALLY LISTED IN ENTITY
-                        if (entity.components && entity.componentsRemoved)
-                        {
-                            for (const componentName of entity.componentsRemoved)
-                            {
-                                delete entity.components[componentName];
-                            }
-                        }
+                        // ANY IS ONLY ENTITY THAT DOES NOT NEED A BASE ENTITY
+                        entity = entityArg;
                     }
                     else
                     {
-                        entity = cloneEntityData(entityArg);
+                        // SET DEFAULT ENTITY, IF NOT SET
+                        if (!entityArg.entity)
+                        {
+                            if (!entityArg.name)
+                                entityArg.entity = "ANY_ENTITY";
+                            else
+                                if (settingsData.baseEntities[entityArg.name])
+                                    entityArg.entity = "ANY";
+                                else
+                                    entityArg.entity = "ANY_ENTITY";
+                        }
+                    }
+
+                    if (entityArg.entity)
+                    {
+                        var possibleEntity = (settingsData.entities[entityArg.entity] || settingsData.baseEntities[entityArg.entity]);
+                        if (possibleEntity)
+                        {
+                            extendsBaseEntity = (settingsData.baseEntities[entityArg.entity] != null);
+
+                            // ENTITY WAS FOUND IN ENTITIES ARRAY IN DATA, DELETE SPECIFIED IGNORED PROPS FROM IT
+                            // USING IT ATM TO FIND THE PROPS SET ON THE BASE
+                            for (var prop of options.propsToIgnoreInEntity)
+                            {
+                                delete entityArg[prop as keyof Entity];
+                            }
+                            
+                            // MERGE WITH ENTITY IN SETTINGSDATA
+                            entity = {
+                                ...possibleEntity, // BASE
+                                ...entityArg, // OVERRIDE
+                                components: this.MergeComponents(possibleEntity.components, entityArg.components),
+                            };
+
+                            if (!entityArg.name)
+                                delete entity.name; // DON'T WANT THE NAME COMING FROM possibleEntity, SETTING AT BOTTOM OF METHOD
+
+                            // REMOVE COMPONENTS SPECIFICALLY LISTED IN ENTITY
+                            if (entity.components && entity.componentsRemoved)
+                            {
+                                for (const componentName of entity.componentsRemoved)
+                                {
+                                    delete entity.components[componentName];
+                                }
+                            }
+                        }
+                        else
+                        {
+                            throw new Error(`Could not find base entity '${entityArg.entity}' for entity '${entityArg.name}'`);
+                        }
                     }
                 }
             }
@@ -524,14 +519,15 @@ export class Scene implements SceneI
                 if (possibleEntity)
                 {
                     // ENTITY NAME IS DEFINED IN ENTITIES
-                    entity = cloneEntityData(possibleEntity);
+                    entity = Helper.DeepCopy(possibleEntity);
                 }
                 else
                 {
                     // ENTITY NAME NOT FOUND, SO TAKE THE 'ANY_ENTITY' ENTRY AND ASSIGN A NEW NAME
-                    var entityBase = cloneEntityData(settingsData.baseEntities!["ANY_ENTITY"] as Entity);
+                    var entityBase = Helper.DeepCopy(settingsData.baseEntities!["ANY_ENTITY"] as Entity);
                     entity = entityBase;
                     entity.name = nameOrEntity;
+                    entity.texture = nameOrEntity;
                 }
             }
         }
@@ -545,6 +541,12 @@ export class Scene implements SceneI
 
         if (!entity.baseClass)
             entity.baseClass = "GameObject";
+
+        if (!entity.name)
+            entity.name = (!extendsBaseEntity ? entity.entity : "") || entity.texture || "GameObject";
+
+        if (entity.texture == "NAME")
+            entity.texture = entity.name;
 
         // NO USE FOR THIS ANYMORE, BUT GONNA REPURPOSE IT TO SHOW baseEntity PATH
         //delete entityConstructed.baseEntity;
@@ -566,7 +568,7 @@ export class Scene implements SceneI
     {
         obj.OnApplyEntityVarsToGameObject(entity, obj);
         
-        if (!obj.texture)//
+        if (!obj.texture && entity.texture)//
             obj.InitTexture(MakePathForEntity(entity));
 
         // PROCESS POLYGON VERTICES FIRST, SET THE AREA THAT OTHER PHYSICS PROPERTIES NEED
@@ -832,7 +834,8 @@ export class Scene implements SceneI
 
         gameObject.Awake();
         
-        gameObject.InitTexture(MakePathForEntity(entityConstructed)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
+        if (entityConstructed.texture)
+            gameObject.InitTexture(MakePathForEntity(entityConstructed)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
     
         // DON'T WANT COMPONENTS TO BE CREATED AT ApplyEntityToGameObject(). 
         //delete entityConstructed.components;
@@ -870,7 +873,7 @@ export class Scene implements SceneI
                 // DEFAULT GAMEOBJECT
                 gameObject = bare.GetObjectFromPool("GameObject", this);
                 gameObject.pooled = true;
-                gameObject.name = "pooledGameObject";
+                gameObject.name = "gameObject"; //"pooledGameObject";
                 gameObject.scene = this;
                 gameObject.Awake();
             }
@@ -887,7 +890,7 @@ export class Scene implements SceneI
                 if (pool)
                     gameObject.pooled = true;
 
-                gameObject.name = (pool ? "pooledGameObjectExtend" : "gameObjectExtend");
+                gameObject.name = "gameObject"; //(pool ? "pooledGameObjectExtend" : "gameObjectExtend");
                 gameObject.scene = this;
                 gameObject.Awake();
             }
@@ -908,7 +911,7 @@ export class Scene implements SceneI
                 gameObject.Awake();
                 gameObject.SetTexture(input);
                 gameObject.pooled = true;
-                gameObject.name = input.texturePath || "PooledGameObjectFromTexture";
+                gameObject.name = input.texturePath || "gameObject"; //"PooledGameObjectFromTexture";
             }
             else
             {
@@ -918,14 +921,6 @@ export class Scene implements SceneI
                 {
                     // STRING INPUT
 
-                    var processPathInput = (path: string) => {
-                        var split = path.split("/");
-                        var imagePath = split.slice(0, split.length - 1).join("/");
-                        var name = split[split.length - 1];
-
-                        entity = {imagePath: imagePath, name:name, baseClass: "GameObject"};
-                    }
-
                     if (input.includes("/"))
                     {
                         // PATH STRING - SET UP A BASIC ENTITY USING PROVIDED STRING - SPLITTING INTO NAME AND IMAGE PATH
@@ -934,8 +929,13 @@ export class Scene implements SceneI
                         // USAGE OF / OVERIDES ANY :XXX - YOU ARE DEFINING A PATH, NOTHING ELSE
                         if (input.includes(":"))
                             input = input.split(":")[0];
-                            
-                        processPathInput(input);
+                        
+                        // SET LAST ENTRY IN PATH AS NAME
+                        var split = input.split("/");
+                        var imagePath = split.slice(0, split.length - 1).join("/");
+                        var name = split[split.length - 1];
+
+                        entity = {imagePath: imagePath, texture: name, name:name, baseClass: "GameObject"};
                     }
                     else
                     if (input.startsWith("-"))
@@ -944,7 +944,7 @@ export class Scene implements SceneI
                         // PREVENT A TEXTURE LOOKUP FOR THIS NAME, HANDY FOR OBJECTS THAT WILL HAVE AN ANIMATION COMPONENT
                         var name = input.substring(1);
                         entity = this.ConstructEntity(name);
-                        entity.texture = "NONE";
+                        //entity.texture = "NONE";
                     }
                     else
                     {
@@ -961,14 +961,14 @@ export class Scene implements SceneI
                 // CHECK IF IMAGE THAT THIS ENTITY WILL USE IS AVAILABLE
                 // IF NOT, SET IT TO NONE - TO PREVENT A FAILED IMAGE REQUEST
                 // THIS IS ONLY CHECKED FOR DEV, FOR PRODUCTION Bare.assets.images.length = 0 ALWAYS SINCE assets.ts IS NOT INCLUDED
-                if (Bare.assets.images.length > 0 && entity.texture != "NONE" && entity.texture != "placeHolder" /*&& entity.texture*/)
+                if (Bare.assets.images.length > 0 && entity.texture && entity.texture != "NONE" && entity.texture != "placeHolder" /*&& entity.texture*/)
                 {
                     var texturePath = MakePathForEntity(entity);
                     var hasEntityImage = Bare.assets.images.includes(texturePath) || assetsHandler.HasTexture(texturePath);
                     
                     if (!hasEntityImage)
                     {
-                        entity.texture = "NONE";
+                        //entity.texture = "NONE";
 
                         if (entity.baseClass != "TextObject") // GETS TEXTURE FROM TEXT
                         if (__STRIP_GENERATED_ASSETS__)
@@ -988,7 +988,10 @@ to package.json to keep the generated assets (can become large for big projects)
                 gameObject = bare.GetObjectFromPool(entity.baseClass!, this);
                 gameObject.Awake(entity);
 
-                gameObject.Init(MakePathForEntity(entity)); // LOADS TEXTURE TOO
+                gameObject.Init(entity.name);
+
+                if (entity.texture)
+                    gameObject.InitTexture(MakePathForEntity(entity));
 
                 //if (entity.texture != "NONE")
                 //    delete entity.texture; // TEXTURE HAS BEEN HANDLED ABOVE WITH Init()

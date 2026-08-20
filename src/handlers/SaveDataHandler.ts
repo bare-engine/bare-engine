@@ -1,5 +1,6 @@
 import { globalEvents } from "../globals";
 import { SaveData, BareEvent } from '../types/bareTypes';
+import { Helper } from "../utils/helper";
 export class SaveDataHandler
 {
     static saveEnabled: boolean = true;
@@ -26,7 +27,7 @@ export class SaveDataHandler
             } else if (value instanceof Map) {
                 (SaveData as any)[key] = new Map(value);
             } else if (typeof value === 'object' && value !== null) {
-                (SaveData as any)[key] = JSON.parse(JSON.stringify(value));
+                (SaveData as any)[key] = Helper.DeepCopy(value);
             } else {
                 (SaveData as any)[key] = value;
             }
@@ -49,7 +50,7 @@ export class SaveDataHandler
             } else if (value instanceof Map) {
                 this.defaults.set(key, new Map(value));
             } else if (typeof value === 'object' && value !== null) {
-                this.defaults.set(key, JSON.parse(JSON.stringify(value)));
+                this.defaults.set(key, Helper.DeepCopy(value));
             } else {
                 this.defaults.set(key, value);
             }
@@ -108,7 +109,7 @@ export class SaveDataHandler
             } else if (defaultValue instanceof Map) {
                 (SaveData as any)[key] = new Map(defaultValue);
             } else if (typeof defaultValue === 'object' && defaultValue !== null) {
-                (SaveData as any)[key] = JSON.parse(JSON.stringify(defaultValue));
+                (SaveData as any)[key] = Helper.DeepCopy(defaultValue);
             } else {
                 (SaveData as any)[key] = defaultValue;
             }

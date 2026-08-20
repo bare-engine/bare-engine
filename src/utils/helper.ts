@@ -11,9 +11,10 @@ export interface Size {
 
 export class Helper
 {
-    static DeepCopy(obj: Object)
+    static DeepCopy<T>(obj: T): T
     {
-        return JSON.parse(JSON.stringify(obj));
+        //return JSON.parse(JSON.stringify(obj)) as T;
+        return structuredClone(obj);
     }
 
     static DeepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T

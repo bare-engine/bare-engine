@@ -344,7 +344,7 @@ window.__GAME_DEBUG_API__ = {
   {
     var info:Record<string, string> = {};
     info.baseClass = "The GameObject class this entity will assign.\nAdd it with bareEngine.AddClass(CustomGameObjectClass); to make it appear in the dropdown.";
-    info.baseEntity = "The entity this entity will inherit from.";
+    info.entity = "The entity this entity will inherit from.";
     info.imagePath = `Where to find the image. Looks in bareEngine.imagePath: ${bare.imagePath}/[imagePath]`;
     info.texture = "The texture to use for the entity. Overrides entity.name, which is used as the default texture name.";
     info.pivot = "The pivot point of the entity. 0,0 is the top left corner. Can also supply percentual values.";
@@ -468,13 +468,18 @@ window.__GAME_DEBUG_API__ = {
     {
         delete processedEntityCopy[key];
     }*/
+    var defaultFieldsToIgnore = [];
 
     // COPY ENTITY AND FIND EXTENDS TO CONSTRUCT IT - BUT WITH RAW VALUES - NEED THOSE IN PLUGIN
     // (SAME THING HAPPENS IN settingsHandler PROCESS, JUST NOT FILLING PRESETS)
-    //var entityCopy = {...entity};
     var entityCopy = Helper.DeepCopy(entity);
     var defaultBaseEntity = (isBase ? "ANY" : "ANY_ENTITY");
-    let baseEntity = entityCopy.baseEntity || defaultBaseEntity;
+    if (!entityCopy.entity)
+    {
+        entityCopy.entity = defaultBaseEntity;
+        defaultFieldsToIgnore.push("entity"); // DON'T SHOW ENTITY WE'VE CUSTOM SET HERE, NOT INHERENT PART OF ENTITY
+    }
+    let baseEntity = entityCopy.entity || defaultBaseEntity;
     var scene = plugin.GetCurrentScene();
 
     while (baseEntity)
@@ -492,7 +497,7 @@ window.__GAME_DEBUG_API__ = {
 
         entityCopy.components = scene.MergeComponents(entityBase.components, entityCopy.components);
 
-        baseEntity = raw.baseEntities[baseEntity]?.baseEntity;
+        baseEntity = raw.baseEntities[baseEntity]?.entity;
     }
 
     // ADD baseEntityLog DATA TO ENTITY - STORING WHICH FIELDS COME FROM WHICH ENTITY
@@ -501,22 +506,22 @@ window.__GAME_DEBUG_API__ = {
     // WE'VE SET entity.baseEntity = "ANY_ENTITY"; WHEN CONSTRUCTING ENTITY, BUT DON'T WANT TO SHOW THIS IN PLUGIN (NOT USER VALUE)
     // ALONG WITH THE VALUES ANY_ENTITY SETS (EG: baseClass)
     // PASSING THIS INFO TO __defaultFieldsToIgnore__
-    var defaultFieldsToIgnore = [];
-    entityWithLog["__defaultFieldsToIgnore__"] = defaultFieldsToIgnore;
 
     if (!isBase)
     {
-        if (entityWithLog.baseEntity == "ANY_ENTITY")
+        if (entityWithLog.entity == "ANY_ENTITY")
         {
             //entityWithLog["__defaultFieldsToIgnore__"] = ["baseEntity"];
 
             var defaultBaseClass = defaultSettingsData.baseEntities.ANY_ENTITY.baseClass;
             if (entityWithLog.baseClass == defaultBaseClass)
             {
-                entityWithLog["__defaultFieldsToIgnore__"].push("baseClass");
+                defaultFieldsToIgnore.push("baseClass");
             }
         }
     }
+
+    entityWithLog["__defaultFieldsToIgnore__"] = defaultFieldsToIgnore;
 
     // BUILD THE ENTITY TO PASS TO PLUGIN RIGHT AWAY
     //var levelEntityWithDefaultValues = scene.GetEntityWithDefaultValues(entityWithLog, scene.settingsData, {fillPresets: false});
@@ -737,7 +742,7 @@ window.__GAME_DEBUG_API__ = {
   getFieldsSuggestions(entityName: string, childPath: string[], baseClass: string = "GameObject"): string[]
   {
     var suggestions = [
-        "baseEntity",
+        "entity",
         "baseClass",
         "imagePath",
         "texture",
@@ -752,10 +757,10 @@ window.__GAME_DEBUG_API__ = {
 
     var limitNumber = 7;
 
-    // NON-GAMEOBJECT BASE CLASSES (EG: TextObject) GET THEIR OWN @InspectorField/@Save MEMBERS
-    // SUGGESTED FIRST, THEN FALL BACK TO THE GENERIC GAMEOBJECT LIST TO FILL REMAINING SLOTS.
-    // READ THEM OFF THE LIVE INSTANCE (SAME AS NORMAL OBJECT INSPECTION), NOT THE BARE CLASS -
-    // DECORATOR METADATA ISN'T RELIABLY READABLE THROUGH A FAKE {constructor: cls} WRAPPER.
+    // non-gameobject base classes (eg: textobject) get their own @inspectorfield/@save members
+    // suggested first, then fall back to the generic gameobject list to fill remaining slots.
+    // read them off the live instance (same as normal object inspection), not the bare class -
+    // decorator metadata isn't reliably readable through a fake {constructor: cls} wrapper.
     if (baseClass && baseClass !== "GameObject")
     {
         var entityScene = bare.scene.Get(EntityScene);
@@ -765,9 +770,9 @@ window.__GAME_DEBUG_API__ = {
 
         if (liveObj)
         {
-            // ONLY FIELDS DECLARED BY baseClass ITSELF (OR A CLASS BETWEEN IT AND GameObject),
-            // NOT THE INHERITED GameObject FIELDS (position, scale, alpha, etc.) - THOSE ARE
-            // ALREADY COVERED BY THE GENERIC SUGGESTIONS LIST ABOVE.
+            // only fields declared by baseclass itself (or a class between it and gameobject),
+            // not the inherited gameobject fields (position, scale, alpha, etc.) - those are
+            // already covered by the generic suggestions list above.
             var classFieldNames = getInspectorFields(liveObj, true)
                 .filter(f => f.source !== "GameObject" && !f.name.startsWith("_"))
                 .map(f => f.name);
@@ -2099,12 +2104,12 @@ export class PluginHandler
             let extendCount = 0;
 
             let extendEntities = [];
-            let baseEntity = entity.baseEntity;
+            let baseEntity = entity.entity;
             while (baseEntity)
             {
                 extendCount++;
                 extendEntities.push(settings.baseEntities[baseEntity]);
-                baseEntity = settings.baseEntities[baseEntity]?.baseEntity;
+                baseEntity = settings.baseEntities[baseEntity]?.entity;
             }
 
             entitiesByExtendCount[extendCount] ??= [];
@@ -2155,7 +2160,7 @@ export class PluginHandler
         var newEntity = entityToApplyTo;//{...newEntity}; // SHALLOW COPY, MORE IS NOT NEEDED, SINCE WE ONLY ADD baseEntityLog TO IT
 
         // GET BASE ENTITIES ALL THE WAY DOWN, PUSH IN extendOrder
-        let baseEntity = processedEntity.baseEntity;
+        let baseEntity = processedEntity.entity;
 
         var extendOrder = [entityName];
         newEntity.baseEntityLog = {};
@@ -2164,7 +2169,7 @@ export class PluginHandler
         while (baseEntity)
         {
             extendOrder.push(baseEntity);
-            baseEntity = settingsDataProcessed.baseEntities[baseEntity]?.baseEntity;
+            baseEntity = settingsDataProcessed.baseEntities[baseEntity]?.entity;
         }
 
         // FILL INFO ABOUT WHAT ENTITY PROPERTIES ARE EXTENDED BY WHY WHICH DATA - USING extendOrder
@@ -2494,7 +2499,10 @@ export class PluginHandler
         }
 
         const settingsHandler = this.GetSettingsDataHandler(newData.name ?? "");
-        settingsHandler.FilterSettingsDataDefaults(newData);
+        
+        const dataToSave = Helper.DeepCopy(newData);
+
+        settingsHandler.FilterSettingsDataDefaults(dataToSave);
 
         plugin.doNotifyAfterSave = false;
 
@@ -2502,7 +2510,7 @@ export class PluginHandler
         const scene = bare.scene.GetMainScene();
         if (scene instanceof EditorScene)
         {
-            await (plugin.GetCurrentScene() as EditorScene).SaveEntityData(newData);
+            await (plugin.GetCurrentScene() as EditorScene).SaveEntityData(dataToSave);
         }
         else
         {
@@ -2511,7 +2519,7 @@ export class PluginHandler
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     path: bare.dataPath,
-                    settingsData: newData,
+                    settingsData: dataToSave,
                     skipReload: true
                 })
             });
@@ -2520,6 +2528,9 @@ export class PluginHandler
 
         // Update only the handler for the file that was saved. Assigning named settings data to
         // the main scene's handler makes the default dropdown entry resolve to that named file.
+        // Keep the live handler on the unfiltered data. dataToSave has defaults stripped
+        // for persistence, so assigning it here would make raw.baseEntities lose
+        // ANY, ANY_ENTITY, and NONE after every save.
         settingsHandler.SetRaw(newData);
         await settingsHandler.Process(newData);
 

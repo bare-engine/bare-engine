@@ -640,6 +640,13 @@ export class EditorScene extends Scene
 
         delete unconstructedEntity.id;
 
+        // DON'T SEND THE CUSTOM FIELDS SET BY BASE ENTITY (ANY/ANY_ENTITY)
+        if (unconstructedEntity.texture == "placeHolder")
+        {
+            delete unconstructedEntity.texture;
+            delete unconstructedEntity.imagePath;
+        }
+
         return unconstructedEntity;
     }
 
@@ -668,9 +675,11 @@ export class EditorScene extends Scene
         //if (globalThis.plugin)
         //    globalThis.plugin.FilterSettingsDataDefaults(newRawData);
 
-        this.settingsHandler.FilterSettingsDataDefaults(newRawData);
+        const dataToSave = Helper.DeepCopy(newRawData);
+        
+        this.settingsHandler.FilterSettingsDataDefaults(dataToSave);
 
-        await this.OnPreSaveEntityData(newRawData);
+        await this.OnPreSaveEntityData(dataToSave);
 
         // Persist to disk via dev-server endpoint when available (local only)
         if (!window.isLocalhost) {
@@ -683,16 +692,16 @@ export class EditorScene extends Scene
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 path: bare.dataPath,
-                settingsData: newRawData,
+                settingsData: dataToSave,
                 skipReload: true
             })
           });
           const json = await res.json().catch(() => null);
         
           // TELL THE PLUGIN
-          //window.__GAME_DEBUG_API__.notifyEntityDataChanged(newRawData)
+          //window.__GAME_DEBUG_API__.notifyEntityDataChanged(dataToSave)
 
-          await this.OnPostSaveEntityData(newRawData);
+          await this.OnPostSaveEntityData(dataToSave);
 
           return { ok: res.ok, saved: res.ok, response: json };
         } catch (error: any) {

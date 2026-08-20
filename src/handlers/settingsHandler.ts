@@ -81,6 +81,14 @@ export class SettingsHandler
         if (raw?.processed)
             throw new Error('Process() received already-processed data — caller passed Get()/settingsData instead of GetRaw()');
 
+        // These sentinel base entities are omitted from the persisted JSON when they only
+        // contain defaults. Restore them on every load/process so GetRaw() has the same
+        // usable shape after an editor close/restart as it had before saving.
+        raw.baseEntities ??= {};
+        raw.baseEntities.ANY ??= Helper.DeepCopy(defaultSettingsData.baseEntities.ANY);
+        raw.baseEntities.ANY_ENTITY ??= Helper.DeepCopy(defaultSettingsData.baseEntities.ANY_ENTITY);
+        raw.baseEntities.NONE ??= Helper.DeepCopy(defaultSettingsData.baseEntities.NONE);
+
         var settings = this.clone(raw);
 
         var layerObjectsIsSetByUser = settings.layers?.includes("objects");
@@ -148,137 +156,6 @@ export class SettingsHandler
 
         this.ProcessAnimations(settings);
 
-        // CATEGORIES FIRST, SINCE ENTITIES CAN BE CREATED - THEY WILL LATER GET A NAME ASSIGEND TO THEM
-        if (settings.categories)
-        {
-            // PROCES CATEGORY ENTRIES, IF PATH IS PREFIXED, REMOVE AND ADD UNDER ENTITIES DATA
-            for (const [key, category] of Object.entries(settings.categories))
-            {
-                if (category.entries instanceof Array)
-                {
-                    for (var i = 0; i < category.entries.length; i++)
-                    {
-                        var entry = category.entries[i];
-                    
-                        if (entry.includes("/"))
-                        {
-                            var entryName = entry.split("/").pop()!;
-                            var entryPath = entry.split("/").slice(0, -1).join("/");
-
-                            // REDEFINE CATEGORY ENTRY TO JUST IT'S NAME
-                            (category.entries as string[])[i] = entryName;
-
-                            // STORE ENTRY NAME IN ENTITIES DATA, TOGETHER WITH PATH WE JUST FOUND
-                            settings.entities[entryName] = { name: entryName, ...settings.entities[entryName], imagePath: entryPath };
-                        }
-                    }
-                }
-            }
-
-            // PROCESS EACH CATEGORY - HAS TO HAPPEN AFTER ENTITIES ARE CONSTRUCTED, BECAUSE this.scene.ConstructEntity()
-            for (const [categoryName, categoryData] of Object.entries(settings.categories))
-            {
-                if (!categoryData || !categoryData.entries || categoryData.entries.length === 0) continue;
-
-                var entitiesInCategory: Entity[] = [];
-
-                // PARSE STRING ENTRIES...
-                if (typeof categoryData.entries === 'string') 
-                {
-                    const entries = categoryData.entries;
-
-                    if (this.IsNumberedName(entries))
-                    {
-                        // ... EG: "roadTexture_1#12"
-                        // CAN ALSO OMIT 1: "roadTexture_#12" (1 IS DEFAULT)
-                        const entityBaseName = this.GetNumberedNameBaseName(entries);
-                        const entity = this.scene.ConstructEntity(entityBaseName, settings, options);
-                        const entryNames = this.ProcessNumberedNames([entries]) ?? [];
-
-                        categoryData.entries = entryNames;
-                        for (const entryName of entryNames)
-                        {
-                            // ALSO PUSH EACH AS ENTITY SO WE CAN FIND THEM LATER
-                            if (!settings.entities[entryName]) // DON'T OVERWRITE EXISTING ENTRIES
-                            {
-                                var entityFinal = {...entity, name: entryName}
-                                settings.entities[entryName] = entityFinal;
-
-                                entitiesInCategory.push(entityFinal);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // ... EG: "level_[editorImages]"
-                        // WILL FIND ALL FILES UNDER editorImages AND CREATE level_... ENTRIES OUT OF THEM
-                        const regex = /(.+)_\[(.+)\]/;
-                        const match = entries.match(regex);
-                        if (match)
-                        {
-                            const prefix = match[1]; // EG "level"
-                            const imagePath = match[2]; // EG "editorImages"
-
-                            var entityBaseName = prefix + "_*";
-                            var entity = this.scene.ConstructEntity(entityBaseName, settings, options);
-                            var files = folderFiles.get(`${bare.imagePath}/` + imagePath) ?? [];
-
-                            // TURN ENTRIES INTO ARRAY
-                            categoryData.entries = [];
-                            for (var j = 0; j < files.length; j++)
-                            {
-                                var fileName = files[j].split('.')[0];
-                                categoryData.entries.push(fileName);
-
-                                // ALSO PUSH EACH AS ENTITY SO WE CAN FIND THEM LATER
-                                if (!settings.entities[fileName]) // DON'T OVERWRITE EXISTING ENTRIES
-                                {
-                                    var entityFinal = {...entity, name: fileName}
-                                    settings.entities[fileName] = entityFinal;
-
-                                    entitiesInCategory.push(entityFinal);
-                                }
-                            }
-                        }
-                    }
-
-                    // REMOVE THE STRING ENTRY
-                    //delete categoryData.entries;
-                }
-
-                // ASSIGN BASE ENTITY TO ENTITIES UNDER THIS CATEGORY
-                if (categoryData.baseEntity)
-                {
-                    if (typeof categoryData.entries !== 'string')
-                    {
-                        // ENTRIES IS AN ARRAY. EG ["tile_0098", "tile_0123", ...]
-                        // TURN EACH NAME INTO AN ENTITY, TAKE EXISTING ONE OR CREATE NEW
-                        entitiesInCategory = categoryData.entries.map(name => {
-                            var newEntity:Entity;
-                            if (settings.entities[name])
-                            {
-                                newEntity = settings.entities[name];
-                            }
-                            else
-                            {
-                                newEntity = { name: name }
-                                settings.entities[name] = newEntity;
-                            }
-
-                            return newEntity;
-                        });
-                    }
-
-                    // ASSIGN BASE ENTITY (ENTITIES IN CATEGORY ARE ONES IN settings.entities[name] NOW)
-                    for (var entity of entitiesInCategory)
-                    {
-                        if (!entity.baseEntity || entity.baseEntity == "ANY" || entity.baseEntity == "ANY_ENTITY")
-                            entity.baseEntity = categoryData.baseEntity;
-                    }
-                }
-            }
-        }
-
         // PROCESS saveVars - WILL FIND EXTENDED CLASSES FOR EACH AND ADD THEIR SAVE VARS
         //
         // EG:
@@ -323,50 +200,166 @@ export class SettingsHandler
         if (settings.baseEntities)
         {
             // PREPARE ENTITY BASES - SETTING name AND baseEntity
-            for (var entityBaseName in settings.baseEntities)
+            for (var baseEntityName in settings.baseEntities)
             {
-                var entityBase = settings.baseEntities[entityBaseName];
-                entityBase.name = entityBaseName; // FOR CONSTRUCT
+                var baseEntity = settings.baseEntities[baseEntityName];
+                baseEntity.name = baseEntityName; // FOR CONSTRUCT
 
                 // ENTITY BASE - IF EXTEND DATA NOT SET, DEFAULT TO ANY BASE
-                if (entityBaseName == "NONE")
+                if (baseEntityName == "NONE")
                     continue;
 
-                if (!entityBase.baseEntity && entityBaseName != "ANY")
+                if (!baseEntity.entity && baseEntityName != "ANY")
                 {
-                    entityBase.baseEntity = "ANY";
+                    baseEntity.entity = "ANY";
                 }
             }
             
             // CONSTRUCT ALL ENTITY BASES
-            for (var entityBaseName in settings.baseEntities)
+            for (var baseEntityName in settings.baseEntities)
             {
-                if (entityBaseName == "NONE")
+                if (baseEntityName == "NONE")
                     continue;
 
-                var entityBase = settings.baseEntities[entityBaseName];
+                var baseEntity = settings.baseEntities[baseEntityName];
 
                 // SET DEFAULT baseEntity - IN PREPARATION FOR CONSTRUCT
-                if (!entityBase.baseEntity && entityBaseName != "ANY")
+                if (!baseEntity.entity && baseEntityName != "ANY")
                 {
-                    entityBase.baseEntity = "ANY";
+                    baseEntity.entity = "ANY";
                 }
 
                 // CONSTRUCT BASE ENTITY - NOW IT EXTENDS SOMETHING
-                this.ConstructEntity(entityBase, settings, options);
+                this.ConstructEntity(baseEntity, settings, options);
 
-                //delete entityBase.name; // DON'T NEED IT ANYMORE
+                //delete baseEntity.name; // DON'T NEED IT ANYMORE
                 
                 // SET DEFAULT baseClass - IF NOT BEEN SET BY CONSTRUCT
-                /*if (!entityBase.baseClass)
+                /*if (!baseEntity.baseClass)
                 {
-                    entityBase.baseClass = "GameObject";
+                    baseEntity.baseClass = "GameObject";
                 }*/
             }
         }
 
+        // PROCESS CATEGORIES
+        // AFTER BASE ENTITIES CONSTRUCTION, SINCE WE CONSTRUCT ENTITIES AND NEED CONSTRUCTED BASE ENTITIES FOR IT
+        // BEFORE ENTITIES CONSTRUCTION, SINCE ENTITIES CAN BE CREATED - THEY WILL LATER GET A NAME ASSIGEND TO THEM
+        if (settings.categories)
+        {
+            // PROCES CATEGORY ENTRIES, IF PATH IS PREFIXED, REMOVE AND ADD UNDER ENTITIES DATA
+            for (const [key, category] of Object.entries(settings.categories))
+            {
+                if (category.entries instanceof Array)
+                {
+                    for (var i = 0; i < category.entries.length; i++)
+                    {
+                        var entry = category.entries[i];
+                    
+                        if (entry.includes("/"))
+                        {
+                            var entryName = entry.split("/").pop()!;
+                            var entryPath = entry.split("/").slice(0, -1).join("/");
+
+                            // REDEFINE CATEGORY ENTRY TO JUST IT'S NAME
+                            (category.entries as string[])[i] = entryName;
+
+                            // STORE ENTRY NAME IN ENTITIES DATA, TOGETHER WITH PATH WE JUST FOUND
+                            settings.entities[entryName] = { name: entryName, ...settings.entities[entryName], imagePath: entryPath };
+                        }
+                    }
+                }
+            }
+
+            // PROCESS EACH CATEGORY - HAS TO HAPPEN AFTER ENTITIES ARE CONSTRUCTED, BECAUSE this.scene.ConstructEntity()
+            for (const [categoryName, categoryData] of Object.entries(settings.categories))
+            {
+                if (!categoryData || !categoryData.entries || categoryData.entries.length === 0) continue;
+
+                var entitiesInCategory: Entity[] = [];
+
+                let entryNames: string[];
+
+                // PARSE STRING ENTRIES...
+                if (typeof categoryData.entries === 'string') 
+                {
+                    const entries = categoryData.entries;
+
+                    if (this.IsNumberedName(entries))
+                    {
+                        // ... EG: "roadTexture_1#12"
+                        // CAN ALSO OMIT 1: "roadTexture_#12" (1 IS DEFAULT)
+                        entryNames = this.ProcessNumberedNames([entries]) ?? [];
+                    }
+                    
+                    if (!entryNames)
+                    {
+                        // ... EG: "level_[editorImages]"
+                        // WILL FIND ALL FILES UNDER editorImages AND CREATE level_... ENTRIES OUT OF THEM
+                        const match = entries.match(/(.+)_\[(.+)\]/);
+                        if (match)
+                        {
+                            const prefix = match[1]; // EG "level"
+                            const imagePath = match[2]; // EG "editorImages"
+
+                            entryNames = (folderFiles.get(`${bare.imagePath}/${imagePath}`) ?? [])
+                                .map(file => file.split('.')[0]);
+                        }
+                    }
+
+                    if (!entryNames)
+                    {
+                        // ASSIGN BASE ENTITY TO A SINGLE, NON-GENERATED ENTRY
+                        const entity = settings.entities[entries] ??= { name: entries };
+                        
+                        if (categoryData.entity &&
+                            (!entity.entity || entity.entity === "ANY" || entity.entity === "ANY_ENTITY"))
+                        {
+                            entity.entity = categoryData.entity;
+                        }
+
+                        categoryData.entries = [entries];
+                        entitiesInCategory.push(entity);
+                    }
+                }
+                else
+                {
+                    // ENTRIES IS AN ARRAY. EG ["tile_0098", "tile_0123", ...]
+                    entryNames = categoryData.entries;
+                }
+
+                if (entryNames)
+                {
+                    // TURN EACH NAME INTO AN ENTITY, TAKE EXISTING ONE OR CREATE NEW
+                    categoryData.entries = entryNames;
+
+                    // PUSH EACH AS ENTITY SO WE CAN FIND THEM LATER
+                    for (const entryName of entryNames)
+                    {
+                        var unconstructedEntity = {name: entryName, entity: categoryData.entity ?? undefined};
+
+                        if (settings.entities[entryName])
+                        {
+                            if (settings.entities[entryName].entity)
+                                continue; // DON'T OVERWRITE EXISTING ENTRIES WHERE ENITY ALREADY SET
+
+                            unconstructedEntity = {
+                                ...unconstructedEntity,
+                                ...settings.entities[entryName] // OVERWRITES ABOVE
+                            }
+                        }
+
+                        const entity = this.scene.ConstructEntity(unconstructedEntity, settings, options);
+                        settings.entities[entryName] = entity;
+
+                        entitiesInCategory.push(entity);
+                    }
+                }
+            }
+        }
+
         // ENTITIES - CONSTRUCT THEM ALL, FOR FASTER LOOKUP LATER
-        // CAN BECOME HEAVY, WILL NOT ALWAYS BE NECESSARY - CAN ADD FLAG
+        // CAN BECOME HEAVY, WILL NOT ALWAYS BE NECESSARY FOR EVERY PROCESS - CAN ADD FLAG
         if (settings.entities)
         {
             for (var entityName in settings.entities)
@@ -376,16 +369,11 @@ export class SettingsHandler
                     continue;
 
                 var entity = settings.entities[entityName];
-                if (!entity.baseEntity)
+                if (!entity.entity)
                 {
-                    entity.baseEntity = "ANY_ENTITY";
+                    entity.entity = "ANY_ENTITY";
                 }
             }
-
-            /*if (globalThis.plugin)
-            {
-                globalThis.plugin.ProcessSettingsData(settings);
-            }*/
 
             for (var entityName in settings.entities)
             {
@@ -563,26 +551,28 @@ export class SettingsHandler
     ConstructEntity(entity:Entity, rawSettingsData:SettingsData, options:ConstructEntityOptions): Entity
     {
         // RECURSIVELY EXTEND DATA
-        var baseEntity = entity.baseEntity;
+        var baseEntity = entity.entity;
         while (baseEntity)
         {
-            var entityBase = rawSettingsData.baseEntities[baseEntity];
+            var baseEntityCur = rawSettingsData.entities[baseEntity] || rawSettingsData.baseEntities[baseEntity];
 
-            if (!entityBase)
+            if (!baseEntityCur)
                 throw new Error(`Could not find base entity '${baseEntity}' for entity '${entity.name}'`);
             
             // INSERT MEMBERS FROM ENTITY BASE WE DIDN'T DEFINE ALREADY IN ENTITY
-            for (const key of Object.keys(entityBase))
+            for (const key of Object.keys(baseEntityCur))
             {
                 if (!(key in entity))
                 {
-                    entity[key] = entityBase[key];
+                    entity[key] = baseEntityCur[key];
                 }
             }
 
-            entity.components = this.scene.MergeComponents(entityBase.components, entity.components);
+            var components = this.scene.MergeComponents(baseEntityCur.components, entity.components);
+            if (Object.keys(components).length > 0)
+                entity.components = this.scene.MergeComponents(baseEntityCur.components, entity.components);
 
-            baseEntity = entityBase.baseEntity;
+            baseEntity = baseEntityCur.entity;
         }
 
         // CONSTRUCT ALL CHILDREN
@@ -630,23 +620,23 @@ export class SettingsHandler
     {
         var entity = {...this.raw.entities[entityName]}; // SHALLOW COPY
 
-        var baseEntity = entity.baseEntity || "ANY_ENTITY";
+        var baseEntity = entity.entity || "ANY_ENTITY";
         while (baseEntity)
         {
-            var entityBase = this.raw.baseEntities[baseEntity] || defaultSettingsData.baseEntities[baseEntity];
+            var baseEntityCur = this.raw.baseEntities[baseEntity] || defaultSettingsData.baseEntities[baseEntity];
 
             // INSERT MEMBERS FROM ENTITY BASE WE DIDN'T DEFINE ALREADY IN ENTITY
-            for (const key of Object.keys(entityBase))
+            for (const key of Object.keys(baseEntityCur))
             {
                 if (!(key in entity))
                 {
-                    entity[key] = entityBase[key];
+                    entity[key] = baseEntityCur[key];
                 }
             }
 
-            entity.components = this.scene.MergeComponents(entityBase.components, entity.components);
+            entity.components = this.scene.MergeComponents(baseEntityCur.components, entity.components);
 
-            baseEntity = entityBase.baseEntity;
+            baseEntity = baseEntityCur.entity;
         }
 
         return entity;
@@ -750,12 +740,12 @@ export class SettingsHandler
 
     SnapshotCurrent(): SettingsData
     {
-        return this.clone(this.raw);
+        return Helper.DeepCopy(this.raw);
     }
 
     private clone<T>(data: T): T
     {
-        return JSON.parse(JSON.stringify(data));
+        return Helper.DeepCopy(data);
     }
 
     FilterSettingsDataDefaults(settingsData: SettingsData)

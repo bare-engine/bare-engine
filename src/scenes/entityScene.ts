@@ -134,7 +134,8 @@ export class EntityScene extends EditorScene
         {
             //entityFromSettingsData.name = objectName;
             entityFromSettingsData.texture = "placeHolder";
-            entityFromSettingsData.imagePath = "";
+            if(entityFromSettingsData.imagePath)
+                entityFromSettingsData.imagePath = "";
         }
         
         // ASSIGN IDS
@@ -486,8 +487,6 @@ export class EntityScene extends EditorScene
     {
         delete rawData.showUI;
         delete rawData.selectionEnabled;
-
-        await this.settingsHandler.Process(rawData);
     }
 
     async OnPostSaveEntityData(rawData: SettingsData): Promise<void>

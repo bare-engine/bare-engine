@@ -25,7 +25,7 @@ export class EntitiesTest extends Scene
                     texture: "NONE",
                 },
                 bigAndNoRotation: {
-                    baseEntity: "big",
+                    entity: "big",
                     propertiesRemoved: ["rotation"],
                 },
             },
@@ -36,7 +36,7 @@ export class EntitiesTest extends Scene
                     texture: "NONE",
                 },
                 apple: {
-                    baseEntity: "bigAndNoRotation",
+                    entity: "bigAndNoRotation",
                     texture: "NONE",
                 },
             },
