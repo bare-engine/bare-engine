@@ -545,35 +545,43 @@ export class SettingsHandler
         const match = this.IsNumberedName(name) ? name.match(/^(.+?)(\d*#\d+.*)$/) : null;
         return match ? match[1] + "#" : name;
     }
+
+    // EXTENDS AN ENTITY WITH EVERY ENTITY IN ITS BASE CHAIN.
+    // THE ENTITY ARGUMENT IS MUTATED AND ITS EXISTING VALUES TAKE PRECEDENCE.
+    ExtendEntity(entity: Entity, rawSettingsData: SettingsData = this.raw, defaultBaseEntity?: string): Entity
+    {
+        var baseEntityName = entity.entity || defaultBaseEntity;
+        while (baseEntityName)
+        {
+            var baseEntity = rawSettingsData.entities[baseEntityName] || rawSettingsData.baseEntities[baseEntityName] || defaultSettingsData.baseEntities[baseEntityName];
+
+            if (!baseEntity)
+            {
+                throw new Error(`Could not find base entity '${baseEntityName}' for entity '${entity.name}'`);
+            }
+
+            // INSERT MEMBERS FROM THE BASE THAT THE ENTITY DIDN'T DEFINE ITSELF
+            for (const key of Object.keys(baseEntity))
+            {
+                if (!(key in entity))
+                    entity[key] = baseEntity[key];
+            }
+
+            var components = this.scene.MergeComponents(baseEntity.components, entity.components);
+            if (Object.keys(components).length > 0)
+                entity.components = components;
+
+            baseEntityName = baseEntity.entity;
+        }
+
+        return entity;
+    }
     
     // THIS CONSTRUCTS AN ENTITY BY GOING DOWN IT'S baseEntity RECURSIVELY AND ASSIGNING VALUES
     // THIS METHOD MUTATES THE entity ARGUMENT ITSELF
     ConstructEntity(entity:Entity, rawSettingsData:SettingsData, options:ConstructEntityOptions): Entity
     {
-        // RECURSIVELY EXTEND DATA
-        var baseEntity = entity.entity;
-        while (baseEntity)
-        {
-            var baseEntityCur = rawSettingsData.entities[baseEntity] || rawSettingsData.baseEntities[baseEntity];
-
-            if (!baseEntityCur)
-                throw new Error(`Could not find base entity '${baseEntity}' for entity '${entity.name}'`);
-            
-            // INSERT MEMBERS FROM ENTITY BASE WE DIDN'T DEFINE ALREADY IN ENTITY
-            for (const key of Object.keys(baseEntityCur))
-            {
-                if (!(key in entity))
-                {
-                    entity[key] = baseEntityCur[key];
-                }
-            }
-
-            var components = this.scene.MergeComponents(baseEntityCur.components, entity.components);
-            if (Object.keys(components).length > 0)
-                entity.components = this.scene.MergeComponents(baseEntityCur.components, entity.components);
-
-            baseEntity = baseEntityCur.entity;
-        }
+        this.ExtendEntity(entity, rawSettingsData);
 
         // CONSTRUCT ALL CHILDREN
         // (MOSTLY THE SAME AS SCENE ConstructEntity(), COULD GENERALIZE SOME PARTS)
@@ -620,24 +628,7 @@ export class SettingsHandler
     {
         var entity = {...this.raw.entities[entityName]}; // SHALLOW COPY
 
-        var baseEntity = entity.entity || "ANY_ENTITY";
-        while (baseEntity)
-        {
-            var baseEntityCur = this.raw.baseEntities[baseEntity] || defaultSettingsData.baseEntities[baseEntity];
-
-            // INSERT MEMBERS FROM ENTITY BASE WE DIDN'T DEFINE ALREADY IN ENTITY
-            for (const key of Object.keys(baseEntityCur))
-            {
-                if (!(key in entity))
-                {
-                    entity[key] = baseEntityCur[key];
-                }
-            }
-
-            entity.components = this.scene.MergeComponents(baseEntityCur.components, entity.components);
-
-            baseEntity = baseEntityCur.entity;
-        }
+        this.ExtendEntity(entity, this.raw, "ANY_ENTITY");
 
         return entity;
     }

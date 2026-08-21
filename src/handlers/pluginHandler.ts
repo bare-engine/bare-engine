@@ -2334,26 +2334,7 @@ export class PluginHandler
             defaultFieldsToIgnore.push("entity");
         }
 
-        let baseEntity = entityCopy.entity || defaultBaseEntity;
-        while (baseEntity)
-        {
-            var entityBase = settingsDataRaw.entities[baseEntity]
-                || settingsDataRaw.baseEntities[baseEntity]
-                || defaultSettingsData.baseEntities[baseEntity];
-            if (!entityBase)
-                break;
-
-            for (const key of Object.keys(entityBase))
-            {
-                if (!(key in entityCopy))
-                    entityCopy[key] = Helper.DeepCopy(entityBase[key]);
-            }
-
-            entityCopy.components = this.GetCurrentScene().MergeComponents(entityBase.components, entityCopy.components);
-            baseEntity = settingsDataRaw.entities[baseEntity]?.entity
-                || settingsDataRaw.baseEntities[baseEntity]?.entity
-                || defaultSettingsData.baseEntities[baseEntity]?.entity;
-        }
+        this.GetCurrentScene().settingsHandler.ExtendEntity(entityCopy, settingsDataRaw, defaultBaseEntity);
 
         var entityWithLog = this.BuildExtendDataLog(entity, entityCopy, entityName, processedEntity, settingsDataRaw, settingsDataProcessed);
 
