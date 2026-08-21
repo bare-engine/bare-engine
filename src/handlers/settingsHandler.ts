@@ -563,6 +563,9 @@ export class SettingsHandler
             // INSERT MEMBERS FROM THE BASE THAT THE ENTITY DIDN'T DEFINE ITSELF
             for (const key of Object.keys(baseEntity))
             {
+                if (key == "components" || key == "children")
+                    continue;
+
                 if (!(key in entity))
                     entity[key] = baseEntity[key];
             }
@@ -570,6 +573,10 @@ export class SettingsHandler
             var components = this.scene.MergeComponents(baseEntity.components, entity.components);
             if (Object.keys(components).length > 0)
                 entity.components = components;
+
+            var children = this.scene.MergeChildren(baseEntity.children, entity.children);
+            if (Object.keys(children).length > 0)
+                entity.children = children;
 
             baseEntityName = baseEntity.entity;
         }

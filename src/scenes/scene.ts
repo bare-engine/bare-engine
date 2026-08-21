@@ -398,6 +398,12 @@ export class Scene implements SceneI
         
         return merged;
     }
+
+    // ADD ENTITY CHILDREN AFTER INHERITED BASE CHILDREN.
+    MergeChildren(children1?: Entity[], children2?: Entity[]): Entity[]
+    {
+        return [...(children1 ?? []), ...(children2 ?? [])];
+    }
     
     // CONSTRUCTS AN ENTITY OUT OF A ENITTY NAME OR ENTITY OBJECT
     // FOR AN ENTITY NAME: IT RETURNS THE ENTITY FOUND IN SETTINGSDATA, OR CREATES A NEW ONE IF NOT THERE
