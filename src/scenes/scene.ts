@@ -407,7 +407,7 @@ export class Scene implements SceneI
     
     // CONSTRUCTS AN ENTITY OUT OF A ENITTY NAME OR ENTITY OBJECT
     // FOR AN ENTITY NAME: IT RETURNS THE ENTITY FOUND IN SETTINGSDATA, OR CREATES A NEW ONE IF NOT THERE
-    // FOR AN ENTITY OBJECT: IT FINDS THE baseEntity FROM SETTINGSDATA AND MERGES IT IN FOR A NEW ENTITY
+    // FOR AN ENTITY OBJECT: IT FINDS THE REFERENCED/DEFAULT ENTITY FROM SETTINGSDATA AND MERGES IT IN FOR A NEW ENTITY
     ConstructEntity(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [] }): Entity
     {
         if (typeof nameOrEntity === "object" && nameOrEntity.constructed)
@@ -431,16 +431,6 @@ export class Scene implements SceneI
                 // CONSTRUCT - GENERALIZE THIS? SHOULD BE SAME FOR BASE
                 {
                     var entityArg = Helper.DeepCopy(nameOrEntity);
-
-                    // CONSTRUCT ALL CHILDREN
-                    if (entityArg.children)
-                    {
-                        for (var i = 0; i < entityArg.children.length; i++)
-                        {
-                            var child = entityArg.children[i];
-                            entityArg.children[i] = this.ConstructEntity(child, settingsData, options);
-                        }
-                    }
 
                     // ANYTHING WITH A HITBOX IS A PHYSICS OBJECT
                     //if ((entityArg.hitbox || entityArg.hitboxRadius) && entityArg.baseClass == "GameObject") 
@@ -478,6 +468,7 @@ export class Scene implements SceneI
                         }
                     }
 
+                    // .entity HAS BEEN SET, NOW GET IT FROM SETTINGSDATA AND MERGE IT FOR NEW ENTITY
                     if (entityArg.entity)
                     {
                         var possibleEntity = (settingsData.entities[entityArg.entity] || settingsData.baseEntities[entityArg.entity]);
@@ -497,19 +488,11 @@ export class Scene implements SceneI
                                 ...possibleEntity, // BASE
                                 ...entityArg, // OVERRIDE
                                 components: this.MergeComponents(possibleEntity.components, entityArg.components),
+                                children: this.MergeChildren(possibleEntity.children, entityArg.children)
                             };
 
                             if (!entityArg.name)
                                 delete entity.name; // DON'T WANT THE NAME COMING FROM possibleEntity, SETTING AT BOTTOM OF METHOD
-
-                            // REMOVE COMPONENTS SPECIFICALLY LISTED IN ENTITY
-                            if (entity.components && entity.componentsRemoved)
-                            {
-                                for (const componentName of entity.componentsRemoved)
-                                {
-                                    delete entity.components[componentName];
-                                }
-                            }
                         }
                         else
                         {
@@ -538,24 +521,13 @@ export class Scene implements SceneI
             }
         }
 
-        // FILL PRESETS - LIKE hitbox: "FULL"                     
-        //                     hitbox: {x1: 0, y1: 0, x2: 1, y2: 1}
-        //
-        // SOME OF THESE ALREADY EXSIST IN defaultSettingsData
-        if (options.fillPresets)
-            this.settingsHandler.FillPresets(entity, settingsData); // ALREADY DONE IN SETTINGS CONSTRUCT - BUT COULD HAVE NEW PROPS IN ENTITY
-
-        if (!entity.baseClass)
-            entity.baseClass = "GameObject";
+        this.settingsHandler.ConstructEntity(entity, settingsData, options);
 
         if (!entity.name)
             entity.name = (!extendsBaseEntity ? entity.entity : "") || entity.texture || "GameObject";
 
         if (entity.texture == "NAME")
             entity.texture = entity.name;
-
-        // NO USE FOR THIS ANYMORE, BUT GONNA REPURPOSE IT TO SHOW baseEntity PATH
-        //delete entityConstructed.baseEntity;
 
         entity.constructed = true;
 

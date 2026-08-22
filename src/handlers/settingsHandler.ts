@@ -230,6 +230,7 @@ export class SettingsHandler
                 }
 
                 // CONSTRUCT BASE ENTITY - NOW IT EXTENDS SOMETHING
+                this.ExtendEntity(baseEntity, settings); // MUTATES baseEntity
                 this.ConstructEntity(baseEntity, settings, options);
 
                 //delete baseEntity.name; // DON'T NEED IT ANYMORE
@@ -349,8 +350,8 @@ export class SettingsHandler
                             }
                         }
 
-                        const entity = this.scene.ConstructEntity(unconstructedEntity, settings, options);
-                        settings.entities[entryName] = entity;
+                        //const entity = this.scene.ConstructEntity(unconstructedEntity, settings, options);
+                        settings.entities[entryName] = unconstructedEntity; // WILL GET CONSTRUCTED ALONG WITH REST OF ENTITIES BELOW
 
                         entitiesInCategory.push(entity);
                     }
@@ -379,6 +380,7 @@ export class SettingsHandler
             {
                 // CONSTRUCT
                 var entity = settings.entities[entityName];
+                this.ExtendEntity(entity, settings); // MUTATES entity - THIS ALSO EXTENDS INTO BASE ENTITIES, WHICH ARE ALREADY EXTENDED+CONSTRUCTED - OPTMIZE
                 this.ConstructEntity(entity, settings, options);
 
                 // SET ENTITY WITH ANIMATION TO TEXTURE NONE
@@ -550,46 +552,55 @@ export class SettingsHandler
     // THE ENTITY ARGUMENT IS MUTATED AND ITS EXISTING VALUES TAKE PRECEDENCE.
     ExtendEntity(entity: Entity, rawSettingsData: SettingsData = this.raw, defaultBaseEntity?: string): Entity
     {
-        var baseEntityName = entity.entity || defaultBaseEntity;
-        while (baseEntityName)
+        for (var child of entity.children ?? [])
         {
-            var baseEntity = rawSettingsData.entities[baseEntityName] || rawSettingsData.baseEntities[baseEntityName] || defaultSettingsData.baseEntities[baseEntityName];
+            this.ExtendEntity(child, rawSettingsData, defaultBaseEntity);
+        }
 
-            if (!baseEntity)
+        var entityName = entity.entity || defaultBaseEntity;
+        while (entityName)
+        {
+            var settingsDataEntity = rawSettingsData.entities[entityName] || rawSettingsData.baseEntities[entityName] || defaultSettingsData.baseEntities[entityName];
+
+            if (!settingsDataEntity)
             {
-                throw new Error(`Could not find base entity '${baseEntityName}' for entity '${entity.name}'`);
+                throw new Error(`Could not find base entity '${entityName}' for entity '${entity.name}'`);
             }
 
             // INSERT MEMBERS FROM THE BASE THAT THE ENTITY DIDN'T DEFINE ITSELF
-            for (const key of Object.keys(baseEntity))
+            for (const key of Object.keys(settingsDataEntity))
             {
-                if (key == "components" || key == "children")
+                // entity IS THE BASE RECORD'S OWN PARENT LINK. IT DRIVES THE
+                // CHAIN BELOW BUT MUST NEVER BE INHERITED BY THE TARGET.
+                if (key == "entity" || key == "components" || key == "children")
                     continue;
 
+                // IGNORE componentsRemoved, childrenRemoved AND propertiesRemoved? TODO
+
                 if (!(key in entity))
-                    entity[key] = baseEntity[key];
+                    entity[key] = settingsDataEntity[key];
             }
 
-            var components = this.scene.MergeComponents(baseEntity.components, entity.components);
+            var components = this.scene.MergeComponents(settingsDataEntity.components, entity.components);
             if (Object.keys(components).length > 0)
                 entity.components = components;
 
-            var children = this.scene.MergeChildren(baseEntity.children, entity.children);
+            var children = this.scene.MergeChildren(settingsDataEntity.children, entity.children);
             if (Object.keys(children).length > 0)
                 entity.children = children;
 
-            baseEntityName = baseEntity.entity;
+            entityName = settingsDataEntity.entity;
         }
 
         return entity;
     }
     
     // THIS CONSTRUCTS AN ENTITY BY GOING DOWN IT'S baseEntity RECURSIVELY AND ASSIGNING VALUES
+    // AND FOR EACH .ENTITY FIELD CONSTRUCTING IT INTO THE ENTITY, EG ADDING ITS CHIDLREN/COMPONENTS.
+    // THESE ENTITY CHILDREN REFERENCE THEIR ROOT ENTITY PARENT UID, SO LATER DURING SERIALIZATION, THEY CAN ONLY SAVE THEIR DIFFERENCE.
     // THIS METHOD MUTATES THE entity ARGUMENT ITSELF
     ConstructEntity(entity:Entity, rawSettingsData:SettingsData, options:ConstructEntityOptions): Entity
     {
-        this.ExtendEntity(entity, rawSettingsData);
-
         // CONSTRUCT ALL CHILDREN
         // (MOSTLY THE SAME AS SCENE ConstructEntity(), COULD GENERALIZE SOME PARTS)
         if (entity.children)
@@ -628,14 +639,17 @@ export class SettingsHandler
             }
         }
 
+        if (!entity.baseClass)
+            entity.baseClass = "GameObject";
+        
         return entity;
     }
 
     GetExtendedEntity(entityName: string)
     {
-        var entity = {...this.raw.entities[entityName]}; // SHALLOW COPY
+        var entity = Helper.DeepCopy(this.raw.entities[entityName]);
 
-        this.ExtendEntity(entity, this.raw, "ANY_ENTITY");
+        this.ExtendEntityTree(entity, this.raw, "ANY_ENTITY");
 
         return entity;
     }
