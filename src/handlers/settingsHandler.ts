@@ -570,8 +570,6 @@ export class SettingsHandler
             // INSERT MEMBERS FROM THE BASE THAT THE ENTITY DIDN'T DEFINE ITSELF
             for (const key of Object.keys(settingsDataEntity))
             {
-                // entity IS THE BASE RECORD'S OWN PARENT LINK. IT DRIVES THE
-                // CHAIN BELOW BUT MUST NEVER BE INHERITED BY THE TARGET.
                 if (key == "entity" || key == "components" || key == "children")
                     continue;
 
@@ -579,6 +577,15 @@ export class SettingsHandler
 
                 if (!(key in entity))
                     entity[key] = settingsDataEntity[key];
+            }
+
+            if (settingsDataEntity.children?.length > 0)
+            {
+                var i = 0;
+                for (var child of settingsDataEntity.children)
+                {
+                    child.uid = "test"+i++;//
+                }
             }
 
             var components = this.scene.MergeComponents(settingsDataEntity.components, entity.components);
@@ -594,6 +601,19 @@ export class SettingsHandler
 
         return entity;
     }
+
+    // RESOLVE INHERITANCE FOR AN ENTITY AND EVERY CHILD WITHOUT APPLYING
+    // FULL-CONSTRUCTION POLICIES SUCH AS PRESETS OR REMOVALS.
+    ExtendEntityTree(entity: Entity, rawSettingsData: SettingsData = this.raw, defaultBaseEntity?: string): Entity
+    {
+        this.ExtendEntity(entity, rawSettingsData, defaultBaseEntity);
+
+        for (const child of entity.children ?? [])
+            this.ExtendEntityTree(child, rawSettingsData, "ANY_ENTITY");
+
+        return entity;
+    }
+
     
     // THIS CONSTRUCTS AN ENTITY BY GOING DOWN IT'S baseEntity RECURSIVELY AND ASSIGNING VALUES
     // AND FOR EACH .ENTITY FIELD CONSTRUCTING IT INTO THE ENTITY, EG ADDING ITS CHIDLREN/COMPONENTS.
@@ -641,7 +661,7 @@ export class SettingsHandler
 
         if (!entity.baseClass)
             entity.baseClass = "GameObject";
-        
+
         return entity;
     }
 

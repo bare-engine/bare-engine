@@ -4,7 +4,7 @@ import { SettingsHandler } from "../handlers/settingsHandler";
 import { Color, RenderTexture, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { TextObject } from "../objects/textObject";
-import { AwakePayload, Entity, LevelData, Rectangle, SettingsData } from "../types/bareTypes";
+import { AwakePayload, BareEvent, Entity, LevelData, Rectangle, SettingsData } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
 import { EditorScene } from "./editorScene";
 
@@ -36,6 +36,7 @@ export class EntityScene extends EditorScene
         
         if (!assetsHandler.HasTexture("placeHolder"))
         {
+            // CREATE placeHolder RENDERTEXTURE
             var rt = new RenderTexture(rapid, { width: 512, height: 512, clearColor: Color.fromHex("b3b3b3") });
             var text = new TextObject(this, {text: "  Place       Holder", fontSize: 52, fill: "white"});
             text.CenterPivot();
@@ -141,7 +142,7 @@ export class EntityScene extends EditorScene
         // ASSIGN IDS
         {
             var assignId = (entity: Entity) => {
-                entity.id = this.entitiesUnconstructedOrderedById.length;
+                entity.id = this.entitiesUnconstructedOrderedById.length; // HERE
                 this.entitiesUnconstructedOrderedById.push(entity);
                 if (entity.children)
                 {

@@ -2330,11 +2330,47 @@ export class PluginHandler
 
         if (!entityCopy.entity)
         {
-            entityCopy.entity = defaultBaseEntity;
-            defaultFieldsToIgnore.push("entity");
+            if (entityCopy.uidLink)
+            {
+                
+            }
+            else
+            {
+                entityCopy.entity = defaultBaseEntity;
+                defaultFieldsToIgnore.push("entity");
+            }
         }
 
-        this.GetCurrentScene().settingsHandler.ExtendEntity(entityCopy, settingsDataRaw, defaultBaseEntity);
+        var ExtendEntityChildren = function(entity: Entity, rawSettingsData: SettingsData = this.raw, defaultBaseEntity?: string): Entity
+        {
+            var entityName = entity.entity || defaultBaseEntity;
+            while (entityName)
+            {
+                var settingsDataEntity = rawSettingsData.entities[entityName] || rawSettingsData.baseEntities[entityName] || defaultSettingsData.baseEntities[entityName];
+
+                if (!settingsDataEntity)
+                {
+                    throw new Error(`Could not find base entity '${entityName}' for entity '${entity.name}'`);
+                }
+
+                for (var child of settingsDataEntity.children ?? [])
+                {
+                    var curChild = entity.children?.find(c => c.uidLink == child.uid);
+                    if (!curChild)
+                    {
+                        if (!entity.children)
+                            entity.children = [];
+
+                        entity.children.push({uidLink: child.uid});
+                    }
+                }
+
+                entityName = settingsDataEntity.entity;
+            }
+
+            return entity;
+        }
+        ExtendEntityChildren(entityCopy, settingsDataRaw, defaultBaseEntity);
 
         var entityWithLog = this.BuildExtendDataLog(entity, entityCopy, entityName, processedEntity, settingsDataRaw, settingsDataProcessed);
 

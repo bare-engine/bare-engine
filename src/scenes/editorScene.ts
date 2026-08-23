@@ -617,7 +617,12 @@ export class EditorScene extends Scene
                     var child = rootObject.children[i];
 
                     if (child.save)
-                        diff.children.push(this.GetEnitityFromObject(child));
+                    {
+                        var childEntity = this.GetEnitityFromObject(child);
+
+                        if (Object.keys(childEntity).length > 0) // COULD BE EMPTY IF CHILD HAS uidLink AND NO CHANGES MADE TO IT
+                            diff.children.push(childEntity);
+                    }
                 }
 
                 if (diff.children.length == 0)
@@ -633,6 +638,15 @@ export class EditorScene extends Scene
                 unconstructedEntity = this.entitiesUnconstructedOrderedById[rootObject.entity.id];
 
             unconstructedEntity = Helper.DeepCopy(unconstructedEntity);
+        }
+
+        if (rootObject.entity.uid)
+        {
+            var anyChangesmade = (Object.keys(diff).length > 0);
+            if (anyChangesmade)
+                diff.uidLink = rootObject.entity.uid; // CHANGES MADE, NOW NEED TO LINK TO UID, SO CAN FIND THE ENTTIY SOURCE, EVEN WHEN ITS ORDER IN PARENT WOULD BE CHANGED
+
+            return diff;
         }
 
         // APPLY DIFF TO unconstructedEntity

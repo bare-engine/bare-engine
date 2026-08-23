@@ -143,6 +143,7 @@ export interface Entity
 
     components?: any; // Record<string, any>
     componentsRemoved?: any; // string[]
+    //childrenRemoved?: any; // string[] TODO
     propertiesRemoved?: any; // string[]
 
     baseClass?: string;
@@ -170,8 +171,11 @@ export interface Entity
     //tileDimensions?: {width: number; height: number};
     //numberOfTiles?: int; //
 
-    baseEntityLog?: Record<string, any>
-    constructed ?: boolean
+    baseEntityLog?: Record<string, any>;
+    constructed ?: boolean;
+    //fromEntity?: boolean;
+    uid?: string;
+    uidLink?: string;
 }
 
 export type ConstructEntityOptions = { propsToIgnoreInEntity?: string[], fillPresets?: boolean, forceAllEntityVars?: boolean, includeSaveFields?: boolean };
