@@ -424,7 +424,9 @@ window.__GAME_DEBUG_API__ = {
   },
   
   // FIND THE ENTITY IN CURRENT entityData JSON, CONTRUCT IT, ADD EXTRA INFO, RETURN IT FOR PLUGIN VISUALIZATION
-  async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: string)
+  // childPath, when given, re-selects that node in-scene after rebuilding - callers reloading to
+  // reflect a field edit pass along whatever was selected beforehand so the transform tool stays on it.
+  async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: string, childPath?: Array<number | string>)
   {
     window.postMessage({ __fromGame: true, type: "lockObjectsTab", flag: true }, "*");
 
@@ -450,10 +452,17 @@ window.__GAME_DEBUG_API__ = {
 
     // Opening/reloading an entity no longer auto-selects the root object live in-scene - the
     // panel still defaults to showing the root's own fields (that's separate, panel-side logic),
-    // but the transform tool stays empty until the user actually clicks something. EditorControlsHandler
-    // is freshly constructed in OnStart() on every (re)open, so selection is already empty here.
+    // and the transform tool stays empty until the user clicks something or a caller passes
+    // childPath (see below). EditorControlsHandler is freshly constructed in OnStart() on every
+    // (re)open, so selection is already empty here.
 
     var finalEntity = plugin.BuildEntityEditorPayload(name, isBase, entityScene.settingsHandler, entityScene);
+
+    // restore whatever was selected before this reload, so a field edit that reloads the scene
+    // doesn't silently drop the transform tool off the object being worked on.
+    if (childPath)
+        window.__GAME_DEBUG_API__.selectEntityObject(childPath);
+
     return finalEntity;
   },
 
@@ -821,8 +830,8 @@ window.__GAME_DEBUG_API__ = {
 
         await entityScene.settingsHandler.Process();
 
-        var entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase);
-        
+        var entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase, undefined, childPath);
+
         await plugin.SaveSettingsData(rawSettingsData);
 
         return entityData;
@@ -1038,8 +1047,8 @@ window.__GAME_DEBUG_API__ = {
         // SAVE TO FILE
         if (save)
         {
-            entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase);
-            
+            entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase, undefined, selectedChildPath);
+
             await plugin.SaveSettingsData(rawSettingsData);
 
             // The child entity dropdown is saved asynchronously by the panel, so its direct API
@@ -2701,7 +2710,7 @@ export class PluginHandler
 
         await entityScene.settingsHandler.Process();
 
-        var entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase);
+        var entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase, undefined, childPath);
 
         await plugin.SaveSettingsData(rawSettingsData);
 
