@@ -1,11 +1,10 @@
-import { assetsHandler } from "./assetsHandler";
-import { defaultSettingsData } from "../types/bareData";
-import { CollisionHandlingType, Entity, LayerInfo, SettingsData } from "../types/bareTypes";
-import { Helper } from "../utils/helper";
 import { Scene } from "../scenes/scene";
 import { Bare } from "../types/bare";
-import { InspectorButton, InspectorField, Int, Label, Locked } from "../utils/decorators";
-import { GameMode } from "../globals";
+import { defaultSettingsData } from "../types/bareData";
+import { CollisionHandlingType, Entity, LayerInfo, SettingsData } from "../types/bareTypes";
+import { InspectorField, Int } from "../utils/decorators";
+import { Helper } from "../utils/helper";
+import { assetsHandler } from "./assetsHandler";
 
 // SettingsHandler KEEPS TRACK OF RAW AND PROCESSED SETTINGS
 // BIT CLUMSY TO HAVE THEM BOTH, BUT HAVING ONLY ONE WOULD MEAN I'D HAVE TO UNDO THE CHANGES THAT HAPPEN IN PROCESS()
@@ -32,6 +31,9 @@ export class SettingsHandler
     //@InspectorButton
     //@Label("Edit")
     //private editSettings() { /*CALL PLUGIN TO GO TO (TO BE MADE) SETTINGS DATA TAB - TODO*/ }
+
+    private rawEntitiesMappedByUID:Record<string, Entity> = {};
+    private processedEntitiesMappedByUID:Record<string, Entity> = {};
 
     constructor(scene: Scene)
     {
@@ -88,6 +90,25 @@ export class SettingsHandler
         raw.baseEntities.ANY ??= Helper.DeepCopy(defaultSettingsData.baseEntities.ANY);
         raw.baseEntities.ANY_ENTITY ??= Helper.DeepCopy(defaultSettingsData.baseEntities.ANY_ENTITY);
         raw.baseEntities.NONE ??= Helper.DeepCopy(defaultSettingsData.baseEntities.NONE);
+
+        // Existing UID links must be available before inheritance is processed. Otherwise an
+        // authored override such as `{ entity: "<child UID>" }` cannot resolve on re-process.
+        this.rawEntitiesMappedByUID = {};
+        this.processedEntitiesMappedByUID = {};
+        var indexRawEntityUIDs = (entities: Entity[]) =>
+        {
+            for (const entity of entities)
+            {
+                if (entity.entityUID)
+                    this.rawEntitiesMappedByUID[entity.entityUID] = entity;
+
+                indexRawEntityUIDs(entity.children ?? []);
+            }
+        };
+        indexRawEntityUIDs([
+            ...Object.values(raw.baseEntities ?? {}),
+            ...Object.values(raw.entities ?? {})
+        ]);
 
         var settings = this.clone(raw);
 
@@ -414,6 +435,35 @@ export class SettingsHandler
             }
         }
 
+        // Assign UIDs required by processed entity references and index them without clearing the
+        // raw UID index built before construction. Generated UIDs are promoted to raw only when a
+        // writable inherited override is materialized.
+        var assignIds = (entities: Entity[]) =>
+        {
+            for (var entityy of entities)
+            {
+                assignIds(entityy.children ?? []);
+
+                if (entityy.entity)
+                {
+                    var refEntity = this.GetRawEnity(entityy.entity, settings);
+                    if (refEntity?.children?.length > 0)
+                    {
+                        for (var child of refEntity.children)
+                        {
+                            child.entityUID ??= Helper.GenerateEntityUID();
+                            this.rawEntitiesMappedByUID[child.entityUID] ??= child;
+                            this.processedEntitiesMappedByUID[child.entityUID] = child;
+                        }
+                    }
+                }
+            }
+        }
+        assignIds([
+            ...Object.values(settings.baseEntities ?? {}),
+            ...Object.values(settings.entities ?? {})
+        ]);
+
         // PROCESS LAYER INFO - ADDS DEFAULTS
         {
             var anyCollidesWithSetByUser = false;
@@ -542,25 +592,25 @@ export class SettingsHandler
         return name.includes('#');
     }
 
-    private GetNumberedNameBaseName(name: string): string
-    {
-        const match = this.IsNumberedName(name) ? name.match(/^(.+?)(\d*#\d+.*)$/) : null;
-        return match ? match[1] + "#" : name;
-    }
-
     // EXTENDS AN ENTITY WITH EVERY ENTITY IN ITS BASE CHAIN.
     // THE ENTITY ARGUMENT IS MUTATED AND ITS EXISTING VALUES TAKE PRECEDENCE.
-    ExtendEntity(entity: Entity, rawSettingsData: SettingsData = this.raw, defaultBaseEntity?: string): Entity
+    ExtendEntity(entity: Entity, rawSettingsData: SettingsData = this.raw, defaultBaseEntity?: string, options: { includeChildren?: boolean, recurseChildren?: boolean } = {}): Entity
     {
-        for (var child of entity.children ?? [])
+        var includeChildren = options.includeChildren !== false;
+        var recurseChildren = options.recurseChildren ?? includeChildren;
+
+        if (recurseChildren)
         {
-            this.ExtendEntity(child, rawSettingsData, defaultBaseEntity);
+            for (var child of entity.children ?? [])
+            {
+                this.ExtendEntity(child, rawSettingsData, defaultBaseEntity, options);
+            }
         }
 
         var entityName = entity.entity || defaultBaseEntity;
         while (entityName)
         {
-            var settingsDataEntity = rawSettingsData.entities[entityName] || rawSettingsData.baseEntities[entityName] || defaultSettingsData.baseEntities[entityName];
+            var settingsDataEntity = this.GetRawEnity(entityName, rawSettingsData, entity.children ?? []);
 
             if (!settingsDataEntity)
             {
@@ -570,7 +620,7 @@ export class SettingsHandler
             // INSERT MEMBERS FROM THE BASE THAT THE ENTITY DIDN'T DEFINE ITSELF
             for (const key of Object.keys(settingsDataEntity))
             {
-                if (key == "entity" || key == "components" || key == "children")
+                if (key == "entity" || key == "components" || key == "children" || key == "entityUID")
                     continue;
 
                 // IGNORE componentsRemoved, childrenRemoved AND propertiesRemoved? TODO
@@ -579,22 +629,16 @@ export class SettingsHandler
                     entity[key] = settingsDataEntity[key];
             }
 
-            if (settingsDataEntity.children?.length > 0)
-            {
-                var i = 0;
-                for (var child of settingsDataEntity.children)
-                {
-                    child.uid = "test"+i++;//
-                }
-            }
-
             var components = this.scene.MergeComponents(settingsDataEntity.components, entity.components);
             if (Object.keys(components).length > 0)
                 entity.components = components;
 
-            var children = this.scene.MergeChildren(settingsDataEntity.children, entity.children);
-            if (Object.keys(children).length > 0)
-                entity.children = children;
+            if (includeChildren)
+            {
+                var children = this.scene.MergeChildren(settingsDataEntity.children, entity.children);
+                if (Object.keys(children).length > 0)
+                    entity.children = children;
+            }
 
             entityName = settingsDataEntity.entity;
         }
@@ -606,14 +650,15 @@ export class SettingsHandler
     // FULL-CONSTRUCTION POLICIES SUCH AS PRESETS OR REMOVALS.
     ExtendEntityTree(entity: Entity, rawSettingsData: SettingsData = this.raw, defaultBaseEntity?: string): Entity
     {
-        this.ExtendEntity(entity, rawSettingsData, defaultBaseEntity);
+        // Merge this node's inherited children without recursively processing them here. The loop
+        // below then processes every resulting child exactly once.
+        this.ExtendEntity(entity, rawSettingsData, defaultBaseEntity, { recurseChildren: false });
 
         for (const child of entity.children ?? [])
             this.ExtendEntityTree(child, rawSettingsData, "ANY_ENTITY");
 
         return entity;
     }
-
     
     // THIS CONSTRUCTS AN ENTITY BY GOING DOWN IT'S baseEntity RECURSIVELY AND ASSIGNING VALUES
     // AND FOR EACH .ENTITY FIELD CONSTRUCTING IT INTO THE ENTITY, EG ADDING ITS CHIDLREN/COMPONENTS.
@@ -659,15 +704,20 @@ export class SettingsHandler
             }
         }
 
+        if (entity.entityUID)
+            this.processedEntitiesMappedByUID[entity.entityUID] = entity;
+
         if (!entity.baseClass)
             entity.baseClass = "GameObject";
+
+        entity.constructed = true;
 
         return entity;
     }
 
     GetExtendedEntity(entityName: string)
     {
-        var entity = Helper.DeepCopy(this.raw.entities[entityName]);
+        var entity = Helper.DeepCopy(this.GetRawEnity(entityName));
 
         this.ExtendEntityTree(entity, this.raw, "ANY_ENTITY");
 
@@ -768,6 +818,31 @@ export class SettingsHandler
         await this.Process(raw, options);
     
         return raw;
+    }
+
+    GetRawEnity(entityNameOrId: string, rawSettingsData: SettingsData = this.raw, rawChildEntities: Entity[] = []): Entity
+    {
+        // QUICK WAY TO FIND LINKED ENTITY UID IF RAW DATA IS GIVEN
+        if (rawChildEntities.length > 0)
+        {
+            for (const entity of rawChildEntities)
+            {
+                if (entity.entityUID == entityNameOrId)
+                    return entity;
+            }
+        }
+
+        return rawSettingsData.entities[entityNameOrId] || rawSettingsData.baseEntities[entityNameOrId] || this.rawEntitiesMappedByUID[entityNameOrId] || defaultSettingsData.baseEntities[entityNameOrId]
+    }
+
+    GetRawEntitiesMappedByUID(): Readonly<Record<string, Entity>>
+    {
+        return this.rawEntitiesMappedByUID;
+    }
+
+    GetProcessedEnity(entityNameOrId: string, processedSettingsData: SettingsData = this.processed): Entity
+    {
+        return processedSettingsData.entities[entityNameOrId] || processedSettingsData.baseEntities[entityNameOrId] || this.processedEntitiesMappedByUID[entityNameOrId] || defaultSettingsData.baseEntities[entityNameOrId]
     }
 
     SnapshotCurrent(): SettingsData

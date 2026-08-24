@@ -445,4 +445,13 @@ export class Helper
     {
         return path.replace(/\.[^/.]+$/, "");
     }
+    
+    static GenerateEntityUID(): string
+    {
+        const bytes = new Uint8Array(8);
+        globalThis.crypto.getRandomValues(bytes);
+        var entityUID = Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
+        trace(entityUID)
+        return entityUID;
+    }
 }

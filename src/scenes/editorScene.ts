@@ -592,7 +592,7 @@ export class EditorScene extends Scene
         return gameObject;
     }
 
-    GetEnitityFromObject(rootObject: GameObject): Entity
+    GetEnitityFromObject(rootObject: GameObject, ownedEntityDefinitionIds?: ReadonlySet<number>): Entity
     {
         // SERIALIZE ORIGINAL GAMEOBJECT USING STARTING ENTITY
         var serializedRootObjectOrig = this.ConstructEntityWithDefaultValues(rootObject.entity);
@@ -618,7 +618,7 @@ export class EditorScene extends Scene
 
                     if (child.save)
                     {
-                        var childEntity = this.GetEnitityFromObject(child);
+                        var childEntity = this.GetEnitityFromObject(child, ownedEntityDefinitionIds);
 
                         if (Object.keys(childEntity).length > 0) // COULD BE EMPTY IF CHILD HAS uidLink AND NO CHANGES MADE TO IT
                             diff.children.push(childEntity);
@@ -640,13 +640,36 @@ export class EditorScene extends Scene
             unconstructedEntity = Helper.DeepCopy(unconstructedEntity);
         }
 
-        if (rootObject.entity.uid)
-        {
-            var anyChangesmade = (Object.keys(diff).length > 0);
-            if (anyChangesmade)
-                diff.uidLink = rootObject.entity.uid; // CHANGES MADE, NOW NEED TO LINK TO UID, SO CAN FIND THE ENTTIY SOURCE, EVEN WHEN ITS ORDER IN PARENT WOULD BE CHANGED
+        // a child can be linked back to its inherited source two ways: it was itself authored as
+        // an `entity: <uid>` override (rootObject.entity.entity), or it's an untouched original
+        // child of the base entity, identifiable only by its own entityUID (eg "p" in the tt/test
+        // example - never given an explicit override, just inherited as-is). the entityUID fallback
+        // only applies when this node isn't one of the entity-being-edited's own definitions
+        // (ownedEntityDefinitionIds) - otherwise an unchanged canonical definition (eg "text" as
+        // defined directly inside "test" itself) would wrongly get omitted instead of saved.
+        var isOwnDefinition = ownedEntityDefinitionIds?.has(rootObject.entity.id) ?? false;
+        var inheritedSourceUID = rootObject.entity.entity || (!isOwnDefinition ? rootObject.entity.entityUID : undefined);
+        var inheritedSourceEntity = inheritedSourceUID
+            ? this.settingsHandler.GetRawEntitiesMappedByUID()[inheritedSourceUID]
+            : undefined;
 
-            return diff;
+        if (inheritedSourceEntity)
+        {
+            // `diff` above is relative to THIS SESSION's construction-time snapshot, which may
+            // already bake in an override authored in an earlier save (eg text:"gg" on a UID-linked
+            // child) - that reads as "unchanged" this session and would wrongly get dropped. compare
+            // against the true inherited source instead, so an existing override survives a save
+            // even when nothing about it was touched this session.
+            var serializedInheritedSource = this.ConstructEntityWithDefaultValues(Helper.DeepCopy(inheritedSourceEntity));
+            var diffFromSource = this.level.GetEntitiesDiff(serializedInheritedSource, serializedRootObject) ?? {};
+
+            if (diff.children)
+                diffFromSource.children = diff.children;
+
+            if (Object.keys(diffFromSource).length > 0)
+                diffFromSource.entity = inheritedSourceUID; // LINK TO THE INHERITED SOURCE BY UID, EVEN IF ITS ORDER CHANGES
+
+            return diffFromSource;
         }
 
         // APPLY DIFF TO unconstructedEntity

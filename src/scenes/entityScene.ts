@@ -19,6 +19,7 @@ export class EntityScene extends EditorScene
 {
     objectName: string = "";
     isBase: boolean = false;
+    private ownedEntityDefinitionIds = new Set<number>();
     readonly transformToolHandlesBodyMove: boolean = true;
     
     lastPayload: EntitySceneAwakePayload;
@@ -128,6 +129,29 @@ export class EntityScene extends EditorScene
         }
 
         entityFromSettingsData = Helper.DeepCopy(entityFromSettingsData);
+
+        // Keep the identity of records authored inside the entity being edited. Inheritance adds
+        // source children to this tree below; those must serialize as UID overrides, while authored
+        // source definitions (which can also carry entityUID) must remain complete raw records.
+        const authoredEntities = new Set<Entity>();
+        const collectAuthoredEntities = (entity: Entity): void => {
+            authoredEntities.add(entity);
+            for (const child of entity.children ?? [])
+                collectAuthoredEntities(child);
+        };
+        collectAuthoredEntities(entityFromSettingsData);
+
+        // LevelHandler receives a raw entity object, so Scene.ConstructEntity() only resolves that
+        // root object. Expand nested entity references (for example `tt -> test`) before handing the
+        // temporary level to LevelHandler. Copy once more afterward because inherited children come
+        // from raw settings and the ID assignment below must not write editor IDs into raw data.
+        this.settingsHandler.ExtendEntityTree(
+            entityFromSettingsData,
+            this.settingsHandler.GetRaw(),
+            isBase ? "ANY" : "ANY_ENTITY"
+        );
+        const expandedEntityFromSettingsData = entityFromSettingsData;
+        entityFromSettingsData = Helper.DeepCopy(expandedEntityFromSettingsData);
         
         entityFromSettingsData.name = objectName;
 
@@ -141,18 +165,23 @@ export class EntityScene extends EditorScene
         
         // ASSIGN IDS
         {
-            var assignId = (entity: Entity) => {
+            this.ownedEntityDefinitionIds.clear();
+            var assignId = (entity: Entity, expandedEntity: Entity) => {
                 entity.id = this.entitiesUnconstructedOrderedById.length; // HERE
                 this.entitiesUnconstructedOrderedById.push(entity);
+
+                if (entity.entityUID && authoredEntities.has(expandedEntity))
+                    this.ownedEntityDefinitionIds.add(entity.id);
+
                 if (entity.children)
                 {
                     for (let i = 0; i < entity.children.length; i++)
                     {
-                        assignId(entity.children[i]);
+                        assignId(entity.children[i], expandedEntity.children[i]);
                     }
                 }
             };
-            assignId(entityFromSettingsData)
+            assignId(entityFromSettingsData, expandedEntityFromSettingsData)
         }
 
         // SET UP LEVEL
@@ -265,7 +294,7 @@ export class EntityScene extends EditorScene
     {
         var rootObject = this.object.GetByName(this.objectName);
         
-        var entity = this.GetEnitityFromObject(rootObject);
+        var entity = this.GetEnitityFromObject(rootObject, this.ownedEntityDefinitionIds);
         delete entity.name;//
 
         const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
@@ -275,13 +304,12 @@ export class EntityScene extends EditorScene
 
         await this.SaveEntityData(newRawSettingsData);
 
-        // The runtime object graph is authoritative in EntityScene. Send the exact entity we
-        // just serialized to the panel so it can update both the inspector and its hierarchy
-        // without reopening (and consequently rebuilding) the scene.
+        // The compact entity above is the persistence representation. The debug API rebuilds the
+        // resolved editor payload from the freshly processed settings, matching gotoEntity()
+        // without reopening (and consequently rebuilding) this scene.
         window.__GAME_DEBUG_API__?.notifyEntityDataChanged({
             name: this.objectName,
             isBase: this.isBase,
-            entity,
         });
         
         return this.currentLevel; // NOT USED IN THIS CASE, BUT EXPECTED FOR METHOD, BIT HACKY

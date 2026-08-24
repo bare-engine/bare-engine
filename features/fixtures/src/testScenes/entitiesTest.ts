@@ -28,6 +28,9 @@ export class EntitiesTest extends Scene
                     entity: "big",
                     propertiesRemoved: ["rotation"],
                 },
+                withChild: {
+                    children: [{ name: "baseChild", texture: "NONE" }],
+                },
             },
             entities: {
                 pear: {},
@@ -38,6 +41,16 @@ export class EntitiesTest extends Scene
                 apple: {
                     entity: "bigAndNoRotation",
                     texture: "NONE",
+                },
+                tile: {
+                    children: [{ name: "tileChild", texture: "NONE" }],
+                },
+                playerTile: {
+                    children: [{ name: "rent", entity: "tile" }],
+                },
+                combinedChildren: {
+                    entity: "withChild",
+                    children: [{ name: "ownChild", texture: "NONE" }],
                 },
             },
             layers: ["objects"],
@@ -60,5 +73,12 @@ export class EntitiesTest extends Scene
         assert(banana.children.length === 1, "FruitObject should run its awake behavior");
         assert(apple.scale.x === 2 && apple.scale.y === 2, "base entity chain should apply scale");
         assert(apple.rotation === 0, "propertiesRemoved should prevent inherited rotation");
+
+        const extendedPlayerTile = this.settingsHandler.GetExtendedEntity("playerTile");
+        assert(extendedPlayerTile.children[0].children[0].name === "tileChild", "nested entity references should extend their children");
+        assert(extendedPlayerTile.entity === undefined, "implicit root defaults should not become authored entity links");
+        assert(extendedPlayerTile.children[0].entity === "tile", "authored child entity links should be preserved");
+        assert(extendedPlayerTile.children[0].children[0].entity === undefined, "implicit child defaults should not become authored entity links");
+
     }
 }

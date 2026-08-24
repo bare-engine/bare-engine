@@ -400,9 +400,36 @@ export class Scene implements SceneI
     }
 
     // ADD ENTITY CHILDREN AFTER INHERITED BASE CHILDREN.
-    MergeChildren(children1?: Entity[], children2?: Entity[]): Entity[]
+    MergeChildren(sourceChildren?: Entity[], currentChildren?: Entity[]): Entity[]
     {
-        return [...(children1 ?? []), ...(children2 ?? [])];
+        var childrenMerged: Entity[] = [];
+        var currentChildrenRemaining = [...(currentChildren ?? [])];
+        
+        for (var child of sourceChildren ?? [])
+        {
+            const overrideIndex = child.entityUID
+                ? currentChildrenRemaining.findIndex(currentChild => currentChild.entity == child.entityUID)
+                : -1;
+
+            if (overrideIndex >= 0)
+            {
+                // A UID override replaces the source child in-place. Its authored array position
+                // must not reorder the inherited source collection.
+                childrenMerged.push(currentChildrenRemaining[overrideIndex]);
+                currentChildrenRemaining.splice(overrideIndex, 1);
+                continue;
+            }
+
+            childrenMerged.push(child);
+        }
+
+        // Children that do not override a source child are genuinely new and retain authored order.
+        for (var child of currentChildrenRemaining)
+        {
+            childrenMerged.push(child);
+        }
+
+        return childrenMerged;
     }
     
     // CONSTRUCTS AN ENTITY OUT OF A ENITTY NAME OR ENTITY OBJECT
@@ -471,7 +498,7 @@ export class Scene implements SceneI
                     // .entity HAS BEEN SET, NOW GET IT FROM SETTINGSDATA AND MERGE IT FOR NEW ENTITY
                     if (entityArg.entity)
                     {
-                        var possibleEntity = (settingsData.entities[entityArg.entity] || settingsData.baseEntities[entityArg.entity]);
+                        var possibleEntity = this.settingsHandler.GetProcessedEnity(entityArg.entity, settingsData);
                         if (possibleEntity)
                         {
                             extendsBaseEntity = (settingsData.baseEntities[entityArg.entity] != null);
@@ -492,7 +519,7 @@ export class Scene implements SceneI
                             };
 
                             if (!entityArg.name)
-                                delete entity.name; // DON'T WANT THE NAME COMING FROM possibleEntity, SETTING AT BOTTOM OF METHOD
+                                delete entity.name; // DON'T WANT THE NAME COMING FROM possibleEntity, SETTING NAME AT BOTTOM OF THIS METHOD
                         }
                         else
                         {
@@ -536,10 +563,17 @@ export class Scene implements SceneI
 
     ApplyEntityToGameObject(entity: Entity, obj: GameObject, addComponents: boolean = true)
     {
+        this.OnApplyEntityToGameObject(entity, obj, addComponents);
+
         this.ApplyEntityVarsToGameObject(entity, obj, addComponents);
         obj.OnApplyEntityToGameObject(entity, addComponents);
 
         obj.entity = entity;
+    }
+
+    OnApplyEntityToGameObject(entity: Entity, obj: GameObject, addComponents: boolean)
+    {
+        // OVERRIDE
     }
 
     ApplyEntityVarsToGameObject(entity: Entity, obj: GameObject, addComponents: boolean = true)
