@@ -442,6 +442,15 @@ window.__GAME_DEBUG_API__ = {
         return;
     }*/
 
+    // A gotoEntity() called while already inside the entity editor (eg to reflect a field edit,
+    // or to navigate to another entity) tears down and rebuilds the scene, which resets its camera
+    // to auto-fit the entity's bounds - discarding whatever the user had panned/zoomed to. Preserve
+    // it across that rebuild.
+    const previousEntityScene = bare.scene.Get(EntityScene);
+    const previousCameraTransform = previousEntityScene
+        ? { x: previousEntityScene.camera.target.x, y: previousEntityScene.camera.target.y, zoom: previousEntityScene.camera.zoom }
+        : undefined;
+
     if (!bare.scene.Get(EntityScene))
         bare.scene.Remove(EditorScene); // WILL REMOVE LEVEL EDITOR IF EXISTS
 
@@ -449,6 +458,12 @@ window.__GAME_DEBUG_API__ = {
     var entityScene = await bare.scene.Add(EntityScene, {name: name, isBase: isBase, settingsHandler: settingsHandler});
     //bare.scene.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
     plugin.notifyLeaveEntity = true;
+
+    if (previousCameraTransform)
+    {
+        entityScene.camera.SetPosition(previousCameraTransform.x, previousCameraTransform.y);
+        entityScene.camera.SetZoom(previousCameraTransform.zoom);
+    }
 
     // Opening/reloading an entity no longer auto-selects the root object live in-scene - the
     // panel still defaults to showing the root's own fields (that's separate, panel-side logic),
