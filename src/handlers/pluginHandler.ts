@@ -447,7 +447,7 @@ window.__GAME_DEBUG_API__ = {
     // to auto-fit the entity's bounds - discarding whatever the user had panned/zoomed to. Preserve
     // it across that rebuild.
     const previousEntityScene = bare.scene.Get(EntityScene);
-    const previousCameraTransform = previousEntityScene
+    const previousCameraTransform = previousEntityScene?.objectName == name
         ? { x: previousEntityScene.camera.target.x, y: previousEntityScene.camera.target.y, zoom: previousEntityScene.camera.zoom }
         : undefined;
 
