@@ -471,14 +471,19 @@ window.__GAME_DEBUG_API__ = {
     // childPath (see below). EditorControlsHandler is freshly constructed in OnStart() on every
     // (re)open, so selection is already empty here.
 
-    var finalEntity = plugin.BuildEntityEditorPayload(name, isBase, entityScene.settingsHandler, entityScene);
+    var entityWithLog = plugin.BuildEntityEditorPayload(
+        name,
+        isBase,
+        entityScene.settingsHandler,
+        entityScene
+    );
 
     // restore whatever was selected before this reload, so a field edit that reloads the scene
     // doesn't silently drop the transform tool off the object being worked on.
     if (childPath)
         window.__GAME_DEBUG_API__.selectEntityObject(childPath);
 
-    return finalEntity;
+    return entityWithLog;
   },
 
   getObject(id: string) {
@@ -747,71 +752,7 @@ window.__GAME_DEBUG_API__ = {
 
   getNestedEntityVars(entityName: string, childPath: string[])
   {
-        var scene = plugin.GetCurrentScene();
-        var entity = scene.settingsHandler.GetExtendedEntity(entityName);
-        
-        // GET THE CHILD
-        if (childPath.length > 0)
-        {
-            for (var i = 0; i < childPath.length; i++)
-            {
-                entity = entity.children[childPath[i]];
-            }
-        }
-
-        var baseClass = entity.baseClass || "GameObject";
-        var allPossibleEntityKeys = plugin.GetAllPossibleEntityKeys(baseClass);
-
-        // WANT POSITION LOCKED FOR ENTIY WITH NO CHILDREN
-        // BUT CHILD CAN HAVE POSITION
-        var includePosition = (childPath.length > 0);
-        if (!includePosition)
-        {
-            var i = allPossibleEntityKeys.indexOf("position");
-            allPossibleEntityKeys.splice(i, 1);
-        }
-
-        // TAKE OFF CURRENT FROM ALL POSSIBLE
-        var keys = Object.keys(entity);
-        allPossibleEntityKeys = allPossibleEntityKeys.filter(key => !keys.includes(key));
-
-        var lockIfUnavailable = (key: string): string => {
-            return allPossibleEntityKeys.includes(key) ? key : `${key}:locked`;
-        };
-
-        var varsPluginHideApplied: EntityVarsNestedEntry[] = [];
-
-        // GET parentClassNames, TO CHECK IF GROUP IS NOT IN HERE
-        // THEN LOCK THE WHOLE GROUP, EG: RigidBody, ArcadeObject
-        var cls = bare.registeredClasses[baseClass];
-        var parentClassNames = Helper.GetParentClasses(cls);
-        parentClassNames.push(baseClass);
-
-        for (var entry of entityVarsNested)
-        {
-            if (typeof entry === "string")
-            {
-                varsPluginHideApplied.push(lockIfUnavailable(entry));
-                continue;
-            }
-
-            var groupEntries = Object.entries(entry)
-                .filter(([groupName]) => groupName !== "HideInPlugin")
-                .map(([groupName, keys]) => {
-                    var isGeneralGroup = groupName == "General" || groupName == "Misc";
-                    var groupUnavailable = !isGeneralGroup && !parentClassNames.includes(groupName);
-                    var lockedKeys = groupUnavailable ? keys.map(key => `${key}:locked`) : keys.map(lockIfUnavailable);
-                    var groupLocked = groupUnavailable || keys.every(key => !allPossibleEntityKeys.includes(key));
-                    var lockedGroupName = groupLocked ? `${groupName}:locked` : groupName;
-
-                    return [lockedGroupName, lockedKeys];
-                });
-
-            if (groupEntries.length > 0)
-                varsPluginHideApplied.push(Object.fromEntries(groupEntries));
-        }
-
-        return varsPluginHideApplied;
+        return [""];
   },
 
   async removeFieldFromEntity(entiyName: string, childPath: string[], field: string)
@@ -2135,7 +2076,7 @@ export class PluginHandler
         var newEntity = entityToApplyTo;//{...newEntity}; // SHALLOW COPY, MORE IS NOT NEEDED, SINCE WE ONLY ADD baseEntityLog TO IT
         var settingsHandler = this.GetCurrentScene().settingsHandler;
         var getRawEntity = (name: string): Entity | undefined =>
-            settingsHandler.GetRawEnity(name, settingsDataRaw);
+            settingsHandler.GetRawEntity(name, settingsDataRaw);
         var getProcessedEntity = (name: string): Entity | undefined =>
             settingsHandler.GetProcessedEnity(name, settingsDataProcessed);
 
@@ -2353,10 +2294,22 @@ export class PluginHandler
         if (!entity)
             throw new Error(`Could not build editor data for missing entity '${name}'`);
 
+        var defaultBaseEntity = isBase ? "ANY" : "ANY_ENTITY";
+        var extendedEntity = Helper.DeepCopy(entity);
+        settingsHandler.ExtendEntity(
+            extendedEntity,
+            raw,
+            defaultBaseEntity,
+            { childDefaultBaseEntity: "ANY_ENTITY" }
+        );
+
         // Child entities need the same inherited fields, extend provenance, defaults, and removal
         // metadata as the root entity; otherwise the panel cannot render their labels and controls.
+        // Expand the complete display tree once, then walk it alongside the authored raw tree so
+        // BuildExtendDataLog still receives the correct ownership/provenance record for each node.
         const entityWithLog = this.BuildEntityEditorData(
             entity,
+            extendedEntity,
             name,
             processedEntity,
             raw,
@@ -2376,59 +2329,21 @@ export class PluginHandler
         return entityWithLog;
     }
 
-    // Construct the data shown by the entity editor without expanding presets yet, then attach
-    // inheritance metadata to every node. This mirrors gotoEntity's former root-only work and is
-    // deliberately recursive so inline/inherited children receive the same panel capabilities.
-    BuildEntityEditorData(entity: Entity, entityName: string, processedEntity: Entity, settingsDataRaw: SettingsData, settingsDataProcessed: SettingsData, isBase: boolean = false): Entity
+    // Attach editor metadata to an entity tree that BuildEntityEditorPayload already expanded.
+    // `entity` is the authored record used for provenance; `extendedEntity` supplies display values.
+    BuildEntityEditorData(entity: Entity, extendedEntity: Entity, entityName: string, processedEntity: Entity, settingsDataRaw: SettingsData, settingsDataProcessed: SettingsData, isBase: boolean = false): Entity
     {
-        var entityCopy = Helper.DeepCopy(entity);
         var defaultFieldsToIgnore: string[] = [];
         var defaultBaseEntity = isBase ? "ANY" : "ANY_ENTITY";
 
-        if (!entityCopy.entity)
+        if (!extendedEntity.entity)
         {
-            //if (entityCopy.uidLink)
-            {
-                
-            }
-            //else
-            {
-                entityCopy.entity = defaultBaseEntity;
-                defaultFieldsToIgnore.push("entity");
-            }
+            extendedEntity.entity = defaultBaseEntity;
+            defaultFieldsToIgnore.push("entity");
         }
 
-        this.GetCurrentScene().settingsHandler.ExtendEntity(
-            entityCopy,
-            settingsDataRaw,
-            defaultBaseEntity,
-            { includeChildren: false }
-        );
-
-        var resolvedChildren = this.ResolveRawEntityChildren(entityCopy, settingsDataRaw, defaultBaseEntity);
-        var editorChildren: Entity[] = [];
-        for (var resolvedChildIndex = 0; resolvedChildIndex < resolvedChildren.length; resolvedChildIndex++)
-        {
-            var resolvedChild = resolvedChildren[resolvedChildIndex];
-            if (!resolvedChild.inherited)
-            {
-                editorChildren.push(resolvedChild.entity);
-                continue;
-            }
-
-            // Raw source children intentionally do not carry the generated UID. The processed
-            // tree uses the same MergeChildren() order and contains the UID assigned during
-            // settings processing, so use its aligned child when building the editor link.
-            var sourceEntityUID = resolvedChild.entity.entityUID
-                || processedEntity?.children?.[resolvedChildIndex]?.entityUID;
-            if (sourceEntityUID)
-                editorChildren.push({ entity: sourceEntityUID });
-        }
-
-        if (editorChildren.length > 0)
-            entityCopy.children = editorChildren;
-
-        var entityWithLog = this.BuildExtendDataLog(entity, entityCopy, entityName, processedEntity, settingsDataRaw, settingsDataProcessed);
+        var resolvedChildren = this.ResolveRawEntityChildren(entity, settingsDataRaw, defaultBaseEntity);
+        var entityWithLog = this.BuildExtendDataLog(entity, extendedEntity, entityName, processedEntity, settingsDataRaw, settingsDataProcessed);
 
         if (!isBase && entityWithLog.entity == "ANY_ENTITY")
         {
@@ -2444,7 +2359,7 @@ export class PluginHandler
         {
             var entityOptions: Array<{ value: string, label: string, source?: string }> = [];
             var optionSourceName = entity.entity || defaultBaseEntity;
-            var optionSource = this.GetCurrentScene().settingsHandler.GetRawEnity(optionSourceName, settingsDataRaw);
+            var optionSource = this.GetCurrentScene().settingsHandler.GetRawEntity(optionSourceName, settingsDataRaw);
             var processedOptionSource = this.GetCurrentScene().settingsHandler.GetProcessedEnity(optionSourceName, settingsDataProcessed);
             var optionValues = new Set<string>();
             var optionSourceChildren: Entity[] = optionSource?.children ?? [];
@@ -2466,10 +2381,22 @@ export class PluginHandler
 
             for (var i = 0; i < entityWithLog.children.length; i++)
             {
-                var child = entityWithLog.children[i];
-                var processedChild = processedEntity?.children?.[i] || child;
-                var childName = child.name || processedChild.name || child.entity || "GameObject";
-                entityWithLog.children[i] = this.BuildEntityEditorData(child, childName, processedChild, settingsDataRaw, settingsDataProcessed, false);
+                var extendedChild = entityWithLog.children[i];
+                var processedChild = processedEntity?.children?.[i] || extendedChild;
+                var resolvedChild = resolvedChildren[i];
+                var authoredChild = resolvedChild?.entity || extendedChild;
+
+                if (resolvedChild?.inherited)
+                {
+                    var sourceEntityUID = resolvedChild.entity.entityUID
+                        || extendedChild.entity
+                        || processedChild.entityUID;
+                    if (sourceEntityUID)
+                        authoredChild = { entity: sourceEntityUID };
+                }
+
+                var childName = extendedChild.name || processedChild.name || authoredChild.entity || "GameObject";
+                entityWithLog.children[i] = this.BuildEntityEditorData(authoredChild, extendedChild, childName, processedChild, settingsDataRaw, settingsDataProcessed, false);
                 entityWithLog.children[i].__entityOptions = entityOptions;
             }
         }
@@ -2799,7 +2726,7 @@ export class PluginHandler
                 throw new Error(`Circular entity inheritance while resolving children for '${entity.name}'`);
             visitedBaseEntities.add(baseEntityName);
 
-            const baseEntity = scene.settingsHandler.GetRawEnity(baseEntityName, rawSettingsData, entity.children ?? []);
+            const baseEntity = scene.settingsHandler.GetRawEntity(baseEntityName, rawSettingsData, entity.children ?? []);
             if (!baseEntity)
                 throw new Error(`Could not find base entity '${baseEntityName}' while resolving child path`);
 

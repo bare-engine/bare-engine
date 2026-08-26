@@ -40,8 +40,6 @@ export class EditorScene extends Scene
     private gameResolution: BareOptions['resolution'] = undefined;
     public draggingLevelEntity: GameObject | null = null;
     public currentLevelPath: string = '';
-
-    entitiesUnconstructedOrderedById: Entity[] = [];
     
     saveLevelCallback: () => Promise<LevelData>;
 
@@ -89,7 +87,10 @@ export class EditorScene extends Scene
                 if (levelPathOrData.name == this.currentLevel?.name)
                     return; // ALREADY IN TARGET EDITOR AT TARGET LEVEL
 
-        this.settingsHandler = settingsHandler; // SETTING IT HERE, MAYBE NOT THE BEST PLACE, BUT TO MAKE ABOVE CHECK WORK
+        //this.settingsHandler = settingsHandler; // SETTING IT HERE, MAYBE NOT THE BEST PLACE, BUT TO MAKE ABOVE CHECK WORK
+        this.settingsHandler.SetRaw(settingsHandler.GetRaw());
+        this.settingsHandler.Process();
+        //this.settingsHandler.scene = this;
         // ALSO SCENE HAS SET AND PROCESSED DEFAULT SETTINGSHANDLER, WHICH IS PRETTY USELESS IN THIS CASE. TODO
         // COULD SEND ALONG THE PAYLOAD (CONTAINING settingsHandler) TO SCENE CONTRUCTOR, BUT NOT SURE IF THAT WILL PLAY WELL WITH EditorSceneAwakePayload
         // WILL CREATE MORE CONTRAINTS TO ALIGN WITH CONSTRUCTOR ARG TYPE
@@ -539,45 +540,7 @@ export class EditorScene extends Scene
 
         gameObject.save = true; //
 
-        // NEEDED FOR ENTITY SCENE AND COPY PASTE
-        this.AddGameObjectEntityId(gameObject, entity);
-
         return gameObject;
-    }
-
-    AddGameObjectEntityId(gameObject: GameObject, entity: Entity | string)
-    {
-        // IF ENTITY IS STRING OR DOESN'T HAVE AN ID, IT'S NOT FROM ROOT ENTITY DATA
-        // A USER HAS CALLED THIS METHOD, OR SOME COMPONENT DID
-        // NOW WE DON'T HAVE AN UNCONSTRUCTED ENTITY FOR IT, SO WE HAVE TO CREATE ONE. SO SERIALIZATION WORKS LATER
-        if (typeof entity === "string")
-        {
-            // MADE THIS ENTITY BEFORE? SHARE MATCHING ID
-            for (var i = 0; i < this.entitiesUnconstructedOrderedById.length; i++)
-            {
-                if (Object.keys(this.entitiesUnconstructedOrderedById[i]).length == 1 &&this.entitiesUnconstructedOrderedById[i].name == entity)
-                {
-                    gameObject.entity.id = i;
-                    return gameObject; //////////// RETURN
-                }
-            }
-            
-            var unconstructedEntity = {name: entity};
-            gameObject.entity.id = this.entitiesUnconstructedOrderedById.length;
-            this.entitiesUnconstructedOrderedById.push(unconstructedEntity);
-        }
-        else
-        {
-            if (entity.id === undefined)
-            {
-                //if (entity.constructed)
-                //    throw new Error("Cannot add constructed entity to EntityScene.");
-
-                entity.id = this.entitiesUnconstructedOrderedById.length;
-                this.entitiesUnconstructedOrderedById.push(entity);
-                gameObject.entity.id = entity.id;
-            }
-        }
     }
 
     AddGameObjectAtPosition(x: number, y: number, entityOrName: Entity | string, parent?: int | string | GameObject): GameObject
@@ -632,44 +595,15 @@ export class EditorScene extends Scene
 
         // FIND UNCONSTRUCTED ENTITY
         {
-            var unconstructedEntity: Entity;
-
-            if (rootObject.entity) // SHOULD ALWAYS BE TRUE
-                unconstructedEntity = this.entitiesUnconstructedOrderedById[rootObject.entity.id];
-
-            unconstructedEntity = Helper.DeepCopy(unconstructedEntity);
+            var unconstructedEntity = Helper.DeepCopy(this.settingsHandler.GetRawEntitiesMappedByUID()[rootObject.entity.entityUID]);
         }
 
-        // a child can be linked back to its inherited source two ways: it was itself authored as
-        // an `entity: <uid>` override (rootObject.entity.entity), or it's an untouched original
-        // child of the base entity, identifiable only by its own entityUID (eg "p" in the tt/test
-        // example - never given an explicit override, just inherited as-is). the entityUID fallback
-        // only applies when this node isn't one of the entity-being-edited's own definitions
-        // (ownedEntityDefinitionIds) - otherwise an unchanged canonical definition (eg "text" as
-        // defined directly inside "test" itself) would wrongly get omitted instead of saved.
-        var isOwnDefinition = ownedEntityDefinitionIds?.has(rootObject.entity.id) ?? false;
-        var inheritedSourceUID = rootObject.entity.entity || (!isOwnDefinition ? rootObject.entity.entityUID : undefined);
-        var inheritedSourceEntity = inheritedSourceUID
-            ? this.settingsHandler.GetRawEntitiesMappedByUID()[inheritedSourceUID]
-            : undefined;
-
-        if (inheritedSourceEntity)
+        if (rootObject.entity.entity && this.settingsHandler.GetRawEntitiesMappedByUID()[rootObject.entity.entity])
         {
-            // `diff` above is relative to THIS SESSION's construction-time snapshot, which may
-            // already bake in an override authored in an earlier save (eg text:"gg" on a UID-linked
-            // child) - that reads as "unchanged" this session and would wrongly get dropped. compare
-            // against the true inherited source instead, so an existing override survives a save
-            // even when nothing about it was touched this session.
-            var serializedInheritedSource = this.ConstructEntityWithDefaultValues(Helper.DeepCopy(inheritedSourceEntity));
-            var diffFromSource = this.level.GetEntitiesDiff(serializedInheritedSource, serializedRootObject) ?? {};
-
-            if (diff.children)
-                diffFromSource.children = diff.children;
-
-            if (Object.keys(diffFromSource).length > 0)
-                diffFromSource.entity = inheritedSourceUID; // LINK TO THE INHERITED SOURCE BY UID, EVEN IF ITS ORDER CHANGES
-
-            return diffFromSource;
+            if (Object.keys(diff).length > 0)
+                diff.entity = rootObject.entity.entity; // IF THERE ARE CHANGES TO ENTITY, WE KEEP TRACK OF THE .entity UID LINK
+            
+            return diff;
         }
 
         // APPLY DIFF TO unconstructedEntity

@@ -4,7 +4,7 @@ import { SettingsHandler } from "../handlers/settingsHandler";
 import { Color, RenderTexture, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { TextObject } from "../objects/textObject";
-import { AwakePayload, BareEvent, Entity, LevelData, Rectangle, SettingsData } from "../types/bareTypes";
+import { AwakePayload, Entity, LevelData, Rectangle, SettingsData } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
 import { EditorScene } from "./editorScene";
 
@@ -14,6 +14,13 @@ type EntitySceneAwakePayload = EditorScenePayload & {
     isBase: boolean;
     settingsHandler: SettingsHandler;
 };
+
+// HOW SERIALIZATION OF CHILDREN COMING FROM ENITTY WORKS:
+// 
+// IN ExtendEntity(), THE CHILDREN COMING FROM THE ENITY ARE MARKED WITH childFromEntity IN THEIR ENITY DATA.
+// 
+// 
+// 
 
 export class EntityScene extends EditorScene
 {
@@ -130,29 +137,6 @@ export class EntityScene extends EditorScene
 
         entityFromSettingsData = Helper.DeepCopy(entityFromSettingsData);
 
-        // Keep the identity of records authored inside the entity being edited. Inheritance adds
-        // source children to this tree below; those must serialize as UID overrides, while authored
-        // source definitions (which can also carry entityUID) must remain complete raw records.
-        const authoredEntities = new Set<Entity>();
-        const collectAuthoredEntities = (entity: Entity): void => {
-            authoredEntities.add(entity);
-            for (const child of entity.children ?? [])
-                collectAuthoredEntities(child);
-        };
-        collectAuthoredEntities(entityFromSettingsData);
-
-        // LevelHandler receives a raw entity object, so Scene.ConstructEntity() only resolves that
-        // root object. Expand nested entity references (for example `tt -> test`) before handing the
-        // temporary level to LevelHandler. Copy once more afterward because inherited children come
-        // from raw settings and the ID assignment below must not write editor IDs into raw data.
-        this.settingsHandler.ExtendEntityTree(
-            entityFromSettingsData,
-            this.settingsHandler.GetRaw(),
-            isBase ? "ANY" : "ANY_ENTITY"
-        );
-        const expandedEntityFromSettingsData = entityFromSettingsData;
-        entityFromSettingsData = Helper.DeepCopy(expandedEntityFromSettingsData);
-        
         entityFromSettingsData.name = objectName;
 
         if (isBase)
@@ -161,27 +145,6 @@ export class EntityScene extends EditorScene
             entityFromSettingsData.texture = "placeHolder";
             if(entityFromSettingsData.imagePath)
                 entityFromSettingsData.imagePath = "";
-        }
-        
-        // ASSIGN IDS
-        {
-            this.ownedEntityDefinitionIds.clear();
-            var assignId = (entity: Entity, expandedEntity: Entity) => {
-                entity.id = this.entitiesUnconstructedOrderedById.length; // HERE
-                this.entitiesUnconstructedOrderedById.push(entity);
-
-                if (entity.entityUID && authoredEntities.has(expandedEntity))
-                    this.ownedEntityDefinitionIds.add(entity.id);
-
-                if (entity.children)
-                {
-                    for (let i = 0; i < entity.children.length; i++)
-                    {
-                        assignId(entity.children[i], expandedEntity.children[i]);
-                    }
-                }
-            };
-            assignId(entityFromSettingsData, expandedEntityFromSettingsData)
         }
 
         // SET UP LEVEL
@@ -302,6 +265,8 @@ export class EntityScene extends EditorScene
             collection[this.objectName] = entity;
         });
 
+        this.CleanSettingsDataEntityUIDs(newRawSettingsData);
+
         await this.SaveEntityData(newRawSettingsData);
 
         // The compact entity above is the persistence representation. The debug API rebuilds the
@@ -313,6 +278,34 @@ export class EntityScene extends EditorScene
         });
         
         return this.currentLevel; // NOT USED IN THIS CASE, BUT EXPECTED FOR METHOD, BIT HACKY
+    }
+
+    CleanSettingsDataEntityUIDs(settingsDataRaw: SettingsData): void
+    {
+        var entitiesAr = [
+            ...Object.values(settingsDataRaw.entities),
+            ...Object.values(settingsDataRaw.baseEntities)
+        ];
+
+        var stringifiedEntities = JSON.stringify(entitiesAr); // TO JUST COMPARE VALUES AGAINST THIS STRING, INSTEAD OF WALKING THE NODES
+
+        var traverseEntities = (entities: Entity[]) => {
+            for (const entity of entities)
+            {
+                if (entity.entityUID)
+                {
+                    var firstIndex = stringifiedEntities.indexOf(entity.entityUID);
+                    var lastIndex = stringifiedEntities.lastIndexOf(entity.entityUID);
+                    var moreThanOneRef = (firstIndex != lastIndex);
+
+                    if (!moreThanOneRef)
+                        delete entity.entityUID; // THIS UID IS NOT REFERENCED ANYWHERE ELSE, REMOVE IT
+                }
+                
+                traverseEntities(entity.children ?? []);
+            }
+        }
+        traverseEntities(entitiesAr);
     }
 
     NotifyTransformToolPreview(operation: "move" | "resize" | "rotate"): void

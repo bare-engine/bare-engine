@@ -235,17 +235,6 @@ export class LevelHandler
 
         await this.scene.OnPreLoadLevel(level);
 
-        // CONSTRUCT ENTITIES (AND THEIR CHILDREN)
-        for (var layerName in level.entitiesByLayer)
-        {
-            var entities = level.entitiesByLayer[layerName];
-            for (var i = 0; i < entities.length; i++)
-            {
-                var levelEntity = entities[i];
-                var entityConstructed = this.scene.ConstructEntity(levelEntity); 
-                entities[i] = entityConstructed;
-            }
-        }
 
         // LOAD ALL TEXTURES
         await Promise.all(this.LoadTextures(level));

@@ -32,7 +32,7 @@ export class SettingsHandler
     //@Label("Edit")
     //private editSettings() { /*CALL PLUGIN TO GO TO (TO BE MADE) SETTINGS DATA TAB - TODO*/ }
 
-    private rawEntitiesMappedByUID:Record<string, Entity> = {};
+    public rawEntitiesMappedByUID:Record<string, Entity> = {};
     private processedEntitiesMappedByUID:Record<string, Entity> = {};
 
     constructor(scene: Scene)
@@ -91,16 +91,17 @@ export class SettingsHandler
         raw.baseEntities.ANY_ENTITY ??= Helper.DeepCopy(defaultSettingsData.baseEntities.ANY_ENTITY);
         raw.baseEntities.NONE ??= Helper.DeepCopy(defaultSettingsData.baseEntities.NONE);
 
-        // Existing UID links must be available before inheritance is processed. Otherwise an
-        // authored override such as `{ entity: "<child UID>" }` cannot resolve on re-process.
-        this.rawEntitiesMappedByUID = {};
-        this.processedEntitiesMappedByUID = {};
+        // FOR ENTITIES WHERE entityUID IS ALREADY SET, STORE IN rawEntitiesMappedByUID 
+        // ALL OTHER ENITIES GET THEIR entityUID GENERATED AND IN ExtendEntity()
+        // NOT DOING IT HERE, SINCE NOT ALL ENITITES ARE PRESENT YET, THEY COULD GET ADDED IN ExtendEntity() FROM A .entity field
+        //this.rawEntitiesMappedByUID = {};
+        //this.processedEntitiesMappedByUID = {};
         var indexRawEntityUIDs = (entities: Entity[]) =>
         {
             for (const entity of entities)
             {
                 if (entity.entityUID)
-                    this.rawEntitiesMappedByUID[entity.entityUID] = entity;
+                    this.rawEntitiesMappedByUID[entity.entityUID] = Helper.DeepCopy(entity);
 
                 indexRawEntityUIDs(entity.children ?? []);
             }
@@ -435,35 +436,6 @@ export class SettingsHandler
             }
         }
 
-        // Assign UIDs required by processed entity references and index them without clearing the
-        // raw UID index built before construction. Generated UIDs are promoted to raw only when a
-        // writable inherited override is materialized.
-        var assignIds = (entities: Entity[]) =>
-        {
-            for (var entityy of entities)
-            {
-                assignIds(entityy.children ?? []);
-
-                if (entityy.entity)
-                {
-                    var refEntity = this.GetRawEnity(entityy.entity, settings);
-                    if (refEntity?.children?.length > 0)
-                    {
-                        for (var child of refEntity.children)
-                        {
-                            child.entityUID ??= Helper.GenerateEntityUID();
-                            this.rawEntitiesMappedByUID[child.entityUID] ??= child;
-                            this.processedEntitiesMappedByUID[child.entityUID] = child;
-                        }
-                    }
-                }
-            }
-        }
-        assignIds([
-            ...Object.values(settings.baseEntities ?? {}),
-            ...Object.values(settings.entities ?? {})
-        ]);
-
         // PROCESS LAYER INFO - ADDS DEFAULTS
         {
             var anyCollidesWithSetByUser = false;
@@ -594,24 +566,35 @@ export class SettingsHandler
 
     // EXTENDS AN ENTITY WITH EVERY ENTITY IN ITS BASE CHAIN.
     // THE ENTITY ARGUMENT IS MUTATED AND ITS EXISTING VALUES TAKE PRECEDENCE.
-    ExtendEntity(entity: Entity, rawSettingsData: SettingsData = this.raw, defaultBaseEntity?: string, options: { includeChildren?: boolean, recurseChildren?: boolean } = {}): Entity
+    ExtendEntity(entity: Entity, rawSettingsData: SettingsData = this.raw, defaultBaseEntity?: string, options: { includeChildren?: boolean, recurseChildren?: boolean, childDefaultBaseEntity?: string } = {}): Entity
     {
         var includeChildren = options.includeChildren !== false;
         var recurseChildren = options.recurseChildren ?? includeChildren;
 
-        if (recurseChildren)
-        {
-            for (var child of entity.children ?? [])
+        var i = 0;
+        
+        var assignID = (entities: Entity[]) => {
+            for (const entity of entities)
             {
-                this.ExtendEntity(child, rawSettingsData, defaultBaseEntity, options);
+                entity.entityUID ??= Helper.GenerateEntityUID();
+                this.rawEntitiesMappedByUID[entity.entityUID] = Helper.DeepCopy(entity);
+                assignID(entity.children ?? []);
             }
         }
 
+        entity.entityUID ??= Helper.GenerateEntityUID();
+        this.rawEntitiesMappedByUID[entity.entityUID] = Helper.DeepCopy(entity);
+        
         var entityName = entity.entity || defaultBaseEntity;
         while (entityName)
         {
-            var settingsDataEntity = this.GetRawEnity(entityName, rawSettingsData, entity.children ?? []);
+            var settingsDataEntity = this.GetRawEntity(entityName, rawSettingsData, entity.children ?? []);
 
+            // COULD BE THAT THIS settingsDataEntity.entity HAS NEED ASSIGNED UID YET
+            assignID([settingsDataEntity]);
+            //settingsDataEntity.entityUID ??= Helper.GenerateEntityUID();
+            //this.rawEntitiesMappedByUID[entity.entityUID] = Helper.DeepCopy(settingsDataEntity);
+            
             if (!settingsDataEntity)
             {
                 throw new Error(`Could not find base entity '${entityName}' for entity '${entity.name}'`);
@@ -635,13 +618,45 @@ export class SettingsHandler
 
             if (includeChildren)
             {
-                var children = this.scene.MergeChildren(settingsDataEntity.children, entity.children);
+                var settingsDataEntityChildren = [];
+                var toRemoveEntityUID = [];
+                for (const child of settingsDataEntity.children ?? [])
+                {
+                    // ASSIGN THE UID TO THE EXTENDED CHILD, SO IT CAN BE DIFFED AGAINST ITS SOURCE LATER
+                    var childCopy = { ...child };
+                    childCopy.entity = child.entityUID;
+                    settingsDataEntityChildren.push(childCopy);
+
+                    toRemoveEntityUID.push(childCopy);
+                }
+
+                var children = this.scene.MergeChildren(settingsDataEntityChildren, entity.children);
                 if (Object.keys(children).length > 0)
                     entity.children = children;
+
+                for (const child of toRemoveEntityUID)
+                {
+                    delete child.entityUID; // SOURCE ENTITY SHOULD STAY ONLY ONE WITH ITS UID
+                }
             }
 
             entityName = settingsDataEntity.entity;
+
+            i++
+            if (i > 1000)
+            {
+                throw new Error(`Infinite loop while extending entity '${entity.name}'`);
+            }
         }
+
+        if (recurseChildren)
+        {
+            for (var child of entity.children ?? [])
+            {
+                this.ExtendEntity(child, rawSettingsData, options.childDefaultBaseEntity ?? defaultBaseEntity, options);
+            }
+        }
+
 
         return entity;
     }
@@ -717,7 +732,7 @@ export class SettingsHandler
 
     GetExtendedEntity(entityName: string)
     {
-        var entity = Helper.DeepCopy(this.GetRawEnity(entityName));
+        var entity = Helper.DeepCopy(this.GetRawEntity(entityName));
 
         this.ExtendEntityTree(entity, this.raw, "ANY_ENTITY");
 
@@ -820,7 +835,7 @@ export class SettingsHandler
         return raw;
     }
 
-    GetRawEnity(entityNameOrId: string, rawSettingsData: SettingsData = this.raw, rawChildEntities: Entity[] = []): Entity
+    GetRawEntity(entityNameOrId: string, rawSettingsData: SettingsData = this.raw, rawChildEntities: Entity[] = []): Entity
     {
         // QUICK WAY TO FIND LINKED ENTITY UID IF RAW DATA IS GIVEN
         if (rawChildEntities.length > 0)

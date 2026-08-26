@@ -399,37 +399,22 @@ export class Scene implements SceneI
         return merged;
     }
 
-    // ADD ENTITY CHILDREN AFTER INHERITED BASE CHILDREN.
+    // MERGES sourceChildren + currentChildren
+    // ANY sourceChild THAT LINKS .entityUID to currentChild .enitity WILL BE REMOVED
     MergeChildren(sourceChildren?: Entity[], currentChildren?: Entity[]): Entity[]
     {
-        var childrenMerged: Entity[] = [];
-        var currentChildrenRemaining = [...(currentChildren ?? [])];
-        
-        for (var child of sourceChildren ?? [])
-        {
-            const overrideIndex = child.entityUID
-                ? currentChildrenRemaining.findIndex(currentChild => currentChild.entity == child.entityUID)
-                : -1;
+        const current = currentChildren ?? [];
+        const overriddenEntityUIDs = new Set(
+            current
+                .map(child => child.entity)
+                .filter((entity): entity is string => entity !== undefined)
+        );
 
-            if (overrideIndex >= 0)
-            {
-                // A UID override replaces the source child in-place. Its authored array position
-                // must not reorder the inherited source collection.
-                childrenMerged.push(currentChildrenRemaining[overrideIndex]);
-                currentChildrenRemaining.splice(overrideIndex, 1);
-                continue;
-            }
+        const source = (sourceChildren ?? []).filter(sourceChild =>
+            sourceChild.entityUID === undefined || !overriddenEntityUIDs.has(sourceChild.entityUID)
+        );
 
-            childrenMerged.push(child);
-        }
-
-        // Children that do not override a source child are genuinely new and retain authored order.
-        for (var child of currentChildrenRemaining)
-        {
-            childrenMerged.push(child);
-        }
-
-        return childrenMerged;
+        return [...source, ...current];
     }
     
     // CONSTRUCTS AN ENTITY OUT OF A ENITTY NAME OR ENTITY OBJECT
@@ -510,6 +495,8 @@ export class Scene implements SceneI
                                 delete entityArg[prop as keyof Entity];
                             }
                             
+                            entityArg.entityUID ??= Helper.GenerateEntityUID();
+
                             // MERGE WITH ENTITY IN SETTINGSDATA
                             entity = {
                                 ...possibleEntity, // BASE
@@ -517,6 +504,14 @@ export class Scene implements SceneI
                                 components: this.MergeComponents(possibleEntity.components, entityArg.components),
                                 children: this.MergeChildren(possibleEntity.children, entityArg.children)
                             };
+
+                            // CONSTRUCT ANY NEW CHILDREN IF NECESSARY
+                            for (var i = 0; i < entity.children.length; i++)
+                            {
+                                var child = entity.children[i];
+                                if (!child.constructed)
+                                     entity.children[i] = this.ConstructEntity(child, settingsData, options);
+                            }
 
                             if (!entityArg.name)
                                 delete entity.name; // DON'T WANT THE NAME COMING FROM possibleEntity, SETTING NAME AT BOTTOM OF THIS METHOD
