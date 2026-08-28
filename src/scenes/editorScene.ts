@@ -595,15 +595,20 @@ export class EditorScene extends Scene
 
         // FIND UNCONSTRUCTED ENTITY
         {
-            var unconstructedEntity = Helper.DeepCopy(this.settingsHandler.GetRawEntitiesMappedByUID()[rootObject.entity.entityUID]);
+            var unconstructedEntity = Helper.DeepCopy(this.settingsHandler.GetRawEntitiesMappedByUID()[rootObject.entity.entityUID]) || {};
         }
 
-        if (rootObject.entity.entity && this.settingsHandler.GetRawEntitiesMappedByUID()[rootObject.entity.entity])
+        if (rootObject.entity.fromEntity || (rootObject.entity.entity && this.settingsHandler.GetRawEntitiesMappedByUID()[rootObject.entity.entity]))
         {
             if (Object.keys(diff).length > 0)
                 diff.entity = rootObject.entity.entity; // IF THERE ARE CHANGES TO ENTITY, WE KEEP TRACK OF THE .entity UID LINK
             
-            return diff;
+            var finalDiff = {
+                ...unconstructedEntity,
+                ...diff
+            };
+            
+            return finalDiff;
         }
 
         // APPLY DIFF TO unconstructedEntity

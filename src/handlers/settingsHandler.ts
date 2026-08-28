@@ -91,17 +91,17 @@ export class SettingsHandler
         raw.baseEntities.ANY_ENTITY ??= Helper.DeepCopy(defaultSettingsData.baseEntities.ANY_ENTITY);
         raw.baseEntities.NONE ??= Helper.DeepCopy(defaultSettingsData.baseEntities.NONE);
 
-        // FOR ENTITIES WHERE entityUID IS ALREADY SET, STORE IN rawEntitiesMappedByUID 
+        // SETTING entityUID FOR ALL ENTITIES
         // ALL OTHER ENITIES GET THEIR entityUID GENERATED AND IN ExtendEntity()
-        // NOT DOING IT HERE, SINCE NOT ALL ENITITES ARE PRESENT YET, THEY COULD GET ADDED IN ExtendEntity() FROM A .entity field
-        //this.rawEntitiesMappedByUID = {};
-        //this.processedEntitiesMappedByUID = {};
+        // THESE entityUID FIELDS DON'T GET SERIALIZED WHEN UNUSED, SEE CleanSettingsDataEntityUIDs()
+        this.rawEntitiesMappedByUID = {};
+        this.processedEntitiesMappedByUID = {};
         var indexRawEntityUIDs = (entities: Entity[]) =>
         {
             for (const entity of entities)
             {
-                if (entity.entityUID)
-                    this.rawEntitiesMappedByUID[entity.entityUID] = Helper.DeepCopy(entity);
+                entity.entityUID ??= Helper.GenerateEntityUID();
+                this.rawEntitiesMappedByUID[entity.entityUID] = Helper.DeepCopy(entity);
 
                 indexRawEntityUIDs(entity.children ?? []);
             }
@@ -625,6 +625,7 @@ export class SettingsHandler
                     // ASSIGN THE UID TO THE EXTENDED CHILD, SO IT CAN BE DIFFED AGAINST ITS SOURCE LATER
                     var childCopy = { ...child };
                     childCopy.entity = child.entityUID;
+                    childCopy.fromEntity = true;
                     settingsDataEntityChildren.push(childCopy);
 
                     toRemoveEntityUID.push(childCopy);

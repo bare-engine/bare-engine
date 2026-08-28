@@ -265,7 +265,7 @@ export class EntityScene extends EditorScene
             collection[this.objectName] = entity;
         });
 
-        this.CleanSettingsDataEntityUIDs(newRawSettingsData);
+        Helper.CleanSettingsDataEntityUIDs(newRawSettingsData);
 
         await this.SaveEntityData(newRawSettingsData);
 
@@ -278,34 +278,6 @@ export class EntityScene extends EditorScene
         });
         
         return this.currentLevel; // NOT USED IN THIS CASE, BUT EXPECTED FOR METHOD, BIT HACKY
-    }
-
-    CleanSettingsDataEntityUIDs(settingsDataRaw: SettingsData): void
-    {
-        var entitiesAr = [
-            ...Object.values(settingsDataRaw.entities),
-            ...Object.values(settingsDataRaw.baseEntities)
-        ];
-
-        var stringifiedEntities = JSON.stringify(entitiesAr); // TO JUST COMPARE VALUES AGAINST THIS STRING, INSTEAD OF WALKING THE NODES
-
-        var traverseEntities = (entities: Entity[]) => {
-            for (const entity of entities)
-            {
-                if (entity.entityUID)
-                {
-                    var firstIndex = stringifiedEntities.indexOf(entity.entityUID);
-                    var lastIndex = stringifiedEntities.lastIndexOf(entity.entityUID);
-                    var moreThanOneRef = (firstIndex != lastIndex);
-
-                    if (!moreThanOneRef)
-                        delete entity.entityUID; // THIS UID IS NOT REFERENCED ANYWHERE ELSE, REMOVE IT
-                }
-                
-                traverseEntities(entity.children ?? []);
-            }
-        }
-        traverseEntities(entitiesAr);
     }
 
     NotifyTransformToolPreview(operation: "move" | "resize" | "rotate"): void

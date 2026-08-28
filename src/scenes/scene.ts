@@ -496,13 +496,41 @@ export class Scene implements SceneI
                             }
                             
                             entityArg.entityUID ??= Helper.GenerateEntityUID();
+                            this.settingsHandler.rawEntitiesMappedByUID[entityArg.entityUID] = Helper.DeepCopy(entityArg);
+
+                            // possibleentity.children with their own entityuid are owned directly by the base entity -
+                            // mark them fromentity and link them back to their source via .entity, same as
+                            // settingshandler.extendentity() does for the raw pipeline. keep entityuid until after
+                            // mergechildren() - its override detection needs it to match against entityarg.children.
+                            // children without entityuid already came from a deeper base (possibleentity itself
+                            // extends something else) and already carry fromentity/.entity from that level - leave them as-is.
+                            var possibleEntityChildren = [];
+                            var toStripEntityUID = [];
+                            for (var possibleChild of possibleEntity.children ?? [])
+                            {
+                                var possibleChildCopy = { ...possibleChild };
+                                if (possibleChild.entityUID)
+                                {
+                                    possibleChildCopy.entity = possibleChild.entityUID;
+                                    possibleChildCopy.fromEntity = true;
+                                    toStripEntityUID.push(possibleChildCopy);
+                                }
+                                possibleEntityChildren.push(possibleChildCopy);
+                            }
+
+                            var mergedChildren = this.MergeChildren(possibleEntityChildren, entityArg.children);
+
+                            for (var childToStrip of toStripEntityUID)
+                            {
+                                delete childToStrip.entityUID; // SOURCE ENTITY SHOULD STAY ONLY ONE WITH ITS UID
+                            }
 
                             // MERGE WITH ENTITY IN SETTINGSDATA
                             entity = {
                                 ...possibleEntity, // BASE
                                 ...entityArg, // OVERRIDE
                                 components: this.MergeComponents(possibleEntity.components, entityArg.components),
-                                children: this.MergeChildren(possibleEntity.children, entityArg.children)
+                                children: mergedChildren
                             };
 
                             // CONSTRUCT ANY NEW CHILDREN IF NECESSARY
@@ -510,7 +538,7 @@ export class Scene implements SceneI
                             {
                                 var child = entity.children[i];
                                 if (!child.constructed)
-                                     entity.children[i] = this.ConstructEntity(child, settingsData, options);
+                                    entity.children[i] = this.ConstructEntity(child, settingsData, options);
                             }
 
                             if (!entityArg.name)

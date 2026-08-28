@@ -781,9 +781,6 @@ window.__GAME_DEBUG_API__ = {
 
         delete entity[field];
 
-        // REMOVE EMPTY UID-BASED CHILD OVERRIDES AND THEIR NOW-UNUSED SOURCE UIDS
-        plugin.CleanUpSettingsDataUIDs(rawSettingsData);
-
         await entityScene.settingsHandler.Process();
 
         var entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase, undefined, childPath);
@@ -2341,6 +2338,9 @@ export class PluginHandler
             extendedEntity.entity = defaultBaseEntity;
             defaultFieldsToIgnore.push("entity");
         }
+        
+        defaultFieldsToIgnore.push("entityUID");
+        defaultFieldsToIgnore.push("interactableInEditor");
 
         var resolvedChildren = this.ResolveRawEntityChildren(entity, settingsDataRaw, defaultBaseEntity);
         var entityWithLog = this.BuildExtendDataLog(entity, extendedEntity, entityName, processedEntity, settingsDataRaw, settingsDataProcessed);
@@ -2561,6 +2561,10 @@ export class PluginHandler
         {
             throw new Error('Cannot save processed data. Something went really wrong!');
         }
+
+        // REMOVE EMPTY UID-BASED CHILD OVERRIDES AND THEIR NOW-UNUSED SOURCE UIDS
+        //plugin.CleanUpSettingsDataUIDs(newData);
+        Helper.CleanSettingsDataEntityUIDs(newData);
 
         const settingsHandler = this.GetSettingsDataHandler(newData.name ?? "");
         
