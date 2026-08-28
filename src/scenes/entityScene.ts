@@ -11,7 +11,6 @@ import { EditorScene } from "./editorScene";
 type EditorScenePayload = AwakePayload<EditorScene>;
 type EntitySceneAwakePayload = EditorScenePayload & {
     name: string;
-    isBase: boolean;
     settingsHandler: SettingsHandler;
 };
 
@@ -25,8 +24,7 @@ type EntitySceneAwakePayload = EditorScenePayload & {
 export class EntityScene extends EditorScene
 {
     objectName: string = "";
-    isBase: boolean = false;
-    private ownedEntityDefinitionIds = new Set<number>();
+    
     readonly transformToolHandlesBodyMove: boolean = true;
     
     lastPayload: EntitySceneAwakePayload;
@@ -79,7 +77,6 @@ export class EntityScene extends EditorScene
         this.lastPayload = payload;
 
         const objectName:string = (payload)?.name;
-        const isBase:boolean = (payload)?.isBase;
         const targetSettingsHandler:SettingsHandler = (payload)?.settingsHandler;
         
         // WE TAKE OVER THE TARGET ENTITY DATA, ONCE AT INIT
@@ -89,8 +86,6 @@ export class EntityScene extends EditorScene
             this.objectName = objectName;
         }
 
-        this.isBase = isBase;
-
         // Entity editor UI state is local to this scene; don't write it into the shared settings raw data.
         //this.HideEditorUIForScene();
         // PROBLEM: THE ACTUAL RECT INGAME - TODO
@@ -98,7 +93,7 @@ export class EntityScene extends EditorScene
         targetSettingsHandler.Get().showUI = false;
         targetSettingsHandler.Get().selectionEnabled = false;
 
-        var levelData = await this.CreateEntityDataFor(objectName, isBase);
+        var levelData = await this.CreateEntityDataFor(objectName);
         await super.OnStart({levelPathOrData: levelData, saveLevelCallback: this.SaveEntityDataToSettingsData, settingsHandler: targetSettingsHandler});
     }
 
@@ -122,18 +117,11 @@ export class EntityScene extends EditorScene
         super.OnClear();
     }
 
-    async CreateEntityDataFor(objectName: string, isBase: boolean): Promise<LevelData>
+    async CreateEntityDataFor(objectName: string): Promise<LevelData>
     {
-        var entityFromSettingsData:Entity;
-
-        if (isBase)
-        {
-            entityFromSettingsData = this.settingsHandler.GetRaw().baseEntities[objectName];
-        }
-        else
-        {
-            entityFromSettingsData = this.settingsHandler.GetRaw().entities[objectName];
-        }
+        const rawSettingsData = this.settingsHandler.GetRaw();
+        var entityFromSettingsData = SettingsHandler.FindEntity(rawSettingsData, objectName)!;
+        const isBase = SettingsHandler.IsBaseEntity(rawSettingsData, objectName);
 
         entityFromSettingsData = Helper.DeepCopy(entityFromSettingsData);
 
@@ -257,15 +245,14 @@ export class EntityScene extends EditorScene
     {
         var rootObject = this.object.GetByName(this.objectName);
         
-        var entity = this.GetEnitityFromObject(rootObject, this.ownedEntityDefinitionIds);
+        var entity = this.GetEnitityFromObject(rootObject);
         delete entity.name;//
 
         const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
-            const collection = this.isBase ? draft.baseEntities : draft.entities;
-            collection[this.objectName] = entity;
+            SettingsHandler.SetEntity(draft, this.objectName, entity);
         });
 
-        Helper.CleanSettingsDataEntityUIDs(newRawSettingsData);
+        this.settingsHandler.CleanSettingsDataEntityUIDs(newRawSettingsData);
 
         await this.SaveEntityData(newRawSettingsData);
 
@@ -274,7 +261,6 @@ export class EntityScene extends EditorScene
         // without reopening (and consequently rebuilding) this scene.
         window.__GAME_DEBUG_API__?.notifyEntityDataChanged({
             name: this.objectName,
-            isBase: this.isBase,
         });
         
         return this.currentLevel; // NOT USED IN THIS CASE, BUT EXPECTED FOR METHOD, BIT HACKY
@@ -319,7 +305,6 @@ export class EntityScene extends EditorScene
         // Preview only: the raw settings data and disk are still updated once on pointer release.
         window.__GAME_DEBUG_API__?.notifyEntityTransformPreview({
             name: this.objectName,
-            isBase: this.isBase,
             transforms,
         });
     }
@@ -334,7 +319,6 @@ export class EntityScene extends EditorScene
             // THE PANEL TO DROP ITS FOCUSED NODE THE SAME WAY AN EMPTY-SPACE CLICK DOES.
             window.__GAME_DEBUG_API__?.selectEntityObjectInPlugin({
                 name: this.objectName,
-                isBase: this.isBase,
                 clearSelection: true,
             });
             return;
@@ -351,7 +335,6 @@ export class EntityScene extends EditorScene
 
         window.__GAME_DEBUG_API__?.selectEntityObjectInPlugin({
             name: this.objectName,
-            isBase: this.isBase,
             childPath,
         });
     }
@@ -373,7 +356,6 @@ export class EntityScene extends EditorScene
             this.editorControlsHandler.ClearSelection();
             window.__GAME_DEBUG_API__?.selectEntityObjectInPlugin({
                 name: this.objectName,
-                isBase: this.isBase,
                 clearSelection: true,
             });
             return null;
@@ -396,7 +378,6 @@ export class EntityScene extends EditorScene
         const childPath = this.GetChildPath(rootObject, selected) ?? [];
         window.__GAME_DEBUG_API__?.selectEntityObjectInPlugin({
             name: this.objectName,
-            isBase: this.isBase,
             childPath,
         });
 

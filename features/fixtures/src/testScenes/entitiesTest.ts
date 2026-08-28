@@ -13,46 +13,55 @@ export class EntitiesTest extends Scene
     constructor()
     {
         super({
-            baseEntities: {
-                ANY: {
+            baseEntities: [
+                {
+                    name: "ANY",
                     pivot: { x: 7, y: 9 },
                     texture: "NONE",
                 },
-                big: {
+                {
+                    name: "big",
                     scale: { x: 2, y: 2 },
                     pivot: { x: 0, y: 0 },
                     rotation: 90,
                     texture: "NONE",
                 },
-                bigAndNoRotation: {
+                {
+                    name: "bigAndNoRotation",
                     entity: "big",
                     propertiesRemoved: ["rotation"],
                 },
-                withChild: {
+                {
+                    name: "withChild",
                     children: [{ name: "baseChild", texture: "NONE" }],
                 },
-            },
-            entities: {
-                pear: {},
-                banana: {
+            ],
+            entities: [
+                { name: "pear" },
+                {
+                    name: "banana",
                     baseClass: "FruitObject",
                     texture: "NONE",
                 },
-                apple: {
+                {
+                    name: "apple",
                     entity: "bigAndNoRotation",
                     texture: "NONE",
                 },
-                tile: {
+                {
+                    name: "tile",
                     children: [{ name: "tileChild", texture: "NONE" }],
                 },
-                playerTile: {
+                {
+                    name: "playerTile",
                     children: [{ name: "rent", entity: "tile" }],
                 },
-                combinedChildren: {
+                {
+                    name: "combinedChildren",
                     entity: "withChild",
                     children: [{ name: "ownChild", texture: "NONE" }],
                 },
-            },
+            ],
             layers: ["objects"],
         });
     }

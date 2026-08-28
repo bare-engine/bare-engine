@@ -473,7 +473,7 @@ export class Scene implements SceneI
                             if (!entityArg.name)
                                 entityArg.entity = "ANY_ENTITY";
                             else
-                                if (settingsData.baseEntities[entityArg.name])
+                                if (SettingsHandler.IsBaseEntity(settingsData, entityArg.name))
                                     entityArg.entity = "ANY";
                                 else
                                     entityArg.entity = "ANY_ENTITY";
@@ -486,7 +486,7 @@ export class Scene implements SceneI
                         var possibleEntity = this.settingsHandler.GetProcessedEnity(entityArg.entity, settingsData);
                         if (possibleEntity)
                         {
-                            extendsBaseEntity = (settingsData.baseEntities[entityArg.entity] != null);
+                            extendsBaseEntity = SettingsHandler.IsBaseEntity(settingsData, entityArg.entity);
 
                             // ENTITY WAS FOUND IN ENTITIES ARRAY IN DATA, DELETE SPECIFIED IGNORED PROPS FROM IT
                             // USING IT ATM TO FIND THE PROPS SET ON THE BASE
@@ -554,7 +554,7 @@ export class Scene implements SceneI
             else
             {
                 // ARG IS NAME
-                var possibleEntity = settingsData.entities[nameOrEntity] as Entity;
+                var possibleEntity = SettingsHandler.FindEntity(settingsData, nameOrEntity);
                 if (possibleEntity)
                 {
                     // ENTITY NAME IS DEFINED IN ENTITIES
@@ -563,7 +563,7 @@ export class Scene implements SceneI
                 else
                 {
                     // ENTITY NAME NOT FOUND, SO TAKE THE 'ANY_ENTITY' ENTRY AND ASSIGN A NEW NAME
-                    var entityBase = Helper.DeepCopy(settingsData.baseEntities!["ANY_ENTITY"] as Entity);
+                    var entityBase = Helper.DeepCopy(SettingsHandler.FindEntity(settingsData, "ANY_ENTITY")!);
                     entity = entityBase;
                     entity.name = nameOrEntity;
                     entity.texture = nameOrEntity;

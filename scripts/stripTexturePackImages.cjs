@@ -110,8 +110,11 @@ function collectSettingsDataEntityKeys(settingsDataPath, references) {
 
     try {
         const data = JSON.parse(fs.readFileSync(settingsDataPath, "utf8"));
-        for (const key of Object.keys(data.entities || {})) {
-            addTextureReference(references, key);
+        const entities = Array.isArray(data.entities)
+            ? data.entities
+            : Object.entries(data.entities || {}).map(([name, entity]) => ({ ...entity, name }));
+        for (const entity of entities) {
+            addTextureReference(references, entity.name);
         }
         collectTextureFields(data, references);
     } catch (error) {

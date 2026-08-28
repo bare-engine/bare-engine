@@ -1,16 +1,19 @@
 import { SettingsData } from "./bareTypes";
 
 export const defaultSettingsData: SettingsData = {
-  baseEntities: {
-    ANY: {
+  baseEntities: [
+    {
+      name: "ANY",
     },
-    ANY_ENTITY: {
+    {
+      name: "ANY_ENTITY",
       entity: "ANY",
     },
-    NONE: {
+    {
+      name: "NONE",
     }
-  },
-  entities: {},
+  ],
+  entities: [],
   layers: ["objects"],
   layersInfo: {
     objects: {

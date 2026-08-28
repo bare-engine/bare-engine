@@ -282,8 +282,8 @@ export interface SettingsData
 {
     name?: string; // WHEN SettingsData IS SAVED TO FILE, THIS NAME IS USED AS THE FILE NAME. IF LEFT EMPTY, THE DEFAULT settingsData.json IS USED. SO ANY EXTRA SettingsData json NEEDS A UNIQUE NAME, ELSE THEY WILL OVERRIDE THE DEFAULT ONE
     categories?: Record<string, Category>;
-    baseEntities?: Record<string, Entity>; // TURN INTO ARRAY? TO CHANGE ORDER - TODO
-    entities?: Record<string, Entity>; // ^
+    baseEntities?: Entity[];
+    entities?: Entity[];
     tilesheets?: Array<Entity>;//
     layers?: Array<string>;
     layersInfo?: Record<string, Partial<LayerInfo>>; // Partial, SINCE I'LL BE ASSIGNING MORE KEYS TO IT DURING PROCESSING

@@ -15,6 +15,63 @@ type ConstructEntityOptions = { fillPresets?: boolean };
 
 export class SettingsHandler
 {
+    static FindEntity(settingsData: SettingsData, name: string): Entity | undefined
+    {
+        const entity = settingsData.entities?.find(entity => entity.name === name);
+        const baseEntity = settingsData.baseEntities?.find(entity => entity.name === name);
+
+        if (entity && baseEntity)
+            throw new Error(`Entity name '${name}' exists in both entities and baseEntities`);
+
+        return entity ?? baseEntity;
+    }
+
+    static FindEntityCollection(settingsData: SettingsData, name: string): Entity[] | undefined
+    {
+        const inEntities = settingsData.entities?.some(entity => entity.name === name);
+        const inBaseEntities = settingsData.baseEntities?.some(entity => entity.name === name);
+
+        if (inEntities && inBaseEntities)
+            throw new Error(`Entity name '${name}' exists in both entities and baseEntities`);
+
+        return inEntities ? settingsData.entities : inBaseEntities ? settingsData.baseEntities : undefined;
+    }
+
+    static IsBaseEntity(settingsData: SettingsData, name: string): boolean
+    {
+        const collection = SettingsHandler.FindEntityCollection(settingsData, name);
+        return !!collection && collection === settingsData.baseEntities;
+    }
+
+    static SetEntity(settingsData: SettingsData, name: string, entity: Entity): Entity
+    {
+        const collection = SettingsHandler.FindEntityCollection(settingsData, name);
+        if (!collection)
+            throw new Error(`Cannot update missing entity '${name}'`);
+
+        entity.name = name;
+        collection[collection.findIndex(existing => existing.name === name)] = entity;
+
+        return entity;
+    }
+
+    static RemoveEntity(settingsData: SettingsData, name: string): Entity | undefined
+    {
+        const collection = SettingsHandler.FindEntityCollection(settingsData, name);
+        if (!collection)
+            return undefined;
+
+        return collection.splice(collection.findIndex(entity => entity.name === name), 1)[0];
+    }
+
+    static NormalizeEntities(entities: Entity[] | Record<string, Entity> | undefined): Entity[]
+    {
+        if (Array.isArray(entities))
+            return entities;
+
+        return Object.entries(entities ?? {}).map(([name, entity]) => ({ ...entity, name }));
+    }
+
     private raw: SettingsData;
     private processed: SettingsData;
 
@@ -86,10 +143,37 @@ export class SettingsHandler
         // These sentinel base entities are omitted from the persisted JSON when they only
         // contain defaults. Restore them on every load/process so GetRaw() has the same
         // usable shape after an editor close/restart as it had before saving.
-        raw.baseEntities ??= {};
-        raw.baseEntities.ANY ??= Helper.DeepCopy(defaultSettingsData.baseEntities.ANY);
-        raw.baseEntities.ANY_ENTITY ??= Helper.DeepCopy(defaultSettingsData.baseEntities.ANY_ENTITY);
-        raw.baseEntities.NONE ??= Helper.DeepCopy(defaultSettingsData.baseEntities.NONE);
+        // Accept legacy name-keyed data at the load boundary, but use ordered arrays everywhere else.
+        raw.baseEntities = SettingsHandler.NormalizeEntities(raw.baseEntities as any);
+        raw.entities = SettingsHandler.NormalizeEntities(raw.entities as any);
+
+        const seenNames = new Set<string>();
+        const duplicateNames = [...raw.entities, ...raw.baseEntities]
+            .map(entity => entity.name)
+            .filter((name): name is string => {
+                if (!name)
+                    throw new Error("Every entity and baseEntity must have a name");
+
+                if (seenNames.has(name))
+                    return true;
+
+                seenNames.add(name);
+                return false;
+            });
+        if (duplicateNames.length > 0)
+            throw new Error(`Entity names must be unique across entities and baseEntities: ${[...new Set(duplicateNames)].join(", ")}`);
+
+        for (const defaultName of ["ANY", "ANY_ENTITY", "NONE"])
+        {
+            if (raw.entities.some(entity => entity.name === defaultName))
+                throw new Error(`Reserved base entity name '${defaultName}' cannot be used in entities`);
+
+            if (!raw.baseEntities.some(entity => entity.name === defaultName))
+            {
+                const defaultEntity = SettingsHandler.FindEntity(defaultSettingsData, defaultName)!;
+                raw.baseEntities.push(Helper.DeepCopy(defaultEntity));
+            }
+        }
 
         // SETTING entityUID FOR ALL ENTITIES
         // ALL OTHER ENITIES GET THEIR entityUID GENERATED AND IN ExtendEntity()
@@ -107,8 +191,8 @@ export class SettingsHandler
             }
         };
         indexRawEntityUIDs([
-            ...Object.values(raw.baseEntities ?? {}),
-            ...Object.values(raw.entities ?? {})
+            ...(raw.baseEntities ?? []),
+            ...(raw.entities ?? [])
         ]);
 
         var settings = this.clone(raw);
@@ -120,6 +204,9 @@ export class SettingsHandler
         {
             const rawValue = settings[key];
             const defaultValue = (defaultSettingsData as any)[key];
+
+            if (key === "baseEntities" || key === "entities")
+                continue;
 
             if (Array.isArray(rawValue) && Array.isArray(defaultValue))
             {
@@ -171,11 +258,6 @@ export class SettingsHandler
             }
         }
 
-        // ASSIGN ENTITY NAMES BASED ON KEY
-        Object.entries(settings.entities).forEach(([key, e]) => {
-            e.name = key;
-        });
-
         this.ProcessAnimations(settings);
 
         // PROCESS saveVars - WILL FIND EXTENDED CLASSES FOR EACH AND ADD THEIR SAVE VARS
@@ -222,10 +304,9 @@ export class SettingsHandler
         if (settings.baseEntities)
         {
             // PREPARE ENTITY BASES - SETTING name AND baseEntity
-            for (var baseEntityName in settings.baseEntities)
+            for (const baseEntity of settings.baseEntities)
             {
-                var baseEntity = settings.baseEntities[baseEntityName];
-                baseEntity.name = baseEntityName; // FOR CONSTRUCT
+                const baseEntityName = baseEntity.name!;
 
                 // ENTITY BASE - IF EXTEND DATA NOT SET, DEFAULT TO ANY BASE
                 if (baseEntityName == "NONE")
@@ -238,12 +319,11 @@ export class SettingsHandler
             }
             
             // CONSTRUCT ALL ENTITY BASES
-            for (var baseEntityName in settings.baseEntities)
+            for (const baseEntity of settings.baseEntities)
             {
+                const baseEntityName = baseEntity.name!;
                 if (baseEntityName == "NONE")
                     continue;
-
-                var baseEntity = settings.baseEntities[baseEntityName];
 
                 // SET DEFAULT baseEntity - IN PREPARATION FOR CONSTRUCT
                 if (!baseEntity.entity && baseEntityName != "ANY")
@@ -288,7 +368,11 @@ export class SettingsHandler
                             (category.entries as string[])[i] = entryName;
 
                             // STORE ENTRY NAME IN ENTITIES DATA, TOGETHER WITH PATH WE JUST FOUND
-                            settings.entities[entryName] = { name: entryName, ...settings.entities[entryName], imagePath: entryPath };
+                            const existingEntity = SettingsHandler.FindEntity(settings, entryName);
+                            if (existingEntity)
+                                SettingsHandler.SetEntity(settings, entryName, { ...existingEntity, imagePath: entryPath });
+                            else
+                                settings.entities.push({ name: entryName, imagePath: entryPath });
                         }
                     }
                 }
@@ -333,7 +417,12 @@ export class SettingsHandler
                     if (!entryNames)
                     {
                         // ASSIGN BASE ENTITY TO A SINGLE, NON-GENERATED ENTRY
-                        const entity = settings.entities[entries] ??= { name: entries };
+                        let entity = SettingsHandler.FindEntity(settings, entries);
+                        if (!entity)
+                        {
+                            entity = { name: entries };
+                            settings.entities.push(entity);
+                        }
                         
                         if (categoryData.entity &&
                             (!entity.entity || entity.entity === "ANY" || entity.entity === "ANY_ENTITY"))
@@ -361,19 +450,27 @@ export class SettingsHandler
                     {
                         var unconstructedEntity = {name: entryName, entity: categoryData.entity ?? undefined};
 
-                        if (settings.entities[entryName])
+                        const existingEntity = SettingsHandler.FindEntity(settings, entryName);
+                        if (existingEntity)
                         {
-                            if (settings.entities[entryName].entity)
+                            if (existingEntity.entity)
                                 continue; // DON'T OVERWRITE EXISTING ENTRIES WHERE ENITY ALREADY SET
 
                             unconstructedEntity = {
                                 ...unconstructedEntity,
-                                ...settings.entities[entryName] // OVERWRITES ABOVE
+                                ...existingEntity // OVERWRITES ABOVE
                             }
                         }
 
                         //const entity = this.scene.ConstructEntity(unconstructedEntity, settings, options);
-                        settings.entities[entryName] = unconstructedEntity; // WILL GET CONSTRUCTED ALONG WITH REST OF ENTITIES BELOW
+                        let entity: Entity;
+                        if (existingEntity)
+                            entity = SettingsHandler.SetEntity(settings, entryName, unconstructedEntity);
+                        else
+                        {
+                            entity = unconstructedEntity;
+                            settings.entities.push(entity);
+                        }
 
                         entitiesInCategory.push(entity);
                     }
@@ -385,23 +482,22 @@ export class SettingsHandler
         // CAN BECOME HEAVY, WILL NOT ALWAYS BE NECESSARY FOR EVERY PROCESS - CAN ADD FLAG
         if (settings.entities)
         {
-            for (var entityName in settings.entities)
+            for (const entity of settings.entities)
             {
+                const entityName = entity.name!;
                 // ENTITY - IF EXTEND DATA NOT SET, DEFAULT TO ANY_ENTITY BASE
                 if (entityName == "NONE")
                     continue;
-
-                var entity = settings.entities[entityName];
                 if (!entity.entity)
                 {
                     entity.entity = "ANY_ENTITY";
                 }
             }
 
-            for (var entityName in settings.entities)
+            for (const entity of settings.entities)
             {
+                const entityName = entity.name!;
                 // CONSTRUCT
-                var entity = settings.entities[entityName];
                 this.ExtendEntity(entity, settings); // MUTATES entity - THIS ALSO EXTENDS INTO BASE ENTITIES, WHICH ARE ALREADY EXTENDED+CONSTRUCTED - OPTMIZE
                 this.ConstructEntity(entity, settings, options);
 
@@ -848,7 +944,9 @@ export class SettingsHandler
             }
         }
 
-        return rawSettingsData.entities[entityNameOrId] || rawSettingsData.baseEntities[entityNameOrId] || this.rawEntitiesMappedByUID[entityNameOrId] || defaultSettingsData.baseEntities[entityNameOrId]
+        return SettingsHandler.FindEntity(rawSettingsData, entityNameOrId)
+            || this.rawEntitiesMappedByUID[entityNameOrId]
+            || SettingsHandler.FindEntity(defaultSettingsData, entityNameOrId)!;
     }
 
     GetRawEntitiesMappedByUID(): Readonly<Record<string, Entity>>
@@ -858,7 +956,9 @@ export class SettingsHandler
 
     GetProcessedEnity(entityNameOrId: string, processedSettingsData: SettingsData = this.processed): Entity
     {
-        return processedSettingsData.entities[entityNameOrId] || processedSettingsData.baseEntities[entityNameOrId] || this.processedEntitiesMappedByUID[entityNameOrId] || defaultSettingsData.baseEntities[entityNameOrId]
+        return SettingsHandler.FindEntity(processedSettingsData, entityNameOrId)
+            || this.processedEntitiesMappedByUID[entityNameOrId]
+            || SettingsHandler.FindEntity(defaultSettingsData, entityNameOrId)!;
     }
 
     SnapshotCurrent(): SettingsData
@@ -873,51 +973,59 @@ export class SettingsHandler
 
     FilterSettingsDataDefaults(settingsData: SettingsData)
     {
+        settingsData.baseEntities ??= [];
+        settingsData.entities ??= [];
+
+        const defaultAny = SettingsHandler.FindEntity(defaultSettingsData, "ANY")!;
+        const defaultAnyEntity = SettingsHandler.FindEntity(defaultSettingsData, "ANY_ENTITY")!;
+        const any = SettingsHandler.FindEntity(settingsData, "ANY");
+        const anyEntity = SettingsHandler.FindEntity(settingsData, "ANY_ENTITY");
+
         // UNDO DEFAULT ADDITIONS TO ANY AND ANY_ENTITY AGAIN, DON'T WANT TO SAVE THEM
         // THIS IS ALSO ADDED AT getEntityData
         //if (entityScene.objectName == "ANY" || entityScene.objectName == "ANY_ENTITY")
         //if (entityScene.isBase)
 
         //
-        if (settingsData.baseEntities.ANY == defaultSettingsData.baseEntities.ANY)
+        if (any == defaultAny)
         {
-            delete settingsData.baseEntities.ANY;
+            SettingsHandler.RemoveEntity(settingsData, "ANY");
         }
         else
-        if (settingsData.baseEntities.ANY)
+        if (any)
         {
-            var anyKeys = Object.keys(defaultSettingsData.baseEntities.ANY);
+            var anyKeys = Object.keys(defaultAny) as (keyof Entity)[];
             for (var key of anyKeys)
             {
-                if (settingsData.baseEntities.ANY[key] == defaultSettingsData.baseEntities.ANY[key]) // IF SAME AS DEFAULT
-                    delete settingsData.baseEntities.ANY[key];
+                if (key !== "name" && any[key] == defaultAny[key]) // IF SAME AS DEFAULT
+                    delete any[key];
             }
 
-            if (Object.keys(settingsData.baseEntities.ANY).length == 0)
-                delete settingsData.baseEntities.ANY;
+            if (Object.keys(any).length == 1)
+                SettingsHandler.RemoveEntity(settingsData, "ANY");
         }
 
         //
-        if (settingsData.baseEntities.ANY_ENTITY == defaultSettingsData.baseEntities.ANY_ENTITY)
+        if (anyEntity == defaultAnyEntity)
         {
-            delete settingsData.baseEntities.ANY_ENTITY;
+            SettingsHandler.RemoveEntity(settingsData, "ANY_ENTITY");
         }
         else
-        if (settingsData.baseEntities.ANY_ENTITY)
+        if (anyEntity)
         {
-            var anyEntityKeys = Object.keys(defaultSettingsData.baseEntities.ANY_ENTITY);
+            var anyEntityKeys = Object.keys(defaultAnyEntity) as (keyof Entity)[];
             for (var key of anyEntityKeys)
             {
-                if (settingsData.baseEntities.ANY_ENTITY[key] == defaultSettingsData.baseEntities.ANY_ENTITY[key])
-                    delete settingsData.baseEntities.ANY_ENTITY[key];
+                if (key !== "name" && anyEntity[key] == defaultAnyEntity[key])
+                    delete anyEntity[key];
             }
 
-            if (Object.keys(settingsData.baseEntities.ANY_ENTITY).length == 0)
-                delete settingsData.baseEntities.ANY_ENTITY;
+            if (Object.keys(anyEntity).length == 1)
+                SettingsHandler.RemoveEntity(settingsData, "ANY_ENTITY");
         }
         
         // SHOULD NEVER BE ANYTHING IN NONE, JUST DELETE IT
-        delete settingsData.baseEntities.NONE;
+        SettingsHandler.RemoveEntity(settingsData, "NONE");
 
         // STRIP INSPECTOR-ONLY METADATA (__fields / __buttons) THAT THE PLUGIN INJECTS FOR DISPLAY
         // (SEE AddInspectorDataToObject) AND CAN ECHO BACK INTO THE DATA WE SAVE
@@ -926,9 +1034,9 @@ export class SettingsHandler
         // EntityScene assigns temporary numeric IDs while constructing its runtime object graph.
         // They are never part of entity source data. Remove IDs that leaked from an older scene
         // instance as well, so the next plugin edit cleans existing files automatically.
-        for (const entity of Object.values(settingsData.entities ?? {}))
+        for (const entity of settingsData.entities)
             this.StripEntityRuntimeIds(entity);
-        for (const entity of Object.values(settingsData.baseEntities ?? {}))
+        for (const entity of settingsData.baseEntities)
             this.StripEntityRuntimeIds(entity);
     }
 
@@ -961,5 +1069,57 @@ export class SettingsHandler
             for (const child of entity.children)
                 this.StripEntityRuntimeIds(child);
         }
+    }
+
+
+    CleanSettingsDataEntityUIDs(settingsDataRaw: SettingsData): void
+    {
+        var entitiesAr = [
+            ...(settingsDataRaw.entities ?? []),
+            ...(settingsDataRaw.baseEntities ?? [])
+        ];
+
+        var stringifiedEntities = JSON.stringify(entitiesAr); // TO JUST COMPARE VALUES AGAINST THIS STRING, INSTEAD OF WALKING THE NODES
+
+        var traverseEntities = (entities: Entity[]) => {
+            for (var i = entities.length - 1; i >= 0; i--)
+            {
+                const entity = entities[i];
+
+                if (Array.isArray(entity.children))
+                {
+                    traverseEntities(entity.children);
+
+                    if (entity.children.length == 0)
+                        delete entity.children;
+                }
+
+                if (entity.entityUID)
+                {
+                    var firstIndex = stringifiedEntities.indexOf(entity.entityUID);
+                    var lastIndex = stringifiedEntities.lastIndexOf(entity.entityUID);
+                    var moreThanOneRef = (firstIndex != lastIndex);
+
+                    if (!moreThanOneRef)
+                    {
+                        delete entity.entityUID; // THIS UID IS NOT REFERENCED ANYWHERE ELSE, REMOVE IT
+
+                        if (Object.keys(entity).length == 1 && entity.entity)
+                        {
+                            if (this.rawEntitiesMappedByUID[entity.entity])
+                            {
+                                delete entity.entity;
+                            }
+                        }
+
+                    }
+                }
+
+                if (Object.keys(entity).length == 0)
+                    entities.splice(i, 1);
+            }
+        }
+        traverseEntities(settingsDataRaw.entities ?? []);
+        traverseEntities(settingsDataRaw.baseEntities ?? []);
     }
 }

@@ -136,11 +136,11 @@ window.__GAME_DEBUG_API__ = {
       const processed = entityScene.settingsHandler.Get();
       const selected = plugin.ResolveRuntimeEntityPath(
           selectedRoot,
-          entityScene.isBase ? raw.baseEntities[entityScene.objectName] : raw.entities[entityScene.objectName],
-          entityScene.isBase ? processed.baseEntities[entityScene.objectName] : processed.entities[entityScene.objectName],
+          SettingsHandler.FindEntity(raw, entityScene.objectName)!,
+          SettingsHandler.FindEntity(processed, entityScene.objectName)!,
           childPath,
           raw,
-          entityScene.isBase ? "ANY" : "ANY_ENTITY"
+          SettingsHandler.IsBaseEntity(raw, entityScene.objectName) ? "ANY" : "ANY_ENTITY"
       );
 
       if (!selected)
@@ -383,15 +383,14 @@ window.__GAME_DEBUG_API__ = {
     // GET CURRENT ENTITY KEYS
     var scene = (plugin.GetCurrentScene() as EntityScene);
     var name = scene.objectName;
-    var isBase = scene.isBase;
     var raw = scene.settingsHandler.GetRaw();
     var processed = scene.settingsHandler.Get();
     var entity = plugin.ResolveWritableEntityPath(
-        isBase ? raw.baseEntities[name] : raw.entities[name],
+        SettingsHandler.FindEntity(raw, name)!,
         childPath,
         raw,
-        isBase ? "ANY" : "ANY_ENTITY",
-        isBase ? processed.baseEntities[name] : processed.entities[name]
+        SettingsHandler.IsBaseEntity(raw, name) ? "ANY" : "ANY_ENTITY",
+        SettingsHandler.FindEntity(processed, name)!
     );
 
     var entityKeys = Object.keys(entity).filter(k => !k.startsWith("__"));
@@ -408,13 +407,12 @@ window.__GAME_DEBUG_API__ = {
     // REMOVE FROM ENTITY EXTRA KEYS
     var scene = (plugin.GetCurrentScene() as EntityScene);
     var name = scene.objectName;
-    var isBase = scene.isBase;
     var raw = scene.settingsHandler.GetRaw();
     var entity = plugin.ResolveRawEntityPath(
-        isBase ? raw.baseEntities[name] : raw.entities[name],
+        SettingsHandler.FindEntity(raw, name)!,
         childPath,
         raw,
-        isBase ? "ANY" : "ANY_ENTITY"
+        SettingsHandler.IsBaseEntity(raw, name) ? "ANY" : "ANY_ENTITY"
     );
 
     for (var key of extraKeys)
@@ -426,15 +424,14 @@ window.__GAME_DEBUG_API__ = {
   // FIND THE ENTITY IN CURRENT entityData JSON, CONTRUCT IT, ADD EXTRA INFO, RETURN IT FOR PLUGIN VISUALIZATION
   // childPath, when given, re-selects that node in-scene after rebuilding - callers reloading to
   // reflect a field edit pass along whatever was selected beforehand so the transform tool stays on it.
-  async gotoEntity(name: string, isBase: boolean = false, settingsDataName?: string, childPath?: Array<number | string>)
+  async gotoEntity(name: string, settingsDataName?: string, childPath?: Array<number | string>)
   {
     window.postMessage({ __fromGame: true, type: "lockObjectsTab", flag: true }, "*");
 
     const settingsHandler = plugin.GetSettingsDataHandler(settingsDataName);
     plugin.currentSettingsDataName = settingsHandler.GetRaw()?.name ?? "";
-
     // Remember it so setPluginConnected can re-open it after a recompile/restart.
-    plugin.lastEntity = { name, isBase };
+    plugin.lastEntity = { name };
 
     /*const levelController = getLevelController();
     if (levelController && levelController.currentLevel && levelController.currentLevel.name == name)
@@ -455,7 +452,7 @@ window.__GAME_DEBUG_API__ = {
         bare.scene.Remove(EditorScene); // WILL REMOVE LEVEL EDITOR IF EXISTS
 
     plugin.notifyLeaveEntity = false;
-    var entityScene = await bare.scene.Add(EntityScene, {name: name, isBase: isBase, settingsHandler: settingsHandler});
+    var entityScene = await bare.scene.Add(EntityScene, {name: name, settingsHandler: settingsHandler});
     //bare.scene.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
     plugin.notifyLeaveEntity = true;
 
@@ -473,7 +470,6 @@ window.__GAME_DEBUG_API__ = {
 
     var entityWithLog = plugin.BuildEntityEditorPayload(
         name,
-        isBase,
         entityScene.settingsHandler,
         entityScene
     );
@@ -752,7 +748,71 @@ window.__GAME_DEBUG_API__ = {
 
   getNestedEntityVars(entityName: string, childPath: string[])
   {
-        return [""];
+        var scene = plugin.GetCurrentScene();
+        var entity = scene.settingsHandler.GetExtendedEntity(entityName);
+        
+        // GET THE CHILD
+        if (childPath.length > 0)
+        {
+            for (var i = 0; i < childPath.length; i++)
+            {
+                entity = entity.children[childPath[i]];
+            }
+        }
+
+        var baseClass = entity.baseClass || "GameObject";
+        var allPossibleEntityKeys = plugin.GetAllPossibleEntityKeys(baseClass);
+
+        // WANT POSITION LOCKED FOR ENTIY WITH NO CHILDREN
+        // BUT CHILD CAN HAVE POSITION
+        var includePosition = (childPath.length > 0);
+        if (!includePosition)
+        {
+            var i = allPossibleEntityKeys.indexOf("position");
+            allPossibleEntityKeys.splice(i, 1);
+        }
+
+        // TAKE OFF CURRENT FROM ALL POSSIBLE
+        var keys = Object.keys(entity);
+        allPossibleEntityKeys = allPossibleEntityKeys.filter(key => !keys.includes(key));
+
+        var lockIfUnavailable = (key: string): string => {
+            return allPossibleEntityKeys.includes(key) ? key : `${key}:locked`;
+        };
+
+        var varsPluginHideApplied: EntityVarsNestedEntry[] = [];
+
+        // GET parentClassNames, TO CHECK IF GROUP IS NOT IN HERE
+        // THEN LOCK THE WHOLE GROUP, EG: RigidBody, ArcadeObject
+        var cls = bare.registeredClasses[baseClass];
+        var parentClassNames = Helper.GetParentClasses(cls);
+        parentClassNames.push(baseClass);
+
+        for (var entry of entityVarsNested)
+        {
+            if (typeof entry === "string")
+            {
+                varsPluginHideApplied.push(lockIfUnavailable(entry));
+                continue;
+            }
+
+            var groupEntries = Object.entries(entry)
+                .filter(([groupName]) => groupName !== "HideInPlugin")
+                .map(([groupName, keys]) => {
+                    var isGeneralGroup = groupName == "General" || groupName == "Misc";
+                    var groupUnavailable = !isGeneralGroup && !parentClassNames.includes(groupName);
+                    var lockedKeys = groupUnavailable ? keys.map(key => `${key}:locked`) : keys.map(lockIfUnavailable);
+                    var groupLocked = groupUnavailable || keys.every(key => !allPossibleEntityKeys.includes(key));
+                    var lockedGroupName = groupLocked ? `${groupName}:locked` : groupName;
+
+                    return [lockedGroupName, lockedKeys];
+                });
+
+            if (groupEntries.length > 0)
+                varsPluginHideApplied.push(Object.fromEntries(groupEntries));
+        }
+
+        return varsPluginHideApplied;
   },
 
   async removeFieldFromEntity(entiyName: string, childPath: string[], field: string)
@@ -762,28 +822,27 @@ window.__GAME_DEBUG_API__ = {
         
         var rawSettingsData = entityScene.settingsHandler.GetRaw();
 
-        rawSettingsData.baseEntities.ANY ??= {};
-        rawSettingsData.baseEntities.ANY_ENTITY ??= {};
+        rawSettingsData.baseEntities ??= [];
+        if (!SettingsHandler.FindEntity(rawSettingsData, "ANY"))
+            rawSettingsData.baseEntities.push({ name: "ANY" });
+        if (!SettingsHandler.FindEntity(rawSettingsData, "ANY_ENTITY"))
+            rawSettingsData.baseEntities.push({ name: "ANY_ENTITY" });
 
         var processedSettingsData = entityScene.settingsHandler.Get();
 
         var entity = plugin.ResolveWritableEntityPath(
-            entityScene.isBase
-                ? rawSettingsData.baseEntities[entityScene.objectName]
-                : rawSettingsData.entities[entityScene.objectName],
+            SettingsHandler.FindEntity(rawSettingsData, entityScene.objectName)!,
             childPath,
             rawSettingsData,
-            entityScene.isBase ? "ANY" : "ANY_ENTITY",
-            entityScene.isBase
-                ? processedSettingsData.baseEntities[entityScene.objectName]
-                : processedSettingsData.entities[entityScene.objectName]
+            SettingsHandler.IsBaseEntity(rawSettingsData, entityScene.objectName) ? "ANY" : "ANY_ENTITY",
+            SettingsHandler.FindEntity(processedSettingsData, entityScene.objectName)!
         );
 
         delete entity[field];
 
         await entityScene.settingsHandler.Process();
 
-        var entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase, undefined, childPath);
+        var entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, undefined, childPath);
 
         await plugin.SaveSettingsData(rawSettingsData);
 
@@ -813,12 +872,10 @@ window.__GAME_DEBUG_API__ = {
     var rawSettingsData = entityScene.settingsHandler.GetRaw();
 
     var entity = plugin.ResolveRawEntityPath(
-        entityScene.isBase
-            ? rawSettingsData.baseEntities[entityScene.objectName]
-            : rawSettingsData.entities[entityScene.objectName],
+        SettingsHandler.FindEntity(rawSettingsData, entityScene.objectName)!,
         childPath,
         rawSettingsData,
-        entityScene.isBase ? "ANY" : "ANY_ENTITY"
+        SettingsHandler.IsBaseEntity(rawSettingsData, entityScene.objectName) ? "ANY" : "ANY_ENTITY"
     );
 
     // COMMENTED OUT, SINCE I WANT TO KEEP VALUE IN PLUGIN, EVEN IF IT'S DEFAULT
@@ -859,15 +916,11 @@ window.__GAME_DEBUG_API__ = {
         var processedSettingsData = entityScene.settingsHandler.Get();
         var obj = plugin.ResolveRuntimeEntityPath(
             entityScene.object.GetByName(entityScene.objectName),
-            entityScene.isBase
-                ? rawSettingsData.baseEntities[entityScene.objectName]
-                : rawSettingsData.entities[entityScene.objectName],
-            entityScene.isBase
-                ? processedSettingsData.baseEntities[entityScene.objectName]
-                : processedSettingsData.entities[entityScene.objectName],
+            SettingsHandler.FindEntity(rawSettingsData, entityScene.objectName)!,
+            SettingsHandler.FindEntity(processedSettingsData, entityScene.objectName)!,
             childPath,
             rawSettingsData,
-            entityScene.isBase ? "ANY" : "ANY_ENTITY"
+            SettingsHandler.IsBaseEntity(rawSettingsData, entityScene.objectName) ? "ANY" : "ANY_ENTITY"
         );
 
         if (!obj)
@@ -938,23 +991,21 @@ window.__GAME_DEBUG_API__ = {
         //if (entityScene.isBase)
         {
             //if (entityScene.objectName == "ANY")
-                rawSettingsData.baseEntities.ANY ??= {};
+                if (!SettingsHandler.FindEntity(rawSettingsData, "ANY"))
+                    rawSettingsData.baseEntities.push({ name: "ANY" });
             
             //if (entityScene.objectName == "ANY_ENTITY")
-                rawSettingsData.baseEntities.ANY_ENTITY ??= {};
+                if (!SettingsHandler.FindEntity(rawSettingsData, "ANY_ENTITY"))
+                    rawSettingsData.baseEntities.push({ name: "ANY_ENTITY" });
         }
 
         // WRITE ENTITY PROPS TO RAW 
         var entity = plugin.ResolveWritableEntityPath(
-            entityScene.isBase
-                ? rawSettingsData.baseEntities[entityScene.objectName]
-                : rawSettingsData.entities[entityScene.objectName],
+            SettingsHandler.FindEntity(rawSettingsData, entityScene.objectName)!,
             childPath,
             rawSettingsData,
-            entityScene.isBase ? "ANY" : "ANY_ENTITY",
-            entityScene.isBase
-                ? processedSettingsData.baseEntities[entityScene.objectName]
-                : processedSettingsData.entities[entityScene.objectName]
+            SettingsHandler.IsBaseEntity(rawSettingsData, entityScene.objectName) ? "ANY" : "ANY_ENTITY",
+            SettingsHandler.FindEntity(processedSettingsData, entityScene.objectName)!
         );
         
         var entityCopy = Object.assign({}, entity);
@@ -1000,7 +1051,7 @@ window.__GAME_DEBUG_API__ = {
         // SAVE TO FILE
         if (save)
         {
-            entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase, undefined, selectedChildPath);
+            entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, undefined, selectedChildPath);
 
             await plugin.SaveSettingsData(rawSettingsData);
 
@@ -1014,7 +1065,6 @@ window.__GAME_DEBUG_API__ = {
                     __fromGame: true,
                     type: "gotoEntity",
                     name: plugin.lastEntity.name,
-                    isBase: plugin.lastEntity.isBase,
                     settingsDataName: plugin.currentSettingsDataName,
                     childPath: selectedChildPath
                 }, "*");
@@ -1022,8 +1072,10 @@ window.__GAME_DEBUG_API__ = {
         }
 
         // ADD DEFAULTS TO RAW SETTINGS AGAIN, SO PROPS CAN BE ADDED TO IT
-        rawSettingsData.baseEntities.ANY ??= {...defaultSettingsData.baseEntities.ANY};
-        rawSettingsData.baseEntities.ANY_ENTITY ??= {...defaultSettingsData.baseEntities.ANY_ENTITY};
+        if (!SettingsHandler.FindEntity(rawSettingsData, "ANY"))
+            rawSettingsData.baseEntities.push({ ...SettingsHandler.FindEntity(defaultSettingsData, "ANY")! });
+        if (!SettingsHandler.FindEntity(rawSettingsData, "ANY_ENTITY"))
+            rawSettingsData.baseEntities.push({ ...SettingsHandler.FindEntity(defaultSettingsData, "ANY_ENTITY")! });
 
         return entityData;
     },
@@ -1248,40 +1300,22 @@ window.__GAME_DEBUG_API__ = {
     // SHOULD HAVE IT AGAIN WHEN I START WORK ON PLUGIN ENTITIES
 
     // ADD DEFAULTS - SAME AS defaultSettingsData - REBUILD TO ADD IN FRONT
-    settingsData.baseEntities ??= {};
+    settingsData.baseEntities ??= [];
 
-    const {
-        ANY,
-        ANY_ENTITY,
-        NONE,
-        ...rest
-    } = settingsData.baseEntities;
+    const sentinelNames = ["ANY", "ANY_ENTITY", "NONE"];
+    const sentinels = sentinelNames.map(name =>
+        SettingsHandler.FindEntity(settingsData, name)
+        ?? SettingsHandler.FindEntity(defaultSettingsData, name)!
+    );
+    const rest = settingsData.baseEntities.filter(entity => !sentinelNames.includes(entity.name!));
 
-    settingsData.baseEntities = {
-        ANY: ANY ?? defaultSettingsData.baseEntities.ANY,
-        ANY_ENTITY: ANY_ENTITY ?? defaultSettingsData.baseEntities.ANY_ENTITY,
-        NONE: defaultSettingsData.baseEntities.NONE,
-        ...rest
-    };
+    settingsData.baseEntities = [...sentinels, ...rest];
 
     return settingsData;
   },
 
-  async addNewEntity(name: string, isBase: boolean = true, newRawData: SettingsData)
+  async addNewEntity(name: string, newRawData: SettingsData)
   {
-    /*var scene = plugin.GetCurrentScene();
-
-    var newRawData = scene.settingsHandler.GetRaw();
-
-    if (isBase)
-    {
-        newRawData.baseEntities[name] = defaultSettingsData.baseEntities[name];
-    }
-    else
-    {
-        newRawData.entities[name] = defaultSettingsData.entities[name];
-    }*/
-
     plugin.GetCurrentScene().settingsHandler.SetRaw(newRawData);
     plugin.GetCurrentScene().settingsHandler.Process(newRawData);
 
@@ -1305,11 +1339,9 @@ window.__GAME_DEBUG_API__ = {
         console.error('Failed to save entity data', error);
         //return { ok: false, error: error?.message ?? String(error) };
     }
-
-    //window.__GAME_DEBUG_API__.gotoEntity(name, isBase);
   },
 
-  removeEntity(name: string, isBase: boolean = true, newRawData: SettingsData)
+  removeEntity(name: string, newRawData: SettingsData)
   {
     var scene = plugin.GetCurrentScene();
 
@@ -1325,17 +1357,16 @@ window.__GAME_DEBUG_API__ = {
     await plugin.SaveSettingsData(newData);
   },
 
-  notifyEntityDataChanged(data: { name: string, isBase: boolean }) {
+  notifyEntityDataChanged(data: { name: string }) {
     if (!plugin.doNotifyAfterSave)
       return;
 
     const entityScene = bare.scene.Get(EntityScene);
-    if (!entityScene || entityScene.objectName != data.name || entityScene.isBase != data.isBase)
+    if (!entityScene || entityScene.objectName != data.name)
       return;
 
     const entity = plugin.BuildEntityEditorPayload(
       data.name,
-      data.isBase,
       entityScene.settingsHandler,
       entityScene
     );
@@ -1371,7 +1402,7 @@ window.__GAME_DEBUG_API__ = {
           globalEvents.persistent.once(BareEvent.game_started, () => {
               if (plugin.lastEntity && !bare.scene.Get(EntityScene))
               {
-                  window.postMessage({ __fromGame: true, type: "gotoEntity", name: plugin.lastEntity.name, isBase: plugin.lastEntity.isBase }, "*");
+                  window.postMessage({ __fromGame: true, type: "gotoEntity", name: plugin.lastEntity.name }, "*");
               }
           });
       }
@@ -1552,7 +1583,7 @@ export class PluginHandler
     currentSceneClassString: string = "";
     // The entity being edited, remembered across a recompile/restart so setPluginConnected
     // can re-open it (the restart drops back to the main scene).
-    lastEntity: { name: string, isBase: boolean } | null = null;
+    lastEntity: { name: string } | null = null;
 
     public GetPaused(): boolean
     {
@@ -2010,10 +2041,9 @@ export class PluginHandler
         // STORE ENTITES BASED ON HOW MANY TIMES THEY EXTEND DATA - COULD BE ARRAY? NEVER ANY GAP?
         var entitiesByExtendCount:Record<int, {entity: Entity, extendEntities: Array<Entity>}[]> = {};
 
-        var entitiesCombined = {...settings.baseEntities, ...settings.entities};
-        for (var entityName in entitiesCombined)
+        var entitiesCombined = [...settings.baseEntities, ...settings.entities];
+        for (const entity of entitiesCombined)
         {
-            let entity = entitiesCombined[entityName];
             let extendCount = 0;
 
             let extendEntities = [];
@@ -2021,8 +2051,11 @@ export class PluginHandler
             while (baseEntity)
             {
                 extendCount++;
-                extendEntities.push(settings.baseEntities[baseEntity]);
-                baseEntity = settings.baseEntities[baseEntity]?.entity;
+                const extendedEntity = SettingsHandler.FindEntity(settings, baseEntity);
+                if (!extendedEntity)
+                    break;
+                extendEntities.push(extendedEntity);
+                baseEntity = extendedEntity.entity;
             }
 
             entitiesByExtendCount[extendCount] ??= [];
@@ -2276,17 +2309,15 @@ export class PluginHandler
     // Build the panel-facing representation for an entity that is already open. Unlike
     // gotoEntity(), this does not add or rebuild a scene, so post-save notifications can publish
     // exactly the same resolved data shape without disturbing the live editor.
-    BuildEntityEditorPayload(name: string, isBase: boolean, settingsHandler: SettingsHandler, entityScene: EntityScene): Entity
+    BuildEntityEditorPayload(name: string, settingsHandler: SettingsHandler, entityScene: EntityScene): Entity
     {
         const raw = settingsHandler.GetRaw();
-        const entity = isBase
-            ? raw.baseEntities[name] || defaultSettingsData.baseEntities[name] || {}
-            : raw.entities[name];
+        const entity = SettingsHandler.FindEntity(raw, name)
+            || SettingsHandler.FindEntity(defaultSettingsData, name);
 
         const processed = settingsHandler.Get();
-        const processedEntity = isBase
-            ? processed.baseEntities[name]
-            : processed.entities[name];
+        const processedEntity = SettingsHandler.FindEntity(processed, name);
+        const isBase = SettingsHandler.IsBaseEntity(raw, name);
 
         if (!entity)
             throw new Error(`Could not build editor data for missing entity '${name}'`);
@@ -2310,8 +2341,7 @@ export class PluginHandler
             name,
             processedEntity,
             raw,
-            processed,
-            isBase
+            processed
         );
 
         const obj = entityScene.object.GetByName(name);
@@ -2328,9 +2358,11 @@ export class PluginHandler
 
     // Attach editor metadata to an entity tree that BuildEntityEditorPayload already expanded.
     // `entity` is the authored record used for provenance; `extendedEntity` supplies display values.
-    BuildEntityEditorData(entity: Entity, extendedEntity: Entity, entityName: string, processedEntity: Entity, settingsDataRaw: SettingsData, settingsDataProcessed: SettingsData, isBase: boolean = false): Entity
+    BuildEntityEditorData(entity: Entity, extendedEntity: Entity, entityName: string, processedEntity: Entity, settingsDataRaw: SettingsData, settingsDataProcessed: SettingsData): Entity
     {
         var defaultFieldsToIgnore: string[] = [];
+        const isBase = SettingsHandler.FindEntity(settingsDataRaw, entityName) === entity
+            && SettingsHandler.IsBaseEntity(settingsDataRaw, entityName);
         var defaultBaseEntity = isBase ? "ANY" : "ANY_ENTITY";
 
         if (!extendedEntity.entity)
@@ -2347,7 +2379,7 @@ export class PluginHandler
 
         if (!isBase && entityWithLog.entity == "ANY_ENTITY")
         {
-            var defaultBaseClass = defaultSettingsData.baseEntities.ANY_ENTITY.baseClass;
+            var defaultBaseClass = SettingsHandler.FindEntity(defaultSettingsData, "ANY_ENTITY")!.baseClass;
             if (entityWithLog.baseClass == defaultBaseClass)
                 defaultFieldsToIgnore.push("baseClass");
         }
@@ -2396,7 +2428,7 @@ export class PluginHandler
                 }
 
                 var childName = extendedChild.name || processedChild.name || authoredChild.entity || "GameObject";
-                entityWithLog.children[i] = this.BuildEntityEditorData(authoredChild, extendedChild, childName, processedChild, settingsDataRaw, settingsDataProcessed, false);
+                entityWithLog.children[i] = this.BuildEntityEditorData(authoredChild, extendedChild, childName, processedChild, settingsDataRaw, settingsDataProcessed);
                 entityWithLog.children[i].__entityOptions = entityOptions;
             }
         }
@@ -2562,9 +2594,12 @@ export class PluginHandler
             throw new Error('Cannot save processed data. Something went really wrong!');
         }
 
+        //var scene = plugin.GetCurrentScene();
+        const scene = bare.scene.GetMainScene();
+
         // REMOVE EMPTY UID-BASED CHILD OVERRIDES AND THEIR NOW-UNUSED SOURCE UIDS
         //plugin.CleanUpSettingsDataUIDs(newData);
-        Helper.CleanSettingsDataEntityUIDs(newData);
+        scene.settingsHandler.CleanSettingsDataEntityUIDs(newData);
 
         const settingsHandler = this.GetSettingsDataHandler(newData.name ?? "");
         
@@ -2574,8 +2609,6 @@ export class PluginHandler
 
         plugin.doNotifyAfterSave = false;
 
-        //var scene = plugin.GetCurrentScene();
-        const scene = bare.scene.GetMainScene();
         if (scene instanceof EditorScene)
         {
             await (plugin.GetCurrentScene() as EditorScene).SaveEntityData(dataToSave);
@@ -2621,21 +2654,19 @@ export class PluginHandler
         var entityScene = plugin.GetCurrentScene() as EntityScene;
         var rawSettingsData = entityScene.settingsHandler.GetRaw();
 
-        rawSettingsData.baseEntities.ANY ??= {};
-        rawSettingsData.baseEntities.ANY_ENTITY ??= {};
+        if (!SettingsHandler.FindEntity(rawSettingsData, "ANY"))
+            rawSettingsData.baseEntities.push({ name: "ANY" });
+        if (!SettingsHandler.FindEntity(rawSettingsData, "ANY_ENTITY"))
+            rawSettingsData.baseEntities.push({ name: "ANY_ENTITY" });
 
         var processedSettingsData = entityScene.settingsHandler.Get();
 
         var entity = plugin.ResolveWritableEntityPath(
-            entityScene.isBase
-                ? rawSettingsData.baseEntities[entityScene.objectName]
-                : rawSettingsData.entities[entityScene.objectName],
+            SettingsHandler.FindEntity(rawSettingsData, entityScene.objectName)!,
             childPath,
             rawSettingsData,
-            entityScene.isBase ? "ANY" : "ANY_ENTITY",
-            entityScene.isBase
-                ? processedSettingsData.baseEntities[entityScene.objectName]
-                : processedSettingsData.entities[entityScene.objectName]
+            SettingsHandler.IsBaseEntity(rawSettingsData, entityScene.objectName) ? "ANY" : "ANY_ENTITY",
+            SettingsHandler.FindEntity(processedSettingsData, entityScene.objectName)!
         );
 
         var list = Array.isArray(entity[arrayKey]) ? entity[arrayKey] : [];
@@ -2656,7 +2687,7 @@ export class PluginHandler
 
         await entityScene.settingsHandler.Process();
 
-        var entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, entityScene.isBase, undefined, childPath);
+        var entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, undefined, childPath);
 
         await plugin.SaveSettingsData(rawSettingsData);
 
@@ -2667,9 +2698,8 @@ export class PluginHandler
     {
         var scene = (plugin.GetCurrentScene() as EntityScene);
         var name = scene.objectName;
-        var isBase = scene.isBase;
         var raw = scene.settingsHandler.GetRaw();
-        var entity = (isBase ? raw.baseEntities[name] : raw.entities[name]);
+        var entity = SettingsHandler.FindEntity(raw, name)!;
 
         return entity;
     }
@@ -2678,9 +2708,8 @@ export class PluginHandler
     {
         var scene = (plugin.GetCurrentScene() as EntityScene);
         var name = scene.objectName;
-        var isBase = scene.isBase;
         var processed = scene.settingsHandler.Get();
-        var entity = (isBase ? processed.baseEntities[name] : processed.entities[name]);
+        var entity = SettingsHandler.FindEntity(processed, name)!;
 
         return entity;
     }
@@ -2777,9 +2806,8 @@ export class PluginHandler
             const processedChild = currentProcessedEntity?.children?.[childIndex];
             const entityLink = resolvedChild.entity.entity;
             const linkIsUID = !!entityLink
-                && !rawSettingsData.entities?.[entityLink]
-                && !rawSettingsData.baseEntities?.[entityLink]
-                && !defaultSettingsData.baseEntities?.[entityLink];
+                && !SettingsHandler.FindEntity(rawSettingsData, entityLink)
+                && !SettingsHandler.FindEntity(defaultSettingsData, entityLink);
             const sourceEntityUID = resolvedChild.entity.entityUID
                 || (linkIsUID ? entityLink : undefined)
                 || processedChild?.entityUID;
@@ -2862,8 +2890,8 @@ export class PluginHandler
         const entityScene = this.GetCurrentScene() as EntityScene;
         const rawEntitiesMappedByUID = entityScene.settingsHandler.GetRawEntitiesMappedByUID();
         const rootEntities = [
-            ...Object.values(rawSettingsData.baseEntities ?? {}),
-            ...Object.values(rawSettingsData.entities ?? {})
+            ...(rawSettingsData.baseEntities ?? []),
+            ...(rawSettingsData.entities ?? [])
         ];
 
         const cleanChildren = (entity: Entity): void =>

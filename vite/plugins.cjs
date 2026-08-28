@@ -269,8 +269,9 @@ function bareAutoRegisterClassesPlugin(options = {}) {
         }
         for (const group of [data.entities, data.baseEntities]) {
             if (!group || typeof group !== "object") continue;
-            for (const entityName in group) {
-                const components = group[entityName] && group[entityName].components;
+            const entities = Array.isArray(group) ? group : Object.values(group);
+            for (const entity of entities) {
+                const components = entity && entity.components;
                 if (!components || typeof components !== "object") continue;
                 for (const componentKey in components) {
                     names.add(componentKey.charAt(0).toUpperCase() + componentKey.slice(1) + "Component");
@@ -819,7 +820,6 @@ function bareEditorAndApiPlugin(options = {}) {
                         if (attach && attach.entity) {
                             attached = attachComponentToEntity(projectRoot, {
                                 entity: String(attach.entity),
-                                isBase: !!attach.isBase,
                                 childPath: Array.isArray(attach.childPath) ? attach.childPath : [],
                                 componentName
                             });
@@ -1406,7 +1406,7 @@ function toComponentClassName(name) {
 
 // Add the component (by its decapitalized name) to an entity's `components` map in
 // settingsData.json, walking childPath into nested children if given.
-function attachComponentToEntity(projectRoot, { entity, isBase, childPath, componentName }) {
+function attachComponentToEntity(projectRoot, { entity, childPath, componentName }) {
     const settingsPath = path.join(projectRoot, "public", "data", "settingsData.json");
     if (!fs.existsSync(settingsPath)) {
         return false;
@@ -1417,8 +1417,15 @@ function attachComponentToEntity(projectRoot, { entity, isBase, childPath, compo
     } catch {
         return false;
     }
-    const group = isBase ? data.baseEntities : data.entities;
-    let target = group && group[entity];
+    const findEntity = group => Array.isArray(group)
+        ? group.find(value => value.name === entity)
+        : group && group[entity];
+    const normalEntity = findEntity(data.entities);
+    const baseEntity = findEntity(data.baseEntities);
+    if (normalEntity && baseEntity) {
+        throw new Error(`Entity name '${entity}' exists in both entities and baseEntities`);
+    }
+    let target = normalEntity || baseEntity;
     if (!target) {
         return false;
     }
@@ -2070,15 +2077,19 @@ function generateAssets(projectRoot, outputPath, imageGlobs = []) {
         const fontEntries = dedupeAssetEntries(fonts, file => file.base);
         const levelEntries = dedupeAssetEntries(levels, file => file.relNoExt);
 
-        let entityDefs = {};
-        let baseEntityDefs = {};
+        let entityDefs = [];
+        let baseEntityDefs = [];
         let animations = [];
         let layers = [];
         const settingsPath = path.join(publicDir, "data/settingsData.json");
         if (fs.existsSync(settingsPath)) {
             const data = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
-            entityDefs = data.entities || {};
-            baseEntityDefs = data.baseEntities || {};
+            entityDefs = Array.isArray(data.entities)
+                ? data.entities
+                : Object.keys(data.entities || {}).map(name => ({ name }));
+            baseEntityDefs = Array.isArray(data.baseEntities)
+                ? data.baseEntities
+                : Object.keys(data.baseEntities || {}).map(name => ({ name }));
             animations = Object.keys(data.animations || {});
             layers = (data.layers || []).slice();
             // Mirror SettingsHandler.Process(): the engine prepends the default
@@ -2088,8 +2099,8 @@ function generateAssets(projectRoot, outputPath, imageGlobs = []) {
             }
         }
 
-        const entityEntries = dedupeNamedEntries(Object.keys(entityDefs));
-        const baseEntityEntries = dedupeNamedEntries(Object.keys(baseEntityDefs));
+        const entityEntries = dedupeNamedEntries(entityDefs.map(entity => entity.name));
+        const baseEntityEntries = dedupeNamedEntries(baseEntityDefs.map(entity => entity.name));
         const animationEntries = dedupeNamedEntries(animations);
         const layerEntries = layers.map((name, index) => ({ key: toEnumKey(name), value: index }));
 

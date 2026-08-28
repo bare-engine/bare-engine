@@ -454,40 +454,4 @@ export class Helper
         trace(entityUID)
         return entityUID;
     }
-
-    // NOT GREAT HERE
-    static CleanSettingsDataEntityUIDs(settingsDataRaw: SettingsData): void
-    {
-        var entitiesAr = [
-            ...Object.values(settingsDataRaw.entities),
-            ...Object.values(settingsDataRaw.baseEntities)
-        ];
-
-        var stringifiedEntities = JSON.stringify(entitiesAr); // TO JUST COMPARE VALUES AGAINST THIS STRING, INSTEAD OF WALKING THE NODES
-
-        var traverseEntities = (entities: Entity[]) => {
-            for (const entity of entities)
-            {
-                if (entity.entityUID)
-                {
-                    var firstIndex = stringifiedEntities.indexOf(entity.entityUID);
-                    var lastIndex = stringifiedEntities.lastIndexOf(entity.entityUID);
-                    var moreThanOneRef = (firstIndex != lastIndex);
-
-                    if (!moreThanOneRef)
-                    {
-                        delete entity.entityUID; // THIS UID IS NOT REFERENCED ANYWHERE ELSE, REMOVE IT
-
-                        if (Object.keys(entity).length == 0)
-                        {
-                            
-                        }
-                    }
-                }
-                
-                traverseEntities(entity.children ?? []);
-            }
-        }
-        traverseEntities(entitiesAr);
-    }
 }

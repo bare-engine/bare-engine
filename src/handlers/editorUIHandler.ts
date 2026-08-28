@@ -244,7 +244,7 @@ export class EditorUIHandler {
         sidebarContent.innerHTML = '';
 
         var categoriesFinal: Record<string, Category>  = {};
-        var allEntityNames = Object.keys(data.entities);
+        var allEntityNames = data.entities.map(entity => entity.name!);
 
         for (const [categoryName, categoryData] of Object.entries(data.categories))
         {

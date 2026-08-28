@@ -173,8 +173,9 @@ export class HitboxScene extends EditorScene
 
         // APPLY NEW VALUES TO THE INITIAL ENTITY SETTING
         const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
-            draft.entities[mainEntityName] ??= {};
-            const entityDraft = draft.entities[mainEntityName];
+            const entityDraft = SettingsHandler.FindEntity(draft, mainEntityName);
+            if (!entityDraft)
+                throw new Error(`Cannot update missing entity '${mainEntityName}'`);
 
             // PIVOT BASED ON HITBOX
             if (mainEntity.pivotBasedOnHitbox && !resetPivotBasedOnHitbox/* && !Helper.ObjectsAreEqual(pivotBasedOnHitboxOrig!, mainEntity.pivotBasedOnHitbox)*/)
