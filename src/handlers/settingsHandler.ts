@@ -1074,52 +1074,59 @@ export class SettingsHandler
 
     CleanSettingsDataEntityUIDs(settingsDataRaw: SettingsData): void
     {
-        var entitiesAr = [
-            ...(settingsDataRaw.entities ?? []),
-            ...(settingsDataRaw.baseEntities ?? [])
-        ];
+        var didClean: boolean;
 
-        var stringifiedEntities = JSON.stringify(entitiesAr); // TO JUST COMPARE VALUES AGAINST THIS STRING, INSTEAD OF WALKING THE NODES
+        do
+        {
+            didClean = false;
+            var entitiesAr = [
+                ...(settingsDataRaw.entities ?? []),
+                ...(settingsDataRaw.baseEntities ?? [])
+            ];
+            var stringifiedEntities = JSON.stringify(entitiesAr); // REFRESH AFTER EACH PASS SO REMOVED REFERENCES ARE SEEN IMMEDIATELY
 
-        var traverseEntities = (entities: Entity[]) => {
-            for (var i = entities.length - 1; i >= 0; i--)
-            {
-                const entity = entities[i];
-
-                if (Array.isArray(entity.children))
+            var traverseEntities = (entities: Entity[]) => {
+                for (var i = entities.length - 1; i >= 0; i--)
                 {
-                    traverseEntities(entity.children);
+                    const entity = entities[i];
 
-                    if (entity.children.length == 0)
-                        delete entity.children;
-                }
-
-                if (entity.entityUID)
-                {
-                    var firstIndex = stringifiedEntities.indexOf(entity.entityUID);
-                    var lastIndex = stringifiedEntities.lastIndexOf(entity.entityUID);
-                    var moreThanOneRef = (firstIndex != lastIndex);
-
-                    if (!moreThanOneRef)
+                    if (Array.isArray(entity.children))
                     {
-                        delete entity.entityUID; // THIS UID IS NOT REFERENCED ANYWHERE ELSE, REMOVE IT
+                        traverseEntities(entity.children);
 
-                        if (Object.keys(entity).length == 1 && entity.entity)
+                        if (entity.children.length == 0)
                         {
-                            if (this.rawEntitiesMappedByUID[entity.entity])
-                            {
-                                delete entity.entity;
-                            }
+                            delete entity.children;
+                            didClean = true;
                         }
+                    }
 
+                    if (entity.entityUID)
+                    {
+                        var firstIndex = stringifiedEntities.indexOf(entity.entityUID);
+                        var lastIndex = stringifiedEntities.lastIndexOf(entity.entityUID);
+                        var moreThanOneRef = (firstIndex != lastIndex);
+
+                        if (!moreThanOneRef)
+                        {
+                            delete entity.entityUID; // THIS UID IS NOT REFERENCED ANYWHERE ELSE, REMOVE IT
+                            didClean = true;
+
+                            if (Object.keys(entity).length == 1 && entity.entity && this.rawEntitiesMappedByUID[entity.entity])
+                                delete entity.entity;
+                        }
+                    }
+
+                    if (Object.keys(entity).length == 0)
+                    {
+                        entities.splice(i, 1);
+                        didClean = true;
                     }
                 }
-
-                if (Object.keys(entity).length == 0)
-                    entities.splice(i, 1);
             }
+            traverseEntities(settingsDataRaw.entities ?? []);
+            traverseEntities(settingsDataRaw.baseEntities ?? []);
         }
-        traverseEntities(settingsDataRaw.entities ?? []);
-        traverseEntities(settingsDataRaw.baseEntities ?? []);
+        while (didClean);
     }
 }
