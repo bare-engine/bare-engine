@@ -89,5 +89,17 @@ export class EntitiesTest extends Scene
         assert(extendedPlayerTile.children[0].entity === "tile", "authored child entity links should be preserved");
         assert(extendedPlayerTile.children[0].children[0].entity === undefined, "implicit child defaults should not become authored entity links");
 
+        const sourceChildren = [
+            { name: "first", entityUID: "firstChildUID" },
+            { name: "second", entityUID: "secondChildUID" },
+        ];
+        const newChild = { name: "new" };
+        const firstChildOverride = { entity: "firstChildUID" };
+        const mergedChildren = this.MergeChildren(sourceChildren, [newChild, firstChildOverride]);
+
+        assert(mergedChildren[0] === firstChildOverride, "child overrides should keep their source child position");
+        assert(mergedChildren[1] === sourceChildren[1], "unmodified source children should keep their source order");
+        assert(mergedChildren[2] === newChild, "new current children should be appended after source children");
+
     }
 }

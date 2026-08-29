@@ -400,21 +400,34 @@ export class Scene implements SceneI
     }
 
     // MERGES sourceChildren + currentChildren
-    // ANY sourceChild THAT LINKS .entityUID to currentChild .enitity WILL BE REMOVED
+    // A currentChild THAT LINKS .entity TO A sourceChild .entityUID REPLACES IT IN PLACE
     MergeChildren(sourceChildren?: Entity[], currentChildren?: Entity[]): Entity[]
     {
         const current = currentChildren ?? [];
-        const overriddenEntityUIDs = new Set(
-            current
-                .map(child => child.entity)
-                .filter((entity): entity is string => entity !== undefined)
-        );
+        const usedCurrentChildren = new Set<number>();
+        const merged = (sourceChildren ?? []).map(sourceChild =>
+        {
+            if (sourceChild.entityUID === undefined)
+                return sourceChild;
 
-        const source = (sourceChildren ?? []).filter(sourceChild =>
-            sourceChild.entityUID === undefined || !overriddenEntityUIDs.has(sourceChild.entityUID)
-        );
+            const overrideIndex = current.findIndex((currentChild, index) =>
+                !usedCurrentChildren.has(index) && currentChild.entity === sourceChild.entityUID
+            );
 
-        return [...source, ...current];
+            if (overrideIndex === -1)
+                return sourceChild;
+
+            usedCurrentChildren.add(overrideIndex);
+            return current[overrideIndex];
+        });
+
+        current.forEach((currentChild, index) =>
+        {
+            if (!usedCurrentChildren.has(index))
+                merged.push(currentChild);
+        });
+
+        return merged;
     }
     
     // CONSTRUCTS AN ENTITY OUT OF A ENITTY NAME OR ENTITY OBJECT

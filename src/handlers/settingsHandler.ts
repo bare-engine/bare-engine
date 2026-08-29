@@ -175,7 +175,7 @@ export class SettingsHandler
             }
         }
 
-        // SETTING entityUID FOR ALL ENTITIES
+        // SETTING entityUID FOR ALL RAW ENTITIES
         // ALL OTHER ENITIES GET THEIR entityUID GENERATED AND IN ExtendEntity()
         // THESE entityUID FIELDS DON'T GET SERIALIZED WHEN UNUSED, SEE CleanSettingsDataEntityUIDs()
         this.rawEntitiesMappedByUID = {};
@@ -1073,7 +1073,6 @@ export class SettingsHandler
                 this.StripEntityRuntimeIds(child);
         }
     }
-
 
     CleanSettingsDataEntityUIDs(settingsDataRaw: SettingsData): void
     {

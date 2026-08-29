@@ -14,17 +14,35 @@ type EntitySceneAwakePayload = EditorScenePayload & {
     settingsHandler: SettingsHandler;
 };
 
-// HOW SERIALIZATION OF CHILDREN COMING FROM ENITTY WORKS:
+// ON SERIALIZATION:
 // 
-// IN ExtendEntity(), THE CHILDREN COMING FROM THE ENITY ARE MARKED WITH childFromEntity IN THEIR ENITY DATA.
+// AN ENTITY HAS ITS DATA SERIALIZED IN settingsData.json (OR CUSTOM FILE)
+// THIS IS FED INTO THE PLUGIN IN GotoEntity() IN PluginHandler.ts
+// ANY CHANGES TO THE DATA MADE IN THE PLUGIN ARE DIRECTLY SAVED, SEE SetEntityField()
 // 
+// WHEN CHANGES ARE MADE IN THE EDITOR, EG, OBJECT IS DRAGGED, THEN ON RELEASE, THE saveLevelCallback: SaveEntityDataToSettingsData() IS CALLED
+// HERE THE RUNTIME ENTITY OBJECT IS SERIALIZED AND SAVED TO settingsData.json
+// WAS SENDING EVERY CHANGE TO THE settingsData BEFORE, BUT MORE KEPT COMING AND USER WOULD NEED TO DO THIS TOO, 
+// SO JUST SERIALIZING THE WHOLE OBJECT NOW, CAN MARK ONE WITH .save = false AND IT WILL BE SKIPPED
 // 
+// ON SERIALIZATION - FOR CHILDREN COMING FROM ENITTY:
+// IN SettingsHandler.ts Process() and ExtendEntity() entityUID FIELDS ARE ASSIGNED TO EACH RAW ENTITY.
+// IF AN ENTITY EXTENDS ANOTHER WITH THE .entity field, IT WILL TAKE OVER ITS VALUES AND CHILDREN. SEE ExtendEntity()
+// EACH NEW CHILD WILL GET A .entity FIELD REFERENCING THEIR SOURCE CHILD entityUID 
+// THIS MEANS THE CHILD ENTITY INHERITS THE VALUES OF THE SOURCE, AND CAN ALSO OVERRIDE THEM WITH ITS OWN VALUES
+// NOTE: AN OVERRIDEN ENTITY CANNOT OVERRIDE IT'S CHILDREN ORDER, WILL STAY SAME AS SOURCE
 // 
+// BEFORE SAVING THE entityData, THE entityUID FIELDS ARE CLEARED IF THEY ARE NOT REFERENCED, SEE CleanSettingsDataEntityUIDs(), 
+//
+// SO .entity CAN REFERENCE AN ENTITY NAME, OR AN ENTITY UID. COULD GO ALL THE WAY REFERENCING UIDS, WHICH WOULD WORK FINE IN THE PLUGIN
+// IT WOULD JUST RESOLVE THE NAME. BUT WHEN VIEWING/EDITING THE raw entityData.json, IT WOULD BE HARD TO FOLLOW WHAT EXTENDS WHAT
+// SO SUPPORTING BOTH WAYS FOR NOW. (INTENDING TO, CANNOT REFERENCE CHILD NAME ATM, JUST ROOT)
+//
 
 export class EntityScene extends EditorScene
 {
     objectName: string = "";
-    
+
     readonly transformToolHandlesBodyMove: boolean = true;
     
     lastPayload: EntitySceneAwakePayload;
@@ -90,8 +108,8 @@ export class EntityScene extends EditorScene
         //this.HideEditorUIForScene();
         // PROBLEM: THE ACTUAL RECT INGAME - TODO
         
-        targetSettingsHandler.Get().showUI = false;
-        targetSettingsHandler.Get().selectionEnabled = false;
+        targetSettingsHandler.GetRaw().showUI = false;
+        targetSettingsHandler.GetRaw().selectionEnabled = false;
 
         var levelData = await this.CreateEntityDataFor(objectName);
         await super.OnStart({levelPathOrData: levelData, saveLevelCallback: this.SaveEntityDataToSettingsData, settingsHandler: targetSettingsHandler});
@@ -251,10 +269,11 @@ export class EntityScene extends EditorScene
         const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
             SettingsHandler.SetEntity(draft, this.objectName, entity);
         });
+        const dataToSave = Helper.DeepCopy(newRawSettingsData);
 
-        this.settingsHandler.CleanSettingsDataEntityUIDs(newRawSettingsData);
+        this.settingsHandler.CleanSettingsDataEntityUIDs(dataToSave);
 
-        await this.SaveEntityData(newRawSettingsData);
+        await this.SaveEntityData(dataToSave);
 
         // The compact entity above is the persistence representation. The debug API rebuilds the
         // resolved editor payload from the freshly processed settings, matching gotoEntity()

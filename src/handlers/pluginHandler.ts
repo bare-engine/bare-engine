@@ -2599,11 +2599,11 @@ export class PluginHandler
 
         // REMOVE EMPTY UID-BASED CHILD OVERRIDES AND THEIR NOW-UNUSED SOURCE UIDS
         //plugin.CleanUpSettingsDataUIDs(newData);
-        scene.settingsHandler.CleanSettingsDataEntityUIDs(newData);
 
         const settingsHandler = this.GetSettingsDataHandler(newData.name ?? "");
         
         const dataToSave = Helper.DeepCopy(newData);
+        settingsHandler.CleanSettingsDataEntityUIDs(dataToSave);
 
         settingsHandler.FilterSettingsDataDefaults(dataToSave);
 
