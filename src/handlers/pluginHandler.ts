@@ -444,9 +444,13 @@ window.__GAME_DEBUG_API__ = {
     // to auto-fit the entity's bounds - discarding whatever the user had panned/zoomed to. Preserve
     // it across that rebuild.
     const previousEntityScene = bare.scene.Get(EntityScene);
-    const previousCameraTransform = previousEntityScene?.objectName == name
+    var previousCameraTransform = previousEntityScene?.objectName == name
         ? { x: previousEntityScene.camera.target.x, y: previousEntityScene.camera.target.y, zoom: previousEntityScene.camera.zoom }
         : undefined;
+    
+    // IF ZOOM WAS INFINITY, ENTITY HAD NO BOUNDS, DON'T WANT TO RESTORE TO THAT
+    if (previousCameraTransform?.zoom == Infinity)
+        previousCameraTransform = undefined;
 
     if (!bare.scene.Get(EntityScene))
         bare.scene.Remove(EditorScene); // WILL REMOVE LEVEL EDITOR IF EXISTS

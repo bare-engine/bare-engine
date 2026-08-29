@@ -110,6 +110,9 @@ export class EditorControlsHandler {
 
             var topLeftCopiedObjects = new Vec2(Number.MAX_VALUE, Number.MAX_VALUE);
             this.copiedObjects.forEach(entity => {
+                if (!entity.position)
+                    entity.position = { x: 0, y: 0 };
+                
                 if (entity.position.x < topLeftCopiedObjects.x)
                     topLeftCopiedObjects.x = entity.position.x;
                 if (entity.position.y < topLeftCopiedObjects.y)
