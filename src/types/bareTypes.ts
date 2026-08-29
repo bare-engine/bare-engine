@@ -174,7 +174,6 @@ export interface Entity
     baseEntityLog?: Record<string, any>;
     __entityOptions?: Array<{ value: string, label: string, source?: string }>;
     constructed ?: boolean;
-    fromEntity?: boolean;
     entityUID?: string;
 }
 

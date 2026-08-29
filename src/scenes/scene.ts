@@ -499,11 +499,11 @@ export class Scene implements SceneI
                             this.settingsHandler.rawEntitiesMappedByUID[entityArg.entityUID] = Helper.DeepCopy(entityArg);
 
                             // possibleentity.children with their own entityuid are owned directly by the base entity -
-                            // mark them fromentity and link them back to their source via .entity, same as
-                            // settingshandler.extendentity() does for the raw pipeline. keep entityuid until after
-                            // mergechildren() - its override detection needs it to match against entityarg.children.
-                            // children without entityuid already came from a deeper base (possibleentity itself
-                            // extends something else) and already carry fromentity/.entity from that level - leave them as-is.
+                            // link them back to their source via .entity, same as settingshandler.extendentity()
+                            // does for the raw pipeline. keep entityuid until after mergechildren() - its override
+                            // detection needs it to match against entityarg.children. children without entityuid
+                            // already came from a deeper base (possibleentity itself extends something else) and
+                            // already carry .entity from that level - leave them as-is.
                             var possibleEntityChildren = [];
                             var toStripEntityUID = [];
                             for (var possibleChild of possibleEntity.children ?? [])
@@ -512,7 +512,6 @@ export class Scene implements SceneI
                                 if (possibleChild.entityUID)
                                 {
                                     possibleChildCopy.entity = possibleChild.entityUID;
-                                    possibleChildCopy.fromEntity = true;
                                     toStripEntityUID.push(possibleChildCopy);
                                 }
                                 possibleEntityChildren.push(possibleChildCopy);

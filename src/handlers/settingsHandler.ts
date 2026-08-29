@@ -718,13 +718,16 @@ export class SettingsHandler
                 var toRemoveEntityUID = [];
                 for (const child of settingsDataEntity.children ?? [])
                 {
-                    // ASSIGN THE UID TO THE EXTENDED CHILD, SO IT CAN BE DIFFED AGAINST ITS SOURCE LATER
+                    // ASSIGN THE UID TO THE EXTENDED CHILD, SO IT CAN BE DIFFED AGAINST ITS SOURCE LATER.
+                    // children without their own entityUID came from a deeper base and already carry
+                    // .entity from that level - leave them as-is (matches Scene.ConstructEntity()).
                     var childCopy = { ...child };
-                    childCopy.entity = child.entityUID;
-                    childCopy.fromEntity = true;
+                    if (child.entityUID)
+                    {
+                        childCopy.entity = child.entityUID;
+                        toRemoveEntityUID.push(childCopy);
+                    }
                     settingsDataEntityChildren.push(childCopy);
-
-                    toRemoveEntityUID.push(childCopy);
                 }
 
                 var children = this.scene.MergeChildren(settingsDataEntityChildren, entity.children);

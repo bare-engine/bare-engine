@@ -598,7 +598,7 @@ export class EditorScene extends Scene
             var unconstructedEntity = Helper.DeepCopy(this.settingsHandler.GetRawEntitiesMappedByUID()[rootObject.entity.entityUID]) || {};
         }
 
-        if (rootObject.entity.fromEntity || (rootObject.entity.entity && this.settingsHandler.GetRawEntitiesMappedByUID()[rootObject.entity.entity]))
+        if (rootObject.entity.entity && this.settingsHandler.GetRawEntitiesMappedByUID()[rootObject.entity.entity])
         {
             if (Object.keys(diff).length > 0)
                 diff.entity = rootObject.entity.entity; // IF THERE ARE CHANGES TO ENTITY, WE KEEP TRACK OF THE .entity UID LINK
