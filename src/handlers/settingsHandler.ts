@@ -64,14 +64,6 @@ export class SettingsHandler
         return collection.splice(collection.findIndex(entity => entity.name === name), 1)[0];
     }
 
-    static NormalizeEntities(entities: Entity[] | Record<string, Entity> | undefined): Entity[]
-    {
-        if (Array.isArray(entities))
-            return entities;
-
-        return Object.entries(entities ?? {}).map(([name, entity]) => ({ ...entity, name }));
-    }
-
     private raw: SettingsData;
     private processed: SettingsData;
 
@@ -140,13 +132,6 @@ export class SettingsHandler
         if (raw?.processed)
             throw new Error('Process() received already-processed data — caller passed Get()/settingsData instead of GetRaw()');
 
-        // These sentinel base entities are omitted from the persisted JSON when they only
-        // contain defaults. Restore them on every load/process so GetRaw() has the same
-        // usable shape after an editor close/restart as it had before saving.
-        // Accept legacy name-keyed data at the load boundary, but use ordered arrays everywhere else.
-        raw.baseEntities = SettingsHandler.NormalizeEntities(raw.baseEntities as any);
-        raw.entities = SettingsHandler.NormalizeEntities(raw.entities as any);
-
         const seenNames = new Set<string>();
         const duplicateNames = [...raw.entities, ...raw.baseEntities]
             .map(entity => entity.name)
@@ -194,6 +179,35 @@ export class SettingsHandler
             ...(raw.baseEntities ?? []),
             ...(raw.entities ?? [])
         ]);
+
+        // ALREADY EXTENDING CHILDREN, SO IT'S EASIER TO DO OPERATIONS ON THEM
+        // WILL BE CLEANED IN CleanSettingsDataEntityUIDs() TOO
+        var extendEntityChildren = (entities: Entity[], defaultBaseEntity = "ANY_ENTITY") =>
+        {
+            for (const entity of entities)
+            {
+                entity.children ??= [];
+
+                var entityName = entity.entity || defaultBaseEntity;
+                var settingsDataEntity = this.GetRawEntity(entityName, raw, entity.children);
+
+                var sourceChildrenAr = settingsDataEntity?.children ?? [];
+                for (var i = sourceChildrenAr.length - 1; i >= 0; i--)
+                {
+                    var sourceChild = sourceChildrenAr[i];
+
+                    var sourceChildUIDIsInOtherChild = (entity.children).some(child => child.entity === sourceChild.entityUID);
+                    if (!sourceChildUIDIsInOtherChild)
+                    {
+                        entity.children.unshift({entity: sourceChild.entityUID});
+                    }
+                }
+
+                extendEntityChildren(entity.children, defaultBaseEntity);
+            }
+        }
+        extendEntityChildren(raw.entities ?? [], "ANY_ENTITY");
+        extendEntityChildren(raw.baseEntities ?? [], "ANY");
 
         var settings = this.clone(raw);
 
@@ -686,7 +700,7 @@ export class SettingsHandler
         {
             var settingsDataEntity = this.GetRawEntity(entityName, rawSettingsData, entity.children ?? []);
 
-            // COULD BE THAT THIS settingsDataEntity.entity HAS NEED ASSIGNED UID YET
+            // COULD BE THAT THIS settingsDataEntity.entity HAS NO ASSIGNED UID YET
             assignID([settingsDataEntity]);
             //settingsDataEntity.entityUID ??= Helper.GenerateEntityUID();
             //this.rawEntitiesMappedByUID[entity.entityUID] = Helper.DeepCopy(settingsDataEntity);
@@ -714,30 +728,9 @@ export class SettingsHandler
 
             if (includeChildren)
             {
-                var settingsDataEntityChildren = [];
-                var toRemoveEntityUID = [];
-                for (const child of settingsDataEntity.children ?? [])
-                {
-                    // ASSIGN THE UID TO THE EXTENDED CHILD, SO IT CAN BE DIFFED AGAINST ITS SOURCE LATER.
-                    // children without their own entityUID came from a deeper base and already carry
-                    // .entity from that level - leave them as-is (matches Scene.ConstructEntity()).
-                    var childCopy = { ...child };
-                    if (child.entityUID)
-                    {
-                        childCopy.entity = child.entityUID;
-                        toRemoveEntityUID.push(childCopy);
-                    }
-                    settingsDataEntityChildren.push(childCopy);
-                }
-
-                var children = this.scene.MergeChildren(settingsDataEntityChildren, entity.children);
+                var children = this.scene.MergeChildren(settingsDataEntity.children ?? [], entity.children);
                 if (Object.keys(children).length > 0)
                     entity.children = children;
-
-                for (const child of toRemoveEntityUID)
-                {
-                    delete child.entityUID; // SOURCE ENTITY SHOULD STAY ONLY ONE WITH ITS UID
-                }
             }
 
             entityName = settingsDataEntity.entity;
