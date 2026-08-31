@@ -18,12 +18,14 @@ export class SettingsHandler
     static FindEntity(settingsData: SettingsData, name: string): Entity | undefined
     {
         const entity = settingsData.entities?.find(entity => entity.name === name);
+        if (entity)
+            return entity;
+
         const baseEntity = settingsData.baseEntities?.find(entity => entity.name === name);
+        if (baseEntity)
+            return baseEntity;
 
-        if (entity && baseEntity)
-            throw new Error(`Entity name '${name}' exists in both entities and baseEntities`);
-
-        return entity ?? baseEntity;
+        return undefined;
     }
 
     static FindEntityCollection(settingsData: SettingsData, name: string): Entity[] | undefined
@@ -148,7 +150,7 @@ export class SettingsHandler
         if (duplicateNames.length > 0)
             throw new Error(`Entity names must be unique across entities and baseEntities: ${[...new Set(duplicateNames)].join(", ")}`);
 
-        for (const defaultName of ["ANY", "ANY_ENTITY", "NONE"])
+        for (const defaultName of ["ANY", "NONE"])
         {
             if (raw.entities.some(entity => entity.name === defaultName))
                 throw new Error(`Reserved base entity name '${defaultName}' cannot be used in entities`);
@@ -182,13 +184,13 @@ export class SettingsHandler
 
         // ALREADY EXTENDING CHILDREN, SO IT'S EASIER TO DO OPERATIONS ON THEM
         // WILL BE CLEANED IN CleanSettingsDataEntityUIDs() TOO
-        var extendEntityChildren = (entities: Entity[], defaultBaseEntity = "ANY_ENTITY") =>
+        var extendEntityChildren = (entities: Entity[]) =>
         {
             for (const entity of entities)
             {
                 entity.children ??= [];
 
-                var entityName = entity.entity || defaultBaseEntity;
+                var entityName = entity.entity || "ANY";
                 var settingsDataEntity = this.GetRawEntity(entityName, raw, entity.children);
 
                 var sourceChildrenAr = settingsDataEntity?.children ?? [];
@@ -203,11 +205,11 @@ export class SettingsHandler
                     }
                 }
 
-                extendEntityChildren(entity.children, defaultBaseEntity);
+                extendEntityChildren(entity.children);
             }
         }
-        extendEntityChildren(raw.entities ?? [], "ANY_ENTITY");
-        extendEntityChildren(raw.baseEntities ?? [], "ANY");
+        extendEntityChildren(raw.entities ?? []);
+        extendEntityChildren(raw.baseEntities ?? []);
 
         var settings = this.clone(raw);
 
@@ -438,8 +440,7 @@ export class SettingsHandler
                             settings.entities.push(entity);
                         }
                         
-                        if (categoryData.entity &&
-                            (!entity.entity || entity.entity === "ANY" || entity.entity === "ANY_ENTITY"))
+                        if (categoryData.entity && (!entity.entity || entity.entity === "ANY"))
                         {
                             entity.entity = categoryData.entity;
                         }
@@ -499,12 +500,13 @@ export class SettingsHandler
             for (const entity of settings.entities)
             {
                 const entityName = entity.name!;
-                // ENTITY - IF EXTEND DATA NOT SET, DEFAULT TO ANY_ENTITY BASE
+
+                // ENTITY - IF EXTEND DATA NOT SET, DEFAULT TO ANY BASE
                 if (entityName == "NONE")
                     continue;
                 if (!entity.entity)
                 {
-                    entity.entity = "ANY_ENTITY";
+                    entity.entity = "ANY";
                 }
             }
 
@@ -676,7 +678,7 @@ export class SettingsHandler
 
     // EXTENDS AN ENTITY WITH EVERY ENTITY IN ITS BASE CHAIN.
     // THE ENTITY ARGUMENT IS MUTATED AND ITS EXISTING VALUES TAKE PRECEDENCE.
-    ExtendEntity(entity: Entity, rawSettingsData: SettingsData = this.raw, defaultBaseEntity?: string, options: { includeChildren?: boolean, recurseChildren?: boolean, childDefaultBaseEntity?: string } = {}): Entity
+    ExtendEntity(entity: Entity, rawSettingsData: SettingsData = this.raw, options: { includeChildren?: boolean, recurseChildren?: boolean, childDefaultBaseEntity?: string } = {}): Entity
     {
         var includeChildren = options.includeChildren !== false;
         var recurseChildren = options.recurseChildren ?? includeChildren;
@@ -695,7 +697,7 @@ export class SettingsHandler
         entity.entityUID ??= Helper.GenerateEntityUID();
         this.rawEntitiesMappedByUID[entity.entityUID] = Helper.DeepCopy(entity);
         
-        var entityName = entity.entity || defaultBaseEntity;
+        var entityName = entity.entity || "ANY";
         while (entityName)
         {
             var settingsDataEntity = this.GetRawEntity(entityName, rawSettingsData, entity.children ?? []);
@@ -746,7 +748,7 @@ export class SettingsHandler
         {
             for (var child of entity.children ?? [])
             {
-                this.ExtendEntity(child, rawSettingsData, options.childDefaultBaseEntity ?? defaultBaseEntity, options);
+                this.ExtendEntity(child, rawSettingsData, options);
             }
         }
 
@@ -756,14 +758,14 @@ export class SettingsHandler
 
     // RESOLVE INHERITANCE FOR AN ENTITY AND EVERY CHILD WITHOUT APPLYING
     // FULL-CONSTRUCTION POLICIES SUCH AS PRESETS OR REMOVALS.
-    ExtendEntityTree(entity: Entity, rawSettingsData: SettingsData = this.raw, defaultBaseEntity?: string): Entity
+    ExtendEntityTree(entity: Entity, rawSettingsData: SettingsData = this.raw): Entity
     {
         // Merge this node's inherited children without recursively processing them here. The loop
         // below then processes every resulting child exactly once.
-        this.ExtendEntity(entity, rawSettingsData, defaultBaseEntity, { recurseChildren: false });
+        this.ExtendEntity(entity, rawSettingsData, { recurseChildren: false });
 
         for (const child of entity.children ?? [])
-            this.ExtendEntityTree(child, rawSettingsData, "ANY_ENTITY");
+            this.ExtendEntityTree(child, rawSettingsData);
 
         return entity;
     }
@@ -827,7 +829,7 @@ export class SettingsHandler
     {
         var entity = Helper.DeepCopy(this.GetRawEntity(entityName));
 
-        this.ExtendEntityTree(entity, this.raw, "ANY_ENTITY");
+        this.ExtendEntityTree(entity, this.raw);
 
         return entity;
     }
@@ -973,14 +975,7 @@ export class SettingsHandler
         settingsData.entities ??= [];
 
         const defaultAny = SettingsHandler.FindEntity(defaultSettingsData, "ANY")!;
-        const defaultAnyEntity = SettingsHandler.FindEntity(defaultSettingsData, "ANY_ENTITY")!;
         const any = SettingsHandler.FindEntity(settingsData, "ANY");
-        const anyEntity = SettingsHandler.FindEntity(settingsData, "ANY_ENTITY");
-
-        // UNDO DEFAULT ADDITIONS TO ANY AND ANY_ENTITY AGAIN, DON'T WANT TO SAVE THEM
-        // THIS IS ALSO ADDED AT getEntityData
-        //if (entityScene.objectName == "ANY" || entityScene.objectName == "ANY_ENTITY")
-        //if (entityScene.isBase)
 
         //
         if (any == defaultAny)
@@ -999,25 +994,6 @@ export class SettingsHandler
 
             if (Object.keys(any).length == 1)
                 SettingsHandler.RemoveEntity(settingsData, "ANY");
-        }
-
-        //
-        if (anyEntity == defaultAnyEntity)
-        {
-            SettingsHandler.RemoveEntity(settingsData, "ANY_ENTITY");
-        }
-        else
-        if (anyEntity)
-        {
-            var anyEntityKeys = Object.keys(defaultAnyEntity) as (keyof Entity)[];
-            for (var key of anyEntityKeys)
-            {
-                if (key !== "name" && anyEntity[key] == defaultAnyEntity[key])
-                    delete anyEntity[key];
-            }
-
-            if (Object.keys(anyEntity).length == 1)
-                SettingsHandler.RemoveEntity(settingsData, "ANY_ENTITY");
         }
         
         // SHOULD NEVER BE ANYTHING IN NONE, JUST DELETE IT

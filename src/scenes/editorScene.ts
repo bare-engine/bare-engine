@@ -616,7 +616,7 @@ export class EditorScene extends Scene
 
         delete unconstructedEntity.id;
 
-        // DON'T SEND THE CUSTOM FIELDS SET BY BASE ENTITY (ANY/ANY_ENTITY)
+        // DON'T SEND THE CUSTOM FIELDS SET BY BASE ENTITY (ANY)
         if (unconstructedEntity.texture == "placeHolder")
         {
             delete unconstructedEntity.texture;

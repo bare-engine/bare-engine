@@ -505,13 +505,7 @@ export class Scene implements SceneI
                         // SET DEFAULT ENTITY, IF NOT SET
                         if (!entityArg.entity)
                         {
-                            if (!entityArg.name)
-                                entityArg.entity = "ANY_ENTITY";
-                            else
-                                if (SettingsHandler.IsBaseEntity(settingsData, entityArg.name))
-                                    entityArg.entity = "ANY";
-                                else
-                                    entityArg.entity = "ANY_ENTITY";
+                            entityArg.entity = "ANY";
                         }
                     }
 
@@ -572,8 +566,8 @@ export class Scene implements SceneI
                 }
                 else
                 {
-                    // ENTITY NAME NOT FOUND, SO TAKE THE 'ANY_ENTITY' ENTRY AND ASSIGN A NEW NAME
-                    var entityBase = Helper.DeepCopy(SettingsHandler.FindEntity(settingsData, "ANY_ENTITY")!);
+                    // ENTITY NAME NOT FOUND, SO TAKE THE 'ANY' ENTRY AND ASSIGN A NEW NAME
+                    var entityBase = Helper.DeepCopy(SettingsHandler.FindEntity(settingsData, "ANY")!);
                     entity = entityBase;
                     entity.name = nameOrEntity;
                     entity.texture = nameOrEntity;

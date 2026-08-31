@@ -809,8 +809,6 @@ window.__GAME_DEBUG_API__ = {
         rawSettingsData.baseEntities ??= [];
         if (!SettingsHandler.FindEntity(rawSettingsData, "ANY"))
             rawSettingsData.baseEntities.push({ name: "ANY" });
-        if (!SettingsHandler.FindEntity(rawSettingsData, "ANY_ENTITY"))
-            rawSettingsData.baseEntities.push({ name: "ANY_ENTITY" });
 
         var entity = plugin.ResolveEntityChildPath(
             SettingsHandler.FindEntity(rawSettingsData, entityScene.objectName)!,
@@ -958,19 +956,7 @@ window.__GAME_DEBUG_API__ = {
 
             return;
         }
-
-        // MAKE SURE ANY OR ANY_ENTITY EXISTS, IF WE'RE GONNA WRITE TO IT
-        //if (entityScene.isBase)
-        {
-            //if (entityScene.objectName == "ANY")
-                if (!SettingsHandler.FindEntity(rawSettingsData, "ANY"))
-                    rawSettingsData.baseEntities.push({ name: "ANY" });
-            
-            //if (entityScene.objectName == "ANY_ENTITY")
-                if (!SettingsHandler.FindEntity(rawSettingsData, "ANY_ENTITY"))
-                    rawSettingsData.baseEntities.push({ name: "ANY_ENTITY" });
-        }
-
+        
         // WRITE ENTITY PROPS TO RAW
         var entity = plugin.ResolveEntityChildPath(
             SettingsHandler.FindEntity(rawSettingsData, entityScene.objectName)!,
@@ -1043,8 +1029,6 @@ window.__GAME_DEBUG_API__ = {
         // ADD DEFAULTS TO RAW SETTINGS AGAIN, SO PROPS CAN BE ADDED TO IT
         if (!SettingsHandler.FindEntity(rawSettingsData, "ANY"))
             rawSettingsData.baseEntities.push({ ...SettingsHandler.FindEntity(defaultSettingsData, "ANY")! });
-        if (!SettingsHandler.FindEntity(rawSettingsData, "ANY_ENTITY"))
-            rawSettingsData.baseEntities.push({ ...SettingsHandler.FindEntity(defaultSettingsData, "ANY_ENTITY")! });
 
         return entityData;
     },
@@ -1271,7 +1255,7 @@ window.__GAME_DEBUG_API__ = {
     // ADD DEFAULTS - SAME AS defaultSettingsData - REBUILD TO ADD IN FRONT
     settingsData.baseEntities ??= [];
 
-    const sentinelNames = ["ANY", "ANY_ENTITY", "NONE"];
+    const sentinelNames = ["ANY", "NONE"];
     const sentinels = sentinelNames.map(name =>
         SettingsHandler.FindEntity(settingsData, name)
         ?? SettingsHandler.FindEntity(defaultSettingsData, name)!
@@ -2103,8 +2087,8 @@ export class PluginHandler
             // do not persist their implicit default base, so continue through ANY_ENTITY when the
             // referenced child has no explicit entity. This matches BuildEntityEditorData's direct
             // child path and produces UID/name -> ANY_ENTITY -> ANY in the inheritance log.
-            if (!baseEntity && getRawEntity(currentBaseEntity)?.entityUID == currentBaseEntity)
-                baseEntity = "ANY_ENTITY";
+            //if (!baseEntity && getRawEntity(currentBaseEntity)?.entityUID == currentBaseEntity)
+            //    baseEntity = "ANY_ENTITY";
         }
 
         // FILL INFO ABOUT WHAT ENTITY PROPERTIES ARE EXTENDED BY WHY WHICH DATA - USING extendOrder
@@ -2324,9 +2308,7 @@ export class PluginHandler
     BuildEntityEditorData(entity: Entity, extendedEntity: Entity, entityName: string, processedEntity: Entity, settingsDataRaw: SettingsData, settingsDataProcessed: SettingsData): Entity
     {
         var defaultFieldsToIgnore: string[] = [];
-        const isBase = SettingsHandler.FindEntity(settingsDataRaw, entityName) === entity
-            && SettingsHandler.IsBaseEntity(settingsDataRaw, entityName);
-        var defaultBaseEntity = isBase ? "ANY" : "ANY_ENTITY";
+        var defaultBaseEntity = "ANY";
 
         if (!extendedEntity.entity)
         {
@@ -2338,13 +2320,6 @@ export class PluginHandler
         defaultFieldsToIgnore.push("interactableInEditor");
 
         var entityWithLog = this.BuildExtendDataLog(entity, extendedEntity, entityName, processedEntity, settingsDataRaw, settingsDataProcessed);
-
-        if (!isBase && entityWithLog.entity == "ANY_ENTITY")
-        {
-            var defaultBaseClass = SettingsHandler.FindEntity(defaultSettingsData, "ANY_ENTITY")!.baseClass;
-            if (entityWithLog.baseClass == defaultBaseClass)
-                defaultFieldsToIgnore.push("baseClass");
-        }
 
         entityWithLog["__defaultFieldsToIgnore__"] = defaultFieldsToIgnore;
         entityWithLog.name ??= entityName;
@@ -2583,7 +2558,7 @@ export class PluginHandler
         // the main scene's handler makes the default dropdown entry resolve to that named file.
         // Keep the live handler on the unfiltered data. dataToSave has defaults stripped
         // for persistence, so assigning it here would make raw.baseEntities lose
-        // ANY, ANY_ENTITY, and NONE after every save.
+        // ANY, and NONE after every save.
         settingsHandler.SetRaw(newData);
         await settingsHandler.Process(newData);
 
@@ -2608,8 +2583,6 @@ export class PluginHandler
 
         if (!SettingsHandler.FindEntity(rawSettingsData, "ANY"))
             rawSettingsData.baseEntities.push({ name: "ANY" });
-        if (!SettingsHandler.FindEntity(rawSettingsData, "ANY_ENTITY"))
-            rawSettingsData.baseEntities.push({ name: "ANY_ENTITY" });
 
         var entity = plugin.ResolveEntityChildPath(
             SettingsHandler.FindEntity(rawSettingsData, entityScene.objectName)!,

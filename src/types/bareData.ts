@@ -6,10 +6,6 @@ export const defaultSettingsData: SettingsData = {
       name: "ANY",
     },
     {
-      name: "ANY_ENTITY",
-      entity: "ANY",
-    },
-    {
       name: "NONE",
     }
   ],
