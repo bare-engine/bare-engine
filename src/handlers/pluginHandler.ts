@@ -132,16 +132,7 @@ window.__GAME_DEBUG_API__ = {
           return false;
 
       const selectedRoot = entityScene.object.GetByName(entityScene.objectName);
-      const raw = entityScene.settingsHandler.GetRaw();
-      const processed = entityScene.settingsHandler.Get();
-      const selected = plugin.ResolveRuntimeEntityPath(
-          selectedRoot,
-          SettingsHandler.FindEntity(raw, entityScene.objectName)!,
-          SettingsHandler.FindEntity(processed, entityScene.objectName)!,
-          childPath,
-          raw,
-          SettingsHandler.IsBaseEntity(raw, entityScene.objectName) ? "ANY" : "ANY_ENTITY"
-      );
+      const selected = plugin.ResolveRuntimeEntityPath(selectedRoot, childPath);
 
       if (!selected)
           return false;
@@ -384,14 +375,7 @@ window.__GAME_DEBUG_API__ = {
     var scene = (plugin.GetCurrentScene() as EntityScene);
     var name = scene.objectName;
     var raw = scene.settingsHandler.GetRaw();
-    var processed = scene.settingsHandler.Get();
-    var entity = plugin.ResolveWritableEntityPath(
-        SettingsHandler.FindEntity(raw, name)!,
-        childPath,
-        raw,
-        SettingsHandler.IsBaseEntity(raw, name) ? "ANY" : "ANY_ENTITY",
-        SettingsHandler.FindEntity(processed, name)!
-    );
+    var entity = plugin.ResolveEntityChildPath(SettingsHandler.FindEntity(raw, name)!, childPath);
 
     var entityKeys = Object.keys(entity).filter(k => !k.startsWith("__"));
 
@@ -408,12 +392,7 @@ window.__GAME_DEBUG_API__ = {
     var scene = (plugin.GetCurrentScene() as EntityScene);
     var name = scene.objectName;
     var raw = scene.settingsHandler.GetRaw();
-    var entity = plugin.ResolveRawEntityPath(
-        SettingsHandler.FindEntity(raw, name)!,
-        childPath,
-        raw,
-        SettingsHandler.IsBaseEntity(raw, name) ? "ANY" : "ANY_ENTITY"
-    );
+    var entity = plugin.ResolveEntityChildPath(SettingsHandler.FindEntity(raw, name)!, childPath);
 
     for (var key of extraKeys)
         delete entity[key];
@@ -430,6 +409,7 @@ window.__GAME_DEBUG_API__ = {
 
     const settingsHandler = plugin.GetSettingsDataHandler(settingsDataName);
     plugin.currentSettingsDataName = settingsHandler.GetRaw()?.name ?? "";
+    
     // Remember it so setPluginConnected can re-open it after a recompile/restart.
     plugin.lastEntity = { name };
 
@@ -832,14 +812,9 @@ window.__GAME_DEBUG_API__ = {
         if (!SettingsHandler.FindEntity(rawSettingsData, "ANY_ENTITY"))
             rawSettingsData.baseEntities.push({ name: "ANY_ENTITY" });
 
-        var processedSettingsData = entityScene.settingsHandler.Get();
-
-        var entity = plugin.ResolveWritableEntityPath(
+        var entity = plugin.ResolveEntityChildPath(
             SettingsHandler.FindEntity(rawSettingsData, entityScene.objectName)!,
-            childPath,
-            rawSettingsData,
-            SettingsHandler.IsBaseEntity(rawSettingsData, entityScene.objectName) ? "ANY" : "ANY_ENTITY",
-            SettingsHandler.FindEntity(processedSettingsData, entityScene.objectName)!
+            childPath
         );
 
         delete entity[field];
@@ -875,11 +850,9 @@ window.__GAME_DEBUG_API__ = {
 
     var rawSettingsData = entityScene.settingsHandler.GetRaw();
 
-    var entity = plugin.ResolveRawEntityPath(
+    var entity = plugin.ResolveEntityChildPath(
         SettingsHandler.FindEntity(rawSettingsData, entityScene.objectName)!,
-        childPath,
-        rawSettingsData,
-        SettingsHandler.IsBaseEntity(rawSettingsData, entityScene.objectName) ? "ANY" : "ANY_ENTITY"
+        childPath
     );
 
     // COMMENTED OUT, SINCE I WANT TO KEEP VALUE IN PLUGIN, EVEN IF IT'S DEFAULT
@@ -917,14 +890,9 @@ window.__GAME_DEBUG_API__ = {
         const entityReferenceChanged = Object.prototype.hasOwnProperty.call(props, "entity");
         const selectedChildPath = [...childPath];
         var rawSettingsData = entityScene.settingsHandler.GetRaw();
-        var processedSettingsData = entityScene.settingsHandler.Get();
         var obj = plugin.ResolveRuntimeEntityPath(
             entityScene.object.GetByName(entityScene.objectName),
-            SettingsHandler.FindEntity(rawSettingsData, entityScene.objectName)!,
-            SettingsHandler.FindEntity(processedSettingsData, entityScene.objectName)!,
-            childPath,
-            rawSettingsData,
-            SettingsHandler.IsBaseEntity(rawSettingsData, entityScene.objectName) ? "ANY" : "ANY_ENTITY"
+            childPath
         );
 
         if (!obj)
@@ -1003,13 +971,10 @@ window.__GAME_DEBUG_API__ = {
                     rawSettingsData.baseEntities.push({ name: "ANY_ENTITY" });
         }
 
-        // WRITE ENTITY PROPS TO RAW 
-        var entity = plugin.ResolveWritableEntityPath(
+        // WRITE ENTITY PROPS TO RAW
+        var entity = plugin.ResolveEntityChildPath(
             SettingsHandler.FindEntity(rawSettingsData, entityScene.objectName)!,
-            childPath,
-            rawSettingsData,
-            SettingsHandler.IsBaseEntity(rawSettingsData, entityScene.objectName) ? "ANY" : "ANY_ENTITY",
-            SettingsHandler.FindEntity(processedSettingsData, entityScene.objectName)!
+            childPath
         );
         
         var entityCopy = Object.assign({}, entity);
@@ -1572,6 +1537,8 @@ window.__GAME_DEBUG_API__ = {
 
 export class PluginHandler
 {
+    pluginProcessedSettingsData: SettingsData;
+
     currentSettingsDataName: string = "";
     private settingsDataHandlers = new Map<string, SettingsHandler>();
 
@@ -2321,20 +2288,12 @@ export class PluginHandler
 
         const processed = settingsHandler.Get();
         const processedEntity = SettingsHandler.FindEntity(processed, name);
-        const isBase = SettingsHandler.IsBaseEntity(raw, name);
 
         if (!entity)
             throw new Error(`Could not build editor data for missing entity '${name}'`);
 
-        var defaultBaseEntity = isBase ? "ANY" : "ANY_ENTITY";
         var extendedEntity = Helper.DeepCopy(entity);
-        settingsHandler.ExtendEntity(
-            extendedEntity,
-            raw,
-            defaultBaseEntity,
-            { childDefaultBaseEntity: "ANY_ENTITY" }
-        );
-
+        
         // Child entities need the same inherited fields, extend provenance, defaults, and removal
         // metadata as the root entity; otherwise the panel cannot render their labels and controls.
         // Expand the complete display tree once, then walk it alongside the authored raw tree so
@@ -2378,7 +2337,6 @@ export class PluginHandler
         defaultFieldsToIgnore.push("entityUID");
         defaultFieldsToIgnore.push("interactableInEditor");
 
-        var resolvedChildren = this.ResolveRawEntityChildren(entity, settingsDataRaw, defaultBaseEntity);
         var entityWithLog = this.BuildExtendDataLog(entity, extendedEntity, entityName, processedEntity, settingsDataRaw, settingsDataProcessed);
 
         if (!isBase && entityWithLog.entity == "ANY_ENTITY")
@@ -2419,17 +2377,7 @@ export class PluginHandler
             {
                 var extendedChild = entityWithLog.children[i];
                 var processedChild = processedEntity?.children?.[i] || extendedChild;
-                var resolvedChild = resolvedChildren[i];
-                var authoredChild = resolvedChild?.entity || extendedChild;
-
-                if (resolvedChild?.inherited)
-                {
-                    var sourceEntityUID = resolvedChild.entity.entityUID
-                        || extendedChild.entity
-                        || processedChild.entityUID;
-                    if (sourceEntityUID)
-                        authoredChild = { entity: sourceEntityUID };
-                }
+                var authoredChild = entity.children?.[i] ?? extendedChild;
 
                 var childName = extendedChild.name || processedChild.name || authoredChild.entity || "GameObject";
                 entityWithLog.children[i] = this.BuildEntityEditorData(authoredChild, extendedChild, childName, processedChild, settingsDataRaw, settingsDataProcessed);
@@ -2663,14 +2611,9 @@ export class PluginHandler
         if (!SettingsHandler.FindEntity(rawSettingsData, "ANY_ENTITY"))
             rawSettingsData.baseEntities.push({ name: "ANY_ENTITY" });
 
-        var processedSettingsData = entityScene.settingsHandler.Get();
-
-        var entity = plugin.ResolveWritableEntityPath(
+        var entity = plugin.ResolveEntityChildPath(
             SettingsHandler.FindEntity(rawSettingsData, entityScene.objectName)!,
-            childPath,
-            rawSettingsData,
-            SettingsHandler.IsBaseEntity(rawSettingsData, entityScene.objectName) ? "ANY" : "ANY_ENTITY",
-            SettingsHandler.FindEntity(processedSettingsData, entityScene.objectName)!
+            childPath
         );
 
         var list = Array.isArray(entity[arrayKey]) ? entity[arrayKey] : [];
@@ -2718,13 +2661,13 @@ export class PluginHandler
         return entity;
     }
 
-    // MAP A PATH FROM THE EXTENDED CHILD TREE BACK TO THE RAW RECORD CURRENTLY VISIBLE AT
-    // THAT PATH. Missing inherited children resolve to their source without modifying raw data;
-    // existing UID overrides resolve to the authored override record.
-    ResolveRawEntityPath(entity: Entity, childPath: Array<number | string>, rawSettingsData: SettingsData, defaultBaseEntity?: string): Entity
+    // WALK A DISPLAYED childPath STRAIGHT INTO THE RAW CHILD RECORDS. SettingsHandler.Process()
+    // materializes every inherited child as a `{ entity: <sourceUID> }` (or authored) record in
+    // MergeChildren() order at every depth, so the displayed index maps 1:1 onto entity.children
+    // and the resolved record is always safe both to read and to mutate.
+    ResolveEntityChildPath(entity: Entity, childPath: Array<number | string>): Entity
     {
         var currentEntity = entity;
-        var currentDefaultBaseEntity = defaultBaseEntity;
 
         for (const childPathEntry of childPath)
         {
@@ -2732,66 +2675,21 @@ export class PluginHandler
             if (!Number.isInteger(childIndex) || childIndex < 0)
                 throw new Error(`Invalid entity child index '${childPathEntry}'`);
 
-            const resolvedChild = this.ResolveRawEntityChildren(
-                currentEntity,
-                rawSettingsData,
-                currentDefaultBaseEntity
-            )[childIndex];
-            if (!resolvedChild)
+            const child = (currentEntity.children ?? [])[childIndex];
+            if (!child)
                 throw new Error(`Could not resolve entity child at index '${childIndex}'`);
 
-            currentEntity = resolvedChild.entity;
-            currentDefaultBaseEntity = "ANY_ENTITY";
+            currentEntity = child;
         }
 
         return currentEntity;
     }
 
-    // BUILD THE RAW CHILD LIST IN THE SAME ORDER AS MergeChildren(). Entries authored on
-    // the current entity suppress inherited source children when they reference that child's UID.
-    private ResolveRawEntityChildren(entity: Entity, rawSettingsData: SettingsData, defaultBaseEntity?: string): Array<{ entity: Entity, inherited: boolean }>
-    {
-        var scene = (plugin.GetCurrentScene() as EntityScene);
-
-        var resolvedChildren = (entity.children ?? []).map(child => ({ entity: child, inherited: false }));
-        var baseEntityName = entity.entity || defaultBaseEntity;
-        var visitedBaseEntities = new Set<string>();
-
-        while (baseEntityName)
-        {
-            if (visitedBaseEntities.has(baseEntityName))
-                throw new Error(`Circular entity inheritance while resolving children for '${entity.name}'`);
-            visitedBaseEntities.add(baseEntityName);
-
-            const baseEntity = scene.settingsHandler.GetRawEntity(baseEntityName, rawSettingsData, entity.children ?? []);
-            if (!baseEntity)
-                throw new Error(`Could not find base entity '${baseEntityName}' while resolving child path`);
-
-            const resolvedChildrenByEntity = new Map(
-                resolvedChildren.map(resolvedChild => [resolvedChild.entity, resolvedChild])
-            );
-            resolvedChildren = scene.MergeChildren(
-                baseEntity.children,
-                resolvedChildren.map(resolvedChild => resolvedChild.entity)
-            ).map(resolvedEntity =>
-                resolvedChildrenByEntity.get(resolvedEntity)
-                ?? { entity: resolvedEntity, inherited: true }
-            );
-            baseEntityName = baseEntity.entity;
-        }
-
-        return resolvedChildren;
-    }
-
-    // Resolve an editor child path against the live GameObject tree. The displayed entity tree and
-    // runtime child array can differ after an inherited source child is replaced by a UID override,
-    // so prefer stable UID identity and use the displayed index only as a fallback.
-    ResolveRuntimeEntityPath(rootObject: GameObject | null, entity: Entity, processedEntity: Entity, childPath: Array<number | string>, rawSettingsData: SettingsData, defaultBaseEntity?: string): GameObject | null
+    // Resolve a displayed child path against the live GameObject tree. Raw, processed and runtime
+    // save-children all share MergeChildren() order, so the displayed index maps directly.
+    ResolveRuntimeEntityPath(rootObject: GameObject | null, childPath: Array<number | string>): GameObject | null
     {
         var currentObject = rootObject;
-        var currentEntity = entity;
-        var currentProcessedEntity = processedEntity;
-        var currentDefaultBaseEntity = defaultBaseEntity;
 
         for (const childPathEntry of childPath)
         {
@@ -2799,94 +2697,14 @@ export class PluginHandler
             if (!currentObject || !Number.isInteger(childIndex) || childIndex < 0)
                 return null;
 
-            const resolvedChild = this.ResolveRawEntityChildren(
-                currentEntity,
-                rawSettingsData,
-                currentDefaultBaseEntity
-            )[childIndex];
-            if (!resolvedChild)
-                return null;
-
-            const processedChild = currentProcessedEntity?.children?.[childIndex];
-            const entityLink = resolvedChild.entity.entity;
-            const linkIsUID = !!entityLink
-                && !SettingsHandler.FindEntity(rawSettingsData, entityLink)
-                && !SettingsHandler.FindEntity(defaultSettingsData, entityLink);
-            const sourceEntityUID = resolvedChild.entity.entityUID
-                || (linkIsUID ? entityLink : undefined)
-                || processedChild?.entityUID;
-            const runtimeChildren = currentObject.children.filter(child => child.save);
-            const runtimeChild = sourceEntityUID
-                ? runtimeChildren.find(child =>
-                    child.entity?.entityUID == sourceEntityUID
-                    || child.entity?.entity == sourceEntityUID
-                ) ?? runtimeChildren[childIndex]
-                : runtimeChildren[childIndex];
-
+            const runtimeChild = currentObject.children.filter(child => child.save)[childIndex];
             if (!runtimeChild)
                 return null;
 
             currentObject = runtimeChild;
-            currentEntity = resolvedChild.entity;
-            currentProcessedEntity = processedChild;
-            currentDefaultBaseEntity = "ANY_ENTITY";
         }
 
         return currentObject;
-    }
-
-    // RESOLVE A DISPLAYED CHILD PATH TO AN AUTHORED RAW RECORD THAT IS SAFE TO MUTATE.
-    // When the displayed child only exists in an inherited source, materialize a lightweight
-    // `{ entity: source.entityUID }` override on the current raw parent and continue through it.
-    ResolveWritableEntityPath(entity: Entity, childPath: Array<number | string>, rawSettingsData: SettingsData, defaultBaseEntity?: string, processedEntity?: Entity): Entity
-    {
-        var currentEntity = entity;
-        var currentDefaultBaseEntity = defaultBaseEntity;
-        var currentProcessedEntity = processedEntity;
-
-        for (const childPathEntry of childPath)
-        {
-            const childIndex = Number(childPathEntry);
-            if (!Number.isInteger(childIndex) || childIndex < 0)
-                throw new Error(`Invalid entity child index '${childPathEntry}'`);
-
-            const resolvedChild = this.ResolveRawEntityChildren(
-                currentEntity,
-                rawSettingsData,
-                currentDefaultBaseEntity
-            )[childIndex];
-            if (!resolvedChild)
-                throw new Error(`Could not resolve entity child at index '${childIndex}'`);
-
-            // The generated source UID lives on the processed child, while the raw source child
-            // remains free of processing-only metadata. Both trees use MergeChildren() ordering.
-            const processedChild = currentProcessedEntity?.children?.[childIndex];
-
-            if (resolvedChild.inherited)
-            {
-                const sourceEntityUID = resolvedChild.entity.entityUID || processedChild?.entityUID;
-                if (!sourceEntityUID)
-                    throw new Error(`Cannot override inherited entity child at index '${childIndex}' because it has no entityUID`);
-
-                // Persist the source identity when it is first used by an authored override. This
-                // lets the UID link resolve before construction on subsequent Process() calls.
-                resolvedChild.entity.entityUID ??= sourceEntityUID;
-
-                const entityOverride: Entity = { entity: sourceEntityUID };
-                currentEntity.children ??= [];
-                currentEntity.children.push(entityOverride);
-                currentEntity = entityOverride;
-            }
-            else
-            {
-                currentEntity = resolvedChild.entity;
-            }
-
-            currentDefaultBaseEntity = "ANY_ENTITY";
-            currentProcessedEntity = processedChild;
-        }
-
-        return currentEntity;
     }
     
     CleanUpSettingsDataUIDs(rawSettingsData: SettingsData): void
