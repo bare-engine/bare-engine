@@ -24,6 +24,10 @@ declare global {
   }
 }
 
+// Do not expose a partially initialized API. The extension treats a missing API as
+// not ready and keeps pinging until PluginHandler.Init() publishes it below.
+window.__GAME_DEBUG_API__ = undefined;
+
 function getObjectByIdFromAllScenes(uid: string): GameObject | null
 {
     for (const scene of bare.scene.GetAll(true))
@@ -37,7 +41,7 @@ function getObjectByIdFromAllScenes(uid: string): GameObject | null
     return null;
 }
 
-window.__GAME_DEBUG_API__ = {
+const gameDebugApi = {
     getPaused() {
         return plugin.GetPaused();
     },
@@ -49,9 +53,7 @@ window.__GAME_DEBUG_API__ = {
     },
     setPluginConnected(connected: boolean) {
         if (connected)
-        {
-            plugin.isPluginConnected = connected;
-        }
+            plugin.isPluginConnected = true;
 
         // REMOVED THE EditorUIScene WHEN PLUGIN BECOMES CONNECTED
         // COMMENTED OUT SINCE THE EditorUIScene KEPT BEING REMOVED HERE AND ADDED AT Check()
@@ -1568,6 +1570,7 @@ export class PluginHandler
     {
         plugin = new PluginHandler(showEditorButton, editorButtonPosition);
         globalThis.plugin = plugin;
+        window.__GAME_DEBUG_API__ = gameDebugApi;
     }
 
     constructor(showEditorButton: boolean, editorButtonPosition: Position)
