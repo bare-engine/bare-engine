@@ -2154,11 +2154,11 @@ export class PluginHandler
             baseEntity = processedBaseEntity?.entity;
 
             // A UID points at a child definition rather than a top-level entity. Child definitions
-            // do not persist their implicit default base, so continue through ANY_ENTITY when the
+            // do not persist their implicit default base, so continue through ANY when the
             // referenced child has no explicit entity. This matches BuildEntityEditorData's direct
-            // child path and produces UID/name -> ANY_ENTITY -> ANY in the inheritance log.
-            //if (!baseEntity && getRawEntity(currentBaseEntity)?.entityUID == currentBaseEntity)
-            //    baseEntity = "ANY_ENTITY";
+            // child path and produces UID/name -> ANY in the inheritance log.
+            if (!baseEntity && getRawEntity(currentBaseEntity)?.entityUID == currentBaseEntity)
+                baseEntity = "ANY";
         }
 
         // FILL INFO ABOUT WHAT ENTITY PROPERTIES ARE EXTENDED BY WHY WHICH DATA - USING extendOrder
