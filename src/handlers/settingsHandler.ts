@@ -162,54 +162,21 @@ export class SettingsHandler
             }
         }
 
-        // SETTING entityUID FOR ALL RAW ENTITIES
-        // ALL OTHER ENITIES GET THEIR entityUID GENERATED AND IN ExtendEntity()
-        // THESE entityUID FIELDS DON'T GET SERIALIZED WHEN UNUSED, SEE CleanSettingsDataEntityUIDs()
+        // FILLING rawEntitiesMappedByUID - SO CHILREN REFERENCING THEIR .entity TO THIS UID, CAN QUICKLY FIND IT
         this.rawEntitiesMappedByUID = {};
-        this.processedEntitiesMappedByUID = {};
-        var indexRawEntityUIDs = (entities: Entity[]) =>
+        var fillEntityUIDS = (entities: Entity[]) =>
         {
             for (const entity of entities)
             {
-                entity.entityUID ??= Helper.GenerateEntityUID();
-                this.rawEntitiesMappedByUID[entity.entityUID] = Helper.DeepCopy(entity);
+                if (entity.entityUID)
+                    this.rawEntitiesMappedByUID[entity.entityUID] = entity;
 
-                indexRawEntityUIDs(entity.children ?? []);
-            }
-        };
-        indexRawEntityUIDs([
-            ...(raw.baseEntities ?? []),
-            ...(raw.entities ?? [])
-        ]);
-
-        // ALREADY EXTENDING CHILDREN, SO IT'S EASIER TO DO OPERATIONS ON THEM
-        // WILL BE CLEANED IN CleanSettingsDataEntityUIDs() TOO
-        var extendEntityChildren = (entities: Entity[]) =>
-        {
-            for (const entity of entities)
-            {
-                entity.children ??= [];
-
-                var entityName = entity.entity || "ANY";
-                var settingsDataEntity = this.GetRawEntity(entityName, raw, entity.children);
-
-                var sourceChildrenAr = settingsDataEntity?.children ?? [];
-                for (var i = sourceChildrenAr.length - 1; i >= 0; i--)
-                {
-                    var sourceChild = sourceChildrenAr[i];
-
-                    var sourceChildUIDIsInOtherChild = (entity.children).some(child => child.entity === sourceChild.entityUID);
-                    if (!sourceChildUIDIsInOtherChild)
-                    {
-                        entity.children.unshift({entity: sourceChild.entityUID});
-                    }
-                }
-
-                extendEntityChildren(entity.children);
+                if (entity.children?.length > 0)
+                    fillEntityUIDS(entity.children);
             }
         }
-        extendEntityChildren(raw.entities ?? []);
-        extendEntityChildren(raw.baseEntities ?? []);
+        fillEntityUIDS(raw.baseEntities);
+        fillEntityUIDS(raw.entities);
 
         var settings = this.clone(raw);
 
@@ -685,28 +652,11 @@ export class SettingsHandler
 
         var i = 0;
         
-        var assignID = (entities: Entity[]) => {
-            for (const entity of entities)
-            {
-                entity.entityUID ??= Helper.GenerateEntityUID();
-                this.rawEntitiesMappedByUID[entity.entityUID] = Helper.DeepCopy(entity);
-                assignID(entity.children ?? []);
-            }
-        }
-
-        entity.entityUID ??= Helper.GenerateEntityUID();
-        this.rawEntitiesMappedByUID[entity.entityUID] = Helper.DeepCopy(entity);
-        
         var entityName = entity.entity || "ANY";
         while (entityName)
         {
-            var settingsDataEntity = this.GetRawEntity(entityName, rawSettingsData, entity.children ?? []);
+            var settingsDataEntity = this.GetRawEntity(entityName, rawSettingsData);
 
-            // COULD BE THAT THIS settingsDataEntity.entity HAS NO ASSIGNED UID YET
-            assignID([settingsDataEntity]);
-            //settingsDataEntity.entityUID ??= Helper.GenerateEntityUID();
-            //this.rawEntitiesMappedByUID[entity.entityUID] = Helper.DeepCopy(settingsDataEntity);
-            
             if (!settingsDataEntity)
             {
                 throw new Error(`Could not find base entity '${entityName}' for entity '${entity.name}'`);
@@ -953,10 +903,12 @@ export class SettingsHandler
     }
 
     GetProcessedEnity(entityNameOrId: string, processedSettingsData: SettingsData = this.processed): Entity
-    {
+    {        
         return SettingsHandler.FindEntity(processedSettingsData, entityNameOrId)
             || this.processedEntitiesMappedByUID[entityNameOrId]
             || SettingsHandler.FindEntity(defaultSettingsData, entityNameOrId)!;
+        
+        // return SettingsHandler.FindEntity(processedSettingsData, entityNameOrId) || SettingsHandler.FindEntity(defaultSettingsData, entityNameOrId)!;
     }
 
     SnapshotCurrent(): SettingsData
@@ -1041,63 +993,5 @@ export class SettingsHandler
             for (const child of entity.children)
                 this.StripEntityRuntimeIds(child);
         }
-    }
-
-    CleanSettingsDataEntityUIDs(settingsDataRaw: SettingsData): void
-    {
-        var didClean: boolean;
-
-        do
-        {
-            didClean = false;
-            var entitiesAr = [
-                ...(settingsDataRaw.entities ?? []),
-                ...(settingsDataRaw.baseEntities ?? [])
-            ];
-            var stringifiedEntities = JSON.stringify(entitiesAr); // REFRESH AFTER EACH PASS SO REMOVED REFERENCES ARE SEEN IMMEDIATELY
-
-            var traverseEntities = (entities: Entity[]) => {
-                for (var i = entities.length - 1; i >= 0; i--)
-                {
-                    const entity = entities[i];
-
-                    if (Array.isArray(entity.children))
-                    {
-                        traverseEntities(entity.children);
-
-                        if (entity.children.length == 0)
-                        {
-                            delete entity.children;
-                            didClean = true;
-                        }
-                    }
-
-                    if (entity.entityUID)
-                    {
-                        var firstIndex = stringifiedEntities.indexOf(entity.entityUID);
-                        var lastIndex = stringifiedEntities.lastIndexOf(entity.entityUID);
-                        var moreThanOneRef = (firstIndex != lastIndex);
-
-                        if (!moreThanOneRef)
-                        {
-                            delete entity.entityUID; // THIS UID IS NOT REFERENCED ANYWHERE ELSE, REMOVE IT
-                            didClean = true;
-
-                            if (Object.keys(entity).length == 1 && entity.entity && this.rawEntitiesMappedByUID[entity.entity])
-                                delete entity.entity;
-                        }
-                    }
-
-                    if (Object.keys(entity).length == 0)
-                    {
-                        entities.splice(i, 1);
-                        didClean = true;
-                    }
-                }
-            }
-            traverseEntities(settingsDataRaw.entities ?? []);
-            traverseEntities(settingsDataRaw.baseEntities ?? []);
-        }
-        while (didClean);
     }
 }

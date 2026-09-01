@@ -263,15 +263,17 @@ export class EntityScene extends EditorScene
     {
         var rootObject = this.object.GetByName(this.objectName);
         
-        var entity = this.GetEnitityFromObject(rootObject);
-        delete entity.name;//
+        var entity = {
+            name: this.objectName, // KEEP NAME ON TOP
+            ...this.GetEnitityFromObject(rootObject)
+        };
 
         const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
             SettingsHandler.SetEntity(draft, this.objectName, entity);
         });
         const dataToSave = Helper.DeepCopy(newRawSettingsData);
 
-        this.settingsHandler.CleanSettingsDataEntityUIDs(dataToSave);
+        globalThis.plugin?.CleanSettingsDataEntityUIDs(dataToSave, this.settingsHandler);
 
         await this.SaveEntityData(dataToSave);
 

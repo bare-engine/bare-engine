@@ -410,6 +410,8 @@ window.__GAME_DEBUG_API__ = {
     const settingsHandler = plugin.GetSettingsDataHandler(settingsDataName);
     plugin.currentSettingsDataName = settingsHandler.GetRaw()?.name ?? "";
     
+    plugin.ProcessSettingsDataForPlugin(name, settingsHandler);
+
     // Remember it so setPluginConnected can re-open it after a recompile/restart.
     plugin.lastEntity = { name };
 
@@ -956,7 +958,7 @@ window.__GAME_DEBUG_API__ = {
 
             return;
         }
-        
+
         // WRITE ENTITY PROPS TO RAW
         var entity = plugin.ResolveEntityChildPath(
             SettingsHandler.FindEntity(rawSettingsData, entityScene.objectName)!,
@@ -1989,68 +1991,126 @@ export class PluginHandler
         return fallback;
     }
 
-    // FOR ALL ENTITIES IN SETTINGS,
-    // FILL entity.baseEntityLog WITH DATA ABOUT WHAT PROPERTIES IT EXTENDS
-    ProcessSettingsData(settings: SettingsData):void
+    ProcessSettingsDataForPlugin(entityName: string, settingsHandler: SettingsHandler)
     {
-        // STORE ENTITES BASED ON HOW MANY TIMES THEY EXTEND DATA - COULD BE ARRAY? NEVER ANY GAP?
-        var entitiesByExtendCount:Record<int, {entity: Entity, extendEntities: Array<Entity>}[]> = {};
+        var raw = settingsHandler.GetRaw();
+        var entity = SettingsHandler.FindEntity(raw, entityName);
 
-        var entitiesCombined = [...settings.baseEntities, ...settings.entities];
-        for (const entity of entitiesCombined)
+        // EXTENDING CHILDREN, SO IT'S EASIER TO DO OPERATIONS ON THEM
+        // WILL BE CLEANED IN CleanSettingsDataEntityUIDs() AGAIN
+        var extendEntityChildren = (entities: Entity[]) =>
         {
-            let extendCount = 0;
-
-            let extendEntities = [];
-            let baseEntity = entity.entity;
-            while (baseEntity)
+            for (const entity of entities)
             {
-                extendCount++;
-                const extendedEntity = SettingsHandler.FindEntity(settings, baseEntity);
-                if (!extendedEntity)
-                    break;
-                extendEntities.push(extendedEntity);
-                baseEntity = extendedEntity.entity;
-            }
+                entity.children ??= [];
 
-            entitiesByExtendCount[extendCount] ??= [];
-            entitiesByExtendCount[extendCount].push({entity, extendEntities});
-        }
-
-        // FILL baseEntityLog OF ENTITIES 
-        // STARTING FROM THE LEAST EXTENDED, TO MOST. THIS ALLOWS US TO REUSE THE LOG WE PROCESSED BEFORE
-        for (var extendCount in entitiesByExtendCount)
-        {
-            var entityInfoAr = entitiesByExtendCount[extendCount];
-
-            for (var entityInfo of entityInfoAr)
-            {
-                let entity = entityInfo.entity;
-                let extendEntities = entityInfo.extendEntities;
-
-                // FILL INFO ABOUT WHAT ENTITY PROPERTIES ARE EXTENDED BY WHY WHICH DATA
-                let propsInThisEntity = Object.keys(entity);
-                propsInThisEntity.splice(propsInThisEntity.indexOf("name"), 1);
-                entity.baseEntityLog = {};
-                entity.baseEntityLog[entity.name] = propsInThisEntity;
-
-                var extendOrder = [entity.name];
-                entity.baseEntityLog["__extendOrder__"] = extendOrder;
-
-                for (var extendEntity of extendEntities)
+                var entityName = entity.entity || "ANY";
+                var visitedEntityNames = new Set<string>();
+                while (entityName && !visitedEntityNames.has(entityName))
                 {
-                    entity.baseEntityLog[extendEntity.name] = [];
-                    for (var extendedEntityName of extendEntity.baseEntityLog["__extendOrder__"])
+                    visitedEntityNames.add(entityName);
+                    var settingsDataEntity = settingsHandler.GetRawEntity(entityName, raw);
+                    if (!settingsDataEntity)
+                        break;
+
+                    var sourceChildrenAr = settingsDataEntity.children ?? [];
+                    for (var i = sourceChildrenAr.length - 1; i >= 0; i--)
                     {
-                        var propsExtended = extendEntity.baseEntityLog[extendedEntityName];
-                        var propsExtendedFiltered = propsExtended.filter(p => !propsInThisEntity.includes(p));
-                        entity.baseEntityLog[extendEntity.name] = propsExtendedFiltered;
+                        var sourceChild = sourceChildrenAr[i];
+
+                        // GIVE SOURCE CHILD AN UID, IF IT DOESN'T HAVE ONE ALREADY
+                        sourceChild.entityUID ??= Helper.GenerateEntityUID();
+                        settingsHandler.rawEntitiesMappedByUID[sourceChild.entityUID] = sourceChild;
+
+                        var sourceChildUIDIsInOtherChild = entity.children.some(child => child.entity === sourceChild.entityUID);
+                        if (!sourceChildUIDIsInOtherChild)
+                        {
+                            var newChildEnity:Entity = {entity: sourceChild.entityUID};
+
+                            // NEW CHILD ALSO NEEDS A UID, IN CASE ANOTHER CHILD REFRENCES IT
+                            newChildEnity.entityUID = Helper.GenerateEntityUID();
+                            settingsHandler.rawEntitiesMappedByUID[newChildEnity.entityUID] = newChildEnity;
+
+                            entity.children.unshift(newChildEnity);
+                        }
                     }
 
-                    extendOrder.push(extendEntity.name);
+                    // Children can be inherited through multiple entity levels, so continue through the complete base chain.
+                    entityName = settingsDataEntity.entity || "";
                 }
+
+                // STORE UNCONSTRUCTED ENTITIES IN rawEntitiesMappedByUID, SO GetEnitityFromObject() CAN USE THEM FOR SERIALIZATION
+                for (const child of entity.children)
+                {
+                    child.entityUID ??= Helper.GenerateEntityUID();
+                    settingsHandler.rawEntitiesMappedByUID[child.entityUID] = child;
+                }
+
+                extendEntityChildren(entity.children);
             }
         }
+        extendEntityChildren([entity]);
+    }
+
+    CleanSettingsDataEntityUIDs(settingsDataRaw: SettingsData, settingsHandler: SettingsHandler): void
+    {
+        var didClean: boolean;
+
+        do
+        {
+            didClean = false;
+            var entitiesAr = [
+                ...(settingsDataRaw.entities ?? []),
+                ...(settingsDataRaw.baseEntities ?? [])
+            ];
+            var stringifiedEntities = JSON.stringify(entitiesAr); // REFRESH AFTER EACH PASS SO REMOVED REFERENCES ARE SEEN IMMEDIATELY
+
+            var traverseEntities = (entities: Entity[]) => {
+                for (var i = entities.length - 1; i >= 0; i--)
+                {
+                    const entity = entities[i];
+
+                    if (Array.isArray(entity.children))
+                    {
+                        traverseEntities(entity.children);
+
+                        if (entity.children.length == 0)
+                        {
+                            delete entity.children;
+                            didClean = true;
+                        }
+                    }
+
+                    if (entity.entityUID)
+                    {
+                        var firstIndex = stringifiedEntities.indexOf(entity.entityUID);
+                        var lastIndex = stringifiedEntities.lastIndexOf(entity.entityUID);
+                        var moreThanOneRef = (firstIndex != lastIndex);
+
+                        if (!moreThanOneRef)
+                        {
+                            delete entity.entityUID; // THIS UID IS NOT REFERENCED ANYWHERE ELSE, REMOVE IT
+                            didClean = true;
+                        }
+                    }
+
+                    // A bare UID reference adds no authored data; its source entity supplies the
+                    // child. This also handles serialized references that have no temporary
+                    // entityUID of their own.
+                    if (Object.keys(entity).length == 1 && entity.entity && settingsHandler.rawEntitiesMappedByUID[entity.entity])
+                        delete entity.entity;
+
+                    if (Object.keys(entity).length == 0)
+                    {
+                        entities.splice(i, 1);
+                        didClean = true;
+                    }
+                }
+            }
+            traverseEntities(settingsDataRaw.entities ?? []);
+            traverseEntities(settingsDataRaw.baseEntities ?? []);
+        }
+        while (didClean);
     }
 
     // RETURNS A NEW ENTITY WITH baseEntityLog ADDED TOT IT
@@ -2328,24 +2388,34 @@ export class PluginHandler
         {
             var entityOptions: Array<{ value: string, label: string, source?: string }> = [];
             var optionSourceName = entity.entity || defaultBaseEntity;
-            var optionSource = this.GetCurrentScene().settingsHandler.GetRawEntity(optionSourceName, settingsDataRaw);
-            var processedOptionSource = this.GetCurrentScene().settingsHandler.GetProcessedEnity(optionSourceName, settingsDataProcessed);
             var optionValues = new Set<string>();
-            var optionSourceChildren: Entity[] = optionSource?.children ?? [];
-            for (var sourceChildIndex = 0; sourceChildIndex < optionSourceChildren.length; sourceChildIndex++)
+            var visitedOptionSources = new Set<string>();
+            while (optionSourceName && !visitedOptionSources.has(optionSourceName))
             {
-                var sourceChild = optionSourceChildren[sourceChildIndex];
-                var processedSourceChild = processedOptionSource?.children?.[sourceChildIndex];
-                var sourceChildUID = sourceChild.entityUID || processedSourceChild?.entityUID;
-                if (!sourceChildUID || optionValues.has(sourceChildUID))
-                    continue;
+                visitedOptionSources.add(optionSourceName);
+                var optionSource = this.GetCurrentScene().settingsHandler.GetRawEntity(optionSourceName, settingsDataRaw);
+                if (!optionSource)
+                    break;
 
-                optionValues.add(sourceChildUID);
-                entityOptions.push({
-                    value: sourceChildUID,
-                    label: sourceChild.name || processedSourceChild?.name || sourceChildUID,
-                    source: optionSourceName,
-                });
+                var processedOptionSource = this.GetCurrentScene().settingsHandler.GetProcessedEnity(optionSourceName, settingsDataProcessed);
+                var optionSourceChildren: Entity[] = optionSource.children ?? [];
+                for (var sourceChildIndex = 0; sourceChildIndex < optionSourceChildren.length; sourceChildIndex++)
+                {
+                    var sourceChild = optionSourceChildren[sourceChildIndex];
+                    var processedSourceChild = processedOptionSource?.children?.[sourceChildIndex];
+                    var sourceChildUID = sourceChild.entityUID || processedSourceChild?.entityUID;
+                    if (!sourceChildUID || optionValues.has(sourceChildUID))
+                        continue;
+
+                    optionValues.add(sourceChildUID);
+                    entityOptions.push({
+                        value: sourceChildUID,
+                        label: sourceChild.name || processedSourceChild?.name || sourceChildUID,
+                        source: optionSourceName,
+                    });
+                }
+
+                optionSourceName = optionSource.entity || "";
             }
 
             for (var i = 0; i < entityWithLog.children.length; i++)
@@ -2525,12 +2595,12 @@ export class PluginHandler
         const scene = bare.scene.GetMainScene();
 
         // REMOVE EMPTY UID-BASED CHILD OVERRIDES AND THEIR NOW-UNUSED SOURCE UIDS
-        //plugin.CleanUpSettingsDataUIDs(newData);
+        plugin.CleanUpSettingsDataUIDs(newData);
 
         const settingsHandler = this.GetSettingsDataHandler(newData.name ?? "");
         
         const dataToSave = Helper.DeepCopy(newData);
-        settingsHandler.CleanSettingsDataEntityUIDs(dataToSave);
+        this.CleanSettingsDataEntityUIDs(dataToSave, settingsHandler);
 
         settingsHandler.FilterSettingsDataDefaults(dataToSave);
 

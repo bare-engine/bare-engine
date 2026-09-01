@@ -405,11 +405,22 @@ export class Scene implements SceneI
     {
         var possibleEntityChildren = [];
         var toStripEntityUID = [];
+        const inheritedSourceUIDByChildUID = new Map<string, string>();
         for (var possibleChild of sourceChildren)
         {
             var possibleChildCopy = { ...possibleChild };
             if (possibleChild.entityUID)
             {
+                // A processed inherited child can itself be a proxy: its entityUID identifies the
+                // proxy while its entity points at the original source child. Plugin preprocessing
+                // may already have materialized a current child using that original source UID.
+                // Preserve that canonical identity before replacing .entity below.
+                if (typeof possibleChild.entity === "string"
+                    && this.settingsHandler.rawEntitiesMappedByUID[possibleChild.entity])
+                {
+                    inheritedSourceUIDByChildUID.set(possibleChild.entityUID, possibleChild.entity);
+                }
+
                 possibleChildCopy.entity = possibleChild.entityUID;
                 toStripEntityUID.push(possibleChildCopy);
             }
@@ -421,11 +432,21 @@ export class Scene implements SceneI
         const usedCurrentChildren = new Set<number>();
         const merged = (possibleEntityChildren ?? []).map(sourceChild =>
         {
-            if (sourceChild.entityUID === undefined)
+            const referencedSourceUID = typeof sourceChild.entity === "string"
+                && this.settingsHandler.rawEntitiesMappedByUID[sourceChild.entity]
+                    ? sourceChild.entity
+                    : undefined;
+            const sourceChildUID = sourceChild.entityUID ?? referencedSourceUID;
+            if (sourceChildUID === undefined)
                 return sourceChild;
 
+            const inheritedSourceUID = sourceChild.entityUID
+                ? inheritedSourceUIDByChildUID.get(sourceChild.entityUID)
+                : undefined;
             const overrideIndex = current.findIndex((currentChild, index) =>
-                !usedCurrentChildren.has(index) && currentChild.entity === sourceChild.entityUID
+                !usedCurrentChildren.has(index)
+                && (currentChild.entity === sourceChildUID
+                    || (inheritedSourceUID !== undefined && currentChild.entity === inheritedSourceUID))
             );
 
             if (overrideIndex === -1)
@@ -524,8 +545,8 @@ export class Scene implements SceneI
                                 delete entityArg[prop as keyof Entity];
                             }
                             
-                            entityArg.entityUID ??= Helper.GenerateEntityUID();
-                            this.settingsHandler.rawEntitiesMappedByUID[entityArg.entityUID] = Helper.DeepCopy(entityArg);
+                            //entityArg.entityUID ??= Helper.GenerateEntityUID();
+                            //this.settingsHandler.rawEntitiesMappedByUID[entityArg.entityUID] = Helper.DeepCopy(entityArg);
 
                             var mergedChildren = this.MergeChildren(possibleEntity.children ?? [], entityArg.children);
 
