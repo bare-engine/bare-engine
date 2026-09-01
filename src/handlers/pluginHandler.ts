@@ -964,6 +964,16 @@ window.__GAME_DEBUG_API__ = {
             SettingsHandler.FindEntity(rawSettingsData, entityScene.objectName)!,
             childPath
         );
+
+        if (entityReferenceChanged)
+        {
+            entity.children = entity.children?.filter((child: Entity) =>
+                !entityScene.settingsHandler.rawEntitiesMappedByUID[child.entity]
+            );
+
+            if (entity.children?.length === 0)
+                delete entity.children;
+        }
         
         var entityCopy = Object.assign({}, entity);
 
@@ -2337,6 +2347,7 @@ export class PluginHandler
             throw new Error(`Could not build editor data for missing entity '${name}'`);
 
         var extendedEntity = Helper.DeepCopy(entity);
+        settingsHandler.ExtendEntityTree(extendedEntity, raw);
         
         // Child entities need the same inherited fields, extend provenance, defaults, and removal
         // metadata as the root entity; otherwise the panel cannot render their labels and controls.
