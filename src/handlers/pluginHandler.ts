@@ -2602,6 +2602,10 @@ export class PluginHandler
             throw new Error('Cannot save processed data. Something went really wrong!');
         }
 
+        // WAS SET FOR ENTITY SCENE
+        delete newData.showUI;
+        delete newData.selectionEnabled;
+
         //var scene = plugin.GetCurrentScene();
         const scene = bare.scene.GetMainScene();
 
