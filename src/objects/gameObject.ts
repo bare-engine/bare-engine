@@ -876,9 +876,6 @@ export class GameObject
     childrenInheritInnerTransform: boolean = true;
 
     @InspectorField @Save
-    customName: string = "";
-
-    @InspectorField @Save
     persistent: boolean = false;
 
     @InspectorField @Save
@@ -1611,7 +1608,6 @@ export class GameObject
         this.visible = true;
         this.visibleInEditor = true;
         this.tags = [];
-        this.customName = "";
         this.tapHitbox = null;
         this.revertPivotOnSave = false;
         this.resizeable = true;

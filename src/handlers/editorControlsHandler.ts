@@ -46,7 +46,7 @@ export class EditorControlsHandler {
 
         this.currentPreviewEntity = new ArcadeObject(this.scene, '', -100, -100);
         this.currentPreviewEntity.name = 'currentPreviewEntity';
-        this.currentPreviewEntity.customName = 'ignoreInPlugin';
+        this.currentPreviewEntity.name = 'ignoreInPlugin';
         this.SetCurrentPreviewActive(false);//
 
         this.init();
@@ -688,7 +688,7 @@ export class EditorControlsHandler {
         this.currentPreviewEntity.ResetValues();
         this.currentPreviewEntity.Init(MakePathForEntity(entityCopy));
         this.currentPreviewEntity.alpha = 0.5;
-        this.currentPreviewEntity.customName = 'ignoreInPlugin';
+        this.currentPreviewEntity.name = 'ignoreInPlugin';
 
         this.SetCurrentPreviewActive(true);
 
@@ -697,7 +697,7 @@ export class EditorControlsHandler {
             this.scene.ApplyEntityToGameObject(entityCopy, this.currentPreviewEntity, false);
             this.SetCurrentPreviewActive(true); // COULD HAVE BEEN SET TO VISIBLE FALSE ABOVE
             this.currentPreviewEntity.alpha = 0.5;
-            this.currentPreviewEntity.customName = 'ignoreInPlugin';
+            this.currentPreviewEntity.name = 'ignoreInPlugin';
         }
 
         this.currentPreviewEntity.WhenTextureLoaded(() => {

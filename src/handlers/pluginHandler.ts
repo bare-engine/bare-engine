@@ -308,7 +308,7 @@ const gameDebugApi = {
     const layers = scene.object.GetLayers();
 
     return layers.flatMap((objects, layerIndex) => objects
-                    .filter(o => o.customName !== 'ignoreInPlugin')
+                    .filter(o => o.name !== 'ignoreInPlugin')
                     .map(o => ({
                         id: o.uniqueID,
                         name: o.pluginName || o.name || "gameObject",
@@ -602,7 +602,7 @@ const gameDebugApi = {
         var data = {
             id: o.uniqueID,
             name: o.name || "noName",
-            customName: o.customName,
+            customName: o.name,
 
             x: o.x,
             y: o.y,
@@ -1794,7 +1794,7 @@ export class PluginHandler
             {
                 var obj = objs[j];
 
-                if (obj.customName == 'ignoreInPlugin')
+                if (obj.name == 'ignoreInPlugin')
                     continue;
 
                 if (!obj.visible || !obj.visibleInEditor || obj.alpha == 0)
@@ -1834,7 +1834,7 @@ export class PluginHandler
             {
                 var obj = objs[j];
 
-                if (obj.customName == 'ignoreInPlugin')
+                if (obj.name == 'ignoreInPlugin')
                     continue;
 
                 if (!obj.visible || !obj.visibleInEditor || obj.alpha == 0)
