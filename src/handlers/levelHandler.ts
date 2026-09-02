@@ -247,6 +247,7 @@ export class LevelHandler
             {
                 var gameObject = this.scene.AddGameObject(levelEntity, layerName);
 
+                gameObject.unconstructedEntity = levelEntity; // USED IN GetEnitityFromObject() FOR SERIALIZATION
                 gameObject.save = true;
             }
         }
@@ -560,28 +561,15 @@ to package.json to keep the generated assets (can become large for big projects)
     // COME BACK LATER TO OPTIMIZE/CACHE - TODO
     SerializeObject(obj: GameObject, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false, includeSaveFields: false }): Entity
     {
-        var entity:Entity = {};
+        var entity = this.scene.GetEnitityFromObject(obj, options);
 
-        if (obj.entity && obj.entity.entity)
-            entity.entity = obj.entity.entity; // obj.entity.entity IS NAME OF ENTITY IT'S EXTENDING
-
-        var origEntity = this.scene.ConstructEntityWithDefaultValues(obj.entity.entity, this.scene.settingsData, options);
-        var fullEntity = this.SerializeObjectFully(obj, options.forceAllEntityVars, options.includeSaveFields);
-        var diffEntity = this.GetEntitiesDiff(origEntity, fullEntity);
-
-        if (diffEntity)
+        // ROUND POSITION
+        if (entity.position)
         {
-            // ROUND POSITION
-            if (diffEntity.position)
-            {
-                if (diffEntity.position.x)
-                    diffEntity.position.x = Math.round(diffEntity.position.x);
-                if (diffEntity.position.y)
-                    diffEntity.position.y = Math.round(diffEntity.position.y);
-            }
-
-            // APPLY DIFF TO entity
-            Object.assign(entity, diffEntity);
+            if (entity.position.x)
+                entity.position.x = Math.round(entity.position.x);
+            if (entity.position.y)
+                entity.position.y = Math.round(entity.position.y);
         }
 
         //delete entity.name;

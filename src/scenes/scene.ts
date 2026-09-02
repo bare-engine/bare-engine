@@ -33,6 +33,8 @@ export class Scene implements SceneI
     @InspectorField public resize: boolean = false;
 
     public solo: boolean = false;
+
+    defaultGameObject: GameObject;
    
     @InspectorField
     get _solo(): boolean { return this.solo; }
@@ -267,6 +269,8 @@ export class Scene implements SceneI
     {
         this.started = false;
 
+        this.defaultGameObject = new GameObject(this);
+
         // SNAPSHOT FIRST, FLAG SECOND: CONTROLLERS CREATED DURING THE LOOP (OR LATER)
         // GET THEIR Start AT CREATION IN CreateController INSTEAD
         var controllers = this.GetInstantiatedControllers();
@@ -471,6 +475,88 @@ export class Scene implements SceneI
 
 
         return merged;
+    }
+
+    GetEnitityFromObject(rootObject: GameObject, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false, includeSaveFields: false }): Entity
+    {
+        if (!rootObject.parent)
+        {
+            this.ApplyEntityToGameObject({entity: "ANY"}, this.defaultGameObject);
+        }
+
+        const startingEntity = rootObject.entity || {};
+        const unconstructedSource = rootObject.unconstructedEntity ?? {};
+
+        // SERIALIZE ORIGINAL GAMEOBJECT USING STARTING ENTITY
+        const serializedRootObjectOrig = this.ConstructEntityWithDefaultValues(startingEntity, this.settingsData, options);
+        
+        // SERIALIZE CURRENT GAMEOBJECT
+        const serializedRootObject = this.level.SerializeObjectFully(rootObject, options.forceAllEntityVars, options.includeSaveFields);
+        
+        // STORE THE DIFFERENCES IN AN OBJECT (SHOULD BE EMPTY IF NO CHANGES WERE MADE)
+        const diff = this.level.GetEntitiesDiff(serializedRootObjectOrig, serializedRootObject) ?? {};
+
+        // REDO CHILDREN - NEEDED FOR IF A CHILD IS REMOVED THE ABOVE DIFF IS NOT CORRECT, SINCE IT'S COMPARING DIFFERENT CHILDREN THEN
+        // THIS DOES MAKE THE ABOVE DIFF FINDING ALL DIFFERENCES IN CHILDREN REDUNDANT - OPTIMIZE
+        if (rootObject.children.length > 0)
+        {
+            diff.children = [];
+
+            for (const child of rootObject.children)
+            {
+                if (!child.save && !options.forceAllEntityVars)
+                    continue;
+
+                const childEntity = this.GetEnitityFromObject(child, options);
+                if (Object.keys(childEntity).length > 0)
+                    diff.children.push(childEntity);
+            }
+
+            if (diff.children.length == 0)
+                delete diff.children;
+        }
+
+        const unconstructedEntity = Helper.DeepCopy(unconstructedSource);
+
+        var finalEntity = {};
+
+        if (startingEntity)
+        {
+            if (Object.keys(diff).length > 0 && startingEntity.entity)
+                diff.entity = startingEntity.entity;
+
+            finalEntity = {
+                ...unconstructedEntity,
+                ...diff
+            };
+        }
+        else
+        if (unconstructedSource)
+        {
+            Helper.DeepMerge(unconstructedEntity, diff);
+            delete unconstructedEntity.id;
+            
+            // DON'T SEND THE CUSTOM FIELDS SET BY BASE ENTITY (ANY)
+            if (unconstructedEntity.texture == "placeHolder")
+            {
+                delete unconstructedEntity.texture;
+                delete unconstructedEntity.imagePath;
+            }
+
+            finalEntity = unconstructedEntity;
+        }
+
+        // REMOVE ANY FIELDS THAT HAVE A DEFAULT VALUE
+        for (var field in finalEntity)
+        {
+            var defaultValueField = this.defaultGameObject[field];
+            var currentValueField = finalEntity[field];
+
+            if (Helper.ObjectsAreEqual(defaultValueField, currentValueField))
+                delete finalEntity[field];
+        }
+
+        return finalEntity;
     }
     
     // CONSTRUCTS AN ENTITY OUT OF A ENITTY NAME OR ENTITY OBJECT

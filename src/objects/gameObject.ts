@@ -67,6 +67,7 @@ export class GameObject
     private renderParentTransform: Float32Array | null = null;
 
     entity: Entity | null = null;
+    unconstructedEntity: Entity | null = null; // USED IN GetEnitityFromObject() FOR SERIALIZATION
     
     visibleInEditor:boolean = true;
 
@@ -1616,6 +1617,7 @@ export class GameObject
         this.resizeable = true;
 
         this.entity = null;
+        this.unconstructedEntity = null;
         
         this.startPosition.set(0);
 
