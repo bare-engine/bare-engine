@@ -370,8 +370,8 @@ to package.json to keep the generated assets (can become large for big projects)
             level.entitiesByLayer[layerName] = gameObjs
                 .filter(obj => !obj.persistent && obj.save) // ONLY LOOK AT NON-PERSISTENT AND SAVEABLE OBJECTS
                 .map(obj => {
-                    if (obj.name == "")
-                        trace("NO NAME");
+                    //if (obj.name == "")
+                    //    trace("NO NAME");
 
                     // IF HAS PIVOT HAS BEEN SET IN CODE, BUT WANT TO KEEP SAVING AT ORIGINAL POSITION, THIS REVERTS THE PIVOT
                     if (obj.revertPivotOnSave)
@@ -558,7 +558,6 @@ to package.json to keep the generated assets (can become large for big projects)
     // SERIALIZE OBJECT DIFF
     // THIS IS A VERY INEFFICIENT WAY TO IT, BUT... EASY TO FOLLOW
     // COME BACK LATER TO OPTIMIZE/CACHE - TODO
-    // USED levelEntity BEFORE, KEEPING TRACK OF CHANGES, BUT KEPT GETTING EDGE CASES ALL OVER
     SerializeObject(obj: GameObject, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false, includeSaveFields: false }): Entity
     {
         var entity:Entity = {};

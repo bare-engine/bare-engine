@@ -574,6 +574,9 @@ export class Scene implements SceneI
                             throw new Error(`Could not find base entity '${entityArg.entity}' for entity '${entityArg.name}'`);
                         }
                     }
+
+                    if(entity.entity == "ANY")
+                        delete entity.entity;
                 }
             }
             else
@@ -602,7 +605,13 @@ export class Scene implements SceneI
             entity.name = (!extendsBaseEntity ? entity.entity : "") || entity.texture || "GameObject";
 
         if (entity.texture == "NAME")
-            entity.texture = entity.name;
+        {
+            var isBase = SettingsHandler.IsBaseEntity(settingsData, entity.name);
+            if (!isBase && entity.name)
+                entity.texture = entity.name;
+            else
+                delete entity.texture;
+        }
 
         entity.constructed = true;
 
