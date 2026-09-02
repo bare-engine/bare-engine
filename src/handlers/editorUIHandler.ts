@@ -8,6 +8,7 @@ import { MakePath, MakePathForEntity } from '../globals';
 import { SaveDataHandler } from './SaveDataHandler';
 import { EditorUIHintHandler } from './editorUIHintHandler';
 import { Bare } from '../types/bare';
+import { SettingsHandler } from './settingsHandler';
 
 /*
     BUILD SETUP/CONTROLS UI
@@ -19,7 +20,6 @@ export class EditorUIHandler {
     private static readonly textureFrameUrlCache = new Map<string, string>();
     private static readonly textureFrameLoadCache = new Map<string, Promise<string>>();
     private static readonly imageLoadCache = new Map<string, Promise<HTMLImageElement>>();
-    private static readonly imageEntityCache = new WeakMap<SettingsData, Map<string, Entity>>();
 
     private abortController: AbortController = new AbortController();
     private isMinimized: boolean = false;
@@ -144,29 +144,9 @@ export class EditorUIHandler {
         return entries.join('\0');
     }
 
-    private GetCachedImageEntity(imagePath: string, data: SettingsData): Entity {
-        let dataCache = EditorUIHandler.imageEntityCache.get(data);
-        if (!dataCache)
-        {
-            dataCache = new Map<string, Entity>();
-            EditorUIHandler.imageEntityCache.set(data, dataCache);
-        }
-
-        let entity = dataCache.get(imagePath);
-        if (entity)
-            return entity;
-
-        entity = this.scene.ConstructEntity(imagePath, data);
-        // images CATEGORY CONTAINS GENERATED PATHS - NO NEED FOR A SEPARATE imagePath
-        entity.imagePath = "";
-
-        dataCache.set(imagePath, entity);
-        return entity;
-    }
-
     private GetSidebarEntity(entityId: string, categoryName: string, data: SettingsData): Entity {
         if (categoryName == "images")
-            return this.GetCachedImageEntity(entityId, data);
+            return SettingsHandler.FindEntity(this.scene.settingsHandler.GetRaw(), entityId) || {texture: entityId};
 
         return this.scene.ConstructEntity(entityId);
     }

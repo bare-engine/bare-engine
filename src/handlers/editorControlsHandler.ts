@@ -685,8 +685,11 @@ export class EditorControlsHandler {
         // THIS PREVIEW OBJECT IS JUST VISUAL, DON'T WANT ANY COMPONENTS ON IT (?)
         //delete entityCopy.components;
 
+        var constructedEntity = this.scene.ConstructEntity(entityCopy);
+        //var texture = entityCopy.texture ?? undefined;
+
         this.currentPreviewEntity.ResetValues();
-        this.currentPreviewEntity.Init(MakePathForEntity(entityCopy));
+        this.currentPreviewEntity.InitTexture(MakePathForEntity(entityCopy));
         this.currentPreviewEntity.alpha = 0.5;
         this.currentPreviewEntity.name = 'ignoreInPlugin';
 
@@ -694,7 +697,7 @@ export class EditorControlsHandler {
 
         var ready = () => {
             // WILL END UP SETTING THE PIVOT CORRECTLY
-            this.scene.ApplyEntityToGameObject(entityCopy, this.currentPreviewEntity, false);
+            this.scene.ApplyEntityToGameObject(constructedEntity, this.currentPreviewEntity, false);
             this.SetCurrentPreviewActive(true); // COULD HAVE BEEN SET TO VISIBLE FALSE ABOVE
             this.currentPreviewEntity.alpha = 0.5;
             this.currentPreviewEntity.name = 'ignoreInPlugin';

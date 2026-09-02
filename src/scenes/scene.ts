@@ -1071,7 +1071,9 @@ export class Scene implements SceneI
             else
             {
                 var entity: Entity;
+                var unconstructedEntity: Entity;
 
+                // SETUP unconstructedEntity
                 if (typeof input === "string")
                 {
                     // STRING INPUT
@@ -1090,7 +1092,7 @@ export class Scene implements SceneI
                         var imagePath = split.slice(0, split.length - 1).join("/");
                         var name = split[split.length - 1];
 
-                        entity = {imagePath: imagePath, texture: name, name:name, baseClass: "GameObject"};
+                        unconstructedEntity = {imagePath: imagePath, texture: name, name:name, baseClass: "GameObject"};
                     }
                     else
                     if (input.startsWith("-"))
@@ -1098,20 +1100,24 @@ export class Scene implements SceneI
                         // STRING INPUT, MARKED WITH -, EG: -exlosion
                         // PREVENT A TEXTURE LOOKUP FOR THIS NAME, HANDY FOR OBJECTS THAT WILL HAVE AN ANIMATION COMPONENT
                         var name = input.substring(1);
-                        entity = this.ConstructEntity(name);
+                        unconstructedEntity = {entity: name}
                         //entity.texture = "NONE";
                     }
                     else
                     {
                         // DEFAULT - ENTITY NAME AS INPUT - CONSTRUCT IT
-                        entity = this.ConstructEntity(input);
+                        var settingsDataEntity = SettingsHandler.FindEntity(this.settingsData, input);
+                        unconstructedEntity = settingsDataEntity ? {entity: input} : {texture: input};
                     }
                 }
                 else
                 {
                     // ENTITY ITSELF AS INPUT - CONSTRUCT IT - TO GET ALL DATA TO APPLY TO GAMEOBJECT BELOW
-                    entity = this.ConstructEntity(input);
+                    unconstructedEntity = input;
                 }
+
+                // CONSTRUCT
+                entity = this.ConstructEntity(unconstructedEntity);
 
                 // CHECK IF IMAGE THAT THIS ENTITY WILL USE IS AVAILABLE
                 // IF NOT, SET IT TO NONE - TO PREVENT A FAILED IMAGE REQUEST
@@ -1141,6 +1147,7 @@ to package.json to keep the generated assets (can become large for big projects)
                 }
 
                 gameObject = bare.GetObjectFromPool(entity.baseClass!, this);
+                gameObject.unconstructedEntity = !unconstructedEntity.constructed ? unconstructedEntity : undefined; // COULD BE CONSTRUCTED IF THAT WAS DIRECTLY SUPPLIED TO METHOD
                 gameObject.Awake(entity);
 
                 gameObject.Init(entity.name);
