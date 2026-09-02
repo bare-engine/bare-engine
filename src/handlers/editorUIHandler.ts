@@ -735,7 +735,12 @@ export class EditorUIHandler {
     }
 
     private GetEntityImagePath(entity: Entity): string | null {
-        return assetsHandler.GetFullImagePath(MakePathForEntity(entity));
+        if (!entity.texture || entity.texture == "NONE")
+            return null;
+
+        const imagePath = MakePathForEntity(entity);
+
+        return assetsHandler.GetFullImagePath(imagePath);
     }
 
     SetupEditorControls(): Promise<void> {
