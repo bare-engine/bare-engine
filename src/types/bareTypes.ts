@@ -106,7 +106,6 @@ export interface Entity
 {
     name?: string;
     id?: int;
-    customName?: string;
     tags?: any; // Array<string>
     customData?: any; // Record<string, Scalar>
 
@@ -200,7 +199,6 @@ export var entityVarsNestedRecord: Record<string, string[]> =
         //"interactableInEditor",
         "persistent",
         "save",
-        "customName",
         "tags",
         "customData",
     ],

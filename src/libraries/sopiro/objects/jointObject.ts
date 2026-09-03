@@ -11,10 +11,10 @@ import { World } from "../world";
 export abstract class JointObject extends GameObject
 {
     @InspectorField @Save
-    baseCustomName: string = "";
+    baseName: string = "";
 
     @InspectorField @Save
-    targetCustomName: string = "";
+    targetName: string = "";
     
     protected joint: Joint | null = null;
 
@@ -53,12 +53,12 @@ export abstract class JointObject extends GameObject
         var bodyA: RigidBody | null = null;
         var bodyB: RigidBody | null = null;
         
-        if (this.baseCustomName == "jointAnchor")
+        if (this.baseName == "jointAnchor")
             bodyA = this.CreateAnchor();
         else
-            bodyA = bare.object.GetByCustomName(this.baseCustomName) as RigidBody;
+            bodyA = bare.object.GetByName(this.baseName) as RigidBody;
 
-        bodyB = bare.object.GetByCustomName(this.targetCustomName) as RigidBody;
+        bodyB = bare.object.GetByName(this.targetName) as RigidBody;
 
         if (!bodyA || !bodyB)
         {
@@ -98,15 +98,15 @@ export abstract class JointObject extends GameObject
 
         this.joint = this.CreateJoint(bodyA, bodyB);
         
-        if (!bodyA.customName)
-            bodyA.customName = ("body_" + bodyA.x + "_" + bodyA.y);
+        if (!bodyA.name)
+            bodyA.name = ("body_" + bodyA.x + "_" + bodyA.y);
 
-        this.baseCustomName = bodyA.customName;
+        this.baseName = bodyA.name;
         
-        if (!bodyB.customName)
-            bodyB.customName = ("body_" + bodyB.x + "_" + bodyB.y);
+        if (!bodyB.name)
+            bodyB.name = ("body_" + bodyB.x + "_" + bodyB.y);
 
-        this.targetCustomName = bodyB.customName;
+        this.targetName = bodyB.name;
     }
 
     GetBodies(): { bodyA: RigidBody | null; bodyB: RigidBody | null; }
@@ -153,7 +153,6 @@ export abstract class JointObject extends GameObject
         var staticAnchor = new Circle(this.scene, 0.01, Type.Static);
         staticAnchor.SetPosition(this.position.x, this.position.y);
         staticAnchor.name = "jointAnchor";
-        staticAnchor.customName = staticAnchor.name;
         staticAnchor.save = false;
         staticAnchor.visible = false;
         staticAnchor.visibleInEditor = false;

@@ -201,10 +201,10 @@ export class DistanceJointObject extends JointObject
 
     private RestoreTargetPositionFromSavedBody(): void
     {
-        if (bare.gameMode != GameMode.Edit || !this.targetObject || !this.targetCustomName)
+        if (bare.gameMode != GameMode.Edit || !this.targetObject || !this.targetName)
             return;
 
-        var targetBody = bare.object.GetByCustomName(this.targetCustomName) as RigidBody;
+        var targetBody = bare.object.GetByName(this.targetName) as RigidBody;
         if (!targetBody)
             return;
 

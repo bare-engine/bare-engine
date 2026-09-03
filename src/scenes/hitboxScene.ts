@@ -80,7 +80,7 @@ export class HitboxScene extends EditorScene
                 "objects": [
                     {
                         ...entityConstructedFromSettingsData,
-                        customName: "main",
+                        name: "main",
                         position: {
                             x: 0,
                             y: 0

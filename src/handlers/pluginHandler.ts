@@ -1080,7 +1080,7 @@ const gameDebugApi = {
 
         // GENERIC PASS - MIRRORS Scene.ApplyEntityVarsToGameObject / setEntityField:
         // route through the object's specialMap (color, children, ...) else assign the field directly.
-        // COVERS customName, x/y, scale*, rotation, inner*, flipped, visible, persistent, save, alpha, color, children.
+        // COVERS x/y, scale*, rotation, inner*, flipped, visible, persistent, save, alpha, color, children.
         const specialMap = o.specialMap;
         for (let prop in props)
         {
