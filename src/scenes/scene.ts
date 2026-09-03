@@ -525,10 +525,8 @@ export class Scene implements SceneI
             if (Object.keys(diff).length > 0 && startingEntity.entity)
                 diff.entity = startingEntity.entity;
 
-            finalEntity = {
-                ...unconstructedEntity,
-                ...diff
-            };
+            // deep merge so a partial diff like position: {x} keeps the source's y
+            finalEntity = Helper.DeepMerge(unconstructedEntity, diff);
         }
         else
         if (unconstructedSource)
@@ -638,8 +636,7 @@ export class Scene implements SceneI
 
                             // MERGE WITH ENTITY IN SETTINGSDATA
                             entity = {
-                                ...possibleEntity, // BASE
-                                ...entityArg, // OVERRIDE
+                                ...Helper.DeepMergeCopy(possibleEntity, entityArg), // BASE + OVERRIDE
                                 components: this.MergeComponents(possibleEntity.components, entityArg.components),
                                 children: mergedChildren
                             };

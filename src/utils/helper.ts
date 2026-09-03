@@ -46,6 +46,37 @@ export class Helper
         return target;
     }
 
+    // like DeepMerge but never mutates either argument; returns a new object
+    // where nested plain objects are merged and everything else is overridden by source
+    static DeepMergeCopy<T extends Record<string, any>>(target: T, source: Partial<T>): T
+    {
+        const result: Record<string, any> = { ...target };
+
+        for (const key of Object.keys(source))
+        {
+            const sourceValue = source[key];
+            const targetValue = result[key];
+
+            if (
+                sourceValue !== null &&
+                targetValue !== null &&
+                typeof sourceValue === "object" &&
+                typeof targetValue === "object" &&
+                !Array.isArray(sourceValue) &&
+                !Array.isArray(targetValue)
+            )
+            {
+                result[key] = Helper.DeepMergeCopy(targetValue, sourceValue);
+            }
+            else
+            {
+                result[key] = sourceValue;
+            }
+        }
+
+        return result as T;
+    }
+
     static ToFixed(value: number, limit = 1e-13): number
     {
         return Math.round(value / limit) * limit;
