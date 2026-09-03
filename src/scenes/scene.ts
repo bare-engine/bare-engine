@@ -1288,6 +1288,8 @@ to package.json to keep the generated assets (can become large for big projects)
 
             gameObject.Removed();
 
+            this.settingsHandler?.UnregisterUnconstructedEntity(gameObject.entity?.entityUID);
+
             gameObject.ResetValues();
 
             if (wasPooled)

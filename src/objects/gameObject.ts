@@ -1620,7 +1620,6 @@ export class GameObject
         this.revertPivotOnSave = false;
         this.resizeable = true;
 
-        this.scene?.settingsHandler?.UnregisterUnconstructedEntity(this.entity?.entityUID);
         this.entity = null;
         
         this.startPosition.set(0);
