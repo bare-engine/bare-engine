@@ -280,6 +280,11 @@ export class LevelHandler
         var texturesFound = new Set<string>();
 
         var collectTextures = (entity: any) => {
+            if (!entity.texture || entity.texture == "NAME")
+            {
+                entity = this.scene.ConstructEntity(entity, this.scene.settingsData);
+            }
+
             if (Bare.assets.images.length > 0 && entity.texture && entity.texture != "NONE" && entity.texture != "placeHolder")
             {
                 var fullPath = MakePathForEntity(entity);
