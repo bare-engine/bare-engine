@@ -1,6 +1,7 @@
 import type { ButtonHandlers } from "../controllers/hitboxController";
 import { Color, ITextureOptions, TextTexture, Vec2 } from "../libraries/new-rapid-render";
 import type { Scene } from "../scenes/scene";
+import type { Rectangle } from "../types/bareTypes";
 import { GameObject } from "./gameObject";
 
 interface TextOptions extends ITextureOptions, ButtonHandlers<Button> {
@@ -47,6 +48,12 @@ export class Button extends GameObject
             color: inheritedColor,
             position: new Vec2(this.marge, this.height / 2),
         });
+    }
+
+    // no texture of its own - the rect is drawn in OnRender, so report it here for bounds/hit tests
+    override GetLocalContentBounds(): Rectangle
+    {
+        return { x: 0, y: 0, width: this.width, height: this.height };
     }
 
     get width(): number

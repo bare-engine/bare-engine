@@ -1093,14 +1093,23 @@ export class GameObject
         ];
     }
 
+    // local-space rect of this object's own drawn content, before pivot/transform. sprites use
+    // their texture bounds; procedural objects (eg Button) override this so bounds, hit tests and
+    // the transform tool see them the same way. null means "nothing of its own" (a container).
+    GetLocalContentBounds(): Rectangle | null
+    {
+        return this.texture ? this.texture.localBounds : null;
+    }
+
     GetBounds(global:boolean = true): Rectangle
     {
-        if (!this.texture)
+        const ownBounds = this.GetLocalContentBounds();
+        if (!ownBounds)
             return this.GetBoundsWithChildren(global);
 
         if (!global || !this.parent)
         {
-            const bounds = this.texture.localBounds;
+            const bounds = ownBounds;
             return {
                 x: this.x + (bounds.x - this.pivot.x) * this.totalScaleX,
                 y: this.y + (bounds.y - this.pivot.y) * this.totalScaleY,
@@ -1117,7 +1126,7 @@ export class GameObject
         m.save();
         this.applyContentTransform(m, this);
 
-        const bounds = this.texture.localBounds;
+        const bounds = ownBounds;
         var corners = this.getCorners(m, bounds.x, bounds.y, bounds.width, bounds.height);
         m.restore();
         
@@ -1141,10 +1150,10 @@ export class GameObject
             this.buildAncestorMatrix(m);
 
         var updateBounds = (obj: GameObject) => {
-            if (!obj.texture)
+            const bounds = obj.GetLocalContentBounds();
+            if (!bounds)
                 return;
 
-            const bounds = obj.texture.localBounds;
             if (bounds.width === 0 && bounds.height === 0)
                 return;
 
