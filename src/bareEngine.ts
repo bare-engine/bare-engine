@@ -8,7 +8,7 @@ import type { ParticleController } from "./controllers/particleController";
 import { SceneController } from "./controllers/sceneController";
 import type { SopiroPhysicsController } from "./controllers/sopiroPhysicsController";
 import type { TweenController } from "./controllers/tweenController";
-import { GameMode, globalEvents } from "./globals";
+import { AdvanceFrameWaits, GameMode, globalEvents } from "./globals";
 import { assetsHandler } from "./handlers/assetsHandler";
 import type { CameraHandler } from "./handlers/cameraHandler";
 import type { LevelHandler } from "./handlers/levelHandler";
@@ -484,6 +484,7 @@ export class BareEngine
                 while (this.accumulator >= this.fixedTimestep)
                 {
                     this.FixedUpdate(this.fixedTimestep);
+                    AdvanceFrameWaits();
                     this.accumulator -= this.fixedTimestep;
                 }
 

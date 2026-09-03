@@ -84,20 +84,52 @@ window.wait = (seconds: number, persistent = false): Promise<void> => {
         }, seconds * 1000);
     });
 };
+
+type FrameWait = {
+    remaining: number;
+    generation: number;
+    persistent: boolean;
+    resolve: () => void;
+};
+
+let _frameWaits: FrameWait[] = [];
 window.waitFrame = (frames: number = 1, persistent = false): Promise<void> => {
-    const gen = _waitGen;
     return new Promise(resolve => {
-        const tick = (remaining: number) => {
-            requestAnimationFrame(() => {
-                if (!persistent && _waitGen !== gen) return;
-                if (remaining <= 1) resolve();
-                else tick(remaining - 1);
-            });
-        };
-        tick(frames);
+        _frameWaits.push({
+            remaining: Math.max(1, Math.ceil(frames)),
+            generation: _waitGen,
+            persistent,
+            resolve,
+        });
     });
 };
-window.cancelWaits = (): void => { _waitGen++; };
+
+// A game frame is a fixed simulation frame, not a monitor refresh. Advancing
+// here ensures movement and collision callbacks have run before waitFrame()
+// continuations resume, including on displays faster than the fixed timestep.
+export function AdvanceFrameWaits(): void
+{
+    const pending: FrameWait[] = [];
+
+    for (const frameWait of _frameWaits)
+    {
+        if (!frameWait.persistent && frameWait.generation !== _waitGen)
+            continue;
+
+        frameWait.remaining--;
+        if (frameWait.remaining <= 0)
+            frameWait.resolve();
+        else
+            pending.push(frameWait);
+    }
+
+    _frameWaits = pending;
+}
+
+window.cancelWaits = (): void => {
+    _waitGen++;
+    _frameWaits = _frameWaits.filter(frameWait => frameWait.persistent);
+};
 
 
 
