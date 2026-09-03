@@ -523,7 +523,7 @@ export class TransformToolHandler
         this.resizing = false;
         this.rotating = false;
         this.handle = null;
-        this.startMousePosition = mouse;
+        this.startMousePosition = new Vec2(mouse.x, mouse.y);
         this.RecordStarts();
         this.movePrimaryObj = primaryObj;
 
