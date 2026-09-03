@@ -1620,7 +1620,6 @@ export class GameObject
         this.revertPivotOnSave = false;
         this.resizeable = true;
 
-        // the unconstructed source registered for this object in AddGameObject() is no longer needed
         this.scene?.settingsHandler?.UnregisterUnconstructedEntity(this.entity?.entityUID);
         this.entity = null;
         

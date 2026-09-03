@@ -632,7 +632,7 @@ export class EditorUIHandler {
                 raw.layersInfo[layerName] = { ...existingInfo, showInEditor: show };
         });
         
-        this.scene.SaveEntityData(updatedRaw);
+        this.scene.SaveSettingsData(updatedRaw);
     }
 
     private ToggleEntity(element: HTMLElement): void {
@@ -819,7 +819,7 @@ export class EditorUIHandler {
                     raw.settings ??= {gridEnabled: false, gridSize: 64}; //
                     raw.settings.gridSize = newGridSize;
                 });
-                this.scene.SaveEntityData(updatedRaw);
+                this.scene.SaveSettingsData(updatedRaw);
             }
         };
 
@@ -875,7 +875,7 @@ export class EditorUIHandler {
             raw.settings ??= {gridEnabled: false, gridSize: 64};
             raw.settings.gridEnabled = this.settings.gridEnabled;
         });
-        this.scene.SaveEntityData(updatedRaw);
+        this.scene.SaveSettingsData(updatedRaw);
     }
 
     SyncSettingsUI(): void

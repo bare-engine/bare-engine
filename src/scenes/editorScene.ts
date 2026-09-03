@@ -24,13 +24,6 @@ export class EditorScene extends Scene
     readonly transformToolHandlesBodyMove: boolean = true;
     public opened: boolean = false; // DOUBLES TRUTH WITH this.levelEditorOpen
 
-    // DUCK-TYPED HOOK TransformToolHandler CALLS DURING A BODY-MOVE GESTURE TO GRID/PIVOT-SNAP THE
-    // PRIMARY DRAGGED OBJECT. EntityScene INHERITS THIS SINCE IT EXTENDS EditorScene.
-    GetTransformToolMovePosition(obj: GameObject, desiredX: number, desiredY: number, mouseX: number, mouseY: number, ignoreGrid: boolean): Vec2
-    {
-        return this.editorControlsHandler.GetGridAlignedDragPosition(obj, desiredX, desiredY, mouseX, mouseY, ignoreGrid);
-    }
-    
     // Component classes
     public editorControlsHandler: EditorControlsHandler;
     public editorUIHandler: EditorUIHandler;
@@ -570,7 +563,7 @@ export class EditorScene extends Scene
         return tilesheetEntity;
     }
 
-    async SaveEntityData(newRawData: SettingsData)
+    async SaveSettingsData(newRawData: SettingsData)
     {
         if (newRawData.processed)
         {
@@ -584,7 +577,7 @@ export class EditorScene extends Scene
         
         this.settingsHandler.FilterSettingsDataDefaults(dataToSave);
 
-        await this.OnPreSaveEntityData(dataToSave);
+        await this.OnPreSaveSettingsData(dataToSave);
 
         // Persist to disk via dev-server endpoint when available (local only)
         if (!window.isLocalhost) {
@@ -606,23 +599,30 @@ export class EditorScene extends Scene
           // TELL THE PLUGIN
           //window.__GAME_DEBUG_API__.notifyEntityDataChanged(dataToSave)
 
-          await this.OnPostSaveEntityData(dataToSave);
+          await this.OnPostSaveSettingsData(dataToSave);
 
           return { ok: res.ok, saved: res.ok, response: json };
         } catch (error: any) {
-          console.error('Failed to save entity data', error);
+          console.error('Failed to save settings data', error);
           return { ok: false, error: error?.message ?? String(error) };
         }
     }
 
-    async OnPreSaveEntityData(rawData: SettingsData)
+    async OnPreSaveSettingsData(rawData: SettingsData)
     {
         // FOR OVERRIDE
     }
 
-    async OnPostSaveEntityData(rawData: SettingsData)
+    async OnPostSaveSettingsData(rawData: SettingsData)
     {
         // FOR OVERRIDE
+    }
+
+    // duck-typed hook transformtoolhandler calls during a body-move gesture to grid/pivot-snap the
+    // primary dragged object. entityscene inherits this since it extends editorscene.
+    GetTransformToolMovePosition(obj: GameObject, desiredX: number, desiredY: number, mouseX: number, mouseY: number, ignoreGrid: boolean): Vec2
+    {
+        return this.editorControlsHandler.GetGridAlignedDragPosition(obj, desiredX, desiredY, mouseX, mouseY, ignoreGrid);
     }
 }
 

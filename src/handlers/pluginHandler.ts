@@ -2628,7 +2628,7 @@ export class PluginHandler
 
         if (scene instanceof EditorScene)
         {
-            await (plugin.GetCurrentScene() as EditorScene).SaveEntityData(dataToSave);
+            await (plugin.GetCurrentScene() as EditorScene).SaveSettingsData(dataToSave);
         }
         else
         {

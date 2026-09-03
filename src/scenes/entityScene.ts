@@ -275,7 +275,7 @@ export class EntityScene extends EditorScene
 
         globalThis.plugin?.CleanSettingsData(dataToSave, this.settingsHandler);
 
-        await this.SaveEntityData(dataToSave);
+        await this.SaveSettingsData(dataToSave);
 
         // The compact entity above is the persistence representation. The debug API rebuilds the
         // resolved editor payload from the freshly processed settings, matching gotoEntity()
@@ -479,13 +479,13 @@ export class EntityScene extends EditorScene
         this.settingsData.selectionEnabled = false;
     }
 
-    async OnPreSaveEntityData(rawData: SettingsData): Promise<void>
+    async OnPreSaveSettingsData(rawData: SettingsData): Promise<void>
     {
         delete rawData.showUI;
         delete rawData.selectionEnabled;
     }
 
-    async OnPostSaveEntityData(rawData: SettingsData): Promise<void>
+    async OnPostSaveSettingsData(rawData: SettingsData): Promise<void>
     {
         this.HideEditorUIForScene();
     }

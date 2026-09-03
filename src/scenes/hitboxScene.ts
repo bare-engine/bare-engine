@@ -220,12 +220,12 @@ export class HitboxScene extends EditorScene
         });
 
         // SAVE TO FILE
-        await this.SaveEntityData(newRawSettingsData);
+        await this.SaveSettingsData(newRawSettingsData);
 
         return level;
     }
 
-    async OnPreSaveEntityData(rawData: SettingsData): Promise<void>
+    async OnPreSaveSettingsData(rawData: SettingsData): Promise<void>
     {
         // Only sanitize the persistence copy. Processing it here would replace the
         // handler's live raw data and restore defaults that were intentionally stripped
@@ -234,7 +234,7 @@ export class HitboxScene extends EditorScene
         delete rawData.selectionEnabled;
     }
 
-    async OnPostSaveEntityData(rawData: SettingsData): Promise<void>
+    async OnPostSaveSettingsData(rawData: SettingsData): Promise<void>
     {
         await this.settingsHandler.UpdateRaw((raw) => {
             raw.showUI = false;
