@@ -692,11 +692,19 @@ export class Scene implements SceneI
 
         if (entity.texture == "NAME")
         {
+            // REPLACE 'NAME' VALUE OF texture WITH entity.name
             var isBase = SettingsHandler.IsBaseEntity(settingsData, entity.name);
             if (!isBase && entity.name)
                 entity.texture = entity.name;
             else
                 delete entity.texture;
+        }
+
+        if (entity.imagePath && entity.texture)
+        {
+            // PREPEND texture WITH imagePath, NO NEED FOR imagePath ANYMORE
+            entity.texture = entity.imagePath + "/" + entity.texture;
+            delete entity.imagePath;
         }
 
         entity.constructed = true;
