@@ -2010,7 +2010,7 @@ export class PluginHandler
         var entity = SettingsHandler.FindEntity(raw, entityName);
 
         // EXTENDING CHILDREN, SO IT'S EASIER TO DO OPERATIONS ON THEM
-        // WILL BE CLEANED IN CleanSettingsDataEntityUIDs() AGAIN
+        // WILL BE CLEANED IN CleanSettingsData() AGAIN
         var extendEntityChildren = (entities: Entity[]) =>
         {
             for (const entity of entities)
@@ -2065,7 +2065,7 @@ export class PluginHandler
         extendEntityChildren([entity]);
     }
 
-    CleanSettingsDataEntityUIDs(settingsDataRaw: SettingsData, settingsHandler: SettingsHandler): void
+    CleanSettingsData(settingsDataRaw: SettingsData, settingsHandler: SettingsHandler): void
     {
         var didClean: boolean;
 
@@ -2112,6 +2112,8 @@ export class PluginHandler
                     // entityUID of their own.
                     if (Object.keys(entity).length == 1 && entity.entity && settingsHandler.rawEntitiesMappedByUID[entity.entity])
                         delete entity.entity;
+                    
+                    delete entity.interactableInEditor;
 
                     if (Object.keys(entity).length == 0)
                     {
@@ -2618,7 +2620,7 @@ export class PluginHandler
         const settingsHandler = this.GetSettingsDataHandler(newData.name ?? "");
         
         const dataToSave = Helper.DeepCopy(newData);
-        this.CleanSettingsDataEntityUIDs(dataToSave, settingsHandler);
+        this.CleanSettingsData(dataToSave, settingsHandler);
 
         settingsHandler.FilterSettingsDataDefaults(dataToSave);
 

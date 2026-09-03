@@ -67,7 +67,6 @@ export class GameObject
     private renderParentTransform: Float32Array | null = null;
 
     entity: Entity | null = null;
-    unconstructedEntity: Entity | null = null; // USED IN GetEnitityFromObject() FOR SERIALIZATION
     
     visibleInEditor:boolean = true;
 
@@ -1612,8 +1611,9 @@ export class GameObject
         this.revertPivotOnSave = false;
         this.resizeable = true;
 
+        // the unconstructed source registered for this object in AddGameObject() is no longer needed
+        this.scene?.settingsHandler?.UnregisterUnconstructedEntity(this.entity?.entityUID);
         this.entity = null;
-        this.unconstructedEntity = null;
         
         this.startPosition.set(0);
 

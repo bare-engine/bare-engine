@@ -485,7 +485,7 @@ export class Scene implements SceneI
         }
 
         const startingEntity = rootObject.entity || {};
-        const unconstructedSource = rootObject.unconstructedEntity ?? {};
+        const unconstructedSource = this.settingsHandler.GetUnconstructedEntity(rootObject.entity) ?? {};
 
         // SERIALIZE ORIGINAL GAMEOBJECT USING STARTING ENTITY
         const serializedRootObjectOrig = this.ConstructEntityWithDefaultValues(startingEntity, this.settingsData, options);
@@ -518,7 +518,7 @@ export class Scene implements SceneI
 
         const unconstructedEntity = Helper.DeepCopy(unconstructedSource);
 
-        var finalEntity = {};
+        var finalEntity: Entity = {};
 
         if (startingEntity)
         {
@@ -543,6 +543,10 @@ export class Scene implements SceneI
 
             finalEntity = unconstructedEntity;
         }
+
+        // a uid generated at runtime only links the object to its source, don't let it end up in level data
+        if (this.settingsHandler.IsRuntimeGeneratedUID(finalEntity.entityUID))
+            delete finalEntity.entityUID;
 
         // REMOVE ANY FIELDS THAT HAVE A DEFAULT VALUE
         for (var field in finalEntity)
@@ -1121,6 +1125,11 @@ export class Scene implements SceneI
                     unconstructedEntity = input;
                 }
 
+                // register the unconstructed entity by uid before constructing, so the constructed entity carries the uid
+                // GetEnitityFromObject() uses it to find the source to serialize against
+                if (!unconstructedEntity.constructed)
+                    this.settingsHandler.RegisterUnconstructedEntity(unconstructedEntity);
+
                 // CONSTRUCT
                 entity = this.ConstructEntity(unconstructedEntity);
 
@@ -1152,7 +1161,6 @@ to package.json to keep the generated assets (can become large for big projects)
                 }
 
                 gameObject = bare.GetObjectFromPool(entity.baseClass!, this);
-                gameObject.unconstructedEntity = !unconstructedEntity.constructed ? unconstructedEntity : undefined; // COULD BE CONSTRUCTED IF THAT WAS DIRECTLY SUPPLIED TO METHOD
                 gameObject.Awake(entity);
 
                 gameObject.Init(entity.name);

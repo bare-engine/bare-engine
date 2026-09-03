@@ -246,8 +246,6 @@ export class LevelHandler
             for(var levelEntity of entities)
             {
                 var gameObject = this.scene.AddGameObject(levelEntity, layerName);
-
-                gameObject.unconstructedEntity = levelEntity; // USED IN GetEnitityFromObject() FOR SERIALIZATION
                 gameObject.save = true;
             }
         }

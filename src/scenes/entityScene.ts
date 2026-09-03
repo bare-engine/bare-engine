@@ -32,7 +32,7 @@ type EntitySceneAwakePayload = EditorScenePayload & {
 // THIS MEANS THE CHILD ENTITY INHERITS THE VALUES OF THE SOURCE, AND CAN ALSO OVERRIDE THEM WITH ITS OWN VALUES
 // NOTE: AN OVERRIDEN ENTITY CANNOT OVERRIDE IT'S CHILDREN ORDER, WILL STAY SAME AS SOURCE
 // 
-// BEFORE SAVING THE entityData, THE entityUID FIELDS ARE CLEARED IF THEY ARE NOT REFERENCED, SEE CleanSettingsDataEntityUIDs(), 
+// BEFORE SAVING THE entityData, THE entityUID FIELDS ARE CLEARED IF THEY ARE NOT REFERENCED, SEE CleanSettingsData(), 
 //
 // SO .entity CAN REFERENCE AN ENTITY NAME, OR AN ENTITY UID. COULD GO ALL THE WAY REFERENCING UIDS, WHICH WOULD WORK FINE IN THE PLUGIN
 // IT WOULD JUST RESOLVE THE NAME. BUT WHEN VIEWING/EDITING THE raw entityData.json, IT WOULD BE HARD TO FOLLOW WHAT EXTENDS WHAT
@@ -273,7 +273,7 @@ export class EntityScene extends EditorScene
         });
         const dataToSave = Helper.DeepCopy(newRawSettingsData);
 
-        globalThis.plugin?.CleanSettingsDataEntityUIDs(dataToSave, this.settingsHandler);
+        globalThis.plugin?.CleanSettingsData(dataToSave, this.settingsHandler);
 
         await this.SaveEntityData(dataToSave);
 

@@ -86,6 +86,12 @@ export class SettingsHandler
     public rawEntitiesMappedByUID:Record<string, Entity> = {};
     private processedEntitiesMappedByUID:Record<string, Entity> = {};
 
+    // uids of unconstructed entities registered at runtime through RegisterUnconstructedEntity() (level entities, AddGameObject() inputs)
+    // these survive Process() rebuilding rawEntitiesMappedByUID from the raw settings data
+    private runtimeRegisteredEntities = new Map<string, Entity>();
+    // subset of runtimeRegisteredUIDs whose uid was generated here instead of coming from the entity itself; stripped again on serialization
+    private runtimeGeneratedUIDs = new Set<string>();
+
     constructor(scene: Scene)
     {
         this.scene = scene;
@@ -163,6 +169,7 @@ export class SettingsHandler
         }
 
         // FILLING rawEntitiesMappedByUID - SO CHILREN REFERENCING THEIR .entity TO THIS UID, CAN QUICKLY FIND IT
+        const previousRawEntitiesMappedByUID = this.rawEntitiesMappedByUID;
         this.rawEntitiesMappedByUID = {};
         var fillEntityUIDS = (entities: Entity[]) =>
         {
@@ -177,6 +184,12 @@ export class SettingsHandler
         }
         fillEntityUIDS(raw.baseEntities);
         fillEntityUIDS(raw.entities);
+
+        // keep the runtime registered entities that the raw settings data doesn't provide, running objects still serialize against them
+        for (const [entityUID, entity] of this.runtimeRegisteredEntities)
+        {
+            this.rawEntitiesMappedByUID[entityUID] ??= previousRawEntitiesMappedByUID[entityUID] ?? entity;
+        }
 
         var settings = this.clone(raw);
 
@@ -900,6 +913,50 @@ export class SettingsHandler
     GetRawEntitiesMappedByUID(): Readonly<Record<string, Entity>>
     {
         return this.rawEntitiesMappedByUID;
+    }
+
+    // makes an unconstructed entity (level entity, AddGameObject() input) findable by uid, so GetEnitityFromObject() can serialize against it
+    // an entity that already has a uid present in the map (eg the entity editor's copy of a raw entity) keeps pointing at the raw entity
+    RegisterUnconstructedEntity(entity: Entity): void
+    {
+        if (!entity.entityUID)
+        {
+            entity.entityUID = Helper.GenerateEntityUID();
+            this.runtimeGeneratedUIDs.add(entity.entityUID);
+        }
+
+        this.rawEntitiesMappedByUID[entity.entityUID] ??= entity;
+        this.runtimeRegisteredEntities.set(entity.entityUID, entity);
+    }
+
+    UnregisterUnconstructedEntity(entityUID: string | undefined): void
+    {
+        if (!entityUID)
+            return;
+
+        const registeredEntity = this.runtimeRegisteredEntities.get(entityUID);
+        if (!registeredEntity)
+            return;
+
+        this.runtimeRegisteredEntities.delete(entityUID);
+        this.runtimeGeneratedUIDs.delete(entityUID);
+
+        // a raw settings entity sharing the uid stays in the map, only remove what was registered here
+        if (this.rawEntitiesMappedByUID[entityUID] === registeredEntity)
+            delete this.rawEntitiesMappedByUID[entityUID];
+    }
+
+    // the unconstructed entity a constructed entity was made from: a raw settings entity/child, or one registered at runtime
+    // a child that only references its source through .entity (no entityUID of its own) resolves to nothing, it serializes as that reference plus its diff
+    GetUnconstructedEntity(entity: Entity | null | undefined): Entity | undefined
+    {
+        const entityUID = entity?.entityUID;
+        return entityUID ? this.rawEntitiesMappedByUID[entityUID] : undefined;
+    }
+
+    IsRuntimeGeneratedUID(entityUID: string | undefined): boolean
+    {
+        return !!entityUID && this.runtimeGeneratedUIDs.has(entityUID);
     }
 
     GetProcessedEnity(entityNameOrId: string, processedSettingsData: SettingsData = this.processed): Entity
