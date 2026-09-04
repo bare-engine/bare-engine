@@ -153,9 +153,9 @@ class AssetsHandler
         this.loading.clear();
         this.animationData.clear();
 
-        // BIT HACKY, BUT WE STILL NEED THE whitePixel TEXTURE, INITIALLY CREATED IN BareEngine.ts Init()
+        // BIT HACKY, BUT WE STILL NEED THE PIXEL TEXTURE, INITIALLY CREATED IN BareEngine.ts Init()
         // ALSO PREVENTED DESTROYING IT ABOVE
-        assetsHandler.AddTexture("whitePixel", window.whitePixelTexture);
+        assetsHandler.AddTexture("PIXEL", window.whitePixelTexture);
     }
 }
 
