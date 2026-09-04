@@ -396,7 +396,9 @@ export class SettingsHandler
                     {
                         // ... EG: "roadTexture_1#12"
                         // CAN ALSO OMIT 1: "roadTexture_#12" (1 IS DEFAULT)
-                        generatedEntryEntityName = this.GetNumberedNameBaseName(entries);
+                        const numberedEntityName = this.GetNumberedNameBaseName(entries);
+                        if (SettingsHandler.FindEntity(settings, numberedEntityName))
+                            generatedEntryEntityName = numberedEntityName;
                         entryNames = this.ProcessNumberedNames([entries]) ?? [];
                     }
                     
