@@ -44,11 +44,6 @@ export { ParticleComponent } from "./components/particleComponent";
 export { TextComponent } from "./components/textComponent";
 
 // Editor
-export { PivotComponent } from "./editorComponents/pivotComponent";
-export { PivotRemoveComponent } from "./editorComponents/pivotRemoveComponent";
-export { PositionPivotComponent } from "./editorComponents/positionPivotComponent";
-export { ResizableComponent } from "./editorComponents/resizableComponent";
-export { ResizableRemoveComponent } from "./editorComponents/resizableRemoveComponent";
 export { EditorScene } from "./scenes/editorScene";
 export { EditorUIScene } from "./scenes/editorUIScene";
 export { uiScene } from "./scenes/uiScene";

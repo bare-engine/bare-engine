@@ -140,6 +140,9 @@ export class SettingsHandler
         if (raw?.processed)
             throw new Error('Process() received already-processed data — caller passed Get()/settingsData instead of GetRaw()');
 
+        raw.entities ??= [];
+        raw.baseEntities ??= [];
+        
         const seenNames = new Set<string>();
         const duplicateNames = [...raw.entities, ...raw.baseEntities]
             .map(entity => entity.name)
