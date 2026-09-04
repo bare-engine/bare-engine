@@ -17,6 +17,7 @@ import { TransformToolHandler } from "./transformToolHandler";
 export class EditorControlsHandler {
     private active: boolean = true;
     public currentPreviewEntity: GameObject;
+    private currentPreviewEntityName: string = ""; // what the stamp places, AddGameObject() resolves it to an entity or texture
     public currentPreviewActive:boolean = false;
     private draggingObject: GameObject | null = null;
     
@@ -412,7 +413,6 @@ export class EditorControlsHandler {
             
             if (!this.currentPreviewActive || obj.name != this.currentPreviewEntity.name) // DOUBLE CLICK FIRST TIME OR DIFFERENT OBJECT
             {
-                //const entity = this.scene.ConstructEntity(obj.name);
                 this.SetCurrentPreviewEntity(obj.entity);
             }
             else
@@ -680,16 +680,12 @@ export class EditorControlsHandler {
             return;
         }
 
-        var entityCopy =  Object.assign({}, entity);//Helper.DeepCopy(entity); // Object.assign({}, entity);
+        this.currentPreviewEntityName = entity.name ?? entity.texture;
 
-        // THIS PREVIEW OBJECT IS JUST VISUAL, DON'T WANT ANY COMPONENTS ON IT (?)
-        //delete entityCopy.components;
-
-        var constructedEntity = this.scene.ConstructEntity(entityCopy);
-        //var texture = entityCopy.texture ?? undefined;
+        var constructedEntity = this.scene.ConstructEntity(this.currentPreviewEntityName);
 
         this.currentPreviewEntity.ResetValues();
-        this.currentPreviewEntity.InitTexture(MakePathForEntity(entityCopy));
+        this.currentPreviewEntity.InitTexture(MakePathForEntity(constructedEntity));
         this.currentPreviewEntity.alpha = 0.5;
         this.currentPreviewEntity.name = 'ignoreInPlugin';
 
@@ -707,7 +703,7 @@ export class EditorControlsHandler {
             ready();
         });
 
-        if (entityCopy.texture == "NONE")
+        if (constructedEntity.texture == "NONE")
         {
             ready();
         }
@@ -810,7 +806,7 @@ export class EditorControlsHandler {
 
     private PlaceCurrentPreviewObject(layer: int): GameObject
     {
-        const obj = this.scene.AddGameObjectAtPosition(this.currentPreviewEntity.x, this.currentPreviewEntity.y, this.currentPreviewEntity.entity, layer);
+        const obj = this.scene.AddGameObjectAtPosition(this.currentPreviewEntity.x, this.currentPreviewEntity.y, this.currentPreviewEntityName, layer);
         const multiSelect = keyboardController.IsKeyDown("shift");
 
         if (!multiSelect)
