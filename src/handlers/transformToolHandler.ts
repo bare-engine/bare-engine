@@ -1,5 +1,5 @@
 import { keyboardController } from "../controllers/keyboardController";
-import { globalEvents } from "../globals";
+import { GameMode, globalEvents } from "../globals";
 import { Color, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
@@ -528,7 +528,8 @@ export class TransformToolHandler
         this.movePrimaryObj = primaryObj;
 
         const target = this.starts.length == 1 ? this.starts[0].obj : null;
-        const sopiroController = target && scene.Has("sopiro") ? scene.Get("sopiro") : null;
+        const useGrab = bare.gameMode == GameMode.Play;
+        const sopiroController = useGrab && target && scene.Has("sopiro") ? scene.Get("sopiro") : null;
         this.moveGrabController = sopiroController && sopiroController.grab(target, mouse)
             ? sopiroController
             : null;
