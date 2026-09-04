@@ -385,6 +385,7 @@ export class SettingsHandler
                 var entitiesInCategory: Entity[] = [];
 
                 let entryNames: string[];
+                let generatedEntryEntityName: string;
 
                 // PARSE STRING ENTRIES...
                 if (typeof categoryData.entries === 'string') 
@@ -395,6 +396,7 @@ export class SettingsHandler
                     {
                         // ... EG: "roadTexture_1#12"
                         // CAN ALSO OMIT 1: "roadTexture_#12" (1 IS DEFAULT)
+                        generatedEntryEntityName = this.GetNumberedNameBaseName(entries);
                         entryNames = this.ProcessNumberedNames([entries]) ?? [];
                     }
                     
@@ -446,7 +448,10 @@ export class SettingsHandler
                     // PUSH EACH AS ENTITY SO WE CAN FIND THEM LATER
                     for (const entryName of entryNames)
                     {
-                        var unconstructedEntity = {name: entryName, entity: categoryData.entity ?? undefined};
+                        var unconstructedEntity = {
+                            name: entryName,
+                            entity: categoryData.entity ?? generatedEntryEntityName
+                        };
 
                         const existingEntity = SettingsHandler.FindEntity(settings, entryName);
                         if (existingEntity)
@@ -657,6 +662,12 @@ export class SettingsHandler
     private IsNumberedName(name: string): boolean
     {
         return name.includes('#');
+    }
+
+    private GetNumberedNameBaseName(name: string): string
+    {
+        const match = this.IsNumberedName(name) ? name.match(/^(.+?)(\d*#\d+.*)$/) : null;
+        return match ? match[1] + "#" : name;
     }
 
     // EXTENDS AN ENTITY WITH EVERY ENTITY IN ITS BASE CHAIN.
