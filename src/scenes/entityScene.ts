@@ -48,6 +48,9 @@ export class EntityScene extends EditorScene
     lastPayload: EntitySceneAwakePayload;
     degugAtStart: boolean;
 
+    imagePathBeforePlaceHolder: string = "";
+    textureBeforePlaceHolder: string = "";
+
     constructor()
     {
         super({solo:true, persistent: true});
@@ -147,7 +150,9 @@ export class EntityScene extends EditorScene
 
         if (isBase)
         {
-            //entityFromSettingsData.name = objectName;
+            this.imagePathBeforePlaceHolder = entityFromSettingsData.imagePath;
+            this.textureBeforePlaceHolder = entityFromSettingsData.texture;
+
             entityFromSettingsData.texture = "placeHolder";
             if(entityFromSettingsData.imagePath)
                 entityFromSettingsData.imagePath = "";
@@ -267,6 +272,20 @@ export class EntityScene extends EditorScene
             name: this.objectName, // KEEP NAME ON TOP
             ...this.GetEnitityFromObject(rootObject)
         };
+            
+        // RESTORE THE PLACEHOLDER FIELDS SET IN CreateEntityDataFor()
+        if (entity.texture == "placeHolder")
+        {
+            if (this.textureBeforePlaceHolder)
+                entity.texture = this.textureBeforePlaceHolder;
+            else
+                delete entity.texture;
+
+            if (this.imagePathBeforePlaceHolder)
+                entity.imagePath = this.imagePathBeforePlaceHolder;
+            else
+                delete entity.imagePath;
+        }
 
         const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
             SettingsHandler.SetEntity(draft, this.objectName, entity);

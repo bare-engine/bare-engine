@@ -533,13 +533,6 @@ export class Scene implements SceneI
         {
             Helper.DeepMerge(unconstructedEntity, diff);
             delete unconstructedEntity.id;
-            
-            // DON'T SEND THE CUSTOM FIELDS SET BY BASE ENTITY (ANY)
-            if (unconstructedEntity.texture == "placeHolder")
-            {
-                delete unconstructedEntity.texture;
-                delete unconstructedEntity.imagePath;
-            }
 
             finalEntity = unconstructedEntity;
         }
