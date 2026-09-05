@@ -859,7 +859,7 @@ export class TransformToolHandler
         if (targets.length == 1)
         {
             const o = targets[0];
-            const bounds = o.texture?.localBounds;
+            const bounds = o.GetLocalContentBounds(); // NOT texture.localBounds: CUSTOM-DRAWN OBJECTS OVERRIDE GetLocalContentBounds()
 
             if (bounds && bounds.width > 0 && bounds.height > 0)
             {
@@ -965,7 +965,7 @@ export class TransformToolHandler
         const corners: Vec2[] = [];
 
         const visit = (obj: GameObject) => {
-            const bounds = obj.texture?.localBounds;
+            const bounds = obj.GetLocalContentBounds();
             if (bounds && bounds.width > 0 && bounds.height > 0)
             {
                 corners.push(

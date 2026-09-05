@@ -1094,7 +1094,7 @@ export class Scene implements SceneI
                         var imagePath = split.slice(0, split.length - 1).join("/");
                         var name = split[split.length - 1];
 
-                        unconstructedEntity = {imagePath: imagePath, texture: name, name:name, baseClass: "GameObject"};
+                        unconstructedEntity = {entity: "NONE", imagePath: imagePath, texture: name, name:name, baseClass: "GameObject"}; // NONE: SINCE THIS IS JUST FOR A TEXTURE, NOT EXTENDING DEFAULT 'ANY'
                     }
                     else
                     if (input.startsWith("-"))
