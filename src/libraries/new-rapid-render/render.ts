@@ -8,7 +8,6 @@ import { RenderTexture, Texture, TextureManager } from "./texture";
 import { Color } from "./color";
 import {
     ICircleOptions,
-    IDrawParticleOptions,
     IDrawParticleBatchOptions,
     IGraphicOptions,
     ILineOptions,
@@ -19,13 +18,13 @@ import {
     drawGraphic,
     drawLine,
     drawMaskImage,
-    drawParticle,
     drawParticles,
     drawRect,
     drawSprite,
+    getColorUint32,
 } from "./draw";
 import { Vec2 } from "./math";
-import { AtlasSprtieRegion } from "./region/atlasSpriteRegion";
+import { AtlasSpriteRegion } from "./region/atlasSpriteRegion";
 import { ParticleRegion } from "./region/particleRegion";
 
 /**
@@ -102,19 +101,19 @@ export enum TextureFilterMode {
 }
 
 export enum CanvasScaleMode {
-  /**
-   * Scales the canvas by increasing the WebGL backbuffer size.
-   * The logical game size stays the same, but rendering happens at the final display resolution,
-   * so rotated sprites, lines, and geometry get more rasterized pixels and look smoother.
-   */
-  CanvasItem,
-  /**
-   * Scales only the final canvas element on the page.
-   * The WebGL backbuffer stays at the logical game size, then the browser stretches that bitmap
-   * to the CSS display size. This preserves low-resolution/pixel-art rendering and does not add
-   * more fragments while scaling up.
-   */
-  Viewport,
+    /**
+     * Scales the canvas by increasing the WebGL backbuffer size.
+     * The logical game size stays the same, but rendering happens at the final display resolution,
+     * so rotated sprites, lines, and geometry get more rasterized pixels and look smoother.
+     */
+    CanvasItem,
+    /**
+     * Scales only the final canvas element on the page.
+     * The WebGL backbuffer stays at the logical game size, then the browser stretches that bitmap
+     * to the CSS display size. This preserves low-resolution/pixel-art rendering and does not add
+     * more fragments while scaling up.
+     */
+    Viewport,
 }
 
 /**
@@ -164,7 +163,7 @@ export class Rapid {
     /** Region dedicated to arbitrary geometry and shapes rendering. */
     graphicRegion: GraphicRegion;
 
-    atlasSpriteRegion: AtlasSprtieRegion;
+    atlasSpriteRegion: AtlasSpriteRegion;
 
     particleRegion: ParticleRegion;
 
@@ -219,7 +218,7 @@ export class Rapid {
 
         this.spriteRegion = new SpriteRegion(this);
         this.graphicRegion = new GraphicRegion(this);
-        this.atlasSpriteRegion = new AtlasSprtieRegion(this);
+        this.atlasSpriteRegion = new AtlasSpriteRegion(this);
         this.particleRegion = new ParticleRegion(this);
 
         const cssW = this.canvas.clientWidth || this.canvas.width;
@@ -264,9 +263,8 @@ export class Rapid {
         this.antialias = antialias;
     }
 
-    private getColorUint32(color?: Color): number {
-        if (!color) return 0xFFFFFFFF;
-        return this.premultipliedAlpha ? color.premultipliedUint32 : color.uint32;
+    getColorUint32(color?: Color): number {
+        return getColorUint32(this.premultipliedAlpha, color)
     }
 
     /**
@@ -283,12 +281,8 @@ export class Rapid {
         region.enter(customShader);
     }
 
-    drawParticle(options: IDrawParticleOptions): void {
-        drawParticle(this, options)
-    }
-
     drawParticles(options: IDrawParticleBatchOptions): void {
-        drawParticles(this, options)
+        drawParticles(this, options);
     }
 
     drawSprite(options: ISpriteOptions): void {
@@ -388,9 +382,9 @@ export class Rapid {
     addGraphicVertex(
         x: number, y: number,
         u: number = 0, v: number = 0,
-        color: number = 0xFFFFFFFF,
+        color: Color | number,
     ): void {
-        this.graphicRegion.addVertex(x, y, u, v, color);
+        this.graphicRegion.addVertex(x, y, u, v, typeof color == "number" ? color : this.getColorUint32(color));
     }
 
     /**
@@ -443,7 +437,7 @@ export class Rapid {
             default:
                 throw new Error("scaleMode can only be CanvasScaleMode.Viewport or CanvasScaleMode.CanvasItem")
         }
-        
+
         this.updateProjection(0, this.logicWidth, this.logicHeight, 0);
     }
 
@@ -524,13 +518,13 @@ export class Rapid {
         // drawSprite uses the region UV, so only the region pixels are rendered into the RT.
         // The output RT contains the "baked" region content — no region metadata needed.
 
-        
+
         const width = source.rawWidth + maxPadding * 2;
         const height = source.rawHeight + maxPadding * 2;
 
         // Ensure both ping-pong RTs exist and match the source size (grow-only: no GPU
         // reallocation unless size exceeds the previous maximum)
-        
+
         for (let i = 0; i < 2; i++) {
             if (!this._filterRT[i]) {
                 this._filterRT[i] = this.texture.createRenderTexture({ width, height });
@@ -557,7 +551,7 @@ export class Rapid {
             // We can't let `drawsprite` handle the padding offset because `renderTexture` has a limited size.
             // Render from the top left corner the image will render outside the `renderTexture`.
             // We need to render the image in the center of the `renderTexture`.
-            this.drawSprite({ 
+            this.drawSprite({
                 texture: inputTex,
                 shader: shaders[i],
                 offsetX: i == 0 ? paddingOffset : 0, // padding back
@@ -689,24 +683,14 @@ export class Rapid {
      * }, { x: 100, y: 50, rotation: Math.PI / 4, origin: 0.5 }, myTexture.width, myTexture.height);
      */
     withTransform(cb: () => void, transform?: ITransformOptions, width: number = 0, height: number = 0): void {
-        if (transform) {
-            const shouldRestore = transform.saveTransform ?? true;
-            try {
-                // save in applyTransform
+        this.matrixStack.save();
+        try {
+            if (transform) {
                 this.matrixStack.applyTransform(transform, width, height);
-                cb();
-            } finally {
-                if (shouldRestore) {
-                    this.matrixStack.restore();
-                }
             }
-        } else {
-            this.matrixStack.save();
-            try {
-                cb();
-            } finally {
-                this.matrixStack.restore();
-            }
+            cb();
+        } finally {
+            this.matrixStack.restore();
         }
     }
 
@@ -899,7 +883,7 @@ export class Rapid {
         this.gl.disable(this.gl.SCISSOR_TEST);
     }
 
-    renderCamera(transform: ITransformOptions) {
+    applyCamera(transform: ITransformOptions) {
         this.matrixStack.applyTransform(transform)
 
         const m = this.matrixStack.curWorldM
@@ -924,7 +908,7 @@ export class Rapid {
         return p.mul(this.dpr)
     }
 
-    cssToLogic(p: Vec2){
+    cssToLogic(p: Vec2) {
         const devicePixel = this.cssToDevicePixel(p);
         const logicPoint = this.physicsToLogic(devicePixel);
         return logicPoint

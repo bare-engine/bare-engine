@@ -36,7 +36,7 @@ export class ParticleController
     private get activeEmittersNum():int { return this.emitters.filter(entry => entry.hasActivated).length; }
 
     @InspectorField
-    private get particlesNum():int { return this.emitters.reduce((total, entry) => total + entry.emitter.getParticleCount(), 0); }
+    private get particlesNum():int { return this.emitters.reduce((total, entry) => total + entry.emitter.count, 0); }
 
     constructor(scene: Scene)
     {

@@ -5,9 +5,8 @@ import { Rapid } from "./render";
 
 export interface ITransformOptions {
     /** Whether to push a save before applying transforms. Default: true. */
-    saveTransform?: boolean;
-    /** Called immediately after the save (if any). */
-    afterSave?: () => void;
+    modifyStack?: boolean;
+
     x?: number;
     y?: number;
     position?: Vec2;
@@ -34,6 +33,8 @@ export class MatrixStore {
     /** The raw floating-point data of all matrices. */
     public data: Float32Array;
 
+    public temporary: number = -1;
+
     /**
      * Creates a new MatrixStore.
      * @param capacity - The initial capacity of the matrix store (default is 10).
@@ -42,6 +43,7 @@ export class MatrixStore {
         this.buffer = new DynamicArrayBuffer(ArrayType.Float32);
         this.buffer.resize(capacity * NUM_ELEMENTS);
         this.data = this.buffer.getArray() as Float32Array;
+        this.reset();
     }
 
     /**
@@ -73,6 +75,7 @@ export class MatrixStore {
     reset(): void {
         this.matrixCount = 0;
         this.buffer.usedElemNum = 0;
+        this.temporary = this.alloc()
     }
 
     /**
@@ -359,6 +362,67 @@ export class MatrixStore {
         d[o + 4] = f[4];
         d[o + 5] = f[5];
     }
+
+    multiplyAffineInPlace(
+        index: number,
+        a: number,
+        b: number,
+        c: number,
+        dValue: number,
+        tx: number,
+        ty: number
+    ): void {
+        const o = index * 6;
+        const data = this.data;
+
+        const ma = data[o];
+        const mb = data[o + 1];
+        const mc = data[o + 2];
+        const md = data[o + 3];
+        const mx = data[o + 4];
+        const my = data[o + 5];
+
+        data[o] = ma * a + mc * b;
+        data[o + 1] = mb * a + md * b;
+
+        data[o + 2] = ma * c + mc * dValue;
+        data[o + 3] = mb * c + md * dValue;
+
+        data[o + 4] = ma * tx + mc * ty + mx;
+        data[o + 5] = mb * tx + md * ty + my;
+    }
+    multiplyAffine(
+        indexIn: number,
+        indexOut: number,
+
+        a: number,
+        b: number,
+        c: number,
+        dValue: number,
+        tx: number,
+        ty: number
+    ): void {
+        const i = indexIn * 6;
+        const o = indexOut * 6;
+
+        const data = this.data;
+
+        const ma = data[i];
+        const mb = data[i + 1];
+        const mc = data[i + 2];
+        const md = data[i + 3];
+        const mx = data[i + 4];
+        const my = data[i + 5];
+
+        data[o] = ma * a + mc * b;
+        data[o + 1] = mb * a + md * b;
+
+        data[o + 2] = ma * c + mc * dValue;
+        data[o + 3] = mb * c + md * dValue;
+
+        data[o + 4] = ma * tx + mc * ty + mx;
+        data[o + 5] = mb * tx + md * ty + my;
+    }
 }
 
 /**
@@ -379,7 +443,7 @@ export class MatrixStack {
     stepWorldM = new DynamicArrayBuffer(ArrayType.Uint32)
     /** Records actions (push/pop) taken during the traversal. */
     stepAction = new DynamicArrayBuffer(ArrayType.Uint32)
-    /** Records the parent world matrix for each step (used by updateMatrix). */
+    /** Records the parent world matrix for each step (used by updateMatrixSubtree). */
     stepParentM = new DynamicArrayBuffer(ArrayType.Uint32)
 
     /** Buffer used during hierarchy traversal updates. */
@@ -409,17 +473,17 @@ export class MatrixStack {
         this.stack.push(this.curWorldM)
         const parentWorldM = this.curWorldM;
 
-        this.step++;
-
         this.curLocalM = this.matrix.alloc(); // localM
         this.curWorldM = this.matrix.allocDirty(); // worldM
+
+        // update step info
         this.stepWorldM.push(this.curWorldM)
         this.stepParentM.push(parentWorldM)
-
-        this.matrix.copy(this.curWorldM, parentWorldM);
         this.stepAction.push(1)
 
-        return { world: this.curWorldM, local: this.curLocalM, step: this.step }
+        this.matrix.copy(this.curWorldM, parentWorldM);
+
+        return { world: this.curWorldM, local: this.curLocalM, step: this.step++ }
     }
 
     /**
@@ -430,10 +494,16 @@ export class MatrixStack {
         if (this.stack.length == 0) {
             return;
         } else {
+
             this.curWorldM = this.stack.pop()
             this.curLocalM = this.curWorldM - 1
 
-            this.stepAction.push(0)
+            // update step info
+            this.stepParentM.push(this.stack.get(this.stack.length - 1)) // get stack top
+            this.stepWorldM.push(this.curWorldM)
+            this.stepAction.push(0);
+
+            this.step ++;
         }
     }
 
@@ -441,34 +511,25 @@ export class MatrixStack {
      * Evaluates and updates matrices from the given step. Used primarily for deferred transformation.
      * @param step - The initial step to update matrices from.
      */
-    updateMatrix(step: number | { step: number }) {
-        // step is 1-indexed; the node's data is at index (step - 1) in stepWorldM/stepAction
-        // Start from the node itself so its own world matrix gets recalculated
-        const nodeIndex = (typeof step == "number" ? step : step.step) - 1
-        const rootParent = this.stepParentM.get(nodeIndex)
+    updateMatrixSubtree(step: number | { step: number }) {
+        const currentIndex = (typeof step == "number" ? step : step.step)
 
         let depth = 0
-        let index = nodeIndex
-
-        const parentStack = this.parentStack
-        parentStack.reset()
-        parentStack.push(rootParent)
-        while (index < this.stepAction.length) {
+        let index = currentIndex
+        while (index < this.step) {
             const action = this.stepAction.get(index)
 
-            if (action === 1) {
+            if (action === 1) { // save 
                 const worldMatrix = this.stepWorldM.get(index)
                 const localMatrix = worldMatrix - 1
-                const parent = parentStack.top()
+                const parentMatrix = this.stepParentM.get(index)
 
-                this.matrix.multiplyOut(worldMatrix, parent, localMatrix)
-
-                parentStack.push(worldMatrix)
+                this.matrix.multiplyOut(worldMatrix, parentMatrix, localMatrix)
                 depth++
-            } else {
-                parentStack.pop()
+            } else { // restore
                 depth--
                 if (depth === 0) {
+                    // 作用域结束
                     break
                 }
             }
@@ -626,26 +687,33 @@ export class MatrixStack {
 
     /**
      * Applies a transform options object to the current matrix state.
-     * Optionally saves the matrix first (saveTransform defaults to true).
+     * Optionally saves the matrix first
      */
-    applyTransform(transform: ITransformOptions, width: number = 0, height: number = 0) {
-        if (transform.saveTransform ?? true) {
-            this.save();
+    applyTransform(transform: ITransformOptions, width: number = 0, height: number = 0, customMatrix: number = -1) {
+        let x = transform.x ?? 0;
+        let y = transform.y ?? 0;
+
+        if (transform.position) {
+            x += transform.position.x;
+            y += transform.position.y;
         }
-        transform.afterSave?.();
 
-        const x = transform.x ?? 0;
-        const y = transform.y ?? 0;
-        if (x || y) this.translate(x, y);
+        let scaleX = 1;
+        let scaleY = 1;
 
-        if (transform.position) this.translate(transform.position.x, transform.position.y);
-        if (transform.rotation) this.rotate(transform.rotation);
         const scale = transform.scale;
-        const isScaleNumber = typeof scale === "number";
-        if (scale) this.scale(
-            isScaleNumber ? scale : scale.x,
-            isScaleNumber ? scale : scale.y
-        );
+
+        if (scale) {
+            if (typeof scale === "number") {
+                scaleX = scale;
+                scaleY = scale;
+            } else {
+                scaleX = scale.x;
+                scaleY = scale.y;
+            }
+        }
+
+        const rotation = transform.rotation ?? 0;
 
         let offsetX = transform.offsetX ?? 0;
         let offsetY = transform.offsetY ?? 0;
@@ -656,6 +724,7 @@ export class MatrixStack {
         }
 
         const origin = transform.origin;
+
         if (origin !== undefined) {
             if (typeof origin === "number") {
                 offsetX -= origin * width;
@@ -666,6 +735,57 @@ export class MatrixStack {
             }
         }
 
-        this.translate(offsetX, offsetY)
+        const cos = rotation ? Math.cos(rotation) : 1;
+        const sin = rotation ? Math.sin(rotation) : 0;
+
+        // R * S
+        const a = cos * scaleX;
+        const b = sin * scaleX;
+        const c = -sin * scaleY;
+        const d = cos * scaleY;
+
+        // translate(x, y)
+        // rotate(rotation)
+        // scale(scaleX, scaleY)
+        // translate(offsetX, offsetY)
+        const tx = x + a * offsetX + c * offsetY;
+        const ty = y + b * offsetX + d * offsetY;
+
+        if (customMatrix !== -1) {
+            // 不修改matrix stack
+            this.matrix.multiplyAffine(
+                this.curWorldM,
+                customMatrix,
+                a,
+                b,
+                c,
+                d,
+                tx,
+                ty
+            )
+            return
+        }
+
+        // localMatrix = localMatrix * localTransform
+        this.matrix.multiplyAffineInPlace(
+            this.curLocalM,
+            a,
+            b,
+            c,
+            d,
+            tx,
+            ty
+        );
+
+        // worldMatrix = worldMatrix * localTransform
+        this.matrix.multiplyAffineInPlace(
+            this.curWorldM,
+            a,
+            b,
+            c,
+            d,
+            tx,
+            ty
+        );
     }
 }

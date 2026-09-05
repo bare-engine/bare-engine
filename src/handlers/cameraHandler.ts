@@ -352,10 +352,9 @@ export class CameraHandler {
 
         // SET TRANSFORM
         rapid.matrixStack.translate(this.offset.x, this.offset.y);
-        rapid.renderCamera({
+        rapid.applyCamera({
                 position: this.position,
                 scale: 1 / scale,
-                saveTransform: false
             });
     }
 

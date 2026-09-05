@@ -27,7 +27,7 @@ export class Button extends GameObject
         this.buttonColor = options.buttonColor || Color.fromHex('#242428eb');
         
         //this.text = new BareText({text: options.text, fontSize: 22, fontFamily: 'monospace', color: '#fff'});
-        this.text = rapid.texture.createTextTexture({text:options.text, baseline: 'middle',fontSize: 22, fontFamily: 'monospace', fill: '#fff'});
+        this.text = rapid.texture.createTextTexture({text:options.text,fontSize: 22, fontFamily: 'monospace', fill: '#fff'});
         scene.hitbox.AssignButton(this, options);
     }
 
@@ -47,6 +47,7 @@ export class Button extends GameObject
             texture: this.text,
             color: inheritedColor,
             position: new Vec2(this.marge, this.height / 2),
+            origin: new Vec2(0, 0.5)
         });
     }
 

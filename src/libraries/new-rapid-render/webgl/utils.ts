@@ -43,8 +43,6 @@ export const compileShader = (gl: WebGLContext, source: string, type: number) =>
         throw new Error("Unable to compile shader: " + errorLog + source);
     }
 
-    //console.log("compileShader \n", source)
-
     return shader;
 }
 
@@ -128,7 +126,7 @@ export function createTexture(
         const s = source as { width: number; height: number };
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, s.width, s.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
     } else {
-        const premultipliedAlpha = options.premultipliedAlpha ?? rapid.premultipliedAlpha
+        const premultipliedAlpha = options.premultipliedAlpha ?? render.premultipliedAlpha
         if (premultipliedAlpha) {
             gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
         }
@@ -155,7 +153,7 @@ export function generateShader(fs: string, max: number) {
             } else {
                 code += `else if(vTextureId == ${index})`
             }
-            code += `{return texture(uTextures[${index}], uv) * vColor;}`
+            code += `{return texture(uTextures[${index}], uv);}`
         }
         fs = fs.replace("%GET_COLOR%", code)
     }

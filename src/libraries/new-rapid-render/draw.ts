@@ -9,41 +9,33 @@ import type { Rapid } from "./render";
 export type DrawShader = GLShader | CustomGlShader;
 export type DrawPoint = Vec2 | { x: number; y: number };
 
-export interface IDrawOptions extends ITransformOptions {
+export interface IDrawOptions extends ITransformOptions, IDisplayOptions {
+}
+
+export interface IDisplayOptions {
     shader?: DrawShader;
     customMatrix?: number;
 }
 
-export interface IDrawParticleOptions {
-    shader?: DrawShader;
+export interface IDrawParticleBatchOptions extends IDisplayOptions {
     texture: Texture;
-    color?: Color;
-    flipX?: boolean;
-    flipY?: boolean;
-
-    x?: number;
-    y?: number;
-    position?: Vec2;
-    rotation?: number;
-    scaleX?: number;
-    scaleY?: number;
-
-    isRotated?: boolean;
-}
-
-export interface IDrawParticleBatchOptions {
-    shader?: DrawShader;
-    texture: Texture;
-    x: Array<number>;
-    y: Array<number>;
-    rotation: Array<number>;
-    color: Array<Color>;
+    x: ArrayLike<number>;
+    y: ArrayLike<number>;
+    rotation?: ArrayLike<number> | number;
+    color?: ArrayLike<Color> | ArrayLike<number> | number;
     count?: number;
-    scaleX?: number;
-    scaleY?: number;
+    scaleX?: ArrayLike<number>;
+    scaleY?: ArrayLike<number>;
+    originX?: number;
+    originY?: number;
     flipX?: boolean;
     flipY?: boolean;
-    isRotated?: boolean;
+    reverseOrder?: boolean;
+
+    u0?: ArrayLike<number> | number;
+    v0?: ArrayLike<number> | number;
+    u1?: ArrayLike<number> | number;
+    v1?: ArrayLike<number> | number;
 }
 
 export interface ISpriteOptions extends IDrawOptions {
@@ -83,27 +75,42 @@ export interface ICircleOptions extends IDrawOptions {
 
 const withOptionsTransform = (
     rapid: Rapid,
-    options: ITransformOptions,
+    options: IDrawOptions,
     width: number,
     height: number,
-    draw: () => void,
 ) => {
-    // matrixStack save in applyTransform
-    rapid.matrixStack.applyTransform(options, width, height);
-    draw();
+    if (options.customMatrix !== undefined) {
+        return options.customMatrix;
+    }
 
-    if (options.saveTransform !== false) {
-        rapid.matrixStack.restore();
+    if (options.modifyStack) {
+        rapid.matrixStack.applyTransform(
+            options,
+            width,
+            height
+        );
+
+        return
+    } else {
+        const temporary = rapid.matrix.temporary
+        rapid.matrixStack.applyTransform(
+            options,
+            width,
+            height,
+            temporary
+        );
+        return temporary
     }
 };
 
-const getColorUint32 = (rapid: Rapid, color?: Color): number => {
+export const getColorUint32 = (premultipliedAlpha: boolean, color?: Color): number => {
     if (!color) return 0xFFFFFFFF;
-    return rapid.premultipliedAlpha ? color.premultipliedUint32 : color.uint32;
+    return premultipliedAlpha ? color.premultipliedUint32 : color.uint32;
 };
 
 const ATLAS_PADDING = 2
-export const drawSpriteRaw = (rapid: Rapid, options: ISpriteOptions): void => {
+export const drawSprite = (rapid: Rapid, options: ISpriteOptions): void => {
+    const matrix = withOptionsTransform(rapid, options, options.texture.rawWidth, options.texture.rawHeight)
     const texture = options.texture;
     if (!texture?.base || rapid.inCreateMask) {
         return;
@@ -132,49 +139,18 @@ export const drawSpriteRaw = (rapid: Rapid, options: ISpriteOptions): void => {
 
     region.drawSprite(
         texture,
-        options.customMatrix ?? rapid.matrixStack.curWorldM,
+        matrix ?? options.customMatrix ?? rapid.matrixStack.curWorldM,
         u0,
         v0,
         u1,
         v1,
-        getColorUint32(rapid, options.color),
+        rapid.getColorUint32(options.color),
         paddingX,
         paddingY,
         flipX,
         flipY,
         texture.isRotated,
     );
-};
-
-export const drawSprite = (rapid: Rapid, options: ISpriteOptions): void => {
-    withOptionsTransform(rapid, options, options.texture.rawWidth, options.texture.rawHeight, () => {
-        drawSpriteRaw(rapid, options);
-    });
-};
-
-export const drawParticle = (rapid: Rapid, options: IDrawParticleOptions): void => {
-    const region = rapid.particleRegion
-    rapid.enterRegion(region, options.shader);
-    const texture = options.texture
-
-    const u0 = texture.uvX;
-    const v0 = texture.uvY;
-    const u1 = texture.uvW;
-    const v1 = texture.uvH;
-
-    region.drawParticle(
-        texture,
-        options.x,
-        options.y,
-        options.scaleX,
-        options.scaleY,
-        options.rotation,
-        u0, v0, u1, v1,
-        getColorUint32(rapid, options.color),
-        options.flipX,
-        options.flipY,
-        options.isRotated
-    )
 };
 
 export const drawParticles = (rapid: Rapid, options: IDrawParticleBatchOptions): void => {
@@ -185,65 +161,56 @@ export const drawParticles = (rapid: Rapid, options: IDrawParticleBatchOptions):
     const count = options.count ?? options.x.length;
     const color = options.color;
 
-    const len = color.length;
-    const numColor = new Array(len);
-
-    if (rapid.premultipliedAlpha) {
-        for (let i = 0; i < len; i++) {
-            numColor[i] = color[i].premultipliedUint32;
-        }
-    } else {
-        for (let i = 0; i < len; i++) {
-            numColor[i] = color[i].uint32;
-        }
-    }
-
     region.drawParticles(
         texture,
         options.x,
         options.y,
         options.rotation,
-        numColor,
+        color,
         count,
         options.scaleX,
         options.scaleY,
-        texture.uvX,
-        texture.uvY,
-        texture.uvW,
-        texture.uvH,
+        options.u0 ?? texture.uvX,
+        options.v0 ?? texture.uvY,
+        options.u1 ?? texture.uvW,
+        options.v1 ?? texture.uvH,
         options.flipX,
         options.flipY,
-        options.isRotated,
+        texture.isRotated,
+        options.originX,
+        options.originY,
+        rapid.premultipliedAlpha,
+        options.reverseOrder,
+        options.customMatrix
     )
 };
 
 export const drawGraphic = (rapid: Rapid, options: IGraphicOptions): void => {
     if (options.points.length === 0) return;
 
-    withOptionsTransform(rapid, options, 0, 0, () => {
-        rapid.startGraphic(
-            options.drawMode ?? rapid.gl.TRIANGLES,
-            options.texture,
-            options.shader,
-            options.customMatrix,
+    const matrix = withOptionsTransform(rapid, options, 0, 0);
+    rapid.startGraphic(
+        options.drawMode ?? rapid.gl.TRIANGLES,
+        options.texture,
+        options.shader,
+        matrix ?? options.customMatrix,
+    );
+
+    for (let i = 0; i < options.points.length; i++) {
+        const point = options.points[i];
+        const uv = options.uv?.[i];
+        const color = Array.isArray(options.color) ? options.color[i] : options.color;
+
+        rapid.addGraphicVertex(
+            point.x,
+            point.y,
+            uv?.x ?? 0,
+            uv?.y ?? 0,
+            rapid.getColorUint32(color),
         );
+    }
 
-        for (let i = 0; i < options.points.length; i++) {
-            const point = options.points[i];
-            const uv = options.uv?.[i];
-            const color = Array.isArray(options.color) ? options.color[i] : options.color;
-
-            rapid.addGraphicVertex(
-                point.x,
-                point.y,
-                uv?.x ?? 0,
-                uv?.y ?? 0,
-                getColorUint32(rapid, color),
-            );
-        }
-
-        rapid.endGraphic();
-    });
+    rapid.endGraphic();
 };
 
 export const drawLine = (rapid: Rapid, options: ILineOptions): void => {
@@ -261,45 +228,48 @@ export const drawLine = (rapid: Rapid, options: ILineOptions): void => {
 };
 
 export const drawMaskImage = (rapid: Rapid, options: IMaskImageOptions): void => {
-    withOptionsTransform(rapid, options, options.texture.rawWidth, options.texture.rawHeight, () => {
-        rapid.startMaskGraphic(
-            rapid.gl.TRIANGLE_FAN,
-            options.texture,
-            options.customMatrix,
-        );
-        rapid.addRectVertex(options.texture.rawWidth, options.texture.rawHeight);
-        rapid.endGraphic();
-    });
+    const matrix = withOptionsTransform(
+        rapid,
+        options,
+        options.texture.rawWidth,
+        options.texture.rawHeight,
+    );
+    rapid.startMaskGraphic(
+        rapid.gl.TRIANGLE_FAN,
+        options.texture,
+        matrix ?? options.customMatrix,
+    );
+    rapid.addRectVertex(options.texture.rawWidth, options.texture.rawHeight);
+    rapid.endGraphic();
 };
 
 export const drawRect = (rapid: Rapid, options: IRectOptions): void => {
-    withOptionsTransform(rapid, options, options.width, options.height, () => {
-        rapid.startGraphic(
-            rapid.gl.TRIANGLE_FAN,
-            options.texture,
-            options.shader,
-            options.customMatrix,
-        );
-        rapid.addRectVertex(options.width, options.height, options.color);
-        rapid.endGraphic();
-    });
+    const matrix = withOptionsTransform(rapid, options, options.width, options.height)
+
+    rapid.startGraphic(
+        rapid.gl.TRIANGLE_FAN,
+        options.texture,
+        options.shader,
+        matrix ?? options.customMatrix,
+    );
+    rapid.addRectVertex(options.width, options.height, options.color);
+    rapid.endGraphic();
 };
 
 export const drawCircle = (rapid: Rapid, options: ICircleOptions): void => {
     const segments = options.segments ?? 32;
+    const matrix = withOptionsTransform(rapid, options, 0, 0);
 
-    withOptionsTransform(rapid, options, 0, 0, () => {
-        rapid.startGraphic(
-            rapid.gl.TRIANGLE_FAN,
-            undefined,
-            options.shader,
-            options.customMatrix,
-        );
+    rapid.startGraphic(
+        rapid.gl.TRIANGLE_FAN,
+        undefined,
+        options.shader,
+        matrix ?? options.customMatrix,
+    );
 
-        const unitColor = getColorUint32(rapid, options.color);
-        rapid.addGraphicVertex(0, 0, 0.5, 0.5, unitColor);
-        rapid.addCircleVertex(options.radius, options.color, segments);
-        rapid.addGraphicVertex(options.radius, 0, 1, 0.5, unitColor);
-        rapid.endGraphic();
-    });
+    const unitColor = rapid.getColorUint32(options.color);
+    rapid.addGraphicVertex(0, 0, 0.5, 0.5, unitColor);
+    rapid.addCircleVertex(options.radius, options.color, segments);
+    rapid.addGraphicVertex(options.radius, 0, 1, 0.5, unitColor);
+    rapid.endGraphic();
 };

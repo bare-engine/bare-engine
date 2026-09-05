@@ -3,7 +3,6 @@ import { MatrixStore } from "../matrix-engine";
 import GLShader, { CustomGlShader } from "../webgl/glshader";
 import { WebGLContext } from "../webgl/utils";
 
-export const MAX_INSTANCES = Infinity
 export class Region {
     defaultShader!: GLShader
     currentShader!: GLShader
@@ -63,6 +62,9 @@ export class Region {
     useTexture(texture: WebGLTexture, paddingX: number = 0, paddingY: number = 0) {
         const textureUnit = this.findTextureUnit(texture, paddingX, paddingY)
         if (textureUnit == -1) {
+            if (this.freeTextureUnitNum === 0) {
+                this.flush();
+            }
             this.usedTextures.push(texture)
 
             this.usedTexturePadding.push(paddingX)
@@ -136,6 +138,10 @@ export class Region {
     }
 
     render(): void {
+        this.prepareRender()
+    }
+
+    protected prepareRender(): void {
         const shader = this.currentShader
         shader.use()
 

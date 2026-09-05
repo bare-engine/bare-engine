@@ -278,11 +278,11 @@ class Texture {
     public glTexture: WebGLTexture | null = null;
 
     get width(): number {
-        return (this.isRotated ? this.rawHeight : this.rawWidth) * this.scale;
+        return this.isRotated ? this.rawHeight : this.rawWidth;
     }
 
     get height(): number {
-        return (this.isRotated ? this.rawWidth : this.rawHeight) * this.scale;
+        return this.isRotated ? this.rawWidth : this.rawHeight;
     }
 
     /**
@@ -354,8 +354,8 @@ class Texture {
         this.uvW = this.uvX + (w / this.base.width);
         this.uvH = this.uvY + (h / this.base.height);
 
-        this.rawWidth = w;
-        this.rawHeight = h;
+        this.rawWidth = w * this.scale;
+        this.rawHeight = h * this.scale;
 
         return this;
     }
@@ -385,7 +385,7 @@ class Texture {
      * Creates a shallow copy of this Texture, sharing the same BaseTexture.
      * @returns A new Texture instance.
      */
-    clone(target?:Texture): Texture {
+    clone(target?: Texture): Texture {
         const t = target ?? new Texture(this.base);
         if (target) {
             target.setBase(this.base)
@@ -557,7 +557,7 @@ class RenderTexture extends Texture {
      * Activates this texture as the current render target.
      * @param clear - Whether to clear the render target after activation.
      */
-    activate(clear:boolean = false): void {
+    activate(clear: boolean = false): void {
         if (!this.framebuffer) return;
         const gl = this.gl;
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
@@ -566,7 +566,7 @@ class RenderTexture extends Texture {
         if (clear) this.clear()
     }
 
-    clear(clearColor?: Color){
+    clear(clearColor?: Color) {
         if (!this.framebuffer) return;
         const gl = this.gl;
 
@@ -644,7 +644,6 @@ class RenderTexture extends Texture {
         this.base?.destroy(this.gl);
     }
 }
-
 export interface ITextStyle {
     fontFamily?: string;
     fontSize?: number;
@@ -653,8 +652,7 @@ export interface ITextStyle {
     stroke?: string | CanvasGradient | CanvasPattern;
     strokeThickness?: number;
     align?: "left" | "center" | "right";
-    baseline?: CanvasTextBaseline;
-    lineHeight?: number;
+    lineHeight?: number,
 }
 
 const defaultTextStyle: ITextStyle = {
@@ -662,9 +660,9 @@ const defaultTextStyle: ITextStyle = {
     fontSize: 24,
     fontWeight: "normal",
     fill: "#000000",
-    strokeThickness: 1,
+    strokeThickness: 0,
     align: "left",
-    baseline: "top",
+    lineHeight: 1
 };
 
 export interface ITextOptions extends ITextStyle, ITextureOptions {
@@ -723,45 +721,22 @@ class TextTexture extends Texture {
     }
 
     /**
-     * Set new style partially and update the texture. Skips the update if
-     * none of the given values differ from the current style.
+     * Set new style partially and update the texture
      */
     public set style(value: Partial<ITextStyle>) {
-        const keys = Object.keys(value) as (keyof ITextStyle)[];
-        if (keys.every((key) => this._style[key] === value[key])) return;
-
         this._style = { ...this._style, ...value };
         this.update();
     }
 
-    private updateOffset(width: number, height: number): void {
+    private updateOffset(width: number, padding: number) {
         switch (this._style.align) {
             case "center":
-                this.offsetX = -width / 2;
-                break;
+                return width / 2;
             case "right":
-                this.offsetX = -width;
-                break;
+                return width;
             case "left":
             default:
-                this.offsetX = 0;
-                break;
-        }
-
-        switch (this._style.baseline) {
-            case "middle":
-                this.offsetY = -height / 2;
-                break;
-            case "bottom":
-                this.offsetY = -height;
-                break;
-            case "alphabetic":
-            case "hanging":
-            case "ideographic":
-            case "top":
-            default:
-                this.offsetY = 0;
-                break;
+                return padding;
         }
     }
 
@@ -770,48 +745,41 @@ class TextTexture extends Texture {
      */
     public update(): void {
         const ctx = this.ctx;
-        const fontSize = this._style.fontSize!;
-        const fontWeight = this._style.fontWeight!;
-        const fontFamily = this._style.fontFamily!;
+        const style = this.style
+        const fontSize = style.fontSize!;
+        const fontWeight = style.fontWeight!;
+        const fontFamily = style.fontFamily!;
+        const lineHeightRate = style.lineHeight!;
         const font = `${fontWeight} ${fontSize}px ${fontFamily}`;
         const dpr = this.render.dpr
         ctx.font = font;
+        ctx.textBaseline = "top";
 
         const lines = this._text.split('\n');
         let maxWidth = 0;
         let totalHeight = 0;
 
-        // "top" is positioned inconsistently across browser text engines.
-        // Measure a stable set of ascenders and descenders, then render from
-        // the alphabetic baseline, following Pixi's canvas text approach.
-        ctx.textBaseline = "alphabetic";
-        const fontMetrics = ctx.measureText("|ÉqÅM");
-        const ascent = fontMetrics.actualBoundingBoxAscent
-            || fontMetrics.fontBoundingBoxAscent
-            || fontSize;
-        const descent = fontMetrics.actualBoundingBoxDescent
-            || fontMetrics.fontBoundingBoxDescent
-            || Math.ceil(fontSize * 0.25);
-        const fontHeight = ascent + descent;
-        const lineHeight = this._style.lineHeight || fontHeight;
-        const linePositionYShift = Math.max(0, (lineHeight - fontHeight) / 2);
+        const textMetrics = ctx.measureText(lines[0] || 'M');
+
+        const lineHeight = (
+            (textMetrics.fontBoundingBoxAscent || fontSize) +
+            (textMetrics.fontBoundingBoxDescent || fontSize * 0.2)
+        )
 
         for (const line of lines) {
             const metrics = ctx.measureText(line);
             if (metrics.width > maxWidth) maxWidth = metrics.width;
+            totalHeight += lineHeight * lineHeightRate;
         }
+        totalHeight -= lineHeight * (lineHeightRate - 1)
 
-        // Keep enough room for the final line's descent. If lineHeight is
-        // smaller than the font itself, lines may overlap but are not clipped.
-        totalHeight = Math.max(lineHeight, fontHeight)
-            + ((lines.length - 1) * lineHeight);
+        const padding = (this._style.strokeThickness || 0);
 
-        const padding = (this._style.strokeThickness || 0) * 2;
-        const logicalWidth = Math.ceil(maxWidth + padding) || 1;
-        const logicalHeight = Math.ceil(totalHeight + padding) || 1;
+        const logicalWidth = Math.ceil(maxWidth + padding * 2) || 1;
+        const logicalHeight = Math.ceil(totalHeight + padding * 2) || 1;
 
-        const pixelWidth = logicalWidth * dpr;
-        const pixelHeight = logicalHeight * dpr;
+        const pixelWidth = Math.ceil(logicalWidth * dpr);
+        const pixelHeight = Math.ceil(logicalHeight * dpr);
 
         // Only resize if actually changed, because resizing clears canvas
         if (this.canvas.width !== pixelWidth || this.canvas.height !== pixelHeight) {
@@ -823,30 +791,35 @@ class TextTexture extends Texture {
         ctx.clearRect(0, 0, logicalWidth, logicalHeight);
 
         ctx.font = font;
-        ctx.textBaseline = "alphabetic";
-        ctx.textAlign = "left";
-        this.updateOffset(logicalWidth, logicalHeight);
+        ctx.textBaseline = "top";
+        ctx.textAlign = this._style.align!;
 
-        let y = padding / 2 + linePositionYShift + ascent;
+        const startX = this.updateOffset(logicalWidth, padding);
+
+        const strokeThickness = style.strokeThickness!
+        const hasStroke = strokeThickness > 0;
+        if (hasStroke) {
+            ctx.lineWidth = strokeThickness;
+            ctx.strokeStyle = style.stroke as string;
+            ctx.lineJoin = "round";
+        }
+        if (style.fill) {
+            ctx.fillStyle = style.fill as string;
+        }
+
+        let y = padding;
         for (const line of lines) {
-            let x = padding / 2;
-
-            if (this._style.stroke && this._style.strokeThickness! > 0) {
-                ctx.lineWidth = this._style.strokeThickness!;
-                ctx.strokeStyle = this._style.stroke as string;
-                ctx.strokeText(line, x, y);
+            if (hasStroke) {
+                ctx.strokeText(line, startX, y);
             }
-
-            if (this._style.fill) {
-                ctx.fillStyle = this._style.fill as string;
-                ctx.fillText(line, x, y);
+            if (style.fill) {
+                ctx.fillText(line, startX, y);
             }
-
-            y += lineHeight;
+            y += lineHeight * lineHeightRate;
         }
 
         this.base?.updateSource(this.render.gl, this.canvas, this.options);
-        this.setRegion(0, 0, this.canvas.width, this.canvas.height);
+        this.setRegion(0, 0, pixelWidth, pixelHeight);
     }
 }
 

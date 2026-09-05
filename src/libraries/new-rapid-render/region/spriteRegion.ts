@@ -1,5 +1,5 @@
 import { Rapid } from "../render";
-import { MAX_INSTANCES, Region } from "./region";
+import { Region } from "./region";
 import { CustomGlShader } from "../webgl/glshader";
 import { ArrayType, WebglBufferArray } from "../buffer";
 import { drawArraysInstanced, generateShader, UNSIGNED_BYTE } from "../webgl/utils";
@@ -11,11 +11,11 @@ import { Texture } from "../texture";
 
 // Per-instance buffer stride: 12 floats + 2 uint32 = 48 bytes
 // layout:
-//   aMatrixRow0  vec3        float32×3  offset  0  (a, c, tx)
-//   aMatrixRow1  vec3        float32×3  offset 12  (b, d, ty)
-//   aUVRect      vec4        float32×4  offset 24  (u0, v0, u1, v1)
-//   aColor       vec4 u8×4   uint32×1   offset 40  (r,g,b,a 0-255, normalized)
-//   aTextureId   float u8×1  uint32×1   offset 44  (texture unit index)
+//   aMatrixRow0  vec3        float32×3  offset  12 (a, c, tx)
+//   aMatrixRow1  vec3        float32×3  offset  24 (b, d, ty)
+//   aUVRect      vec4        float32×4  offset  40 (u0, v0, u1, v1)
+//   aColor       vec4 u8×4   uint32×1   offset  44 (r,g,b,a 0-255, normalized)
+//   aTextureId   float u8×1  uint32×1   offset  48 (texture unit index)
 const INSTANCE_STRIDE = 48;
 
 // Static quad vertices: 4 × vec2 for TRIANGLE_STRIP
@@ -117,12 +117,49 @@ export class SpriteRegion extends Region {
         flipY: boolean = false,
         isRotated: boolean = false,
     ): void {
-        if (this.freeTextureUnitNum === 0 || this.instanceCount > MAX_INSTANCES) {
-            this.flush();
-        }
+        const o = matrixIndex * 6;
+        const md = this.matrixStore.data;
+   
+        this.drawSpriteAffine(
+            texture,
+            md[o],
+            md[o + 1],
+            md[o + 2],
+            md[o + 3],
+            md[o + 4],
+            md[o + 5],
+            u0,
+            v0,
+            u1,
+            v1,
+            color,
+            paddingX,
+            paddingY,
+            flipX,
+            flipY,
+            isRotated,
+        );
+    }
 
+    drawSpriteAffine(
+        texture: Texture,
+
+        matrixA: number,
+        matrixB: number,
+        matrixC: number,
+        matrixD: number,
+        matrixTx: number,
+        matrixTy: number,
+
+        u0: number = 0, v0: number = 0, u1: number = 1, v1: number = 1,
+        color: number = 0xFFFFFFFF,
+        paddingX: number = 0,
+        paddingY: number = 0,
+        flipX: boolean = false,
+        flipY: boolean = false,
+        isRotated: boolean = false,
+    ): void {
         const base = texture.base!;
-        const textureScale = texture.scale ?? 1;
 
         const rawWidth = texture.rawWidth;
         const rawHeight = texture.rawHeight;
@@ -133,13 +170,9 @@ export class SpriteRegion extends Region {
         // base.width is full texture size, texture.width is alts texture size
         const textureId = this.useTexture(
             texture.glTexture!,
-            (paddingX / textureScale) / base.width,
-            (paddingY / textureScale) / base.height
+            paddingX / base.width,
+            paddingY / base.height
         );
-        // Read 2×3 affine matrix from MatrixStore and bake (width + 2p) / (height + 2p) into it.
-        // Offset tx/ty by -p in local space (rotation-aware) so the quad expands symmetrically.
-        const o = matrixIndex * 6;
-        const md = this.matrixStore.data;
 
         const buf = this.instanceBuffer;
         const index = buf.usedElemNum
@@ -148,8 +181,8 @@ export class SpriteRegion extends Region {
         const f32 = buf.float32!;
         const u32 = buf.uint32!;
 
-        const width = (isRotated ? rawHeight : rawWidth) * textureScale;
-        const height = (isRotated ? rawWidth : rawHeight) * textureScale;
+        const width = isRotated ? rawHeight : rawWidth;
+        const height = isRotated ? rawWidth : rawHeight;
 
         const drawWidth = width + 2 * paddingX;
         const drawHeight = height + 2 * paddingY;
@@ -176,12 +209,13 @@ export class SpriteRegion extends Region {
         }
 
         const world = this.worldSpriteMatrix;
-        world[0] = md[o] * local[0] + md[o + 2] * local[1];
-        world[1] = md[o + 1] * local[0] + md[o + 3] * local[1];
-        world[2] = md[o] * local[2] + md[o + 2] * local[3];
-        world[3] = md[o + 1] * local[2] + md[o + 3] * local[3];
-        world[4] = md[o + 4] + md[o] * local[4] + md[o + 2] * local[5];
-        world[5] = md[o + 5] + md[o + 1] * local[4] + md[o + 3] * local[5];
+        world[0] = matrixA * local[0] + matrixC * local[1];
+        world[1] = matrixB * local[0] + matrixD * local[1];
+        world[2] = matrixA * local[2] + matrixC * local[3];
+        world[3] = matrixB * local[2] + matrixD * local[3];
+
+        world[4] = matrixTx + matrixA * local[4] + matrixC * local[5];
+        world[5] = matrixTy + matrixB * local[4] + matrixD * local[5];
 
         f32[index + 6] = u0;
         f32[index + 7] = v0;
@@ -211,7 +245,7 @@ export class SpriteRegion extends Region {
 
     override render(): void {
         if (this.instanceCount === 0) return;
-        super.render();
+        this.prepareRender();
 
         const gl = this.gl;
         const shader = this.currentShader;

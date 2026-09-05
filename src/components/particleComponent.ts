@@ -76,10 +76,6 @@ export class ParticleComponent extends Component
                     start: this.animation.velocity.start ? new Vec2(this.animation.velocity.start.x, this.animation.velocity.start.y) : undefined,
                     end: this.animation.velocity.end ? new Vec2(this.animation.velocity.end.x, this.animation.velocity.end.y) : undefined,
                 } : undefined,
-                acceleration: this.animation?.acceleration ? {
-                    start: this.animation.acceleration.start ? new Vec2(this.animation.acceleration.start.x, this.animation.acceleration.start.y) : undefined,
-                    end: this.animation.acceleration.end ? new Vec2(this.animation.acceleration.end.x, this.animation.acceleration.end.y) : undefined,
-                } : undefined,
             }
         };
 

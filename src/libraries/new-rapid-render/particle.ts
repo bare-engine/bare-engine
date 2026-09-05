@@ -3,15 +3,14 @@ import { Vec2 } from "./math";
 import { Rapid } from "./render";
 import { Texture } from "./texture";
 import { isPlainObject, Random } from "./utils";
-import { drawSpriteRaw } from "./draw"
-
-export type ParticleAttributeTypes = number | Vec2 | Color;
+import { ArrayType, DynamicArrayBuffer } from "./buffer";
+import { CustomGlShader } from "./webgl/glshader";
 
 /**
  * Describes an animated attribute: it transitions from `start` to `end`
  * over the particle's lifetime, optionally with a per-second damping factor.
  */
-export interface ParticleAttribute<T extends ParticleAttributeTypes> {
+export interface ParticleAttribute<T = number> {
     /** Starting value (scalar, range tuple, or fixed value). */
     start?: T | [T, T];
     /** Ending value. Defaults to `start` if omitted (no change over time). */
@@ -29,7 +28,7 @@ export interface ParticleAttribute<T extends ParticleAttributeTypes> {
 }
 
 /** Internal resolved state of one animated attribute. */
-export interface ParticleAttributeData<T extends ParticleAttributeTypes> {
+export interface ParticleAttributeData<T = number> {
     value: T;
     delta?: T;
     damping?: number;
@@ -50,15 +49,15 @@ export interface IParticleAnimation {
     scale?: ParticleAttribute<number> | number;
     /** Tint color (0-255 components, uses engine Color class). */
     color?: ParticleAttribute<Color> | Color;
-    /** Additive velocity vector (pixels/sec). */
+    /** Additive velocity vector (pixels/sec). Use `velocity.delta` to simulate constant acceleration (e.g. gravity). */
     velocity?: ParticleAttribute<Vec2> | Vec2;
-    /** Acceleration vector added to velocity each second (pixels/sec²). */
-    acceleration?: ParticleAttribute<Vec2> | Vec2;
 }
 
 export interface IParticleOptions {
     /** Texture(s) to pick from. Pass a weighted tuple `[Texture, weight][]` for weighted random. */
-    texture: Texture | Texture[] | [Texture, number][];
+    texture: Texture;
+    shader?: CustomGlShader,
+    position: Vec2,
     /** Particle lifetime in seconds, or a [min, max] range. */
     life: number | [number, number];
     /** Animation / per-attribute configuration. */
@@ -80,8 +79,6 @@ export interface IParticleOptions {
     emitTime?: number;
     /** Whether particles are positioned relative to the emitter (default: true). */
     localSpace?: boolean;
-    /** World-space position of the emitter (used when localSpace is false). */
-    position?: Vec2;
 
     origin?: Vec2;
 }
@@ -90,190 +87,112 @@ const DEFAULT_EMIT_RATE = 10;
 const DEFAULT_EMIT_TIME = 0;
 const DEFAULT_LOCAL_SPACE = true;
 
-export class Particle {
-    private life: number = 0;
-    private maxLife: number;
+type ParticleAttributeValue = number | Vec2 | Color;
 
-    private texture!: Texture;
-    private options: IParticleOptions;
-    private position: Vec2;
-    private datas: Record<string, ParticleAttributeData<any>> = {};
+class ParticleAttributeStore {
+    readonly components: {
+        value: DynamicArrayBuffer;
+        delta: DynamicArrayBuffer;
+        damping: DynamicArrayBuffer;
+    }[];
 
-    private rapid: Rapid;
-
-    constructor(rapid: Rapid, options: IParticleOptions) {
-        this.rapid = rapid;
-        this.options = options;
-
-        if (options.texture instanceof Texture) {
-            this.texture = options.texture;
-        } else if (
-            options.texture instanceof Array &&
-            options.texture[0] instanceof Array
-        ) {
-            this.texture = Random.pickWeight(options.texture as [Texture, number][]);
-        } else if (options.texture instanceof Array) {
-            this.texture = Random.pick(options.texture as Texture[]);
+    constructor(size: number = 1) {
+        if (!Number.isInteger(size) || size <= 0) {
+            throw new RangeError("ParticleAttributeStore size must be a positive integer");
         }
 
-        this.maxLife = Random.scalarOrRange(options.life as any, 1) as number;
-
-        this.datas = {
-            speed:        this.processAttribute(options.animation.speed,        0)!,
-            rotation:     this.processAttribute(options.animation.rotation,     0)!,
-            scale:        this.processAttribute(options.animation.scale,        1)!,
-            color:        this.processAttribute(options.animation.color,        Color.White.clone())!,
-            velocity:     this.processAttribute(options.animation.velocity,     Vec2.ZERO)!,
-            acceleration: this.processAttribute(options.animation.acceleration, Vec2.ZERO)!,
-        };
-
-        this.position = Vec2.ZERO;
-        this.initializePosition();
+        this.components = Array.from({ length: size }, () => ({
+            value: new DynamicArrayBuffer(ArrayType.Float32),
+            delta: new DynamicArrayBuffer(ArrayType.Float32),
+            damping: new DynamicArrayBuffer(ArrayType.Float32),
+        }));
     }
 
-    private processAttribute<T extends ParticleAttributeTypes>(
+    getArrayBuffer(): DynamicArrayBuffer[] {
+        return this.components.flatMap(({ value, delta, damping }) => [value, delta, damping]);
+    }
+
+    update(deltaTime: number): void {
+        for (const { value, delta, damping } of this.components) {
+            for (let index = 0; index < value.usedElemNum; index++) {
+                value.typedArray[index] *= Math.pow(damping.get(index), deltaTime);
+                value.typedArray[index] += delta.get(index) * deltaTime;
+            }
+        }
+    }
+
+    get(particleIndex: number, componentIndex: number = 0): number {
+        return this.components[componentIndex].value.get(particleIndex);
+    }
+
+    private getComponent(value: ParticleAttributeValue, index: number): number {
+        if (typeof value === "number") {
+            return value;
+        }
+        if (value instanceof Vec2) {
+            return index === 0 ? value.x : value.y;
+        }
+
+        switch (index) {
+            case 0: return value.r;
+            case 1: return value.g;
+            case 2: return value.b;
+            case 3: return value.a;
+            default: return 0;
+        }
+    }
+
+    private resolveComponent(
+        value: ParticleAttributeValue | [ParticleAttributeValue, ParticleAttributeValue] | undefined,
+        index: number,
+        defaultValue: number,
+    ): number {
+        if (value === undefined) {
+            return defaultValue;
+        }
+        if (Array.isArray(value)) {
+            return Random.float(
+                this.getComponent(value[0], index),
+                this.getComponent(value[1], index),
+            );
+        }
+        return this.getComponent(value, index);
+    }
+
+    create<T extends ParticleAttributeValue>(
         attribute: ParticleAttribute<T> | T | undefined,
         defaultData: T,
-    ): ParticleAttributeData<T> {
-        if (attribute === undefined || attribute === null) {
-            return { value: defaultData };
-        }
-        if (isPlainObject(attribute)) {
-            const attr = attribute as ParticleAttribute<T>;
-            const start = Random.scalarOrRange(attr.start, defaultData) as T;
-            const end   = attr.end === undefined
+        lifeTime: number = 1,
+    ): number {
+        const attr = isPlainObject(attribute)
+            ? attribute as ParticleAttribute<T>
+            : undefined;
+        const fixedValue = attr === undefined ? attribute as T | undefined : undefined;
+        const duration = lifeTime > 0 ? lifeTime : 1;
+        let firstValue = 0;
+
+        for (let index = 0; index < this.components.length; index++) {
+            const { value, delta, damping } = this.components[index];
+            const componentDefault = this.getComponent(defaultData, index);
+            const start = fixedValue === undefined
+                ? this.resolveComponent(attr?.start, index, componentDefault)
+                : this.getComponent(fixedValue, index);
+            const end = attr?.end === undefined
                 ? start
-                : Random.scalarOrRange(attr.end, defaultData) as T;
-            return {
-                delta:   attr.delta ?? this.getDelta(start, end, this.maxLife),
-                value:   start,
-                damping: attr.damping,
-            };
-        } else {
-            return this.processAttribute({ start: attribute as T }, defaultData);
-        }
-    }
+                : this.resolveComponent(attr.end, index, componentDefault);
 
-    private updateDamping(deltaTime: number) {
-        for (const att of Object.values(this.datas)) {
-            if (att.damping !== undefined) {
-                const timeBasedDamping = Math.pow(att.damping, deltaTime);
-                if (typeof att.value === "number") {
-                    att.value *= timeBasedDamping;
-                } else {
-                    att.value = (att.value as Vec2 | Color).multiply(timeBasedDamping);
-                }
-            }
-        }
-    }
+            value.push(start);
+            delta.push(attr?.delta === undefined
+                ? (end - start) / duration
+                : this.getComponent(attr.delta, index));
+            damping.push(attr?.damping ?? 1);
 
-    private updateDelta(deltaTime: number) {
-        const datas = this.datas;
-
-        for (const att of Object.values(datas)) {
-            if (att.delta !== undefined) {
-                if (typeof att.value === "number") {
-                    att.value += deltaTime * (att.delta as number);
-                } else {
-                    att.value = (att.value as Vec2 | Color).add(
-                        (att.delta as Vec2 | Color).multiply(deltaTime) as any,
-                    );
-                }
-            }
+            if (index === 0) firstValue = start;
         }
 
-        (datas.color.value as Color).clamp();
-
-        // acceleration → velocity → position
-        datas.velocity.value = (datas.velocity.value as Vec2).add(
-            (datas.acceleration.value as Vec2).multiply(deltaTime) as any
-        );
-        const direction   = Vec2.fromAngle(datas.rotation.value as number);
-        const speedOffset = direction.multiply((datas.speed.value as number) * deltaTime);
-        this.position = this.position
-            .add(speedOffset)
-            .add((datas.velocity.value as Vec2).multiply(deltaTime));
-    }
-
-    private getDelta<T extends ParticleAttributeTypes>(start: T, end: T, lifeTime: number): T {
-        if (typeof start === "number" && typeof end === "number") {
-            return ((end - start) / lifeTime) as T;
-        } else if (start instanceof Vec2 && end instanceof Vec2) {
-            return end.subtract(start).divide(lifeTime) as T;
-        } else if (start instanceof Color && end instanceof Color) {
-            return end.subtract(start).divide(lifeTime) as T;
-        }
-        return start as T;
-    }
-
-    /**
-     * Updates particle state.
-     * @param deltaTime - Seconds elapsed since last frame
-     * @returns `true` while the particle is alive, `false` when it should be removed
-     */
-    update(deltaTime: number): boolean {
-        this.life += deltaTime;
-        if (this.life >= this.maxLife) return false;
-        this.updateDamping(deltaTime);
-        this.updateDelta(deltaTime);
-        return true;
-    }
-
-    /**
-     * Renders the particle using the Rapid engine's matrixStack + drawSprite.
-     * The emitter is responsible for calling save/restore around a batch of particles.
-     */
-    render() {
-        const ms    = this.rapid.matrixStack;
-        const scale = this.datas.scale.value as number;
-        const rot   = this.datas.rotation.value as number;
-        const color = this.datas.color.value as Color;
-
-        ms.save();
-        ms.translate(this.position.x, this.position.y);
-        if (rot !== 0) ms.rotate(rot);
-        if (scale !== 1) ms.scale(scale, scale);
-
-        const originX = this.options.origin ? this.options.origin.x : 0.5;
-        const originY = this.options.origin ? this.options.origin.y : 0.5;
-
-        if (originX !== 0 || originY !== 0) {
-            ms.translate(-originX * this.texture.rawWidth, -originY * this.texture.rawHeight);
-        }
-
-        //this.rapid.drawSprite({ texture: this.texture, color });
-        drawSpriteRaw(rapid, { texture: this.texture, color })
-        ms.restore();
-    }
-
-    private initializePosition() {
-        switch (this.options.emitShape) {
-            case ParticleShape.CIRCLE: {
-                const angle  = Math.random() * Math.PI * 2;
-                const radius = (this.options.emitRadius ?? 0) * Math.sqrt(Math.random());
-                this.position = new Vec2(Math.cos(angle) * radius, Math.sin(angle) * radius);
-                break;
-            }
-            case ParticleShape.RECT: {
-                this.position = new Vec2(
-                    (Math.random() - 0.5) * (this.options.emitRect?.width  ?? 0),
-                    (Math.random() - 0.5) * (this.options.emitRect?.height ?? 0),
-                );
-                break;
-            }
-            case ParticleShape.POINT:
-            default:
-                this.position = Vec2.ZERO;
-                break;
-        }
-
-        // In world-space mode offset by emitter position at spawn time
-        if (!this.options.localSpace && this.options.position) {
-            this.position = this.position.add(this.options.position);
-        }
+        return firstValue;
     }
 }
-
 /**
  * Creates and manages a pool of Particle instances.
  *
@@ -288,7 +207,6 @@ export class Particle {
  * ```
  */
 export class ParticleEmitter {
-    private particles: Particle[] = [];
     private options: IParticleOptions;
     private emitting: boolean = false;
     private emitTimer: number = 0;
@@ -298,25 +216,51 @@ export class ParticleEmitter {
 
     /** Whether spawned particles are positioned in local emitter space (default: true). */
     localSpace: boolean = DEFAULT_LOCAL_SPACE;
-    /** World position of the emitter. Used for both local-space transform and world-space spawn offset. */
-    position: Vec2 = Vec2.ZERO;
 
     private rapid: Rapid;
 
-    gameObject:any
+    x = new DynamicArrayBuffer(ArrayType.Float32)
+    y = new DynamicArrayBuffer(ArrayType.Float32)
+    scaleX = new DynamicArrayBuffer(ArrayType.Float32)
+    scaleY = new DynamicArrayBuffer(ArrayType.Float32)
+    rotation = new DynamicArrayBuffer(ArrayType.Float32)
+    color = new DynamicArrayBuffer(ArrayType.Uint32)
+    remainingLife = new DynamicArrayBuffer(ArrayType.Float32)
 
+    animations = {
+        speed: new ParticleAttributeStore(),
+        rotation: new ParticleAttributeStore(),
+        scale: new ParticleAttributeStore(),
+        color: new ParticleAttributeStore(4),
+        velocity: new ParticleAttributeStore(2),
+    }
+    count: number = 0
+    position: Vec2
     /**
      * Creates a new particle emitter.
      * @param rapid   - The Rapid renderer instance
      * @param options - Emitter configuration options
      */
     constructor(rapid: Rapid, options: IParticleOptions) {
-        this.rapid    = rapid;
-        this.options  = options;
-        this.emitRate = options.emitRate  !== undefined ? options.emitRate  : DEFAULT_EMIT_RATE;
-        this.emitTime = options.emitTime  !== undefined ? options.emitTime  : DEFAULT_EMIT_TIME;
-        this.localSpace = options.localSpace !== undefined ? options.localSpace : DEFAULT_LOCAL_SPACE;
-        this.position = options.position ?? Vec2.ZERO;
+        this.rapid = rapid;
+        this.options = options;
+        this.emitRate = options.emitRate ?? DEFAULT_EMIT_RATE;
+        this.emitTime = options.emitTime ?? DEFAULT_EMIT_TIME;
+        this.localSpace = options.localSpace ?? DEFAULT_LOCAL_SPACE;
+        this.position = options.position ?? new Vec2(0, 0)
+    }
+
+    getAllArrayBuffer(): DynamicArrayBuffer[] {
+        return [
+            this.x,
+            this.y,
+            this.scaleX,
+            this.scaleY,
+            this.rotation,
+            this.color,
+            this.remainingLife,
+            ...Object.values(this.animations).flatMap(v => v.getArrayBuffer())
+        ]
     }
 
     /** Replaces the emitter's texture at runtime. */
@@ -344,7 +288,7 @@ export class ParticleEmitter {
 
     /** Starts continuous particle emission. */
     start() {
-        this.emitting       = true;
+        this.emitting = true;
         this.emitTimeCounter = 0;
     }
 
@@ -355,7 +299,10 @@ export class ParticleEmitter {
 
     /** Removes all particles and resets timers. */
     clear() {
-        this.particles       = [];
+        for (const data of this.getAllArrayBuffer()) {
+            data.clear()
+        }
+        this.count = 0
         this.emitTimeCounter = 0;
     }
 
@@ -364,11 +311,68 @@ export class ParticleEmitter {
      * Respects `maxParticles` if set.
      */
     emit(count: number) {
-        const max    = this.options.maxParticles ?? Infinity;
-        const actual = Math.min(count, max - this.particles.length);
+        const max = this.options.maxParticles ?? Infinity;
+        const actual = Math.min(count, max - this.count);
         for (let i = 0; i < actual; i++) {
-            this.particles.push(new Particle(this.rapid, { ...this.options }));
+            this.createParticle();
         }
+    }
+
+    createParticle() {
+        const lifeTime = Random.scalarOrRange(this.options.life, 1)
+        this.remainingLife.push(lifeTime)
+        let spawnX = 0
+        let spawnY = 0
+
+        switch (this.options.emitShape) {
+            case ParticleShape.CIRCLE: {
+                const angle = Math.random() * Math.PI * 2;
+                const radius = (this.options.emitRadius ?? 0) * Math.sqrt(Math.random());
+                spawnX = Math.cos(angle) * radius
+                spawnY = Math.sin(angle) * radius
+                break;
+            }
+            case ParticleShape.RECT: {
+                spawnX = (Math.random() - 0.5) * (this.options.emitRect?.width ?? 0)
+                spawnY = (Math.random() - 0.5) * (this.options.emitRect?.height ?? 0)
+                break;
+            }
+            case ParticleShape.POINT:
+            default:
+                break;
+        }
+        const ms = this.rapid.matrixStack
+        if (this.localSpace) {
+            this.x.push(spawnX)
+            this.y.push(spawnY)
+        } else {
+            const { x, y } = ms.localToWorld(spawnX, spawnY)
+            this.x.push(x)
+            this.y.push(y)
+        }
+
+        const animation = this.options.animation
+        const particleAttribute = this.animations
+
+        const s = particleAttribute.scale.create(animation.scale, 1, lifeTime)
+        const r = particleAttribute.rotation.create(animation.rotation, 0, lifeTime)
+        particleAttribute.speed.create(animation.speed, 0, lifeTime)
+
+        particleAttribute.velocity.create(animation.velocity, Vec2.ZERO, lifeTime)
+        particleAttribute.color.create(animation.color, Color.White, lifeTime)
+
+        this.rotation.push(r)
+        this.scaleX.push(s)
+        this.scaleY.push(s)
+        this.color.pushUint32(Color.packColor(
+            particleAttribute.color.get(this.count, 0),
+            particleAttribute.color.get(this.count, 1),
+            particleAttribute.color.get(this.count, 2),
+            particleAttribute.color.get(this.count, 3),
+            this.rapid.premultipliedAlpha,
+        ))
+
+        this.count += 1
     }
 
     /**
@@ -396,11 +400,42 @@ export class ParticleEmitter {
             }
         }
 
-        for (let i = this.particles.length - 1; i >= 0; i--) {
-            if (!this.particles[i].update(deltaTime)) {
-                this.particles.splice(i, 1);
+        const removeIndex = this.updateParticle(deltaTime)
+        this.count -= removeIndex.length
+        DynamicArrayBuffer.removeAtIndices(removeIndex, this.getAllArrayBuffer())
+    }
+
+    updateParticle(deltaTime: number) {
+        const removeIndex: number[] = []
+        const ani = this.animations
+
+        Object.values(ani).forEach(a => a.update(deltaTime))
+        for (let index = 0; index < this.count; index++) {
+            this.remainingLife.typedArray[index] -= deltaTime
+            if (this.remainingLife.typedArray[index] <= 0) {
+                removeIndex.push(index)
+                continue
             }
+            const rotation = ani.rotation.get(index);
+            const scale = ani.scale.get(index);
+            const speed = ani.speed.get(index);
+
+            this.rotation.typedArray[index] = rotation;
+            this.scaleX.typedArray[index] = scale;
+            this.scaleY.typedArray[index] = scale;
+            this.color.uint32![index] = Color.packColor(
+                ani.color.get(index, 0),
+                ani.color.get(index, 1),
+                ani.color.get(index, 2),
+                ani.color.get(index, 3),
+                this.rapid.premultipliedAlpha,
+            );
+
+            this.x.typedArray[index] += (speed * Math.cos(rotation) + ani.velocity.get(index, 0)) * deltaTime
+            this.y.typedArray[index] += (speed * Math.sin(rotation) + ani.velocity.get(index, 1)) * deltaTime
         }
+
+        return removeIndex
     }
 
     /**
@@ -408,30 +443,42 @@ export class ParticleEmitter {
      * In local-space mode the emitter's own transform is applied around the batch.
      */
     render() {
-        const ms = this.rapid.matrixStack;
-
+        const options = this.options
+        const customMatrix = this.localSpace ? undefined : this.rapid.matrix.alloc()
+        const stack = this.rapid.matrixStack
         if (this.localSpace) {
-            ms.save();
-            ms.translate(this.position.x, this.position.y);
+            stack.save()
+            stack.translate(this.position.x, this.position.y)
+        } else {
+            this.rapid.matrix.translate(customMatrix, this.position.x, this.position.y)
         }
 
-        for (const particle of this.particles) {
-            particle.render();
-        }
+        this.rapid.drawParticles({
+            texture: options.texture,
+            shader: options.shader,
 
+            x: this.x.typedArray,
+            y: this.y.typedArray,
+            scaleX: this.scaleX.typedArray,
+            scaleY: this.scaleY.typedArray,
+            rotation: this.rotation.typedArray,
+            color: this.color.typedArray,
+            count: this.count,
+            reverseOrder: true,
+
+            originX: options.origin?.x ?? 0.5,
+            originY: options.origin?.y ?? 0.5,
+
+            customMatrix
+        })
         if (this.localSpace) {
-            ms.restore();
+            stack.restore()
         }
-    }
-
-    /** Returns the current number of live particles. */
-    getParticleCount(): number {
-        return this.particles.length;
     }
 
     /** Returns `true` if the emitter is running or still has live particles. */
     isActive(): boolean {
-        return this.emitting || this.particles.length > 0;
+        return this.emitting || this.count > 0;
     }
 
     /**
