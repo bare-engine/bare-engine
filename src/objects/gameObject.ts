@@ -630,7 +630,7 @@ export class GameObject
         if (!this.visible)
             return;
         
-        if (window.debug)
+        if (window.debug && this.scene.showDebugHelpers)
         {
             // OUTER PIVOT / ORIGIN — BLACK CIRCLE (world space so nested children draw correctly)
             var originWorld = this.ToGlobal(this.pivot);

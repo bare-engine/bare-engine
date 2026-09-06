@@ -42,6 +42,7 @@ type EntitySceneAwakePayload = EditorScenePayload & {
 export class EntityScene extends EditorScene
 {
     objectName: string = "";
+    override showDebugHelpers: boolean = false;
 
     readonly transformToolHandlesBodyMove: boolean = true;
     
@@ -59,7 +60,7 @@ export class EntityScene extends EditorScene
     override async OnStart(payload: EntitySceneAwakePayload = this.lastPayload): Promise<void>
     {
         this.degugAtStart = window.debug;
-        //window.debug = true;
+        window.debug = true;
         
         if (!assetsHandler.HasTexture("placeHolder"))
         {

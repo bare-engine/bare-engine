@@ -95,7 +95,7 @@ export class HitboxController
 
     Render()
     {
-        if (!window.debug)
+        if (!window.debug || !this.scene.showDebugHelpers)
             return;
 
         var objs = this.GetAllObjectsWithChildren();
