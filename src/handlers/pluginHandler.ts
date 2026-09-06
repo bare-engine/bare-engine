@@ -2381,7 +2381,11 @@ export class PluginHandler
 
     // Attach editor metadata to an entity tree that BuildEntityEditorPayload already expanded.
     // `entity` is the authored record used for provenance; `extendedEntity` supplies display values.
-    BuildEntityEditorData(entity: Entity, extendedEntity: Entity, entityName: string, processedEntity: Entity, settingsDataRaw: SettingsData, settingsDataProcessed: SettingsData): Entity
+    // `logKey` is what this node's own entry in baseEntityLog (and extendOrder[0]) is keyed by. It
+    // defaults to the name, which is fine for root entities, but a child is usually named after the
+    // entity it references (child "weapon" -> entity "weapon"), so its name would collide with the
+    // first base in its chain and the base's props/components would get logged as the child's own.
+    BuildEntityEditorData(entity: Entity, extendedEntity: Entity, entityName: string, processedEntity: Entity, settingsDataRaw: SettingsData, settingsDataProcessed: SettingsData, logKey: string = entityName): Entity
     {
         var defaultFieldsToIgnore: string[] = [];
         var defaultBaseEntity = "ANY";
@@ -2395,7 +2399,7 @@ export class PluginHandler
         defaultFieldsToIgnore.push("entityUID");
         defaultFieldsToIgnore.push("interactableInEditor");
 
-        var entityWithLog = this.BuildExtendDataLog(entity, extendedEntity, entityName, processedEntity, settingsDataRaw, settingsDataProcessed);
+        var entityWithLog = this.BuildExtendDataLog(entity, extendedEntity, logKey, processedEntity, settingsDataRaw, settingsDataProcessed);
 
         entityWithLog["__defaultFieldsToIgnore__"] = defaultFieldsToIgnore;
         entityWithLog.name ??= entityName;
@@ -2441,7 +2445,11 @@ export class PluginHandler
                 var authoredChild = entity.children?.[i] ?? extendedChild;
 
                 var childName = extendedChild.name || processedChild.name || authoredChild.entity || "GameObject";
-                entityWithLog.children[i] = this.BuildEntityEditorData(authoredChild, extendedChild, childName, processedChild, settingsDataRaw, settingsDataProcessed);
+                // key the child's own log entry by its uid, never by its name: the name is typically the
+                // same as the entity it references, which is the first base in its extend chain. the
+                // processed child always carries a uid (runtime-generated when the raw record has none).
+                var childLogKey = authoredChild.entityUID || processedChild.entityUID || extendedChild.entityUID || childName;
+                entityWithLog.children[i] = this.BuildEntityEditorData(authoredChild, extendedChild, childName, processedChild, settingsDataRaw, settingsDataProcessed, childLogKey);
                 entityWithLog.children[i].__entityOptions = entityOptions;
             }
         }
