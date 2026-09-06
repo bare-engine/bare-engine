@@ -107,6 +107,11 @@ export class ParticleRegion extends SpriteRegion {
         const uniUV = typeof u0 == "number"
         const numberColor = !uniColor && typeof color[0] == "number"
 
+        const textureUVWidth = texture.uvW - texture.uvX;
+        const textureUVHeight = texture.uvH - texture.uvY;
+        const uvWidthToTextureWidth = textureUVWidth === 0 ? 0 : 1 / textureUVWidth;
+        const uvHeightToTextureHeight = textureUVHeight === 0 ? 0 : 1 / textureUVHeight;
+
         let rawWidth = texture.rawWidth * (flipX ? -1 : 1);
         if (uniScaleX) {
             rawWidth *= scaleX
@@ -117,10 +122,9 @@ export class ParticleRegion extends SpriteRegion {
             rawHeight *= scaleY
         }
         if (uniUV) {
-            rawWidth *= u1 as number - (u0 as number)
-            rawHeight *= v1 as number - (v0 as number)
+            rawWidth *= (u1 as number - (u0 as number)) * uvWidthToTextureWidth
+            rawHeight *= (v1 as number - (v0 as number)) * uvHeightToTextureHeight
         }
-
         let rotationOffset = isRotated ? Math.PI / 2 : 0;
         if (uniRotation) {
             rotationOffset += rotation
@@ -152,7 +156,8 @@ export class ParticleRegion extends SpriteRegion {
 
         index = loopFunction(
             x, y, scaleX, scaleY, rotation, u0, v0, u1, v1, color,
-            f32, u32, rawWidth, rawHeight, rotationOffset, staticColor,
+            f32, u32, rawWidth, rawHeight, uvWidthToTextureWidth, uvHeightToTextureHeight,
+            rotationOffset, staticColor,
             originX, originY, count, batchCount, index
         )
 
@@ -181,7 +186,7 @@ export class ParticleRegion extends SpriteRegion {
         }
 
         let code = `
-return function( x, y, scaleX, scaleY, rotation, u0, v0, u1, v1, color, f32, u32, rawWidth, rawHeight, rotationOffset, staticColor, originX, originY, count, batchCount, index ) {
+return function( x, y, scaleX, scaleY, rotation, u0, v0, u1, v1, color, f32, u32, rawWidth, rawHeight, uvWidthToTextureWidth, uvHeightToTextureHeight, rotationOffset, staticColor, originX, originY, count, batchCount, index ) {
     ${(uniScaleX && uniUV) ? `const baseSx = rawWidth;` : ''}
     ${(uniScaleY && uniUV) ? `const baseSy = rawHeight;` : ''}
 
@@ -206,8 +211,8 @@ return function( x, y, scaleX, scaleY, rotation, u0, v0, u1, v1, color, f32, u32
         f32[idx + 8] = v1;
         ` : `
         const cu0 = u0[src], cv0 = v0[src], cu1 = u1[src], cv1 = v1[src];
-        f32[idx + 2] = (rawWidth * (cu1 - cu0)) ${uniScaleX ? '' : '* scaleX[src]'};
-        f32[idx + 3] = (rawHeight * (cv1 - cv0)) ${uniScaleY ? '' : '* scaleY[src]'};
+        f32[idx + 2] = (rawWidth * (cu1 - cu0) * uvWidthToTextureWidth) ${uniScaleX ? '' : '* scaleX[src]'};
+        f32[idx + 3] = (rawHeight * (cv1 - cv0) * uvHeightToTextureHeight) ${uniScaleY ? '' : '* scaleY[src]'};
         f32[idx + 4] = ${uniRotation ? 'rotationOffset' : 'rotation[src] + rotationOffset'};
         f32[idx + 5] = cu0;
         f32[idx + 6] = cv0;
