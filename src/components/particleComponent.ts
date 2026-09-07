@@ -3,7 +3,7 @@ import { assetsHandler } from "../handlers/assetsHandler";
 import { Color, IParticleOptions, ParticleEmitter, ParticleShape, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
-import { InspectorButton, InspectorField, Save } from "../utils/decorators";
+import { InspectorButton, InspectorField } from "../utils/decorators";
 
 export class ParticleComponent extends Component
 {
@@ -35,6 +35,8 @@ export class ParticleComponent extends Component
 
     @InspectorField
     private animation: Record<string, any> = {};
+
+    textureLoaded: boolean = false;
     
     constructor(scene: Scene)
     {
@@ -87,7 +89,12 @@ export class ParticleComponent extends Component
             {
                 tex = await assetsHandler.LoadTexture(this.texture);
                 this.emitter.setTexture(tex);
+                this.textureLoaded = true;
             })();
+        }
+        else
+        {
+            this.textureLoaded = true;
         }
     }
 
@@ -111,6 +118,9 @@ export class ParticleComponent extends Component
 
     OnPostRender(): void
     {
+        if (!this.textureLoaded)
+            return;
+
         this.emitter.render();
     }
 
