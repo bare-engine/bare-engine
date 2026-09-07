@@ -366,8 +366,26 @@ function bareAutoRegisterClassesPlugin(options = {}) {
         const registrationSetChanged = registeredAfter.size !== registeredBefore.size
             || [...registeredAfter].some(name => !registeredBefore.has(name));
         if (registrationSetChanged && serverRef) {
-            serverRef.ws.send({ type: "full-reload", path: "*" });
+            scheduleStartBareHotUpdate();
         }
+    }
+
+    // re-run the StartBare module in place (it hot-accepts itself, see appendHotRestart) rather
+    // than full-reloading the page, so the game's persistent listeners survive - that's how the
+    // plugin re-opens the entity being edited after a component is created from it.
+    // Skipped when Vite's own HMR just re-ran StartBare (handleHotUpdate below): creating a
+    // component from an entity also writes settingsData.json, which the StartBare file may import,
+    // and that restart already re-transforms (and so re-scans) StartBare.
+    let startBareHotUpdateTimer = null;
+    let lastViteStartBareUpdate = 0;
+    function scheduleStartBareHotUpdate() {
+        clearTimeout(startBareHotUpdateTimer);
+        startBareHotUpdateTimer = setTimeout(() => {
+            if (Date.now() - lastViteStartBareUpdate < 1000) return;
+            const mod = [...(serverRef.moduleGraph.getModulesByFile(startBareFile ?? "") ?? [])].find(m => m.url);
+            if (!mod) return; // StartBare not loaded yet - nothing to restart
+            serverRef.ws.send({ type: "update", updates: [{ type: "js-update", timestamp: Date.now(), path: mod.url, acceptedPath: mod.url }] });
+        }, 300);
     }
 
     return {
@@ -386,6 +404,11 @@ function bareAutoRegisterClassesPlugin(options = {}) {
             server.watcher.on("add", (p) => onWatcherEvent(p, "add"));
             server.watcher.on("change", (p) => onWatcherEvent(p, "change"));
             server.watcher.on("unlink", (p) => onWatcherEvent(p, "unlink"));
+        },
+        handleHotUpdate(ctx) {
+            const isStartBare = (mod) => normalize(mod.file ?? "") === startBareFile;
+            if (ctx.modules.some(mod => isStartBare(mod) || [...mod.importers].some(isStartBare)))
+                lastViteStartBareUpdate = Date.now();
         },
         transform(code, id) {
             const filePath = cleanId(id);

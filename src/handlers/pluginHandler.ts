@@ -1362,10 +1362,15 @@ const gameDebugApi = {
       // Done as the same flow as clicking the entity in the list, so the panel re-syncs.
       if (plugin.lastEntity)
       {
+          // carry the child that was selected (attach.childPath) so the panel lands back on it
+          // rather than on the root entity
+          const settingsDataName = plugin.currentSettingsDataName;
+          const isBase = !!attach?.isBase;
+          const childPath = Array.isArray(attach?.childPath) ? attach.childPath : [];
           globalEvents.persistent.once(BareEvent.game_started, () => {
               if (plugin.lastEntity && !bare.scene.Get(EntityScene))
               {
-                  window.postMessage({ __fromGame: true, type: "gotoEntity", name: plugin.lastEntity.name }, "*");
+                  window.postMessage({ __fromGame: true, type: "gotoEntity", name: plugin.lastEntity.name, settingsDataName, isBase, childPath }, "*");
               }
           });
       }
