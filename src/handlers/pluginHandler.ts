@@ -933,6 +933,13 @@ const gameDebugApi = {
                     continue;
                 }
 
+                const special = obj.specialMap[prop];
+                if (special)
+                {
+                    special(obj, value);
+                    continue;
+                }
+
                 // @InspectorField DESCRIPTORS (EG TextObject.text/fontSize, DECLARED AS { get, set })
                 // NEED THEIR OWN SETTER INVOKED - A DIRECT ASSIGNMENT WOULD JUST OVERWRITE THE
                 // DESCRIPTOR OBJECT ITSELF, SO THE LIVE PREVIEW NEVER ACTUALLY APPLIED THE CHANGE.
@@ -942,14 +949,6 @@ const gameDebugApi = {
                 // MISFIRE ON THOSE THE WAY A NAIVE "HAS A .set METHOD" CHECK WOULD.
                 if (await applyInspectorField(obj, prop, value))
                     continue;
-
-                // if special mapping exists — use it
-                const special = obj.specialMap[prop];
-                if (special)
-                {
-                    special(obj, value);
-                    continue;
-                }
 
                 obj[prop] = value;
             }
