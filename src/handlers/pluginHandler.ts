@@ -2577,7 +2577,16 @@ export class PluginHandler
             this.settingsDataHandlers.set(mainName, mainScene.settingsHandler);
         }
 
+        var storedDataPath = bare.dataPath;
         const files = await Helper.GetFilesInFolder(`${bare.dataPath}/`, false);
+
+        if (bare.dataPath !== storedDataPath)
+        {
+            // DATA PATH CHANGES DURING AWAIT (CAN HAPPEN WHEN CHANGING DEMOS QUICKLY), TRY AGAIN
+            this.LoadSettingsDataJSONs();
+            return [];
+        }
+
         for (const file of files.filter(file => /\.json$/i.test(file)))
         {
             const fileName = file.split(/[\\/]/).pop() ?? file;
