@@ -406,20 +406,18 @@ export class EditorControlsHandler {
         if (multiSelect)
             return;
 
-        var hitbox = bare.hitbox.GetCurrentHover();
-        if (hitbox)
-        {
-            var obj = hitbox.parent;
-            
-            if (!this.currentPreviewActive || obj.name != this.currentPreviewEntity.name) // DOUBLE CLICK FIRST TIME OR DIFFERENT OBJECT
-            {
-                this.SetCurrentPreviewEntity(obj.entity);
-            }
-            else
-            {
-                this.SetCurrentPreviewEntity(null);
-            }
-        }
+        // hover is cleared by the time dblclick fires, so re-run the hit test like PointerDown does
+        bare.hitbox.Update();
+
+        var obj = bare.hitbox.GetCurrentHover()?.parent;
+        if (!obj?.entity)
+            return;
+
+        // currentPreviewEntity.name is always 'ignoreInPlugin', so compare against what the stamp places
+        if (!this.currentPreviewActive || obj.name != this.currentPreviewEntityName) // DOUBLE CLICK FIRST TIME OR DIFFERENT OBJECT
+            this.SetCurrentPreviewEntity(obj.entity);
+        else
+            this.SetCurrentPreviewEntity(null);
     }
 
     private ActivateStampFromSelection(): void
@@ -680,9 +678,11 @@ export class EditorControlsHandler {
             return;
         }
 
-        this.currentPreviewEntityName = entity.name ?? entity.texture;
+        this.currentPreviewEntityName = entity.name ?? entity.entity ?? entity.texture;
 
-        var constructedEntity = this.scene.ConstructEntity(this.currentPreviewEntityName);
+        // construct from the entity itself, not from its name: an entity coming from a level object carries
+        // its base entity (possibly a UID reference), which a name lookup in settingsData cannot resolve
+        var constructedEntity = this.scene.ConstructEntity(entity);
 
         this.currentPreviewEntity.ResetValues();
         this.currentPreviewEntity.InitTexture(MakePathForEntity(constructedEntity));

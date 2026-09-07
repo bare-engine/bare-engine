@@ -540,7 +540,7 @@ export class EditorScene extends Scene
     {
         // TURING ARG INTO AN ENTITY WITH POSITION - SO BY THE TIME GameObject REACHES OnStart(), ITS POSITION HAS BEEN SET
         if (typeof entityOrName == "string")
-            entityOrName = {name: entityOrName, position: {x: x, y: y}};
+            entityOrName = {entity: entityOrName, position: {x: x, y: y}};
         else
             entityOrName.position = {x: x, y: y};
 
