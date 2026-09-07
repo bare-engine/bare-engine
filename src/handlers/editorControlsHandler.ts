@@ -31,8 +31,6 @@ export class EditorControlsHandler {
     copiedObjects: Entity[] = [];
 
     private lastMultiPlaceGridKey: string | null = null;
-    private firstMultiPlacedObject: GameObject | null = null;
-    private multiPlaceSelectionReset: boolean = false;
     static copiedObjectCached: Entity[] = [];
     
     constructor(editorScene: any) {
@@ -183,40 +181,8 @@ export class EditorControlsHandler {
         var isRightButton = (event.button == 2);
         if (isRightButton)
         {
-            const transformTool = TransformToolHandler.Get();
-            if (transformTool.TryRemoveTargetsAtPointer(this.scene, mouseX, mouseY))
-            {
-                bare.hitbox.ResetCurrentHover();
-                this.actionThisFrame = 'objRemoval';
-                return;
-            }
-
-            var hover = bare.hitbox.GetCurrentHover();
-
-            if (hover)
-            {
-                // ALSO REMOVE OTHER SELECTED ENTITIES
-                var draggedEntityIsSelected = this.selectedObjects.includes(hover.parent);
-                if (draggedEntityIsSelected)
-                {
-                    this.RemoveSelectedObjects();
-                }
-                else
-                {
-                    this.scene.RemoveGameObject(hover.parent);
-                }
-
-                bare.hitbox.ResetCurrentHover();
-    
-                this.actionThisFrame = 'objRemoval';
-            }
-            else
-            {
-                if (this.currentPreviewEntity)
-                {
-                    this.SetCurrentPreviewActive(false);
-                }
-            }
+            if (!this.RemoveObjectAtPointer(mouseX, mouseY) && this.currentPreviewEntity)
+                this.SetCurrentPreviewActive(false);
         }
     }
 
@@ -382,8 +348,6 @@ export class EditorControlsHandler {
             
         this.actionThisFrame = '';
         this.lastMultiPlaceGridKey = null;
-        this.firstMultiPlacedObject = null;
-        this.multiPlaceSelectionReset = false;
 
         if (!this.scene.opened)
             return;
@@ -589,6 +553,10 @@ export class EditorControlsHandler {
         
         const transformTool = TransformToolHandler.Get();
         if (transformTool.IsTransforming())
+            return;
+
+        // this same press just stamped the object, so keep placing while held instead of moving it
+        if (this.actionThisFrame == 'objCreation')
             return;
 
         if (!this.selectedObjects.includes(obj))
@@ -807,30 +775,9 @@ export class EditorControlsHandler {
     private PlaceCurrentPreviewObject(layer: int): GameObject
     {
         const obj = this.scene.AddGameObjectAtPosition(this.currentPreviewEntity.x, this.currentPreviewEntity.y, this.currentPreviewEntityName, layer);
-        const multiSelect = keyboardController.IsKeyDown("shift");
 
-        if (!multiSelect)
-        {
-            this.firstMultiPlacedObject = null;
-            this.multiPlaceSelectionReset = false;
-            this.SelectGameObjects([obj], true);
-        }
-        else
-        if (!this.firstMultiPlacedObject)
-        {
-            this.firstMultiPlacedObject = obj;
-            this.SelectGameObjects([obj], false);
-        }
-        else
-        if (!this.multiPlaceSelectionReset)
-        {
-            this.SelectGameObjects([this.firstMultiPlacedObject, obj], true);
-            this.multiPlaceSelectionReset = true;
-        }
-        else
-        {
-            this.SelectGameObjects([obj], false);
-        }
+        // placing replaces the selection: while stamping, shift multi-places, it doesn't multi-select
+        this.SelectGameObjects([obj], true);
 
         this.actionThisFrame = 'objCreation';
         return obj;
@@ -873,9 +820,7 @@ export class EditorControlsHandler {
         if (!bare.mouse.IsDown())
         {
             this.lastMultiPlaceGridKey = null;
-            this.firstMultiPlacedObject = null;
-            this.multiPlaceSelectionReset = false;
-            return;
+                    return;
         }
 
         if (!this.IsMultiPlaceGridEnabled(ignoreGrid))
@@ -890,9 +835,40 @@ export class EditorControlsHandler {
         this.lastMultiPlaceGridKey = placementKey;
     }
 
+    // removes what the pointer is on: the transform tool's selection (its targets have their hitboxes
+    // disabled, so they never show up as hover) or the hovered object, with the rest of the selection
+    private RemoveObjectAtPointer(screenX: number, screenY: number): boolean
+    {
+        if (!TransformToolHandler.Get().TryRemoveTargetsAtPointer(this.scene, screenX, screenY))
+        {
+            bare.hitbox.Update(); // hover is stale after a removal, and lags a frame behind the pointer
+            var hover = bare.hitbox.GetCurrentHover();
+            if (!hover)
+                return false;
+
+            if (this.selectedObjects.includes(hover.parent))
+                this.RemoveSelectedObjects();
+            else
+                this.scene.RemoveGameObject(hover.parent);
+        }
+
+        bare.hitbox.ResetCurrentHover();
+        this.actionThisFrame = 'objRemoval';
+        return true;
+    }
+
     Update(_deltaTime?: number) {
         if (!this.scene.opened)
             return;
+
+        // before the active check: TransformTool suppresses editor controls while its frame is hovered,
+        // which would otherwise make its own selection unremovable by a right drag
+        var rightDragged = bare.mouse.IsRightDown() &&
+            Helper.Distance(bare.mouse.world.position, bare.mouse.world.positionOnRightDown) > 5;
+
+        if (rightDragged && this.RemoveObjectAtPointer(bare.mouse.screen.position.x, bare.mouse.screen.position.y))
+            return;
+
         if (!this.active)
             return;
 
@@ -908,17 +884,6 @@ export class EditorControlsHandler {
 
         this.SetEditorPosition(this.currentPreviewEntity, previewX, previewY, altDown);
         this.PlaceCurrentPreviewObjectOnNewGridSquare(altDown);
-
-        var distRightMouseMoved = Helper.Distance(bare.mouse.world.position, bare.mouse.world.positionOnRightDown);
-        if (this.actionThisFrame != 'objRemoval' && bare.mouse.IsRightDown() && distRightMouseMoved > 5) {
-            var hover = bare.hitbox.GetCurrentHover();
-            if (hover) {
-                this.scene.RemoveGameObject(hover.parent);
-                bare.hitbox.ResetCurrentHover();
-                this.actionThisFrame = 'objRemoval';
-                return;
-            }
-        }
 
         /*bare.object.GetLayer(Layer.worldUI).sort((a, b) => {
             return a.y - b.y;

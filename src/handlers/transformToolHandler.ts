@@ -164,7 +164,8 @@ export class TransformToolHandler
 
         this.PruneTargets();
 
-        const frame = this.GetFrame(this.GetTransformableTargets(this.targets));
+        // removal doesn't care about resizeable, so fall back to all targets when none are transformable
+        const frame = this.GetFrame(this.GetTransformableTargets(this.targets)) ?? this.GetFrame(this.targets);
         if (!frame || !this.FrameContains(frame, scene.ScreenToWorld(mouseX, mouseY)))
             return false;
 
