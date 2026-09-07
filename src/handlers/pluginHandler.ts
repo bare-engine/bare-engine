@@ -561,7 +561,7 @@ const gameDebugApi = {
         }
         
         var curEntity = o.scene.level.SerializeObjectFully(o, true, true);
-        var diffEntity = o.scene.level.GetEntitiesDiff(origEntity, curEntity);
+        var diffEntity = o.scene.level.GetEntitiesDiff(origEntity, curEntity) || {};
 
         // FIELDS TO IGNORE - NOT IN INSPECTOR
         delete diffEntity.name;
