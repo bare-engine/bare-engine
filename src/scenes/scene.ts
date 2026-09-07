@@ -33,8 +33,6 @@ export class Scene implements SceneI
     @InspectorField public resize: boolean = false;
 
     public solo: boolean = false;
-    public showDebugHelpers: boolean = true;
-
     defaultGameObject: GameObject;
    
     @InspectorField

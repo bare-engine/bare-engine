@@ -42,7 +42,6 @@ type EntitySceneAwakePayload = EditorScenePayload & {
 export class EntityScene extends EditorScene
 {
     objectName: string = "";
-    override showDebugHelpers: boolean = false;
 
     readonly transformToolHandlesBodyMove: boolean = true;
     
@@ -61,6 +60,7 @@ export class EntityScene extends EditorScene
     {
         this.degugAtStart = window.debug;
         window.debug = true;
+        this.hitbox.showDebug = false;
         
         if (!assetsHandler.HasTexture("placeHolder"))
         {

@@ -22,6 +22,7 @@ export type ButtonHandlers<Arg extends GameObject = GameObject> = {
 export class HitboxController
 {
     public active: boolean = true;
+    public showDebug: boolean = true;
 
     private currentHitboxHover: Hitbox | null = null;
     private currentHitboxDown: Hitbox | null = null;
@@ -95,7 +96,7 @@ export class HitboxController
 
     Render()
     {
-        if (!window.debug || !this.scene.showDebugHelpers)
+        if (!window.debug || !this.showDebug)
             return;
 
         var objs = this.GetAllObjectsWithChildren();
