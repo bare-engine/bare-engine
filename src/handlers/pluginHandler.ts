@@ -24,10 +24,6 @@ declare global {
   }
 }
 
-// Do not expose a partially initialized API. The extension treats a missing API as
-// not ready and keeps pinging until PluginHandler.Init() publishes it below.
-window.__GAME_DEBUG_API__ = undefined;
-
 function getObjectByIdFromAllScenes(uid: string): GameObject | null
 {
     for (const scene of bare.scene.GetAll(true))
@@ -1568,9 +1564,12 @@ export class PluginHandler
 
     static Init(showEditorButton: boolean, editorButtonPosition: Position)
     {
+        // Install the API before constructing the handler. The constructor can
+        // synchronously add/remove scenes, which notifies persistent listeners
+        // retained across a hot reload.
+        window.__GAME_DEBUG_API__ = gameDebugApi;
         plugin = new PluginHandler(showEditorButton, editorButtonPosition);
         globalThis.plugin = plugin;
-        window.__GAME_DEBUG_API__ = gameDebugApi;
     }
 
     constructor(showEditorButton: boolean, editorButtonPosition: Position)
