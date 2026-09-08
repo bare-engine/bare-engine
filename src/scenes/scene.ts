@@ -20,6 +20,7 @@ import { AwakePayload, BareEvent, CollisionHandlingType, ConstructEntityOptions,
 import { getInspectorFieldNames, InspectorClass, InspectorField, Label } from "../utils/decorators";
 import { EntitySerializer } from "../utils/entitySerializer";
 import { Helper } from "../utils/helper";
+import { Hitbox } from "../types/hitbox";
 
 export class Scene implements SceneI
 {
@@ -1623,10 +1624,10 @@ to package.json to keep the generated assets (can become large for big projects)
     }
 
     // POINTERS
-    OnPointerDown(gameObject: GameObject, callback: any)
+    OnPointerDown(gameObject: GameObject, callback: any):Hitbox
     {
         /* @ AddClass(HitboxController) */
-        this.hitbox?.OnPointerDown(gameObject, callback);
+        return this.hitbox?.OnPointerDown(gameObject, callback);
     }
 
     OnPointerUp(gameObject: GameObject, callback: any)

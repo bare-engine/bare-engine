@@ -153,12 +153,14 @@ export class GameObject
         }
     }
 
-    OnPointerDown(callback = null)
+    OnPointerDown(callback = null): Hitbox
     {
         if (this.scene)
         {
-            this.scene.OnPointerDown(this, callback);
+            return this.scene.OnPointerDown(this, callback);
         }
+
+        return null;
     }
 
     OnPointerUp(callback = null)

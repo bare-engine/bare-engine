@@ -7,6 +7,7 @@ export class Hitbox
     active:boolean;
     shouldReleaseOnTop:boolean;
     showPointer:boolean;
+    affectedByVisibility:boolean;
     parent:GameObject;
 
     type:HitboxType;
@@ -24,6 +25,7 @@ export class Hitbox
         this.active = true;
         this.shouldReleaseOnTop = true;
         this.showPointer = true;
+        this.affectedByVisibility = true;
         
         var type = typeof data === 'number' ? HitboxType.Circle : HitboxType.Rectangle;
         this.type = type;

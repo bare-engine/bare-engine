@@ -312,6 +312,9 @@ export class HitboxController
         if (!hitbox?.active)
             return false;
 
+        if (!hitbox?.affectedByVisibility)
+            return true;
+
         var obj: GameObject | null = hitbox.parent;
         while (obj)
         {
@@ -655,9 +658,9 @@ export class HitboxController
         return hitbox;
     }
 
-    OnPointerDown(gameobject: GameObject, callback: AnyPress): void
+    OnPointerDown(gameobject: GameObject, callback: AnyPress): Hitbox
     {
-        this.AssignCallback(gameobject, "OnPress", callback);
+        return this.AssignCallback(gameobject, "OnPress", callback);
     }
 
     OffPointerDown(gameobject: GameObject): void
@@ -719,7 +722,7 @@ export class HitboxController
         gameobject.tapHitbox.showPointer = show;
     }
 
-    AssignCallback(gameobject: GameObject, type: "OnPress" | "OnRelease" | "OnEnter" | "OnLeave", callback: AnyPress): void
+    AssignCallback(gameobject: GameObject, type: "OnPress" | "OnRelease" | "OnEnter" | "OnLeave", callback: AnyPress): Hitbox
     {
         var rect = this.GetLocalRect(gameobject);
 
@@ -729,6 +732,8 @@ export class HitboxController
         const hitbox = gameobject.tapHitbox ?? new Hitbox(gameobject, rect);
         hitbox[type] = callback;
         gameobject.tapHitbox = hitbox;
+
+        return hitbox;
     }
 }
 
