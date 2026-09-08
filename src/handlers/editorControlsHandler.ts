@@ -585,9 +585,10 @@ export class EditorControlsHandler {
         {
             if (keyboardController.IsKeyDown("control") && !this.currentPreviewActive)
             {
-                var layerOfObj = bare.object.GetLayerOf(obj);
+                const layerOfObj = bare.object.GetLayerOf(obj);
                 this.scene.editorUIHandler.SelectLayerItemByInt(layerOfObj);
-                
+
+                // Ctrl remains an all-layer picking modifier until it is released.
                 bare.hitbox.ClearExclusiveLayers();
             }
 
@@ -604,7 +605,8 @@ export class EditorControlsHandler {
 
     private LayerSelected({ layerName }: BareEventPayload['editor_layerSelected']): void
     {
-        this.ClearSelection();
+        if (!keyboardController.IsKeyDown("control"))
+            this.ClearSelection();
 
         const layerInfo = this.scene.settingsData.layersInfo[layerName];
         const selectedLayerI = layerInfo.layerI;
