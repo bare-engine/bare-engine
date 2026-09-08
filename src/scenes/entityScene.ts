@@ -139,6 +139,16 @@ export class EntityScene extends EditorScene
         super.OnClear();
     }
 
+    // ON CLOSE, PROCESS THE SETTINGS DATA OF SCENE WE'RE RETURNING TO,
+    // SO IT'S UPDATED WITH THE LATEST CHANGES
+    override async Close(): Promise<void>
+    {
+        const gameScene = bare.scene.GetMainScene();
+        await gameScene.settingsHandler.Process();
+
+        await super.Close();
+    }
+
     async CreateEntityDataFor(objectName: string): Promise<LevelData>
     {
         const rawSettingsData = this.settingsHandler.GetRaw();
