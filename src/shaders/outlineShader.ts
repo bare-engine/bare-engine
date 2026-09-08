@@ -1,4 +1,4 @@
-import type { CameraHandler } from "src/handlers/cameraHandler";
+import type { CameraHandler } from "../handlers/cameraHandler";
 import { Color } from "../libraries/new-rapid-render";
 import type { GameObject } from "../objects/gameObject";
 import { Shader } from "../types/bareTypes";
