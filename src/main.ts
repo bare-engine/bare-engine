@@ -26,12 +26,13 @@ function GetBareOptions(options?: BareOptions): BareOptions
         textureFilter: TextureFilterMode.LINEAR,
         editorButtonPosition: {x: 0, y: 0},
         showEditorButton: undefined,
-        debugKeys: [
+        debugKeys: __DEV__ ? [
             {e: () => window.debug = !window.debug},
             {p: () => { bare.TogglePause(); }},
             {r: () => bare.Restart()},
             {l: () => bare.scene.GetLevelScene()?.level.Restart()},
-        ],
+            {c: () => bare.storage.Clear()},
+        ] : undefined,
     }, ...options };
 }
 
