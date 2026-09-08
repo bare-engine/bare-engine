@@ -1267,6 +1267,12 @@ to package.json to keep the generated assets (can become large for big projects)
             if (!removed)
                 trace("FAILED TO REMOVE GAMEOBJECT");
         }
+        else
+        {
+            // NO PARENT: THE OBJECT SITS IN A LAYER, TAKE IT OUT OF THERE OR IT KEEPS RENDERING.
+            // (NO-OP WHEN CALLED VIA RemoveGameObjectFromLayer, WHICH ALREADY REMOVED IT)
+            this.object.Remove(gameObject);
+        }
 
         var wasPooled = gameObject.pooled;
         gameObject.pooled = false; // SETTING TO FALSE ALREADY HERE TO PREVENT RECURSION LOOP IN RemoveChild

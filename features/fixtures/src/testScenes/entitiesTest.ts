@@ -98,7 +98,10 @@ export class EntitiesTest extends Scene
         const mergedChildren = this.MergeChildren(sourceChildren, [newChild, firstChildOverride]);
 
         assert(mergedChildren[0] === firstChildOverride, "child overrides should keep their source child position");
-        assert(mergedChildren[1] === sourceChildren[1], "unmodified source children should keep their source order");
+        // A source child with an entityUID comes back as a copy: MergeChildren rewrites .entity on it,
+        // and the source array is shared settings data that must not be mutated.
+        assert(mergedChildren[1] !== sourceChildren[1]
+            && mergedChildren[1].name === sourceChildren[1].name, "unmodified source children should keep their source order");
         assert(mergedChildren[2] === newChild, "new current children should be appended after source children");
 
     }
