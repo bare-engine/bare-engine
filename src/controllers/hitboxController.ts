@@ -635,7 +635,7 @@ export class HitboxController
         hitbox.OnRelease = (...a: any[]) => handlers.OnRelease?.(gameObject, ...a);
         hitbox.OnEnter   = (...a: any[]) => handlers.OnEnter?.(gameObject, ...a);
         hitbox.OnLeave   = (...a: any[]) => handlers.OnLeave?.(gameObject, ...a);
-        hitbox.showPointer = handlers.showPointer ?? true;
+        hitbox.showPointer = handlers?.showPointer ?? true;
 
         gameObject.tapHitbox = hitbox;
         
