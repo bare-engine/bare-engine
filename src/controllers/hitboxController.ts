@@ -140,7 +140,23 @@ export class HitboxController
     HandleUpdate(layers: GameObject[][])
     {
         const mouse = bare.mouse.world.position;
-        this.SetHover(this.GetHitboxAt(layers, mouse));
+        const hitbox = this.GetHitboxAt(layers, mouse) ?? this.GetInactiveHoverAt(mouse);
+        this.SetHover(hitbox);
+    }
+
+    private GetInactiveHoverAt(mouse: Vec2): Hitbox | null
+    {
+        // TransformTool temporarily disables a selected object's hitbox while its frame/body is
+        // hovered. Preserve that object's hover semantics until the pointer actually leaves its
+        // bounds; otherwise OnLeave can hide a child overlay immediately after OnEnter showed it.
+        for (var i = this.currentHitboxHoverPath.length - 1; i >= 0; i--)
+        {
+            const hitbox = this.currentHitboxHoverPath[i];
+            if (!hitbox.active && hitbox.parent.visibleInEditor && this.IsPointInside(hitbox, mouse))
+                return hitbox;
+        }
+
+        return null;
     }
 
     private GetHitboxAt(layers: GameObject[][], mouse: Vec2): Hitbox | null
@@ -399,7 +415,9 @@ export class HitboxController
 
         while (obj)
         {
-            if (this.IsTouchable(obj.tapHitbox))
+            // Keep an inactive ancestor that was already hovered. Selected objects temporarily
+            // disable their own hitbox, but an active child can still become the topmost hit.
+            if (this.IsTouchable(obj.tapHitbox) || (obj.tapHitbox && this.currentHitboxHoverPath.includes(obj.tapHitbox)))
             {
                 path.unshift(obj.tapHitbox);
             }
