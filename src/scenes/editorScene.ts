@@ -506,14 +506,22 @@ export class EditorScene extends Scene
         {
             gameObject.tapHitbox ??= new Hitbox(gameObject, 0);
             gameObject.tapHitbox.shouldReleaseOnTop = false;
+            let pointerSelectionTarget: GameObject = gameObject;
             gameObject.tapHitbox.OnPress = (_levelEntiy: GameObject, event: PointerEvent) => {
                 if (bare.MouseIsOnEditor(event))
                     return;
 
-                this.editorControlsHandler.StartDrag(gameObject);
+                pointerSelectionTarget = gameObject;
+                if (!event.ctrlKey)
+                {
+                    while (pointerSelectionTarget.parent)
+                        pointerSelectionTarget = pointerSelectionTarget.parent;
+                }
+
+                this.editorControlsHandler.StartDrag(pointerSelectionTarget);
             };
             gameObject.tapHitbox.OnRelease = (_levelEntiy: GameObject, event: PointerEvent) => {
-                this.editorControlsHandler.EndDrag(gameObject)
+                this.editorControlsHandler.EndDrag(pointerSelectionTarget)
             };
 
             gameObject.tapHitbox.type = HitboxType.Rectangle;
