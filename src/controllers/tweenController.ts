@@ -78,6 +78,7 @@ export class TweenController
             'yoyo',
             'repeat',
             'delay',
+            'initialDelay',
             'onStart',
             'onEveryStart',
             'onUpdate',
@@ -134,7 +135,13 @@ export class TweenController
             tween.repeat(props.repeat);
         }
         
-        if (props.delay) {
+        // 'delay' waits again before every repeat/yoyo pass; 'initialDelay' only waits once,
+        // before the first pass, and leaves the repeats using 'delay' (none by default).
+        if (props.initialDelay) {
+            tween.delay(props.initialDelay * 1000);
+            tween.repeatDelay((props.delay ?? 0) * 1000);
+        }
+        else if (props.delay) {
             tween.delay(props.delay * 1000);
         }
 
