@@ -1260,9 +1260,26 @@ export class GameObject
         return this;
     }
 
-    SetScaleToReachDimensions(width: number, height: number): this
+    SetScaleToReachDimensions(width: number, height: number, keepRatio: boolean = false): this
     {
-        this.SetScaleXY(width / this.texture!.width, height / this.texture!.height);
+        // TEXTURE CAN STILL BE LOADING
+        if (!this.texture)
+        {
+            this.WhenTextureLoaded(() => this.SetScaleToReachDimensions(width, height, keepRatio));
+            return this;
+        }
+
+        const scaleX = width / this.texture!.width;
+        const scaleY = height / this.texture!.height;
+
+        if (keepRatio)
+        {
+            const scale = Math.min(scaleX, scaleY);
+            this.SetScaleXY(scale, scale);
+        }
+        else
+            this.SetScaleXY(scaleX, scaleY);
+
         return this;
     }
 
