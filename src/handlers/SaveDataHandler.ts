@@ -24,12 +24,16 @@ export class SaveDataHandler
 
             if (value instanceof Set) {
                 (SaveData as any)[key] = new Set(value);
+                this.defaults.set(key, new Set(value));
             } else if (value instanceof Map) {
                 (SaveData as any)[key] = new Map(value);
+                this.defaults.set(key, new Map(value));
             } else if (typeof value === 'object' && value !== null) {
                 (SaveData as any)[key] = Helper.DeepCopy(value);
+                this.defaults.set(key, Helper.DeepCopy(value));
             } else {
                 (SaveData as any)[key] = value;
+                this.defaults.set(key, value);
             }
         }
     }
@@ -171,9 +175,7 @@ export class SaveDataHandler
 SaveDataHandler.InitDefaults();
 
 globalEvents.persistent.on(BareEvent.game_awake, () => {
-    SaveDataHandler.InitDefaults();
-
-bare.storage = SaveDataHandler;
+    bare.storage = SaveDataHandler;
 });
 
 globalEvents.persistent.on(BareEvent.game_completeClear, () => {
