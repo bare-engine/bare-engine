@@ -31,7 +31,7 @@ function GetBareOptions(options?: BareOptions): BareOptions
             {p: () => { bare.TogglePause(); }},
             {r: () => bare.Restart()},
             {l: () => bare.scene.GetLevelScene()?.level.Restart()},
-            {c: () => bare.storage.Clear()},
+            {c: () => {bare.Restart({clearSaveData: true});}},
         ] : undefined,
     }, ...options };
 }
