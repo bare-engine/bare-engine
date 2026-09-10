@@ -79,6 +79,11 @@ export interface IParticleOptions {
     emitTime?: number;
     /** Whether particles are positioned relative to the emitter (default: true). */
     localSpace?: boolean;
+    /**
+     * Scales the whole burst - particle size and how far the particles travel - around the
+     * emitter's position (default: 1). Use it to fit one effect to differently sized things.
+     */
+    scale?: number;
 
     origin?: Vec2;
 }
@@ -217,6 +222,13 @@ export class ParticleEmitter {
     /** Whether spawned particles are positioned in local emitter space (default: true). */
     localSpace: boolean = DEFAULT_LOCAL_SPACE;
 
+    /**
+     * Scales the whole burst around the emitter's position: the particles are drawn that
+     * much bigger and spread that much further, so an effect keeps its shape whatever size
+     * the thing it belongs to is. Can be changed at any time, live particles included.
+     */
+    scale: number = 1;
+
     private rapid: Rapid;
 
     x = new DynamicArrayBuffer(ArrayType.Float32)
@@ -248,6 +260,7 @@ export class ParticleEmitter {
         this.emitTime = options.emitTime ?? DEFAULT_EMIT_TIME;
         this.localSpace = options.localSpace ?? DEFAULT_LOCAL_SPACE;
         this.position = options.position ?? new Vec2(0, 0)
+        this.scale = options.scale ?? 1;
     }
 
     getAllArrayBuffer(): DynamicArrayBuffer[] {
@@ -449,8 +462,14 @@ export class ParticleEmitter {
         if (this.localSpace) {
             stack.save()
             stack.translate(this.position.x, this.position.y)
+            if (this.scale !== 1) {
+                stack.scale(this.scale)
+            }
         } else {
             this.rapid.matrix.translate(customMatrix, this.position.x, this.position.y)
+            if (this.scale !== 1) {
+                this.rapid.matrix.scale(customMatrix!, this.scale, this.scale)
+            }
         }
 
         this.rapid.drawParticles({

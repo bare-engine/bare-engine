@@ -149,6 +149,7 @@ export class ParticleController
             emitRate: data.emitRate,
             emitTime: data.emitTime,
             localSpace: data.localSpace,
+            scale: data.scale,
             emitShape: ParticleController.ToEmitShape(data.emitShape),
             emitRadius: data.emitRadius,
             emitRect: data.emitRect,
