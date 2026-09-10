@@ -140,6 +140,9 @@ export class BareEngine
     get drawRect(): typeof rapid.drawRect {
         return rapid.drawRect.bind(rapid);
     }
+    get drawRoundedRect(): typeof rapid.drawRoundedRect {
+        return rapid.drawRoundedRect.bind(rapid);
+    }
     get drawSprite(): typeof rapid.drawSprite {
         return rapid.drawSprite.bind(rapid);
     }

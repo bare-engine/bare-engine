@@ -67,6 +67,17 @@ export interface IRectOptions extends IDrawOptions {
     texture?: Texture;
 }
 
+export interface IRoundedRectOptions extends IRectOptions {
+    /**
+     * The corner radius in pixels. A single value rounds every corner equally,
+     * or pass [topLeft, topRight, bottomRight, bottomLeft] to round them apart.
+     * Radii are clamped so they can never overrun the rectangle.
+     */
+    radius: number | [number, number, number, number];
+    /** The number of segments used to approximate each corner arc. */
+    segments?: number;
+}
+
 export interface ICircleOptions extends IDrawOptions {
     radius: number;
     color?: Color;
@@ -271,5 +282,18 @@ export const drawCircle = (rapid: Rapid, options: ICircleOptions): void => {
     rapid.addGraphicVertex(0, 0, 0.5, 0.5, unitColor);
     rapid.addCircleVertex(options.radius, options.color, segments);
     rapid.addGraphicVertex(options.radius, 0, 1, 0.5, unitColor);
+    rapid.endGraphic();
+};
+
+export const drawRoundedRect = (rapid: Rapid, options: IRoundedRectOptions): void => {
+    const matrix = withOptionsTransform(rapid, options, options.width, options.height)
+
+    rapid.startGraphic(
+        rapid.gl.TRIANGLE_FAN,
+        options.texture,
+        options.shader,
+        matrix ?? options.customMatrix,
+    );
+    rapid.addRoundedRectVertex(options.width, options.height, options.radius, options.color, options.segments);
     rapid.endGraphic();
 };
