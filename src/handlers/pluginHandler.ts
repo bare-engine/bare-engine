@@ -842,7 +842,22 @@ const gameDebugApi = {
 
         var comp = entity.components?.[compName];
         if (comp && typeof comp === "object")
+        {
             delete comp[prop];
+
+            // the revert emptied the component. when a base declares it anyway the empty object adds
+            // nothing, so drop it rather than leaving eg alive: {} behind in the settings data
+            if (Object.keys(comp).length == 0)
+            {
+                var baseComponents = entityScene.settingsHandler.ExtendEntity({ name: entity.name, entity: entity.entity }, rawSettingsData, { includeChildren: false }).components;
+                if (baseComponents?.[compName] !== undefined)
+                {
+                    delete entity.components![compName];
+                    if (Object.keys(entity.components!).length == 0)
+                        delete entity.components;
+                }
+            }
+        }
 
         await entityScene.settingsHandler.Process();
 
