@@ -928,6 +928,8 @@ export class Scene implements SceneI
         if (!entityConstructed.hitbox)
             entityConstructed.hitbox = { x1: 0, y1: 0, x2: 0, y2: 0 };
 
+        entityConstructed.entity ??= "ANY";
+        
         return entityConstructed;
     }
 
