@@ -23,7 +23,7 @@ import { EditorScene } from "./scenes/editorScene";
 import { Scene } from "./scenes/scene";
 import { UIScene, uiScene } from "./scenes/uiScene";
 import { BareEvent, BareOptions, CanvasPosition, CanvasScale, Events, GameObjectClass, LevelData, SceneClass } from "./types/bareTypes";
-import { getSaveFields } from "./utils/decorators";
+import { getInspectorFieldNames, getSaveFields } from "./utils/decorators";
 import { Helper } from "./utils/helper";
 
 export interface BareRestartOptions
@@ -616,6 +616,22 @@ export class BareEngine
             const paramName = constructorVarNames[i];
             const paramValue = component[paramName as keyof typeof component] as any; // SHOULD BE STRING, NUMBER OR BOOLEAN
             defaulValues[paramName] = paramValue;
+        }
+
+        // also the @inspectorField-only members, so the plugin can tell an authored component prop
+        // that just repeats the class default from a real override. stored serialized (eg color hex)
+        // to compare against settings data
+        for (const fieldName of getInspectorFieldNames(component))
+        {
+            if (fieldName in defaulValues)
+                continue;
+
+            var fieldValue = component[fieldName as keyof typeof component] as any;
+            if (typeof fieldValue?.toHex === "function")
+                fieldValue = fieldValue.toHex();
+            else if (typeof fieldValue?.get === "function")
+                fieldValue = fieldValue.get();
+            defaulValues[fieldName] = fieldValue;
         }
         bare.componentDefaulValues[className] = defaulValues;
     }

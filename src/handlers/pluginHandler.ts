@@ -826,6 +826,33 @@ const gameDebugApi = {
         return entityData;
   },
 
+  // deletes one prop off a component authored on this entity, so the inherited value (if any)
+  // applies again. the component itself stays
+  async removeComponentPropFromEntity(entityName: string, childPath: string[], compName: string, prop: string)
+  {
+        var scene = plugin.GetCurrentScene();
+        let entityScene = scene as EntityScene;
+
+        var rawSettingsData = entityScene.settingsHandler.GetRaw();
+
+        var entity = plugin.ResolveEntityChildPath(
+            SettingsHandler.FindEntity(rawSettingsData, entityScene.objectName)!,
+            childPath
+        );
+
+        var comp = entity.components?.[compName];
+        if (comp && typeof comp === "object")
+            delete comp[prop];
+
+        await entityScene.settingsHandler.Process();
+
+        var entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, undefined, childPath);
+
+        await plugin.SaveSettingsData(rawSettingsData);
+
+        return entityData;
+  },
+
   // MARK/UNMARK AN INHERITED PROPERTY AS REMOVED ON THIS ENTITY (entity.propertiesRemoved)
   async setEntityPropertyRemoved(entityName: string, childPath: number[], field: string, removed: boolean)
   {
@@ -2271,6 +2298,37 @@ export class PluginHandler
                 }
             }
         }
+
+        // per component prop counterpart of __overriddenFields__: on a component a base declares, a
+        // prop this entity authors itself is an override when it differs from the nearest base's
+        // value, or from the component's class default when no base sets it (eg base alive: {},
+        // this entity alive: { maxHealth: 15 }). plugin shows these blue with a revert (R) button
+        // that deletes the prop off this entity's component - see removeComponentPropFromEntity
+        var overriddenComponentProps: Record<string, string[]> = {};
+        for (var [ownCompName, ownComp] of Object.entries(entity.components ?? {}))
+        {
+            // a string component is a preset reference, not authored props
+            if (!ownComp || typeof ownComp !== "object")
+                continue;
+
+            // not via __componentSources__: that walks extendOrder from self, so a component this
+            // entity re-declares is sourced to self even when a base declares it too
+            var baseComps = extendOrder.slice(1).map(name => getRawEntity(name)?.components?.[ownCompName]).filter(c => c !== undefined);
+            if (baseComps.length == 0)
+                continue; // introduced by this entity, nothing to revert to
+
+            // nearest-first lookup for a prop's inherited value, class defaults last
+            var baselines = [...baseComps.filter(c => typeof c === "object"), bare.componentDefaulValues[Helper.CapitalizeFirstLetter(ownCompName) + "Component"] ?? {}];
+            var overriddenProps = Object.keys(ownComp).filter(prop => {
+                if (prop.startsWith("__"))
+                    return false;
+                var baseline = baselines.find(b => Object.prototype.hasOwnProperty.call(b, prop));
+                return !baseline || !valuesEqual(ownComp[prop], baseline[prop]);
+            });
+            if (overriddenProps.length > 0)
+                overriddenComponentProps[ownCompName] = overriddenProps;
+        }
+        newEntity.baseEntityLog["__overriddenComponentProps__"] = overriddenComponentProps;
 
         // re-add removed properties/components so the plugin can still show them (greyed-out, with a revert button).
         // constructentity stripped them out of processedentity via propertiesremoved/componentsremoved, so we look
