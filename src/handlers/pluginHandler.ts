@@ -1001,7 +1001,7 @@ const gameDebugApi = {
                 {
                     var val = props[key];
                     var defaultVal = entityWithDefaultValues[key];
-                    if (val == defaultVal)
+                    if (Helper.ObjectsAreEqual(val, defaultVal))
                         delete entity[key];
                 }
             }
