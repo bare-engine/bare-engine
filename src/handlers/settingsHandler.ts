@@ -714,7 +714,9 @@ export class SettingsHandler
                     entity.children = children;
             }
 
-            entityName = settingsDataEntity.entity;
+            // a base without an explicit entity still extends ANY (same default Process() applies),
+            var isChainEnd = entityName == "ANY" || entityName == "NONE";
+            entityName = settingsDataEntity.entity ?? (isChainEnd ? undefined : "ANY");
 
             i++
             if (i > 1000)
