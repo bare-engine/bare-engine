@@ -2178,7 +2178,7 @@ export class PluginHandler
         newEntity.baseEntityLog = {};
         newEntity.baseEntityLog["__extendOrder__"] = extendOrder;
 
-        while (baseEntity)
+        while (baseEntity && !extendOrder.includes(baseEntity))
         {
             const currentBaseEntity = baseEntity;
             extendOrder.push(currentBaseEntity);
@@ -2449,7 +2449,9 @@ export class PluginHandler
         var defaultFieldsToIgnore: string[] = [];
         var defaultBaseEntity = "ANY";
 
-        if (!extendedEntity.entity)
+        // ANY is the root default, so it must not inherit from itself. Nested
+        // nodes use a distinct logKey and still receive the normal default.
+        if (!extendedEntity.entity && logKey !== "ANY")
         {
             extendedEntity.entity = defaultBaseEntity;
             defaultFieldsToIgnore.push("entity");
