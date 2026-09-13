@@ -491,10 +491,10 @@ export class Scene implements SceneI
         const serializedRootObjectOrig = this.ConstructEntityWithDefaultValues(startingEntity, this.settingsData, options);
         
         // SERIALIZE CURRENT GAMEOBJECT
-        const serializedRootObject = this.level.SerializeObjectFully(rootObject, options.forceAllEntityVars, options.includeSaveFields);
+        const serializedRootObject = this.level?.SerializeObjectFully(rootObject, options.forceAllEntityVars, options.includeSaveFields);
         
         // STORE THE DIFFERENCES IN AN OBJECT (SHOULD BE EMPTY IF NO CHANGES WERE MADE)
-        const diff = this.level.GetEntitiesDiff(serializedRootObjectOrig, serializedRootObject) ?? {};
+        const diff = this.level?.GetEntitiesDiff(serializedRootObjectOrig, serializedRootObject) ?? {};
 
         // REDO CHILDREN - NEEDED FOR IF A CHILD IS REMOVED THE ABOVE DIFF IS NOT CORRECT, SINCE IT'S COMPARING DIFFERENT CHILDREN THEN
         // THIS DOES MAKE THE ABOVE DIFF FINDING ALL DIFFERENCES IN CHILDREN REDUNDANT - OPTIMIZE
