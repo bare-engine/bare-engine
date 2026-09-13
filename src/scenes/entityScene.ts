@@ -165,8 +165,7 @@ export class EntityScene extends EditorScene
             this.textureBeforePlaceHolder = entityFromSettingsData.texture;
 
             entityFromSettingsData.texture = "placeHolder";
-            if(entityFromSettingsData.imagePath)
-                entityFromSettingsData.imagePath = "";
+            entityFromSettingsData.imagePath = "";
         }
 
         // SET UP LEVEL
