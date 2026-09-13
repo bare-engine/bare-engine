@@ -669,13 +669,20 @@ const gameDebugApi = {
     var gameObjectFields = ["entity", "baseClass", "imagePath", "texture", "position", "pivot", "alpha", "visible", "scale", "rotation", "hitbox"];
 
     var scene = bare.scene.Get(EntityScene);
-    var entity: any = scene?.settingsHandler.GetExtendedEntity(entityName);
+    // Scene.Add exposes the replacement before Awake/Start have finished. Ignore
+    // inspector requests from the previous selection while it is being rebuilt.
+    if (!scene?.started || scene.objectName !== entityName || !scene.settingsHandler.GetRawEntity(entityName))
+        return [];
+
+    var entity: any = scene.settingsHandler.GetExtendedEntity(entityName);
     var liveObj: any = scene?.object.GetByName(entityName);
     for (var index of childPath)
     {
         entity = entity?.children?.[index];
         liveObj = liveObj?.children?.filter(child => child.save)[index];
     }
+    if (!entity)
+        return [];
 
     // already on the entity json, or locked by getNestedEntityVars (eg: hitbox on a non-arcade class)
     var lockedVars = new Set<string>(Object.keys(entity ?? {}));
@@ -703,7 +710,10 @@ const gameDebugApi = {
 
   getNestedEntityVars(entityName: string, childPath: string[])
   {
-        var scene = plugin.GetCurrentScene();
+        var scene = bare.scene.Get(EntityScene);
+        if (!scene?.started || scene.objectName !== entityName || !scene.settingsHandler.GetRawEntity(entityName))
+            return [];
+
         var entity = scene.settingsHandler.GetExtendedEntity(entityName);
         
         // GET THE CHILD
@@ -711,9 +721,11 @@ const gameDebugApi = {
         {
             for (var i = 0; i < childPath.length; i++)
             {
-                entity = entity.children[childPath[i]];
+                entity = entity?.children?.[childPath[i]];
             }
         }
+        if (!entity)
+            return [];
 
         var baseClass = entity.baseClass || "GameObject";
         var allPossibleEntityKeys = plugin.GetAllPossibleEntityKeys(baseClass);
