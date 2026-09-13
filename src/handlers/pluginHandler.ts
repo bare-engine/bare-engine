@@ -661,73 +661,44 @@ const gameDebugApi = {
     return s;
   },
 
-  // GIVES SUGGESTION FIELDS, TAKES OFF ONES THAT ARE LOCKED/ALREADY IN HUSE
-  getFieldsSuggestions(entityName: string, childPath: string[], baseClass: string = "GameObject"): string[]
+  // GIVES SUGGESTION FIELDS, TAKES OFF ONES THAT ARE LOCKED/ALREADY IN USE.
+  // one group per class in the inheritance chain (most-derived first, gameobject last) so the plugin can label them
+  getFieldsSuggestions(entityName: string, childPath: string[]): { source: string, fields: string[] }[]
   {
-    var suggestions = [
-        "entity",
-        "baseClass",
-        "imagePath",
-        "texture",
-        "position",
-        "pivot",
-        "alpha",
-        "visible",
-        "scale",
-        "rotation",
-        "hitbox",
-    ];
-
     var limitNumber = 7;
+    var gameObjectFields = ["entity", "baseClass", "imagePath", "texture", "position", "pivot", "alpha", "visible", "scale", "rotation", "hitbox"];
 
-    // non-gameobject base classes (eg: textobject) get their own @inspectorfield/@save members
-    // suggested first, then fall back to the generic gameobject list to fill remaining slots.
-    // read them off the live instance (same as normal object inspection), not the bare class -
-    // decorator metadata isn't reliably readable through a fake {constructor: cls} wrapper.
-    if (baseClass && baseClass !== "GameObject")
+    var scene = bare.scene.Get(EntityScene);
+    var entity: any = scene?.settingsHandler.GetExtendedEntity(entityName);
+    var liveObj: any = scene?.object.GetByName(entityName);
+    for (var index of childPath)
     {
-        var entityScene = bare.scene.Get(EntityScene);
-        var liveObj: any = entityScene?.object.GetByName(entityName);
-        for (var i = 0; liveObj && i < childPath.length; i++)
-            liveObj = liveObj.children?.filter(child => child.save)[childPath[i]];
-
-        if (liveObj)
-        {
-            // only fields declared by baseclass itself (or a class between it and gameobject),
-            // not the inherited gameobject fields (position, scale, alpha, etc.) - those are
-            // already covered by the generic suggestions list above.
-            var classFieldNames = getInspectorFields(liveObj, true)
-                .filter(f => f.source !== "GameObject" && !f.name.startsWith("_"))
-                .map(f => f.name);
-            suggestions = [...classFieldNames, ...suggestions.filter(s => !classFieldNames.includes(s))];
-        }
+        entity = entity?.children?.[index];
+        liveObj = liveObj?.children?.filter(child => child.save)[index];
     }
 
-    var possibleVarsNested = window.__GAME_DEBUG_API__.getNestedEntityVars(entityName, childPath);
-    var lockedVars = new Set<string>();
+    // already on the entity json, or locked by getNestedEntityVars (eg: hitbox on a non-arcade class)
+    var lockedVars = new Set<string>(Object.keys(entity ?? {}));
+    var nestedVars: EntityVarsNestedEntry[] = window.__GAME_DEBUG_API__.getNestedEntityVars(entityName, childPath);
+    for (var key of nestedVars.flatMap(entry => typeof entry === "string" ? [entry] : Object.values(entry).flat()))
+        if (key.endsWith(":locked"))
+            lockedVars.add(key.slice(0, -":locked".length));
 
-    var addLockedVar = (field: string) => {
-        if (field.endsWith(":locked"))
-            lockedVars.add(field.slice(0, -":locked".length));
-    };
-
-    for (var entry of possibleVarsNested)
+    // subclass @inspectorfield/@save members grouped by declaring class. read off the live instance,
+    // decorator metadata isn't reliably readable through a fake {constructor: cls} wrapper
+    var groups: { source: string, fields: string[] }[] = [];
+    if (liveObj)
     {
-        if (typeof entry === "string")
-        {
-            addLockedVar(entry);
-            continue;
-        }
-
-        for (var keys of Object.values(entry) as string[][])
-            for (var key of keys)
-                addLockedVar(key);
+        var classFields = getInspectorFields(liveObj, true).filter(f => !f.name.startsWith("_"));
+        var classChain = [liveObj.constructor.name, ...Helper.GetParentClasses(liveObj.constructor)].filter(c => c !== "GameObject");
+        for (var className of classChain)
+            groups.push({ source: className, fields: classFields.filter(f => f.source === className).map(f => f.name) });
     }
+    groups.push({ source: "GameObject", fields: gameObjectFields });
 
-    var finalSuggestions = suggestions.filter(suggestion => !lockedVars.has(suggestion));
-    finalSuggestions = finalSuggestions.slice(0, limitNumber);
-    
-    return finalSuggestions;
+    return groups
+        .map(g => ({ source: g.source, fields: g.fields.filter(f => !lockedVars.has(f)).slice(0, limitNumber) }))
+        .filter(g => g.fields.length > 0);
   },
 
   getNestedEntityVars(entityName: string, childPath: string[])
