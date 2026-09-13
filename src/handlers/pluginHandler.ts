@@ -533,31 +533,39 @@ const gameDebugApi = {
         }
         else
         {
-            // MAKE A NEW INSTANCE OF OBJECT, TO GET START ORIGINAL VALUES
-            // IF IT'S A USER OBJECT EXTENDING GAMEOBJECT, THAT CONSTRUCTOR WOULD NEED TO WORK WITH ONLY THE SCENE ARGUMENT
-            // ELSE KEEP TRYING PARENT CLASSES UNTIL ONE CONSTRUCTS SUCCESSFULLY, FALLING BACK TO PLAIN GameObject
-            var gameObject:GameObject;
-            var gameObjectClass = o.constructor as new (scene: Scene) => GameObject;
-            while (true)
+            // class defaults are cached per class name (like bare.componentDefaulValues), built lazily
+            // from a fresh instance the first time the inspector needs them
+            var className = o.constructor.name;
+            origEntity = bare.gameObjectDefaultValues[className];
+            if (!origEntity)
             {
-                try {
-                    gameObject = new gameObjectClass(o.scene);
-                    break;
-                }
-                catch (e)
+                // MAKE A NEW INSTANCE OF OBJECT, TO GET START ORIGINAL VALUES
+                // IF IT'S A USER OBJECT EXTENDING GAMEOBJECT, THAT CONSTRUCTOR WOULD NEED TO WORK WITH ONLY THE SCENE ARGUMENT
+                // ELSE KEEP TRYING PARENT CLASSES UNTIL ONE CONSTRUCTS SUCCESSFULLY, FALLING BACK TO PLAIN GameObject
+                var gameObject:GameObject;
+                var gameObjectClass = o.constructor as new (scene: Scene) => GameObject;
+                while (true)
                 {
-                    // THERE WAS AN ERROR IN CONSTRUCTOR, NEED AN EXTRA ARGUMENT
-                    // TRY PARENT CLASS NEXT, NOT ASKING USER TO FIX IT
-                    var parentClass = Object.getPrototypeOf(gameObjectClass);
-                    if (typeof parentClass !== "function")
-                    {
-                        gameObject = new GameObject(o.scene);
+                    try {
+                        gameObject = new gameObjectClass(o.scene);
                         break;
                     }
-                    gameObjectClass = parentClass;
+                    catch (e)
+                    {
+                        // THERE WAS AN ERROR IN CONSTRUCTOR, NEED AN EXTRA ARGUMENT
+                        // TRY PARENT CLASS NEXT, NOT ASKING USER TO FIX IT
+                        var parentClass = Object.getPrototypeOf(gameObjectClass);
+                        if (typeof parentClass !== "function")
+                        {
+                            gameObject = new GameObject(o.scene);
+                            break;
+                        }
+                        gameObjectClass = parentClass;
+                    }
                 }
+                origEntity = o.scene.level.SerializeObjectFully(gameObject, true, true);
+                bare.gameObjectDefaultValues[className] = origEntity;
             }
-            origEntity = o.scene.level.SerializeObjectFully(gameObject, true, true);
         }
         
         var curEntity = o.scene.level.SerializeObjectFully(o, true, true);

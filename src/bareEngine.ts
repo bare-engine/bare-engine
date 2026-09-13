@@ -22,7 +22,7 @@ import { GameObject } from "./objects/gameObject";
 import { EditorScene } from "./scenes/editorScene";
 import { Scene } from "./scenes/scene";
 import { UIScene, uiScene } from "./scenes/uiScene";
-import { BareEvent, BareOptions, CanvasPosition, CanvasScale, Events, GameObjectClass, LevelData, SceneClass } from "./types/bareTypes";
+import { BareEvent, BareOptions, CanvasPosition, CanvasScale, Entity, Events, GameObjectClass, LevelData, SceneClass } from "./types/bareTypes";
 import { getInspectorFieldNames, getSaveFields } from "./utils/decorators";
 import { Helper } from "./utils/helper";
 
@@ -65,6 +65,7 @@ export class BareEngine
     
     public componentClasses: Record<string, any> = {};
     public componentDefaulValues: Record<string, Record<string, any>> = {};
+    public gameObjectDefaultValues: Record<string, Entity> = {};
 
     private mouseDownOnLeave: boolean = false;
     
