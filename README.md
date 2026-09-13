@@ -1,7 +1,7 @@
 <h1>Bare Game Engine</h1>
 
 Build for Web:
-- 29kb minimal game (gzip)
+- 34kb minimal game (gzip)
 - Instant load time
 - Asset streaming
 - Ingame level editor
