@@ -6,7 +6,7 @@ import type { Scene } from "../scenes/scene";
 import type { ComponentCtor, Ctor, DropFirst, Events, Rectangle, Shader } from "../types/bareTypes";
 import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';
 import { Hitbox } from '../types/hitbox';
-import { getOwnSaveFieldNames, InspectorField, isInspectorFieldDescriptor, Percentage, Save } from "../utils/decorators";
+import { getOwnInspectorFieldNames, getOwnSaveFieldNames, InspectorField, isInspectorFieldDescriptor, Percentage, Save } from "../utils/decorators";
 import { Helper } from '../utils/helper';
 
 export class Transform {
@@ -119,10 +119,10 @@ export class GameObject
     {
         const className = cls.name;
 
-        // ADD FIELDS EXPLICITLY MARKED FOR SERIALIZATION TO entityVarsNested.
-        // @InspectorField ONLY CONTROLS EDITOR EXPOSURE, AS IT DOES FOR COMPONENTS.
+        // add this class's @InspectorField and @Save members to entityVarsNested, so they show
+        // up in the plugin (grouped/locked per class) and get default values from the instance
         // MAKE THIS ALSO WORK WITH INHERITANCE OF MULTIPLE CUSTOM CLASSES - TODOR
-        var vars = getOwnSaveFieldNames(cls);
+        var vars = [...new Set([...getOwnInspectorFieldNames(cls), ...getOwnSaveFieldNames(cls)])];
         if (vars.length > 0)
         {
             var existingEntityVars = entityVarsNested.find(entry =>
