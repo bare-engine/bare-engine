@@ -15,7 +15,8 @@
             var firstLevelLoad = %BARE_FIRST_LEVEL_LOAD%;
 
             try {
-                levelStr = localStorage.getItem("bare:" + %BARE_GAME_ID% + ":currentLevelStr") || "";
+                var save = JSON.parse(localStorage.getItem(%BARE_GAME_ID%) || "null");
+                levelStr = save ? save.currentLevelStr : localStorage.getItem(%BARE_GAME_ID% + ":currentLevelStr");
             } catch (error) {
                 levelStr = "";
             }

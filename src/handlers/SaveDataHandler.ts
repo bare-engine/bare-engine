@@ -9,9 +9,9 @@ export class SaveDataHandler
     private static defaults: Map<string, any> = new Map();
     private static readonly storagePrefix = `${this.gameId}:`;
 
-    public static GetStorageKey(key: string): string
+    public static GetStorageKey(): string
     {
-        return `${this.storagePrefix}${key}`;
+        return this.gameId;
     }
 
     // Allow game code to attach additional SaveData fields without modifying the engine class
@@ -66,14 +66,18 @@ export class SaveDataHandler
         if (!localStorage || !this.saveEnabled)
             return;
 
+        const save: Record<string, any> = {};
         for (const key in SaveData)
         {
             if (typeof (SaveData as any)[key] === 'function' || key[0] === key[0].toUpperCase())
                 continue;
 
             const value = (SaveData as any)[key];
-            this.SaveItem(key, value);
+            save[key] = value instanceof Set || value instanceof Map ? Array.from(value as any) : value;
         }
+
+        localStorage.setItem(this.GetStorageKey(), JSON.stringify(save));
+        this.ClearLegacyKeys();
     }
 
     static Load()
@@ -81,14 +85,29 @@ export class SaveDataHandler
         if (!localStorage)
             return;
 
+        const item = localStorage.getItem(this.GetStorageKey());
+        const save = item === null ? null : JSON.parse(item);
+
         for (const key in SaveData)
         {
             if (typeof (SaveData as any)[key] === 'function' || key[0] === key[0].toUpperCase())
                 continue;
 
             const defaultValue = this.defaults.get(key);
-            (SaveData as any)[key] = this.LoadItem(key, defaultValue);
+            if (save === null)
+                (SaveData as any)[key] = this.LoadLegacyItem(key, defaultValue);
+            else if (!Object.prototype.hasOwnProperty.call(save, key))
+                (SaveData as any)[key] = defaultValue;
+            else if (defaultValue instanceof Set)
+                (SaveData as any)[key] = new Set(save[key]);
+            else if (defaultValue instanceof Map)
+                (SaveData as any)[key] = new Map(save[key]);
+            else
+                (SaveData as any)[key] = save[key];
         }
+
+        if (item === null && Array.from(this.defaults.keys()).some(key => localStorage.getItem(`${this.storagePrefix}${key}`) !== null))
+            this.Save();
     }
 
     static Clear()
@@ -98,13 +117,9 @@ export class SaveDataHandler
             
         SaveData.levelCache.clear();
 
-        for (let index = localStorage.length - 1; index >= 0; index--)
-        {
-            const key = localStorage.key(index);
-            if (key?.startsWith(this.storagePrefix))
-                localStorage.removeItem(key);
-        }
-        
+        localStorage.removeItem(this.GetStorageKey());
+        this.ClearLegacyKeys();
+
         // Reset all properties to their default values
         for (const [key, defaultValue] of this.defaults)
         {
@@ -120,26 +135,19 @@ export class SaveDataHandler
         }
     }
 
-    private static SaveItem<T>(key: string, value: T): void
+    private static ClearLegacyKeys(): void
     {
-        key = this.GetStorageKey(key);
-
-        if (typeof value === 'string') {
-            localStorage.setItem(key, value);
-        } else if (typeof value === 'boolean' || typeof value === 'number') {
-            localStorage.setItem(key, value.toString());
-        } else if (value instanceof Set) {
-            localStorage.setItem(key, JSON.stringify(Array.from(value)));
-        } else if (value instanceof Map) {
-            localStorage.setItem(key, JSON.stringify(Array.from(value)));
-        } else {
-            localStorage.setItem(key, JSON.stringify(value));
+        for (let index = localStorage.length - 1; index >= 0; index--)
+        {
+            const key = localStorage.key(index);
+            if (key?.startsWith(this.storagePrefix))
+                localStorage.removeItem(key);
         }
     }
 
-    private static LoadItem<T>(key: string, defaultValue: T): T
+    private static LoadLegacyItem<T>(key: string, defaultValue: T): T
     {
-        key = this.GetStorageKey(key);
+        key = `${this.storagePrefix}${key}`;
         const item = localStorage.getItem(key);
         
         if (item === null) {
