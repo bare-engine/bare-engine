@@ -38,21 +38,38 @@ export class KeyboardController
             return processedkey;
         };
 
-        // KEY DOWN
-        document.addEventListener('keydown', (event: any) => {
-            //if (bareEngine.MouseIsOnEditor(event))
-            //    return; // Allow normal typing inside the editor UI
+        // keyup removes the same name keydown added, even if event.key changed in between
+        // (eg: "!" on keydown, "1" on keyup after shift was released)
+        const codeToKey = new Map<string, string>();
 
-            //trace(event.key)
+        const release = (key: string) => {
+            if (!this.keysPressed.delete(key))
+                return;
+
+            this.keysJustPressed.delete(key);
+            bare.SendEvent(BareEvent.key_released, { key: key, allKeys: Array.from(this.keysPressed) });
+        };
+
+        // modifier keyups often never reach us (ctrl+shift+i, alt+shift, shift+click into another document),
+        // but every input event carries the real modifier state, so use that to drop stuck ones
+        const syncModifiers = (event: KeyboardEvent | MouseEvent) => {
+            if (!event.shiftKey) release("shift");
+            if (!event.ctrlKey) release("control");
+            if (!event.altKey) release("alt");
+            if (!event.metaKey) release("meta");
+        };
+
+        // KEY DOWN
+        document.addEventListener('keydown', (event: KeyboardEvent) => {
+            syncModifiers(event);
+
             var key = processKey(event.key);
-            
-            if (!this.keysPressed.has(key)) {
-                this.keysJustPressed.add(key);
-            }
+            codeToKey.set(event.code, key);
 
             if (!this.keysPressed.has(key))
             {
                 this.keysPressed.add(key);
+                this.keysJustPressed.add(key);
                 bare.SendEvent(BareEvent.key_pressed, { key: key, allKeys: Array.from(this.keysPressed) });
             }
 
@@ -62,32 +79,19 @@ export class KeyboardController
         });
 
         // KEY UP
-        document.addEventListener('keyup', (event: any) => {
-            //if (bareEngine.MouseIsOnEditor(event))
-            //    return; // Allow typing inside editor UI
-
-            var key = processKey(event.key);
-
-            this.keysPressed.delete(key);
-            this.keysJustPressed.delete(key);
-
-            bare.SendEvent(BareEvent.key_released, { key: key, allKeys: Array.from(this.keysPressed) });
+        document.addEventListener('keyup', (event: KeyboardEvent) => {
+            release(codeToKey.get(event.code) ?? processKey(event.key));
+            codeToKey.delete(event.code);
+            syncModifiers(event);
         });
 
-        // Handle window focus/blur to reset keys
-        document.addEventListener('blur', () => {
-            this.keysPressed.clear();
-            this.keysJustPressed.clear();
-        });
+        document.addEventListener('mousedown', syncModifiers);
 
-        // Handle window focus/blur to reset keys
-        document.addEventListener('focus', () => {
-            // Clear keys to prevent stuck keys
-            this.keysPressed.clear();
-            this.keysJustPressed.clear();
-            
-            const canvas = rapid.canvas;
-            if (canvas) canvas.focus();
+        // blur/focus don't bubble, they must be listened for on window
+        window.addEventListener('blur', () => this.ClearAll());
+        window.addEventListener('focus', () => {
+            this.ClearAll();
+            rapid.canvas?.focus();
         });
     }
 

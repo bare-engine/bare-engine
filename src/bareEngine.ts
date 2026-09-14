@@ -208,7 +208,10 @@ export class BareEngine
         if (debugKeyActions.size == 0)
             return;
 
-        var debugKeysHandler = ({ key }) => {
+        var debugKeysHandler = ({ key, allKeys }) => {
+            if (allKeys.length > 1)
+                return; // MORE THAN ONE KEY PRESSED, EG: CTRL-C
+
             const action = debugKeyActions.get(key.toLocaleLowerCase());
             if (action)
                 action();
