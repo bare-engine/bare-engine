@@ -183,8 +183,13 @@ function collectEntityName(entity, references) {
         return;
     }
 
-    if (typeof entity.name === "string") {
-        addTextureReference(references, entity.name);
+    // Level entries reference textures either directly ("texture") or through an
+    // entity name ("entity" / "name") which resolves to a texture of the same name
+    // via the base entity "texture": "NAME" rule.
+    for (const key of ["name", "entity", "texture"]) {
+        if (typeof entity[key] === "string") {
+            addTextureReference(references, entity[key]);
+        }
     }
 
     if (Array.isArray(entity.children)) {
