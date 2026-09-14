@@ -146,9 +146,9 @@ export class EditorUIHandler {
 
     private GetSidebarEntity(entityId: string, categoryName: string, data: SettingsData): Entity {
         if (categoryName == "images")
-            return SettingsHandler.FindEntity(this.scene.settingsHandler.GetRaw(), entityId) || {texture: entityId};
+            return {texture: entityId};
 
-        return this.scene.ConstructEntity(entityId);
+        return {entity: entityId};
     }
 
     private SetupPreviewImage(img: HTMLImageElement, src: string, id?: string): void {
@@ -353,9 +353,11 @@ export class EditorUIHandler {
                         childEntity.onclick = (e) => {
                             e.stopPropagation();
                         };
+
+                        var processedEntiy = this.scene.ConstructEntity(entityId);
                         
                         // Get entity image from loaded texture or fallback to path
-                        const texKey = MakePathForEntity(entity);
+                        const texKey = MakePathForEntity(processedEntiy);
                         const entityTex = assetsHandler.HasTexture(texKey) ? assetsHandler.GetTexture(texKey) : null;
 
                         if (entityTex?.base?.uid) {
@@ -363,7 +365,7 @@ export class EditorUIHandler {
                             childEntity.style.borderRadius = '3px';
                             this.SetTextureBackground(childEntity, entityTex);
                         } else {
-                            const entityImagePath = this.GetEntityImagePath(entity);
+                            const entityImagePath = this.GetEntityImagePath(processedEntiy);
                             if (entityImagePath && !entityImagePath.endsWith('images/whitePixel.webp')) {
                                 const img = document.createElement('img');
                                 this.SetupPreviewImage(img, entityImagePath, entityId);

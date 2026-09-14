@@ -32,6 +32,7 @@ export class EditorControlsHandler {
 
     private lastMultiPlaceGridKey: string | null = null;
     static copiedObjectCached: Entity[] = [];
+    currentPreviewEntityRawEntity: Entity;
     
     constructor(editorScene: any) {
         this.scene = editorScene;
@@ -648,6 +649,7 @@ export class EditorControlsHandler {
             return;
         }
 
+        this.currentPreviewEntityRawEntity = entity;
         this.currentPreviewEntityName = entity.name ?? entity.entity ?? entity.texture;
 
         // construct from the entity itself, not from its name: an entity coming from a level object carries
@@ -776,7 +778,7 @@ export class EditorControlsHandler {
 
     private PlaceCurrentPreviewObject(layer: int): GameObject
     {
-        const obj = this.scene.AddGameObjectAtPosition(this.currentPreviewEntity.x, this.currentPreviewEntity.y, this.currentPreviewEntityName, layer);
+        const obj = this.scene.AddGameObjectAtPosition(this.currentPreviewEntity.x, this.currentPreviewEntity.y, this.currentPreviewEntityRawEntity, layer);
 
         // placing replaces the selection: while stamping, shift multi-places, it doesn't multi-select
         this.SelectGameObjects([obj], true);
