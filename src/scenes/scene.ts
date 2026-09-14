@@ -166,6 +166,11 @@ export class Scene implements SceneI
         bare.AddClass(ObjectController);
 
         Scene.DefineLazyControllerAccessors();
+
+        // CREATE MOUSE CONTROLLER RIGHT AWAY, SO IT'S FIRST TO LISTEN TO pointer_down
+        // DOES NOT WORK AS LAZY CONTROLLER LIKE OTHERS
+        // NO-OP WHEN THE MOUSE CONTROLLER MODULE ISN'T BUNDLED (CREATECONTROLLER RETURNS UNDEFINED)
+        this.CreateController("mouse");
     }
 
     // CUSTOM CONTROLLERS (RegisterController WITH A DERIVED FIELD NAME) GET THE SAME LAZY
