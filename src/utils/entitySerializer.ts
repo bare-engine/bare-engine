@@ -1,6 +1,6 @@
 import type { Component } from "../controllers/componentController";
 import { GameMode } from "../globals";
-import { Color, Texture, Vec2 } from "../libraries/new-rapid-render";
+import { Color, Texture } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
 import { defaultSettingsData } from "../types/bareData";
@@ -13,34 +13,26 @@ export class EntitySerializer
     static SerializeObjectFully(scene: Scene, obj: GameObject, forceAllEntityVars: boolean = false, includeSaveFields: boolean = true): Entity
     {
         var entity: Entity = {};
+
+        // GET VARS TO SAVE
         var varsToSave: string[] = [];
 
         if (bare.gameMode == GameMode.Play && !forceAllEntityVars)
         {
             var saveVars = scene.settingsData.saveVars;
-            if (saveVars)
+            if (saveVars) // WILL ALWAYS BE THERE REALLY
             {
                 var constructorName = scene.GetContructorName(obj);
 
-                if (saveVars[constructorName])
-                    varsToSave = saveVars[constructorName];
-                else if (constructorName == "GameObject")
-                    varsToSave = defaultSettingsData.saveVars!["GameObject"];
+                // Class save vars extend the GameObject defaults. Keep this merge here
+                // as well as in SettingsHandler so serialization remains correct when
+                // settings data has not gone through preprocessing.
+                const gameObjectSaveVars = saveVars.GameObject ?? defaultSettingsData.saveVars!["GameObject"];
+                const classSaveVars = saveVars[constructorName] ?? [];
+                varsToSave = [...new Set([...gameObjectSaveVars, ...classSaveVars])];
             }
 
             varsToSave = varsToSave.slice();
-
-            if (obj.entity)
-            {
-                for (var varName in obj.entity)
-                {
-                    if (varName == "name")
-                        continue;
-
-                    if (!varsToSave.includes(varName))
-                        varsToSave.push(varName);
-                }
-            }
         }
         else if (bare.gameMode == GameMode.Edit || forceAllEntityVars)
         {
@@ -48,6 +40,8 @@ export class EntitySerializer
             varsToSave.splice(varsToSave.indexOf("tapHitbox"), 1);
         }
 
+        // EDGE CASE, WANT TO ALWAYS SAVE (TOP LEVEL) OBJECT WITHOUT A PARENT, NO NEED TO SUPPLY THE SAVE PROPERTY
+        // CHILDREN DO NEED IT
         if (!obj.parent && varsToSave.includes("save"))
             varsToSave.splice(varsToSave.indexOf("save"), 1);
 
@@ -81,7 +75,7 @@ export class EntitySerializer
                 if ((!child.persistent && child.save) || forceAllEntityVars)
                     children.push(EntitySerializer.SerializeObjectFully(scene, child, forceAllEntityVars, includeSaveFields));
             }
-            return children;
+            return children.length > 0 ? children : null;
         };
 
         customSerialize["components"] = (currentValue: Component[]): Record<string, any> => {
@@ -95,21 +89,168 @@ export class EntitySerializer
                     comps[name] = compData;
                 }
             }
-            return comps;
+            return Object.keys(comps).length > 0 ? comps : null;
         };
 
         for (var varName of varsToSave)
         {
             const key = (varName as keyof GameObject);
+
+            if (key.startsWith("_"))
+                continue;
+
             var objValue = obj[key];
             var serializedValue = customSerialize[varName] && objValue
                 ? customSerialize[varName](objValue)
                 : scene.GetSerializedValueFromObject(obj, key);
 
-            entity[varName] = serializedValue;
+            if (serializedValue != null) // PREVENTS ADDING EMPTY CHILDREN OF COMPONENTS
+                entity[varName] = serializedValue;
         }
 
+        delete entity.save;
+
         return entity;
+    }
+
+    // CREATE A SELF-CONTAINED ENTITY FOR CLONING/COPY-PASTE
+    static SerializeObjectSnapshot(scene: Scene, obj: GameObject): Entity
+    {
+        const snapshot = EntitySerializer.SerializeObjectFully(scene, obj, false, true);
+
+        const makeSelfContained = (gameObject: GameObject, entity: Entity): void => {
+            entity.name = gameObject.name;
+            entity.baseClass = scene.GetContructorName(gameObject);
+
+            // The snapshot already contains the applied values. Prevent ConstructEntity()
+            // from merging a same-named settings entity back into it when it is restored.
+            entity.constructed = true;
+
+            if (!entity.children)
+                return;
+
+            const savedChildren = gameObject.children.filter(child => !child.persistent && child.save);
+            for (var i = 0; i < Math.min(savedChildren.length, entity.children.length); i++)
+                makeSelfContained(savedChildren[i], entity.children[i]);
+        };
+
+        makeSelfContained(obj, snapshot);
+        return snapshot;
+    }
+
+    static GetEntitiesDiff(orig: Entity, updated: Entity): any
+    {
+        var diff = EntitySerializer.GetObjectDiff(orig, updated) ?? {};
+
+        EntitySerializer.AddRemovedComponents(orig, updated, diff);
+
+        return Object.keys(diff).length > 0 ? diff : undefined;
+    }
+
+    static AddRemovedComponents(orig: Entity, updated: Entity, diff: any)
+    {
+        if (orig.components)
+        {
+            const updatedComps = updated.components ?? {};
+            const removed = Object.keys(orig.components).filter(key => !(key in updatedComps));
+            if (removed.length > 0)
+                diff.componentsRemoved = removed;
+        }
+
+        if (orig.children && updated.children)
+        {
+            for (let i = 0; i < Math.min(orig.children.length, updated.children.length); i++)
+            {
+                // REUSE AN EXISTING CHILD DIFF IF ONE, ELSE RECURSE INTO A TEMP WE ONLY KEEP IF NON-EMPTY
+                const existing = diff.children?.[i];
+                const childDiff = existing ?? {};
+
+                EntitySerializer.AddRemovedComponents(orig.children[i], updated.children[i], childDiff);
+
+                if (!existing && Object.keys(childDiff).length > 0)
+                {
+                    // PAD EARLIER INDICES ONLY WHEN NEEDED TO KEEP ALIGNMENT FOR THIS ENTRY
+                    diff.children ??= [];
+                    while (diff.children.length < i)
+                        diff.children.push({});
+                    diff.children[i] = childDiff;
+                }
+            }
+        }
+    }
+
+    static GetGenericDiff(orig: any, updated: any): any
+    {
+        if (orig === updated)
+            return undefined;
+
+        if (Array.isArray(orig) && Array.isArray(updated))
+            return EntitySerializer.GetArrayDiff(orig, updated);
+
+        if (EntitySerializer.IsPlainObject(orig) && EntitySerializer.IsPlainObject(updated))
+            return EntitySerializer.GetObjectDiff(orig, updated);
+
+        if (EntitySerializer.IsEmpty(updated))
+            return EntitySerializer.IsEmpty(orig) ? undefined : updated;
+
+        return updated;
+    }
+
+    static GetArrayDiff(orig: any[], updated: any[]): any
+    {
+        const diff: any[] = [];
+        let hasDiff = false;
+
+        for (let i = 0; i < Math.max(orig.length, updated.length); i++)
+        {
+            let value: any = undefined;
+
+            if (i >= orig.length)
+                value = updated[i];
+            else if (i >= updated.length)
+                continue;
+            else
+                value = EntitySerializer.GetGenericDiff(orig[i], updated[i]) ?? {};
+
+            diff.push(value);
+
+            if (value !== undefined && !(typeof value === "object" && value && Object.keys(value).length === 0))
+                hasDiff = true;
+        }
+
+        return hasDiff ? diff : undefined;
+    }
+
+    static GetObjectDiff(orig: Record<string, any>, updated: Record<string, any>): any
+    {
+        const diff: Record<string, any> = {};
+
+        for (const key in updated)
+        {
+            if (!(key in orig))
+            {
+                diff[key] = updated[key];
+                continue;
+            }
+
+            const subDiff = EntitySerializer.GetGenericDiff(orig[key], updated[key]);
+            if (subDiff !== undefined)
+                diff[key] = subDiff;
+        }
+
+        return Object.keys(diff).length > 0 ? diff : undefined;
+    }
+
+    private static IsPlainObject(value: any): boolean
+    {
+        return !!value && typeof value === "object" && !Array.isArray(value);
+    }
+
+    private static IsEmpty(value: any): boolean
+    {
+        if (Array.isArray(value)) return value.length === 0;
+        if (EntitySerializer.IsPlainObject(value)) return Object.keys(value).length === 0;
+        return value === undefined || value === null;
     }
 
     static SerializeComponents(scene: Scene, components: Component[], checkSave: boolean = true): Record<string, Record<string, Scalar>>
@@ -143,17 +284,21 @@ export class EntitySerializer
         if (!hasExplicitSaveFields)
             constructorVarNames = (component as any).__paramNames || Helper.GetConstructorParamNames(component.constructor);
 
+        // Component classes have .name normalized at registration (AddClass), so read it directly.
         var className = component.constructor.name;
         var defaultValues = bare.componentDefaulValues[className];
 
+        // GET VALUE FROM EACH KEY OF CONSTRUCTOR PARAMS
         for (let i = 0; i < constructorVarNames.length; i++)
         {
             const paramName = constructorVarNames[i];
-            const paramValue = component[paramName as keyof typeof component] as any;
+            const paramValue = component[paramName as keyof typeof component] as any; // SHOULD BE STRING, NUMBER OR BOOLEAN
 
+            // SKIP SCENE
             if (paramName == "scene" || paramValue === scene)
                 continue;
 
+            // SKIP IF DEFAULT
             var defaultValue = defaultValues[paramName];
             if (paramValue === defaultValue)
                 continue;

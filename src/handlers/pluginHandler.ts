@@ -563,13 +563,13 @@ const gameDebugApi = {
                         gameObjectClass = parentClass;
                     }
                 }
-                origEntity = o.scene.level.SerializeObjectFully(gameObject, true, true);
+                origEntity = EntitySerializer.SerializeObjectFully(o.scene, gameObject, true, true);
                 bare.gameObjectDefaultValues[className] = origEntity;
             }
         }
         
-        var curEntity = o.scene.level.SerializeObjectFully(o, true, true);
-        var diffEntity = o.scene.level.GetEntitiesDiff(origEntity, curEntity) || {};
+        var curEntity = EntitySerializer.SerializeObjectFully(o.scene, o, true, true);
+        var diffEntity = EntitySerializer.GetEntitiesDiff(origEntity, curEntity) || {};
 
         // FIELDS TO IGNORE - NOT IN INSPECTOR
         delete diffEntity.name;
