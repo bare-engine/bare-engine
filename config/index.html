@@ -11,6 +11,8 @@
     <script>
       (function() {
         function getCurrentLevelAssetUrl() {
+            if (!%BARE_PRELOAD_CURRENT_LEVEL%) return "";
+
             var levelStr = "";
             var firstLevelLoad = %BARE_FIRST_LEVEL_LOAD%;
 

@@ -629,6 +629,7 @@ function bareHtmlPlugin(options = {}) {
     const textColor = htmlOptions.textColor || "rgb(0, 0, 0)";
     const loadingTextStyle = htmlOptions.showLoading === false ? "display: none;" : "";
     const firstLevelLoad = resolveFirstLevelLoad(projectPackage.bareEngine?.firstLevelLoad);
+    const preloadCurrentLevel = projectPackage.bareEngine?.preloadCurrentLevel !== false;
     const bootstrap = options.bootstrap || '<script type="module" src="/src/game.ts"></script>';
 
     return {
@@ -664,6 +665,7 @@ function bareHtmlPlugin(options = {}) {
                     .replace(/%BARE_TEXT_COLOR%/g, textColor)
                     .replace(/%BARE_LOADING_TEXT_STYLE%/g, loadingTextStyle)
                     .replace(/%BARE_FIRST_LEVEL_LOAD%/g, JSON.stringify(firstLevelLoad))
+                    .replace(/%BARE_PRELOAD_CURRENT_LEVEL%/g, JSON.stringify(preloadCurrentLevel))
                     .replace(/%BARE_GAME_ID%/g, JSON.stringify(gameId))
                     .replace("<!-- js:bootstrap -->", bootstrap);
             }
@@ -2474,4 +2476,3 @@ module.exports = {
     readProjectPackage,
     withTransformSourcemap
 };
-
