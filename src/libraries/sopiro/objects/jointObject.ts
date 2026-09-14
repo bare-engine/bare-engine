@@ -1,7 +1,8 @@
 import { GameMode } from "../../../globals";
 import { GameObject } from "../../../objects/gameObject";
 import { BareEvent, Entity } from "../../../types/bareTypes";
-import { InspectorField, Percentage, Limit, Save } from "../../../utils/decorators";
+import { InspectorField, Percentage, Limit } from "../../../utils/decorators";
+import { Save } from "../../../utils/saveFields";
 import { Circle } from "../circle";
 import { testPointInside } from "../detection";
 import { Joint } from "../joint";

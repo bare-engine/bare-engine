@@ -8,7 +8,8 @@ import { Matrix3 } from "./math";
 import { GameMode, globalEvents } from "../../globals";
 import type { Scene } from "../../scenes/scene";
 import { BareEvent, Entity } from '../../types/bareTypes';
-import { Enum, InspectorField, Limit, Locked, Percentage, Save } from "../../utils/decorators";
+import { Enum, InspectorField, Limit, Locked, Percentage } from "../../utils/decorators";
+import { Save } from "../../utils/saveFields";
 
 export enum Type
 {

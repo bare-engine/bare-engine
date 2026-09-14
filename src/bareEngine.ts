@@ -23,7 +23,8 @@ import { EditorScene } from "./scenes/editorScene";
 import { Scene } from "./scenes/scene";
 import { UIScene, uiScene } from "./scenes/uiScene";
 import { BareEvent, BareOptions, CanvasPosition, CanvasScale, Entity, Events, GameObjectClass, LevelData, SceneClass } from "./types/bareTypes";
-import { getInspectorFieldNames, getSaveFields } from "./utils/decorators";
+import { getInspectorFieldNames } from "./utils/decorators";
+import { getSaveFields } from "./utils/saveFields";
 import { Helper } from "./utils/helper";
 
 export interface BareRestartOptions

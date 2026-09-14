@@ -5,7 +5,7 @@ import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
 import { defaultSettingsData } from "../types/bareData";
 import { Entity, entityVars, Rectangle2Vec, Scalar } from "../types/bareTypes";
-import { getSaveFields } from "./decorators";
+import { getSaveFields } from "./saveFields";
 import { Helper } from "./helper";
 
 export class EntitySerializer

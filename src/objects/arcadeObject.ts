@@ -3,7 +3,8 @@ import { Texture, Vec2 } from "../libraries/new-rapid-render";
 import { Scene } from "../scenes/scene";
 import { BareEvent, BlockedState, ConstructEntityOptions, Entity, HitboxType, Rectangle, Rectangle2Vec } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
-import { Dropdown, InspectorField, Int, Save } from "../utils/decorators";
+import { Dropdown, InspectorField, Int } from "../utils/decorators";
+import { Save } from "../utils/saveFields";
 import { GameObject } from "./gameObject";
 
 export class ArcadeObject extends GameObject

@@ -5,7 +5,8 @@ import { Entity } from "../../types/bareTypes";
 import { RigidBody, Type } from "./rigidbody";
 import { Settings } from "./settings";
 import * as Util from "./util";
-import { InspectorField, Save } from "../../utils/decorators";
+import { InspectorField } from "../../utils/decorators";
+import { Save } from "../../utils/saveFields";
 
 export class Circle extends RigidBody
 {

@@ -1,6 +1,7 @@
 import type { Scene } from "../../scenes/scene";
 import { Entity } from "../../types/bareTypes";
-import { InspectorField, Limit, Save } from "../../utils/decorators";
+import { InspectorField, Limit } from "../../utils/decorators";
+import { Save } from "../../utils/saveFields";
 import { Vec2 } from "../new-rapid-render";
 import { RigidBody, Type } from "./rigidbody";
 import { Settings } from "./settings";

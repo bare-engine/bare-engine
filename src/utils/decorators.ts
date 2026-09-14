@@ -1,4 +1,5 @@
 import { Color } from "../libraries/new-rapid-render";
+import { prototypeChain, SAVE_METADATA_KEY } from "./saveFields";
 
 const BUTTON_METADATA_KEY = "__editorButtons__";
 const FIELD_METADATA_KEY = "__editorFields__";
@@ -10,7 +11,6 @@ const ENUM_METADATA_KEY = "__fieldEnums__";
 const DECIMAL_METADATA_KEY = "__fieldDecimals__";
 const LABEL_METADATA_KEY = "__fieldLabels__";
 const DESCRIPTION_METADATA_KEY = "__fieldDescriptions__";
-const SAVE_METADATA_KEY = "__saveFields__";
 const ORDER_COUNTER_KEY = "__inspectorOrderCounter__";
 const INSPECTOR_CLASS_ORDER_KEY = "__inspectorClassOrders__";
 
@@ -27,9 +27,9 @@ function nextDeclarationOrder(proto: any): number
     return current;
 }
 
-// NOTE: @Run / RUN_MODES_KEY live in ./runModes.ts (not here) because they carry runtime
-// semantics and must survive the production build that strips these editor-only decorators
-// and tree-shakes decorators.ts away.
+// NOTE: @Run / RUN_MODES_KEY live in ./runModes.ts and @Save / getSaveFields in ./saveFields.ts
+// (not here) because they carry runtime semantics and must survive the production build that
+// strips these editor-only decorators and tree-shakes decorators.ts away.
 
 export interface ButtonEntry
 {
@@ -120,15 +120,6 @@ export function InspectorButton(targetOrLabel: any, propertyKey?: string, _descr
 
     // @InspectorButton — bare method decorator
     addButton(targetOrLabel, propertyKey as string);
-}
-
-/** Returns the prototype chain (parent-first), stopping before Object.prototype. */
-function prototypeChain(proto: any): any[]
-{
-    const chain: any[] = [];
-    for (let p = proto; p && p !== Object.prototype; p = Object.getPrototypeOf(p))
-        chain.push(p);
-    return chain.reverse();
 }
 
 /** Returns all editor buttons registered on the component class and its ancestors. */
@@ -391,44 +382,6 @@ export function getOwnInspectorFieldNames(classOrPrototype: any): string[]
         : [];
 
     return entries.map(entry => entry.name);
-}
-
-// USED FOR BOTH LEVEL SAVING AND SAVEDATA - ALWAYS WANTED?
-export function Save(target: any, propertyKey: string): void
-{
-    const saveFields: string[] = Object.prototype.hasOwnProperty.call(target, SAVE_METADATA_KEY)
-        ? target[SAVE_METADATA_KEY]
-        : [];
-    if (!saveFields.includes(propertyKey))
-        saveFields.push(propertyKey);
-
-    target[SAVE_METADATA_KEY] = saveFields;
-}
-
-export function getOwnSaveFieldNames(classOrPrototype: any): string[]
-{
-    const proto = typeof classOrPrototype === "function" ? classOrPrototype.prototype : classOrPrototype;
-    return Object.prototype.hasOwnProperty.call(proto, SAVE_METADATA_KEY)
-        ? [...(proto[SAVE_METADATA_KEY] as string[])]
-        : [];
-}
-
-export function getSaveFields(component: any): string[]
-{
-    const proto = typeof component === "function" ? component.prototype : component.constructor.prototype;
-    const fields: string[] = [];
-
-    for (const p of prototypeChain(proto))
-    {
-        if (!Object.prototype.hasOwnProperty.call(p, SAVE_METADATA_KEY))
-            continue;
-
-        for (const field of (p[SAVE_METADATA_KEY] as string[]))
-            if (!fields.includes(field))
-                fields.push(field);
-    }
-
-    return fields;
 }
 
 export function Locked(target: any, propertyKey: string): void

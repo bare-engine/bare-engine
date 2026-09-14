@@ -6,7 +6,8 @@ import type { Scene } from "../scenes/scene";
 import type { ComponentCtor, Ctor, DropFirst, Events, Rectangle, Shader } from "../types/bareTypes";
 import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';
 import { Hitbox } from '../types/hitbox';
-import { getOwnInspectorFieldNames, getOwnSaveFieldNames, InspectorField, isInspectorFieldDescriptor, Percentage, Save } from "../utils/decorators";
+import { getOwnInspectorFieldNames, InspectorField, isInspectorFieldDescriptor, Percentage } from "../utils/decorators";
+import { getOwnSaveFieldNames, Save } from "../utils/saveFields";
 import { Helper } from '../utils/helper';
 
 export class Transform {

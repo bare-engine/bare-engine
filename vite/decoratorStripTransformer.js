@@ -4,16 +4,17 @@
 // engine's editor-only inspector decorators so that src/utils/decorators.ts ends up with
 // ZERO importers and gets tree-shaken out of the production bundle.
 //
-// It is deliberately scoped to the editor/inspector metadata in decorators.ts. @Run lives in
-// utils/runModes.ts instead - it carries real runtime semantics (component run-mode gating via
-// RUN_MODES_KEY) - so it is never touched here and keeps working in prod.
+// It is deliberately scoped to the editor/inspector metadata in decorators.ts. @Run (utils/runModes.ts)
+// and @Save / getSaveFields (utils/saveFields.ts) live elsewhere on purpose - they carry real runtime
+// semantics (component run-mode gating, level/SaveData serialization) - so they are never touched
+// here and keep working in prod.
 //
 // WHAT IT DOES (per source file), only when the file imports from the decorators module:
 //   1. Strips the @-decorator usages of the inspector decorators (@InspectorField, @Inspector.Field,
-//      @Save, @Limit/@Range, @Dropdown, @Enum, ...) from classes, properties, methods and accessors. Because
+//      @Limit/@Range, @Dropdown, @Enum, ...) from classes, properties, methods and accessors. Because
 //      this runs as a `before` transformer, TypeScript never emits the __decorate(...) helper
 //      for them, so no reference to the decorator function survives.
-//   2. Replaces calls to the runtime READER functions (getSaveFields, getInspectorFields, ...)
+//   2. Replaces calls to the runtime READER functions (getInspectorFields, getButtons, ...)
 //      with their empty equivalents ([], {}, false). After the decorators are gone these would
 //      only ever return empty results anyway.
 //   3. Drops the now-unused named imports from the decorators module (and the index.ts
@@ -26,14 +27,13 @@
 
 const ts = require("./projectRequire")("typescript");
 
-// The editor-only decorators exported by src/utils/decorators.ts. @Run is intentionally absent
-// (it lives in utils/runModes.ts and must survive the prod build).
+// The editor-only decorators exported by src/utils/decorators.ts. @Run and @Save are intentionally
+// absent (they live in utils/runModes.ts / utils/saveFields.ts and must survive the prod build).
 const DECORATOR_NAMES = new Set([
     "InspectorButton",
     "InspectorField",
     "InspectorBaseClass",
     "InspectorClass",
-    "Save",
     "Locked",
     "Limit",
     "Range",
@@ -52,7 +52,6 @@ const INSPECTOR_DECORATOR_PROPERTIES = new Set([
     "Field",
     "BaseClass",
     "Class",
-    "Save",
     "Locked",
     "Limit",
     "Range",
@@ -71,8 +70,7 @@ const READER_REPLACEMENTS = {
     getButtons: "array",
     getInspectorClassNames: "array",
     getInspectorClasses: "array",
-    getOwnInspectorFieldNames: "array",
-    getSaveFields: "array",
+    "getOwnInspectorFieldNames": "array",
     getInspectorFields: "array",
     getInspectorFieldNames: "array",
     getInspectorFieldDescriptions: "object",

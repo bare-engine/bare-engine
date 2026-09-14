@@ -1,7 +1,8 @@
 import { Component } from "../controllers/componentController";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
-import { InspectorButton, Save } from "../utils/decorators";
+import { InspectorButton } from "../utils/decorators";
+import { Save } from "../utils/saveFields";
 
 export class CollisionEventComponent extends Component
 {

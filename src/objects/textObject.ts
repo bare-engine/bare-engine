@@ -1,6 +1,7 @@
 import { Color, ITextOptions, TextTexture, Vec2 } from "../libraries/new-rapid-render";
 import { Scene } from "../scenes/scene";
-import { Dropdown, InspectorField, Int, Limit, Save } from "../utils/decorators";
+import { Dropdown, InspectorField, Int, Limit } from "../utils/decorators";
+import { Save } from "../utils/saveFields";
 import { GameObject } from "./gameObject";
 
 export class TextObject extends GameObject
