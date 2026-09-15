@@ -81,6 +81,7 @@ export class BareEngine
     public gameMode:GameMode = GameMode.Play;
 
     public defaultFont:string = "";
+    public defaultEngineFont:string = "monospace";
 
     // GLOBAL MODULES
     keyboard:KeyboardController;

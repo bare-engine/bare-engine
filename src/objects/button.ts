@@ -1,10 +1,10 @@
 import type { ButtonHandlers } from "../controllers/hitboxController";
-import { Color, ITextureOptions, TextTexture, Vec2 } from "../libraries/new-rapid-render";
+import { Color, ITextOptions, TextTexture, Vec2 } from "../libraries/new-rapid-render";
 import type { Scene } from "../scenes/scene";
 import type { Rectangle } from "../types/bareTypes";
 import { GameObject } from "./gameObject";
 
-interface TextOptions extends ITextureOptions, ButtonHandlers<Button> {
+interface TextOptions extends ITextOptions, ButtonHandlers<Button> {
     buttonColor?: Color;
     marge?: number;
     text: string;
@@ -26,8 +26,12 @@ export class Button extends GameObject
         this.marge = options?.marge || 10;
         this.buttonColor = options?.buttonColor || Color.fromHex('#242428eb');
         
-        //this.text = new BareText({text: options.text, fontSize: 22, fontFamily: 'monospace', color: '#fff'});
-        this.text = rapid.texture.createTextTexture({text:options?.text || "" ,fontSize: 22, fontFamily: bare.defaultFont || 'monospace', fill: '#fff'});
+        this.text = rapid.texture.createTextTexture({
+            fontSize: 22,
+            fontFamily: bare.defaultFont || bare.defaultEngineFont,
+            fill: "#fff",
+            ...options,
+        });
         scene.hitbox.AssignButton(this, options);
     }
 
