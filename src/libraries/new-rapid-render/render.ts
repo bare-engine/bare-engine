@@ -65,6 +65,12 @@ export interface IAppOptions {
     roundPixels?: boolean;
 
     scaleMode?: CanvasScaleMode;
+
+    /** Canvas pixels per logic unit used when rasterizing TextTextures. Default: devicePixelRatio. Use 1 for pixel-art games with a fixed logic resolution. */
+    textResolution?: number;
+
+    /** Rasterize TextTextures without the browser's glyph antialiasing fringe (see ITextStyle.pixelPerfect). Default: false. */
+    pixelPerfectText?: boolean;
 }
 
 /**
@@ -189,6 +195,12 @@ export class Rapid {
 
     scaleMode?: CanvasScaleMode;
 
+    /** Canvas pixels per logic unit used when rasterizing TextTextures. */
+    textResolution: number;
+
+    /** Rasterize TextTextures without the browser's glyph antialiasing fringe. */
+    pixelPerfectText: boolean;
+
     /** Internal ping-pong RenderTextures for multi-filter chains. */
     private _filterRT: [RenderTexture | null, RenderTexture | null] = [null, null];
     private _filterInput = new Texture()
@@ -211,6 +223,8 @@ export class Rapid {
         this.premultipliedAlpha = options.premultipliedAlpha ?? true;
         this.roundPixels = options.roundPixels ?? false;
         this.scaleMode = options.scaleMode ?? CanvasScaleMode.CanvasItem
+        this.textResolution = options.textResolution ?? this.dpr;
+        this.pixelPerfectText = options.pixelPerfectText ?? false;
 
         const gl = getContext(this.canvas, this.antialias, this.premultipliedAlpha);
         this.gl = gl;
@@ -481,8 +495,8 @@ export class Rapid {
             this.canvas.style.height = cssH + 'px';
         }
 
-        this.physicsWidth = cssW * this.dpr;
-        this.physicsHeight = cssH * this.dpr;
+        this.physicsWidth = Math.round(cssW * this.dpr);
+        this.physicsHeight = Math.round(cssH * this.dpr);
 
         this.logicWidth = logicWidth;
         this.logicHeight = logicHeight;

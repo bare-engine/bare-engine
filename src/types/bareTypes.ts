@@ -23,6 +23,11 @@ export type BareOptions =
     debugKeys?: Record<string, () => void>[];
     roundPixels? :boolean;
     scaleMode?: CanvasScaleMode;
+    // CANVAS PIXELS PER LOGIC UNIT WHEN RASTERIZING TEXT. DEFAULT: devicePixelRatio.
+    // USE 1 FOR PIXEL-ART GAMES WITH A FIXED LOGIC RESOLUTION, SO TEXT PIXELS MATCH SPRITE PIXELS.
+    textResolution?: number;
+    // RASTERIZE TEXT WITHOUT THE BROWSER'S GLYPH ANTIALIASING FRINGE. FOR PIXEL FONTS AT NATIVE SIZES.
+    pixelPerfectText?: boolean;
 };
 
 export type ResolutionOptions =

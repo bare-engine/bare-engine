@@ -182,6 +182,12 @@ export class BareEngine
         if (options.antiAlias !== undefined)
             rapid.setAntialias(options.antiAlias);
 
+        if (options.textResolution !== undefined)
+            rapid.textResolution = options.textResolution;
+
+        if (options.pixelPerfectText !== undefined)
+            rapid.pixelPerfectText = options.pixelPerfectText;
+
         if (options.gameObjectPoolSize !== undefined)
             BareEngine.gameObjectPoolSize = options.gameObjectPoolSize;
 
@@ -367,6 +373,10 @@ export class BareEngine
             this.resolutionScale = scale;
         }
 
+        // SNAP CSS SIZE TO WHOLE DEVICE PIXELS, ELSE THE BROWSER RESAMPLES THE CANVAS (BLURRY 1PX EDGES)
+        cssWidth = this.SnapToDevicePixels(cssWidth);
+        cssHeight = this.SnapToDevicePixels(cssHeight);
+
         rapid.resize(
             gameWidth, gameHeight, // LOGIC SIZE
             cssWidth, cssHeight    // CSS SIZE
@@ -455,13 +465,19 @@ export class BareEngine
         if (position == CanvasPosition.Center)
         {
             var viewportSize = this.GetViewportSize();
-            rapid.canvas.style.left = `${(viewportSize.width - cssWidth) * .5}px`;
-            rapid.canvas.style.top = `${(viewportSize.height - cssHeight) * .5}px`;
+            rapid.canvas.style.left = `${this.SnapToDevicePixels((viewportSize.width - cssWidth) * .5)}px`;
+            rapid.canvas.style.top = `${this.SnapToDevicePixels((viewportSize.height - cssHeight) * .5)}px`;
             return;
         }
 
         rapid.canvas.style.left = '0px';
         rapid.canvas.style.top = '0px';
+    }
+
+    // ROUNDS A CSS PIXEL VALUE SO IT LANDS ON A WHOLE DEVICE PIXEL (MATTERS WHEN devicePixelRatio IS FRACTIONAL)
+    private SnapToDevicePixels(cssValue: number): number
+    {
+        return Math.round(cssValue * rapid.dpr) / rapid.dpr;
     }
     
     SetBackgroundColor(backgroundColor: Color)

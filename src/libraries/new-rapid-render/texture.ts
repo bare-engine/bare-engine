@@ -654,6 +654,14 @@ export interface ITextStyle {
     align?: "left" | "center" | "right";
     lineHeight?: number,
     baseline?: CanvasTextBaseline,
+    /** Canvas pixels per logic unit used when rasterizing. Defaults to Rapid's textResolution (dpr). Use 1 for pixel-art games with a fixed logic resolution. */
+    resolution?: number,
+    /**
+     * Rasterize glyphs as exact geometry with no antialiasing fringe. Defaults to Rapid's pixelPerfectText.
+     * Browsers smear glyph edges below ~256px device size (platform font rasterizer); this supersamples
+     * above that threshold and downsamples with nearest sampling. Meant for pixel fonts at native sizes.
+     */
+    pixelPerfect?: boolean,
 }
 
 const defaultTextStyle: ITextStyle = {
@@ -676,6 +684,9 @@ export interface ITextOptions extends ITextStyle, ITextureOptions {
 class TextTexture extends Texture {
     private canvas: HTMLCanvasElement;
     private ctx: CanvasRenderingContext2D;
+    /** Oversized scratch canvas used by pixelPerfect rendering; created on first use. */
+    private superCanvas?: HTMLCanvasElement;
+    private superCtx?: CanvasRenderingContext2D;
     private render: Rapid;
     private _text: string;
     private _style: ITextStyle;
@@ -689,7 +700,7 @@ class TextTexture extends Texture {
         this._text = options?.text ?? "";
         this.options = {
             premultipliedAlpha: render.premultipliedAlpha,
-            textureFilter: TextureFilterMode.LINEAR,
+            textureFilter: render.textureFilter,
             ...options
         };
 
@@ -743,6 +754,40 @@ class TextTexture extends Texture {
         }
     }
 
+    /** Smallest integer factor that puts the device font size above Skia's glyph-cache limit (256px), or 1 if the scratch canvas would get too large. */
+    private getSupersample(deviceFontSize: number, pixelWidth: number, pixelHeight: number): number {
+        const maxCachedSize = 256;
+        const maxCanvasSize = 8192;
+        if (deviceFontSize > maxCachedSize) return 1;
+        const factor = Math.floor(maxCachedSize / deviceFontSize) + 1;
+        if (pixelWidth * factor > maxCanvasSize || pixelHeight * factor > maxCanvasSize) return 1;
+        return factor;
+    }
+
+    /** Snaps every texel to fully opaque or fully transparent, so off-grid font sizes cannot leave a fringe either. */
+    private thresholdAlpha(width: number, height: number): void {
+        const image = this.ctx.getImageData(0, 0, width, height);
+        const data = image.data;
+        for (let i = 3; i < data.length; i += 4) {
+            data[i] = data[i] >= 128 ? 255 : 0;
+        }
+        this.ctx.putImageData(image, 0, 0);
+    }
+
+    private getSuperCtx(width: number, height: number): CanvasRenderingContext2D {
+        if (!this.superCanvas) {
+            this.superCanvas = document.createElement("canvas");
+            const ctx = this.superCanvas.getContext("2d");
+            if (!ctx) throw new Error("Failed to get 2d context for TextTexture supersampling");
+            this.superCtx = ctx;
+        }
+        if (this.superCanvas.width !== width || this.superCanvas.height !== height) {
+            this.superCanvas.width = width;
+            this.superCanvas.height = height;
+        }
+        return this.superCtx!;
+    }
+
     /**
      * Updates the internal canvas and uploads it to WebGL
      */
@@ -750,7 +795,7 @@ class TextTexture extends Texture {
         const ctx = this.ctx;
         const style = this.style;
 
-        const resolution = this.render.dpr;
+        const resolution = style.resolution ?? this.render.textResolution;
         this.scale = 1 / resolution;
 
         const fontSize = style.fontSize!;
@@ -785,6 +830,11 @@ class TextTexture extends Texture {
             descent = Math.max(descent, metrics.actualBoundingBoxDescent);
         }
 
+        // Snap to whole canvas pixels so glyph edges land on the pixel grid;
+        // fractional metrics make fillText antialias every edge.
+        ascent = Math.ceil(ascent);
+        descent = Math.ceil(descent);
+
         // 测量用户基线相对于 alphabetic 的偏移量
         ctx.textBaseline = "alphabetic";
 
@@ -796,7 +846,7 @@ class TextTexture extends Texture {
         const targetDescent =
             ctx.measureText(reference).fontBoundingBoxDescent;
 
-        const lineStep = fontSize * lineHeightRate;
+        const lineStep = Math.round(fontSize * lineHeightRate);
         const totalHeight =
             ascent + descent + (lines.length - 1) * lineStep;
 
@@ -822,27 +872,39 @@ class TextTexture extends Texture {
             this.canvas.height = pixelHeight;
         }
 
-        ctx.setTransform(resolution, 0, 0, resolution, 0, 0);
-        ctx.clearRect(
+        // Skia only rasterizes glyphs as exact geometry above this device size; below it the platform
+        // font rasterizer adds a partial-alpha fringe. pixelPerfect draws above the threshold and downsamples.
+        const pixelPerfect = style.pixelPerfect ?? this.render.pixelPerfectText;
+        const supersample = pixelPerfect
+            ? this.getSupersample(fontSize * resolution, pixelWidth, pixelHeight)
+            : 1;
+
+        const drawCtx = supersample > 1
+            ? this.getSuperCtx(pixelWidth * supersample, pixelHeight * supersample)
+            : ctx;
+
+        const drawScale = resolution * supersample;
+        drawCtx.setTransform(drawScale, 0, 0, drawScale, 0, 0);
+        drawCtx.clearRect(
             0,
             0,
             pixelWidth / resolution,
             pixelHeight / resolution
         );
-        ctx.font = font;
-        ctx.textBaseline = "alphabetic";
-        ctx.textAlign = align;
+        drawCtx.font = font;
+        drawCtx.textBaseline = "alphabetic";
+        drawCtx.textAlign = align;
 
-        const startX = this.updateOffset(logicalWidth, padding)
+        const startX = Math.round(this.updateOffset(logicalWidth, padding));
 
         if (hasStroke) {
-            ctx.lineWidth = strokeThickness;
-            ctx.strokeStyle = style.stroke ?? "#000000";
-            ctx.lineJoin = "round";
+            drawCtx.lineWidth = strokeThickness;
+            drawCtx.strokeStyle = style.stroke ?? "#000000";
+            drawCtx.lineJoin = "round";
         }
 
         if (style.fill) {
-            ctx.fillStyle = style.fill;
+            drawCtx.fillStyle = style.fill;
         }
 
         // 因为是 alphabetic baseline。是在字母底座开始，要增加ascent，才是字母顶上
@@ -851,14 +913,29 @@ class TextTexture extends Texture {
 
         for (const line of lines) {
             if (hasStroke) {
-                ctx.strokeText(line, startX, y);
+                drawCtx.strokeText(line, startX, y);
             }
 
             if (style.fill) {
-                ctx.fillText(line, startX, y);
+                drawCtx.fillText(line, startX, y);
             }
 
             y += lineStep;
+        }
+
+        if (supersample > 1) {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.clearRect(0, 0, pixelWidth, pixelHeight);
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(
+                this.superCanvas!,
+                0, 0, pixelWidth * supersample, pixelHeight * supersample,
+                0, 0, pixelWidth, pixelHeight
+            );
+        }
+
+        if (pixelPerfect) {
+            this.thresholdAlpha(pixelWidth, pixelHeight);
         }
 
         this.base?.updateSource(this.render.gl, this.canvas, this.options);

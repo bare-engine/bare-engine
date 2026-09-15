@@ -65,6 +65,8 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise
                 premultipliedAlpha: options.premultipliedAlpha,
                 roundPixels: options.roundPixels,
                 scaleMode: options.scaleMode,
+                textResolution: options.textResolution,
+                pixelPerfectText: options.pixelPerfectText,
             });
                 
             rapid.canvas.tabIndex = 0; // Make canvas focusable
