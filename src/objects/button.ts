@@ -27,7 +27,7 @@ export class Button extends GameObject
         this.buttonColor = options?.buttonColor || Color.fromHex('#242428eb');
         
         //this.text = new BareText({text: options.text, fontSize: 22, fontFamily: 'monospace', color: '#fff'});
-        this.text = rapid.texture.createTextTexture({text:options?.text || "" ,fontSize: 22, fontFamily: 'monospace', fill: '#fff'});
+        this.text = rapid.texture.createTextTexture({text:options?.text || "" ,fontSize: 22, fontFamily: bare.defaultFont || 'monospace', fill: '#fff'});
         scene.hitbox.AssignButton(this, options);
     }
 
