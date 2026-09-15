@@ -128,9 +128,15 @@ export class EntityScene extends EditorScene
             // UNDO THE showUI / selectionEnabled OVERRIDES WE SET AT OnStart()
             // OTHERWISE THE LEVEL EDITOR (WHICH SHARES THIS HANDLER) OPENS WITH ITS UI HIDDEN
             // ONLY WHEN opened, SINCE OnClear ALSO RUNS DURING INIT (LoadLevel), WHERE WE STILL NEED THE OVERRIDE
-            var settings = this.lastPayload?.settingsHandler?.Get();
-            if (settings)
+            // both raw and processed: OnStart() sets them on the raw, and the level editor's
+            // scene.OnStart() re-processes from GetRaw(), so clearing only the processed copy
+            // would leave the level editor opening without its sidebar
+            var handler = this.lastPayload?.settingsHandler;
+            for (var settings of [handler?.GetRaw(), handler?.Get()])
             {
+                if (!settings)
+                    continue;
+
                 delete settings.showUI;
                 delete settings.selectionEnabled;
             }
