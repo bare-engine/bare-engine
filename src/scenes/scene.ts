@@ -556,6 +556,9 @@ export class Scene implements SceneI
                 delete finalEntity[field];
         }
 
+        if (!rootObject.entity && rootObject.texture)
+            finalEntity.texture = rootObject.texture.texturePath;
+
         return finalEntity;
     }
     
@@ -730,7 +733,7 @@ export class Scene implements SceneI
     {
         obj.OnApplyEntityVarsToGameObject(entity, obj);
         
-        if (!obj.texture && entity.texture)//
+        if (!obj.texture && entity.texture && entity.texture != "NAME" && entity.texture != "NONE")//
             obj.InitTexture(MakePathForEntity(entity));
 
         // PROCESS POLYGON VERTICES FIRST, SET THE AREA THAT OTHER PHYSICS PROPERTIES NEED
@@ -998,7 +1001,7 @@ export class Scene implements SceneI
 
         gameObject.Awake();
         
-        if (entityConstructed.texture)
+        if (entityConstructed.texture && entityConstructed.texture != "NAME" && entityConstructed.texture != "NONE")
             gameObject.InitTexture(MakePathForEntity(entityConstructed)); // COULD BE NEEDED TO SET PIVOT RIGHT IF IT'S A PERCENTAGE
     
         // DON'T WANT COMPONENTS TO BE CREATED AT ApplyEntityToGameObject(). 
