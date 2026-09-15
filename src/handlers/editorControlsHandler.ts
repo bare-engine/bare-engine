@@ -778,7 +778,9 @@ export class EditorControlsHandler {
 
     private PlaceCurrentPreviewObject(layer: int): GameObject
     {
-        const obj = this.scene.AddGameObjectAtPosition(this.currentPreviewEntity.x, this.currentPreviewEntity.y, this.currentPreviewEntityRawEntity, layer);
+        var entityCopy = Helper.DeepCopy(this.currentPreviewEntityRawEntity);
+        delete entityCopy.entityUID;
+        const obj = this.scene.AddGameObjectAtPosition(this.currentPreviewEntity.x, this.currentPreviewEntity.y, entityCopy, layer);
 
         // placing replaces the selection: while stamping, shift multi-places, it doesn't multi-select
         this.SelectGameObjects([obj], true);
