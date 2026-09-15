@@ -380,7 +380,7 @@ export class EditorControlsHandler {
 
         // currentPreviewEntity.name is always 'ignoreInPlugin', so compare against what the stamp places
         if (!this.currentPreviewActive || obj.name != this.currentPreviewEntityName) // DOUBLE CLICK FIRST TIME OR DIFFERENT OBJECT
-            this.SetCurrentPreviewEntity(obj.entity);
+            this.SetCurrentPreviewEntity(this.scene.settingsHandler.rawEntitiesMappedByUID[obj.entity.entityUID]);
         else
             this.SetCurrentPreviewEntity(null);
     }
