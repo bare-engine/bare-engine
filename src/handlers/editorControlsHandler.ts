@@ -3,66 +3,43 @@ import { Color, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { ArcadeObject } from "../objects/arcadeObject";
 import { EditorScene } from "../scenes/editorScene";
-import { OutlineShader } from "../shaders/outlineShader";
 import { BareEvent, BareEventPayload, Entity, Rectangle } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
-import { MakePath, MakePathForEntity } from "../globals";
+import { MakePathForEntity } from "../globals";
+import { assetsHandler } from "./assetsHandler";
 import { TransformToolHandler } from "./transformToolHandler";
-
-/*
-    BUILD CONTROLS INGAME
-    Handles in-game build controls, mouse interactions, and entity placement
-*/
 
 export class EditorControlsHandler {
     private active: boolean = true;
-    public currentPreviewEntity: GameObject;
-    private currentPreviewEntityName: string = ""; // what the stamp places, AddGameObject() resolves it to an entity or texture
-    public currentPreviewActive:boolean = false;
+    public readonly currentPreviewEntity: GameObject;
+    private previewEntityData: Entity | null = null;
+    private previewRevision = 0;
+    public currentPreviewActive: boolean = false;
     private draggingObject: GameObject | null = null;
-    
-    public scene: EditorScene;
 
-    private actionThisFrame: string = '';
+    private gesture: 'idle' | 'select' | 'place' | 'drag' | 'remove' = 'idle';
+    private readonly onWheel = this.OnScroll.bind(this);
 
     private selectionRect: Rectangle = { x: 0, y: 0, width: 0, height: 0 };
 
     selectedObjects: GameObject[] = [];
-    copiedObjects: Entity[] = [];
+    private copiedObjects: Entity[] = [];
 
     private lastMultiPlaceGridKey: string | null = null;
-    static copiedObjectCached: Entity[] = [];
-    currentPreviewEntityRawEntity: Entity;
-    
-    constructor(editorScene: any) {
-        this.scene = editorScene;
-        this.draggingObject = null;
+    private static clipboard: Entity[] = [];
 
-        if (EditorControlsHandler.copiedObjectCached.length > 0)
-        {
-            this.copiedObjects = EditorControlsHandler.copiedObjectCached;
-            EditorControlsHandler.copiedObjectCached = [];
-        }
-
-        this.currentPreviewEntity = new ArcadeObject(this.scene, '', -100, -100);
-        this.currentPreviewEntity.name = 'currentPreviewEntity';
+    constructor(public readonly scene: EditorScene) {
+        this.copiedObjects = EditorControlsHandler.clipboard;
+        this.currentPreviewEntity = new ArcadeObject(scene, '', -100, -100);
         this.currentPreviewEntity.name = 'ignoreInPlugin';
-        this.SetCurrentPreviewActive(false);//
+        this.SetCurrentPreviewActive(false);
 
-        this.init();
-
-        window.addEventListener('wheel', this.OnScroll.bind(this), { passive: false });  // THIS DOESN'T REMOVE LISTENER, JUST CHECKS FOR editorController.active
-    }
-
-    init()
-    {
         bare.events.on(BareEvent.pointer_down_any, this.AnyPointerDown.bind(this));
         bare.events.on(BareEvent.pointer_down, this.PointerDown.bind(this));
         bare.events.on(BareEvent.pointer_move, this.PointerMove.bind(this));
         bare.events.on(BareEvent.pointer_up_any, this.AnyPointerUp.bind(this));
         bare.events.on(BareEvent.pointer_up, this.PointerUp.bind(this));
         bare.events.on(BareEvent.pointer_doubleClick, this.DoubleClick.bind(this));
-        //bare.events.on(BareEvent.game_postRender, this.PostRender.bind(this));
         bare.events.on(BareEvent.key_pressed, this.KeyPressed.bind(this));
         bare.events.on(BareEvent.key_released, this.KeyReleased.bind(this));
         bare.events.on(BareEvent.editor_layerSelected, this.LayerSelected.bind(this));
@@ -72,183 +49,123 @@ export class EditorControlsHandler {
     {
         this.active = active;
 
-        if (this.currentPreviewEntity.visible) // WORKS BUT WEIRD... TODO
-            this.currentPreviewEntity.visibleInEditor = active;
+        this.UpdatePreviewVisibility();
     }
 
-    KeyPressed({ key, allKeys }: BareEventPayload['key_pressed'])
+    private KeyPressed({ key, allKeys }: BareEventPayload['key_pressed']): void
     {
         if (!this.scene.opened)
             return;
-        
-        if (allKeys[0] == 'control')
-        {
+
+        if (key === 'control')
             bare.hitbox.ClearExclusiveLayers();
-        }
-        // SELECT ALL
-        if (allKeys[0] == 'control' && allKeys[1] == 'a')
+
+        if (allKeys.includes('control'))
         {
-            this.SelectGameObjects(bare.object.GetAll());
+            switch (key)
+            {
+                case 'a': this.SelectGameObjects(bare.object.GetAll()); break;
+                case 'x':
+                    this.CopySelectedObjects();
+                    this.RemoveSelectedObjects();
+                    this.scene.saveLevelCallback();
+                    break;
+                case 'c': this.CopySelectedObjects(); break;
+                case 'v': this.PasteCopiedObjects(); break;
+            }
+            return;
         }
-        // CUT
-        if (allKeys[0] == 'control' && allKeys[1] == 'x')
+
+        if (key === 'delete')
         {
-            this.CopySelectedObjects();
             this.RemoveSelectedObjects();
             this.scene.saveLevelCallback();
         }
-        // COPY
-        if (allKeys[0] == 'control' && allKeys[1] == 'c')
-        {
-            this.CopySelectedObjects();
-        }
-        // PASTE
-        if (allKeys[0] == 'control' && allKeys[1] == 'v')
-        {
-            if (this.copiedObjects.length == 0)
-                return;
-
-            var topLeftCopiedObjects = new Vec2(Number.MAX_VALUE, Number.MAX_VALUE);
-            this.copiedObjects.forEach(entity => {
-                if (!entity.position)
-                    entity.position = { x: 0, y: 0 };
-                
-                if (entity.position.x < topLeftCopiedObjects.x)
-                    topLeftCopiedObjects.x = entity.position.x;
-                if (entity.position.y < topLeftCopiedObjects.y)
-                    topLeftCopiedObjects.y = entity.position.y;
-            });
-
-            var offset = bare.mouse.world.position.subtract(topLeftCopiedObjects);
-            //offset = new Vec2(0,0);
-            
-            var objsCreated: GameObject[] = [];
-            const parent = this.GetPasteParent();
-            this.copiedObjects.forEach(entity => {
-                var objCreated = this.scene.AddGameObjectAtPosition(entity.position.x + offset.x, entity.position.y + offset.y, entity, parent);
-                objCreated.entity.id = entity.id;
-                objsCreated.push(objCreated);
-            });
-            this.SnapPastedObjectsToGrid(objsCreated);
-
-            this.SelectGameObjects(objsCreated);
-
-            this.scene.saveLevelCallback();
-        }
-        if (allKeys[0] == 'delete')
-        {
-            this.RemoveSelectedObjects();
-        }
-        if (key == 's' && allKeys.length == 1)
-        {
+        else if (key === 's' && allKeys.length === 1)
             this.ActivateStampFromSelection();
-        }
     }
 
-    KeyReleased({ key, allKeys }: BareEventPayload['key_released'])
+    private KeyReleased({ key }: BareEventPayload['key_released']): void
     {
-        if (!this.scene.opened)
+        if (!this.scene.opened || key !== 'control')
             return;
-        
-        if (key == 'control')
-        {
-            const layer = this.GetSelectedLayer();
-            bare.hitbox.SetExclusiveLayer(layer);
-            bare.hitbox.ResetCurrentHover(); // DON'T WANT TO STILL HAVE HITBOX HOVERED FROM POTENTIALLY DIFFERENT LAYER 
-        }
+
+        bare.hitbox.SetExclusiveLayer(this.GetSelectedLayer());
+        bare.hitbox.ResetCurrentHover();
     }
 
-    private AnyPointerDown({ mouseX, mouseY, event, isLeftButton }: BareEventPayload['pointer_down_any']): void {
-        if (isLeftButton)
+    private AnyPointerDown({ mouseX, mouseY, event }: BareEventPayload['pointer_down_any']): void
+    {
+        if (event.button !== 2 || !this.scene.opened || this.draggingObject || bare.MouseIsOnEditor(event))
             return;
 
-        if (this.MouseIsOnEditor(event))
-            return;
-
-        if (!this.scene.opened)
-            return;
-
-        // TransformTool suppresses editor controls while its frame/body is hovered. Keep right-click
-        // removal available in that state; otherwise a selected object's disabled hitbox and the
-        // inactive controls gate make it impossible to remove by right-clicking.
-        if (!this.active && event.button != 2)
-            return;
-
-        if (this.draggingObject)
-        {
-            return;
-        }
-
-        var isRightButton = (event.button == 2);
-        if (isRightButton)
-        {
-            if (!this.RemoveObjectAtPointer(mouseX, mouseY) && this.currentPreviewEntity)
-                this.SetCurrentPreviewActive(false);
-        }
+        // Right-click must still remove transform targets while their handles suppress controls.
+        if (!this.RemoveObjectAtPointer(mouseX, mouseY))
+            this.SetCurrentPreviewEntity(null);
     }
 
-    private PointerDown({ mouseX, mouseY, event }: BareEventPayload['pointer_down']): void {
-        if (this.MouseIsOnEditor(event))
+    private PointerDown({ event }: BareEventPayload['pointer_down']): void
+    {
+        if (!this.scene.opened || !this.active || this.draggingObject || bare.MouseIsOnEditor(event))
             return;
-
-        if (!this.scene.opened)
-            return;
-
-        if (!this.active)
-            return;
-
-        if (this.draggingObject)
-        {
-            return;
-        }
-
-        const layer = this.GetSelectedLayer();
 
         if (this.CanPlaceCurrentPreviewObject())
         {
-            const altDown = keyboardController.IsKeyDown("alt");
-            this.SetEditorPosition(this.currentPreviewEntity, bare.mouse.world.position.x, bare.mouse.world.position.y, altDown);
-            this.PlaceCurrentPreviewObject(layer);
-            this.lastMultiPlaceGridKey = this.GetCurrentPreviewPlacementKey(layer);
+            const { x, y } = bare.mouse.world.position;
+            this.SetEditorPosition(this.currentPreviewEntity, x, y, keyboardController.IsKeyDown("alt"));
+            this.PlaceCurrentPreviewObject(this.GetSelectedLayer());
+            return;
         }
-        
-        if (this.actionThisFrame == '' && this.scene.AllowsRectSelection())
+
+        if (this.gesture === 'idle' && this.scene.AllowsRectSelection())
         {
-            var w = bare.mouse.world.position.x - bare.mouse.world.positionOnDown.x;
-            var h = bare.mouse.world.position.y - bare.mouse.world.positionOnDown.y;
-            var x = bare.mouse.world.positionOnDown.x;
-            var y = bare.mouse.world.positionOnDown.y;
-
-            // MAKE SURE RECT X/Y IS ALWAYS AT TOP LEFT
-            if (w < 0)
-                x += w;
-            if (h < 0)
-                y += h;
-
-            this.selectionRect.x = x;
-            this.selectionRect.y = y;
-            this.selectionRect.width = 0;
-            this.selectionRect.height = 0;
-
-            this.actionThisFrame = 'selectionRect';
+            const { x, y } = bare.mouse.world.positionOnDown;
+            this.selectionRect = { x, y, width: 0, height: 0 };
+            this.gesture = 'select';
         }
     }
 
-    CopySelectedObjects()
+    CopySelectedObjects(): void
     {
         this.copiedObjects = this.selectedObjects.map(obj => this.scene.GetEnitityFromObject(obj));
     }
 
-    RemoveSelectedObjects()
+    private PasteCopiedObjects(): void
     {
-        const objsToRemove = this.selectedObjects.slice();
-        this.ClearSelection();
+        if (this.copiedObjects.length === 0)
+            return;
 
-        for (var i = 0; i < objsToRemove.length; i++)
-        {
-            const obj = objsToRemove[i];
+        const originX = Math.min(...this.copiedObjects.map(entity => entity.position?.x ?? 0));
+        const originY = Math.min(...this.copiedObjects.map(entity => entity.position?.y ?? 0));
+        const { x, y } = bare.mouse.world.position;
+        const parent = this.GetPasteParent();
+        const objects = this.copiedObjects.map(source => {
+            const entity = this.CopyEntityForPlacement(source);
+            return this.scene.AddGameObjectAtPosition(
+                (entity.position?.x ?? 0) + x - originX,
+                (entity.position?.y ?? 0) + y - originY,
+                entity,
+                parent
+            );
+        });
+        this.SnapPastedObjectsToGrid(objects);
+        this.SelectGameObjects(objects);
+        this.scene.saveLevelCallback();
+    }
+
+    private CopyEntityForPlacement(source: Entity): Entity
+    {
+        const entity = Helper.DeepCopy(source);
+        delete entity.entityUID;
+        return entity;
+    }
+
+    RemoveSelectedObjects(): void
+    {
+        const objects = [...this.selectedObjects];
+        this.ClearSelection();
+        for (const obj of objects)
             this.scene.RemoveGameObject(obj);
-        }
     }
 
     private SnapPastedObjectsToGrid(objs: GameObject[])
@@ -256,8 +173,8 @@ export class EditorControlsHandler {
         if (objs.length == 0)
             return;
 
-        var anchorObj = objs[0];
-        for (var i = 1; i < objs.length; i++)
+        let anchorObj = objs[0];
+        for (let i = 1; i < objs.length; i++)
         {
             const obj = objs[i];
             if (obj.x < anchorObj.x || (obj.x == anchorObj.x && obj.y < anchorObj.y))
@@ -282,51 +199,39 @@ export class EditorControlsHandler {
         for (const obj of objs)
             obj.SetPosition(obj.x + movedX, obj.y + movedY);
     }
-    
-    private PointerMove({ mouseX, mouseY, event }: BareEventPayload['pointer_move']): void {
-        if (!this.scene.opened)
-            return;
 
-        if (!this.active)
-            return;
-
-        if (bare.mouse.IsMiddleDown()) {
-            var deltaMovedMiddleMouse = bare.mouse.screen.position.subtract(bare.mouse.screen.positionPrev);
-            var zoom = bare.camera.GetZoom();
-            bare.camera.AddPosition(-deltaMovedMiddleMouse.x /zoom, -deltaMovedMiddleMouse.y / zoom);
-        }
-
-        var w = bare.mouse.world.position.x - bare.mouse.world.positionOnDown.x;
-        var h = bare.mouse.world.position.y - bare.mouse.world.positionOnDown.y;
-        var x = bare.mouse.world.positionOnDown.x;
-        var y = bare.mouse.world.positionOnDown.y;
-
-        // MAKE SURE RECT X/Y IS ALWAYS AT TOP LEFT
-        if (w < 0)
-            x += w;
-        if (h < 0)
-            y += h;
-        w = Math.abs(w);
-        h = Math.abs(h);
-
-        if (this.actionThisFrame == 'selectionRect')
-        {
-            this.selectionRect.x = x;
-            this.selectionRect.y = y;
-            this.selectionRect.width = w;
-            this.selectionRect.height = h;
-        }
-    }
-
-    private AnyPointerUp({ mouseX, mouseY, event, isLeftButton }: BareEventPayload['pointer_up_any']): void
+    private PointerMove(): void
     {
-        if (isLeftButton || event.button != 2)
+        if (!this.scene.opened || !this.active)
             return;
 
-        this.HandlePointerUp(event);
+        if (bare.mouse.IsMiddleDown())
+        {
+            const delta = bare.mouse.screen.position.subtract(bare.mouse.screen.positionPrev);
+            const zoom = bare.camera.GetZoom();
+            bare.camera.AddPosition(-delta.x / zoom, -delta.y / zoom);
+        }
+
+        if (this.gesture !== 'select')
+            return;
+
+        const start = bare.mouse.world.positionOnDown;
+        const end = bare.mouse.world.position;
+        this.selectionRect = {
+            x: Math.min(start.x, end.x),
+            y: Math.min(start.y, end.y),
+            width: Math.abs(end.x - start.x),
+            height: Math.abs(end.y - start.y)
+        };
     }
 
-    private PointerUp({ mouseX, mouseY, event }: BareEventPayload['pointer_up']): void
+    private AnyPointerUp({ event }: BareEventPayload['pointer_up_any']): void
+    {
+        if (event.button === 2)
+            this.HandlePointerUp(event);
+    }
+
+    private PointerUp({ event }: BareEventPayload['pointer_up']): void
     {
         this.HandlePointerUp(event);
     }
@@ -336,53 +241,51 @@ export class EditorControlsHandler {
         if (!this.scene.opened)
             return;
 
-        if (!this.active)
-            return;
-
-        if (this.actionThisFrame == 'selectionRect')
+        const shouldSave = this.active || this.gesture === 'remove';
+        if (this.active && this.gesture == 'select')
         {
             this.SelectGameObjectsInRect(this.selectionRect);
         }
 
         this.selectionRect.width = 0;
         this.selectionRect.height = 0;
-            
-        this.actionThisFrame = '';
+
+        this.gesture = 'idle';
         this.lastMultiPlaceGridKey = null;
 
-        if (!this.scene.opened)
+        if (!shouldSave || !(event.button == 0 || event.button == 2))
             return;
 
-        if (!(event.button == 0 || event.button == 2))
-            return;
-        
         // TransformTool owns persistence for move/resize/rotate. Its global pointer-up runs
         // before this scene-local handler, so avoid saving the same gesture a second time.
         if (!TransformToolHandler.Get().HandledPointerUp(event))
             this.scene.saveLevelCallback();
     }
-    
-    private DoubleClick({ mouseX, mouseY, event }: BareEventPayload['pointer_doubleClick']): void
+
+    private DoubleClick(): void
     {
         if (!this.scene.opened)
             return;
-        
-        var multiSelect = keyboardController.IsKeyDown("shift");
+
+        const multiSelect = keyboardController.IsKeyDown("shift");
         if (multiSelect)
             return;
 
         // hover is cleared by the time dblclick fires, so re-run the hit test like PointerDown does
         bare.hitbox.Update();
 
-        var obj = bare.hitbox.GetCurrentHover()?.parent;
+        const obj = bare.hitbox.GetCurrentHover()?.parent;
         if (!obj?.entity)
             return;
 
-        // currentPreviewEntity.name is always 'ignoreInPlugin', so compare against what the stamp places
-        if (!this.currentPreviewActive || obj.name != this.currentPreviewEntityName) // DOUBLE CLICK FIRST TIME OR DIFFERENT OBJECT
-            this.SetCurrentPreviewEntity(this.scene.settingsHandler.rawEntitiesMappedByUID[obj.entity.entityUID]);
-        else
-            this.SetCurrentPreviewEntity(null);
+        const entity = this.GetRawEntityForStamp(obj);
+        const preview = this.previewEntityData;
+        const sameEntity = preview && (
+            entity.entityUID ? entity.entityUID === preview.entityUID :
+            entity.entity ? entity.entity === preview.entity :
+            entity.texture === preview.texture
+        );
+        this.SetCurrentPreviewEntity(this.currentPreviewActive && sameEntity ? null : entity);
     }
 
     private ActivateStampFromSelection(): void
@@ -394,21 +297,19 @@ export class EditorControlsHandler {
         }
 
         const selectedObj = this.selectedObjects[this.selectedObjects.length - 1];
-        if (!selectedObj)
-            return;
-
-        this.SetCurrentPreviewEntity(selectedObj.entity);
+        if (selectedObj)
+            this.SetCurrentPreviewEntity(this.GetRawEntityForStamp(selectedObj));
     }
-    
+
+    private GetRawEntityForStamp(obj: GameObject): Entity
+    {
+        return this.scene.settingsHandler.GetUnconstructedEntity(obj.entity)
+            ?? this.scene.GetEnitityFromObject(obj);
+    }
+
     private GetPasteParent(): int | GameObject
     {
-        const selectedObject =
-            this.selectedObjects[this.selectedObjects.length - 1];
-
-        if (selectedObject?.parent)
-            return selectedObject.parent;
-
-        return this.GetSelectedLayer();
+        return this.selectedObjects[this.selectedObjects.length - 1]?.parent ?? this.GetSelectedLayer();
     }
 
     GetSelectedLayer(): int
@@ -420,9 +321,9 @@ export class EditorControlsHandler {
         return layerInfo?.layerI;
     }
 
-    SelectGameObjectsInRect(rect: Rectangle = {x: 0, y: 0, width: 0, height: 0})
+    private SelectGameObjectsInRect(rect: Rectangle): void
     {
-        var objsToSelect: GameObject[] = [];
+        const objsToSelect: GameObject[] = [];
 
         if (rect.width != 0 && rect.height != 0)
         {
@@ -436,10 +337,8 @@ export class EditorControlsHandler {
             }
         }
 
-        var multiSelect = keyboardController.IsKeyDown("shift");
-        // FORCE SELECT: EntityScene DISABLES ORDINARY selectionEnabled-GATED SELECTION (SEE
-        // SelectGameObjects), BUT A MARQUEE RESULT SHOULD STILL APPLY THERE.
-        this.SelectGameObjects(objsToSelect, !multiSelect, true);
+        const multiSelect = keyboardController.IsKeyDown("shift");
+        this.SelectGameObjects(objsToSelect, !multiSelect);
     }
 
     private RectContains(container: Rectangle, target: Rectangle): boolean
@@ -450,48 +349,32 @@ export class EditorControlsHandler {
             target.y + target.height <= container.y + container.height;
     }
 
-    ClearSelection()
+    ClearSelection(): void
     {
-        for (var i = this.selectedObjects.length - 1; i >= 0; i--)
-        {
-            var obj = this.selectedObjects[i];
-
-            obj.RemoveShader(OutlineShader);
-        }
-
         this.selectedObjects.length = 0;
-
         TransformToolHandler.Get().Clear();
     }
 
     SelectGameObjects(
         objs: GameObject[],
         clearPrevious: boolean = true,
-        forceSelection: boolean = false,
         notifyPlugin: boolean = true
     )
     {
-        //if (this.scene.settingsData.selectionEnabled === false && !forceSelection)
-        //    return;
-
-        // CLEAR PREVIOUS
         if (clearPrevious)
             this.ClearSelection();
 
-        // SELECT NEW
-        for (var i = objs.length - 1; i >= 0; i--)
+        for (let i = objs.length - 1; i >= 0; i--)
         {
-            var obj = objs[i];
+            const obj = objs[i];
 
             // Already selected objects stay selected during additive selection.
             if (this.selectedObjects.includes(obj))
                 continue;
 
-            //obj.color = Color.fromHex('#707070ff');
             this.selectedObjects.push(obj);
         }
 
-        // transform gizmo replaces the outline - draw it around the current selection
         TransformToolHandler.Get().SetTargets(this.selectedObjects);
 
         // notify the plugin of the full current selection. single selection shows that object;
@@ -502,18 +385,15 @@ export class EditorControlsHandler {
         }
     }
 
-    // adds obj to the current selection, or removes it if already selected - for shift+click
-    // toggle selection (mirrors selectgameobjects' force-select behavior for scenes like
-    // entityscene that disable ordinary selectionenabled-gated selection).
+    // Shift-click toggles membership without changing the other selected objects.
     ToggleGameObjectSelection(obj: GameObject, notifyPlugin: boolean = true)
     {
         if (!this.selectedObjects.includes(obj))
         {
-            this.SelectGameObjects([obj], false, true, notifyPlugin);
+            this.SelectGameObjects([obj], false, notifyPlugin);
             return;
         }
 
-        obj.RemoveShader(OutlineShader);
         this.selectedObjects = this.selectedObjects.filter(o => o !== obj);
 
         TransformToolHandler.Get().SetTargets(this.selectedObjects);
@@ -527,7 +407,7 @@ export class EditorControlsHandler {
         if (!this.scene.opened)
             return;
 
-        if (this.MouseIsOnEditor(ev))
+        if (bare.MouseIsOnEditor(ev))
             return;
 
         const screen = bare.GetCanvasScreenPosition(ev.clientX, ev.clientY);
@@ -542,7 +422,7 @@ export class EditorControlsHandler {
         const after = bare.camera.ScreenToWorld(screen.x, screen.y);
         // Keep the mouse anchored to the same world position, similar to the zoom behavior in design software and map applications.
         bare.camera.AddPosition(before.x - after.x, before.y - after.y);
-        
+
         ev.preventDefault();
     }
 
@@ -551,13 +431,13 @@ export class EditorControlsHandler {
         // PREVENT SELETING THE OBJECT WHEN HAVING STAMP (CURRENTPREVIEW) AND CONTROL KEY DOWN, SO IT'S EASIER TO PLACE
         if (keyboardController.IsKeyDown("control") && this.currentPreviewActive)
             return;
-        
+
         const transformTool = TransformToolHandler.Get();
         if (transformTool.IsTransforming())
             return;
 
         // this same press just stamped the object, so keep placing while held instead of moving it
-        if (this.actionThisFrame == 'objCreation')
+        if (this.gesture == 'place')
             return;
 
         if (!this.selectedObjects.includes(obj))
@@ -569,39 +449,27 @@ export class EditorControlsHandler {
         if (transformTool.StartMoveFromPointer(this.scene, this.scene.mouse.world.position, obj))
         {
             this.draggingObject = obj;
-            this.actionThisFrame = 'objDrag';
+            this.gesture = 'drag';
         }
     }
 
-    public EndDrag(obj: GameObject)
+    public EndDrag(obj: GameObject): void
     {
-        if (keyboardController.IsKeyDown("control") && this.currentPreviewActive)
-        {
-            this.draggingObject = null;
-            return;
-        }
-
-        var distMouseMoved = Helper.Distance(bare.mouse.world.position, bare.mouse.world.positionOnDown);
-        if (distMouseMoved == 0)
-        {
-            if (keyboardController.IsKeyDown("control") && !this.currentPreviewActive)
-            {
-                const layerOfObj = bare.object.GetLayerOf(obj);
-                this.scene.editorUIHandler.SelectLayerItemByInt(layerOfObj);
-
-                // Ctrl remains an all-layer picking modifier until it is released.
-                bare.hitbox.ClearExclusiveLayers();
-            }
-
-            if (this.scene.settingsData.showUI !== false)
-            {
-                const entity = this.scene.ConstructEntity(obj.name);
-                this.scene.SelectEntity(entity);
-            }
-
-        }
-
         this.draggingObject = null;
+        const controlDown = keyboardController.IsKeyDown("control");
+        if ((controlDown && this.currentPreviewActive) ||
+            Helper.Distance(bare.mouse.world.position, bare.mouse.world.positionOnDown) !== 0)
+            return;
+
+        if (controlDown)
+        {
+            this.scene.editorUIHandler.SelectLayerItemByInt(bare.object.GetLayerOf(obj));
+            // Keep all-layer picking enabled until Ctrl is released.
+            bare.hitbox.ClearExclusiveLayers();
+        }
+
+        if (this.scene.settingsData.showUI !== false)
+            this.scene.SelectEntity(this.scene.ConstructEntity(this.GetRawEntityForStamp(obj)));
     }
 
     private LayerSelected({ layerName }: BareEventPayload['editor_layerSelected']): void
@@ -609,154 +477,100 @@ export class EditorControlsHandler {
         if (!keyboardController.IsKeyDown("control"))
             this.ClearSelection();
 
-        const layerInfo = this.scene.settingsData.layersInfo[layerName];
-        const selectedLayerI = layerInfo.layerI;
-
-        bare.hitbox.SetExclusiveLayer(selectedLayerI);
-        
-        // FADE OUT ALL OTHER LAYERS - PROBLEMS WITH ALPHA BEING ADJUSTED AND SAVED, NEED SEPARATION
-        /*var allLayers = bare.object.GetLayers();
-        for (var i = allLayers.length - 1; i >= 0; i--)
-        {
-            var objs = allLayers[i];
-            for (var j = objs.length - 1; j >= 0; j--)
-            {
-                var obj = objs[j];
-                if (obj == this.currentPreviewEntity)
-                    continue;
-                
-                obj.alpha = (i == selectedLayerI ? 1 : .5);
-            }
-        }*/
+        bare.hitbox.SetExclusiveLayer(this.scene.settingsData.layersInfo[layerName].layerI);
     }
 
     SetCurrentPreviewActive(active: boolean)
     {
+        active = active && this.previewEntityData !== null;
         this.currentPreviewActive = active;
-        this.currentPreviewEntity.visible = active;
-        this.currentPreviewEntity.visibleInEditor = active;
+        if (!active)
+            this.lastMultiPlaceGridKey = null;
+        this.UpdatePreviewVisibility();
 
         // stamp mode while a preview entity is selected, edit mode otherwise
         // optional chaining since this also runs in our constructor, before editoruihandler exists
         this.scene.editorUIHandler?.editorUIHintHandler?.SetMode(active ? 'stamp' : 'edit');
     }
 
-    SetCurrentPreviewEntity(entity: Entity | null)
+    // Accept raw entity data; construction is only needed for rendering the preview.
+    SetCurrentPreviewEntity(entity: Entity | null): void
     {
-        if (!entity)
-        {
-            this.SetCurrentPreviewActive(false);
+        const revision = ++this.previewRevision;
+        this.previewEntityData = entity ? Helper.DeepCopy(entity) : null;
+        this.lastMultiPlaceGridKey = null;
+        this.SetCurrentPreviewActive(false);
+        if (!this.previewEntityData)
             return;
-        }
 
-        this.currentPreviewEntityRawEntity = entity;
-        this.currentPreviewEntityName = entity.name ?? entity.entity ?? entity.texture;
-
-        // construct from the entity itself, not from its name: an entity coming from a level object carries
-        // its base entity (possibly a UID reference), which a name lookup in settingsData cannot resolve
-        var constructedEntity = this.scene.ConstructEntity(entity);
-
-        this.currentPreviewEntity.ResetValues();
-        this.currentPreviewEntity.InitTexture(MakePathForEntity(constructedEntity));
-        this.currentPreviewEntity.alpha = 0.5;
-        this.currentPreviewEntity.name = 'ignoreInPlugin';
-
+        const constructedEntity = this.scene.ConstructEntity(Helper.DeepCopy(this.previewEntityData));
+        const preview = this.currentPreviewEntity;
+        preview.ResetValues();
+        preview.alpha = 0.5;
+        preview.name = 'ignoreInPlugin';
         this.SetCurrentPreviewActive(true);
 
-        var ready = () => {
-            // WILL END UP SETTING THE PIVOT CORRECTLY
-            this.scene.ApplyEntityToGameObject(constructedEntity, this.currentPreviewEntity, false);
-            this.SetCurrentPreviewActive(true); // COULD HAVE BEEN SET TO VISIBLE FALSE ABOVE
-            this.currentPreviewEntity.alpha = 0.5;
-            this.currentPreviewEntity.name = 'ignoreInPlugin';
-        }
+        const applyPreview = (texture?: GameObject['texture']) => {
+            if (revision !== this.previewRevision)
+                return;
 
-        this.currentPreviewEntity.WhenTextureLoaded(() => {
-            ready();
-        });
+            if (texture)
+                preview.SetTexture(texture);
+            this.scene.ApplyEntityToGameObject(constructedEntity, preview, false);
+            preview.alpha = 0.5;
+            preview.name = 'ignoreInPlugin';
+            this.UpdatePreviewVisibility();
+        };
 
-        if (constructedEntity.texture == "NONE")
+        const texturePath = MakePathForEntity(constructedEntity);
+        if (!texturePath || texturePath.endsWith("NONE") || texturePath.endsWith("NAME"))
+            applyPreview();
+        else
         {
-            ready();
+            const cached = assetsHandler.GetTexture(texturePath);
+            if (cached)
+                applyPreview(cached);
+            else
+                // Load separately so an old request cannot overwrite the new preview's texture.
+                assetsHandler.LoadTexture(texturePath).then(applyPreview);
         }
     }
 
-    MouseIsOnEditor(event: PointerEvent | WheelEvent): boolean {
-        return bare.MouseIsOnEditor(event);
-    }
-
-    // SNAPS EDITOR PLACEMENT TO THE GRID.
-    // BY DEFAULT, THE OBJECT PIVOT CONTROLS WHICH GRID EDGE/INTERSECTION THE
-    // MOUSE POSITION RESOLVES TO. WHEN editorObjectSnapToPivot IS FALSE, THE
-    // OBJECT'S LOCAL 0,0 POINT RESOLVES TO THE UPPER/LEFT GRID EDGE.
-    private GetGridAlignedPosition(obj: GameObject, x: number, y: number, ignoreGrid: boolean = false, guideX: number = x, guideY: number = y): Vec2
+    private UpdatePreviewVisibility(): void
     {
-        function GetPivotReferenceRect(obj: GameObject): Rectangle
-        {
-            if (obj.texture && obj.texture.width > 0 && obj.texture.height > 0)
-                return { x: 0, y: 0, width: obj.texture.width, height: obj.texture.height };
+        this.currentPreviewEntity.visible = this.currentPreviewActive;
+        this.currentPreviewEntity.visibleInEditor = this.currentPreviewActive && this.active &&
+            (!bare.hitbox.GetCurrentHover() || keyboardController.IsKeyDown("control"));
+    }
 
-            const hitboxRect = (obj as ArcadeObject).physicsHitbox?.rectangle;
-            if (hitboxRect && hitboxRect.width > 0 && hitboxRect.height > 0)
-                return hitboxRect;
-
-            return { x: 0, y: 0, width: 0, height: 0 };
-        }
-
-        function SnapCoordinateToGrid(value: number, gridSize: number, pivotPercent: number): number
-        {
-            return Math.floor(value / gridSize + pivotPercent) * gridSize;
-        }
-
-        function SnapCoordinateToGridCell(value: number, gridSize: number): number
-        {
-            return Math.floor((value + gridSize * 0.000001) / gridSize) * gridSize;
-        }
-
-        function GetLocalPointOffset(obj: GameObject, localPoint: Vec2): Vec2
-        {
-            return new Vec2(
-                (localPoint.x - obj.pivot.x) * obj.totalScaleX,
-                (localPoint.y - obj.pivot.y) * obj.totalScaleY
-            );
-        }
-        
-        function GetSnapPivotPercent(obj: GameObject): Vec2
-        {
-            const rect = GetPivotReferenceRect(obj);
-            if (rect.width <= 0 || rect.height <= 0)
-                return new Vec2(.5, .5);
-
-            return new Vec2(
-                Helper.Clamp((obj.pivot.x - rect.x) / rect.width, 0, 1),
-                Helper.Clamp((obj.pivot.y - rect.y) / rect.height, 0, 1)
-            );
-        }
-
+    // Snap either the pivot or local origin to the grid, using the pointer as a guide.
+    private GetGridAlignedPosition(obj: GameObject, x: number, y: number, ignoreGrid = false, guideX = x, guideY = y): Vec2
+    {
         const settings = this.scene.settingsData.settings;
         const gridSize = settings?.gridSize;
+        if (ignoreGrid || !settings?.gridEnabled || !(gridSize > 0))
+            return new Vec2(x, y);
 
-        if (!ignoreGrid && settings?.gridEnabled && gridSize && gridSize > 0)
+        if (this.scene.settingsData.editorObjectSnapToPivot === false)
         {
-            const pivotPercent = GetSnapPivotPercent(obj);
-
-            if (this.scene.settingsData.editorObjectSnapToPivot === false)
-            {
-                const localZeroOffset = GetLocalPointOffset(obj, new Vec2(0, 0));
-
-                return new Vec2(
-                    SnapCoordinateToGridCell(guideX, gridSize) - localZeroOffset.x,
-                    SnapCoordinateToGridCell(guideY, gridSize) - localZeroOffset.y
-                );
-            }
-
+            const snapCell = (value: number) => Math.floor(value / gridSize + 0.000001) * gridSize;
             return new Vec2(
-                SnapCoordinateToGrid(guideX, gridSize, pivotPercent.x),
-                SnapCoordinateToGrid(guideY, gridSize, pivotPercent.y)
+                snapCell(guideX) + obj.pivot.x * obj.totalScaleX,
+                snapCell(guideY) + obj.pivot.y * obj.totalScaleY
             );
         }
 
-        return new Vec2(x, y);
+        const texture = obj.texture;
+        const rect = texture && texture.width > 0 && texture.height > 0
+            ? { x: 0, y: 0, width: texture.width, height: texture.height }
+            : (obj as ArcadeObject).physicsHitbox?.rectangle;
+        const validRect = rect && rect.width > 0 && rect.height > 0;
+        const pivotX = validRect ? Helper.Clamp((obj.pivot.x - rect.x) / rect.width, 0, 1) : 0.5;
+        const pivotY = validRect ? Helper.Clamp((obj.pivot.y - rect.y) / rect.height, 0, 1) : 0.5;
+        return new Vec2(
+            Math.floor(guideX / gridSize + pivotX) * gridSize,
+            Math.floor(guideY / gridSize + pivotY) * gridSize
+        );
     }
 
     private SetEditorPosition(obj: GameObject, x: number, y: number, ignoreGrid: boolean = false): void
@@ -765,9 +579,7 @@ export class EditorControlsHandler {
         obj.SetPosition(position.x, position.y);
     }
 
-    // PUBLIC ENTRY POINT FOR TransformToolHandler'S BODY-MOVE GESTURE: IT LIVES OUTSIDE THIS
-    // HANDLER AND HAS NO ACCESS TO THE GRID/PIVOT SNAP SETTINGS OTHERWISE. MIRRORS THE GUIDE-POINT
-    // LOGIC THAT USED TO RUN INLINE IN THE OLD PER-FRAME DRAG UPDATE.
+    // Keep transform-tool dragging consistent with stamp and paste snapping.
     GetGridAlignedDragPosition(obj: GameObject, desiredX: number, desiredY: number, mouseX: number, mouseY: number, ignoreGrid: boolean): Vec2
     {
         const guideX = this.scene.settingsData.editorObjectSnapToPivot === false ? mouseX : desiredX;
@@ -778,14 +590,14 @@ export class EditorControlsHandler {
 
     private PlaceCurrentPreviewObject(layer: int): GameObject
     {
-        var entityCopy = Helper.DeepCopy(this.currentPreviewEntityRawEntity);
-        delete entityCopy.entityUID;
+        const entityCopy = this.CopyEntityForPlacement(this.previewEntityData);
         const obj = this.scene.AddGameObjectAtPosition(this.currentPreviewEntity.x, this.currentPreviewEntity.y, entityCopy, layer);
 
         // placing replaces the selection: while stamping, shift multi-places, it doesn't multi-select
         this.SelectGameObjects([obj], true);
 
-        this.actionThisFrame = 'objCreation';
+        this.gesture = 'place';
+        this.lastMultiPlaceGridKey = this.GetCurrentPreviewPlacementKey(layer);
         return obj;
     }
 
@@ -806,7 +618,6 @@ export class EditorControlsHandler {
             keyboardController.IsKeyDown("shift") &&
             !ignoreGrid &&
             settings?.gridEnabled &&
-            settings.gridSize &&
             settings.gridSize > 0
         );
     }
@@ -815,7 +626,7 @@ export class EditorControlsHandler {
     {
         return [
             layer,
-            this.currentPreviewEntity.name,
+            this.previewRevision,
             this.currentPreviewEntity.x.toFixed(4),
             this.currentPreviewEntity.y.toFixed(4)
         ].join(":");
@@ -826,7 +637,7 @@ export class EditorControlsHandler {
         if (!bare.mouse.IsDown())
         {
             this.lastMultiPlaceGridKey = null;
-                    return;
+            return;
         }
 
         if (!this.IsMultiPlaceGridEnabled(ignoreGrid))
@@ -838,7 +649,6 @@ export class EditorControlsHandler {
             return;
 
         this.PlaceCurrentPreviewObject(layer);
-        this.lastMultiPlaceGridKey = placementKey;
     }
 
     // removes what the pointer is on: the transform tool's selection (its targets have their hitboxes
@@ -848,7 +658,7 @@ export class EditorControlsHandler {
         if (!TransformToolHandler.Get().TryRemoveTargetsAtPointer(this.scene, screenX, screenY))
         {
             bare.hitbox.Update(); // hover is stale after a removal, and lags a frame behind the pointer
-            var hover = bare.hitbox.GetCurrentHover();
+            const hover = bare.hitbox.GetCurrentHover();
             if (!hover)
                 return false;
 
@@ -859,7 +669,7 @@ export class EditorControlsHandler {
         }
 
         bare.hitbox.ResetCurrentHover();
-        this.actionThisFrame = 'objRemoval';
+        this.gesture = 'remove';
         return true;
     }
 
@@ -869,7 +679,7 @@ export class EditorControlsHandler {
 
         // before the active check: TransformTool suppresses editor controls while its frame is hovered,
         // which would otherwise make its own selection unremovable by a right drag
-        var rightDragged = bare.mouse.IsRightDown() &&
+        const rightDragged = bare.mouse.IsRightDown() &&
             Helper.Distance(bare.mouse.world.position, bare.mouse.world.positionOnRightDown) > 5;
 
         if (rightDragged && this.RemoveObjectAtPointer(bare.mouse.screen.position.x, bare.mouse.screen.position.y))
@@ -878,81 +688,61 @@ export class EditorControlsHandler {
         if (!this.active)
             return;
 
-        var altDown = keyboardController.IsKeyDown("alt");
-            
-        if (!bare.mouse.IsRightDown())
-            if (this.currentPreviewActive)
-                this.currentPreviewEntity.visibleInEditor = !(bare.hitbox.GetCurrentHover() && !keyboardController.IsKeyDown("control"));
+        this.UpdatePreviewVisibility();
+        if (!this.currentPreviewActive)
+            return;
 
-        // Calculate preview position
-        const previewX = bare.mouse.world.position.x;
-        const previewY = bare.mouse.world.position.y;
-
-        this.SetEditorPosition(this.currentPreviewEntity, previewX, previewY, altDown);
+        const altDown = keyboardController.IsKeyDown("alt");
+        const { x, y } = bare.mouse.world.position;
+        this.SetEditorPosition(this.currentPreviewEntity, x, y, altDown);
         this.PlaceCurrentPreviewObjectOnNewGridSquare(altDown);
-
-        /*bare.object.GetLayer(Layer.worldUI).sort((a, b) => {
-            return a.y - b.y;
-        });*/
-        
-        //trace(this.actionThisFrame);
     }
 
-    PostRender()
+    PostRender(): void
     {
-        if (!this.scene.opened)
+        if (!this.scene.opened || this.gesture !== 'select')
             return;
-        
-        if (this.actionThisFrame == 'selectionRect')
-        {
-            // TRANSPARENT RECT 
-            // rapid.renderRect({
-            //     offset: new Vec2(this.selectionRect.x, this.selectionRect.y),
-            //     width: this.selectionRect.width,
-            //     height: this.selectionRect.height,
-            //     points: [],
-            //     color: new Color(0, 0, 0, 20),
-            // });
-            rapid.drawRect({
-                width: this.selectionRect.width,
-                height: this.selectionRect.height,
-                color: new Color(0, 0, 0, 20),
-                position: new Vec2(this.selectionRect.x, this.selectionRect.y),
-            });
-                
-            const borderColor = Color.fromHex('#dda112');
-            const borderWidth = 2;
 
-            rapid.drawLine({
-                points: [
-                    new Vec2(this.selectionRect.x, this.selectionRect.y),
-                    new Vec2(this.selectionRect.x + this.selectionRect.width, this.selectionRect.y),
-                    new Vec2(this.selectionRect.x + this.selectionRect.width, this.selectionRect.y + this.selectionRect.height),
-                    new Vec2(this.selectionRect.x, this.selectionRect.y + this.selectionRect.height),
-                ],
-                width: borderWidth,
-                roundCap: false,
-                color: borderColor,
-                closed: true
-            });
-        }
+        const { x, y, width, height } = this.selectionRect;
+        rapid.drawRect({
+            width,
+            height,
+            color: new Color(0, 0, 0, 20),
+            position: new Vec2(x, y),
+        });
+        rapid.drawLine({
+            points: [
+                new Vec2(x, y),
+                new Vec2(x + width, y),
+                new Vec2(x + width, y + height),
+                new Vec2(x, y + height),
+            ],
+            width: 2,
+            roundCap: false,
+            color: Color.fromHex('#dda112'),
+            closed: true
+        });
     }
 
     OpenEditor()
     {
+        window.addEventListener('wheel', this.onWheel, { passive: false });
         bare.object.Add(this.currentPreviewEntity);
         this.SetCurrentPreviewActive(false);
         this.currentPreviewEntity.alpha = 0;
     }
-    
+
     Clear()
     {
-        // BIT OF A HACK TO PERSIST COPIED OBJECTS - SINCE WE CREATE A NEW INSTANCE OF THIS OBJECT WHEN EDITOR IS OPENED AGAIN
-        EditorControlsHandler.copiedObjectCached = this.copiedObjects;
+        EditorControlsHandler.clipboard = this.copiedObjects;
+        window.removeEventListener('wheel', this.onWheel);
+        this.draggingObject = null;
+        this.gesture = 'idle';
 
         bare.hitbox.ClearExclusiveLayers();
+        this.SetCurrentPreviewEntity(null);
         bare.object.Remove(this.currentPreviewEntity);
 
-        TransformToolHandler.Get().Clear(); // HIDE THE GIZMO WHEN THE EDITOR CLOSES
+        this.ClearSelection();
     }
 }

@@ -135,9 +135,8 @@ const gameDebugApi = {
       if (!selected)
           return false;
 
-      // EntityScene disables ordinary editor hitbox selection. Panel tree selection is
-      // authoritative here, so force-select the matching live object without echoing it back.
-      entityScene.editorControlsHandler.SelectGameObjects([selected], true, true, false);
+      // Select the matching live object without echoing the panel selection back to the plugin.
+      entityScene.editorControlsHandler.SelectGameObjects([selected], true, false);
       return selected.uniqueID;
   },
 
@@ -1728,7 +1727,7 @@ export class PluginHandler
         {
             // EntityScene deliberately disables canvas-driven selection. A selection coming
             // from the plugin is still authoritative and should drive TransformTool.
-            entityScene.editorControlsHandler.SelectGameObjects([obj], true, true, false);
+            entityScene.editorControlsHandler.SelectGameObjects([obj], true, false);
             return;
         }
 

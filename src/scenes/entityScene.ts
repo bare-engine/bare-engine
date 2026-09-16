@@ -422,7 +422,7 @@ export class EntityScene extends EditorScene
         if (multiSelect)
             this.editorControlsHandler.ToggleGameObjectSelection(selected, false);
         else
-            this.editorControlsHandler.SelectGameObjects([selected], true, true, false);
+            this.editorControlsHandler.SelectGameObjects([selected], true, false);
 
         if (!this.editorControlsHandler.selectedObjects.includes(selected))
         {
