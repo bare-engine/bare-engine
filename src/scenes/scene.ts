@@ -18,7 +18,7 @@ import { Bare } from "../types/bare";
 import { defaultSettingsData } from "../types/bareData";
 import { AwakePayload, BareEvent, CollisionHandlingType, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LayerInfo, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
 import { getInspectorFieldNames, InspectorClass, InspectorField, Label } from "../utils/decorators";
-import { EntitySerializer } from "../utils/entitySerializer";
+import { GameObjectSerializer } from "../utils/entitySerializer";
 import { Helper } from "../utils/helper";
 import { Hitbox } from "../types/hitbox";
 
@@ -499,10 +499,10 @@ export class Scene implements SceneI
         const serializedRootObjectOrig = this.ConstructEntityWithDefaultValues(startingEntity, this.settingsData, options);
         
         // SERIALIZE CURRENT GAMEOBJECT
-        const serializedRootObject = EntitySerializer.SerializeObjectFully(this, rootObject, options.forceAllEntityVars, options.includeSaveFields);
+        const serializedRootObject = GameObjectSerializer.SerializeObjectFully(this, rootObject, options.forceAllEntityVars, options.includeSaveFields);
         
         // STORE THE DIFFERENCES IN AN OBJECT (SHOULD BE EMPTY IF NO CHANGES WERE MADE)
-        const diff = EntitySerializer.GetEntitiesDiff(serializedRootObjectOrig, serializedRootObject) ?? {};
+        const diff = GameObjectSerializer.GetEntitiesDiff(serializedRootObjectOrig, serializedRootObject) ?? {};
 
         // REDO CHILDREN - NEEDED FOR IF A CHILD IS REMOVED THE ABOVE DIFF IS NOT CORRECT, SINCE IT'S COMPARING DIFFERENT CHILDREN THEN
         // THIS DOES MAKE THE ABOVE DIFF FINDING ALL DIFFERENCES IN CHILDREN REDUNDANT - OPTIMIZE
@@ -1025,7 +1025,7 @@ export class Scene implements SceneI
         this.ApplyEntityToGameObject(entityConstructed, gameObject, false);
         bare.sendEvents = true;
 
-        var entity = EntitySerializer.SerializeObjectFully(this, gameObject);
+        var entity = GameObjectSerializer.SerializeObjectFully(this, gameObject);
 
         // ... BUT ADDING IT BACK TO THE ENITY HERE, SO IT'S NOT LOST
         if (entityConstructed.components)

@@ -8,7 +8,7 @@ import { defaultSettingsData } from "../types/bareData";
 import { BareEvent, BareEventPayload, ConstructEntityOptions, Entity, LevelData, SaveData, SettingsData } from '../types/bareTypes';
 import { InspectorField } from "../utils/decorators";
 import { Helper, Size } from "../utils/helper";
-import { EntitySerializer } from "../utils/entitySerializer";
+import { GameObjectSerializer } from "../utils/entitySerializer";
 import { assetsHandler } from "./assetsHandler";
 import { SettingsHandler } from "./settingsHandler";
 
@@ -396,7 +396,7 @@ to package.json to keep the generated assets (can become large for big projects)
                 });
         }
 
-        EntitySerializer.CleanEntities(Object.values(level.entitiesByLayer), this.scene.settingsHandler.rawEntitiesMappedByUID, ["interactableInEditor", "save"]);
+        GameObjectSerializer.CleanEntities(Object.values(level.entitiesByLayer), this.scene.settingsHandler.rawEntitiesMappedByUID, ["interactableInEditor", "save"]);
     }
 
     // SERIALIZE OBJECT DIFF

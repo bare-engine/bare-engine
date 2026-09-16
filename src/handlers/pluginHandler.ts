@@ -10,7 +10,7 @@ import { OutlineShader } from "../shaders/outlineShader";
 import { defaultSettingsData } from "../types/bareData";
 import { BareEvent, Entity, EntityVarsNestedEntry, entityVarsNested, LevelData, Position, SaveData, Scalar, SettingsData } from "../types/bareTypes";
 import { applyInspectorField, getButtons, getInspectorClasses, getInspectorFieldDescriptions, getInspectorFields, resolveInspectorClassName } from "../utils/decorators";
-import { EntitySerializer } from "../utils/entitySerializer";
+import { GameObjectSerializer } from "../utils/entitySerializer";
 import { Helper } from "../utils/helper";
 import { SaveDataHandler } from "./SaveDataHandler";
 import { TransformToolHandler } from "./transformToolHandler";
@@ -499,7 +499,7 @@ const gameDebugApi = {
         }
     }
 
-    var data = EntitySerializer.SerializeObjectFully(scene, o, true, false) as any;
+    var data = GameObjectSerializer.SerializeObjectFully(scene, o, true, false) as any;
     AddExtraPropsToData(data, o);
     
     // ROUND NUMBERS
@@ -562,13 +562,13 @@ const gameDebugApi = {
                         gameObjectClass = parentClass;
                     }
                 }
-                origEntity = EntitySerializer.SerializeObjectFully(o.scene, gameObject, true, true);
+                origEntity = GameObjectSerializer.SerializeObjectFully(o.scene, gameObject, true, true);
                 bare.gameObjectDefaultValues[className] = origEntity;
             }
         }
         
-        var curEntity = EntitySerializer.SerializeObjectFully(o.scene, o, true, true);
-        var diffEntity = EntitySerializer.GetEntitiesDiff(origEntity, curEntity) || {};
+        var curEntity = GameObjectSerializer.SerializeObjectFully(o.scene, o, true, true);
+        var diffEntity = GameObjectSerializer.GetEntitiesDiff(origEntity, curEntity) || {};
 
         // FIELDS TO IGNORE - NOT IN INSPECTOR
         delete diffEntity.name;
@@ -638,7 +638,7 @@ const gameDebugApi = {
         // COMPONENTS
         {
             let comps = o.scene.component.GetAllFrom(o);
-            let components = EntitySerializer.SerializeComponents(scene, comps, false);
+            let components = GameObjectSerializer.SerializeComponents(scene, comps, false);
 
             for (var c of comps)
             {
@@ -2102,7 +2102,7 @@ export class PluginHandler
 
     CleanSettingsData(settingsDataRaw: SettingsData, settingsHandler: SettingsHandler): void
     {
-        EntitySerializer.CleanEntities([settingsDataRaw.entities ?? [], settingsDataRaw.baseEntities ?? []], settingsHandler.rawEntitiesMappedByUID);
+        GameObjectSerializer.CleanEntities([settingsDataRaw.entities ?? [], settingsDataRaw.baseEntities ?? []], settingsHandler.rawEntitiesMappedByUID);
     }
 
     // RETURNS A NEW ENTITY WITH baseEntityLog ADDED TOT IT

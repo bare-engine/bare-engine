@@ -8,7 +8,7 @@ import { Entity, entityVars, Rectangle2Vec, Scalar } from "../types/bareTypes";
 import { getSaveFields } from "./saveFields";
 import { Helper } from "./helper";
 
-export class EntitySerializer
+export class GameObjectSerializer
 {
     static SerializeObjectFully(scene: Scene, obj: GameObject, forceAllEntityVars: boolean = false, includeSaveFields: boolean = true): Entity
     {
@@ -73,7 +73,7 @@ export class EntitySerializer
             for (var child of currentValue)
             {
                 if ((!child.persistent && child.save) || forceAllEntityVars)
-                    children.push(EntitySerializer.SerializeObjectFully(scene, child, forceAllEntityVars, includeSaveFields));
+                    children.push(GameObjectSerializer.SerializeObjectFully(scene, child, forceAllEntityVars, includeSaveFields));
             }
             return children.length > 0 ? children : null;
         };
@@ -84,7 +84,7 @@ export class EntitySerializer
             {
                 if (comp.save || forceAllEntityVars)
                 {
-                    var compData = EntitySerializer.SerializeComponent(scene, comp);
+                    var compData = GameObjectSerializer.SerializeComponent(scene, comp);
                     var name = bare.GetComponentNameFromClassName(comp.constructor.name);
                     comps[name] = compData;
                 }
@@ -116,7 +116,7 @@ export class EntitySerializer
     // CREATE A SELF-CONTAINED ENTITY FOR CLONING/COPY-PASTE
     static SerializeObjectSnapshot(scene: Scene, obj: GameObject): Entity
     {
-        const snapshot = EntitySerializer.SerializeObjectFully(scene, obj, false, true);
+        const snapshot = GameObjectSerializer.SerializeObjectFully(scene, obj, false, true);
 
         const makeSelfContained = (gameObject: GameObject, entity: Entity): void => {
             entity.name = gameObject.name;
@@ -141,6 +141,7 @@ export class EntitySerializer
     // strips data that should not end up in saved entities: unused entityUIDs, bare UID references,
     // the given props, and any entities/children left empty afterwards.
     // all lists are considered together when counting UID references.
+    // NOT REALLY PART OF OBJECT SERIALIZION, BUT STILL HERE..
     static CleanEntities(entityLists: Entity[][], rawEntitiesMappedByUID: Record<string, Entity>, propsToDelete: string[] = ["interactableInEditor"]): void
     {
         var didClean: boolean;
@@ -203,9 +204,9 @@ export class EntitySerializer
 
     static GetEntitiesDiff(orig: Entity, updated: Entity): any
     {
-        var diff = EntitySerializer.GetObjectDiff(orig, updated) ?? {};
+        var diff = GameObjectSerializer.GetObjectDiff(orig, updated) ?? {};
 
-        EntitySerializer.AddRemovedComponents(orig, updated, diff);
+        GameObjectSerializer.AddRemovedComponents(orig, updated, diff);
 
         return Object.keys(diff).length > 0 ? diff : undefined;
     }
@@ -228,7 +229,7 @@ export class EntitySerializer
                 const existing = diff.children?.[i];
                 const childDiff = existing ?? {};
 
-                EntitySerializer.AddRemovedComponents(orig.children[i], updated.children[i], childDiff);
+                GameObjectSerializer.AddRemovedComponents(orig.children[i], updated.children[i], childDiff);
 
                 if (!existing && Object.keys(childDiff).length > 0)
                 {
@@ -248,13 +249,13 @@ export class EntitySerializer
             return undefined;
 
         if (Array.isArray(orig) && Array.isArray(updated))
-            return EntitySerializer.GetArrayDiff(orig, updated);
+            return GameObjectSerializer.GetArrayDiff(orig, updated);
 
-        if (EntitySerializer.IsPlainObject(orig) && EntitySerializer.IsPlainObject(updated))
-            return EntitySerializer.GetObjectDiff(orig, updated);
+        if (GameObjectSerializer.IsPlainObject(orig) && GameObjectSerializer.IsPlainObject(updated))
+            return GameObjectSerializer.GetObjectDiff(orig, updated);
 
-        if (EntitySerializer.IsEmpty(updated))
-            return EntitySerializer.IsEmpty(orig) ? undefined : updated;
+        if (GameObjectSerializer.IsEmpty(updated))
+            return GameObjectSerializer.IsEmpty(orig) ? undefined : updated;
 
         return updated;
     }
@@ -273,7 +274,7 @@ export class EntitySerializer
             else if (i >= updated.length)
                 continue;
             else
-                value = EntitySerializer.GetGenericDiff(orig[i], updated[i]) ?? {};
+                value = GameObjectSerializer.GetGenericDiff(orig[i], updated[i]) ?? {};
 
             diff.push(value);
 
@@ -296,7 +297,7 @@ export class EntitySerializer
                 continue;
             }
 
-            const subDiff = EntitySerializer.GetGenericDiff(orig[key], updated[key]);
+            const subDiff = GameObjectSerializer.GetGenericDiff(orig[key], updated[key]);
             if (subDiff !== undefined)
                 diff[key] = subDiff;
         }
@@ -312,7 +313,7 @@ export class EntitySerializer
     private static IsEmpty(value: any): boolean
     {
         if (Array.isArray(value)) return value.length === 0;
-        if (EntitySerializer.IsPlainObject(value)) return Object.keys(value).length === 0;
+        if (GameObjectSerializer.IsPlainObject(value)) return Object.keys(value).length === 0;
         return value === undefined || value === null;
     }
 
@@ -329,7 +330,7 @@ export class EntitySerializer
             if (checkSave && component.save === false)
                 continue;
 
-            var componentData = EntitySerializer.SerializeComponent(scene, component);
+            var componentData = GameObjectSerializer.SerializeComponent(scene, component);
             var compName = component.constructor.name.replace("Component", "");
             compName = Helper.DecapitalizeFirstLetter(compName);
             componentsRec[compName] = componentData;
