@@ -386,8 +386,6 @@ to package.json to keep the generated assets (can become large for big projects)
                     
                     var entity = this.SerializeObject(obj);
 
-                    delete entity.save;
-        
                     // POSITION HAS BEEN STORED, CAN APPLY PIVOT AGAIN
                     if (obj.revertPivotOnSave)
                     {
@@ -397,23 +395,14 @@ to package.json to keep the generated assets (can become large for big projects)
                     return entity;
                 });
         }
+
+        EntitySerializer.CleanEntities(Object.values(level.entitiesByLayer), this.scene.settingsHandler.rawEntitiesMappedByUID, ["interactableInEditor", "save"]);
     }
 
     // SERIALIZE OBJECT DIFF
-    // THIS IS A VERY INEFFICIENT WAY TO IT, BUT... EASY TO FOLLOW
-    // COME BACK LATER TO OPTIMIZE/CACHE - TODO
     SerializeObject(obj: GameObject, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false, includeSaveFields: false }): Entity
     {
         var entity = this.scene.GetEnitityFromObject(obj, options);
-
-        // ROUND POSITION
-        if (entity.position)
-        {
-            if (entity.position.x)
-                entity.position.x = Math.round(entity.position.x);
-            if (entity.position.y)
-                entity.position.y = Math.round(entity.position.y);
-        }
 
         //delete entity.name;
 

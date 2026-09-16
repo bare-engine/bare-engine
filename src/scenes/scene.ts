@@ -482,6 +482,9 @@ export class Scene implements SceneI
         return merged;
     }
 
+    // FINDS THE DIFFERENCE BETWEEN CURRENT SERIALIZED OBJECT AND STARTING SERIALIZED OBJECT
+    // DIFFERENCE GETS MERGED WITH unconstructedEntity
+    // USING unconstructedEntity, SINCE IT CAN CONTAIN VALUES LIKE PIVOT .5,.5, imagePath, entity, WHICH CAN'T BE SERIALIZED BACK FROM A GAMEOBJECT
     GetEnitityFromObject(rootObject: GameObject, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false, includeSaveFields: false }): Entity
     {
         if (!rootObject.parent)
@@ -556,6 +559,16 @@ export class Scene implements SceneI
                 delete finalEntity[field];
         }
 
+        // ROUND POSITION
+        if (finalEntity.position)
+        {
+            if (finalEntity.position.x)
+                finalEntity.position.x = Math.round(finalEntity.position.x);
+            if (finalEntity.position.y)
+                finalEntity.position.y = Math.round(finalEntity.position.y);
+        }
+
+        // STUPID FIX FOR GAMEOBJECT THAT WAS INSTANTIATED WITHOUT AN ENTITY, HAVE TO GET/SET THE TEXTURE MANUALLY
         if (!rootObject.entity && rootObject.texture)
             finalEntity.texture = rootObject.texture.texturePath;
 

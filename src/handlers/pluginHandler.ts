@@ -2103,65 +2103,7 @@ export class PluginHandler
 
     CleanSettingsData(settingsDataRaw: SettingsData, settingsHandler: SettingsHandler): void
     {
-        var didClean: boolean;
-
-        do
-        {
-            didClean = false;
-            var entitiesAr = [
-                ...(settingsDataRaw.entities ?? []),
-                ...(settingsDataRaw.baseEntities ?? [])
-            ];
-            var stringifiedEntities = JSON.stringify(entitiesAr); // REFRESH AFTER EACH PASS SO REMOVED REFERENCES ARE SEEN IMMEDIATELY
-
-            var traverseEntities = (entities: Entity[]) => {
-                for (var i = entities.length - 1; i >= 0; i--)
-                {
-                    const entity = entities[i];
-
-                    if (Array.isArray(entity.children))
-                    {
-                        traverseEntities(entity.children);
-
-                        if (entity.children.length == 0)
-                        {
-                            delete entity.children;
-                            didClean = true;
-                        }
-                    }
-
-                    if (entity.entityUID)
-                    {
-                        var firstIndex = stringifiedEntities.indexOf(entity.entityUID);
-                        var lastIndex = stringifiedEntities.lastIndexOf(entity.entityUID);
-                        var moreThanOneRef = (firstIndex != lastIndex);
-
-                        if (!moreThanOneRef)
-                        {
-                            delete entity.entityUID; // THIS UID IS NOT REFERENCED ANYWHERE ELSE, REMOVE IT
-                            didClean = true;
-                        }
-                    }
-
-                    // A bare UID reference adds no authored data; its source entity supplies the
-                    // child. This also handles serialized references that have no temporary
-                    // entityUID of their own.
-                    if (Object.keys(entity).length == 1 && entity.entity && settingsHandler.rawEntitiesMappedByUID[entity.entity])
-                        delete entity.entity;
-                    
-                    delete entity.interactableInEditor;
-
-                    if (Object.keys(entity).length == 0)
-                    {
-                        entities.splice(i, 1);
-                        didClean = true;
-                    }
-                }
-            }
-            traverseEntities(settingsDataRaw.entities ?? []);
-            traverseEntities(settingsDataRaw.baseEntities ?? []);
-        }
-        while (didClean);
+        EntitySerializer.CleanEntities([settingsDataRaw.entities ?? [], settingsDataRaw.baseEntities ?? []], settingsHandler.rawEntitiesMappedByUID);
     }
 
     // RETURNS A NEW ENTITY WITH baseEntityLog ADDED TOT IT

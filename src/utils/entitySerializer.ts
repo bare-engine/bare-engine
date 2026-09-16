@@ -138,6 +138,69 @@ export class EntitySerializer
         return snapshot;
     }
 
+    // strips data that should not end up in saved entities: unused entityUIDs, bare UID references,
+    // the given props, and any entities/children left empty afterwards.
+    // all lists are considered together when counting UID references.
+    static CleanEntities(entityLists: Entity[][], rawEntitiesMappedByUID: Record<string, Entity>, propsToDelete: string[] = ["interactableInEditor"]): void
+    {
+        var didClean: boolean;
+
+        do
+        {
+            didClean = false;
+            var stringifiedEntities = JSON.stringify(entityLists); // REFRESH AFTER EACH PASS SO REMOVED REFERENCES ARE SEEN IMMEDIATELY
+
+            var traverseEntities = (entities: Entity[]) => {
+                for (var i = entities.length - 1; i >= 0; i--)
+                {
+                    const entity = entities[i];
+
+                    if (Array.isArray(entity.children))
+                    {
+                        traverseEntities(entity.children);
+
+                        if (entity.children.length == 0)
+                        {
+                            delete entity.children;
+                            didClean = true;
+                        }
+                    }
+
+                    if (entity.entityUID)
+                    {
+                        var firstIndex = stringifiedEntities.indexOf(entity.entityUID);
+                        var lastIndex = stringifiedEntities.lastIndexOf(entity.entityUID);
+                        var moreThanOneRef = (firstIndex != lastIndex);
+
+                        if (!moreThanOneRef)
+                        {
+                            delete entity.entityUID; // THIS UID IS NOT REFERENCED ANYWHERE ELSE, REMOVE IT
+                            didClean = true;
+                        }
+                    }
+
+                    // A bare UID reference adds no authored data; its source entity supplies the
+                    // child. This also handles serialized references that have no temporary
+                    // entityUID of their own.
+                    if (Object.keys(entity).length == 1 && entity.entity && rawEntitiesMappedByUID[entity.entity])
+                        delete entity.entity;
+
+                    for (const prop of propsToDelete)
+                        delete (entity as any)[prop];
+
+                    if (Object.keys(entity).length == 0)
+                    {
+                        entities.splice(i, 1);
+                        didClean = true;
+                    }
+                }
+            }
+            for (const entities of entityLists)
+                traverseEntities(entities);
+        }
+        while (didClean);
+    }
+
     static GetEntitiesDiff(orig: Entity, updated: Entity): any
     {
         var diff = EntitySerializer.GetObjectDiff(orig, updated) ?? {};
