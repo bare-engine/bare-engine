@@ -548,7 +548,7 @@ export class EditorControlsHandler {
     {
         const settings = this.scene.settingsData.settings;
         const gridSize = settings?.gridSize;
-        if (ignoreGrid || !settings?.gridEnabled || !(gridSize > 0))
+        if (ignoreGrid || !this.scene.gridEnabled || !(gridSize > 0))
             return new Vec2(x, y);
 
         if (this.scene.settingsData.editorObjectSnapToPivot === false)
@@ -617,7 +617,7 @@ export class EditorControlsHandler {
             this.CanPlaceCurrentPreviewObject() &&
             keyboardController.IsKeyDown("shift") &&
             !ignoreGrid &&
-            settings?.gridEnabled &&
+            this.scene.gridEnabled &&
             settings.gridSize > 0
         );
     }

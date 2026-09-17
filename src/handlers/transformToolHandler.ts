@@ -750,7 +750,8 @@ export class TransformToolHandler
     {
         const settings = (scene as any).settingsData?.settings;
         const gridSize = settings?.gridSize;
-        if (!settings?.gridEnabled || !gridSize || gridSize <= 0) return null;
+        const gridEnabled = (scene as any).gridEnabled ?? settings?.gridEnabled;
+        if (!gridEnabled || !gridSize || gridSize <= 0) return null;
 
         return gridSize;
     }

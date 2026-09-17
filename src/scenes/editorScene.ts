@@ -22,6 +22,11 @@ type EditorSceneAwakePayload = {
 export class EditorScene extends Scene
 {
     readonly transformToolHandlesBodyMove: boolean = true;
+    get gridEnabled(): boolean
+    {
+        return !!this.settingsData?.settings?.gridEnabled;
+    }
+
     public opened: boolean = false; // DOUBLES TRUTH WITH this.levelEditorOpen
 
     // Component classes
@@ -393,7 +398,7 @@ export class EditorScene extends Scene
 
         this.editorControlsHandler.PostRender();
 
-        if (!this.settingsData?.settings?.gridEnabled || keyboardController.IsKeyDown("alt"))
+        if (!this.gridEnabled || keyboardController.IsKeyDown("alt"))
             return;
         
         // DRAW GRID

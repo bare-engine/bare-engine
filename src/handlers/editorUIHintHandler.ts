@@ -158,7 +158,7 @@ export class EditorUIHintHandler {
         let hints = this.hintsPerMode[mode];
 
         // GRID HINTS ONLY APPLY WHEN THE GRID IS ON
-        if (!this.scene.settingsData?.settings?.gridEnabled)
+        if (!this.scene.gridEnabled)
             hints = hints.filter(hint => hint != 'alt: disable grid' && hint != 'shift: place multiple');
 
         return hints;

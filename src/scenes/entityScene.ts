@@ -44,6 +44,11 @@ export class EntityScene extends EditorScene
     objectName: string = "";
 
     readonly transformToolHandlesBodyMove: boolean = true;
+
+    override get gridEnabled(): boolean
+    {
+        return false;
+    }
     
     lastPayload: EntitySceneAwakePayload;
     degugAtStart: boolean;
