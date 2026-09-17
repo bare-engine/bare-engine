@@ -1,10 +1,16 @@
 <h1>Bare Game Engine</h1>
 
+<p align="center">
+  <img height="100" src="https://github.com/user-attachments/assets/d9aacea3-b461-4ed4-abb5-8cfc0f322823"><span>&nbsp;&nbsp;</span><img height="100" src="https://github.com/user-attachments/assets/b4b4f2d4-749c-40e8-8f5d-ed0d87bc3531"><span>&nbsp;&nbsp;</span><img height="100" src="https://github.com/user-attachments/assets/010c9a7d-5720-46be-9dc0-f5808b8b9d7b"><span>&nbsp;&nbsp;</span><img height="100" src="https://github.com/user-attachments/assets/a9159947-43d4-43ed-ba05-2a341bd1b112">
+</p>
+
+
 Build for Web:
 - 34kb minimal game (gzip)
 - Instant load time
 - Asset streaming
 - Ingame level editor
+
 - Object inspection in plugin
 - Components
 - Make your own tools/editor
