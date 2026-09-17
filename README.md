@@ -7,14 +7,14 @@
 
 Build for Web:
 - 34kb minimal game (gzip)
-- Instant load time
+- Fast load time
 - Asset streaming
 - Ingame level editor
-- Object inspection in plugin
+- Object inspection in extension
 - Components
 - Make your own tools/editor
 - Save/load levels
-- Hot reload (vite)
+- Fast hot reload (vite)
 - Open source
 
 <br>
