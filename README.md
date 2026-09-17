@@ -23,4 +23,10 @@ Build for Web:
     <li><a href="https://github.com/bare-engine/bare-template#getting-around">Documention</a> - Learn more</li>
 </ol>
 
+<br>
 
+<h1>Going Forward</h1>
+Join the Discord if you have any questions or bug reports:<br>
+https://discord.gg/zq3Qh45JE
+<br><br>
+🚧 Note: The engine is still in active development, some features may be unstable 🚧
