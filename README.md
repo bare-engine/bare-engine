@@ -10,7 +10,6 @@ Build for Web:
 - Instant load time
 - Asset streaming
 - Ingame level editor
-
 - Object inspection in plugin
 - Components
 - Make your own tools/editor
