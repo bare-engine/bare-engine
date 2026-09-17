@@ -7,7 +7,7 @@
 
 Build for Web:
 - 34kb minimal game (gzip)
-- Fast load time
+- Fast loading time
 - Asset streaming
 - Ingame level editor
 - Object inspection in extension
