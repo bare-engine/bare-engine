@@ -14,7 +14,7 @@ Build for Web:
 - Components
 - Make your own tools/editor
 - Save/load levels
-- Fast rendering ([RapidJS](https://github.com/Nightre/Rapid.js))
+- Fast rendering ([Rapid](https://github.com/Nightre/Rapid.js))
 - Fast hot reload (vite)
 - Open source
 
