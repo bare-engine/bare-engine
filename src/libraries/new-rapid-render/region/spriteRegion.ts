@@ -66,25 +66,25 @@ export class SpriteRegion extends Region {
     createShader(vs: string, fs: string) {
         const shader = super.createShader(vs, fs);
 
-        shader.use();
-        shader.bindVAO();
-        this.instanceBuffer.bindBuffer();
-        shader.setAttributes([
-            { name: "aMatrixRow0", size: 3, stride: INSTANCE_STRIDE, offset: 0, divisor: 1 },
-            { name: "aMatrixRow1", size: 3, stride: INSTANCE_STRIDE, offset: 12, divisor: 1 },
-            { name: "aUVRect", size: 4, stride: INSTANCE_STRIDE, offset: 24, divisor: 1 },
-            { name: "aColor", size: 4, type: UNSIGNED_BYTE, normalized: true, stride: INSTANCE_STRIDE, offset: 40, divisor: 1 },
-            { name: "aTextureId", size: 1, type: UNSIGNED_BYTE, stride: INSTANCE_STRIDE, offset: 44, divisor: 1 },
-            { name: "aClampUV", size: 1, type: UNSIGNED_BYTE, stride: INSTANCE_STRIDE, offset: 45, divisor: 1 },
-        ]);
-        this.quadBuffer.bindBuffer();
-        shader.setAttributes([
-            { name: "aVertex", size: 2, stride: 8, offset: 0, divisor: 0 },
-        ]);
-        shader.unbindVAO();
-        if (this.currentShader) {
-            this.currentShader.use();
-        }
+        // Attribute locations are only known once the program has linked; binding them
+        // here would stall until then, so the VAO is recorded on the shader's first use.
+        shader.onReady(() => {
+            shader.bindVAO();
+            this.instanceBuffer.bindBuffer();
+            shader.setAttributes([
+                { name: "aMatrixRow0", size: 3, stride: INSTANCE_STRIDE, offset: 0, divisor: 1 },
+                { name: "aMatrixRow1", size: 3, stride: INSTANCE_STRIDE, offset: 12, divisor: 1 },
+                { name: "aUVRect", size: 4, stride: INSTANCE_STRIDE, offset: 24, divisor: 1 },
+                { name: "aColor", size: 4, type: UNSIGNED_BYTE, normalized: true, stride: INSTANCE_STRIDE, offset: 40, divisor: 1 },
+                { name: "aTextureId", size: 1, type: UNSIGNED_BYTE, stride: INSTANCE_STRIDE, offset: 44, divisor: 1 },
+                { name: "aClampUV", size: 1, type: UNSIGNED_BYTE, stride: INSTANCE_STRIDE, offset: 45, divisor: 1 },
+            ]);
+            this.quadBuffer.bindBuffer();
+            shader.setAttributes([
+                { name: "aVertex", size: 2, stride: 8, offset: 0, divisor: 0 },
+            ]);
+            shader.unbindVAO();
+        });
         return shader;
     }
 

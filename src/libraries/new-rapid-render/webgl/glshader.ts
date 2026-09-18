@@ -1,6 +1,6 @@
 import { Region } from "../region/region";
 import { Rapid } from "../render";
-import { createShaderProgram, FLOAT, vertexAttribDivisor } from "./utils";
+import { createShaderProgram, FLOAT, verifyShaderProgram, vertexAttribDivisor } from "./utils";
 
 export type WebGLContext = WebGL2RenderingContext;
 
@@ -57,20 +57,49 @@ export class GLShader {
     shaderId: number = shadeId++ // for debug
     readonly vao: WebGLVertexArrayObject;
 
+    private vs: string;
+    private fs: string;
+    private ready = false;
+    private onReadyCallbacks: ((shader: GLShader) => void)[] = [];
+
     constructor(gl: WebGLContext, vs: string, fs: string, attributes?: IAttribute[]) {
         this.gl = gl;
+        this.vs = vs;
+        this.fs = fs;
+        // Compile + link only. Location lookups would block on the link, so they wait
+        // until the first use(); the driver builds the program in the meantime.
         this.program = createShaderProgram(gl, vs, fs);
-        this.parseShader(vs);
-        this.parseShader(fs);
         this.vao = gl.createVertexArray()!;
 
         if (attributes) {
-            this.setAttributes(attributes);
+            this.onReady(shader => shader.setAttributes(attributes));
+        }
+    }
+
+    /**
+     * Run once the program is linked and its locations resolved, i.e. on the first use().
+     * Used for attribute/VAO setup that needs locations but should not force an early link wait.
+     */
+    onReady(callback: (shader: GLShader) => void) {
+        if (this.ready) {
+            callback(this);
+        } else {
+            this.onReadyCallbacks.push(callback);
         }
     }
 
     /** Switch GPU to use this shader program */
     use() {
+        if (!this.ready) {
+            this.ready = true;
+            verifyShaderProgram(this.gl, this.program);
+            this.parseShader(this.vs);
+            this.parseShader(this.fs);
+            this.gl.useProgram(this.program);
+            const callbacks = this.onReadyCallbacks;
+            this.onReadyCallbacks = [];
+            for (const callback of callbacks) callback(this);
+        }
         this.gl.useProgram(this.program);
     }
 

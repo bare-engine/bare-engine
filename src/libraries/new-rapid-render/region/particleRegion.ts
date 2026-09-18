@@ -1,4 +1,5 @@
 import { SpriteRegion } from "./spriteRegion";
+import { Region } from "./region";
 import VsShaderSource from "../shader/particle.vert?raw";
 import FsShaderSource from "../shader/particle.frag?raw";
 import { Rapid } from "../render";
@@ -49,27 +50,26 @@ export class ParticleRegion extends SpriteRegion {
     }
 
     createShader(vs: string, fs: string) {
-        const shader = super.createShader(vs, fs);
+        // Skip SpriteRegion.createShader: its VAO layout is the sprite one, not the particle one.
+        const shader = Region.prototype.createShader.call(this, vs, fs) as GLShader;
 
-        shader.use();
-        shader.bindVAO();
-        this.instanceBuffer.bindBuffer();
-        shader.setAttributes([
-            { name: "aPosition", size: 2, stride: INSTANCE_STRIDE, offset: 0, divisor: 1 },
-            { name: "aScale", size: 2, stride: INSTANCE_STRIDE, offset: 8, divisor: 1 },
-            { name: "aRotation", size: 1, stride: INSTANCE_STRIDE, offset: 16, divisor: 1 },
-            { name: "aUVRect", size: 4, stride: INSTANCE_STRIDE, offset: 20, divisor: 1 },
-            { name: "aColor", size: 4, type: UNSIGNED_BYTE, normalized: true, stride: INSTANCE_STRIDE, offset: 36, divisor: 1 },
-            { name: "aOrigin", size: 2, stride: INSTANCE_STRIDE, offset: 40, divisor: 1 },
-        ]);
-        this.quadBuffer.bindBuffer();
-        shader.setAttributes([
-            { name: "aVertex", size: 2, stride: 8, offset: 0, divisor: 0 },
-        ]);
-        shader.unbindVAO();
-        if (this.currentShader) {
-            this.currentShader.use();
-        }
+        shader.onReady(() => {
+            shader.bindVAO();
+            this.instanceBuffer.bindBuffer();
+            shader.setAttributes([
+                { name: "aPosition", size: 2, stride: INSTANCE_STRIDE, offset: 0, divisor: 1 },
+                { name: "aScale", size: 2, stride: INSTANCE_STRIDE, offset: 8, divisor: 1 },
+                { name: "aRotation", size: 1, stride: INSTANCE_STRIDE, offset: 16, divisor: 1 },
+                { name: "aUVRect", size: 4, stride: INSTANCE_STRIDE, offset: 20, divisor: 1 },
+                { name: "aColor", size: 4, type: UNSIGNED_BYTE, normalized: true, stride: INSTANCE_STRIDE, offset: 36, divisor: 1 },
+                { name: "aOrigin", size: 2, stride: INSTANCE_STRIDE, offset: 40, divisor: 1 },
+            ]);
+            this.quadBuffer.bindBuffer();
+            shader.setAttributes([
+                { name: "aVertex", size: 2, stride: 8, offset: 0, divisor: 0 },
+            ]);
+            shader.unbindVAO();
+        });
         return shader;
     }
 

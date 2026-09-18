@@ -55,17 +55,15 @@ export class GraphicRegion extends Region {
     createMaskShader(vs: string, fs: string) {
         const gl = this.gl;
         const shader = new GLShader(gl, vs, fs);
-        shader.use();
-        shader.bindVAO();
-        this.vertexBuffer.bindBuffer();
-        shader.setAttributes([
-            { name: "aPosition", size: 2, type: gl.FLOAT, stride: VERTEX_STRIDE - 4, offset: 0, divisor: 0 },
-            { name: "aUV", size: 2, type: gl.FLOAT, stride: VERTEX_STRIDE - 4, offset: 8, divisor: 0 },
-        ]);
-        shader.unbindVAO();
-        if (this.currentShader) {
-            this.currentShader.use();
-        }
+        shader.onReady(() => {
+            shader.bindVAO();
+            this.vertexBuffer.bindBuffer();
+            shader.setAttributes([
+                { name: "aPosition", size: 2, type: gl.FLOAT, stride: VERTEX_STRIDE - 4, offset: 0, divisor: 0 },
+                { name: "aUV", size: 2, type: gl.FLOAT, stride: VERTEX_STRIDE - 4, offset: 8, divisor: 0 },
+            ]);
+            shader.unbindVAO();
+        });
         return shader;
     }
 
@@ -73,18 +71,16 @@ export class GraphicRegion extends Region {
         const gl = this.gl;
         const shader = super.createShader(vs, fs);
 
-        shader.use();
-        shader.bindVAO();
-        this.vertexBuffer.bindBuffer();
-        shader.setAttributes([
-            { name: "aPosition", size: 2, type: gl.FLOAT, stride: VERTEX_STRIDE, offset: 0, divisor: 0 },
-            { name: "aColor", size: 4, type: gl.UNSIGNED_BYTE, normalized: true, stride: VERTEX_STRIDE, offset: 8, divisor: 0 },
-            { name: "aUV", size: 2, type: gl.FLOAT, stride: VERTEX_STRIDE, offset: 12, divisor: 0 },
-        ]);
-        shader.unbindVAO();
-        if (this.currentShader) {
-            this.currentShader.use();
-        }
+        shader.onReady(() => {
+            shader.bindVAO();
+            this.vertexBuffer.bindBuffer();
+            shader.setAttributes([
+                { name: "aPosition", size: 2, type: gl.FLOAT, stride: VERTEX_STRIDE, offset: 0, divisor: 0 },
+                { name: "aColor", size: 4, type: gl.UNSIGNED_BYTE, normalized: true, stride: VERTEX_STRIDE, offset: 8, divisor: 0 },
+                { name: "aUV", size: 2, type: gl.FLOAT, stride: VERTEX_STRIDE, offset: 12, divisor: 0 },
+            ]);
+            shader.unbindVAO();
+        });
         return shader;
     }
 
