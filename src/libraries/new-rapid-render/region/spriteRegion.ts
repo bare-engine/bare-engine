@@ -15,7 +15,8 @@ import { Texture } from "../texture";
 //   aMatrixRow1  vec3        float32×3  offset  24 (b, d, ty)
 //   aUVRect      vec4        float32×4  offset  40 (u0, v0, u1, v1)
 //   aColor       vec4 u8×4   uint32×1   offset  44 (r,g,b,a 0-255, normalized)
-//   aTextureId   float u8×1  uint32×1   offset  48 (texture unit index)
+//   aTextureId   float u8×1  uint32×1   offset  48 (texture unit index, low byte)
+//   aClampUV     float u8×1             offset  48 (clamp-to-UV-rect flag, second byte)
 const INSTANCE_STRIDE = 48;
 
 // Static quad vertices: 4 × vec2 for TRIANGLE_STRIP
@@ -35,7 +36,6 @@ export class SpriteRegion extends Region {
         super(rapid);
 
         this.createBuffer()
-        this.createDefaultShader()
     }
 
     createBuffer() {
@@ -75,6 +75,7 @@ export class SpriteRegion extends Region {
             { name: "aUVRect", size: 4, stride: INSTANCE_STRIDE, offset: 24, divisor: 1 },
             { name: "aColor", size: 4, type: UNSIGNED_BYTE, normalized: true, stride: INSTANCE_STRIDE, offset: 40, divisor: 1 },
             { name: "aTextureId", size: 1, type: UNSIGNED_BYTE, stride: INSTANCE_STRIDE, offset: 44, divisor: 1 },
+            { name: "aClampUV", size: 1, type: UNSIGNED_BYTE, stride: INSTANCE_STRIDE, offset: 45, divisor: 1 },
         ]);
         this.quadBuffer.bindBuffer();
         shader.setAttributes([
@@ -105,6 +106,7 @@ export class SpriteRegion extends Region {
      * @param u1 Right UV mapped coordinate (default 1).
      * @param v1 Bottom UV mapped coordinate (default 1).
      * @param color The tint color as packed ABGR uniform uint32 (default 0xFFFFFFFF).
+     * @param clampUV Discard samples outside the UV rect (atlas regions, so padding never bleeds into neighbours).
      */
     drawSprite(
         texture: Texture,
@@ -116,6 +118,7 @@ export class SpriteRegion extends Region {
         flipX: boolean = false,
         flipY: boolean = false,
         isRotated: boolean = false,
+        clampUV: boolean = false,
     ): void {
         const o = matrixIndex * 6;
         const md = this.matrixStore.data;
@@ -138,6 +141,7 @@ export class SpriteRegion extends Region {
             flipX,
             flipY,
             isRotated,
+            clampUV,
         );
     }
 
@@ -158,6 +162,7 @@ export class SpriteRegion extends Region {
         flipX: boolean = false,
         flipY: boolean = false,
         isRotated: boolean = false,
+        clampUV: boolean = false,
     ): void {
         const base = texture.base!;
 
@@ -224,7 +229,7 @@ export class SpriteRegion extends Region {
         f32[index + 9] = v1;
 
         u32[index + 10] = color;
-        u32[index + 11] = textureId;
+        u32[index + 11] = textureId | (clampUV ? 1 << 8 : 0);
 
         if (this.rapid.roundPixels) {
             world[4] = Math.round(world[4]);

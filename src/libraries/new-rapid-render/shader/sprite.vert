@@ -17,11 +17,15 @@ in vec4 aColor;
 // per-instance：纹理索引
 in float aTextureId;
 
+// per-instance：1 = discard samples outside aUVRect (atlas regions)
+in float aClampUV;
+
 uniform mat4 u_projection;
 uniform vec2 uPadding[%TEXTURE_NUM%];
 
 out vec2 vRegion;
 flat out int vTextureId;
+flat out int vClampUV;
 out vec4 vColor;
 
 out vec4 vUVRect;
@@ -34,6 +38,7 @@ void main(void) {
     vRegion = mix(aUVRect.xy - vPadding, aUVRect.zw + vPadding, aVertex.xy);
 
     vTextureId = int(aTextureId);
+    vClampUV = int(aClampUV);
     vColor = aColor;
 
     vec4 position = vec4(

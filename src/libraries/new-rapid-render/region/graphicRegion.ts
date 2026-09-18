@@ -25,21 +25,24 @@ export class GraphicRegion extends Region {
 
     texture?: Texture
 
-    maskShader!: GLShader
+    private _maskShader?: GLShader
     KEY = "Graphic"
 
     constructor(rapid: Rapid) {
         super(rapid);
 
         this.createBuffer()
-        this.createDefaultShader()
     }
 
     createBuffer(){
         const gl = this.gl;
 
         this.vertexBuffer = new WebglBufferArray(gl, ArrayType.Float32, gl.ARRAY_BUFFER, gl.DYNAMIC_DRAW);
-        this.maskShader = this.createMaskShader(MaskVsShaderSource, MaskFsShaderSource);
+    }
+
+    /** Built on first use, like the default shader; most scenes never mask. */
+    get maskShader(): GLShader {
+        return this._maskShader ??= this.createMaskShader(MaskVsShaderSource, MaskFsShaderSource);
     }
 
     createDefaultShader() {
@@ -125,7 +128,7 @@ export class GraphicRegion extends Region {
         const buf = this.vertexBuffer;
         buf.pushFloat32(x);
         buf.pushFloat32(y);
-        if (this.currentShader != this.maskShader) {
+        if (this.currentShader != this._maskShader) {
             buf.pushUint32(color);
         }
         buf.pushFloat32(u);

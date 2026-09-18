@@ -18,6 +18,8 @@ export const getContext = (canvas: HTMLCanvasElement, antialias: boolean = false
     if (!gl) {
         throw new Error("WebGL2 is not supported in this browser.");
     }
+    // Lets the browser compile programs on worker threads where the driver supports it.
+    gl.getExtension("KHR_parallel_shader_compile");
     return gl;
 }
 

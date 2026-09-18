@@ -127,7 +127,7 @@ export const drawSprite = (rapid: Rapid, options: ISpriteOptions): void => {
         return;
     }
 
-    const region = texture.isAtlas ? rapid.atlasSpriteRegion : rapid.spriteRegion
+    const region = rapid.spriteRegion
     rapid.enterRegion(region, options.shader);
 
     let u0 = texture.uvX;
@@ -161,6 +161,7 @@ export const drawSprite = (rapid: Rapid, options: ISpriteOptions): void => {
         flipX,
         flipY,
         texture.isRotated,
+        texture.isAtlas,
     );
 };
 

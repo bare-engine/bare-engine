@@ -26,7 +26,6 @@ import {
     getColorUint32,
 } from "./draw";
 import { Vec2 } from "./math";
-import { AtlasSpriteRegion } from "./region/atlasSpriteRegion";
 import { ParticleRegion } from "./region/particleRegion";
 
 /**
@@ -165,7 +164,6 @@ export class Rapid {
     /** Region dedicated to arbitrary geometry and shapes rendering. */
     graphicRegion: GraphicRegion;
 
-    atlasSpriteRegion: AtlasSpriteRegion;
 
     particleRegion: ParticleRegion;
 
@@ -220,8 +218,10 @@ export class Rapid {
 
         this.spriteRegion = new SpriteRegion(this);
         this.graphicRegion = new GraphicRegion(this);
-        this.atlasSpriteRegion = new AtlasSpriteRegion(this);
         this.particleRegion = new ParticleRegion(this);
+        // Regions compile their shaders on first use. Nearly every scene draws sprites, so
+        // start that one now: the link runs in the driver while assets are still loading.
+        this.spriteRegion.prepare();
 
         const cssW = this.canvas.clientWidth || this.canvas.width;
         const cssH = this.canvas.clientHeight || this.canvas.height;
