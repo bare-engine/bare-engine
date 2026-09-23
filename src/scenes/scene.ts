@@ -1286,6 +1286,8 @@ to package.json to keep the generated assets (can become large for big projects)
 
             child.parent = null;
 
+            parent.RefreshLifecycleHooks();
+
             var removed = (childIndex != -1);
             if (!removed)
                 trace("FAILED TO REMOVE GAMEOBJECT");

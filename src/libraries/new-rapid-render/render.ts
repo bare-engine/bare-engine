@@ -23,6 +23,7 @@ import {
     drawRect,
     drawRoundedRect,
     drawSprite,
+    drawSpriteWithMatrix,
     getColorUint32,
 } from "./draw";
 import { Vec2 } from "./math";
@@ -289,6 +290,11 @@ export class Rapid {
 
     drawSprite(options: ISpriteOptions): void {
         drawSprite(this, options);
+    }
+
+    /** @internal Submit a sprite using an existing matrix without an options transform. */
+    drawSpriteWithMatrix(texture: Texture, matrix: number, color?: Color): void {
+        drawSpriteWithMatrix(this, texture, matrix, color);
     }
 
     drawLine(options: ILineOptions): void {

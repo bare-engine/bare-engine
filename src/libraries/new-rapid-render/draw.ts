@@ -122,24 +122,31 @@ export const getColorUint32 = (premultipliedAlpha: boolean, color?: Color): numb
 const ATLAS_PADDING = 2
 export const drawSprite = (rapid: Rapid, options: ISpriteOptions): void => {
     const matrix = withOptionsTransform(rapid, options, options.texture.rawWidth, options.texture.rawHeight)
-    const texture = options.texture;
+    drawSpriteWithMatrix(rapid, options.texture, matrix ?? options.customMatrix ?? rapid.matrixStack.curWorldM,
+        options.color, options.shader, !!options.flipX, !!options.flipY, options.padding);
+};
+
+/** Internal sprite submission for callers that have already applied their transform. */
+export const drawSpriteWithMatrix = (
+    rapid: Rapid, texture: Texture, matrix: number, color?: Color, shader?: DrawShader,
+    flipX: boolean = false, flipY: boolean = false, padding?: number,
+): void => {
     if (!texture?.base || rapid.inCreateMask) {
         return;
     }
 
     const region = texture.isAtlas ? rapid.atlasSpriteRegion : rapid.spriteRegion
-    rapid.enterRegion(region, options.shader);
+    rapid.enterRegion(region, shader);
 
     let u0 = texture.uvX;
     let v0 = texture.uvY;
     let u1 = texture.uvW;
     let v1 = texture.uvH;
 
-    const flipX = !!options.flipX;
-    const flipY = !!options.flipY !== !!texture.flipY; // XOR
+    flipY = flipY !== !!texture.flipY; // XOR
 
     // pixel size
-    let p = (options.padding ?? region.currentShader.padding);
+    let p = (padding ?? region.currentShader.padding);
     if (texture.isAtlas) {
         p += ATLAS_PADDING
     }
@@ -150,12 +157,12 @@ export const drawSprite = (rapid: Rapid, options: ISpriteOptions): void => {
 
     region.drawSprite(
         texture,
-        matrix ?? options.customMatrix ?? rapid.matrixStack.curWorldM,
+        matrix,
         u0,
         v0,
         u1,
         v1,
-        rapid.getColorUint32(options.color),
+        rapid.getColorUint32(color),
         paddingX,
         paddingY,
         flipX,

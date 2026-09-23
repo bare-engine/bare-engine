@@ -1,7 +1,7 @@
 import type { Component } from "../controllers/componentController";
 import { assetsHandler } from "../handlers/assetsHandler";
 import mitt from "../libraries/mitt";
-import { Color, MaskType, MatrixStack, Texture, Vec2 } from "../libraries/new-rapid-render";
+import { Color, MaskType, MatrixStack, MatrixStore, Texture, Vec2 } from "../libraries/new-rapid-render";
 import type { Scene } from "../scenes/scene";
 import type { ComponentCtor, Ctor, DropFirst, Events, Rectangle, Shader } from "../types/bareTypes";
 import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';
@@ -9,6 +9,62 @@ import { Hitbox } from '../types/hitbox';
 import { getOwnInspectorFieldNames, InspectorField, isInspectorFieldDescriptor, Percentage } from "../utils/decorators";
 import { getOwnSaveFieldNames, Save } from "../utils/saveFields";
 import { Helper } from '../utils/helper';
+
+// Lifecycle hook bits. GameObject's hooks are empty virtuals, so walking a whole scene to call them
+// costs real time and does nothing. Every object caches which hooks its own class implements (`hooks`)
+// and which ones exist anywhere in its subtree (`subtreeHooks`), so entire branches can be skipped.
+// A hook assigned to an instance after it was added (obj.OnUpdate = fn) needs RefreshLifecycleHooks().
+export const HOOK_UPDATE = 1;
+export const HOOK_FIXED_UPDATE = 2;
+export const HOOK_PRE_RENDER = 4;
+export const HOOK_POST_RENDER = 8;
+export const HOOK_RENDER = 16;
+
+const DEG_TO_RAD = Math.PI / 180;
+
+/**
+ * Applies one transform stage - `translate(origin + position) rotate scale [flip] translate(-pivot)` -
+ * to the matrix at `parent` and writes the result into `out`. Pass -1 as `parent` to multiply `out`
+ * in place. A null pivot or origin counts as (0, 0).
+ *
+ * Every transform in the engine is built from this, so a stage costs one affine multiply instead of a
+ * translate/rotate/scale/translate sequence on the matrix stack.
+ */
+function composeStage(store: MatrixStore, out: number, parent: number, transform: Transform, pivot: Vec2 | null, origin: Vec2 | null, flip: boolean): void
+{
+    const rotation = transform.rotation * DEG_TO_RAD;
+    const cos = rotation === 0 ? 1 : Math.cos(rotation);
+    const sin = rotation === 0 ? 0 : Math.sin(rotation);
+
+    // scale(-1, 1) after the scale stage is the same as negating the x scale.
+    const scaleX = flip ? -transform.scale.x : transform.scale.x;
+    const scaleY = transform.scale.y;
+
+    const a = cos * scaleX;
+    const b = sin * scaleX;
+    const c = -sin * scaleY;
+    const d = cos * scaleY;
+
+    var x = transform.position.x;
+    var y = transform.position.y;
+
+    if (origin)
+    {
+        x += origin.x;
+        y += origin.y;
+    }
+
+    if (pivot)
+    {
+        x -= a * pivot.x + c * pivot.y;
+        y -= b * pivot.x + d * pivot.y;
+    }
+
+    if (parent === -1)
+        store.multiplyAffineInPlace(out, a, b, c, d, x, y);
+    else
+        store.multiplyAffine(parent, out, a, b, c, d, x, y);
+}
 
 export class Transform {
     position = new Vec2();
@@ -59,6 +115,11 @@ export class GameObject
 
     resizeable: boolean = true;
 
+    /** Bitmask of the lifecycle hooks this object's own class implements. @see RefreshLifecycleHooks */
+    hooks: number = 0;
+    /** Bitmask of the lifecycle hooks implemented anywhere in this object's subtree, itself included. */
+    subtreeHooks: number = 0;
+
     tapHitbox: Hitbox | null = null; // PHASE THIS OUT, MAKE INTO COMPONENT? TODO
   
     startPosition = new Vec2();
@@ -96,6 +157,10 @@ export class GameObject
             trace('isNaN SetPosition')
 
         this.Init("gameObject");
+
+        // Added() reads them again once the object is parented; this covers objects that render
+        // without ever being added to a layer, such as a mask.
+        this.RefreshLifecycleHooks();
 
         if (texturePath != "")
             this.InitTexture(texturePath);
@@ -448,7 +513,50 @@ export class GameObject
     Added()
     {
         this.addedToScene = true;
+
+        // Re-read the hooks now the object is fully constructed and parented.
+        this.RefreshLifecycleHooks();
+
         this.OnAdded();
+    }
+
+    /**
+     * Recomputes which lifecycle hooks this object implements, then the subtree masks of it and its
+     * ancestors. Call it after assigning a hook to an instance at runtime (obj.OnUpdate = fn), or
+     * after adding or removing a child.
+     */
+    RefreshLifecycleHooks()
+    {
+        const base = GameObject.prototype;
+        var hooks = 0;
+
+        if (this.OnUpdate !== base.OnUpdate)
+            hooks |= HOOK_UPDATE;
+        if (this.OnFixedUpdate !== base.OnFixedUpdate)
+            hooks |= HOOK_FIXED_UPDATE;
+        if (this.OnPreRender !== base.OnPreRender)
+            hooks |= HOOK_PRE_RENDER;
+        if (this.OnPostRender !== base.OnPostRender)
+            hooks |= HOOK_POST_RENDER;
+        if (this.OnRender !== base.OnRender)
+            hooks |= HOOK_RENDER;
+
+        this.hooks = hooks;
+
+        for (var obj: GameObject | null = this; obj; obj = obj.parent)
+        {
+            var mask = obj.hooks;
+            var children = obj.children;
+
+            for (var i = 0; i < children.length; i++)
+                mask |= children[i].subtreeHooks;
+
+            // Unchanged here means unchanged for every ancestor too.
+            if (mask === obj.subtreeHooks)
+                return;
+
+            obj.subtreeHooks = mask;
+        }
     }
 
     OnAdded()
@@ -478,11 +586,17 @@ export class GameObject
         if (!this.active)
             return;
 
-        this.OnUpdate(deltaTime);
+        if (this.hooks & HOOK_UPDATE)
+            this.OnUpdate(deltaTime);
 
-        for (var child of this.children)
+        var children = this.children;
+
+        for (var i = 0; i < children.length; i++)
         {
-            child.Update(deltaTime);
+            var child = children[i];
+
+            if (child.subtreeHooks & HOOK_UPDATE)
+                child.Update(deltaTime);
         }
     }
 
@@ -491,11 +605,17 @@ export class GameObject
         if (!this.active)
             return;
 
-        this.OnFixedUpdate(fixedDeltaTime);
+        if (this.hooks & HOOK_FIXED_UPDATE)
+            this.OnFixedUpdate(fixedDeltaTime);
 
-        for (var child of this.children)
+        var children = this.children;
+
+        for (var i = 0; i < children.length; i++)
         {
-            child.FixedUpdate(fixedDeltaTime);
+            var child = children[i];
+
+            if (child.subtreeHooks & HOOK_FIXED_UPDATE)
+                child.FixedUpdate(fixedDeltaTime);
         }
     }
 
@@ -547,34 +667,47 @@ export class GameObject
             }
         }
 
-        rapid.matrixStack.save();
-        
+        const stack = rapid.matrixStack;
+
+        // A MASK OR AN OnRender OVERRIDE DRAWS THROUGH THE MATRIX STACK AND SO NEEDS A REAL FRAME.
+        // A PLAIN SPRITE DOES NOT: ITS WORLD MATRIX GOES STRAIGHT INTO THE SCRATCH SLOT INSTEAD.
+        const needsStackFrame = !!this.mask || (this.visible && (this.hooks & HOOK_RENDER) !== 0);
+
         if (this.mask)
-            this.renderParentTransform = rapid.matrixStack.getTransform();
+            this.renderParentTransform = stack.getTransform();
 
-        rapid.matrixStack.save();
-        this.ApplyContentTransform();
-
-        if (this.texture)
-            this.RenderSprite(inheritedColor);
-
-        if (this.visible)
-            this.OnRender(inheritedColor);
-
-        rapid.matrixStack.restore();
-
-        rapid.matrixStack.save();
-        this.ApplyChildTransform();
-
-        // Render children with inherited color
-        for (var i = 0; i < this.children.length; i++)
+        if (needsStackFrame)
         {
-            this.children[i].Render(inheritedColor);
+            stack.save();
+            this.ApplyContentTransform();
+
+            if (this.texture)
+                this.RenderSprite(inheritedColor);
+
+            if (this.visible)
+                this.OnRender(inheritedColor);
+
+            stack.restore();
+        }
+        else if (this.texture)
+        {
+            this.ComposeContentMatrix(stack.matrix, stack.scratch, stack.curWorldM);
+            this.RenderSprite(inheritedColor, stack.scratch);
         }
 
-        rapid.matrixStack.restore();
+        if (this.children.length > 0)
+        {
+            stack.save();
+            this.ApplyChildTransform();
 
-        rapid.matrixStack.restore();
+            // Render children with inherited color
+            for (var i = 0; i < this.children.length; i++)
+            {
+                this.children[i].Render(inheritedColor);
+            }
+
+            stack.restore();
+        }
     }
     
     RenderWorld(inheritedColor?: Color)
@@ -597,33 +730,69 @@ export class GameObject
     // children use transform.pivot, the sprite uses innerPivot (see RenderSprite / GetBounds).
     ApplyTransformToMatrixStack(transform: Transform)
     {
-        this.applyTransform(rapid.matrixStack, transform);
+        const stack = rapid.matrixStack;
+        composeStage(stack.matrix, stack.curWorldM, -1, transform, null, null, transform.flipped);
     }
 
     // Establishes the space children render in, relative to this object's already-applied
     // parent transform. Children inherit the complete content transform by default.
     protected ApplyChildTransform()
     {
-        if (this.childrenInheritInnerTransform)
-        {
-            this.ApplyContentTransform();
-            return;
-        }
-
-        this.ApplyTransformToMatrixStack(this.transform);
-        rapid.matrixStack.translate(-this.pivot.x, -this.pivot.y);
+        const stack = rapid.matrixStack;
+        this.ComposeChildSpaceMatrix(stack.matrix, stack.curWorldM, -1);
     }
 
     protected ApplyContentTransform()
     {
-        this.applyUnflippedTransform(rapid.matrixStack, this.transform);
-        rapid.matrixStack.translate(-this.pivot.x, -this.pivot.y);
-        this.ApplyInnerTransformToMatrixStack();
+        const stack = rapid.matrixStack;
+        this.ComposeContentMatrix(stack.matrix, stack.curWorldM, -1);
     }
 
     protected ApplyInnerTransformToMatrixStack()
     {
-        this.applyInnerTransform(rapid.matrixStack, this);
+        const stack = rapid.matrixStack;
+        this.ComposeInnerMatrix(stack.matrix, stack.curWorldM);
+    }
+
+    /** Content space: what this object's own sprite draws in - the outer transform, then the inner one. */
+    private ComposeContentMatrix(store: MatrixStore, out: number, parent: number): void
+    {
+        // The outer stage never applies the outer flip; outer and inner flips share the inner stage.
+        composeStage(store, out, parent, this.transform, this.pivot, null, false);
+
+        this.ComposeInnerMatrix(store, out);
+    }
+
+    /** The inner stage on its own. Identity for a plain sprite, which is the case worth being quick about. */
+    private ComposeInnerMatrix(store: MatrixStore, out: number): void
+    {
+        const inner = this.innerTransform;
+        const flipped = this.transform.flipped !== inner.flipped;
+
+        if (!flipped
+            && inner.rotation === 0
+            && inner.scale.x === 1 && inner.scale.y === 1
+            && inner.position.x === 0 && inner.position.y === 0)
+            return;
+
+        // The inner pivot is both the origin the stage rotates around and the pivot it takes back out.
+        const pivot = this.innerPivot;
+        composeStage(store, out, -1, inner, pivot, pivot, flipped);
+    }
+
+    /** Outer transform only: position, rotation, scale, flip and pivot. */
+    private ComposeOuterMatrix(store: MatrixStore, out: number, parent: number): void
+    {
+        composeStage(store, out, parent, this.transform, this.pivot, null, this.transform.flipped);
+    }
+
+    /** The space this object's children live in: content space, unless they ignore the inner transform. */
+    private ComposeChildSpaceMatrix(store: MatrixStore, out: number, parent: number): void
+    {
+        if (this.childrenInheritInnerTransform)
+            this.ComposeContentMatrix(store, out, parent);
+        else
+            this.ComposeOuterMatrix(store, out, parent);
     }
 
     OnRender(inheritedColor?: Color)
@@ -662,12 +831,18 @@ export class GameObject
             rapid.matrixStack.restore();
         }
 
-        this.OnPostRender();
+        if (this.hooks & HOOK_POST_RENDER)
+            this.OnPostRender();
 
         // RECURSE SO CHILDREN (AND THEIR DEBUG VISUALS) ALSO POST-RENDER
-        for (var i = 0; i < this.children.length; i++)
+        var children = this.children;
+
+        for (var i = 0; i < children.length; i++)
         {
-            this.children[i].PostRender();
+            var child = children[i];
+
+            if (window.debug || (child.subtreeHooks & HOOK_POST_RENDER))
+                child.PostRender();
         }
     }
 
@@ -676,7 +851,7 @@ export class GameObject
         // FOR OVERRIDE
     }
 
-    RenderSprite(color?: Color)
+    RenderSprite(color?: Color, matrixIndex: number = rapid.matrixStack.curWorldM)
     {
         if (this.mask)
         {
@@ -716,11 +891,7 @@ export class GameObject
             texture = rapid.applyFilters(this.texture, glShaders);
         }
 
-        rapid.drawSprite({
-            texture: texture,
-            color: renderColor,
-            position: new Vec2(0, 0),
-        });
+        rapid.drawSpriteWithMatrix(texture, matrixIndex, renderColor);
 
         if (this.mask)
         {
@@ -1025,55 +1196,7 @@ export class GameObject
             obj = obj.parent;
         }
         for (var i = chain.length - 1; i >= 0; i--)
-            this.applyChildSpaceTransform(m, chain[i]);
-    }
-
-    private applyUnflippedTransform(m: MatrixStack, t: Transform)
-    {
-        m.translate(t.position.x, t.position.y);
-        m.rotate(t.rotation * (Math.PI / 180));
-        m.scale(t.scale.x, t.scale.y);
-    }
-
-    private applyTransform(m: MatrixStack, t: Transform)
-    {
-        this.applyUnflippedTransform(m, t);
-
-        if (t.flipped)
-            m.scale(-1, 1);
-    }
-
-    // Visual inner transform: outer and inner flips share one transform stage.
-    private applyInnerTransform(m: MatrixStack, obj: GameObject)
-    {
-        var pivot = obj.innerPivot;
-        m.translate(pivot.x, pivot.y);
-        this.applyUnflippedTransform(m, obj.innerTransform);
-
-        const contentFlipped = obj.flipped !== obj.innerFlipped;
-        if (contentFlipped)
-            m.scale(-1, 1);
-
-        m.translate(-pivot.x, -pivot.y);
-    }
-
-    private applyContentTransform(m: MatrixStack, obj: GameObject)
-    {
-        this.applyUnflippedTransform(m, obj.transform);
-        m.translate(-obj.pivot.x, -obj.pivot.y);
-        this.applyInnerTransform(m, obj);
-    }
-
-    private applyChildSpaceTransform(m: MatrixStack, obj: GameObject)
-    {
-        if (obj.childrenInheritInnerTransform)
-        {
-            this.applyContentTransform(m, obj);
-            return;
-        }
-
-        this.applyTransform(m, obj.transform);
-        m.translate(-obj.pivot.x, -obj.pivot.y);
+            chain[i].ComposeChildSpaceMatrix(m.matrix, m.curWorldM, -1);
     }
 
     private cornersToRect(corners: {x: number, y: number}[]): Rectangle
@@ -1130,7 +1253,7 @@ export class GameObject
         
         this.buildAncestorMatrix(m);
         m.save();
-        this.applyContentTransform(m, this);
+        this.ComposeContentMatrix(m.matrix, m.curWorldM, -1);
 
         const bounds = ownBounds;
         var corners = this.getCorners(m, bounds.x, bounds.y, bounds.width, bounds.height);
@@ -1181,17 +1304,17 @@ export class GameObject
             // Object texture.
             m.save();
             if (applyObjectTransform)
-                this.applyContentTransform(m, obj);
+                obj.ComposeContentMatrix(m.matrix, m.curWorldM, -1);
             else
-                this.applyInnerTransform(m, obj);
+                obj.ComposeInnerMatrix(m.matrix, m.curWorldM);
             updateBounds(obj);
             m.restore();
 
             // Child space.
             if (applyObjectTransform)
-                this.applyChildSpaceTransform(m, obj);
+                obj.ComposeChildSpaceMatrix(m.matrix, m.curWorldM, -1);
             else if (obj.childrenInheritInnerTransform)
-                this.applyInnerTransform(m, obj);
+                obj.ComposeInnerMatrix(m.matrix, m.curWorldM);
 
             for (var child of obj.children)
                 recurse(child);
@@ -1467,12 +1590,9 @@ export class GameObject
 
         this.buildAncestorMatrix(m);
         if (includeInnerTransform)
-            this.applyContentTransform(m, this);
+            this.ComposeContentMatrix(m.matrix, m.curWorldM, -1);
         else
-        {
-            this.applyTransform(m, this.transform);
-            m.translate(-this.pivot.x, -this.pivot.y);
-        }
+            this.ComposeOuterMatrix(m.matrix, m.curWorldM, -1);
 
         const {x, y} = m.localToWorld(localPoint.x, localPoint.y);
         
@@ -1490,7 +1610,7 @@ export class GameObject
         m.identity();
 
         this.buildAncestorMatrix(m);
-        this.applyTransform(m, this.transform);
+        this.ApplyTransformToMatrixStack(this.transform);
 
         const {x, y} = m.worldToLocal(globalPoint.x, globalPoint.y);
 
@@ -1508,7 +1628,7 @@ export class GameObject
         m.identity();
         
         this.buildAncestorMatrix(m);
-        this.applyChildSpaceTransform(m, this);
+        this.ComposeChildSpaceMatrix(m.matrix, m.curWorldM, -1);
         
         const {x, y} = m.worldToLocal(globalPoint.x, globalPoint.y);
         

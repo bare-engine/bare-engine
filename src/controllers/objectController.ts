@@ -1,4 +1,4 @@
-import { GameObject } from "../objects/gameObject";
+import { GameObject, HOOK_FIXED_UPDATE, HOOK_POST_RENDER, HOOK_PRE_RENDER, HOOK_UPDATE } from "../objects/gameObject";
 import { Scene } from "../scenes/scene";
 import { RegisterController } from "../globals";
 import { InspectorField } from "../utils/decorators";
@@ -30,15 +30,15 @@ export class ObjectController
         if (!this.active)
             return;
 
-        // PRETTY USELESS LOOPING THROUGH THIS IF NO GAMEOBJECTS HOOK INTO FIXED-UPDATE
-        // ONLY USEFUL IF USER GAMEOBJECTS DO - TODO: REMOVE? MAYBE NOT TOO HEAVY THOUGH
-        // CAN ADD A doFixedUpdate/doUpdate field
+        // SKIP EVERY OBJECT WHOSE SUBTREE IMPLEMENTS NO FIXED-UPDATE HOOK: THE WALK ITSELF IS THE COST
         for (let i = 0; i < this.layers.length; i++)
         {
             for (let j = 0; j < this.layers[i].length; j++)
             {
                 const object = this.layers[i][j];
-                object.FixedUpdate(fixedDeltaTime);
+
+                if (object.subtreeHooks & HOOK_FIXED_UPDATE)
+                    object.FixedUpdate(fixedDeltaTime);
             }
         }
     }
@@ -53,7 +53,9 @@ export class ObjectController
             for (let j = 0; j < this.layers[i].length; j++)
             {
                 const object = this.layers[i][j];
-                object.Update(deltaTime);
+
+                if (object.subtreeHooks & HOOK_UPDATE)
+                    object.Update(deltaTime);
             }
         }
     }
@@ -68,7 +70,9 @@ export class ObjectController
             for (let j = 0; j < this.layers[i].length; j++)
             {
                 const object = this.layers[i][j];
-                object.OnPreRender();
+
+                if (object.hooks & HOOK_PRE_RENDER)
+                    object.OnPreRender();
             }
         }
     }
@@ -99,7 +103,10 @@ export class ObjectController
             for (let j = 0; j < this.layers[i].length; j++)
             {
                 const object = this.layers[i][j];
-                object.PostRender();
+
+                // PostRender ALSO DRAWS THE PIVOT GIZMOS IN DEBUG MODE, SO KEEP WALKING THERE
+                if (window.debug || (object.subtreeHooks & HOOK_POST_RENDER))
+                    object.PostRender();
             }
         }
     }

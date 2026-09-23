@@ -427,32 +427,27 @@ export class MatrixStore {
 
 /**
  * A highly performant MatrixStack useful for hierarchal scene graphs.
- * Handles both local and world transformations automatically.
+ *
+ * Only the world matrix is maintained. Every transform operation used to be applied twice, once to a
+ * per-save local matrix and once to the world matrix, but nothing reads the local matrix: drawing takes
+ * curWorldM, and the deferred subtree evaluation that needed local matrices is gone. Halving that work
+ * halves the cost of every translate/rotate/scale in a scene graph walk.
  */
 export class MatrixStack {
     /** The underlying store for matrices. */
     matrix = new MatrixStore()
 
-    /** The current step or depth in the transformation hierarchy. */
-    step: number = 0
-
-    /** Internal stack maintaining structural information. */
+    /** Internal stack of parent world matrix indices, one entry per open save(). */
     stack = new DynamicArrayBuffer(ArrayType.Uint32)
 
-    /** Records the world matrices generated at each step. */
-    stepWorldM = new DynamicArrayBuffer(ArrayType.Uint32)
-    /** Records actions (push/pop) taken during the traversal. */
-    stepAction = new DynamicArrayBuffer(ArrayType.Uint32)
-    /** Records the parent world matrix for each step (used by updateMatrixSubtree). */
-    stepParentM = new DynamicArrayBuffer(ArrayType.Uint32)
-
-    /** Buffer used during hierarchy traversal updates. */
-    parentStack = new DynamicArrayBuffer(ArrayType.Uint32)
-
-    /** The index of the current local matrix in the matrix store. */
-    curLocalM = -1
     /** The index of the current world matrix in the matrix store. */
     curWorldM = -1
+
+    /**
+     * A matrix slot reserved for callers that compose a world matrix themselves instead of pushing a
+     * stack frame. Kept separate from MatrixStore.temporary, which the draw helpers overwrite.
+     */
+    scratch = -1
 
     rapid: Rapid
 
@@ -467,23 +462,16 @@ export class MatrixStack {
     /**
      * Saves the current matrix state and pushes it onto the stack.
      * Equivalent to context.save().
-     * @returns The current step counter before saving.
+     * @returns The index of the new current world matrix.
      */
-    save() {
-        this.stack.push(this.curWorldM)
+    save(): number {
         const parentWorldM = this.curWorldM;
+        this.stack.push(parentWorldM)
 
-        this.curLocalM = this.matrix.alloc(); // localM
-        this.curWorldM = this.matrix.allocDirty(); // worldM
-
-        // update step info
-        this.stepWorldM.push(this.curWorldM)
-        this.stepParentM.push(parentWorldM)
-        this.stepAction.push(1)
-
+        this.curWorldM = this.matrix.allocDirty();
         this.matrix.copy(this.curWorldM, parentWorldM);
 
-        return { world: this.curWorldM, local: this.curLocalM, step: this.step++ }
+        return this.curWorldM
     }
 
     /**
@@ -491,79 +479,35 @@ export class MatrixStack {
      * Equivalent to context.restore().
      */
     restore() {
-        if (this.stack.length == 0) {
+        if (this.stack.length == 0)
             return;
-        } else {
 
-            this.curWorldM = this.stack.pop()
-            this.curLocalM = this.curWorldM - 1
-
-            // update step info
-            this.stepParentM.push(this.stack.get(this.stack.length - 1)) // get stack top
-            this.stepWorldM.push(this.curWorldM)
-            this.stepAction.push(0);
-
-            this.step ++;
-        }
+        this.curWorldM = this.stack.pop()
     }
 
     /**
-     * Evaluates and updates matrices from the given step. Used primarily for deferred transformation.
-     * @param step - The initial step to update matrices from.
-     */
-    updateMatrixSubtree(step: number | { step: number }) {
-        const currentIndex = (typeof step == "number" ? step : step.step)
-
-        let depth = 0
-        let index = currentIndex
-        while (index < this.step) {
-            const action = this.stepAction.get(index)
-
-            if (action === 1) { // save 
-                const worldMatrix = this.stepWorldM.get(index)
-                const localMatrix = worldMatrix - 1
-                const parentMatrix = this.stepParentM.get(index)
-
-                this.matrix.multiplyOut(worldMatrix, parentMatrix, localMatrix)
-                depth++
-            } else { // restore
-                depth--
-                if (depth === 0) {
-                    // 作用域结束
-                    break
-                }
-            }
-
-            index++
-        }
-    }
-
-    /**
-     * Translates the current local and world matrices by x and y.
+     * Translates the current world matrix by x and y.
      * @param x - Translation along the x-axis.
      * @param y - Translation along the y-axis.
      */
     translate(x: number, y: number): void {
-        this.matrix.translate(this.curLocalM, x, y);
         this.matrix.translate(this.curWorldM, x, y);
     }
 
     /**
-     * Scales the current local and world matrices by scaleX and scaleY.
+     * Scales the current world matrix by scaleX and scaleY.
      * @param scaleX - Scaling factor along the x-axis.
      * @param scaleY - Scaling factor along the y-axis.
      */
     scale(scaleX: number, scaleY: number = scaleX): void {
-        this.matrix.scale(this.curLocalM, scaleX, scaleY);
         this.matrix.scale(this.curWorldM, scaleX, scaleY);
     }
 
     /**
-     * Rotates the current local and world matrices by the given radians.
+     * Rotates the current world matrix by the given radians.
      * @param radians - The rotation angle in radians.
      */
     rotate(radians: number): void {
-        this.matrix.rotate(this.curLocalM, radians);
         this.matrix.rotate(this.curWorldM, radians);
     }
 
@@ -585,15 +529,13 @@ export class MatrixStack {
      * @param offsetY - The y component of the pivot point in local space.
      */
     rotateWithOffset(radians: number, offsetX: number, offsetY: number): void {
-        this.matrix.rotateWithOffset(this.curLocalM, radians, offsetX, offsetY);
         this.matrix.rotateWithOffset(this.curWorldM, radians, offsetX, offsetY);
     }
 
     /**
-     * Sets the current local and world matrices to the identity matrix.
+     * Sets the current world matrix to the identity matrix.
      */
     identity() {
-        this.matrix.identity(this.curLocalM)
         this.matrix.identity(this.curWorldM)
     }
 
@@ -603,13 +545,9 @@ export class MatrixStack {
     reset(): void {
         this.matrix.reset();
         this.stack.reset();
-        this.stepAction.reset();
-        this.stepWorldM.reset();
-        this.stepParentM.reset();
-        this.step = 0;
 
-        this.curLocalM = this.matrix.alloc(); // localM
         this.curWorldM = this.matrix.alloc(); // worldM
+        this.scratch = this.matrix.alloc();
     }
 
     /**
@@ -681,8 +619,9 @@ export class MatrixStack {
         data[o + 4] = f[4]; data[o + 5] = f[5];
     }
 
+    /** Transforms a point by the current world matrix. */
     transformPoint(x: number, y: number) {
-        return this.matrix.transformPoint(this.curLocalM, x, y);
+        return this.matrix.transformPoint(this.curWorldM, x, y);
     }
 
     /**
@@ -765,17 +704,6 @@ export class MatrixStack {
             )
             return
         }
-
-        // localMatrix = localMatrix * localTransform
-        this.matrix.multiplyAffineInPlace(
-            this.curLocalM,
-            a,
-            b,
-            c,
-            d,
-            tx,
-            ty
-        );
 
         // worldMatrix = worldMatrix * localTransform
         this.matrix.multiplyAffineInPlace(
