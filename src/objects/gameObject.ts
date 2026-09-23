@@ -517,6 +517,9 @@ export class GameObject
         // Re-read the hooks now the object is fully constructed and parented.
         this.RefreshLifecycleHooks();
 
+        // Attaching changes the parent's subtree even when our cached mask is unchanged.
+        this.parent?.RefreshLifecycleHooks();
+
         this.OnAdded();
     }
 
@@ -639,8 +642,6 @@ export class GameObject
     /** @virtual */
     Render(inheritedColor?: Color)
     {
-        inheritedColor = inheritedColor ? Helper.MultiplyColors(inheritedColor, this.color) : this.color;
-
         // MAYBE WANT TO MOVE THIS OUTSIDE THE RENDER CALL, 
         // SO USER CODE CAN CALL IT DESPITE VISIBLE BOOL - TODO?
         if (bare.levelEditorOpen)
@@ -669,12 +670,18 @@ export class GameObject
 
         const stack = rapid.matrixStack;
 
-        // A MASK OR AN OnRender OVERRIDE DRAWS THROUGH THE MATRIX STACK AND SO NEEDS A REAL FRAME.
-        // A PLAIN SPRITE DOES NOT: ITS WORLD MATRIX GOES STRAIGHT INTO THE SCRATCH SLOT INSTEAD.
-        const needsStackFrame = !!this.mask || (this.visible && (this.hooks & HOOK_RENDER) !== 0);
+        // Custom rendering relies on the object's transform being the current stack frame.
+        // Only default sprite implementations can submit directly through the scratch slot.
+        const base = GameObject.prototype;
+        const needsStackFrame = !!this.mask || (this.visible && (this.hooks & HOOK_RENDER) !== 0)
+            || this.ApplyContentTransform !== base.ApplyContentTransform
+            || this.ApplyInnerTransformToMatrixStack !== base.ApplyInnerTransformToMatrixStack
+            || this.RenderSprite !== base.RenderSprite;
 
         if (this.mask)
             this.renderParentTransform = stack.getTransform();
+
+        inheritedColor = inheritedColor ? Helper.MultiplyColors(inheritedColor, this.color) : this.color;
 
         if (needsStackFrame)
         {
@@ -738,14 +745,21 @@ export class GameObject
     // parent transform. Children inherit the complete content transform by default.
     protected ApplyChildTransform()
     {
+        if (this.childrenInheritInnerTransform)
+        {
+            this.ApplyContentTransform();
+            return;
+        }
+
         const stack = rapid.matrixStack;
-        this.ComposeChildSpaceMatrix(stack.matrix, stack.curWorldM, -1);
+        this.ComposeOuterMatrix(stack.matrix, stack.curWorldM, -1);
     }
 
     protected ApplyContentTransform()
     {
         const stack = rapid.matrixStack;
-        this.ComposeContentMatrix(stack.matrix, stack.curWorldM, -1);
+        composeStage(stack.matrix, stack.curWorldM, -1, this.transform, this.pivot, null, false);
+        this.ApplyInnerTransformToMatrixStack();
     }
 
     protected ApplyInnerTransformToMatrixStack()
