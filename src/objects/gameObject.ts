@@ -42,7 +42,16 @@ export class GameObject
     active:boolean = true;
     texture: Texture | null;
     
-    shaders: Shader[] = [];
+    private _shaders: Shader[] | null = null;
+
+    get shaders(): Shader[]
+    {
+        return this._shaders ??= [];
+    }
+    set shaders(value: Shader[])
+    {
+        this._shaders = value;
+    }
     private mask: GameObject | null = null;
     private maskType: MaskType = MaskType.EQUAL;
 
@@ -71,9 +80,28 @@ export class GameObject
     
     visibleInEditor:boolean = true;
 
-    OnTextureLoadedCallbacks: Function[] = [];
+    private _OnTextureLoadedCallbacks: Function[] | null = null;
 
-    events = mitt<Events>();
+    get OnTextureLoadedCallbacks(): Function[]
+    {
+        return this._OnTextureLoadedCallbacks ??= [];
+    }
+    set OnTextureLoadedCallbacks(value: Function[])
+    {
+        this._OnTextureLoadedCallbacks = value;
+    }
+
+    private _events: ReturnType<typeof mitt<Events>> | null = null;
+
+    // ONLY ALLOCATING EVENTS WHEN NEEDED, SAVES SOME MEMORY
+    get events(): ReturnType<typeof mitt<Events>>
+    {
+        return this._events ??= mitt<Events>();
+    }
+    set events(value: ReturnType<typeof mitt<Events>>)
+    {
+        this._events = value;
+    }
 
     layer:string = "";
 
@@ -394,9 +422,10 @@ export class GameObject
 
         if (this.texture != window.redPixelTexture) // redPixelTexture MEANS IT'S NOT FOUND
         {
-            var onTextureLoadedCallbacksCached = this.OnTextureLoadedCallbacks;
-            this.OnTextureLoadedCallbacks = [];
-            
+            var onTextureLoadedCallbacksCached = this._OnTextureLoadedCallbacks;
+            this._OnTextureLoadedCallbacks = null;
+
+            if (onTextureLoadedCallbacksCached)
             for (var i = 0; i < onTextureLoadedCallbacksCached.length; i++)
             {
                 onTextureLoadedCallbacksCached[i]();
@@ -535,15 +564,17 @@ export class GameObject
             return;
         
         // UPDATE SHADERS
-        for (var i = this.shaders.length - 1; i >= 0; i--)
+        var shaders = this._shaders;
+        if (shaders)
+        for (var i = shaders.length - 1; i >= 0; i--)
         {
-            var shader = this.shaders[i];
+            var shader = shaders[i];
 
             if (shader.Update)
             {
                 var remove = shader.Update(this);
                 if (remove)
-                    this.shaders.splice(i, 1);
+                    shaders.splice(i, 1);
             }
         }
 
@@ -710,9 +741,9 @@ export class GameObject
         
         var texture = this.texture;
 
-        if (this.shaders.length > 0)
+        if (this._shaders && this._shaders.length > 0)
         {
-            const glShaders = this.shaders.map(shader => shader.shader);
+            const glShaders = this._shaders.map(shader => shader.shader);
             texture = rapid.applyFilters(this.texture, glShaders);
         }
 
@@ -887,10 +918,28 @@ export class GameObject
     save: boolean = false;
 
     @InspectorField @Save
-    tags:Array<string> = [];
+    private _tags: Array<string> | null = null;
+
+    get tags(): Array<string>
+    {
+        return this._tags ??= [];
+    }
+    set tags(value: Array<string>)
+    {
+        this._tags = value;
+    }
 
     @InspectorField @Save
-    customData: Record<string, any> = {};
+    private _customData: Record<string, any> | null = null;
+
+    get customData(): Record<string, any>
+    {
+        return this._customData ??= {};
+    }
+    set customData(value: Record<string, any>)
+    {
+        this._customData = value;
+    }
 
     get x(): number
     {
@@ -1638,7 +1687,7 @@ export class GameObject
         this.active = true;
         this.visible = true;
         this.visibleInEditor = true;
-        this.tags = [];
+        this._tags = null;
         this.tapHitbox = null;
         this.revertPivotOnSave = false;
         this.resizeable = true;
@@ -1652,11 +1701,11 @@ export class GameObject
         this.childrenInheritInnerTransform = true;
         this.renderParentTransform = null;
 
-        this.OnTextureLoadedCallbacks = [];
+        this._OnTextureLoadedCallbacks = null;
 
-        this.customData = {};
+        this._customData = null;
 
-        this.events.clearAll();
+        this._events?.clearAll();
 
         this.RemoveMask();
 
@@ -1694,7 +1743,7 @@ export class GameObject
     
     RemoveShaders()
     {
-        this.shaders = [];
+        this._shaders = null;
     }
     
     Remove(clear:boolean = true)
