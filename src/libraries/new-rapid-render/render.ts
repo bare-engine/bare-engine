@@ -1,6 +1,7 @@
 import { getContext, WebGLContext } from "./webgl/utils";
 import GLShader, { CustomGlShader } from "./webgl/glshader";
 import { Region } from "./region/region";
+import { TransformSpriteRegion } from "./region/transformSpriteRegion";
 import { SpriteRegion } from "./region/spriteRegion";
 import { MatrixStack, MatrixStore, ITransformOptions } from "./matrix-engine";
 import { GraphicRegion } from "./region/graphicRegion";
@@ -163,6 +164,7 @@ export class Rapid {
 
     /** Region dedicated to fast sprite rendering. */
     spriteRegion: SpriteRegion;
+    private transformSpriteRegion?: TransformSpriteRegion;
     /** Region dedicated to arbitrary geometry and shapes rendering. */
     graphicRegion: GraphicRegion;
 
@@ -282,6 +284,14 @@ export class Rapid {
         this.flush();
         this.currentRegion = region;
         region.enter(customShader);
+    }
+
+    /** @internal GPU local transforms for default, unfiltered sprites. */
+    drawSpriteTransform(texture: Texture, x: number, y: number, rotation: number,
+        scaleX: number, scaleY: number, pivotX: number, pivotY: number, color?: Color): void {
+        const region = this.transformSpriteRegion ??= new TransformSpriteRegion(this);
+        this.enterRegion(region);
+        region.drawTransformed(texture, x, y, rotation, scaleX, scaleY, pivotX, pivotY, this.getColorUint32(color));
     }
 
     drawParticles(options: IDrawParticleBatchOptions): void {

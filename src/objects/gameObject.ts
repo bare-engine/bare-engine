@@ -698,8 +698,27 @@ export class GameObject
         }
         else if (this.texture)
         {
-            this.ComposeContentMatrix(stack.matrix, stack.scratch, stack.curWorldM);
-            this.RenderSprite(inheritedColor, stack.scratch);
+            const inner = this.innerTransform;
+            const transform = this.transform;
+            const texture = this.texture;
+            // Preserve the affine path for inner transforms, filters, atlases and pixel snapping.
+            // Children still establish their normal stack frame below.
+            if (!this.parent && this.children.length === 0 && this.shaders.length === 0 && texture.base && !texture.isAtlas && !texture.isRotated
+                && !rapid.roundPixels && !rapid.inCreateMask
+                && transform.flipped === inner.flipped && inner.rotation === 0
+                && inner.scale.x === 1 && inner.scale.y === 1
+                && inner.position.x === 0 && inner.position.y === 0)
+            {
+                const pivot = this.pivot;
+                rapid.drawSpriteTransform(texture, transform.position.x, transform.position.y,
+                    transform.rotation * DEG_TO_RAD, transform.scale.x, transform.scale.y,
+                    pivot.x, pivot.y, inheritedColor);
+            }
+            else
+            {
+                this.ComposeContentMatrix(stack.matrix, stack.scratch, stack.curWorldM);
+                this.RenderSprite(inheritedColor, stack.scratch);
+            }
         }
 
         if (this.children.length > 0)
