@@ -25,6 +25,18 @@ export class TextObject extends GameObject
     @Dropdown(["left", "center", "right"])
     get align():string {return this.textTexture.style.align;}
     set align(value:"left" | "center" | "right") {this.textTexture.style.align = value; this.UpdateText();}
+
+    @InspectorField @Save
+    get fill(): Color {return Color.fromHex(this.textTexture.style.fill as string ?? "#000000");}
+    set fill(value: Color | string) {this.textTexture.style.fill = typeof value === "string" ? value : value.toHex(); this.UpdateText();}
+
+    @InspectorField @Save
+    get stroke(): Color {return Color.fromHex(this.textTexture.style.stroke as string ?? "#000000");}
+    set stroke(value: Color | string) {this.textTexture.style.stroke = typeof value === "string" ? value : value.toHex(); this.UpdateText();}
+
+    @InspectorField @Save @Limit(0, Infinity)
+    get strokeThickness(): number {return this.textTexture.style.strokeThickness ?? 0;}
+    set strokeThickness(value: number) {this.textTexture.style.strokeThickness = value; this.UpdateText();}
     
     override get specialMap(): Record<string, (obj: TextObject, value: any) => void>
     {
