@@ -915,15 +915,18 @@ export class TransformToolHandler
     {
         const origin = o.ToGlobal(new Vec2(0, 0), false);
         const xPt    = o.ToGlobal(new Vec2(1, 0), false);
+        const yPt    = o.ToGlobal(new Vec2(0, 1), false);
         let ax = xPt.x - origin.x;
         let ay = xPt.y - origin.y;
         const len = Math.hypot(ax, ay) || 1;
         ax /= len; ay /= len;          // outer X axis (unit)
 
-        // `flipped` mirrors the sprite through the outer transform's X axis. The gizmo should
-        // still treat the object's unmirrored orientation as "top", otherwise the frame angle
-        // jumps by 180 degrees and the rotation knob appears below the box.
-        if (o.scale.x * (o.flipped ? -1 : 1) < 0)
+        // A mirror anywhere in the chain (own flip/negative scale OR an ancestor's) reverses the
+        // world X axis. The gizmo should still treat the unmirrored orientation as "top", otherwise
+        // the frame angle jumps by 180 degrees and the rotation knob appears below the box.
+        // Detect it from the world transform's determinant rather than just this object's flags.
+        const det = (xPt.x - origin.x) * (yPt.y - origin.y) - (xPt.y - origin.y) * (yPt.x - origin.x);
+        if (det < 0)
         {
             ax = -ax;
             ay = -ay;
