@@ -212,6 +212,8 @@ export var entityVarsNestedRecord: Record<string, string[]> =
         "rigidbodyRect",
         "hitboxRadius",
         "polygonVertices"
+    ],
+    "TextObject": [
     ]
 }
 
