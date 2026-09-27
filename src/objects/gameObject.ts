@@ -1475,6 +1475,18 @@ export class GameObject
 
         return this;
     }
+
+    FlipX(): this
+    {
+        this.scale.x *= -1;
+        return this;
+    }
+
+    FlipY(): this
+    {
+        this.scale.y *= -1;
+        return this;
+    }
     
     SetName(name: string): this
     {
