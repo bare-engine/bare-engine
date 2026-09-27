@@ -2145,15 +2145,14 @@ export class PluginHandler
 
         // FILL INFO ABOUT WHAT ENTITY PROPERTIES ARE EXTENDED BY WHY WHICH DATA - USING extendOrder
         let propsInThisEntity = Object.keys(entity); // USING entity, NOT newEntity SINCE THAT CONTAINS ALL PROPS ALREADY
-        if (propsInThisEntity.includes("name"))
-            propsInThisEntity.splice(propsInThisEntity.indexOf("name"), 1);
 
         // AN ENTITY PROP THAT *ALSO* EXISTS SOMEWHERE IN THE EXTEND CHAIN IS AN OVERRIDE OF AN
         // INHERITED PROP, NOT A BRAND-NEW OWN PROP. KEEP THOSE LOGGED UNDER THEIR BASE SOURCE (SO
         // THEY STAY GROUPED UNDER THE EXTENDED ENTITY IN THE PLUGIN INSTEAD OF JUMPING TO THE OWN
         // GROUP) AND FLAG THEM IN __overriddenFields__ SO THE PLUGIN SHOWS A REVERT (R) BUTTON.
         // baseEntity/baseClass ARE STRUCTURAL (EVERY ENTITY IN A CHAIN DECLARES THEM) - ALWAYS OWN.
-        var overrideExcluded = new Set(["baseEntity", "baseClass"]);
+        // name identifies this node itself, so a base that also has a name never supplies it.
+        var overrideExcluded = new Set(["entity", "baseClass", "name"]);
         // Returns the inherited value for a prop from the nearest base in the chain that declares it,
         // or a sentinel {found:false} when no base declares it.
         var getInheritedValue = (prop: string): { found: boolean, value?: any } =>

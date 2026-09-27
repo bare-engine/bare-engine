@@ -219,6 +219,7 @@ export var entityVarsNestedRecord: Record<string, string[]> =
 
 export var entityVarsAr: string[] =
 [
+    "name",
     "entity",
     "baseClass",
     "imagePath",
