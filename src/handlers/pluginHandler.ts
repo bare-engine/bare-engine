@@ -697,9 +697,16 @@ const gameDebugApi = {
     // already on the entity json, or locked by getNestedEntityVars (eg: hitbox on a non-arcade class)
     var lockedVars = new Set<string>(Object.keys(entity ?? {}));
     var nestedVars: EntityVarsNestedEntry[] = window.__GAME_DEBUG_API__.getNestedEntityVars(entityName, childPath);
-    for (var key of nestedVars.flatMap(entry => typeof entry === "string" ? [entry] : Object.values(entry).flat()))
-        if (key.endsWith(":locked"))
-            lockedVars.add(key.slice(0, -":locked".length));
+    var nestedKeys = nestedVars.flatMap(entry => typeof entry === "string" ? [entry] : Object.values(entry).flat());
+    // the same field name can live in several class groups (eg "text" in both TextObject and Button),
+    // so only lock it when no group offers it unlocked - else Button.text gets locked by the TextObject group
+    var unlockedKeys = new Set(nestedKeys.filter(key => !key.endsWith(":locked")));
+    for (var key of nestedKeys)
+    {
+        var name = key.endsWith(":locked") ? key.slice(0, -":locked".length) : key;
+        if (key.endsWith(":locked") && !unlockedKeys.has(name))
+            lockedVars.add(name);
+    }
 
     // subclass @inspectorfield/@save members grouped by declaring class. read off the live instance,
     // decorator metadata isn't reliably readable through a fake {constructor: cls} wrapper

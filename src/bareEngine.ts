@@ -578,7 +578,12 @@ export class BareEngine
         // GAMEOBJECT
         if (_class.prototype instanceof GameObject || _class === GameObject)
         {
-            bare.RegisterGameObjectPool(_class, 1);
+            try {
+                new _class(null); // TESTING IF CLASS CAN BE INSTANTIATED
+                bare.RegisterGameObjectPool(_class, 1); // IT CAN... POOL IT
+            } catch (error) {
+                
+            }
 
             GameObject.RegisterGameObject(_class);
 
