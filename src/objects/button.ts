@@ -29,8 +29,8 @@ export class Button extends GameObject
     };
 
     @InspectorField @Save
-    get fill(): Color {return Color.fromHex(this.textTexture.style.fill as string ?? "#ffffff");}
-    set fill(value: Color | string) {this.textTexture.style.fill = typeof value === "string" ? value : value.toHex(); this.UpdateText();}
+    get textColor(): Color {return Color.fromHex(this.textTexture.style.fill as string ?? "#ffffff");}
+    set textColor(value: Color | string) {this.textTexture.style.fill = typeof value === "string" ? value : value.toHex(); this.UpdateText();}
 
     @InspectorField @Save
     buttonColor: Color;
@@ -50,7 +50,7 @@ export class Button extends GameObject
 
         this.name = options.text;
         this.marge = options?.marge ?? 10;
-        this.buttonColor = options?.buttonColor || Color.fromHex('#242428eb');
+        this.buttonColor = options?.buttonColor || Color.fromHex('#000000');
 
         this.textTexture = bare.texture.createTextTexture({
             fontSize: 22,
