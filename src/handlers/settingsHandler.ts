@@ -194,6 +194,9 @@ export class SettingsHandler
         fillEntityUIDS(raw.baseEntities, false);
         fillEntityUIDS(raw.entities, false);
 
+        this.RemoveDanglingChildReferences(raw.baseEntities);
+        this.RemoveDanglingChildReferences(raw.entities);
+
         // keep the runtime registered entities that the raw settings data doesn't provide, running objects still serialize against them
         for (const [entityUID, entity] of this.runtimeRegisteredEntities)
         {
@@ -972,6 +975,28 @@ export class SettingsHandler
     {
         const entityUID = entity?.entityUID;
         return entityUID ? this.rawEntitiesMappedByUID[entityUID] : undefined;
+    }
+
+    // removes children overriding a settings child (.entity is its uid) that no longer exists, eg after removing it in its entity
+    // runs before construction, which would fail on the missing base entity. mutates the entities
+    RemoveDanglingChildReferences(entities: Entity[]): void
+    {
+        for (const entity of entities)
+        {
+            if (!entity.children)
+                continue;
+
+            entity.children = entity.children.filter(child =>
+            {
+                const isDangling = typeof child.entity === "string" && Helper.IsEntityUID(child.entity) && !this.rawEntitiesMappedByUID[child.entity];
+                if (isDangling)
+                    console.warn(`Removed child of '${entity.name ?? entity.entity}' referencing removed child '${child.entity}'`);
+
+                return !isDangling;
+            });
+
+            this.RemoveDanglingChildReferences(entity.children);
+        }
     }
 
     static GenerateRuntimeUID(): string
