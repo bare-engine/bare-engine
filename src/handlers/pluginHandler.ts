@@ -59,6 +59,9 @@ const gameDebugApi = {
             bare.scene.Remove(EditorUIScene);*/
     },
     getShowEditorButton() {
+        // hidden while any editor (level or entity) is already open
+        if (bare.scene.Get(EditorScene) || bare.scene.Get(EntityScene))
+            return false;
         return !!bare.scene.GetLevelScene();
     },
   clickedComponentButton(uid: string, compName: string, methodName: string)
