@@ -295,20 +295,28 @@ export class EditorUIHandler {
             
             const categoryIcon = document.createElement('div');
             categoryIcon.className = 'entity-image';
-            
-            if (categoryData.image)
+
+            // fall back to the first entry when no category image is set
+            const categoryImage = categoryData.image
+                ?? (Array.isArray(categoryData.entries) ? categoryData.entries[0] : undefined);
+
+            if (categoryImage)
             {
                 // Get category image from loaded texture or fallback to path
-                const texture = assetsHandler.HasTexture(categoryData.image)
-                    ? assetsHandler.GetTexture(categoryData.image)
-                    : null;
+                // try the raw key first (image paths), then the resolved entity texture (e.g. atlas frames)
+                const entityTexKey = MakePathForEntity(this.scene.ConstructEntity(categoryImage));
+                const texture = assetsHandler.HasTexture(categoryImage)
+                    ? assetsHandler.GetTexture(categoryImage)
+                    : assetsHandler.HasTexture(entityTexKey)
+                        ? assetsHandler.GetTexture(entityTexKey)
+                        : null;
 
                 if (texture?.base?.uid) {
                     this.SetTextureBackground(categoryIcon, texture);
                 } else {
-                    if (categoryData.image)
+                    if (categoryImage)
                     {
-                        const categoryImagePath = this.GetCategoryImagePath(categoryData.image);
+                        const categoryImagePath = this.GetCategoryImagePath(categoryImage);
                         if (categoryImagePath) {
                             const img = document.createElement('img');
                             this.SetupPreviewImage(img, categoryImagePath);
