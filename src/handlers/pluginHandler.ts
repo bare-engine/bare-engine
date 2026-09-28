@@ -2033,6 +2033,10 @@ export class PluginHandler
             {
                 entity.children ??= [];
 
+                // children referencing a source child, in the order MergeChildren() builds the runtime children:
+                // deepest base's children first, then the nearer bases'. the entity's own children go after
+                var orderedSourceRefs: Entity[] = [];
+
                 var entityName = entity.entity || "ANY";
                 var visitedEntityNames = new Set<string>();
                 while (entityName && !visitedEntityNames.has(entityName))
@@ -2043,30 +2047,37 @@ export class PluginHandler
                         break;
 
                     var sourceChildrenAr = settingsDataEntity.children ?? [];
-                    for (var i = sourceChildrenAr.length - 1; i >= 0; i--)
+                    var levelRefs: Entity[] = [];
+                    for (const sourceChild of sourceChildrenAr)
                     {
-                        var sourceChild = sourceChildrenAr[i];
-
                         // GIVE SOURCE CHILD AN UID, IF IT DOESN'T HAVE ONE ALREADY
                         sourceChild.entityUID ??= SettingsHandler.GenerateRuntimeUID();
                         settingsHandler.rawEntitiesMappedByUID[sourceChild.entityUID] = sourceChild;
 
-                        var sourceChildUIDIsInOtherChild = entity.children.some(child => child.entity === sourceChild.entityUID);
-                        if (!sourceChildUIDIsInOtherChild)
+                        var existingRef = entity.children.find(child => child.entity === sourceChild.entityUID);
+                        if (existingRef)
                         {
-                            var newChildEnity:Entity = {entity: sourceChild.entityUID};
-
-                            // NEW CHILD ALSO NEEDS A UID, IN CASE ANOTHER CHILD REFRENCES IT
-                            newChildEnity.entityUID = SettingsHandler.GenerateRuntimeUID();
-                            settingsHandler.rawEntitiesMappedByUID[newChildEnity.entityUID] = newChildEnity;
-
-                            entity.children.unshift(newChildEnity);
+                            levelRefs.push(existingRef);
+                            continue;
                         }
+
+                        var newChildEnity:Entity = {entity: sourceChild.entityUID};
+
+                        // NEW CHILD ALSO NEEDS A UID, IN CASE ANOTHER CHILD REFRENCES IT
+                        newChildEnity.entityUID = SettingsHandler.GenerateRuntimeUID();
+                        settingsHandler.rawEntitiesMappedByUID[newChildEnity.entityUID] = newChildEnity;
+
+                        levelRefs.push(newChildEnity);
                     }
+                    orderedSourceRefs = [...levelRefs, ...orderedSourceRefs];
 
                     // Children can be inherited through multiple entity levels, so continue through the complete base chain.
                     entityName = settingsDataEntity.entity || "";
                 }
+
+                // raw child order has to match the runtime order, childPath indexes both
+                const ownChildren = entity.children.filter(child => !orderedSourceRefs.includes(child));
+                entity.children = [...orderedSourceRefs, ...ownChildren];
 
                 // STORE UNCONSTRUCTED ENTITIES IN rawEntitiesMappedByUID, SO GetEnitityFromObject() CAN USE THEM FOR SERIALIZATION
                 for (const child of entity.children)

@@ -546,7 +546,8 @@ export class Scene implements SceneI
         }
 
         // a uid generated at runtime only links the object to its source, don't let it end up in level data
-        if (this.settingsHandler.IsRuntimeGeneratedUID(finalEntity.entityUID))
+        // the entity editor writes into the live settings data, where objects keep pointing at it (stripped from the saved copy instead)
+        if (!options.keepRuntimeUIDs && this.settingsHandler.IsRuntimeGeneratedUID(finalEntity.entityUID))
             delete finalEntity.entityUID;
 
         // REMOVE ANY FIELDS THAT HAVE A DEFAULT VALUE

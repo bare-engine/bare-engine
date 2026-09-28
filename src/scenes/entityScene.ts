@@ -291,7 +291,7 @@ export class EntityScene extends EditorScene
         
         var entity = {
             name: this.objectName, // KEEP NAME ON TOP
-            ...this.GetEnitityFromObject(rootObject)
+            ...this.GetEnitityFromObject(rootObject, { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false, includeSaveFields: false, keepRuntimeUIDs: true })
         };
             
         // editor-only, set on the root in CreateEntityDataFor(). stored in the live settings data it would make
