@@ -7,8 +7,8 @@ import type { ComponentCtor, Ctor, DropFirst, Events, Rectangle, Shader } from "
 import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';
 import { Hitbox } from '../types/hitbox';
 import { getOwnInspectorFieldNames, InspectorField, isInspectorFieldDescriptor, Percentage } from "../utils/decorators";
-import { getOwnSaveFieldNames, Save } from "../utils/saveFields";
 import { Helper } from '../utils/helper';
+import { getOwnSaveFieldNames, Save } from "../utils/saveFields";
 
 export class Transform {
     position = new Vec2();
@@ -918,9 +918,9 @@ export class GameObject
     @InspectorField @Save
     save: boolean = false;
 
-    @InspectorField @Save
     private _tags: Array<string> | null = null;
 
+    @InspectorField @Save
     get tags(): Array<string>
     {
         return this._tags ??= [];
@@ -930,9 +930,9 @@ export class GameObject
         this._tags = value;
     }
 
-    @InspectorField @Save
     private _customData: Record<string, any> | null = null;
 
+    @InspectorField @Save
     get customData(): Record<string, any>
     {
         return this._customData ??= {};
