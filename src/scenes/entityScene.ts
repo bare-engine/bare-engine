@@ -408,9 +408,8 @@ export class EntityScene extends EditorScene
     // MULTI-SELECT CLICK STILL FOCUSES WHICHEVER CHILD WAS JUST CLICKED/TOGGLED ON, AND FALLS
     // BACK TO THE GENERIC NotifySelectionToPlugin (LAST-SELECTED, OR clearSelection) WHEN A
     // SHIFT-CLICK TOGGLES A CHILD OFF INSTEAD.
-    SelectTransformToolTargetAt(worldPosition: Vec2): GameObject | null
+    SelectTransformToolTargetAt(worldPosition: Vec2, selected: GameObject | null = this.GetTransformToolTargetAt(worldPosition)): GameObject | null
     {
-        const selected = this.GetTransformToolTargetAt(worldPosition);
         const multiSelect = keyboardController.IsKeyDown("shift");
 
         if (!selected)
@@ -478,10 +477,20 @@ export class EntityScene extends EditorScene
         return false;
     }
 
-    // canvas picking stays one level deep, also with ctrl
-    override SelectDeepestChildAt(_mouseWorld: Vec2): boolean
+    // ctrl + click picks the deepest saved descendant, runtime-generated ones resolve to their nearest saved ancestor
+    // the root is never a target
+    override SelectDeepestChildAt(mouseWorld: Vec2): boolean
     {
-        return false;
+        const rootObject = this.object.GetByName(this.objectName);
+        var target = rootObject?.GetDeepestChildAt(mouseWorld);
+        while (target && target !== rootObject && !this.GetChildPath(rootObject!, target))
+            target = target.parent;
+
+        if (!target || target === rootObject)
+            return false;
+
+        this.SelectTransformToolTargetAt(mouseWorld, target);
+        return true;
     }
 
     override AllowsRectSelection(): boolean
