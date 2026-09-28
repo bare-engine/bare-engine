@@ -431,10 +431,10 @@ const gameDebugApi = {
     if (previousCameraTransform?.zoom == Infinity)
         previousCameraTransform = undefined;
 
+    plugin.notifyLeaveEntity = false;
     if (!bare.scene.Get(EntityScene))
         bare.scene.Remove(EditorScene); // WILL REMOVE LEVEL EDITOR IF EXISTS
 
-    plugin.notifyLeaveEntity = false;
     var entityScene = await bare.scene.Add(EntityScene, {name: name, settingsHandler: settingsHandler});
     //bare.scene.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
     plugin.notifyLeaveEntity = true;
