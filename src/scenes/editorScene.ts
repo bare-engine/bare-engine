@@ -644,9 +644,9 @@ export class EditorScene extends Scene
 
         const dataToSave = Helper.DeepCopy(newRawData);
 
-        // strip the unreferenced runtime uids of settings children
+        // strip the unreferenced runtime uids of settings children, and editor-only props
         GameObjectSerializer.CleanEntities([dataToSave.entities ?? [], dataToSave.baseEntities ?? []], this.settingsHandler.rawEntitiesMappedByUID,
-            [], entityUID => this.settingsHandler.IsRuntimeGeneratedUID(entityUID));
+            undefined, entityUID => this.settingsHandler.IsRuntimeGeneratedUID(entityUID));
 
         this.settingsHandler.FilterSettingsDataDefaults(dataToSave);
 
