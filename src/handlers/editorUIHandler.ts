@@ -225,8 +225,9 @@ export class EditorUIHandler {
 
         var categoriesFinal: Record<string, Category>  = {};
         var allEntityNames = data.entities.map(entity => entity.name!);
+        var categoryEntries: Array<[string, Category]> = Object.entries(data.categories);
 
-        for (const [categoryName, categoryData] of Object.entries(data.categories))
+        for (const [categoryName, categoryData] of categoryEntries)
         {
             categoriesFinal[categoryName] = categoryData;
 
@@ -251,7 +252,14 @@ export class EditorUIHandler {
 
         // IF ANY ENTRIES LEFT, ADD THEM TO UNCATEGORIZED
         if (allEntityNames.length > 0)
-            categoriesFinal["uncategorized"] = {...data.categories.uncategorized, entries: allEntityNames};
+        {
+            var uncategorizedName = "uncategorized entities";
+
+            if (categoryEntries.length == 0)
+                uncategorizedName = "entities"; // IF NO CATEGORIES SET, CALL THEM ENTITIES
+
+            categoriesFinal[uncategorizedName] = {...data.categories.uncategorized, entries: allEntityNames};
+        }
 
         // 
         if (Bare.assets.images.length > 0)
