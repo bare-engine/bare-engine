@@ -343,6 +343,30 @@ const gameDebugApi = {
     info.texture = "The texture to use for the entity. Overrides entity.name, which is used as the default texture name.";
     info.pivot = "The pivot point of the entity. 0,0 is the top left corner. Can also supply percentual values.";
     info.hitbox = "Hitbox defined as x1,x2,y1,y2, not x/y/width/height. Can supply percentual values. Can also supply a string to use a pre-defined hitbox, eg: FULL";
+    info.name = "The name of the entity";
+    info.position = "The position of the entity as x,y. For children, this is relative to the parent.";
+    info.scale = "The scale of the entity as x,y.";
+    info.rotation = "The rotation of the entity in degrees.";
+    info.flipped = "Flip the entity horizontally.";
+    info.innerPosition = "An additional x,y offset for the visual content, relative to the entity's transform.";
+    info.innerScale = "An additional scale for the visual content as x,y.";
+    info.innerRotation = "An additional rotation for the visual content in degrees.";
+    info.innerPivot = "The pivot point used by the inner transform. Defaults to the entity's pivot.";
+    info.innerFlipped = "Apply an additional horizontal flip to the visual content.";
+    info.childrenInheritInnerTransform = "Whether children also inherit the parent's inner transform. Enabled by default.";
+    info.color = "The color used to tint the entity's texture. White keeps the original colors.";
+    info.alpha = "The opacity of the entity's texture. 0 is fully transparent, 1 is fully opaque.";
+    info.visible = "Whether the entity is rendered.";
+    info.tapHitbox = "The hitbox used for pointer interaction, defined as x1,x2,y1,y2.";//
+    info.hitboxType = "The shape used for collision detection: Rectangle or Circle.";
+    info.hitboxRadius = "The radius of a circular hitbox.";
+    info.hitboxInheritsInnerTransform = "Whether the physics hitbox also follows the entity's inner transform.";
+    info.pivotBasedOnHitbox = "Set the pivot relative to the hitbox. Can also supply percentual values. Eg 0.5,0.5 for its center.";
+    info.tags = "A list of tags used to group and find game objects.";
+    info.customData = "Custom named values to store on the game object for use by your game code.";
+    info.persistent = "Keep the game object when the current level is cleared. Persistent objects are excluded from level saves.";
+    info.save = "Include the game object when saving the level, unless it is persistent.";
+    info.interactableInEditor = "Whether the game object can be interacted with in the level editor.";
 
     const addDescriptions = (prefix: string | null, descriptions: Record<string, string>) => {
         for (var fieldName in descriptions)
