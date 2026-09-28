@@ -294,6 +294,10 @@ export class EntityScene extends EditorScene
             ...this.GetEnitityFromObject(rootObject)
         };
             
+        // editor-only, set on the root in CreateEntityDataFor(). stored in the live settings data it would make
+        // the entity unselectable in the level editor
+        delete entity.interactableInEditor;
+
         // RESTORE THE PLACEHOLDER FIELDS SET IN CreateEntityDataFor()
         if (entity.texture == "placeHolder")
         {
