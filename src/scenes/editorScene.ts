@@ -526,11 +526,8 @@ export class EditorScene extends Scene
             gameObject.tapHitbox.shouldReleaseOnTop = false;
             let pointerSelectionTarget: GameObject | null = null;
             gameObject.tapHitbox.OnPress = (_levelEntiy: GameObject, event: PointerEvent) => {
-                if (bare.MouseIsOnEditor(event))
-                    return;
-
                 // ctrl presses are picked by SelectDeepestChildAt, called from the transform tool
-                if (event.ctrlKey)
+                if (bare.MouseIsOnEditor(event) || event.ctrlKey || !this.SelectsOnHitboxPress())
                 {
                     pointerSelectionTarget = null;
                     return;
@@ -565,6 +562,12 @@ export class EditorScene extends Scene
         gameObject.save = true; //
 
         return gameObject;
+    }
+
+    // false for scenes that do all their click selection through the transform tool (EntityScene)
+    protected SelectsOnHitboxPress(): boolean
+    {
+        return true;
     }
 
     // ctrl + click: select the deepest visible child under the pointer across all root objects,

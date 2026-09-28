@@ -464,10 +464,20 @@ export class EntityScene extends EditorScene
                 return child;
         }
 
-        if (!rootObject.visible || !rootObject.visibleInEditor || rootObject.alpha == 0 || !rootObject.texture)
-            return null;
+        // the root itself is never a target, clicking it selects the root in the plugin like empty space does
+        return null;
+    }
 
-        return Helper.IsPointInRectangle(worldPosition, rootObject.GetBounds()) ? rootObject : null;
+    // picking goes through SelectTransformToolTargetAt only
+    protected override SelectsOnHitboxPress(): boolean
+    {
+        return false;
+    }
+
+    // canvas picking stays one level deep, also with ctrl
+    override SelectDeepestChildAt(_mouseWorld: Vec2): boolean
+    {
+        return false;
     }
 
     override AllowsRectSelection(): boolean
