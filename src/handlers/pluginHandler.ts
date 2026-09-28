@@ -1875,33 +1875,11 @@ export class PluginHandler
                 if (!obj.visible || !obj.visibleInEditor || obj.alpha == 0)
                     continue;
 
-                var found = this.FindDeepestChildAtPoint(obj, pWorld);
+                var found = obj.GetDeepestChildAt(pWorld);
                 if (found)
                     return found;
             }
         }
-
-        return null;
-    }
-
-    private FindDeepestChildAtPoint(obj: GameObject, pWorld: Vec2): GameObject | null
-    {
-        for (var i = obj.children.length - 1; i >= 0; i--)
-        {
-            var child = obj.children[i];
-
-            if (!child.visible || !child.visibleInEditor)
-                continue;
-
-            var found = this.FindDeepestChildAtPoint(child, pWorld);
-            if (found)
-                return found;
-        }
-
-        var objRect = obj.GetBounds()
-
-        if (Helper.IsPointInRectangle(pWorld, objRect))
-            return obj;
 
         return null;
     }

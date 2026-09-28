@@ -426,7 +426,7 @@ export class EditorControlsHandler {
         ev.preventDefault();
     }
 
-    public StartDrag(obj: GameObject)
+    public StartDrag(obj: GameObject, mouseWorld: Vec2 = this.scene.mouse.world.position)
     {
         // PREVENT SELETING THE OBJECT WHEN HAVING STAMP (CURRENTPREVIEW) AND CONTROL KEY DOWN, SO IT'S EASIER TO PLACE
         if (keyboardController.IsKeyDown("control") && this.currentPreviewActive)
@@ -446,7 +446,7 @@ export class EditorControlsHandler {
             this.SelectGameObjects([obj], !multiSelect);
         }
 
-        if (transformTool.StartMoveFromPointer(this.scene, this.scene.mouse.world.position, obj))
+        if (transformTool.StartMoveFromPointer(this.scene, mouseWorld, obj))
         {
             this.draggingObject = obj;
             this.gesture = 'drag';

@@ -199,6 +199,9 @@ export class TransformToolHandler
             this.SetCursor(null);
         }
 
+        if (!hitsCurrentHandle && event.button === 0 && event.ctrlKey && this.SelectDeepestChildAt(mouseX, mouseY))
+            return;
+
         if (!hitsCurrentHandle)
         {
             const pickerScene = this.GetTransformTargetPickerScene();
@@ -307,6 +310,8 @@ export class TransformToolHandler
 
     private OnPointerUp = ({ event }: BareEventPayload['pointer_up_any']): void =>
     {
+        this.EndCtrlPick();
+
         const pendingTargetPick = this.pendingTargetPick;
         this.pendingTargetPick = null;
 
@@ -766,6 +771,31 @@ export class TransformToolHandler
     private GetScene(): Scene | null
     {
         return this.targets[0]?.scene ?? null;
+    }
+
+    // editor scene: ctrl + click picks the deepest child under the pointer
+    private SelectDeepestChildAt(mouseX: number, mouseY: number): boolean
+    {
+        const scene = this.GetCtrlPickScene();
+        return !!scene && (scene as any).SelectDeepestChildAt(scene.ScreenToWorld(mouseX, mouseY));
+    }
+
+    private EndCtrlPick(): void
+    {
+        (this.GetCtrlPickScene() as any)?.EndCtrlPick();
+    }
+
+    private GetCtrlPickScene(): Scene | null
+    {
+        const scenes = bare.scene.GetAll(true);
+        for (var i = scenes.length - 1; i >= 0; i--)
+        {
+            const scene = scenes[i];
+            if (scene.enabled && (scene as any).opened && typeof (scene as any).SelectDeepestChildAt == 'function')
+                return scene;
+        }
+
+        return null;
     }
 
     private PickTransformTarget(mouseX: number, mouseY: number): void

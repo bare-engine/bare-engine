@@ -1156,6 +1156,27 @@ export class GameObject
         return this.texture ? this.texture.localBounds : null;
     }
 
+    // deepest visible child whose bounds contain pWorld, or this object itself, or null
+    GetDeepestChildAt(pWorld: Vec2): GameObject | null
+    {
+        for (var i = this.children.length - 1; i >= 0; i--)
+        {
+            var child = this.children[i];
+
+            if (!child.visible || !child.visibleInEditor)
+                continue;
+
+            var found = child.GetDeepestChildAt(pWorld);
+            if (found)
+                return found;
+        }
+
+        if (Helper.IsPointInRectangle(pWorld, this.GetBounds()))
+            return this;
+
+        return null;
+    }
+
     GetBounds(global:boolean = true): Rectangle
     {
         const ownBounds = this.GetLocalContentBounds();

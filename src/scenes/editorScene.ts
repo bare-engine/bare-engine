@@ -31,6 +31,7 @@ export class EditorScene extends Scene
 
     // Component classes
     public editorControlsHandler: EditorControlsHandler;
+    private ctrlPickedObject: GameObject | null = null;
     public editorUIHandler: EditorUIHandler;
     
     // State management
@@ -324,7 +325,14 @@ export class EditorScene extends Scene
     {
         var selectedIds = objs.map(o => o.uniqueID);
         if (selectedIds.length == 1)
-            globalThis.plugin?.SelectObjectInPlugin(selectedIds[0], true);
+        {
+            // parent ids let the plugin expand the tree down to a selected child
+            var parentIds: string[] = [];
+            for (var parent = objs[0].parent; parent; parent = parent.parent)
+                parentIds.push(parent.uniqueID);
+
+            globalThis.plugin?.SelectObjectInPlugin(selectedIds[0], true, parentIds);
+        }
         else if (selectedIds.length > 1)
             globalThis.plugin?.SelectObjectsInPlugin(selectedIds);
     }
@@ -511,22 +519,27 @@ export class EditorScene extends Scene
         {
             gameObject.tapHitbox ??= new Hitbox(gameObject, 0);
             gameObject.tapHitbox.shouldReleaseOnTop = false;
-            let pointerSelectionTarget: GameObject = gameObject;
+            let pointerSelectionTarget: GameObject | null = null;
             gameObject.tapHitbox.OnPress = (_levelEntiy: GameObject, event: PointerEvent) => {
                 if (bare.MouseIsOnEditor(event))
                     return;
 
-                pointerSelectionTarget = gameObject;
-                if (!event.ctrlKey)
+                // ctrl presses are picked by SelectDeepestChildAt, called from the transform tool
+                if (event.ctrlKey)
                 {
-                    while (pointerSelectionTarget.parent)
-                        pointerSelectionTarget = pointerSelectionTarget.parent;
+                    pointerSelectionTarget = null;
+                    return;
                 }
+
+                pointerSelectionTarget = gameObject;
+                while (pointerSelectionTarget.parent)
+                    pointerSelectionTarget = pointerSelectionTarget.parent;
 
                 this.editorControlsHandler.StartDrag(pointerSelectionTarget);
             };
             gameObject.tapHitbox.OnRelease = (_levelEntiy: GameObject, event: PointerEvent) => {
-                this.editorControlsHandler.EndDrag(pointerSelectionTarget)
+                if (pointerSelectionTarget)
+                    this.editorControlsHandler.EndDrag(pointerSelectionTarget)
             };
 
             gameObject.tapHitbox.type = HitboxType.Rectangle;
@@ -547,6 +560,41 @@ export class EditorScene extends Scene
         gameObject.save = true; //
 
         return gameObject;
+    }
+
+    // ctrl + click: select the deepest visible child under the pointer across all root objects,
+    // regardless of which hitbox is on top or whether its parent is already selected
+    SelectDeepestChildAt(mouseWorld: Vec2): boolean
+    {
+        if (this.editorControlsHandler.currentPreviewActive)
+            return false;
+
+        var roots = this.object.GetLayers().flat();
+        for (var i = roots.length - 1; i >= 0; i--)
+        {
+            var root = roots[i];
+            if (!root.visible || !root.visibleInEditor || root.entity?.interactableInEditor === false)
+                continue;
+
+            var found = root.GetDeepestChildAt(mouseWorld);
+            if (found)
+            {
+                this.ctrlPickedObject = found;
+                this.editorControlsHandler.StartDrag(found, mouseWorld);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    EndCtrlPick(): void
+    {
+        if (!this.ctrlPickedObject)
+            return;
+
+        this.editorControlsHandler.EndDrag(this.ctrlPickedObject);
+        this.ctrlPickedObject = null;
     }
 
     AddGameObjectAtPosition(x: number, y: number, entityOrName: Entity | string, parent?: int | string | GameObject): GameObject
