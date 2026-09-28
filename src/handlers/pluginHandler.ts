@@ -481,6 +481,9 @@ const gameDebugApi = {
         data.id = o.uniqueID;
         data.hasChildren = o.children.length > 0;
         data.name = o.pluginName || o.name || "gameObject";
+        // the entity the object extends, for the plugin's entity link
+        if (o.entity?.entity)
+            data.title = o.entity.entity;
         data.x = o.x;
         data.y = o.y;
         data.scaleX = o.scaleX;

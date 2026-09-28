@@ -35,6 +35,7 @@ export class GameObject
  
     scene: Scene;
 
+    @InspectorField
     name:string;
     pluginName:string;
     uniqueID:string = "";
