@@ -263,6 +263,9 @@ export class Color {
         if (hexString.startsWith('#')) {
             hexString = hexString.slice(1);
         }
+        if (hexString.length === 3 || hexString.length === 4) {
+            hexString = hexString.split('').map(c => c + c).join('');
+        }
         const r = parseInt(hexString.slice(0, 2), 16);
         const g = parseInt(hexString.slice(2, 4), 16);
         const b = parseInt(hexString.slice(4, 6), 16);
