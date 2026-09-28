@@ -194,8 +194,12 @@ export class SettingsHandler
         fillEntityUIDS(raw.baseEntities, false);
         fillEntityUIDS(raw.entities, false);
 
-        this.RemoveDanglingChildReferences(raw.baseEntities);
-        this.RemoveDanglingChildReferences(raw.entities);
+        // settings entities themselves are kept, only their dangling children are removed
+        for (const entity of [...raw.baseEntities, ...raw.entities])
+        {
+            if (entity.children)
+                entity.children = this.RemoveDanglingReferences(entity.children, entity.name, raw);
+        }
 
         // keep the runtime registered entities that the raw settings data doesn't provide, running objects still serialize against them
         for (const [entityUID, entity] of this.runtimeRegisteredEntities)
@@ -977,26 +981,27 @@ export class SettingsHandler
         return entityUID ? this.rawEntitiesMappedByUID[entityUID] : undefined;
     }
 
-    // removes children overriding a settings child (.entity is its uid) that no longer exists, eg after removing it in its entity
-    // runs before construction, which would fail on the missing base entity. mutates the entities
-    RemoveDanglingChildReferences(entities: Entity[]): void
+    // removes entities whose .entity no longer exists, a removed entity (name) or a removed settings child (uid)
+    // runs before construction, which would fail on the missing base entity. returns the kept entities, children are filtered in place
+    RemoveDanglingReferences(entities: Entity[], ownerName: string = "", raw: SettingsData = this.raw): Entity[]
     {
-        for (const entity of entities)
+        return entities.filter(entity =>
         {
-            if (!entity.children)
-                continue;
+            const reference = entity.entity;
+            const isDangling = typeof reference === "string" && !this.rawEntitiesMappedByUID[reference]
+                && !SettingsHandler.FindEntity(raw, reference) && !SettingsHandler.FindEntity(defaultSettingsData, reference);
 
-            entity.children = entity.children.filter(child =>
+            if (isDangling)
             {
-                const isDangling = typeof child.entity === "string" && Helper.IsEntityUID(child.entity) && !this.rawEntitiesMappedByUID[child.entity];
-                if (isDangling)
-                    console.warn(`Removed child of '${entity.name ?? entity.entity}' referencing removed child '${child.entity}'`);
+                console.warn(`Removed ${entity.name ?? "entity"}${ownerName ? ` in '${ownerName}'` : ""}, it references '${reference}' which no longer exists`);
+                return false;
+            }
 
-                return !isDangling;
-            });
+            if (entity.children)
+                entity.children = this.RemoveDanglingReferences(entity.children, entity.name ?? reference, raw);
 
-            this.RemoveDanglingChildReferences(entity.children);
-        }
+            return true;
+        });
     }
 
     static GenerateRuntimeUID(): string

@@ -477,11 +477,6 @@ export class Helper
         return path.replace(/\.[^/.]+$/, "");
     }
     
-    static IsEntityUID(value: string): boolean
-    {
-        return /^[0-9a-f]{16}$/.test(value);
-    }
-
     static GenerateEntityUID(): string
     {
         const bytes = new Uint8Array(8);

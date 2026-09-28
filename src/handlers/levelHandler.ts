@@ -225,8 +225,8 @@ export class LevelHandler
         if (level.settingsData && level.settingsData != this.scene.settingsData.name)
             await this.LoadSettingsData(level.settingsData);
 
-        for (const entities of Object.values(level.entitiesByLayer ?? {}))
-            this.scene.settingsHandler.RemoveDanglingChildReferences(entities);
+        for (const layerName in level.entitiesByLayer)
+            level.entitiesByLayer[layerName] = this.scene.settingsHandler.RemoveDanglingReferences(level.entitiesByLayer[layerName], level.name);
 
         this.currentLevel = level;
 
