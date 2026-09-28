@@ -410,7 +410,7 @@ export class EditorUIHandler {
                             }
                         }
 
-                        if (categoryData.showLabels)
+                        if (categoryData.showLabels ?? true)
                         {
                             const childEntityItem = document.createElement('div');
                             childEntityItem.className = 'child-entity-item';
