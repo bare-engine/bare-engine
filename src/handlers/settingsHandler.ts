@@ -1,7 +1,7 @@
 import { Scene } from "../scenes/scene";
 import { Bare } from "../types/bare";
 import { defaultSettingsData } from "../types/bareData";
-import { CollisionHandlingType, Entity, LayerInfo, SettingsData } from "../types/bareTypes";
+import { CollisionHandlingType, Entity, LayerInfo, LevelData, SettingsData } from "../types/bareTypes";
 import { InspectorField, Int } from "../utils/decorators";
 import { Helper } from "../utils/helper";
 import { assetsHandler } from "./assetsHandler";
@@ -89,8 +89,9 @@ export class SettingsHandler
     // uids of unconstructed entities registered at runtime through RegisterUnconstructedEntity() (level entities, AddGameObject() inputs)
     // these survive Process() rebuilding rawEntitiesMappedByUID from the raw settings data
     private runtimeRegisteredEntities = new Map<string, Entity>();
-    // subset of runtimeRegisteredUIDs whose uid was generated here instead of coming from the entity itself; stripped again on serialization
-    private runtimeGeneratedUIDs = new Set<string>();
+    // uids generated at runtime instead of coming from the data itself: registered unconstructed entities, and settings children
+    // stripped again on serialization unless referenced. static, since scenes share the raw settings data
+    private static runtimeGeneratedUIDs = new Set<string>();
 
     constructor(scene: Scene)
     {
@@ -174,19 +175,24 @@ export class SettingsHandler
         // FILLING rawEntitiesMappedByUID - SO CHILREN REFERENCING THEIR .entity TO THIS UID, CAN QUICKLY FIND IT
         const previousRawEntitiesMappedByUID = this.rawEntitiesMappedByUID;
         this.rawEntitiesMappedByUID = {};
-        var fillEntityUIDS = (entities: Entity[]) =>
+        var fillEntityUIDS = (entities: Entity[], areChildren: boolean) =>
         {
             for (const entity of entities)
             {
+                // every settings child gets a uid, so a level object's child can reference the child it overrides
+                // unreferenced ones are stripped again when saving the settings data
+                if (areChildren)
+                    entity.entityUID ??= SettingsHandler.GenerateRuntimeUID();
+
                 if (entity.entityUID)
                     this.rawEntitiesMappedByUID[entity.entityUID] = entity;
 
                 if (entity.children?.length > 0)
-                    fillEntityUIDS(entity.children);
+                    fillEntityUIDS(entity.children, true);
             }
         }
-        fillEntityUIDS(raw.baseEntities);
-        fillEntityUIDS(raw.entities);
+        fillEntityUIDS(raw.baseEntities, false);
+        fillEntityUIDS(raw.entities, false);
 
         // keep the runtime registered entities that the raw settings data doesn't provide, running objects still serialize against them
         for (const [entityUID, entity] of this.runtimeRegisteredEntities)
@@ -937,11 +943,7 @@ export class SettingsHandler
     // an entity that already has a uid present in the map (eg the entity editor's copy of a raw entity) keeps pointing at the raw entity
     RegisterUnconstructedEntity(entity: Entity): void
     {
-        if (!entity.entityUID)
-        {
-            entity.entityUID = Helper.GenerateEntityUID();
-            this.runtimeGeneratedUIDs.add(entity.entityUID);
-        }
+        entity.entityUID ??= SettingsHandler.GenerateRuntimeUID();
 
         this.rawEntitiesMappedByUID[entity.entityUID] ??= entity;
         this.runtimeRegisteredEntities.set(entity.entityUID, entity);
@@ -957,7 +959,7 @@ export class SettingsHandler
             return;
 
         this.runtimeRegisteredEntities.delete(entityUID);
-        this.runtimeGeneratedUIDs.delete(entityUID);
+        SettingsHandler.runtimeGeneratedUIDs.delete(entityUID);
 
         // a raw settings entity sharing the uid stays in the map, only remove what was registered here
         if (this.rawEntitiesMappedByUID[entityUID] === registeredEntity)
@@ -972,9 +974,34 @@ export class SettingsHandler
         return entityUID ? this.rawEntitiesMappedByUID[entityUID] : undefined;
     }
 
+    static GenerateRuntimeUID(): string
+    {
+        const entityUID = Helper.GenerateEntityUID();
+        SettingsHandler.runtimeGeneratedUIDs.add(entityUID);
+        return entityUID;
+    }
+
     IsRuntimeGeneratedUID(entityUID: string | undefined): boolean
     {
-        return !!entityUID && this.runtimeGeneratedUIDs.has(entityUID);
+        return !!entityUID && SettingsHandler.runtimeGeneratedUIDs.has(entityUID);
+    }
+
+    // runtime uids of settings children that the serialized level references become permanent
+    // returns whether there were any, the settings data then needs saving too
+    static PersistUIDsReferencedBy(level: LevelData): boolean
+    {
+        const levelJson = JSON.stringify(level);
+        var persisted = false;
+        for (const entityUID of SettingsHandler.runtimeGeneratedUIDs)
+        {
+            if (levelJson.includes(entityUID))
+            {
+                SettingsHandler.runtimeGeneratedUIDs.delete(entityUID);
+                persisted = true;
+            }
+        }
+
+        return persisted;
     }
 
     GetProcessedEnity(entityNameOrId: string, processedSettingsData: SettingsData = this.processed): Entity

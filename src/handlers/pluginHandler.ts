@@ -2045,7 +2045,7 @@ export class PluginHandler
                         var sourceChild = sourceChildrenAr[i];
 
                         // GIVE SOURCE CHILD AN UID, IF IT DOESN'T HAVE ONE ALREADY
-                        sourceChild.entityUID ??= Helper.GenerateEntityUID();
+                        sourceChild.entityUID ??= SettingsHandler.GenerateRuntimeUID();
                         settingsHandler.rawEntitiesMappedByUID[sourceChild.entityUID] = sourceChild;
 
                         var sourceChildUIDIsInOtherChild = entity.children.some(child => child.entity === sourceChild.entityUID);
@@ -2054,7 +2054,7 @@ export class PluginHandler
                             var newChildEnity:Entity = {entity: sourceChild.entityUID};
 
                             // NEW CHILD ALSO NEEDS A UID, IN CASE ANOTHER CHILD REFRENCES IT
-                            newChildEnity.entityUID = Helper.GenerateEntityUID();
+                            newChildEnity.entityUID = SettingsHandler.GenerateRuntimeUID();
                             settingsHandler.rawEntitiesMappedByUID[newChildEnity.entityUID] = newChildEnity;
 
                             entity.children.unshift(newChildEnity);
@@ -2068,7 +2068,7 @@ export class PluginHandler
                 // STORE UNCONSTRUCTED ENTITIES IN rawEntitiesMappedByUID, SO GetEnitityFromObject() CAN USE THEM FOR SERIALIZATION
                 for (const child of entity.children)
                 {
-                    child.entityUID ??= Helper.GenerateEntityUID();
+                    child.entityUID ??= SettingsHandler.GenerateRuntimeUID();
                     settingsHandler.rawEntitiesMappedByUID[child.entityUID] = child;
                 }
 
@@ -2080,7 +2080,8 @@ export class PluginHandler
 
     CleanSettingsData(settingsDataRaw: SettingsData, settingsHandler: SettingsHandler): void
     {
-        GameObjectSerializer.CleanEntities([settingsDataRaw.entities ?? [], settingsDataRaw.baseEntities ?? []], settingsHandler.rawEntitiesMappedByUID);
+        GameObjectSerializer.CleanEntities([settingsDataRaw.entities ?? [], settingsDataRaw.baseEntities ?? []], settingsHandler.rawEntitiesMappedByUID,
+            undefined, entityUID => settingsHandler.IsRuntimeGeneratedUID(entityUID));
     }
 
     // RETURNS A NEW ENTITY WITH baseEntityLog ADDED TOT IT
@@ -2618,7 +2619,7 @@ export class PluginHandler
         //var scene = plugin.GetCurrentScene();
         const scene = bare.scene.GetMainScene();
 
-        // REMOVE EMPTY UID-BASED CHILD OVERRIDES AND THEIR NOW-UNUSED SOURCE UIDS
+        // REMOVE EMPTY UID-BASED CHILD OVERRIDES
         plugin.CleanUpSettingsDataUIDs(newData);
 
         const settingsHandler = this.GetSettingsDataHandler(newData.name ?? "");
@@ -2806,27 +2807,8 @@ export class PluginHandler
         for (const entity of rootEntities)
             cleanChildren(entity);
 
-        const referencedUIDs = new Set<string>();
-        const findReferencedUIDs = (entity: Entity): void =>
-        {
-            if (typeof entity.entity === "string" && rawEntitiesMappedByUID[entity.entity])
-                referencedUIDs.add(entity.entity);
-
-            if (Array.isArray(entity.children))
-            {
-                for (const child of entity.children)
-                    findReferencedUIDs(child);
-            }
-        };
-
-        for (const entity of rootEntities)
-            findReferencedUIDs(entity);
-
-        for (const [entityUID, entity] of Object.entries(rawEntitiesMappedByUID))
-        {
-            if (!referencedUIDs.has(entityUID))
-                delete entity.entityUID;
-        }
+        // unreferenced uids stay on the live raw data, level objects keep pointing at them for the session
+        // CleanSettingsData() strips them from the copy that gets saved
     }
 }
 

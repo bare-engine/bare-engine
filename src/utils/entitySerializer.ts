@@ -142,7 +142,7 @@ export class GameObjectSerializer
     // the given props, and any entities/children left empty afterwards.
     // all lists are considered together when counting UID references.
     // NOT REALLY PART OF OBJECT SERIALIZION, BUT STILL HERE..
-    static CleanEntities(entityLists: Entity[][], rawEntitiesMappedByUID: Record<string, Entity>, propsToDelete: string[] = ["interactableInEditor"]): void
+    static CleanEntities(entityLists: Entity[][], rawEntitiesMappedByUID: Record<string, Entity>, propsToDelete: string[] = ["interactableInEditor"], canStripUID: (entityUID: string) => boolean = () => true): void
     {
         var didClean: boolean;
 
@@ -173,7 +173,7 @@ export class GameObjectSerializer
                         var lastIndex = stringifiedEntities.lastIndexOf(entity.entityUID);
                         var moreThanOneRef = (firstIndex != lastIndex);
 
-                        if (!moreThanOneRef)
+                        if (!moreThanOneRef && canStripUID(entity.entityUID))
                         {
                             delete entity.entityUID; // THIS UID IS NOT REFERENCED ANYWHERE ELSE, REMOVE IT
                             didClean = true;

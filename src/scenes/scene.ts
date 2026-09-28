@@ -659,6 +659,12 @@ export class Scene implements SceneI
                                 children: mergedChildren
                             };
 
+                            // the source's uid identifies the source only, an override referencing it doesn't take it over
+                            if (entityArg.entityUID)
+                                entity.entityUID = entityArg.entityUID;
+                            else
+                                delete entity.entityUID;
+
                             // CONSTRUCT ANY NEW CHILDREN IF NECESSARY
                             for (var i = 0; i < entity.children.length; i++)
                             {
@@ -667,7 +673,9 @@ export class Scene implements SceneI
                                     entity.children[i] = this.ConstructEntity(child, settingsData, options);
                             }
 
-                            if (!entityArg.name)
+                            // an override of a settings child (.entity is the child's uid) keeps the child's name
+                            const referencesChildUID = !!this.settingsHandler.rawEntitiesMappedByUID[entityArg.entity];
+                            if (!entityArg.name && !referencesChildUID)
                                 delete entity.name; // DON'T WANT THE NAME COMING FROM possibleEntity, SETTING NAME AT BOTTOM OF THIS METHOD
                         }
                         else

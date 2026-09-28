@@ -10,6 +10,7 @@ import { Color, Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { BareEvent, BareOptions, CameraScaleMode, Entity, HitboxType, LevelData, Rectangle, SaveData, SceneOptions, SettingsData, Size } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
+import { GameObjectSerializer } from "../utils/entitySerializer";
 import { Helper } from "../utils/helper";
 import { Scene } from "./scene";
 
@@ -485,6 +486,10 @@ export class EditorScene extends Scene
             if (response.ok) {
                 const result = await response.json();
                 console.log('✅ Level saved:', result.message);
+
+                // a level child overriding a settings child references the child's uid, which may only exist at runtime so far
+                if (SettingsHandler.PersistUIDsReferencedBy(level))
+                    await this.SaveSettingsData(this.settingsHandler.GetRaw());
             } else {
                 const errorResult = await response.json();
                 console.error('❌ Failed to save level:', errorResult.error);
@@ -635,7 +640,11 @@ export class EditorScene extends Scene
         //    globalThis.plugin.FilterSettingsDataDefaults(newRawData);
 
         const dataToSave = Helper.DeepCopy(newRawData);
-        
+
+        // strip the unreferenced runtime uids of settings children
+        GameObjectSerializer.CleanEntities([dataToSave.entities ?? [], dataToSave.baseEntities ?? []], this.settingsHandler.rawEntitiesMappedByUID,
+            [], entityUID => this.settingsHandler.IsRuntimeGeneratedUID(entityUID));
+
         this.settingsHandler.FilterSettingsDataDefaults(dataToSave);
 
         await this.OnPreSaveSettingsData(dataToSave);
