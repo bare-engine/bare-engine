@@ -9,6 +9,7 @@ import { GameObject } from "./gameObject";
 interface TextOptions extends ITextOptions, ButtonHandlers<Button> {
     buttonColor?: Color;
     marge?: number;
+    cornerRadius?: number;
     text: string;
 }
 
@@ -38,6 +39,9 @@ export class Button extends GameObject
     @InspectorField @Save @Limit(0, Infinity)
     marge: number;
 
+    @InspectorField @Save @Limit(0, Infinity)
+    cornerRadius: number;
+
     constructor(scene: Scene, textOptions: TextOptions | string)
     {
         super(scene);
@@ -50,6 +54,7 @@ export class Button extends GameObject
 
         this.name = options.text;
         this.marge = options?.marge ?? 10;
+        this.cornerRadius = options?.cornerRadius ?? 9;
         this.buttonColor = options?.buttonColor || Color.fromHex('#000000');
 
         this.textTexture = bare.texture.createTextTexture({
@@ -89,9 +94,10 @@ export class Button extends GameObject
         const buttonColor = this.buttonColor.clone();
         buttonColor.a = this.buttonColor.a * ((inheritedColor?.a ?? 255)/255);
 
-        bare.drawRect({
+        bare.drawRoundedRect({
             width: this.width,
             height: this.height,
+            radius: this.cornerRadius,
             color: buttonColor,
             position: new Vec2(),
         });
