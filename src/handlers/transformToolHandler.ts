@@ -875,6 +875,24 @@ export class TransformToolHandler
         return this.FrameContains(frame, scene.ScreenToWorld(mouseX, mouseY));
     }
 
+    // the current target under the screen point, or null when the point is outside the selection.
+    // falls back to the last target when the point is only inside the combined frame
+    GetCurrentTargetAt(mouseX: number, mouseY: number): GameObject | null
+    {
+        if (!this.PointerHitsCurrentBody(mouseX, mouseY))
+            return null;
+
+        const mouse = this.GetScene()!.ScreenToWorld(mouseX, mouseY);
+        for (var i = this.targets.length - 1; i >= 0; i--)
+        {
+            const frame = this.GetFrame([this.targets[i]]);
+            if (frame && this.FrameContains(frame, mouse))
+                return this.targets[i];
+        }
+
+        return this.targets[this.targets.length - 1];
+    }
+
     private SceneHandlesBodyMove(scene: Scene): boolean
     {
         return (scene as any).transformToolHandlesBodyMove === true;

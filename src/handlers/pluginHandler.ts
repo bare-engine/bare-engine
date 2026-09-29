@@ -1919,13 +1919,29 @@ export class PluginHandler
       if (ev.button === 2)
       {
         var isControlDown = keyboardController.IsKeyDown("control");
+
+          // like left click in the level editor: clicking inside the current selection keeps it
+          // (eg a deep child picked with ctrl) and moves it, instead of reselecting the root
+          if (!isControlDown)
+          {
+              var p = bare.GetCanvasScreenPosition(ev.clientX, ev.clientY);
+              var selected = TransformToolHandler.Get().GetCurrentTargetAt(p.x, p.y);
+              if (selected)
+              {
+                  this.SyncSceneMouseToPointerDown(selected.scene, ev);
+                  TransformToolHandler.Get().StartMoveFromPointer(selected.scene, selected.scene.ScreenToWorldPos(p), selected);
+                  ev.preventDefault();
+                  return false;
+              }
+          }
+
           const obj = isControlDown ? this.CheckClickDeepChild(ev) : this.CheckClickGameObject(ev);
 
           if (obj)
               this.SyncSceneMouseToPointerDown(obj.scene, ev);
-        
+
           plugin.HandleClickObject(obj);
-          
+
           if (obj)
           {
               var parentIds = [];
