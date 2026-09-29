@@ -213,16 +213,11 @@ export class EditorUIHandler {
         this.SyncSettingsUI();
     }
 
-    PopulateSidebar(data: SettingsData): void {
-        const sidebarContent = document.querySelector('.sidebar-content') as HTMLElement;
-        if (!sidebarContent) {
-            console.error('Sidebar content not found');
-            return;
-        }
-
-        // Clear existing content
-        sidebarContent.innerHTML = '';
-
+    // the categories shown in the sidebar: the user's categories, the entities not in any of them
+    // ("entities", or "uncategorized entities" once categories are set up) and the loaded images.
+    // also used by the plugin's add child menu, so both stay in sync
+    static GetSidebarCategories(data: SettingsData): Record<string, Category>
+    {
         var categoriesFinal: Record<string, Category>  = {};
         var allEntityNames = data.entities.map(entity => entity.name!);
         var categoryEntries: Array<[string, Category]> = Object.entries(data.categories);
@@ -264,6 +259,21 @@ export class EditorUIHandler {
         // 
         if (Bare.assets.images.length > 0)
             categoriesFinal["images"] = { entries: Bare.assets.images };
+
+        return categoriesFinal;
+    }
+
+    PopulateSidebar(data: SettingsData): void {
+        const sidebarContent = document.querySelector('.sidebar-content') as HTMLElement;
+        if (!sidebarContent) {
+            console.error('Sidebar content not found');
+            return;
+        }
+
+        // Clear existing content
+        sidebarContent.innerHTML = '';
+
+        var categoriesFinal = EditorUIHandler.GetSidebarCategories(data);
 
         // Process each category
         var categoriesEntries = Object.entries(categoriesFinal)

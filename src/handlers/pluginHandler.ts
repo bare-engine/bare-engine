@@ -13,6 +13,7 @@ import { applyInspectorField, getButtons, getInspectorClasses, getInspectorField
 import { GameObjectSerializer } from "../utils/entitySerializer";
 import { Helper } from "../utils/helper";
 import { SaveDataHandler } from "./SaveDataHandler";
+import { EditorUIHandler } from "./editorUIHandler";
 import { TransformToolHandler } from "./transformToolHandler";
 import { SettingsHandler } from "./settingsHandler";
 
@@ -340,7 +341,7 @@ const gameDebugApi = {
     info.baseClass = "The GameObject class this entity will assign.\nAdd it with bareEngine.AddClass(CustomGameObjectClass); to make it appear in the dropdown.";
     info.entity = "The entity this entity will inherit from.";
     info.imagePath = `Where to find the image. Looks in bareEngine.imagePath: ${bare.imagePath}/[imagePath]`;
-    info.texture = "The texture to use for the entity. Overrides entity.name, which is used as the default texture name.";
+    info.texture = "The texture to use for the entity.\n\nSet to 'NAME', to use the entity's name as the texture. Useful in the ANY base entity.";
     info.pivot = "The pivot point of the entity. 0,0 is the top left corner. Can also supply percentual values.";
     info.hitbox = "Hitbox defined as x1,x2,y1,y2, not x/y/width/height. Can supply percentual values. Can also supply a string to use a pre-defined hitbox, eg: FULL";
     info.name = "The name of the entity";
@@ -1313,6 +1314,22 @@ const gameDebugApi = {
             )
         );
     }, 
+
+    // the editor sidebar's categories, for the plugin's add child menu.
+    // isImages: entries are texture names instead of entity names
+    getAddChildCategories(): Array<{ name: string, isImages: boolean, entries: string[] }> {
+        const settingsData = plugin.GetCurrentScene()?.settingsData;
+        if (!settingsData)
+            return [];
+
+        return Object.entries(EditorUIHandler.GetSidebarCategories(settingsData))
+            .filter(([, category]) => Array.isArray(category?.entries) && category.entries.length > 0)
+            .map(([name, category]) => ({
+                name,
+                isImages: name == "images",
+                entries: [...category.entries as string[]],
+            }));
+    },
     
     getSettingsDataList() {
         return plugin.LoadSettingsDataJSONs();
