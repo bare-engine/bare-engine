@@ -333,6 +333,7 @@ const gameDebugApi = {
                         id: o.uniqueID,
                         name: o.pluginName || o.name || "gameObject",
                         hasChildren: (o.children.length > 0),
+                        hidden: !o.visible,
                         layerIndex,
                         layerName: scene.layerNames[layerIndex] ?? `Layer ${layerIndex}`,
                         layerCount: layers.length
@@ -526,6 +527,8 @@ const gameDebugApi = {
     var AddExtraPropsToData = (data: any, o: GameObject) => {
         data.id = o.uniqueID;
         data.hasChildren = o.children.length > 0;
+        // grays the object out in the plugin's object list
+        data.hidden = !o.visible;
         data.name = o.pluginName || o.name || "gameObject";
         // the prefab the object extends, for the plugin's prefab link
         if (o.entity?.extends)
