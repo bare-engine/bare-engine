@@ -22,7 +22,8 @@ async function stripTexturePackImages(options = {}) {
     const references = collectTextureReferences(projectRoot, options);
     const files = getFilesRecursive(textureDir)
         .filter(filePath => IMAGE_EXTENSIONS.has(path.extname(filePath).toLowerCase()));
-    const keptFiles = files.filter(filePath => isTextureReferenced(textureDir, filePath, references));
+    const wildcards = [...references].filter(reference => reference.includes("*")).map(wildcardToRegExp);
+    const keptFiles = files.filter(filePath => isTextureReferenced(textureDir, filePath, references, wildcards));
 
     fs.rmSync(tempDir, { recursive: true, force: true });
 
@@ -199,11 +200,18 @@ function addTextureReference(references, value) {
     }
 }
 
-function isTextureReferenced(textureDir, filePath, references) {
+function isTextureReferenced(textureDir, filePath, references, wildcards = []) {
     const relativeKey = normalizeTextureKey(path.relative(textureDir, filePath));
     const basenameKey = normalizeTextureKey(path.basename(filePath));
 
-    return references.has(relativeKey) || references.has(basenameKey);
+    return references.has(relativeKey) || references.has(basenameKey)
+        || wildcards.some(wildcard => wildcard.test(relativeKey) || wildcard.test(basenameKey));
+}
+
+// "iterated_*" -> /^iterated_.*$/, * MATCHES ANY CHARACTERS
+function wildcardToRegExp(pattern) {
+    const escaped = pattern.split("*").map(part => part.replace(/[.+?^${}()|[\]\\]/g, "\\$&"));
+    return new RegExp(`^${escaped.join(".*")}$`);
 }
 
 function normalizeTextureKey(value) {
