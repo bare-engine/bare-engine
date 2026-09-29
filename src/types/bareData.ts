@@ -1,7 +1,7 @@
 import { SettingsData } from "./bareTypes";
 
 export const defaultSettingsData: SettingsData = {
-  baseEntities: [
+  basePrefabs: [
     {
       name: "ANY",
     },
@@ -9,7 +9,7 @@ export const defaultSettingsData: SettingsData = {
       name: "NONE",
     }
   ],
-  entities: [],
+  prefabs: [],
   layers: ["objects"],
   layersInfo: {
     objects: {

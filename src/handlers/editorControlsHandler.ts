@@ -127,7 +127,7 @@ export class EditorControlsHandler {
 
     CopySelectedObjects(): void
     {
-        this.copiedObjects = this.selectedObjects.map(obj => this.scene.GetEnitityFromObject(obj));
+        this.copiedObjects = this.selectedObjects.map(obj => this.scene.GetEntityFromObject(obj));
     }
 
     private PasteCopiedObjects(): void
@@ -284,7 +284,7 @@ export class EditorControlsHandler {
         const preview = this.previewEntityData;
         const sameEntity = preview && (
             entity.entityUID ? entity.entityUID === preview.entityUID :
-            entity.entity ? entity.entity === preview.entity :
+            entity.extends ? entity.extends === preview.extends :
             entity.texture === preview.texture
         );
         this.SetCurrentPreviewEntity(this.currentPreviewActive && sameEntity ? null : entity);
@@ -306,7 +306,7 @@ export class EditorControlsHandler {
     private GetRawEntityForStamp(obj: GameObject): Entity
     {
         return this.scene.settingsHandler.GetUnconstructedEntity(obj.entity)
-            ?? this.scene.GetEnitityFromObject(obj);
+            ?? this.scene.GetEntityFromObject(obj);
     }
 
     private GetPasteParent(): int | GameObject

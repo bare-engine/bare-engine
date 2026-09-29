@@ -267,7 +267,7 @@ function bareAutoRegisterClassesPlugin(options = {}) {
         } catch {
             return names;
         }
-        for (const group of [data.entities, data.baseEntities]) {
+        for (const group of [data.prefabs, data.basePrefabs]) {
             if (!group || typeof group !== "object") continue;
             const entities = Array.isArray(group) ? group : Object.values(group);
             for (const entity of entities) {
@@ -710,7 +710,7 @@ function bareInitialAssetsPlugin(options = {}) {
     };
 }
 
-// Shared "suppress the next dev full-reload" window. The save-entity-data endpoint
+// Shared "suppress the next dev full-reload" window. The save-settings-data endpoint
 // (bareEditorAndApiPlugin) opens it when a save passes skipReload, and BOTH the
 // settingsData HMR handler AND the generated-assets watcher honor it - otherwise
 // regenerating assets.ts on an entity add/remove would full-reload the page even
@@ -839,12 +839,12 @@ function bareEditorAndApiPlugin(options = {}) {
                         fs.writeFileSync(fullPath, componentTemplate(className));
                         // No need to write bare.AddClass anywhere: the bare:auto-register-classes
                         // plugin scans the new file and injects it in-memory on the next compile.
-                        // Attach the component to the entity in settingsData.json here (server-side)
+                        // Attach the component to the prefab in settingsData.json here (server-side)
                         // so the write can't be interrupted by the hot-restart the file write triggers.
                         let attached = false;
-                        if (attach && attach.entity) {
-                            attached = attachComponentToEntity(projectRoot, {
-                                entity: String(attach.entity),
+                        if (attach && attach.prefab) {
+                            attached = attachComponentToPrefab(projectRoot, {
+                                prefab: String(attach.prefab),
                                 childPath: Array.isArray(attach.childPath) ? attach.childPath : [],
                                 componentName
                             });
@@ -860,7 +860,7 @@ function bareEditorAndApiPlugin(options = {}) {
                     return;
                 }
 
-                if (req.method === "POST" && requestUrl.pathname === "/api/save-entity-data") {
+                if (req.method === "POST" && requestUrl.pathname === "/api/save-settings-data") {
                     readJson(req, res, ({ settingsData, path: customPath, skipReload }) => {
                         if (!settingsData) {
                             throw new Error("No settingsData provided");
@@ -1429,9 +1429,9 @@ function toComponentClassName(name) {
     return `${base.charAt(0).toUpperCase()}${base.slice(1)}Component`;
 }
 
-// Add the component (by its decapitalized name) to an entity's `components` map in
+// Add the component (by its decapitalized name) to a prefab's `components` map in
 // settingsData.json, walking childPath into nested children if given.
-function attachComponentToEntity(projectRoot, { entity, childPath, componentName }) {
+function attachComponentToPrefab(projectRoot, { prefab, childPath, componentName }) {
     const settingsPath = path.join(projectRoot, "public", "data", "settingsData.json");
     if (!fs.existsSync(settingsPath)) {
         return false;
@@ -1442,15 +1442,15 @@ function attachComponentToEntity(projectRoot, { entity, childPath, componentName
     } catch {
         return false;
     }
-    const findEntity = group => Array.isArray(group)
-        ? group.find(value => value.name === entity)
-        : group && group[entity];
-    const normalEntity = findEntity(data.entities);
-    const baseEntity = findEntity(data.baseEntities);
-    if (normalEntity && baseEntity) {
-        throw new Error(`Entity name '${entity}' exists in both entities and baseEntities`);
+    const findPrefab = group => Array.isArray(group)
+        ? group.find(value => value.name === prefab)
+        : group && group[prefab];
+    const normalPrefab = findPrefab(data.prefabs);
+    const basePrefab = findPrefab(data.basePrefabs);
+    if (normalPrefab && basePrefab) {
+        throw new Error(`Prefab name '${prefab}' exists in both prefabs and basePrefabs`);
     }
-    let target = normalEntity || baseEntity;
+    let target = normalPrefab || basePrefab;
     if (!target) {
         return false;
     }
@@ -1742,7 +1742,7 @@ const ASSET_LEVEL_EXTENSIONS = new Set([".json"]);
 // Generates src/generated/assets.ts, giving the project typed enum-like constants
 // for every public asset and every named definition in settingsData.json, eg:
 //   Asset.Image.HUD_COIN  Asset.Sound.COIN  Asset.Font.QILKA_BOLD  Asset.Level.LEVEL
-//   Data.Entity.PLAYER    Data.Animation.PLAYER_IDLE                Data.Layer.OBJECTS
+//   Data.Prefab.PLAYER    Data.Animation.PLAYER_IDLE                Data.Layer.OBJECTS
 function bareGeneratedAssetsPlugin(options = {}) {
     const projectRoot = options.projectRoot || process.cwd();
     const outputPath = options.outputPath || path.join(projectRoot, "src/generated/assets.ts");
@@ -2102,19 +2102,19 @@ function generateAssets(projectRoot, outputPath, imageGlobs = []) {
         const fontEntries = dedupeAssetEntries(fonts, file => file.base);
         const levelEntries = dedupeAssetEntries(levels, file => file.relNoExt);
 
-        let entityDefs = [];
-        let baseEntityDefs = [];
+        let prefabDefs = [];
+        let basePrefabDefs = [];
         let animations = [];
         let layers = [];
         const settingsPath = path.join(publicDir, "data/settingsData.json");
         if (fs.existsSync(settingsPath)) {
             const data = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
-            entityDefs = Array.isArray(data.entities)
-                ? data.entities
-                : Object.keys(data.entities || {}).map(name => ({ name }));
-            baseEntityDefs = Array.isArray(data.baseEntities)
-                ? data.baseEntities
-                : Object.keys(data.baseEntities || {}).map(name => ({ name }));
+            prefabDefs = Array.isArray(data.prefabs)
+                ? data.prefabs
+                : Object.keys(data.prefabs || {}).map(name => ({ name }));
+            basePrefabDefs = Array.isArray(data.basePrefabs)
+                ? data.basePrefabs
+                : Object.keys(data.basePrefabs || {}).map(name => ({ name }));
             animations = Object.keys(data.animations || {});
             layers = (data.layers || []).slice();
             // Mirror SettingsHandler.Process(): the engine prepends the default
@@ -2124,8 +2124,8 @@ function generateAssets(projectRoot, outputPath, imageGlobs = []) {
             }
         }
 
-        const entityEntries = dedupeNamedEntries(entityDefs.map(entity => entity.name));
-        const baseEntityEntries = dedupeNamedEntries(baseEntityDefs.map(entity => entity.name));
+        const prefabEntries = dedupeNamedEntries(prefabDefs.map(entity => entity.name));
+        const basePrefabEntries = dedupeNamedEntries(basePrefabDefs.map(entity => entity.name));
         const animationEntries = dedupeNamedEntries(animations);
         const layerEntries = layers.map((name, index) => ({ key: toEnumKey(name), value: index }));
 
@@ -2137,8 +2137,8 @@ function generateAssets(projectRoot, outputPath, imageGlobs = []) {
                 Level: levelEntries
             },
             Data: {
-                Entity: entityEntries,
-                BaseEntity: baseEntityEntries,
+                Prefab: prefabEntries,
+                BasePrefab: basePrefabEntries,
                 Animation: animationEntries,
                 Layer: layerEntries
             }
@@ -2148,7 +2148,7 @@ function generateAssets(projectRoot, outputPath, imageGlobs = []) {
         const existing = fs.existsSync(outputPath) ? fs.readFileSync(outputPath, "utf8") : "";
         if (existing !== output) {
             fs.writeFileSync(outputPath, output);
-            console.log(`Generated assets.ts (${imageEntries.length} images, ${soundEntries.length} sounds, ${fontEntries.length} fonts, ${levelEntries.length} levels, ${entityEntries.length} entities, ${baseEntityEntries.length} base entities, ${animationEntries.length} animations, ${layerEntries.length} layers)`);
+            console.log(`Generated assets.ts (${imageEntries.length} images, ${soundEntries.length} sounds, ${fontEntries.length} fonts, ${levelEntries.length} levels, ${prefabEntries.length} prefabs, ${basePrefabEntries.length} base prefabs, ${animationEntries.length} animations, ${layerEntries.length} layers)`);
             return true;
         }
     } catch (error) {
@@ -2409,7 +2409,7 @@ function replaceEmojiWithNames(value) {
 
 function buildAssetsFile(groups) {
     const renderValue = value => typeof value === "number" ? value : JSON.stringify(value);
-    // Image -> Images, BaseEntity -> BaseEntities. The plural holds every value of
+    // Image -> Images, BasePrefab -> BasePrefabs. The plural holds every value of
     // the group, so Asset.Images is the "get all" counterpart of Asset.Image.X.
     const pluralName = section => section.endsWith("y") ? `${section.slice(0, -1)}ies` : `${section}s`;
 
@@ -2433,7 +2433,7 @@ function buildAssetsFile(groups) {
 
 // IMPORTANT, THESE FIELDS GET CLEARED FOR PRODUCTION:
 // Asset.Images, Asset.Sounds, Asset.Fonts, Asset.Levels
-// Data.Entities, Data.BaseEntities, Data.Animations, Data.Layers
+// Data.Prefabs, Data.BasePrefabs, Data.Animations, Data.Layers
 // IF YOU WANT TO KEEP THEM, ADD THIS IN package.json:
 //  "bareEngine": {
 //      "stripGeneratedAssets": false
@@ -2452,8 +2452,8 @@ Bare.assets.images = Object.values(Asset.Image);
 Bare.assets.sounds = Object.values(Asset.Sound);
 Bare.assets.fonts = Object.values(Asset.Font);
 Bare.assets.levels = Object.values(Asset.Level);
-Bare.data.entities = Object.values(Data.Entity);
-Bare.data.baseEntities = Object.values(Data.BaseEntity);
+Bare.data.prefabs = Object.values(Data.Prefab);
+Bare.data.basePrefabs = Object.values(Data.BasePrefab);
 Bare.data.animations = Object.values(Data.Animation);
 Bare.data.layers = Object.values(Data.Layer);
 `;

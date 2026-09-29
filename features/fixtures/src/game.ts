@@ -9,7 +9,7 @@ import
     } from "./browserTestHarness";
 import { BasicsTest } from "./testScenes/basicsTest";
 import { CameraTest } from "./testScenes/cameraTest";
-import { EntitiesTest } from "./testScenes/entitiesTest";
+import { PrefabsTest } from "./testScenes/prefabsTest";
 import { SaveComponentTest } from "./testScenes/saveComponentTest";
 
 function sceneName(scene: SceneClass): string {
@@ -33,7 +33,7 @@ class MainGame extends Scene
 {
     private tests: SceneClass[] = [
         BasicsTest,
-        EntitiesTest,
+        PrefabsTest,
         CameraTest,
         SaveComponentTest,
     ];

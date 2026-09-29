@@ -173,18 +173,18 @@ export class HitboxScene extends EditorScene
 
         // APPLY NEW VALUES TO THE INITIAL ENTITY SETTING
         const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
-            const entityDraft = SettingsHandler.FindEntity(draft, mainEntityName);
-            if (!entityDraft)
+            const prefabDraft = SettingsHandler.FindPrefab(draft, mainEntityName);
+            if (!prefabDraft)
                 throw new Error(`Cannot update missing entity '${mainEntityName}'`);
 
             // PIVOT BASED ON HITBOX
             if (mainEntity.pivotBasedOnHitbox && !resetPivotBasedOnHitbox/* && !Helper.ObjectsAreEqual(pivotBasedOnHitboxOrig!, mainEntity.pivotBasedOnHitbox)*/)
             {
-                entityDraft.pivotBasedOnHitbox = {...mainEntity.pivotBasedOnHitbox};
+                prefabDraft.pivotBasedOnHitbox = {...mainEntity.pivotBasedOnHitbox};
             }
             else
             {
-                delete entityDraft.pivotBasedOnHitbox;
+                delete prefabDraft.pivotBasedOnHitbox;
             }
 
             // PIVOT
@@ -192,30 +192,30 @@ export class HitboxScene extends EditorScene
             {
                 if (!Helper.ObjectsAreEqual(pivotOrigRounded, pivot))
                 {
-                    entityDraft.pivot = {...pivot};
+                    prefabDraft.pivot = {...pivot};
                 }
                 else
                 {
                     // PIVOT REMAINED AT SAME POSITION, SO SHOULD NOT BE SET IN DATA, DELETE
-                    if (entityDraft.pivot)
+                    if (prefabDraft.pivot)
                     {
-                        delete entityDraft.pivot;
+                        delete prefabDraft.pivot;
                     }
                 }
             }
             else
             {
-                delete entityDraft.pivot;
+                delete prefabDraft.pivot;
             }
 
             // HITBOX
             if (!Helper.ObjectsAreEqual(hitboxVecOrig, hitbox))
             {
-                entityDraft.hitbox = {...hitbox};
+                prefabDraft.hitbox = {...hitbox};
             }
             else
             {
-                delete entityDraft.hitbox;
+                delete prefabDraft.hitbox;
             }
         });
 

@@ -148,7 +148,7 @@ export class EditorUIHandler {
         if (categoryName == "images")
             return {texture: entityId};
 
-        return {entity: entityId};
+        return {extends: entityId};
     }
 
     private SetupPreviewImage(img: HTMLImageElement, src: string, id?: string): void {
@@ -213,13 +213,13 @@ export class EditorUIHandler {
         this.SyncSettingsUI();
     }
 
-    // the categories shown in the sidebar: the user's categories, the entities not in any of them
-    // ("entities", or "uncategorized entities" once categories are set up) and the loaded images.
+    // the categories shown in the sidebar: the user's categories, the prefabs not in any of them
+    // ("prefabs", or "uncategorized prefabs" once categories are set up) and the loaded images.
     // also used by the plugin's add child menu, so both stay in sync
     static GetSidebarCategories(data: SettingsData): Record<string, Category>
     {
         var categoriesFinal: Record<string, Category>  = {};
-        var allEntityNames = data.entities.map(entity => entity.name!);
+        var allPrefabNames = data.prefabs.map(entity => entity.name!);
         var categoryEntries: Array<[string, Category]> = Object.entries(data.categories);
 
         for (const [categoryName, categoryData] of categoryEntries)
@@ -231,29 +231,29 @@ export class EditorUIHandler {
                 for (const entityName of categoryData.entries)
                 {
                     // DON'T WANT ENTRIES IN uncategorized THAT ARE ALREALY IN ENTITIES
-                    var i = allEntityNames.indexOf(entityName);
+                    var i = allPrefabNames.indexOf(entityName);
                     if (i != -1)
-                        allEntityNames.splice(i, 1);
+                        allPrefabNames.splice(i, 1);
                 }
             }
         }
 
-        for (var i = allEntityNames.length - 1; i >= 0; i--)
+        for (var i = allPrefabNames.length - 1; i >= 0; i--)
         {
-            var entityName = allEntityNames[i];
+            var entityName = allPrefabNames[i];
             if (entityName.includes('#'))
-                allEntityNames.splice(i, 1);
+                allPrefabNames.splice(i, 1);
         }
 
         // IF ANY ENTRIES LEFT, ADD THEM TO UNCATEGORIZED
-        if (allEntityNames.length > 0)
+        if (allPrefabNames.length > 0)
         {
-            var uncategorizedName = "uncategorized entities";
+            var uncategorizedName = "uncategorized prefabs";
 
             if (categoryEntries.length == 0)
-                uncategorizedName = "entities"; // IF NO CATEGORIES SET, CALL THEM ENTITIES
+                uncategorizedName = "prefabs"; // IF NO CATEGORIES SET, CALL THEM PREFABS
 
-            categoriesFinal[uncategorizedName] = {...data.categories.uncategorized, entries: allEntityNames};
+            categoriesFinal[uncategorizedName] = {...data.categories.uncategorized, entries: allPrefabNames};
         }
 
         // 

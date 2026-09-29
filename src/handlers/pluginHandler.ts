@@ -4,7 +4,7 @@ import { Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { EditorScene } from "../scenes/editorScene";
 import { EditorUIScene } from "../scenes/editorUIScene";
-import { EntityScene } from "../scenes/entityScene";
+import { PrefabScene } from "../scenes/prefabScene";
 import { Scene } from "../scenes/scene";
 import { OutlineShader } from "../shaders/outlineShader";
 import { defaultSettingsData } from "../types/bareData";
@@ -61,7 +61,7 @@ const gameDebugApi = {
     },
     getShowEditorButton() {
         // hidden while any editor (level or entity) is already open
-        if (bare.scene.Get(EditorScene) || bare.scene.Get(EntityScene))
+        if (bare.scene.Get(EditorScene) || bare.scene.Get(PrefabScene))
             return false;
         return !!bare.scene.GetLevelScene();
     },
@@ -148,20 +148,20 @@ const gameDebugApi = {
       return true;
   },
 
-  selectEntityObject(childPath: number[] = [])
+  selectPrefabObject(childPath: number[] = [])
   {
-      const entityScene = bare.scene.Get(EntityScene);
-      if (!entityScene)
+      const prefabScene = bare.scene.Get(PrefabScene);
+      if (!prefabScene)
           return false;
 
-      const selectedRoot = entityScene.object.GetByName(entityScene.objectName);
+      const selectedRoot = prefabScene.object.GetByName(prefabScene.objectName);
       const selected = plugin.ResolveRuntimeEntityPath(selectedRoot, childPath);
 
       if (!selected)
           return false;
 
       // Select the matching live object without echoing the panel selection back to the plugin.
-      entityScene.editorControlsHandler.SelectGameObjects([selected], true, false);
+      prefabScene.editorControlsHandler.SelectGameObjects([selected], true, false);
       return selected.uniqueID;
   },
 
@@ -171,10 +171,10 @@ const gameDebugApi = {
 
       if (!selected) return false;
 
-      const entityScene = bare.scene.Get(EntityScene);
-      if (entityScene && selected.scene === entityScene)
+      const prefabScene = bare.scene.Get(PrefabScene);
+      if (prefabScene && selected.scene === prefabScene)
       {
-          entityScene.editorControlsHandler.ClearSelection();
+          prefabScene.editorControlsHandler.ClearSelection();
           return true;
       }
 
@@ -198,8 +198,8 @@ const gameDebugApi = {
     window.postMessage({ __fromGame: true, type: "selectObject", id: primaryId, openObjectsTab, parentIds: [], selectedIds: uids }, "*");
   },
 
-  selectEntityObjectInPlugin(data) {
-    window.postMessage({ __fromGame: true, type: "selectEntityObject", data }, "*");
+  selectPrefabObjectInPlugin(data) {
+    window.postMessage({ __fromGame: true, type: "selectPrefabObject", data }, "*");
   },
 
   gotoLevelView(levelPath: string) {
@@ -360,9 +360,9 @@ const gameDebugApi = {
   {
     var info:Record<string, string> = {};
     info.baseClass = "The GameObject class this entity will assign.\nAdd it with bareEngine.AddClass(CustomGameObjectClass); to make it appear in the dropdown.";
-    info.entity = "The entity this entity will inherit from.";
+    info.extends = "The prefab this entity extends.";
     info.imagePath = `Where to find the image. Looks in bareEngine.imagePath: ${bare.imagePath}/[imagePath]`;
-    info.texture = "The texture to use for the entity.\n\nSet to 'NAME', to use the entity's name as the texture. Useful in the ANY base entity.";
+    info.texture = "The texture to use for the entity.\n\nSet to 'NAME', to use the entity's name as the texture. Useful in the ANY base prefab.";
     info.pivot = "The pivot point of the entity. 0,0 is the top left corner. Can also supply percentual values.";
     info.hitbox = "Hitbox defined as x1,x2,y1,y2, not x/y/width/height. Can supply percentual values. Can also supply a string to use a pre-defined hitbox, eg: FULL";
     info.name = "The name of the entity.\n\nUsed to identify the entity.\nUse bare.object.GetByName() to find it.";
@@ -418,10 +418,10 @@ const gameDebugApi = {
   onBaseClassChange(baseClass: string, childPath: number[] = []): string[]
   {
     // GET CURRENT ENTITY KEYS
-    var scene = (plugin.GetCurrentScene() as EntityScene);
+    var scene = (plugin.GetCurrentScene() as PrefabScene);
     var name = scene.objectName;
     var raw = scene.settingsHandler.GetRaw();
-    var entity = plugin.ResolveEntityChildPath(SettingsHandler.FindEntity(raw, name)!, childPath);
+    var entity = plugin.ResolveEntityChildPath(SettingsHandler.FindPrefab(raw, name)!, childPath);
 
     var entityKeys = Object.keys(entity).filter(k => !k.startsWith("__"));
 
@@ -435,10 +435,10 @@ const gameDebugApi = {
   async onPressYesChangeBaseClass(extraKeys: string[], childPath: number[] = [])
   {
     // REMOVE FROM ENTITY EXTRA KEYS
-    var scene = (plugin.GetCurrentScene() as EntityScene);
+    var scene = (plugin.GetCurrentScene() as PrefabScene);
     var name = scene.objectName;
     var raw = scene.settingsHandler.GetRaw();
-    var entity = plugin.ResolveEntityChildPath(SettingsHandler.FindEntity(raw, name)!, childPath);
+    var entity = plugin.ResolveEntityChildPath(SettingsHandler.FindPrefab(raw, name)!, childPath);
 
     for (var key of extraKeys)
         delete entity[key];
@@ -449,7 +449,7 @@ const gameDebugApi = {
   // FIND THE ENTITY IN CURRENT entityData JSON, CONTRUCT IT, ADD EXTRA INFO, RETURN IT FOR PLUGIN VISUALIZATION
   // childPath, when given, re-selects that node in-scene after rebuilding - callers reloading to
   // reflect a field edit pass along whatever was selected beforehand so the transform tool stays on it.
-  async gotoEntity(name: string, settingsDataName?: string, childPath?: Array<number | string>)
+  async gotoPrefab(name: string, settingsDataName?: string, childPath?: Array<number | string>)
   {
     window.postMessage({ __fromGame: true, type: "lockObjectsTab", flag: true }, "*");
 
@@ -459,7 +459,7 @@ const gameDebugApi = {
     plugin.ProcessSettingsDataForPlugin(name, settingsHandler);
 
     // Remember it so setPluginConnected can re-open it after a recompile/restart.
-    plugin.lastEntity = { name };
+    plugin.lastPrefab = { name };
 
     /*const levelController = getLevelController();
     if (levelController && levelController.currentLevel && levelController.currentLevel.name == name)
@@ -467,31 +467,31 @@ const gameDebugApi = {
         return;
     }*/
 
-    // A gotoEntity() called while already inside the entity editor (eg to reflect a field edit,
+    // A gotoPrefab() called while already inside the prefab editor (eg to reflect a field edit,
     // or to navigate to another entity) tears down and rebuilds the scene, which resets its camera
     // to auto-fit the entity's bounds - discarding whatever the user had panned/zoomed to. Preserve
     // it across that rebuild.
-    const previousEntityScene = bare.scene.Get(EntityScene);
-    var previousCameraTransform = previousEntityScene?.objectName == name
-        ? { x: previousEntityScene.camera.target.x, y: previousEntityScene.camera.target.y, zoom: previousEntityScene.camera.zoom }
+    const previousPrefabScene = bare.scene.Get(PrefabScene);
+    var previousCameraTransform = previousPrefabScene?.objectName == name
+        ? { x: previousPrefabScene.camera.target.x, y: previousPrefabScene.camera.target.y, zoom: previousPrefabScene.camera.zoom }
         : undefined;
     
     // IF ZOOM WAS INFINITY, ENTITY HAD NO BOUNDS, DON'T WANT TO RESTORE TO THAT
     if (previousCameraTransform?.zoom == Infinity)
         previousCameraTransform = undefined;
 
-    plugin.notifyLeaveEntity = false;
-    if (!bare.scene.Get(EntityScene))
+    plugin.notifyLeavePrefab = false;
+    if (!bare.scene.Get(PrefabScene))
         bare.scene.Remove(EditorScene); // WILL REMOVE LEVEL EDITOR IF EXISTS
 
-    var entityScene = await bare.scene.Add(EntityScene, {name: name, settingsHandler: settingsHandler});
+    var prefabScene = await bare.scene.Add(PrefabScene, {name: name, settingsHandler: settingsHandler});
     //bare.scene.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
-    plugin.notifyLeaveEntity = true;
+    plugin.notifyLeavePrefab = true;
 
     if (previousCameraTransform)
     {
-        entityScene.camera.SetPosition(previousCameraTransform.x, previousCameraTransform.y);
-        entityScene.camera.SetZoom(previousCameraTransform.zoom);
+        prefabScene.camera.SetPosition(previousCameraTransform.x, previousCameraTransform.y);
+        prefabScene.camera.SetZoom(previousCameraTransform.zoom);
     }
 
     // Opening/reloading an entity no longer auto-selects the root object live in-scene - the
@@ -500,16 +500,16 @@ const gameDebugApi = {
     // childPath (see below). EditorControlsHandler is freshly constructed in OnStart() on every
     // (re)open, so selection is already empty here.
 
-    var entityWithLog = plugin.BuildEntityEditorPayload(
+    var entityWithLog = plugin.BuildPrefabEditorPayload(
         name,
-        entityScene.settingsHandler,
-        entityScene
+        prefabScene.settingsHandler,
+        prefabScene
     );
 
     // restore whatever was selected before this reload, so a field edit that reloads the scene
     // doesn't silently drop the transform tool off the object being worked on.
     if (childPath)
-        window.__GAME_DEBUG_API__.selectEntityObject(childPath);
+        window.__GAME_DEBUG_API__.selectPrefabObject(childPath);
 
     return entityWithLog;
   },
@@ -527,9 +527,9 @@ const gameDebugApi = {
         data.id = o.uniqueID;
         data.hasChildren = o.children.length > 0;
         data.name = o.pluginName || o.name || "gameObject";
-        // the entity the object extends, for the plugin's entity link
-        if (o.entity?.entity)
-            data.title = o.entity.entity;
+        // the prefab the object extends, for the plugin's prefab link
+        if (o.entity?.extends)
+            data.title = o.entity.extends;
         data.x = o.x;
         data.y = o.y;
         data.scaleX = o.scaleX;
@@ -647,7 +647,7 @@ const gameDebugApi = {
     }
 
     /*baseClass?: string;
-    baseEntity?: string;
+    extends?: string;
     imagePath?: string;
     texture?: string;
     hitbox?: any; //Rectangle2Vec | String;*/
@@ -725,15 +725,15 @@ const gameDebugApi = {
   getFieldsSuggestions(entityName: string, childPath: string[]): { source: string, fields: string[] }[]
   {
     var limitNumber = 7;
-    var gameObjectFields = ["entity", "baseClass", "imagePath", "texture", "position", "pivot", "alpha", "visible", "scale", "rotation", "hitbox"];
+    var gameObjectFields = ["extends", "baseClass", "imagePath", "texture", "position", "pivot", "alpha", "visible", "scale", "rotation", "hitbox"];
 
-    var scene = bare.scene.Get(EntityScene);
+    var scene = bare.scene.Get(PrefabScene);
     // Scene.Add exposes the replacement before Awake/Start have finished. Ignore
     // inspector requests from the previous selection while it is being rebuilt.
-    if (!scene?.started || scene.objectName !== entityName || !scene.settingsHandler.GetRawEntity(entityName))
+    if (!scene?.started || scene.objectName !== entityName || !scene.settingsHandler.GetRawPrefab(entityName))
         return [];
 
-    var entity: any = scene.settingsHandler.GetExtendedEntity(entityName);
+    var entity: any = scene.settingsHandler.GetExtendedPrefab(entityName);
     var liveObj: any = scene?.object.GetByName(entityName);
     for (var index of childPath)
     {
@@ -776,11 +776,11 @@ const gameDebugApi = {
 
   getNestedEntityVars(entityName: string, childPath: string[])
   {
-        var scene = bare.scene.Get(EntityScene);
-        if (!scene?.started || scene.objectName !== entityName || !scene.settingsHandler.GetRawEntity(entityName))
+        var scene = bare.scene.Get(PrefabScene);
+        if (!scene?.started || scene.objectName !== entityName || !scene.settingsHandler.GetRawPrefab(entityName))
             return [];
 
-        var entity = scene.settingsHandler.GetExtendedEntity(entityName);
+        var entity = scene.settingsHandler.GetExtendedPrefab(entityName);
         
         // GET THE CHILD
         if (childPath.length > 0)
@@ -848,27 +848,27 @@ const gameDebugApi = {
         return varsPluginHideApplied;
   },
 
-  async removeFieldFromEntity(entiyName: string, childPath: string[], field: string)
+  async removeFieldFromPrefab(entiyName: string, childPath: string[], field: string)
   {
         var scene = plugin.GetCurrentScene();
-        let entityScene = scene as EntityScene;
+        let prefabScene = scene as PrefabScene;
         
-        var rawSettingsData = entityScene.settingsHandler.GetRaw();
+        var rawSettingsData = prefabScene.settingsHandler.GetRaw();
 
-        rawSettingsData.baseEntities ??= [];
-        if (!SettingsHandler.FindEntity(rawSettingsData, "ANY"))
-            rawSettingsData.baseEntities.push({ name: "ANY" });
+        rawSettingsData.basePrefabs ??= [];
+        if (!SettingsHandler.FindPrefab(rawSettingsData, "ANY"))
+            rawSettingsData.basePrefabs.push({ name: "ANY" });
 
         var entity = plugin.ResolveEntityChildPath(
-            SettingsHandler.FindEntity(rawSettingsData, entityScene.objectName)!,
+            SettingsHandler.FindPrefab(rawSettingsData, prefabScene.objectName)!,
             childPath
         );
 
         delete entity[field];
 
-        await entityScene.settingsHandler.Process();
+        await prefabScene.settingsHandler.Process();
 
-        var entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, undefined, childPath);
+        var entityData = await window.__GAME_DEBUG_API__.gotoPrefab(prefabScene.objectName, undefined, childPath);
 
         await plugin.SaveSettingsData(rawSettingsData);
 
@@ -877,15 +877,15 @@ const gameDebugApi = {
 
   // deletes one prop off a component authored on this entity, so the inherited value (if any)
   // applies again. the component itself stays
-  async removeComponentPropFromEntity(entityName: string, childPath: string[], compName: string, prop: string)
+  async removeComponentPropFromPrefab(entityName: string, childPath: string[], compName: string, prop: string)
   {
         var scene = plugin.GetCurrentScene();
-        let entityScene = scene as EntityScene;
+        let prefabScene = scene as PrefabScene;
 
-        var rawSettingsData = entityScene.settingsHandler.GetRaw();
+        var rawSettingsData = prefabScene.settingsHandler.GetRaw();
 
         var entity = plugin.ResolveEntityChildPath(
-            SettingsHandler.FindEntity(rawSettingsData, entityScene.objectName)!,
+            SettingsHandler.FindPrefab(rawSettingsData, prefabScene.objectName)!,
             childPath
         );
 
@@ -898,7 +898,7 @@ const gameDebugApi = {
             // nothing, so drop it rather than leaving eg alive: {} behind in the settings data
             if (Object.keys(comp).length == 0)
             {
-                var baseComponents = entityScene.settingsHandler.ExtendEntity({ name: entity.name, entity: entity.entity }, rawSettingsData, { includeChildren: false }).components;
+                var baseComponents = prefabScene.settingsHandler.ExtendEntity({ name: entity.name, extends: entity.extends }, rawSettingsData, { includeChildren: false }).components;
                 if (baseComponents?.[compName] !== undefined)
                 {
                     delete entity.components![compName];
@@ -908,9 +908,9 @@ const gameDebugApi = {
             }
         }
 
-        await entityScene.settingsHandler.Process();
+        await prefabScene.settingsHandler.Process();
 
-        var entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, undefined, childPath);
+        var entityData = await window.__GAME_DEBUG_API__.gotoPrefab(prefabScene.objectName, undefined, childPath);
 
         await plugin.SaveSettingsData(rawSettingsData);
 
@@ -918,29 +918,29 @@ const gameDebugApi = {
   },
 
   // MARK/UNMARK AN INHERITED PROPERTY AS REMOVED ON THIS ENTITY (entity.propertiesRemoved)
-  async setEntityPropertyRemoved(entityName: string, childPath: number[], field: string, removed: boolean)
+  async setPrefabPropertyRemoved(entityName: string, childPath: number[], field: string, removed: boolean)
   {
-        return plugin.ToggleEntityRemovedArray("propertiesRemoved", field, removed, childPath);
+        return plugin.TogglePrefabRemovedArray("propertiesRemoved", field, removed, childPath);
   },
 
   // MARK/UNMARK AN INHERITED COMPONENT AS REMOVED ON THIS ENTITY (entity.componentsRemoved)
-  async setEntityComponentRemoved(entityName: string, childPath: number[], compName: string, removed: boolean)
+  async setPrefabComponentRemoved(entityName: string, childPath: number[], compName: string, removed: boolean)
   {
-        return plugin.ToggleEntityRemovedArray("componentsRemoved", compName, removed, childPath);
+        return plugin.TogglePrefabRemovedArray("componentsRemoved", compName, removed, childPath);
   },
 
-  getDefaultValueForEntityField(entityName: string, field: string, childPath: number[] = [])
+  getDefaultValueForPrefabField(entityName: string, field: string, childPath: number[] = [])
   {
     if (field == "pivotBasedOnHitbox")
         return {x: 0, y: 0};
 
     var scene = plugin.GetCurrentScene();
-    let entityScene = scene as EntityScene;
+    let prefabScene = scene as PrefabScene;
 
-    var rawSettingsData = entityScene.settingsHandler.GetRaw();
+    var rawSettingsData = prefabScene.settingsHandler.GetRaw();
 
     var entity = plugin.ResolveEntityChildPath(
-        SettingsHandler.FindEntity(rawSettingsData, entityScene.objectName)!,
+        SettingsHandler.FindPrefab(rawSettingsData, prefabScene.objectName)!,
         childPath
     );
 
@@ -963,8 +963,8 @@ const gameDebugApi = {
     return defaultValue;
   },
 
-    // THIS CHANGES THE PROPERTIES ON THE ENTITY, SAVES ITS SETTINGSDATA AND RELOADS THE ENTITY WITH gotoEntity(), WHERE IT GETS CONSTRUCTED AGAIN
-    // THIS HAPPENS SINCE THE ENITTY CAN CHANGE DRASTICLY FROM CERTAIN CHANGES, EG: CHANGING THE BASE ENTITY. NOT ALL CHANGES ARE SO DRASTIC
+    // THIS CHANGES THE PROPERTIES ON THE ENTITY, SAVES ITS SETTINGSDATA AND RELOADS THE ENTITY WITH gotoPrefab(), WHERE IT GETS CONSTRUCTED AGAIN
+    // THIS HAPPENS SINCE THE ENITTY CAN CHANGE DRASTICLY FROM CERTAIN CHANGES, EG: CHANGING WHAT IT EXTENDS. NOT ALL CHANGES ARE SO DRASTIC
     // BUT IT'S RELOADED EVERY TIME JUST IN CASE (COULD OPTIMIZE, BUT ALSO A GOOD WAY OF CATCHING BUGS CURRENTLY).
     // WHEN CHANGES ARE MADE IN-EDITOR TO THE ENTITY GAMEOBJECT, IT IS SERIALIZED AND COMPARED WITH THE SERIALIZED ORIGINAL ENTITY
     // ANY CHANGES ARE APPLIED TO THE ORIGINAL ENTITY
@@ -973,14 +973,14 @@ const gameDebugApi = {
     // INSTEAD, THE CHANGE ARE SENT STRAIGHT TO THE GAMEOBJECT IN THE SCENE. SINCE CHANGING THE GAMEOBJECT FIELDS HAVE NO BIG EFFECT ON THE STRUCTURE ITSELF.
     //
     // SHOULD MAKE THE CHANGE TO THE ENTITY, REBUILD SCENE, WHICH SHOULD RE-FEED PLUGIN WITH NEW DATA. SHOULD STAY AT SOME ENTITY (IF NOT DELETED)
-    async setEntityField(name: string, props: Record<string, any>, childPath: number[], save:boolean = false, justAdded:boolean = false)
+    async setPrefabField(name: string, props: Record<string, any>, childPath: number[], save:boolean = false, justAdded:boolean = false)
     {
-        let entityScene = bare.scene.Get(EntityScene);
-        const entityReferenceChanged = Object.prototype.hasOwnProperty.call(props, "entity");
+        let prefabScene = bare.scene.Get(PrefabScene);
+        const extendsChanged = Object.prototype.hasOwnProperty.call(props, "extends");
         const selectedChildPath = [...childPath];
-        var rawSettingsData = entityScene.settingsHandler.GetRaw();
+        var rawSettingsData = prefabScene.settingsHandler.GetRaw();
         var obj = plugin.ResolveRuntimeEntityPath(
-            entityScene.object.GetByName(entityScene.objectName),
+            prefabScene.object.GetByName(prefabScene.objectName),
             childPath
         );
 
@@ -1049,14 +1049,14 @@ const gameDebugApi = {
 
         // WRITE ENTITY PROPS TO RAW
         var entity = plugin.ResolveEntityChildPath(
-            SettingsHandler.FindEntity(rawSettingsData, entityScene.objectName)!,
+            SettingsHandler.FindPrefab(rawSettingsData, prefabScene.objectName)!,
             childPath
         );
 
-        if (entityReferenceChanged)
+        if (extendsChanged)
         {
             entity.children = entity.children?.filter((child: Entity) =>
-                !entityScene.settingsHandler.rawEntitiesMappedByUID[child.entity]
+                !prefabScene.settingsHandler.rawEntitiesMappedByUID[child.extends]
             );
 
             if (entity.children?.length === 0)
@@ -1068,7 +1068,7 @@ const gameDebugApi = {
         // MERGE COMPONENTS, ELSE Object.assign WOULD OVERWRITE THE EXISTING COMPONENTS, SINCE THEY'RE NESTED
         if (props.components)
         {
-            entity.components = entityScene.MergeComponents(entity.components, props.components);
+            entity.components = prefabScene.MergeComponents(entity.components, props.components);
             delete props.components;
         }
 
@@ -1087,7 +1087,7 @@ const gameDebugApi = {
             {
                 // THIS IS NICE OF CHANGED EXTENDED FIELDS
                 // NOT SO MUCH FOR OWN FIELDS, THEY JUST GET REMOVED
-                var entityWithDefaultValues = entityScene.GetEntityWithDefaultValues(entityCopy, entityScene.settingsData) as any;
+                var entityWithDefaultValues = prefabScene.GetEntityWithDefaultValues(entityCopy, prefabScene.settingsData) as any;
                 for (var key in props)
                 {
                     var val = props[key];
@@ -1099,27 +1099,27 @@ const gameDebugApi = {
         }
         
         // SINCE WE JUST MODIFIED THE RAW ENTITY, WE RE-PROCESS THE settingsData AGAIN, SO IT'S UP TO DATE 
-        await entityScene.settingsHandler.Process(rawSettingsData);
+        await prefabScene.settingsHandler.Process(rawSettingsData);
 
         var entityData;
 
         // SAVE TO FILE
         if (save)
         {
-            entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, undefined, selectedChildPath);
+            entityData = await window.__GAME_DEBUG_API__.gotoPrefab(prefabScene.objectName, undefined, selectedChildPath);
 
             await plugin.SaveSettingsData(rawSettingsData);
 
             // The child entity dropdown is saved asynchronously by the panel, so its direct API
             // response is not consumed there. Ask the panel to reopen the same root/child after the
-            // new base has been processed; gotoEntity will then resend the freshly rebuilt recursive
-            // baseEntityLog (including the updated extend chain and field/component provenance).
-            if (entityReferenceChanged && selectedChildPath.length > 0 && plugin.lastEntity)
+            // new base has been processed; gotoPrefab will then resend the freshly rebuilt recursive
+            // extendsLog (including the updated extend chain and field/component provenance).
+            if (extendsChanged && selectedChildPath.length > 0 && plugin.lastPrefab)
             {
                 window.postMessage({
                     __fromGame: true,
-                    type: "gotoEntity",
-                    name: plugin.lastEntity.name,
+                    type: "gotoPrefab",
+                    name: plugin.lastPrefab.name,
                     settingsDataName: plugin.currentSettingsDataName,
                     childPath: selectedChildPath
                 }, "*");
@@ -1127,8 +1127,8 @@ const gameDebugApi = {
         }
 
         // ADD DEFAULTS TO RAW SETTINGS AGAIN, SO PROPS CAN BE ADDED TO IT
-        if (!SettingsHandler.FindEntity(rawSettingsData, "ANY"))
-            rawSettingsData.baseEntities.push({ ...SettingsHandler.FindEntity(defaultSettingsData, "ANY")! });
+        if (!SettingsHandler.FindPrefab(rawSettingsData, "ANY"))
+            rawSettingsData.basePrefabs.push({ ...SettingsHandler.FindPrefab(defaultSettingsData, "ANY")! });
 
         return entityData;
     },
@@ -1164,7 +1164,7 @@ const gameDebugApi = {
         // PROPS THAT NEED BESPOKE HANDLING (BELOW) - SKIP THEM IN THE GENERIC PASS
         const handledExplicitly = new Set(["pivot", "innerPivot", "hitbox", "tags", "customData", "components"]);
 
-        // GENERIC PASS - MIRRORS Scene.ApplyEntityVarsToGameObject / setEntityField:
+        // GENERIC PASS - MIRRORS Scene.ApplyEntityVarsToGameObject / setPrefabField:
         // route through the object's specialMap (color, children, ...) else assign the field directly.
         // COVERS x/y, scale*, rotation, inner*, flipped, visible, persistent, save, alpha, color, children.
         const specialMap = o.specialMap;
@@ -1437,7 +1437,7 @@ const gameDebugApi = {
     return plugin.currentSettingsDataName;
   },
 
-  getEntityData(settingsDataName?: string):SettingsData {
+  getSettingsData(settingsDataName?: string):SettingsData {
     const settingsHandler = plugin.GetSettingsDataHandler(settingsDataName);
     plugin.currentSettingsDataName = settingsHandler.GetRaw()?.name ?? "";
     var settingsData = settingsHandler.GetRaw();
@@ -1446,27 +1446,27 @@ const gameDebugApi = {
     // SHOULD HAVE IT AGAIN WHEN I START WORK ON PLUGIN ENTITIES
 
     // ADD DEFAULTS - SAME AS defaultSettingsData - REBUILD TO ADD IN FRONT
-    settingsData.baseEntities ??= [];
+    settingsData.basePrefabs ??= [];
 
     const sentinelNames = ["ANY", "NONE"];
     const sentinels = sentinelNames.map(name =>
-        SettingsHandler.FindEntity(settingsData, name)
-        ?? SettingsHandler.FindEntity(defaultSettingsData, name)!
+        SettingsHandler.FindPrefab(settingsData, name)
+        ?? SettingsHandler.FindPrefab(defaultSettingsData, name)!
     );
-    const rest = settingsData.baseEntities.filter(entity => !sentinelNames.includes(entity.name!));
+    const rest = settingsData.basePrefabs.filter(entity => !sentinelNames.includes(entity.name!));
 
-    settingsData.baseEntities = [...sentinels, ...rest];
+    settingsData.basePrefabs = [...sentinels, ...rest];
 
     return settingsData;
   },
 
-  async addNewEntity(name: string, newRawData: SettingsData)
+  async addNewPrefab(name: string, newRawData: SettingsData)
   {
     plugin.GetCurrentScene().settingsHandler.SetRaw(newRawData);
     plugin.GetCurrentScene().settingsHandler.Process(newRawData);
 
     try {
-        const res = await fetch('/api/save-entity-data', {
+        const res = await fetch('/api/save-settings-data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1478,7 +1478,7 @@ const gameDebugApi = {
         const json = await res.json().catch(() => null);
     
         // TELL THE PLUGIN
-        //window.__GAME_DEBUG_API__.notifyEntityDataChanged(newRawData)
+        //window.__GAME_DEBUG_API__.notifyPrefabChanged(newRawData)
 
         return { ok: res.ok, saved: res.ok, response: json };
     } catch (error: any) {
@@ -1487,7 +1487,7 @@ const gameDebugApi = {
     }
   },
 
-  removeEntity(name: string, newRawData: SettingsData)
+  removePrefab(name: string, newRawData: SettingsData)
   {
     var scene = plugin.GetCurrentScene();
 
@@ -1495,7 +1495,7 @@ const gameDebugApi = {
     scene.settingsHandler.Process(newRawData);
   },
 
-  async setEntityData(newData: SettingsData, settingsDataName?: string)
+  async setSettingsData(newData: SettingsData, settingsDataName?: string)
   {
     const settingsHandler = plugin.GetSettingsDataHandler(settingsDataName);
     settingsHandler.SetRaw(newData);
@@ -1503,28 +1503,28 @@ const gameDebugApi = {
     await plugin.SaveSettingsData(newData);
   },
 
-  notifyEntityDataChanged(data: { name: string }) {
+  notifyPrefabChanged(data: { name: string }) {
     if (!plugin.doNotifyAfterSave)
       return;
 
-    const entityScene = bare.scene.Get(EntityScene);
-    if (!entityScene || entityScene.objectName != data.name)
+    const prefabScene = bare.scene.Get(PrefabScene);
+    if (!prefabScene || prefabScene.objectName != data.name)
       return;
 
-    const entity = plugin.BuildEntityEditorPayload(
+    const prefab = plugin.BuildPrefabEditorPayload(
       data.name,
-      entityScene.settingsHandler,
-      entityScene
+      prefabScene.settingsHandler,
+      prefabScene
     );
-    window.postMessage({ __fromGame: true, type: "entityData", data: { ...data, entity } }, "*");
+    window.postMessage({ __fromGame: true, type: "prefabData", data: { ...data, prefab } }, "*");
   },
 
-  notifyEntityTransformPreview(data) {
-    window.postMessage({ __fromGame: true, type: "entityTransformPreview", data }, "*");
+  notifyPrefabTransformPreview(data) {
+    window.postMessage({ __fromGame: true, type: "prefabTransformPreview", data }, "*");
   },
 
-  notifyLeaveEntity() {
-    window.postMessage({ __fromGame: true, type: "notifyLeaveEntity2" }, "*");
+  notifyLeavePrefab() {
+    window.postMessage({ __fromGame: true, type: "notifyLeavePrefab2" }, "*");
   },
 
   refreshLevelFiles() {
@@ -1543,7 +1543,7 @@ const gameDebugApi = {
       // Arm a one-shot: the recompile this triggers restarts the game back to the main
       // scene, so when it restarts, ask the panel to re-open the entity we were editing.
       // Done as the same flow as clicking the entity in the list, so the panel re-syncs.
-      if (plugin.lastEntity)
+      if (plugin.lastPrefab)
       {
           // carry the child that was selected (attach.childPath) so the panel lands back on it
           // rather than on the root entity
@@ -1551,9 +1551,9 @@ const gameDebugApi = {
           const isBase = !!attach?.isBase;
           const childPath = Array.isArray(attach?.childPath) ? attach.childPath : [];
           globalEvents.persistent.once(BareEvent.game_started, () => {
-              if (plugin.lastEntity && !bare.scene.Get(EntityScene))
+              if (plugin.lastPrefab && !bare.scene.Get(PrefabScene))
               {
-                  window.postMessage({ __fromGame: true, type: "gotoEntity", name: plugin.lastEntity.name, settingsDataName, isBase, childPath }, "*");
+                  window.postMessage({ __fromGame: true, type: "gotoPrefab", name: plugin.lastPrefab.name, settingsDataName, isBase, childPath }, "*");
               }
           });
       }
@@ -1732,11 +1732,11 @@ export class PluginHandler
 
     debugActions: Array<{label?: string, callback?: () => void}> = [];
     doNotifyAfterSave: boolean = true;
-    notifyLeaveEntity: boolean = true;
+    notifyLeavePrefab: boolean = true;
     currentSceneClassString: string = "";
     // The entity being edited, remembered across a recompile/restart so setPluginConnected
     // can re-open it (the restart drops back to the main scene).
-    lastEntity: { name: string } | null = null;
+    lastPrefab: { name: string } | null = null;
 
     public GetPaused(): boolean
     {
@@ -1830,10 +1830,10 @@ export class PluginHandler
                     this.SetCurrentScene(scene.constructor.name);
             }
 
-            var isAnyEntityScene = bare.scene.Get(EntityScene);
-            if (!isAnyEntityScene && plugin.notifyLeaveEntity)
+            var isAnyPrefabScene = bare.scene.Get(PrefabScene);
+            if (!isAnyPrefabScene && plugin.notifyLeavePrefab)
             {
-                window.__GAME_DEBUG_API__.notifyLeaveEntity();
+                window.__GAME_DEBUG_API__.notifyLeavePrefab();
                 window.postMessage({ __fromGame: true, type: "lockObjectsTab", flag: false }, "*");
             }
         });
@@ -1843,8 +1843,8 @@ export class PluginHandler
         });
 
         globalEvents.persistent.on(BareEvent.scene_awake, ({ scene }) => {
-            // REFRESHES THE ENTITIES
-            window.postMessage({ __fromGame: true, type: "entityDataChanged" }, "*");
+            // REFRESHES THE PREFABS
+            window.postMessage({ __fromGame: true, type: "prefabsChanged" }, "*");
         });
 
         // NOTIFY THE PLUGIN WHEN AN OBJECT IS DESTROYED, SO IT CAN CLEAR ITS OBJECT PANEL
@@ -1874,12 +1874,12 @@ export class PluginHandler
 
     HandleClickObject(obj: GameObject)
     {
-        var entityScene = bare.scene.Get(EntityScene);
-        if (entityScene && obj?.scene === entityScene)
+        var prefabScene = bare.scene.Get(PrefabScene);
+        if (prefabScene && obj?.scene === prefabScene)
         {
-            // EntityScene deliberately disables canvas-driven selection. A selection coming
+            // PrefabScene deliberately disables canvas-driven selection. A selection coming
             // from the plugin is still authoritative and should drive TransformTool.
-            entityScene.editorControlsHandler.SelectGameObjects([obj], true, false);
+            prefabScene.editorControlsHandler.SelectGameObjects([obj], true, false);
             return;
         }
 
@@ -2188,7 +2188,7 @@ export class PluginHandler
     ProcessSettingsDataForPlugin(entityName: string, settingsHandler: SettingsHandler)
     {
         var raw = settingsHandler.GetRaw();
-        var entity = SettingsHandler.FindEntity(raw, entityName);
+        var entity = SettingsHandler.FindPrefab(raw, entityName);
 
         // EXTENDING CHILDREN, SO IT'S EASIER TO DO OPERATIONS ON THEM
         // WILL BE CLEANED IN CleanSettingsData() AGAIN
@@ -2202,16 +2202,16 @@ export class PluginHandler
                 // deepest base's children first, then the nearer bases'. the entity's own children go after
                 var orderedSourceRefs: Entity[] = [];
 
-                var entityName = entity.entity || "ANY";
-                var visitedEntityNames = new Set<string>();
-                while (entityName && !visitedEntityNames.has(entityName))
+                var entityName = entity.extends || "ANY";
+                var visitedExtendsNames = new Set<string>();
+                while (entityName && !visitedExtendsNames.has(entityName))
                 {
-                    visitedEntityNames.add(entityName);
-                    var settingsDataEntity = settingsHandler.GetRawEntity(entityName, raw);
-                    if (!settingsDataEntity)
+                    visitedExtendsNames.add(entityName);
+                    var extendedPrefab = settingsHandler.GetRawPrefab(entityName, raw);
+                    if (!extendedPrefab)
                         break;
 
-                    var sourceChildrenAr = settingsDataEntity.children ?? [];
+                    var sourceChildrenAr = extendedPrefab.children ?? [];
                     var levelRefs: Entity[] = [];
                     for (const sourceChild of sourceChildrenAr)
                     {
@@ -2219,14 +2219,14 @@ export class PluginHandler
                         sourceChild.entityUID ??= SettingsHandler.GenerateRuntimeUID();
                         settingsHandler.rawEntitiesMappedByUID[sourceChild.entityUID] = sourceChild;
 
-                        var existingRef = entity.children.find(child => child.entity === sourceChild.entityUID);
+                        var existingRef = entity.children.find(child => child.extends === sourceChild.entityUID);
                         if (existingRef)
                         {
                             levelRefs.push(existingRef);
                             continue;
                         }
 
-                        var newChildEnity:Entity = {entity: sourceChild.entityUID};
+                        var newChildEnity:Entity = {extends: sourceChild.entityUID};
 
                         // NEW CHILD ALSO NEEDS A UID, IN CASE ANOTHER CHILD REFRENCES IT
                         newChildEnity.entityUID = SettingsHandler.GenerateRuntimeUID();
@@ -2237,14 +2237,14 @@ export class PluginHandler
                     orderedSourceRefs = [...levelRefs, ...orderedSourceRefs];
 
                     // Children can be inherited through multiple entity levels, so continue through the complete base chain.
-                    entityName = settingsDataEntity.entity || "";
+                    entityName = extendedPrefab.extends || "";
                 }
 
                 // raw child order has to match the runtime order, childPath indexes both
                 const ownChildren = entity.children.filter(child => !orderedSourceRefs.includes(child));
                 entity.children = [...orderedSourceRefs, ...ownChildren];
 
-                // STORE UNCONSTRUCTED ENTITIES IN rawEntitiesMappedByUID, SO GetEnitityFromObject() CAN USE THEM FOR SERIALIZATION
+                // STORE UNCONSTRUCTED ENTITIES IN rawEntitiesMappedByUID, SO GetEntityFromObject() CAN USE THEM FOR SERIALIZATION
                 for (const child of entity.children)
                 {
                     child.entityUID ??= SettingsHandler.GenerateRuntimeUID();
@@ -2259,46 +2259,46 @@ export class PluginHandler
 
     CleanSettingsData(settingsDataRaw: SettingsData, settingsHandler: SettingsHandler): void
     {
-        GameObjectSerializer.CleanEntities([settingsDataRaw.entities ?? [], settingsDataRaw.baseEntities ?? []], settingsHandler.rawEntitiesMappedByUID,
+        GameObjectSerializer.CleanEntities([settingsDataRaw.prefabs ?? [], settingsDataRaw.basePrefabs ?? []], settingsHandler.rawEntitiesMappedByUID,
             undefined, entityUID => settingsHandler.IsRuntimeGeneratedUID(entityUID));
     }
 
-    // RETURNS A NEW ENTITY WITH baseEntityLog ADDED TOT IT
+    // RETURNS A NEW ENTITY WITH extendsLog ADDED TOT IT
     // HOLDS DATA ABOUT WHAT PROPERTIES IT EXTENDS
-    // SENDING ALONG PROCESSED ARGS, SO baseEntity IS ALWAYS SET
+    // SENDING ALONG PROCESSED ARGS, SO extendsName IS ALWAYS SET
     BuildExtendDataLog(entity: Entity, entityToApplyTo: Entity, entityName: string, processedEntity: Entity, settingsDataRaw: SettingsData, settingsDataProcessed: SettingsData): Entity
     {
-        var newEntity = entityToApplyTo;//{...newEntity}; // SHALLOW COPY, MORE IS NOT NEEDED, SINCE WE ONLY ADD baseEntityLog TO IT
+        var newEntity = entityToApplyTo;//{...newEntity}; // SHALLOW COPY, MORE IS NOT NEEDED, SINCE WE ONLY ADD extendsLog TO IT
         var settingsHandler = this.GetCurrentScene().settingsHandler;
-        var getRawEntity = (name: string): Entity | undefined =>
-            settingsHandler.GetRawEntity(name, settingsDataRaw);
-        var getProcessedEntity = (name: string): Entity | undefined =>
-            settingsHandler.GetProcessedEnity(name, settingsDataProcessed);
+        var getRawPrefab = (name: string): Entity | undefined =>
+            settingsHandler.GetRawPrefab(name, settingsDataRaw);
+        var getProcessedPrefab = (name: string): Entity | undefined =>
+            settingsHandler.GetProcessedPrefab(name, settingsDataProcessed);
 
         // GET EXTENDED ENTITIES ALL THE WAY DOWN, PUSH IN extendOrder. For nested entities the
         // authored `entity` field is authoritative. entityToApplyTo also carries the ANY_ENTITY
-        // default synthesized by BuildEntityEditorData, which must be logged when none was authored.
+        // default synthesized by BuildPrefabEditorData, which must be logged when none was authored.
         // Fall back to processed data for callers that did not construct an editor entity first.
-        let baseEntity = entity.entity || entityToApplyTo.entity || processedEntity.entity;
+        let extendsName = entity.extends || entityToApplyTo.extends || processedEntity.extends;
 
         var extendOrder = [entityName];
-        newEntity.baseEntityLog = {};
-        newEntity.baseEntityLog["__extendOrder__"] = extendOrder;
+        newEntity.extendsLog = {};
+        newEntity.extendsLog["__extendOrder__"] = extendOrder;
 
-        while (baseEntity && !extendOrder.includes(baseEntity))
+        while (extendsName && !extendOrder.includes(extendsName))
         {
-            const currentBaseEntity = baseEntity;
-            extendOrder.push(currentBaseEntity);
+            const currentExtends = extendsName;
+            extendOrder.push(currentExtends);
 
-            const processedBaseEntity = getProcessedEntity(currentBaseEntity);
-            baseEntity = processedBaseEntity?.entity;
+            const processedExtendedPrefab = getProcessedPrefab(currentExtends);
+            extendsName = processedExtendedPrefab?.extends;
 
             // A UID points at a child definition rather than a top-level entity. Child definitions
             // do not persist their implicit default base, so continue through ANY when the
-            // referenced child has no explicit entity. This matches BuildEntityEditorData's direct
+            // referenced child has no explicit entity. This matches BuildPrefabEditorData's direct
             // child path and produces UID/name -> ANY in the inheritance log.
-            if (!baseEntity && getRawEntity(currentBaseEntity)?.entityUID == currentBaseEntity)
-                baseEntity = "ANY";
+            if (!extendsName && getRawPrefab(currentExtends)?.entityUID == currentExtends)
+                extendsName = "ANY";
         }
 
         // FILL INFO ABOUT WHAT ENTITY PROPERTIES ARE EXTENDED BY WHY WHICH DATA - USING extendOrder
@@ -2308,16 +2308,16 @@ export class PluginHandler
         // INHERITED PROP, NOT A BRAND-NEW OWN PROP. KEEP THOSE LOGGED UNDER THEIR BASE SOURCE (SO
         // THEY STAY GROUPED UNDER THE EXTENDED ENTITY IN THE PLUGIN INSTEAD OF JUMPING TO THE OWN
         // GROUP) AND FLAG THEM IN __overriddenFields__ SO THE PLUGIN SHOWS A REVERT (R) BUTTON.
-        // baseEntity/baseClass ARE STRUCTURAL (EVERY ENTITY IN A CHAIN DECLARES THEM) - ALWAYS OWN.
+        // extends/baseClass ARE STRUCTURAL (EVERY ENTITY IN A CHAIN DECLARES THEM) - ALWAYS OWN.
         // name identifies this node itself, so a base that also has a name never supplies it.
-        var overrideExcluded = new Set(["entity", "baseClass", "name"]);
+        var overrideExcluded = new Set(["extends", "baseClass", "name"]);
         // Returns the inherited value for a prop from the nearest base in the chain that declares it,
         // or a sentinel {found:false} when no base declares it.
         var getInheritedValue = (prop: string): { found: boolean, value?: any } =>
         {
             for (var b = 1; b < extendOrder.length; b++)
             {
-                var baseEnt = getRawEntity(extendOrder[b]);
+                var baseEnt = getRawPrefab(extendOrder[b]);
                 if (baseEnt && Object.prototype.hasOwnProperty.call(baseEnt, prop))
                     return { found: true, value: baseEnt[prop] };
             }
@@ -2358,8 +2358,8 @@ export class PluginHandler
             ownOnlyProps.push(ownProp);
         }
 
-        newEntity.baseEntityLog[entityName] = ownOnlyProps;
-        newEntity.baseEntityLog["__overriddenFields__"] = overriddenFields;
+        newEntity.extendsLog[entityName] = ownOnlyProps;
+        newEntity.extendsLog["__overriddenFields__"] = overriddenFields;
 
         // ONLY OWN-ONLY PROPS SEED propsFound - OVERRIDDEN PROPS ARE LEFT FOR THE NEAREST BASE THAT
         // DECLARES THEM TO CLAIM AS ITS SOURCE (KEEPING THEM UNDER THAT BASE'S GROUP).
@@ -2368,30 +2368,30 @@ export class PluginHandler
         for (var i = 1; i < extendOrder.length; i++) // START AT 1, ALREADY HANDLED 0 (SELF) ABOVE
         {
             // LOG EXTENDED PROPERTIES - SHOULD NOT HAVE BEEN FOUND BEFORE
-            var extendEntityName = extendOrder[i];
-            var extendEntity = getRawEntity(extendEntityName); // THIS CAUSES A PROBLEM WITH FIELD THAT CAN ALSO BE STRING, settingsDataRaw IS DIFFERENT THEN PROCESSED, DOESN'T END UP UNDER RIGHT BASE ENTITY. EG pivotPercOnHitbox CENTER - TODO
-            if (!extendEntity)
+            var extendPrefabName = extendOrder[i];
+            var extendPrefab = getRawPrefab(extendPrefabName); // THIS CAUSES A PROBLEM WITH FIELD THAT CAN ALSO BE STRING, settingsDataRaw IS DIFFERENT THEN PROCESSED, DOESN'T END UP UNDER RIGHT BASE ENTITY. EG pivotPercOnHitbox CENTER - TODO
+            if (!extendPrefab)
                 continue;
-            var propsExtended = Object.keys(extendEntity);
+            var propsExtended = Object.keys(extendPrefab);
             var propsExtendedFiltered = propsExtended.filter(p => !propsFound.includes(p));
 
-            newEntity.baseEntityLog[extendEntityName] = propsExtendedFiltered;
+            newEntity.extendsLog[extendPrefabName] = propsExtendedFiltered;
 
             propsFound.push(...propsExtendedFiltered);
         }
 
-        newEntity.baseEntityLog["__componentSources__"] = {
+        newEntity.extendsLog["__componentSources__"] = {
             components: {}
         };
 
         for (var componentType of ["components"])
         {
-            var componentSources = newEntity.baseEntityLog["__componentSources__"][componentType];
+            var componentSources = newEntity.extendsLog["__componentSources__"][componentType];
             for (var sourceName of extendOrder)
             {
                 var sourceEntity = sourceName == entityName
                     ? entity
-                    : getRawEntity(sourceName);
+                    : getRawPrefab(sourceName);
                 var sourceComponents = sourceEntity?.[componentType];
                 if (!sourceComponents) continue;
 
@@ -2407,7 +2407,7 @@ export class PluginHandler
         // prop this entity authors itself is an override when it differs from the nearest base's
         // value, or from the component's class default when no base sets it (eg base alive: {},
         // this entity alive: { maxHealth: 15 }). plugin shows these blue with a revert (R) button
-        // that deletes the prop off this entity's component - see removeComponentPropFromEntity
+        // that deletes the prop off this entity's component - see removeComponentPropFromPrefab
         var overriddenComponentProps: Record<string, string[]> = {};
         for (var [ownCompName, ownComp] of Object.entries(entity.components ?? {}))
         {
@@ -2417,7 +2417,7 @@ export class PluginHandler
 
             // not via __componentSources__: that walks extendOrder from self, so a component this
             // entity re-declares is sourced to self even when a base declares it too
-            var baseComps = extendOrder.slice(1).map(name => getRawEntity(name)?.components?.[ownCompName]).filter(c => c !== undefined);
+            var baseComps = extendOrder.slice(1).map(name => getRawPrefab(name)?.components?.[ownCompName]).filter(c => c !== undefined);
             if (baseComps.length == 0)
                 continue; // introduced by this entity, nothing to revert to
 
@@ -2432,7 +2432,7 @@ export class PluginHandler
             if (overriddenProps.length > 0)
                 overriddenComponentProps[ownCompName] = overriddenProps;
         }
-        newEntity.baseEntityLog["__overriddenComponentProps__"] = overriddenComponentProps;
+        newEntity.extendsLog["__overriddenComponentProps__"] = overriddenComponentProps;
 
         // re-add removed properties/components so the plugin can still show them (greyed-out, with a revert button).
         // constructentity stripped them out of processedentity via propertiesremoved/componentsremoved, so we look
@@ -2445,11 +2445,11 @@ export class PluginHandler
             for (var p = 1; p < extendOrder.length; p++)
             {
                 var propSrc = extendOrder[p];
-                var propRawBase = getRawEntity(propSrc);
+                var propRawBase = getRawPrefab(propSrc);
                 if (propRawBase && Object.prototype.hasOwnProperty.call(propRawBase, removedProp))
                 {
                     propSource = propSrc;
-                    propValue = getProcessedEntity(propSrc)?.[removedProp] ?? propRawBase[removedProp];
+                    propValue = getProcessedPrefab(propSrc)?.[removedProp] ?? propRawBase[removedProp];
                     break;
                 }
             }
@@ -2457,15 +2457,15 @@ export class PluginHandler
             if (!propSource && extendOrder.length > 1)
             {
                 propSource = extendOrder[1];
-                propValue = getProcessedEntity(propSource)?.[removedProp];
+                propValue = getProcessedPrefab(propSource)?.[removedProp];
             }
             if (!propSource)
                 continue;
 
             newEntity[removedProp] = propValue ?? null;
-            newEntity.baseEntityLog[propSource] ??= [];
-            if (!newEntity.baseEntityLog[propSource].includes(removedProp))
-                newEntity.baseEntityLog[propSource].push(removedProp);
+            newEntity.extendsLog[propSource] ??= [];
+            if (!newEntity.extendsLog[propSource].includes(removedProp))
+                newEntity.extendsLog[propSource].push(removedProp);
         }
 
         var removedComps = Array.isArray(entity.componentsRemoved) ? entity.componentsRemoved : [];
@@ -2478,40 +2478,40 @@ export class PluginHandler
             for (var c = 1; c < extendOrder.length; c++)
             {
                 var compSrc = extendOrder[c];
-                var compRawBase = getRawEntity(compSrc);
+                var compRawBase = getRawPrefab(compSrc);
                 if (compRawBase?.components && Object.prototype.hasOwnProperty.call(compRawBase.components, removedComp))
                 {
                     compSource = compSrc;
-                    compValue = getProcessedEntity(compSrc)?.components?.[removedComp] ?? compRawBase.components[removedComp];
+                    compValue = getProcessedPrefab(compSrc)?.components?.[removedComp] ?? compRawBase.components[removedComp];
                     break;
                 }
             }
             if (!compSource && extendOrder.length > 1)
             {
                 compSource = extendOrder[1];
-                compValue = getProcessedEntity(compSource)?.components?.[removedComp];
+                compValue = getProcessedPrefab(compSource)?.components?.[removedComp];
             }
             if (!compSource)
                 continue;
 
             newEntity.components[removedComp] = compValue ?? {};
-            newEntity.baseEntityLog["__componentSources__"].components[removedComp] = compSource;
+            newEntity.extendsLog["__componentSources__"].components[removedComp] = compSource;
         }
 
         return newEntity;
     }
 
     // Build the panel-facing representation for an entity that is already open. Unlike
-    // gotoEntity(), this does not add or rebuild a scene, so post-save notifications can publish
+    // gotoPrefab(), this does not add or rebuild a scene, so post-save notifications can publish
     // exactly the same resolved data shape without disturbing the live editor.
-    BuildEntityEditorPayload(name: string, settingsHandler: SettingsHandler, entityScene: EntityScene): Entity
+    BuildPrefabEditorPayload(name: string, settingsHandler: SettingsHandler, prefabScene: PrefabScene): Entity
     {
         const raw = settingsHandler.GetRaw();
-        const entity = SettingsHandler.FindEntity(raw, name)
-            || SettingsHandler.FindEntity(defaultSettingsData, name);
+        const entity = SettingsHandler.FindPrefab(raw, name)
+            || SettingsHandler.FindPrefab(defaultSettingsData, name);
 
         const processed = settingsHandler.Get();
-        const processedEntity = SettingsHandler.FindEntity(processed, name);
+        const processedEntity = SettingsHandler.FindPrefab(processed, name);
 
         if (!entity)
             throw new Error(`Could not build editor data for missing entity '${name}'`);
@@ -2523,7 +2523,7 @@ export class PluginHandler
         // metadata as the root entity; otherwise the panel cannot render their labels and controls.
         // Expand the complete display tree once, then walk it alongside the authored raw tree so
         // BuildExtendDataLog still receives the correct ownership/provenance record for each node.
-        const entityWithLog = this.BuildEntityEditorData(
+        const entityWithLog = this.BuildPrefabEditorData(
             entity,
             extendedEntity,
             name,
@@ -2532,7 +2532,7 @@ export class PluginHandler
             processed
         );
 
-        const obj = entityScene.object.GetByName(name);
+        const obj = prefabScene.object.GetByName(name);
         if (obj)
             this.AddInspectorDataToObject(entityWithLog, obj, true);
 
@@ -2544,23 +2544,23 @@ export class PluginHandler
         return entityWithLog;
     }
 
-    // Attach editor metadata to an entity tree that BuildEntityEditorPayload already expanded.
+    // Attach editor metadata to an entity tree that BuildPrefabEditorPayload already expanded.
     // `entity` is the authored record used for provenance; `extendedEntity` supplies display values.
-    // `logKey` is what this node's own entry in baseEntityLog (and extendOrder[0]) is keyed by. It
+    // `logKey` is what this node's own entry in extendsLog (and extendOrder[0]) is keyed by. It
     // defaults to the name, which is fine for root entities, but a child is usually named after the
     // entity it references (child "weapon" -> entity "weapon"), so its name would collide with the
     // first base in its chain and the base's props/components would get logged as the child's own.
-    BuildEntityEditorData(entity: Entity, extendedEntity: Entity, entityName: string, processedEntity: Entity, settingsDataRaw: SettingsData, settingsDataProcessed: SettingsData, logKey: string = entityName): Entity
+    BuildPrefabEditorData(entity: Entity, extendedEntity: Entity, entityName: string, processedEntity: Entity, settingsDataRaw: SettingsData, settingsDataProcessed: SettingsData, logKey: string = entityName): Entity
     {
         var defaultFieldsToIgnore: string[] = [];
-        var defaultBaseEntity = "ANY";
+        var defaultExtends = "ANY";
 
         // ANY is the root default, so it must not inherit from itself. Nested
         // nodes use a distinct logKey and still receive the normal default.
-        if (!extendedEntity.entity && logKey !== "ANY")
+        if (!extendedEntity.extends && logKey !== "ANY")
         {
-            extendedEntity.entity = defaultBaseEntity;
-            defaultFieldsToIgnore.push("entity");
+            extendedEntity.extends = defaultExtends;
+            defaultFieldsToIgnore.push("extends");
         }
         
         defaultFieldsToIgnore.push("entityUID");
@@ -2574,17 +2574,17 @@ export class PluginHandler
         if (entityWithLog.children)
         {
             var entityOptions: Array<{ value: string, label: string, source?: string }> = [];
-            var optionSourceName = entity.entity || defaultBaseEntity;
+            var optionSourceName = entity.extends || defaultExtends;
             var optionValues = new Set<string>();
             var visitedOptionSources = new Set<string>();
             while (optionSourceName && !visitedOptionSources.has(optionSourceName))
             {
                 visitedOptionSources.add(optionSourceName);
-                var optionSource = this.GetCurrentScene().settingsHandler.GetRawEntity(optionSourceName, settingsDataRaw);
+                var optionSource = this.GetCurrentScene().settingsHandler.GetRawPrefab(optionSourceName, settingsDataRaw);
                 if (!optionSource)
                     break;
 
-                var processedOptionSource = this.GetCurrentScene().settingsHandler.GetProcessedEnity(optionSourceName, settingsDataProcessed);
+                var processedOptionSource = this.GetCurrentScene().settingsHandler.GetProcessedPrefab(optionSourceName, settingsDataProcessed);
                 var optionSourceChildren: Entity[] = optionSource.children ?? [];
                 for (var sourceChildIndex = 0; sourceChildIndex < optionSourceChildren.length; sourceChildIndex++)
                 {
@@ -2602,7 +2602,7 @@ export class PluginHandler
                     });
                 }
 
-                optionSourceName = optionSource.entity || "";
+                optionSourceName = optionSource.extends || "";
             }
 
             for (var i = 0; i < entityWithLog.children.length; i++)
@@ -2611,13 +2611,13 @@ export class PluginHandler
                 var processedChild = processedEntity?.children?.[i] || extendedChild;
                 var authoredChild = entity.children?.[i] ?? extendedChild;
 
-                var childName = extendedChild.name || processedChild.name || authoredChild.entity || "GameObject";
+                var childName = extendedChild.name || processedChild.name || authoredChild.extends || "GameObject";
                 // key the child's own log entry by its uid, never by its name: the name is typically the
                 // same as the entity it references, which is the first base in its extend chain. the
                 // processed child always carries a uid (runtime-generated when the raw record has none).
                 var childLogKey = authoredChild.entityUID || processedChild.entityUID || extendedChild.entityUID || childName;
-                entityWithLog.children[i] = this.BuildEntityEditorData(authoredChild, extendedChild, childName, processedChild, settingsDataRaw, settingsDataProcessed, childLogKey);
-                entityWithLog.children[i].__entityOptions = entityOptions;
+                entityWithLog.children[i] = this.BuildPrefabEditorData(authoredChild, extendedChild, childName, processedChild, settingsDataRaw, settingsDataProcessed, childLogKey);
+                entityWithLog.children[i].__extendsOptions = entityOptions;
             }
         }
 
@@ -2625,7 +2625,7 @@ export class PluginHandler
     }
 
     // onlyFieldsInData: only enrich @InspectorField info for fields that are actually present in `data`
-    // (used by the entity/gotoEntity path, whose data only carries the entity's own keys).
+    // (used by the entity/gotoPrefab path, whose data only carries the entity's own keys).
     AddInspectorDataToObject(data: any, o: GameObject, onlyFieldsInData: boolean = false, includeSaveFields: boolean = true): void
     {
         // ADD DATA FOR @InspectorButton AND @InspectorField DECORATORS ON THE OBJECT ITSELF
@@ -2735,8 +2735,8 @@ export class PluginHandler
     
     async LoadSettingsDataJSONs(): Promise<string[]>
     {
-        // Keep handler identity stable while an EntityScene is editing it. Recreating handlers
-        // here makes the scene write to the old instance while gotoEntity reads a fresh copy from
+        // Keep handler identity stable while an PrefabScene is editing it. Recreating handlers
+        // here makes the scene write to the old instance while gotoPrefab reads a fresh copy from
         // disk, causing edited values to snap back in the plugin.
         const mainScene = bare.scene.GetMainScene();
         if (mainScene?.settingsHandler)
@@ -2816,7 +2816,7 @@ export class PluginHandler
         }
         else
         {
-            await fetch('/api/save-entity-data', {
+            await fetch('/api/save-settings-data', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -2831,7 +2831,7 @@ export class PluginHandler
         // Update only the handler for the file that was saved. Assigning named settings data to
         // the main scene's handler makes the default dropdown entry resolve to that named file.
         // Keep the live handler on the unfiltered data. dataToSave has defaults stripped
-        // for persistence, so assigning it here would make raw.baseEntities lose
+        // for persistence, so assigning it here would make raw.basePrefabs lose
         // ANY, and NONE after every save.
         settingsHandler.SetRaw(newData);
         await settingsHandler.Process(newData);
@@ -2850,16 +2850,16 @@ export class PluginHandler
 
     // TOGGLE A VALUE IN entity.propertiesRemoved / entity.componentsRemoved, RE-PROCESS AND SAVE.
     // USED BY THE PLUGIN'S X/REVERT BUTTONS ON INHERITED FIELDS/COMPONENTS.
-    async ToggleEntityRemovedArray(arrayKey: "propertiesRemoved" | "componentsRemoved", value: string, removed: boolean, childPath: number[]): Promise<Entity>
+    async TogglePrefabRemovedArray(arrayKey: "propertiesRemoved" | "componentsRemoved", value: string, removed: boolean, childPath: number[]): Promise<Entity>
     {
-        var entityScene = plugin.GetCurrentScene() as EntityScene;
-        var rawSettingsData = entityScene.settingsHandler.GetRaw();
+        var prefabScene = plugin.GetCurrentScene() as PrefabScene;
+        var rawSettingsData = prefabScene.settingsHandler.GetRaw();
 
-        if (!SettingsHandler.FindEntity(rawSettingsData, "ANY"))
-            rawSettingsData.baseEntities.push({ name: "ANY" });
+        if (!SettingsHandler.FindPrefab(rawSettingsData, "ANY"))
+            rawSettingsData.basePrefabs.push({ name: "ANY" });
 
         var entity = plugin.ResolveEntityChildPath(
-            SettingsHandler.FindEntity(rawSettingsData, entityScene.objectName)!,
+            SettingsHandler.FindPrefab(rawSettingsData, prefabScene.objectName)!,
             childPath
         );
 
@@ -2879,37 +2879,37 @@ export class PluginHandler
         else
             delete entity[arrayKey];
 
-        await entityScene.settingsHandler.Process();
+        await prefabScene.settingsHandler.Process();
 
-        var entityData = await window.__GAME_DEBUG_API__.gotoEntity(entityScene.objectName, undefined, childPath);
+        var entityData = await window.__GAME_DEBUG_API__.gotoPrefab(prefabScene.objectName, undefined, childPath);
 
         await plugin.SaveSettingsData(rawSettingsData);
 
         return entityData;
     }
 
-    GetCurrentEntity(): Entity
+    GetCurrentPrefab(): Entity
     {
-        var scene = (plugin.GetCurrentScene() as EntityScene);
+        var scene = (plugin.GetCurrentScene() as PrefabScene);
         var name = scene.objectName;
         var raw = scene.settingsHandler.GetRaw();
-        var entity = SettingsHandler.FindEntity(raw, name)!;
+        var entity = SettingsHandler.FindPrefab(raw, name)!;
 
         return entity;
     }
 
-    GetCurrentEntityProcessed(): Entity
+    GetCurrentPrefabProcessed(): Entity
     {
-        var scene = (plugin.GetCurrentScene() as EntityScene);
+        var scene = (plugin.GetCurrentScene() as PrefabScene);
         var name = scene.objectName;
         var processed = scene.settingsHandler.Get();
-        var entity = SettingsHandler.FindEntity(processed, name)!;
+        var entity = SettingsHandler.FindPrefab(processed, name)!;
 
         return entity;
     }
 
     // WALK A DISPLAYED childPath STRAIGHT INTO THE RAW CHILD RECORDS. SettingsHandler.Process()
-    // materializes every inherited child as a `{ entity: <sourceUID> }` (or authored) record in
+    // materializes every inherited child as a `{ extends: <sourceUID> }` (or authored) record in
     // MergeChildren() order at every depth, so the displayed index maps 1:1 onto entity.children
     // and the resolved record is always safe both to read and to mutate.
     ResolveEntityChildPath(entity: Entity, childPath: Array<number | string>): Entity
@@ -2956,11 +2956,11 @@ export class PluginHandler
     
     CleanUpSettingsDataUIDs(rawSettingsData: SettingsData): void
     {
-        const entityScene = this.GetCurrentScene() as EntityScene;
-        const rawEntitiesMappedByUID = entityScene.settingsHandler.GetRawEntitiesMappedByUID();
+        const prefabScene = this.GetCurrentScene() as PrefabScene;
+        const rawEntitiesMappedByUID = prefabScene.settingsHandler.GetRawEntitiesMappedByUID();
         const rootEntities = [
-            ...(rawSettingsData.baseEntities ?? []),
-            ...(rawSettingsData.entities ?? [])
+            ...(rawSettingsData.basePrefabs ?? []),
+            ...(rawSettingsData.prefabs ?? [])
         ];
 
         const cleanChildren = (entity: Entity): void =>
@@ -2973,8 +2973,8 @@ export class PluginHandler
 
             entity.children = entity.children.filter((child: Entity) =>
             {
-                const isUIDReference = typeof child.entity === "string"
-                    && rawEntitiesMappedByUID[child.entity] !== undefined;
+                const isUIDReference = typeof child.extends === "string"
+                    && rawEntitiesMappedByUID[child.extends] !== undefined;
 
                 return !isUIDReference || Object.keys(child).length > 1;
             });

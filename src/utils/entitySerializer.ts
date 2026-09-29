@@ -183,8 +183,8 @@ export class GameObjectSerializer
                     // A bare UID reference adds no authored data; its source entity supplies the
                     // child. This also handles serialized references that have no temporary
                     // entityUID of their own.
-                    if (Object.keys(entity).length == 1 && entity.entity && rawEntitiesMappedByUID[entity.entity])
-                        delete entity.entity;
+                    if (Object.keys(entity).length == 1 && entity.extends && rawEntitiesMappedByUID[entity.extends])
+                        delete entity.extends;
 
                     for (const prop of propsToDelete)
                         delete (entity as any)[prop];

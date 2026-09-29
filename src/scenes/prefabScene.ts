@@ -9,37 +9,37 @@ import { Helper } from "../utils/helper";
 import { EditorScene } from "./editorScene";
 
 type EditorScenePayload = AwakePayload<EditorScene>;
-type EntitySceneAwakePayload = EditorScenePayload & {
+type PrefabSceneAwakePayload = EditorScenePayload & {
     name: string;
     settingsHandler: SettingsHandler;
 };
 
 // ON SERIALIZATION:
 // 
-// AN ENTITY HAS ITS DATA SERIALIZED IN settingsData.json (OR CUSTOM FILE)
-// THIS IS FED INTO THE PLUGIN IN GotoEntity() IN PluginHandler.ts
-// ANY CHANGES TO THE DATA MADE IN THE PLUGIN ARE DIRECTLY SAVED, SEE SetEntityField()
+// A PREFAB HAS ITS DATA SERIALIZED IN settingsData.json (OR CUSTOM FILE)
+// THIS IS FED INTO THE PLUGIN IN GotoPrefab() IN PluginHandler.ts
+// ANY CHANGES TO THE DATA MADE IN THE PLUGIN ARE DIRECTLY SAVED, SEE SetPrefabField()
 // 
-// WHEN CHANGES ARE MADE IN THE EDITOR, EG, OBJECT IS DRAGGED, THEN ON RELEASE, THE saveLevelCallback: SaveEntityDataToSettingsData() IS CALLED
-// HERE THE RUNTIME ENTITY OBJECT IS SERIALIZED AND SAVED TO settingsData.json
+// WHEN CHANGES ARE MADE IN THE EDITOR, EG, OBJECT IS DRAGGED, THEN ON RELEASE, THE saveLevelCallback: SavePrefabToSettingsData() IS CALLED
+// HERE THE RUNTIME PREFAB OBJECT IS SERIALIZED AND SAVED TO settingsData.json
 // WAS SENDING EVERY CHANGE TO THE settingsData BEFORE, BUT MORE KEPT COMING AND USER WOULD NEED TO DO THIS TOO, 
 // SO JUST SERIALIZING THE WHOLE OBJECT NOW, CAN MARK ONE WITH .save = false AND IT WILL BE SKIPPED
 // 
-// ON SERIALIZATION - FOR CHILDREN COMING FROM ENITTY:
+// ON SERIALIZATION - FOR CHILDREN COMING FROM A PREFAB:
 // IN SettingsHandler.ts Process() and ExtendEntity() entityUID FIELDS ARE ASSIGNED TO EACH RAW ENTITY.
-// IF AN ENTITY EXTENDS ANOTHER WITH THE .entity field, IT WILL TAKE OVER ITS VALUES AND CHILDREN. SEE ExtendEntity()
-// EACH NEW CHILD WILL GET A .entity FIELD REFERENCING THEIR SOURCE CHILD entityUID 
+// IF AN ENTITY EXTENDS ANOTHER WITH THE .extends field, IT WILL TAKE OVER ITS VALUES AND CHILDREN. SEE ExtendEntity()
+// EACH NEW CHILD WILL GET A .extends FIELD REFERENCING THEIR SOURCE CHILD entityUID 
 // THIS MEANS THE CHILD ENTITY INHERITS THE VALUES OF THE SOURCE, AND CAN ALSO OVERRIDE THEM WITH ITS OWN VALUES
 // NOTE: AN OVERRIDEN ENTITY CANNOT OVERRIDE IT'S CHILDREN ORDER, WILL STAY SAME AS SOURCE
 // 
 // BEFORE SAVING THE entityData, THE entityUID FIELDS ARE CLEARED IF THEY ARE NOT REFERENCED, SEE CleanSettingsData(), 
 //
-// SO .entity CAN REFERENCE AN ENTITY NAME, OR AN ENTITY UID. COULD GO ALL THE WAY REFERENCING UIDS, WHICH WOULD WORK FINE IN THE PLUGIN
+// SO .extends CAN REFERENCE A PREFAB NAME, OR AN ENTITY UID. COULD GO ALL THE WAY REFERENCING UIDS, WHICH WOULD WORK FINE IN THE PLUGIN
 // IT WOULD JUST RESOLVE THE NAME. BUT WHEN VIEWING/EDITING THE raw entityData.json, IT WOULD BE HARD TO FOLLOW WHAT EXTENDS WHAT
 // SO SUPPORTING BOTH WAYS FOR NOW. (INTENDING TO, CANNOT REFERENCE CHILD NAME ATM, JUST ROOT)
 //
 
-export class EntityScene extends EditorScene
+export class PrefabScene extends EditorScene
 {
     objectName: string = "";
 
@@ -50,7 +50,7 @@ export class EntityScene extends EditorScene
         return false;
     }
     
-    lastPayload: EntitySceneAwakePayload;
+    lastPayload: PrefabSceneAwakePayload;
     degugAtStart: boolean;
 
     imagePathBeforePlaceHolder: string = "";
@@ -61,7 +61,7 @@ export class EntityScene extends EditorScene
         super({solo:true, persistent: true});
     }
 
-    override async OnStart(payload: EntitySceneAwakePayload = this.lastPayload): Promise<void>
+    override async OnStart(payload: PrefabSceneAwakePayload = this.lastPayload): Promise<void>
     {
         this.degugAtStart = window.debug;
         window.debug = true;
@@ -106,22 +106,22 @@ export class EntityScene extends EditorScene
         const objectName:string = (payload)?.name;
         const targetSettingsHandler:SettingsHandler = (payload)?.settingsHandler;
         
-        // WE TAKE OVER THE TARGET ENTITY DATA, ONCE AT INIT
+        // WE TAKE OVER THE TARGET PREFAB DATA, ONCE AT INIT
         // SO THAT THE OBJECTS AND DUMMY DATA CREATED FROM THIS SCENE ARE BASED ON THIS DATA
         if (this.objectName == "")
         {
             this.objectName = objectName;
         }
 
-        // Entity editor UI state is local to this scene; don't write it into the shared settings raw data.
+        // Prefab editor UI state is local to this scene; don't write it into the shared settings raw data.
         //this.HideEditorUIForScene();
         // PROBLEM: THE ACTUAL RECT INGAME - TODO
         
         targetSettingsHandler.GetRaw().showUI = false;
         targetSettingsHandler.GetRaw().selectionEnabled = false;
 
-        var levelData = await this.CreateEntityDataFor(objectName);
-        await super.OnStart({levelPathOrData: levelData, saveLevelCallback: this.SaveEntityDataToSettingsData, settingsHandler: targetSettingsHandler});
+        var levelData = await this.CreateLevelDataForPrefab(objectName);
+        await super.OnStart({levelPathOrData: levelData, saveLevelCallback: this.SavePrefabToSettingsData, settingsHandler: targetSettingsHandler});
     }
 
     override OnClear(): void
@@ -160,23 +160,23 @@ export class EntityScene extends EditorScene
         await super.Close();
     }
 
-    async CreateEntityDataFor(objectName: string): Promise<LevelData>
+    async CreateLevelDataForPrefab(objectName: string): Promise<LevelData>
     {
         const rawSettingsData = this.settingsHandler.GetRaw();
-        var entityFromSettingsData = SettingsHandler.FindEntity(rawSettingsData, objectName)!;
-        const isBase = SettingsHandler.IsBaseEntity(rawSettingsData, objectName);
+        var prefab = SettingsHandler.FindPrefab(rawSettingsData, objectName)!;
+        const isBase = SettingsHandler.IsBasePrefab(rawSettingsData, objectName);
 
-        entityFromSettingsData = Helper.DeepCopy(entityFromSettingsData);
+        prefab = Helper.DeepCopy(prefab);
 
-        entityFromSettingsData.name = objectName;
+        prefab.name = objectName;
 
         if (isBase)
         {
-            this.imagePathBeforePlaceHolder = entityFromSettingsData.imagePath;
-            this.textureBeforePlaceHolder = entityFromSettingsData.texture;
+            this.imagePathBeforePlaceHolder = prefab.imagePath;
+            this.textureBeforePlaceHolder = prefab.texture;
 
-            entityFromSettingsData.texture = "placeHolder";
-            entityFromSettingsData.imagePath = "";
+            prefab.texture = "placeHolder";
+            prefab.imagePath = "";
         }
 
         // SET UP LEVEL
@@ -191,7 +191,7 @@ export class EntityScene extends EditorScene
             entitiesByLayer: {
                 "objects": [
                     {
-                        ... entityFromSettingsData,
+                        ... prefab,
                         /*position: {
                             x: 0,
                             y: 0
@@ -285,20 +285,20 @@ export class EntityScene extends EditorScene
     //
     // TOOK SETTINGSDATA ENITY AS BASE TRUTH BEFORE, APPLYING PATCHES WHEN CHANGES TO RUNTIME OBJECT WERE MADE, EG TRANSFORMS.
     // BUT MORE PATCHES WERE NEEDED EVERY TIME, EG CHILDREN ADD/REMOVE, SO I TAKE RUNTIME OBJECT AS BASE TRUTH NOW AND SERIALIZE IT.
-    async SaveEntityDataToSettingsData(): Promise<LevelData>
+    async SavePrefabToSettingsData(): Promise<LevelData>
     {
         var rootObject = this.object.GetByName(this.objectName);
         
         var entity = {
             name: this.objectName, // KEEP NAME ON TOP
-            ...this.GetEnitityFromObject(rootObject, { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false, includeSaveFields: false, keepRuntimeUIDs: true })
+            ...this.GetEntityFromObject(rootObject, { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false, includeSaveFields: false, keepRuntimeUIDs: true })
         };
             
-        // editor-only, set on the root in CreateEntityDataFor(). stored in the live settings data it would make
+        // editor-only, set on the root in CreateLevelDataForPrefab(). stored in the live settings data it would make
         // the entity unselectable in the level editor
         delete entity.interactableInEditor;
 
-        // RESTORE THE PLACEHOLDER FIELDS SET IN CreateEntityDataFor()
+        // RESTORE THE PLACEHOLDER FIELDS SET IN CreateLevelDataForPrefab()
         if (entity.texture == "placeHolder")
         {
             if (this.textureBeforePlaceHolder)
@@ -313,7 +313,7 @@ export class EntityScene extends EditorScene
         }
 
         const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
-            SettingsHandler.SetEntity(draft, this.objectName, entity);
+            SettingsHandler.SetPrefab(draft, this.objectName, entity);
         });
         const dataToSave = Helper.DeepCopy(newRawSettingsData);
 
@@ -322,9 +322,9 @@ export class EntityScene extends EditorScene
         await this.SaveSettingsData(dataToSave);
 
         // The compact entity above is the persistence representation. The debug API rebuilds the
-        // resolved editor payload from the freshly processed settings, matching gotoEntity()
+        // resolved editor payload from the freshly processed settings, matching gotoPrefab()
         // without reopening (and consequently rebuilding) this scene.
-        window.__GAME_DEBUG_API__?.notifyEntityDataChanged({
+        window.__GAME_DEBUG_API__?.notifyPrefabChanged({
             name: this.objectName,
         });
         
@@ -348,7 +348,7 @@ export class EntityScene extends EditorScene
                 // Use the same entity diff used for persistence. This keeps default, unauthored
                 // transform fields absent instead of making a move preview explicitly author
                 // scale {1,1} and rotation 0 in the panel.
-                const serialized = this.GetEnitityFromObject(obj) as any;
+                const serialized = this.GetEntityFromObject(obj) as any;
                 const transform: any = {
                     childPath: this.GetChildPath(rootObject, obj),
                     fields,
@@ -368,13 +368,13 @@ export class EntityScene extends EditorScene
             return;
 
         // Preview only: the raw settings data and disk are still updated once on pointer release.
-        window.__GAME_DEBUG_API__?.notifyEntityTransformPreview({
+        window.__GAME_DEBUG_API__?.notifyPrefabTransformPreview({
             name: this.objectName,
             transforms,
         });
     }
 
-    // ENTITY PANEL SELECTION IS CHILDPATH-BASED (THE ENTITY TREE), NOT UNIQUEID-BASED LIKE THE
+    // PREFAB PANEL SELECTION IS CHILDPATH-BASED (THE PREFAB TREE), NOT UNIQUEID-BASED LIKE THE
     // FLAT LEVEL EDITOR'S OBJECT LIST - SO IT NEEDS ITS OWN PLUGIN MESSAGE SHAPE.
     override NotifySelectionToPlugin(objs: GameObject[]): void
     {
@@ -382,7 +382,7 @@ export class EntityScene extends EditorScene
         {
             // NOTHING LEFT SELECTED (EG SHIFT-CLICK TOGGLED THE LAST REMAINING CHILD OFF) - TELL
             // THE PANEL TO DROP ITS FOCUSED NODE THE SAME WAY AN EMPTY-SPACE CLICK DOES.
-            window.__GAME_DEBUG_API__?.selectEntityObjectInPlugin({
+            window.__GAME_DEBUG_API__?.selectPrefabObjectInPlugin({
                 name: this.objectName,
                 clearSelection: true,
             });
@@ -398,7 +398,7 @@ export class EntityScene extends EditorScene
         if (!childPath)
             return;
 
-        window.__GAME_DEBUG_API__?.selectEntityObjectInPlugin({
+        window.__GAME_DEBUG_API__?.selectPrefabObjectInPlugin({
             name: this.objectName,
             childPath,
         });
@@ -418,7 +418,7 @@ export class EntityScene extends EditorScene
                 return null; // SHIFT+CLICK ON EMPTY SPACE LEAVES THE CURRENT SELECTION ALONE
 
             this.editorControlsHandler.ClearSelection();
-            window.__GAME_DEBUG_API__?.selectEntityObjectInPlugin({
+            window.__GAME_DEBUG_API__?.selectPrefabObjectInPlugin({
                 name: this.objectName,
                 clearSelection: true,
             });
@@ -440,7 +440,7 @@ export class EntityScene extends EditorScene
         }
 
         const childPath = this.GetChildPath(rootObject, selected) ?? [];
-        window.__GAME_DEBUG_API__?.selectEntityObjectInPlugin({
+        window.__GAME_DEBUG_API__?.selectPrefabObjectInPlugin({
             name: this.objectName,
             childPath,
         });

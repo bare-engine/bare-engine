@@ -146,7 +146,7 @@ export interface Entity
     propertiesRemoved?: any; // string[]
 
     baseClass?: string;
-    entity?: string;
+    extends?: string;
     imagePath?: string;
     interactableInEditor?: any; // boolean
     persistent?: any; // boolean
@@ -170,8 +170,8 @@ export interface Entity
     //tileDimensions?: {width: number; height: number};
     //numberOfTiles?: int; //
 
-    baseEntityLog?: Record<string, any>;
-    __entityOptions?: Array<{ value: string, label: string, source?: string }>;
+    extendsLog?: Record<string, any>;
+    __extendsOptions?: Array<{ value: string, label: string, source?: string }>;
     constructed ?: boolean;
     entityUID?: string;
 }
@@ -220,7 +220,7 @@ export var entityVarsNestedRecord: Record<string, string[]> =
 export var entityVarsAr: string[] =
 [
     "name",
-    "entity",
+    "extends",
     "baseClass",
     "imagePath",
     "texture"
@@ -262,7 +262,7 @@ export interface Category
     image?: string;
     expanded?: boolean;
     entries?: Array<string> | string;
-    entity?: string;
+    extends?: string;
     showLabels?: boolean;
 }
 
@@ -282,8 +282,8 @@ export interface SettingsData
 {
     name?: string; // WHEN SettingsData IS SAVED TO FILE, THIS NAME IS USED AS THE FILE NAME. IF LEFT EMPTY, THE DEFAULT settingsData.json IS USED. SO ANY EXTRA SettingsData json NEEDS A UNIQUE NAME, ELSE THEY WILL OVERRIDE THE DEFAULT ONE
     categories?: Record<string, Category>;
-    baseEntities?: Entity[];
-    entities?: Entity[];
+    basePrefabs?: Entity[];
+    prefabs?: Entity[];
     tilesheets?: Array<Entity>;//
     layers?: Array<string>;
     layersInfo?: Record<string, Partial<LayerInfo>>; // Partial, SINCE I'LL BE ASSIGNING MORE KEYS TO IT DURING PROCESSING

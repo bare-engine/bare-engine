@@ -1,13 +1,13 @@
 export class Bare
 {
     public static data: {
-        entities: string[];
-        baseEntities: string[];
+        prefabs: string[];
+        basePrefabs: string[];
         animations: string[];
         layers: int[];
     } = {
-        entities: [],
-        baseEntities: [],
+        prefabs: [],
+        basePrefabs: [],
         animations: [],
         layers: [],
     };

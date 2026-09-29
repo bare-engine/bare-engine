@@ -60,7 +60,7 @@ function collectTextureReferences(projectRoot, options = {}) {
         addTextureReference(references, textureName);
     }
 
-    collectSettingsDataEntityKeys(
+    collectSettingsDataPrefabKeys(
         options.settingsDataPath || path.join(projectRoot, "public/data/settingsData.json"),
         references
     );
@@ -103,16 +103,16 @@ function readProjectPackage(projectRoot) {
     }
 }
 
-function collectSettingsDataEntityKeys(settingsDataPath, references) {
+function collectSettingsDataPrefabKeys(settingsDataPath, references) {
     if (!fs.existsSync(settingsDataPath)) {
         return;
     }
 
     try {
         const data = JSON.parse(fs.readFileSync(settingsDataPath, "utf8"));
-        const entities = Array.isArray(data.entities)
-            ? data.entities
-            : Object.entries(data.entities || {}).map(([name, entity]) => ({ ...entity, name }));
+        const entities = Array.isArray(data.prefabs)
+            ? data.prefabs
+            : Object.entries(data.prefabs || {}).map(([name, entity]) => ({ ...entity, name }));
         for (const entity of entities) {
             addTextureReference(references, entity.name);
         }
@@ -184,9 +184,9 @@ function collectEntityName(entity, references) {
     }
 
     // Level entries reference textures either directly ("texture") or through an
-    // entity name ("entity" / "name") which resolves to a texture of the same name
-    // via the base entity "texture": "NAME" rule.
-    for (const key of ["name", "entity", "texture"]) {
+    // entity name ("extends" / "name") which resolves to a texture of the same name
+    // via the base prefab "texture": "NAME" rule.
+    for (const key of ["name", "extends", "texture"]) {
         if (typeof entity[key] === "string") {
             addTextureReference(references, entity[key]);
         }

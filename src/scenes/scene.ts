@@ -409,7 +409,7 @@ export class Scene implements SceneI
     }
 
     // MERGES sourceChildren + currentChildren
-    // A currentChild THAT LINKS .entity TO A sourceChild .entityUID REPLACES IT IN PLACE
+    // A currentChild THAT LINKS .extends TO A sourceChild .entityUID REPLACES IT IN PLACE
     MergeChildren(sourceChildren?: Entity[], currentChildren?: Entity[]): Entity[]
     {
         var possibleEntityChildren = [];
@@ -423,14 +423,14 @@ export class Scene implements SceneI
                 // A processed inherited child can itself be a proxy: its entityUID identifies the
                 // proxy while its entity points at the original source child. Plugin preprocessing
                 // may already have materialized a current child using that original source UID.
-                // Preserve that canonical identity before replacing .entity below.
-                if (typeof possibleChild.entity === "string"
-                    && this.settingsHandler.rawEntitiesMappedByUID[possibleChild.entity])
+                // Preserve that canonical identity before replacing .extends below.
+                if (typeof possibleChild.extends === "string"
+                    && this.settingsHandler.rawEntitiesMappedByUID[possibleChild.extends])
                 {
-                    inheritedSourceUIDByChildUID.set(possibleChild.entityUID, possibleChild.entity);
+                    inheritedSourceUIDByChildUID.set(possibleChild.entityUID, possibleChild.extends);
                 }
 
-                possibleChildCopy.entity = possibleChild.entityUID;
+                possibleChildCopy.extends = possibleChild.entityUID;
                 toStripEntityUID.push(possibleChildCopy);
             }
             possibleEntityChildren.push(possibleChildCopy);
@@ -441,9 +441,9 @@ export class Scene implements SceneI
         const usedCurrentChildren = new Set<number>();
         const merged = (possibleEntityChildren ?? []).map(sourceChild =>
         {
-            const referencedSourceUID = typeof sourceChild.entity === "string"
-                && this.settingsHandler.rawEntitiesMappedByUID[sourceChild.entity]
-                    ? sourceChild.entity
+            const referencedSourceUID = typeof sourceChild.extends === "string"
+                && this.settingsHandler.rawEntitiesMappedByUID[sourceChild.extends]
+                    ? sourceChild.extends
                     : undefined;
             const sourceChildUID = sourceChild.entityUID ?? referencedSourceUID;
             if (sourceChildUID === undefined)
@@ -454,8 +454,8 @@ export class Scene implements SceneI
                 : undefined;
             const overrideIndex = current.findIndex((currentChild, index) =>
                 !usedCurrentChildren.has(index)
-                && (currentChild.entity === sourceChildUID
-                    || (inheritedSourceUID !== undefined && currentChild.entity === inheritedSourceUID))
+                && (currentChild.extends === sourceChildUID
+                    || (inheritedSourceUID !== undefined && currentChild.extends === inheritedSourceUID))
             );
 
             if (overrideIndex === -1)
@@ -485,11 +485,11 @@ export class Scene implements SceneI
     // FINDS THE DIFFERENCE BETWEEN CURRENT SERIALIZED OBJECT AND STARTING SERIALIZED OBJECT
     // DIFFERENCE GETS MERGED WITH unconstructedEntity
     // USING unconstructedEntity, SINCE IT CAN CONTAIN VALUES LIKE PIVOT .5,.5, imagePath, entity, WHICH CAN'T BE SERIALIZED BACK FROM A GAMEOBJECT
-    GetEnitityFromObject(rootObject: GameObject, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false, includeSaveFields: false }): Entity
+    GetEntityFromObject(rootObject: GameObject, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false, includeSaveFields: false }): Entity
     {
         if (!rootObject.parent)
         {
-            this.ApplyEntityToGameObject({entity: "ANY"}, this.defaultGameObject);
+            this.ApplyEntityToGameObject({extends: "ANY"}, this.defaultGameObject);
         }
 
         const startingEntity = rootObject.entity || {};
@@ -515,7 +515,7 @@ export class Scene implements SceneI
                 if (!child.save && !options.forceAllEntityVars)
                     continue;
 
-                const childEntity = this.GetEnitityFromObject(child, options);
+                const childEntity = this.GetEntityFromObject(child, options);
                 if (Object.keys(childEntity).length > 0)
                     diff.children.push(childEntity);
             }
@@ -530,8 +530,8 @@ export class Scene implements SceneI
 
         if (startingEntity)
         {
-            if (Object.keys(diff).length > 0 && startingEntity.entity)
-                diff.entity = startingEntity.entity;
+            if (Object.keys(diff).length > 0 && startingEntity.extends)
+                diff.extends = startingEntity.extends;
 
             // deep merge so a partial diff like position: {x} keeps the source's y
             finalEntity = Helper.DeepMerge(unconstructedEntity, diff);
@@ -546,7 +546,7 @@ export class Scene implements SceneI
         }
 
         // a uid generated at runtime only links the object to its source, don't let it end up in level data
-        // the entity editor writes into the live settings data, where objects keep pointing at it (stripped from the saved copy instead)
+        // the prefab editor writes into the live settings data, where objects keep pointing at it (stripped from the saved copy instead)
         if (!options.keepRuntimeUIDs && this.settingsHandler.IsRuntimeGeneratedUID(finalEntity.entityUID))
             delete finalEntity.entityUID;
 
@@ -589,7 +589,7 @@ export class Scene implements SceneI
         if (options.propsToIgnoreInEntity === undefined)
             options.propsToIgnoreInEntity = [];
 
-        var extendsBaseEntity = false;
+        var extendsBasePrefab = false;
 
         var entity:Entity;
         
@@ -621,25 +621,25 @@ export class Scene implements SceneI
                 {
                     if (entityArg.name == "ANY")
                     {
-                        // ANY IS ONLY ENTITY THAT DOES NOT NEED A BASE ENTITY
+                        // ANY IS THE ONLY PREFAB THAT DOES NOT EXTEND ANOTHER
                         entity = entityArg;
                     }
                     else
                     {
                         // SET DEFAULT ENTITY, IF NOT SET
-                        if (!entityArg.entity)
+                        if (!entityArg.extends)
                         {
-                            entityArg.entity = "ANY";
+                            entityArg.extends = "ANY";
                         }
                     }
 
-                    // .entity HAS BEEN SET, NOW GET IT FROM SETTINGSDATA AND MERGE IT FOR NEW ENTITY
-                    if (entityArg.entity)
+                    // .extends HAS BEEN SET, NOW GET IT FROM SETTINGSDATA AND MERGE IT FOR NEW ENTITY
+                    if (entityArg.extends)
                     {
-                        var possibleEntity = this.settingsHandler.GetProcessedEnity(entityArg.entity, settingsData);
-                        if (possibleEntity)
+                        var possiblePrefab = this.settingsHandler.GetProcessedPrefab(entityArg.extends, settingsData);
+                        if (possiblePrefab)
                         {
-                            extendsBaseEntity = SettingsHandler.IsBaseEntity(settingsData, entityArg.entity);
+                            extendsBasePrefab = SettingsHandler.IsBasePrefab(settingsData, entityArg.extends);
 
                             // ENTITY WAS FOUND IN ENTITIES ARRAY IN DATA, DELETE SPECIFIED IGNORED PROPS FROM IT
                             // USING IT ATM TO FIND THE PROPS SET ON THE BASE
@@ -651,12 +651,12 @@ export class Scene implements SceneI
                             //entityArg.entityUID ??= Helper.GenerateEntityUID();
                             //this.settingsHandler.rawEntitiesMappedByUID[entityArg.entityUID] = Helper.DeepCopy(entityArg);
 
-                            var mergedChildren = this.MergeChildren(possibleEntity.children ?? [], entityArg.children);
+                            var mergedChildren = this.MergeChildren(possiblePrefab.children ?? [], entityArg.children);
 
                             // MERGE WITH ENTITY IN SETTINGSDATA
                             entity = {
-                                ...Helper.DeepMergeCopy(possibleEntity, entityArg), // BASE + OVERRIDE
-                                components: this.MergeComponents(possibleEntity.components, entityArg.components),
+                                ...Helper.DeepMergeCopy(possiblePrefab, entityArg), // BASE + OVERRIDE
+                                components: this.MergeComponents(possiblePrefab.components, entityArg.components),
                                 children: mergedChildren
                             };
 
@@ -674,35 +674,35 @@ export class Scene implements SceneI
                                     entity.children[i] = this.ConstructEntity(child, settingsData, options);
                             }
 
-                            // an override of a settings child (.entity is the child's uid) keeps the child's name
-                            const referencesChildUID = !!this.settingsHandler.rawEntitiesMappedByUID[entityArg.entity];
+                            // an override of a settings child (.extends is the child's uid) keeps the child's name
+                            const referencesChildUID = !!this.settingsHandler.rawEntitiesMappedByUID[entityArg.extends];
                             if (!entityArg.name && !referencesChildUID)
-                                delete entity.name; // DON'T WANT THE NAME COMING FROM possibleEntity, SETTING NAME AT BOTTOM OF THIS METHOD
+                                delete entity.name; // DON'T WANT THE NAME COMING FROM possiblePrefab, SETTING NAME AT BOTTOM OF THIS METHOD
                         }
                         else
                         {
-                            throw new Error(`Could not find base entity '${entityArg.entity}' for entity '${entityArg.name}'`);
+                            throw new Error(`Could not find prefab '${entityArg.extends}' extended by '${entityArg.name}'`);
                         }
                     }
 
-                    if(entity.entity == "ANY")
-                        delete entity.entity;
+                    if(entity.extends == "ANY")
+                        delete entity.extends;
                 }
             }
             else
             {
                 // ARG IS NAME
-                var possibleEntity = SettingsHandler.FindEntity(settingsData, nameOrEntity);
-                if (possibleEntity)
+                var possiblePrefab = SettingsHandler.FindPrefab(settingsData, nameOrEntity);
+                if (possiblePrefab)
                 {
                     // ENTITY NAME IS DEFINED IN ENTITIES
-                    entity = Helper.DeepCopy(possibleEntity);
+                    entity = Helper.DeepCopy(possiblePrefab);
                 }
                 else
                 {
                     // ENTITY NAME NOT FOUND, SO TAKE THE 'ANY' ENTRY AND ASSIGN A NEW NAME
-                    var entityBase = Helper.DeepCopy(SettingsHandler.FindEntity(settingsData, "ANY")!);
-                    entity = entityBase;
+                    var anyPrefab = Helper.DeepCopy(SettingsHandler.FindPrefab(settingsData, "ANY")!);
+                    entity = anyPrefab;
                     entity.name = nameOrEntity;
                     entity.texture = nameOrEntity;
                 }
@@ -712,12 +712,12 @@ export class Scene implements SceneI
         this.settingsHandler.ConstructEntity(entity, settingsData, options);
 
         if (!entity.name)
-            entity.name = (!extendsBaseEntity ? entity.entity : "") || entity.texture || "GameObject";
+            entity.name = (!extendsBasePrefab ? entity.extends : "") || entity.texture || "GameObject";
 
         if (entity.texture == "NAME")
         {
             // REPLACE 'NAME' VALUE OF texture WITH entity.name
-            var isBase = SettingsHandler.IsBaseEntity(settingsData, entity.name);
+            var isBase = SettingsHandler.IsBasePrefab(settingsData, entity.name);
             if (!isBase && entity.name)
                 entity.texture = entity.name;
             else
@@ -958,7 +958,7 @@ export class Scene implements SceneI
         if (!entityConstructed.hitbox)
             entityConstructed.hitbox = { x1: 0, y1: 0, x2: 0, y2: 0 };
 
-        entityConstructed.entity ??= "ANY";
+        entityConstructed.extends ??= "ANY";
         
         return entityConstructed;
     }
@@ -1126,7 +1126,7 @@ export class Scene implements SceneI
                         var imagePath = split.slice(0, split.length - 1).join("/");
                         var name = split[split.length - 1];
 
-                        unconstructedEntity = {entity: "NONE", imagePath: imagePath, texture: name, name:name, baseClass: "GameObject"}; // NONE: SINCE THIS IS JUST FOR A TEXTURE, NOT EXTENDING DEFAULT 'ANY'
+                        unconstructedEntity = {extends: "NONE", imagePath: imagePath, texture: name, name:name, baseClass: "GameObject"}; // NONE: SINCE THIS IS JUST FOR A TEXTURE, NOT EXTENDING DEFAULT 'ANY'
                     }
                     else
                     if (input.startsWith("-"))
@@ -1134,14 +1134,14 @@ export class Scene implements SceneI
                         // STRING INPUT, MARKED WITH -, EG: -exlosion
                         // PREVENT A TEXTURE LOOKUP FOR THIS NAME, HANDY FOR OBJECTS THAT WILL HAVE AN ANIMATION COMPONENT
                         var name = input.substring(1);
-                        unconstructedEntity = {entity: name}
+                        unconstructedEntity = {extends: name}
                         //entity.texture = "NONE";
                     }
                     else
                     {
                         // DEFAULT - ENTITY NAME AS INPUT - CONSTRUCT IT
-                        var settingsDataEntity = SettingsHandler.FindEntity(this.settingsData, input);
-                        unconstructedEntity = settingsDataEntity ? {entity: input} : {texture: input};
+                        var settingsDataPrefab = SettingsHandler.FindPrefab(this.settingsData, input);
+                        unconstructedEntity = settingsDataPrefab ? {extends: input} : {texture: input};
                     }
                 }
                 else
@@ -1151,7 +1151,7 @@ export class Scene implements SceneI
                 }
 
                 // register the unconstructed entity by uid before constructing, so the constructed entity carries the uid
-                // GetEnitityFromObject() uses it to find the source to serialize against
+                // GetEntityFromObject() uses it to find the source to serialize against
                 if (!unconstructedEntity.constructed)
                     this.settingsHandler.RegisterUnconstructedEntity(unconstructedEntity);
 

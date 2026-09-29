@@ -59,7 +59,7 @@ export class EditorScene extends Scene
     async OnStart(payload?: EditorSceneAwakePayload): Promise<void>
     {
         if (__DEV__)
-            this.RegisterEditorComponents(); // JUST FOR PLUGIN - ENTITY EDITOR
+            this.RegisterEditorComponents(); // JUST FOR PLUGIN - PREFAB EDITOR
 
         bare.camera.SetScaleMode(CameraScaleMode.Contain);
 
@@ -320,7 +320,7 @@ export class EditorScene extends Scene
             this.editorControlsHandler.SetCurrentPreviewEntity(null);*/
     }
 
-    // NOTIFIES THE PLUGIN OF THE CURRENT SELECTION. OVERRIDDEN BY SCENES (EG EntityScene) THAT
+    // NOTIFIES THE PLUGIN OF THE CURRENT SELECTION. OVERRIDDEN BY SCENES (EG PrefabScene) THAT
     // NEED A DIFFERENT PLUGIN MESSAGE SHAPE FOR THEIR SELECTION (EG CHILDPATH-BASED).
     NotifySelectionToPlugin(objs: GameObject[]): void
     {
@@ -349,8 +349,8 @@ export class EditorScene extends Scene
 
     // CANDIDATE OBJECTS AND THEIR SELECTION BOUNDS FOR RECT/MARQUEE SELECTION. DEFAULT USES THE
     // EDITOR TAP HITBOX OF OBJECTS ON THE SELECTED LAYER (OR ALL OBJECTS WITH includeAllLayers).
-    // OVERRIDDEN BY EntityScene, WHOSE OBJECTS HAVE NO TAP HITBOX (SEE EditorScene.AddGameObject
-    // VS EntityScene.AddGameObject).
+    // OVERRIDDEN BY PrefabScene, WHOSE OBJECTS HAVE NO TAP HITBOX (SEE EditorScene.AddGameObject
+    // VS PrefabScene.AddGameObject).
     GetRectSelectionCandidates(includeAllLayers: boolean): Array<{ obj: GameObject, rect: Rectangle }>
     {
         var objs: GameObject[];
@@ -564,7 +564,7 @@ export class EditorScene extends Scene
         return gameObject;
     }
 
-    // false for scenes that do all their click selection through the transform tool (EntityScene)
+    // false for scenes that do all their click selection through the transform tool (PrefabScene)
     protected SelectsOnHitboxPress(): boolean
     {
         return true;
@@ -609,7 +609,7 @@ export class EditorScene extends Scene
     {
         // TURING ARG INTO AN ENTITY WITH POSITION - SO BY THE TIME GameObject REACHES OnStart(), ITS POSITION HAS BEEN SET
         if (typeof entityOrName == "string")
-            entityOrName = {entity: entityOrName, position: {x: x, y: y}};
+            entityOrName = {extends: entityOrName, position: {x: x, y: y}};
         else
             entityOrName.position = {x: x, y: y};
 
@@ -645,7 +645,7 @@ export class EditorScene extends Scene
         const dataToSave = Helper.DeepCopy(newRawData);
 
         // strip the unreferenced runtime uids of settings children, and editor-only props
-        GameObjectSerializer.CleanEntities([dataToSave.entities ?? [], dataToSave.baseEntities ?? []], this.settingsHandler.rawEntitiesMappedByUID,
+        GameObjectSerializer.CleanEntities([dataToSave.prefabs ?? [], dataToSave.basePrefabs ?? []], this.settingsHandler.rawEntitiesMappedByUID,
             undefined, entityUID => this.settingsHandler.IsRuntimeGeneratedUID(entityUID));
 
         this.settingsHandler.FilterSettingsDataDefaults(dataToSave);
@@ -658,7 +658,7 @@ export class EditorScene extends Scene
         }
     
         try {
-            const res = await fetch('/api/save-entity-data', {
+            const res = await fetch('/api/save-settings-data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -670,7 +670,7 @@ export class EditorScene extends Scene
           const json = await res.json().catch(() => null);
         
           // TELL THE PLUGIN
-          //window.__GAME_DEBUG_API__.notifyEntityDataChanged(dataToSave)
+          //window.__GAME_DEBUG_API__.notifyPrefabChanged(dataToSave)
 
           await this.OnPostSaveSettingsData(dataToSave);
 

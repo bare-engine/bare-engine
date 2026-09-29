@@ -15,41 +15,41 @@ type ConstructEntityOptions = { fillPresets?: boolean };
 
 export class SettingsHandler
 {
-    static FindEntity(settingsData: SettingsData, name: string): Entity | undefined
+    static FindPrefab(settingsData: SettingsData, name: string): Entity | undefined
     {
-        const entity = settingsData.entities?.find(entity => entity.name === name);
+        const entity = settingsData.prefabs?.find(entity => entity.name === name);
         if (entity)
             return entity;
 
-        const baseEntity = settingsData.baseEntities?.find(entity => entity.name === name);
-        if (baseEntity)
-            return baseEntity;
+        const basePrefab = settingsData.basePrefabs?.find(entity => entity.name === name);
+        if (basePrefab)
+            return basePrefab;
 
         return undefined;
     }
 
-    static FindEntityCollection(settingsData: SettingsData, name: string): Entity[] | undefined
+    static FindPrefabCollection(settingsData: SettingsData, name: string): Entity[] | undefined
     {
-        const inEntities = settingsData.entities?.some(entity => entity.name === name);
-        const inBaseEntities = settingsData.baseEntities?.some(entity => entity.name === name);
+        const inPrefabs = settingsData.prefabs?.some(entity => entity.name === name);
+        const inBasePrefabs = settingsData.basePrefabs?.some(entity => entity.name === name);
 
-        if (inEntities && inBaseEntities)
-            throw new Error(`Entity name '${name}' exists in both entities and baseEntities`);
+        if (inPrefabs && inBasePrefabs)
+            throw new Error(`Prefab name '${name}' exists in both prefabs and basePrefabs`);
 
-        return inEntities ? settingsData.entities : inBaseEntities ? settingsData.baseEntities : undefined;
+        return inPrefabs ? settingsData.prefabs : inBasePrefabs ? settingsData.basePrefabs : undefined;
     }
 
-    static IsBaseEntity(settingsData: SettingsData, name: string): boolean
+    static IsBasePrefab(settingsData: SettingsData, name: string): boolean
     {
-        const collection = SettingsHandler.FindEntityCollection(settingsData, name);
-        return !!collection && collection === settingsData.baseEntities;
+        const collection = SettingsHandler.FindPrefabCollection(settingsData, name);
+        return !!collection && collection === settingsData.basePrefabs;
     }
 
-    static SetEntity(settingsData: SettingsData, name: string, entity: Entity): Entity
+    static SetPrefab(settingsData: SettingsData, name: string, entity: Entity): Entity
     {
-        const collection = SettingsHandler.FindEntityCollection(settingsData, name);
+        const collection = SettingsHandler.FindPrefabCollection(settingsData, name);
         if (!collection)
-            throw new Error(`Cannot update missing entity '${name}'`);
+            throw new Error(`Cannot update missing prefab '${name}'`);
 
         entity.name = name;
         collection[collection.findIndex(existing => existing.name === name)] = entity;
@@ -57,9 +57,9 @@ export class SettingsHandler
         return entity;
     }
 
-    static RemoveEntity(settingsData: SettingsData, name: string): Entity | undefined
+    static RemovePrefab(settingsData: SettingsData, name: string): Entity | undefined
     {
-        const collection = SettingsHandler.FindEntityCollection(settingsData, name);
+        const collection = SettingsHandler.FindPrefabCollection(settingsData, name);
         if (!collection)
             return undefined;
 
@@ -141,15 +141,15 @@ export class SettingsHandler
         if (raw?.processed)
             throw new Error('Process() received already-processed data — caller passed Get()/settingsData instead of GetRaw()');
 
-        raw.entities ??= [];
-        raw.baseEntities ??= [];
+        raw.prefabs ??= [];
+        raw.basePrefabs ??= [];
         
         const seenNames = new Set<string>();
-        const duplicateNames = [...raw.entities, ...raw.baseEntities]
+        const duplicateNames = [...raw.prefabs, ...raw.basePrefabs]
             .map(entity => entity.name)
             .filter((name): name is string => {
                 if (!name)
-                    throw new Error("Every entity and baseEntity must have a name");
+                    throw new Error("Every prefab and basePrefab must have a name");
 
                 if (seenNames.has(name))
                     return true;
@@ -158,21 +158,21 @@ export class SettingsHandler
                 return false;
             });
         if (duplicateNames.length > 0)
-            throw new Error(`Entity names must be unique across entities and baseEntities: ${[...new Set(duplicateNames)].join(", ")}`);
+            throw new Error(`Prefab names must be unique across prefabs and basePrefabs: ${[...new Set(duplicateNames)].join(", ")}`);
 
         for (const defaultName of ["ANY", "NONE"])
         {
-            if (raw.entities.some(entity => entity.name === defaultName))
-                throw new Error(`Reserved base entity name '${defaultName}' cannot be used in entities`);
+            if (raw.prefabs.some(entity => entity.name === defaultName))
+                throw new Error(`Reserved base prefab name '${defaultName}' cannot be used in prefabs`);
 
-            if (!raw.baseEntities.some(entity => entity.name === defaultName))
+            if (!raw.basePrefabs.some(entity => entity.name === defaultName))
             {
-                const defaultEntity = SettingsHandler.FindEntity(defaultSettingsData, defaultName)!;
-                raw.baseEntities.push(Helper.DeepCopy(defaultEntity));
+                const defaultPrefab = SettingsHandler.FindPrefab(defaultSettingsData, defaultName)!;
+                raw.basePrefabs.push(Helper.DeepCopy(defaultPrefab));
             }
         }
 
-        // FILLING rawEntitiesMappedByUID - SO CHILREN REFERENCING THEIR .entity TO THIS UID, CAN QUICKLY FIND IT
+        // FILLING rawEntitiesMappedByUID - SO CHILREN REFERENCING THEIR .extends TO THIS UID, CAN QUICKLY FIND IT
         const previousRawEntitiesMappedByUID = this.rawEntitiesMappedByUID;
         this.rawEntitiesMappedByUID = {};
         var fillEntityUIDS = (entities: Entity[], areChildren: boolean) =>
@@ -191,11 +191,11 @@ export class SettingsHandler
                     fillEntityUIDS(entity.children, true);
             }
         }
-        fillEntityUIDS(raw.baseEntities, false);
-        fillEntityUIDS(raw.entities, false);
+        fillEntityUIDS(raw.basePrefabs, false);
+        fillEntityUIDS(raw.prefabs, false);
 
         // settings entities themselves are kept, only their dangling children are removed
-        for (const entity of [...raw.baseEntities, ...raw.entities])
+        for (const entity of [...raw.basePrefabs, ...raw.prefabs])
         {
             if (entity.children)
                 entity.children = this.RemoveDanglingReferences(entity.children, entity.name, raw);
@@ -217,7 +217,7 @@ export class SettingsHandler
             const rawValue = settings[key];
             const defaultValue = (defaultSettingsData as any)[key];
 
-            if (key === "baseEntities" || key === "entities")
+            if (key === "basePrefabs" || key === "prefabs")
                 continue;
 
             if (Array.isArray(rawValue) && Array.isArray(defaultValue))
@@ -312,57 +312,57 @@ export class SettingsHandler
             }
         }
 
-        // CONSTRUCT ENTITY BASES
-        if (settings.baseEntities)
+        // CONSTRUCT BASE PREFABS
+        if (settings.basePrefabs)
         {
-            // PREPARE ENTITY BASES - SETTING name AND baseEntity
-            for (const baseEntity of settings.baseEntities)
+            // PREPARE BASE PREFABS - SETTING name AND extends
+            for (const basePrefab of settings.basePrefabs)
             {
-                const baseEntityName = baseEntity.name!;
+                const basePrefabName = basePrefab.name!;
 
-                // ENTITY BASE - IF EXTEND DATA NOT SET, DEFAULT TO ANY BASE
-                if (baseEntityName == "NONE")
+                // BASE PREFAB - IF extends NOT SET, DEFAULT TO ANY
+                if (basePrefabName == "NONE")
                     continue;
 
-                if (!baseEntity.entity && baseEntityName != "ANY")
+                if (!basePrefab.extends && basePrefabName != "ANY")
                 {
-                    baseEntity.entity = "ANY";
+                    basePrefab.extends = "ANY";
                 }
             }
             
-            // CONSTRUCT ALL ENTITY BASES
-            for (const baseEntity of settings.baseEntities)
+            // CONSTRUCT ALL BASE PREFABS
+            for (const basePrefab of settings.basePrefabs)
             {
-                const baseEntityName = baseEntity.name!;
-                if (baseEntityName == "NONE")
+                const basePrefabName = basePrefab.name!;
+                if (basePrefabName == "NONE")
                     continue;
 
-                // SET DEFAULT baseEntity - IN PREPARATION FOR CONSTRUCT
-                if (!baseEntity.entity && baseEntityName != "ANY")
+                // SET DEFAULT extends - IN PREPARATION FOR CONSTRUCT
+                if (!basePrefab.extends && basePrefabName != "ANY")
                 {
-                    baseEntity.entity = "ANY";
+                    basePrefab.extends = "ANY";
                 }
 
-                // CONSTRUCT BASE ENTITY - NOW IT EXTENDS SOMETHING
-                this.ExtendEntity(baseEntity, settings); // MUTATES baseEntity
-                this.ConstructEntity(baseEntity, settings, options);
+                // CONSTRUCT BASE PREFAB - NOW IT EXTENDS SOMETHING
+                this.ExtendEntity(basePrefab, settings); // MUTATES basePrefab
+                this.ConstructEntity(basePrefab, settings, options);
 
-                //delete baseEntity.name; // DON'T NEED IT ANYMORE
+                //delete basePrefab.name; // DON'T NEED IT ANYMORE
                 
                 // SET DEFAULT baseClass - IF NOT BEEN SET BY CONSTRUCT
-                /*if (!baseEntity.baseClass)
+                /*if (!basePrefab.baseClass)
                 {
-                    baseEntity.baseClass = "GameObject";
+                    basePrefab.baseClass = "GameObject";
                 }*/
             }
         }
 
         // PROCESS CATEGORIES
-        // AFTER BASE ENTITIES CONSTRUCTION, SINCE WE CONSTRUCT ENTITIES AND NEED CONSTRUCTED BASE ENTITIES FOR IT
-        // BEFORE ENTITIES CONSTRUCTION, SINCE ENTITIES CAN BE CREATED - THEY WILL LATER GET A NAME ASSIGEND TO THEM
+        // AFTER BASE PREFABS CONSTRUCTION, SINCE WE CONSTRUCT PREFABS AND NEED CONSTRUCTED BASE PREFABS FOR IT
+        // BEFORE PREFABS CONSTRUCTION, SINCE PREFABS CAN BE CREATED - THEY WILL LATER GET A NAME ASSIGEND TO THEM
         if (settings.categories)
         {
-            // PROCES CATEGORY ENTRIES, IF PATH IS PREFIXED, REMOVE AND ADD UNDER ENTITIES DATA
+            // PROCES CATEGORY ENTRIES, IF PATH IS PREFIXED, REMOVE AND ADD UNDER PREFABS DATA
             for (const [key, category] of Object.entries(settings.categories))
             {
                 if (category.entries instanceof Array)
@@ -379,26 +379,26 @@ export class SettingsHandler
                             // REDEFINE CATEGORY ENTRY TO JUST IT'S NAME
                             (category.entries as string[])[i] = entryName;
 
-                            // STORE ENTRY NAME IN ENTITIES DATA, TOGETHER WITH PATH WE JUST FOUND
-                            const existingEntity = SettingsHandler.FindEntity(settings, entryName);
-                            if (existingEntity)
-                                SettingsHandler.SetEntity(settings, entryName, { ...existingEntity, imagePath: entryPath });
+                            // STORE ENTRY NAME IN PREFABS DATA, TOGETHER WITH PATH WE JUST FOUND
+                            const existingPrefab = SettingsHandler.FindPrefab(settings, entryName);
+                            if (existingPrefab)
+                                SettingsHandler.SetPrefab(settings, entryName, { ...existingPrefab, imagePath: entryPath });
                             else
-                                settings.entities.push({ name: entryName, imagePath: entryPath });
+                                settings.prefabs.push({ name: entryName, imagePath: entryPath });
                         }
                     }
                 }
             }
 
-            // PROCESS EACH CATEGORY - HAS TO HAPPEN AFTER ENTITIES ARE CONSTRUCTED, BECAUSE this.scene.ConstructEntity()
+            // PROCESS EACH CATEGORY - HAS TO HAPPEN AFTER PREFABS ARE CONSTRUCTED, BECAUSE this.scene.ConstructEntity()
             for (const [categoryName, categoryData] of Object.entries(settings.categories))
             {
                 if (!categoryData || !categoryData.entries || categoryData.entries.length === 0) continue;
 
-                var entitiesInCategory: Entity[] = [];
+                var prefabsInCategory: Entity[] = [];
 
                 let entryNames: string[];
-                let generatedEntryEntityName: string;
+                let generatedEntryPrefabName: string;
 
                 // PARSE STRING ENTRIES...
                 if (typeof categoryData.entries === 'string') 
@@ -409,9 +409,9 @@ export class SettingsHandler
                     {
                         // ... EG: "roadTexture_1#12"
                         // CAN ALSO OMIT 1: "roadTexture_#12" (1 IS DEFAULT)
-                        const numberedEntityName = this.GetNumberedNameBaseName(entries);
-                        if (SettingsHandler.FindEntity(settings, numberedEntityName))
-                            generatedEntryEntityName = numberedEntityName;
+                        const numberedPrefabName = this.GetNumberedNameBaseName(entries);
+                        if (SettingsHandler.FindPrefab(settings, numberedPrefabName))
+                            generatedEntryPrefabName = numberedPrefabName;
                         entryNames = this.ProcessNumberedNames([entries]) ?? [];
                     }
                     
@@ -432,21 +432,21 @@ export class SettingsHandler
 
                     if (!entryNames)
                     {
-                        // ASSIGN BASE ENTITY TO A SINGLE, NON-GENERATED ENTRY
-                        let entity = SettingsHandler.FindEntity(settings, entries);
+                        // ASSIGN CATEGORY extends TO A SINGLE, NON-GENERATED ENTRY
+                        let entity = SettingsHandler.FindPrefab(settings, entries);
                         if (!entity)
                         {
                             entity = { name: entries };
-                            settings.entities.push(entity);
+                            settings.prefabs.push(entity);
                         }
                         
-                        if (categoryData.entity && (!entity.entity || entity.entity === "ANY"))
+                        if (categoryData.extends && (!entity.extends || entity.extends === "ANY"))
                         {
-                            entity.entity = categoryData.entity;
+                            entity.extends = categoryData.extends;
                         }
 
                         categoryData.entries = [entries];
-                        entitiesInCategory.push(entity);
+                        prefabsInCategory.push(entity);
                     }
                 }
                 else
@@ -457,67 +457,67 @@ export class SettingsHandler
 
                 if (entryNames)
                 {
-                    // TURN EACH NAME INTO AN ENTITY, TAKE EXISTING ONE OR CREATE NEW
+                    // TURN EACH NAME INTO A PREFAB, TAKE EXISTING ONE OR CREATE NEW
                     categoryData.entries = entryNames;
 
-                    // PUSH EACH AS ENTITY SO WE CAN FIND THEM LATER
+                    // PUSH EACH AS PREFAB SO WE CAN FIND THEM LATER
                     for (const entryName of entryNames)
                     {
                         var unconstructedEntity = {
                             name: entryName,
-                            entity: categoryData.entity ?? generatedEntryEntityName
+                            extends: categoryData.extends ?? generatedEntryPrefabName
                         };
 
-                        const existingEntity = SettingsHandler.FindEntity(settings, entryName);
-                        if (existingEntity)
+                        const existingPrefab = SettingsHandler.FindPrefab(settings, entryName);
+                        if (existingPrefab)
                         {
-                            if (existingEntity.entity)
+                            if (existingPrefab.extends)
                                 continue; // DON'T OVERWRITE EXISTING ENTRIES WHERE ENITY ALREADY SET
 
                             unconstructedEntity = {
                                 ...unconstructedEntity,
-                                ...existingEntity // OVERWRITES ABOVE
+                                ...existingPrefab // OVERWRITES ABOVE
                             }
                         }
 
                         //const entity = this.scene.ConstructEntity(unconstructedEntity, settings, options);
                         let entity: Entity;
-                        if (existingEntity)
-                            entity = SettingsHandler.SetEntity(settings, entryName, unconstructedEntity);
+                        if (existingPrefab)
+                            entity = SettingsHandler.SetPrefab(settings, entryName, unconstructedEntity);
                         else
                         {
                             entity = unconstructedEntity;
-                            settings.entities.push(entity);
+                            settings.prefabs.push(entity);
                         }
 
-                        entitiesInCategory.push(entity);
+                        prefabsInCategory.push(entity);
                     }
                 }
             }
         }
 
-        // ENTITIES - CONSTRUCT THEM ALL, FOR FASTER LOOKUP LATER
+        // PREFABS - CONSTRUCT THEM ALL, FOR FASTER LOOKUP LATER
         // CAN BECOME HEAVY, WILL NOT ALWAYS BE NECESSARY FOR EVERY PROCESS - CAN ADD FLAG
-        if (settings.entities)
+        if (settings.prefabs)
         {
-            for (const entity of settings.entities)
+            for (const entity of settings.prefabs)
             {
                 const entityName = entity.name!;
 
-                // ENTITY - IF EXTEND DATA NOT SET, DEFAULT TO ANY BASE
+                // PREFAB - IF extends NOT SET, DEFAULT TO ANY
                 if (entityName == "NONE")
                     continue;
-                if (!entity.entity)
+                if (!entity.extends)
                 {
-                    entity.entity = "ANY";
+                    entity.extends = "ANY";
                 }
             }
 
-            for (const entity of settings.entities)
+            for (const entity of settings.prefabs)
             {
                 const entityName = entity.name!;
                 // CONSTRUCT
-                this.ExtendEntity(entity, settings); // MUTATES entity - THIS ALSO EXTENDS INTO BASE ENTITIES, WHICH ARE ALREADY EXTENDED+CONSTRUCTED - OPTMIZE
+                this.ExtendEntity(entity, settings); // MUTATES entity - THIS ALSO EXTENDS INTO BASE PREFABS, WHICH ARE ALREADY EXTENDED+CONSTRUCTED - OPTMIZE
                 this.ConstructEntity(entity, settings, options);
 
                 // SET ENTITY WITH ANIMATION TO TEXTURE NONE
@@ -685,51 +685,51 @@ export class SettingsHandler
         return match ? match[1] + "#" : name;
     }
 
-    // EXTENDS AN ENTITY WITH EVERY ENTITY IN ITS BASE CHAIN.
+    // EXTENDS AN ENTITY WITH EVERY PREFAB IN ITS extends CHAIN.
     // THE ENTITY ARGUMENT IS MUTATED AND ITS EXISTING VALUES TAKE PRECEDENCE.
-    ExtendEntity(entity: Entity, rawSettingsData: SettingsData = this.raw, options: { includeChildren?: boolean, recurseChildren?: boolean, childDefaultBaseEntity?: string } = {}): Entity
+    ExtendEntity(entity: Entity, rawSettingsData: SettingsData = this.raw, options: { includeChildren?: boolean, recurseChildren?: boolean, childDefaultExtends?: string } = {}): Entity
     {
         var includeChildren = options.includeChildren !== false;
         var recurseChildren = options.recurseChildren ?? includeChildren;
 
         var i = 0;
         
-        var entityName = entity.entity || "ANY";
+        var entityName = entity.extends || "ANY";
         while (entityName)
         {
-            var settingsDataEntity = this.GetRawEntity(entityName, rawSettingsData);
+            var extendedPrefab = this.GetRawPrefab(entityName, rawSettingsData);
 
-            if (!settingsDataEntity)
+            if (!extendedPrefab)
             {
-                throw new Error(`Could not find base entity '${entityName}' for entity '${entity.name}'`);
+                throw new Error(`Could not find prefab '${entityName}' extended by '${entity.name}'`);
             }
 
             // INSERT MEMBERS FROM THE BASE THAT THE ENTITY DIDN'T DEFINE ITSELF
-            for (const key of Object.keys(settingsDataEntity))
+            for (const key of Object.keys(extendedPrefab))
             {
-                if (key == "entity" || key == "components" || key == "children" || key == "entityUID")
+                if (key == "extends" || key == "components" || key == "children" || key == "entityUID")
                     continue;
 
                 // IGNORE componentsRemoved, childrenRemoved AND propertiesRemoved? TODO
 
                 if (!(key in entity))
-                    entity[key] = settingsDataEntity[key];
+                    entity[key] = extendedPrefab[key];
             }
 
-            var components = this.scene.MergeComponents(settingsDataEntity.components, entity.components);
+            var components = this.scene.MergeComponents(extendedPrefab.components, entity.components);
             if (Object.keys(components).length > 0)
                 entity.components = components;
 
             if (includeChildren)
             {
-                var children = this.scene.MergeChildren(settingsDataEntity.children ?? [], entity.children);
+                var children = this.scene.MergeChildren(extendedPrefab.children ?? [], entity.children);
                 if (Object.keys(children).length > 0)
                     entity.children = children;
             }
 
-            // a base without an explicit entity still extends ANY (same default Process() applies),
+            // a base without an explicit extends still extends ANY (same default Process() applies),
             var isChainEnd = entityName == "ANY" || entityName == "NONE";
-            entityName = settingsDataEntity.entity ?? (isChainEnd ? undefined : "ANY");
+            entityName = extendedPrefab.extends ?? (isChainEnd ? undefined : "ANY");
 
             i++
             if (i > 1000)
@@ -764,8 +764,8 @@ export class SettingsHandler
         return entity;
     }
     
-    // THIS CONSTRUCTS AN ENTITY BY GOING DOWN IT'S baseEntity RECURSIVELY AND ASSIGNING VALUES
-    // AND FOR EACH .ENTITY FIELD CONSTRUCTING IT INTO THE ENTITY, EG ADDING ITS CHIDLREN/COMPONENTS.
+    // THIS CONSTRUCTS AN ENTITY BY GOING DOWN IT'S extends CHAIN RECURSIVELY AND ASSIGNING VALUES
+    // AND FOR EACH .EXTENDS FIELD CONSTRUCTING IT INTO THE ENTITY, EG ADDING ITS CHIDLREN/COMPONENTS.
     // THESE ENTITY CHILDREN REFERENCE THEIR ROOT ENTITY PARENT UID, SO LATER DURING SERIALIZATION, THEY CAN ONLY SAVE THEIR DIFFERENCE.
     // THIS METHOD MUTATES THE entity ARGUMENT ITSELF
     ConstructEntity(entity:Entity, rawSettingsData:SettingsData, options:ConstructEntityOptions): Entity
@@ -819,9 +819,9 @@ export class SettingsHandler
         return entity;
     }
 
-    GetExtendedEntity(entityName: string)
+    GetExtendedPrefab(entityName: string)
     {
-        var entity = Helper.DeepCopy(this.GetRawEntity(entityName));
+        var entity = Helper.DeepCopy(this.GetRawPrefab(entityName));
 
         this.ExtendEntityTree(entity, this.raw);
 
@@ -924,7 +924,7 @@ export class SettingsHandler
         return raw;
     }
 
-    GetRawEntity(entityNameOrId: string, rawSettingsData: SettingsData = this.raw, rawChildEntities: Entity[] = []): Entity
+    GetRawPrefab(entityNameOrId: string, rawSettingsData: SettingsData = this.raw, rawChildEntities: Entity[] = []): Entity
     {
         // QUICK WAY TO FIND LINKED ENTITY UID IF RAW DATA IS GIVEN
         if (rawChildEntities.length > 0)
@@ -936,9 +936,9 @@ export class SettingsHandler
             }
         }
 
-        return SettingsHandler.FindEntity(rawSettingsData, entityNameOrId)
+        return SettingsHandler.FindPrefab(rawSettingsData, entityNameOrId)
             || this.rawEntitiesMappedByUID[entityNameOrId]
-            || SettingsHandler.FindEntity(defaultSettingsData, entityNameOrId)!;
+            || SettingsHandler.FindPrefab(defaultSettingsData, entityNameOrId)!;
     }
 
     GetRawEntitiesMappedByUID(): Readonly<Record<string, Entity>>
@@ -946,8 +946,8 @@ export class SettingsHandler
         return this.rawEntitiesMappedByUID;
     }
 
-    // makes an unconstructed entity (level entity, AddGameObject() input) findable by uid, so GetEnitityFromObject() can serialize against it
-    // an entity that already has a uid present in the map (eg the entity editor's copy of a raw entity) keeps pointing at the raw entity
+    // makes an unconstructed entity (level entity, AddGameObject() input) findable by uid, so GetEntityFromObject() can serialize against it
+    // an entity that already has a uid present in the map (eg the prefab editor's copy of a raw prefab) keeps pointing at the raw entity
     RegisterUnconstructedEntity(entity: Entity): void
     {
         entity.entityUID ??= SettingsHandler.GenerateRuntimeUID();
@@ -974,22 +974,22 @@ export class SettingsHandler
     }
 
     // the unconstructed entity a constructed entity was made from: a raw settings entity/child, or one registered at runtime
-    // a child that only references its source through .entity (no entityUID of its own) resolves to nothing, it serializes as that reference plus its diff
+    // a child that only references its source through .extends (no entityUID of its own) resolves to nothing, it serializes as that reference plus its diff
     GetUnconstructedEntity(entity: Entity | null | undefined): Entity | undefined
     {
         const entityUID = entity?.entityUID;
         return entityUID ? this.rawEntitiesMappedByUID[entityUID] : undefined;
     }
 
-    // removes entities whose .entity no longer exists, a removed entity (name) or a removed settings child (uid)
-    // runs before construction, which would fail on the missing base entity. returns the kept entities, children are filtered in place
+    // removes entities whose .extends no longer exists, a removed prefab (name) or a removed settings child (uid)
+    // runs before construction, which would fail on the missing prefab. returns the kept entities, children are filtered in place
     RemoveDanglingReferences(entities: Entity[], ownerName: string = "", raw: SettingsData = this.raw): Entity[]
     {
         return entities.filter(entity =>
         {
-            const reference = entity.entity;
+            const reference = entity.extends;
             const isDangling = typeof reference === "string" && !this.rawEntitiesMappedByUID[reference]
-                && !SettingsHandler.FindEntity(raw, reference) && !SettingsHandler.FindEntity(defaultSettingsData, reference);
+                && !SettingsHandler.FindPrefab(raw, reference) && !SettingsHandler.FindPrefab(defaultSettingsData, reference);
 
             if (isDangling)
             {
@@ -1034,13 +1034,13 @@ export class SettingsHandler
         return persisted;
     }
 
-    GetProcessedEnity(entityNameOrId: string, processedSettingsData: SettingsData = this.processed): Entity
+    GetProcessedPrefab(entityNameOrId: string, processedSettingsData: SettingsData = this.processed): Entity
     {        
-        return SettingsHandler.FindEntity(processedSettingsData, entityNameOrId)
+        return SettingsHandler.FindPrefab(processedSettingsData, entityNameOrId)
             || this.processedEntitiesMappedByUID[entityNameOrId]
-            || SettingsHandler.FindEntity(defaultSettingsData, entityNameOrId)!;
+            || SettingsHandler.FindPrefab(defaultSettingsData, entityNameOrId)!;
         
-        // return SettingsHandler.FindEntity(processedSettingsData, entityNameOrId) || SettingsHandler.FindEntity(defaultSettingsData, entityNameOrId)!;
+        // return SettingsHandler.FindPrefab(processedSettingsData, entityNameOrId) || SettingsHandler.FindPrefab(defaultSettingsData, entityNameOrId)!;
     }
 
     SnapshotCurrent(): SettingsData
@@ -1055,16 +1055,16 @@ export class SettingsHandler
 
     FilterSettingsDataDefaults(settingsData: SettingsData)
     {
-        settingsData.baseEntities ??= [];
-        settingsData.entities ??= [];
+        settingsData.basePrefabs ??= [];
+        settingsData.prefabs ??= [];
 
-        const defaultAny = SettingsHandler.FindEntity(defaultSettingsData, "ANY")!;
-        const any = SettingsHandler.FindEntity(settingsData, "ANY");
+        const defaultAny = SettingsHandler.FindPrefab(defaultSettingsData, "ANY")!;
+        const any = SettingsHandler.FindPrefab(settingsData, "ANY");
 
         //
         if (any == defaultAny)
         {
-            SettingsHandler.RemoveEntity(settingsData, "ANY");
+            SettingsHandler.RemovePrefab(settingsData, "ANY");
         }
         else
         if (any)
@@ -1077,22 +1077,22 @@ export class SettingsHandler
             }
 
             if (Object.keys(any).length == 1)
-                SettingsHandler.RemoveEntity(settingsData, "ANY");
+                SettingsHandler.RemovePrefab(settingsData, "ANY");
         }
         
         // SHOULD NEVER BE ANYTHING IN NONE, JUST DELETE IT
-        SettingsHandler.RemoveEntity(settingsData, "NONE");
+        SettingsHandler.RemovePrefab(settingsData, "NONE");
 
         // STRIP INSPECTOR-ONLY METADATA (__fields / __buttons) THAT THE PLUGIN INJECTS FOR DISPLAY
         // (SEE AddInspectorDataToObject) AND CAN ECHO BACK INTO THE DATA WE SAVE
         this.StripInspectorMeta(settingsData);
 
-        // EntityScene assigns temporary numeric IDs while constructing its runtime object graph.
+        // PrefabScene assigns temporary numeric IDs while constructing its runtime object graph.
         // They are never part of entity source data. Remove IDs that leaked from an older scene
         // instance as well, so the next plugin edit cleans existing files automatically.
-        for (const entity of settingsData.entities)
+        for (const entity of settingsData.prefabs)
             this.StripEntityRuntimeIds(entity);
-        for (const entity of settingsData.baseEntities)
+        for (const entity of settingsData.basePrefabs)
             this.StripEntityRuntimeIds(entity);
     }
 
