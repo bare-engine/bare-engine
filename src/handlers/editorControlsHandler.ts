@@ -329,16 +329,29 @@ export class EditorControlsHandler {
         {
             const includeAllLayers = keyboardController.IsKeyDown("control");
             const candidates = this.scene.GetRectSelectionCandidates(includeAllLayers);
+            // alt selects anything the rect touches instead of only fully contained objects
+            const allowPartial = keyboardController.IsKeyDown("alt");
 
             for (const candidate of candidates)
             {
-                if (this.RectContains(rect, candidate.rect))
+                const hit = allowPartial
+                    ? this.RectOverlaps(rect, candidate.rect)
+                    : this.RectContains(rect, candidate.rect);
+                if (hit)
                     objsToSelect.push(candidate.obj);
             }
         }
 
         const multiSelect = keyboardController.IsKeyDown("shift");
         this.SelectGameObjects(objsToSelect, !multiSelect);
+    }
+
+    private RectOverlaps(a: Rectangle, b: Rectangle): boolean
+    {
+        return a.x <= b.x + b.width &&
+            a.x + a.width >= b.x &&
+            a.y <= b.y + b.height &&
+            a.y + a.height >= b.y;
     }
 
     private RectContains(container: Rectangle, target: Rectangle): boolean
