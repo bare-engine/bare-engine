@@ -137,8 +137,10 @@ export class EditorControlsHandler {
 
         const originX = Math.min(...this.copiedObjects.map(entity => entity.position?.x ?? 0));
         const originY = Math.min(...this.copiedObjects.map(entity => entity.position?.y ?? 0));
-        const { x, y } = bare.mouse.world.position;
         const parent = this.GetPasteParent();
+        // copied positions are local to their parent, so place relative to the mouse in the paste parent's child space
+        const mouse = bare.mouse.world.position;
+        const { x, y } = parent instanceof GameObject ? parent.ToLocal(mouse) : mouse;
         const objects = this.copiedObjects.map(source => {
             const entity = this.CopyEntityForPlacement(source);
             return this.scene.AddGameObjectAtPosition(
@@ -148,7 +150,7 @@ export class EditorControlsHandler {
                 parent
             );
         });
-        this.SnapPastedObjectsToGrid(objects);
+        this.SnapPastedObjectsToGrid(objects, x, y);
         this.SelectGameObjects(objects);
         this.scene.saveLevelCallback();
     }
@@ -168,7 +170,7 @@ export class EditorControlsHandler {
             this.scene.RemoveGameObject(obj);
     }
 
-    private SnapPastedObjectsToGrid(objs: GameObject[])
+    private SnapPastedObjectsToGrid(objs: GameObject[], mouseX: number, mouseY: number)
     {
         if (objs.length == 0)
             return;
@@ -186,8 +188,8 @@ export class EditorControlsHandler {
             anchorObj.x,
             anchorObj.y,
             keyboardController.IsKeyDown("alt"),
-            bare.mouse.world.position.x,
-            bare.mouse.world.position.y
+            mouseX,
+            mouseY
         );
 
         const movedX = snappedPosition.x - anchorObj.x;
