@@ -209,7 +209,7 @@ export class ObjectController
         return this.layers.flat();//REVERSE IT?
     }
 
-    GetById(id: string, searchChildren: boolean = true): GameObject | null
+    GetById<T extends GameObject = GameObject>(id: string, searchChildren: boolean = true): T | null
     {
         // LOOK THROUGH ALL LAYER FOR OBJECT - CHEAP
         for (let i = 0; i < this.layers.length; i++)
@@ -218,7 +218,7 @@ export class ObjectController
             {
                 if (this.layers[i][j].uniqueID == id)  
                 {
-                    return this.layers[i][j];
+                    return this.layers[i][j] as T;
                 }
             }
         }
@@ -252,14 +252,14 @@ export class ObjectController
             {
                 var foundChild = recurseChildren(this.layers[i][j]);
                 if (foundChild)
-                    return foundChild;
+                    return foundChild as T;
             }
         }
         
         return null;
     }
 
-    GetByName(name: string): GameObject | null
+    GetByName<T extends GameObject = GameObject>(name: string): T | null
     {
         for (let i = 0; i < this.layers.length; i++)
         {
@@ -267,7 +267,7 @@ export class ObjectController
             {
                 if (this.layers[i][j].name === name)  
                 {
-                    return this.layers[i][j];
+                    return this.layers[i][j] as T;
                 }
             }
         }

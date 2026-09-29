@@ -1634,13 +1634,13 @@ export class GameObject
         }
     }
 
-    AddChild(input?: Entity | string | GameObject | GameObjectClass | Texture): GameObject
+    AddChild<T extends GameObject = GameObject>(input?: NonNullable<T["entity"]> | string | GameObject | GameObjectClass | Texture): T
     {
         // RESET CACHED VALUES SO THEY GET RECALCULATED
         //this.cachedChildrenWidth = -1;
         //this.cachedChildrenHeight = -1;
 
-        return this.scene.AddGameObject(input, this);
+        return this.scene.AddGameObject<T>(input, this);
     }
 
     RemoveChild(child: GameObject)
@@ -1693,12 +1693,13 @@ export class GameObject
 
     }
 
-    GetChildByName(name: string)
+    // EG: GetChildByName<TextObject>("score").SetText("0")
+    GetChildByName<T extends GameObject = GameObject>(name: string): T | null
     {
         for (var i = 0; i < this.children.length; i++)
         {
             if (this.children[i].name == name)
-                return this.children[i];
+                return this.children[i] as T;
         }
         
         return null;
