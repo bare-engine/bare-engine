@@ -1,6 +1,6 @@
 import { assetsHandler } from "../handlers/assetsHandler";
 import { SettingsHandler } from "../handlers/settingsHandler";
-import { ArcadeObject } from "../objects/arcadeObject";
+import { ArcadeObject, ArcadeObjectEntity } from "../objects/arcadeObject";
 import { AwakePayload, LevelData, SettingsData } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
 import { MakePath, MakePathForEntity } from "../globals";
@@ -145,7 +145,7 @@ export class HitboxScene extends EditorScene
         var objs = this.object.GetLayer(0).slice();
         objs.splice(objs.findIndex(o => o.name === "currentPreviewEntity"), 1);
 
-        var mainEntity = objs[0].entity;
+        var mainEntity = objs[0].entity as ArcadeObjectEntity;
         var collisionRect = objs[1];
         var pivotObj = objs[2];
         
@@ -169,16 +169,16 @@ export class HitboxScene extends EditorScene
         var pivotOrigRounded = { x: Math.round(pivotOrig.x), y: Math.round(pivotOrig.y) };
         var hitboxOrig = (obj as any).physicsHitbox ? (obj as any).physicsHitbox?.rectangle : {x: 0, y: 0, width: 0, height: 0};
         var hitboxVecOrig = { x1: hitboxOrig.x, y1: hitboxOrig.y, x2: hitboxOrig.x + hitboxOrig.width, y2: hitboxOrig.y + hitboxOrig.height };
-        var resetPivotBasedOnHitbox = (mainEntity.pivotBasedOnHitbox && mainEntity.pivotBasedOnHitbox.x == -1 && mainEntity.pivotBasedOnHitbox.y == -1);
+        var resetPivotBasedOnHitbox = (typeof mainEntity.pivotBasedOnHitbox === "object" && mainEntity.pivotBasedOnHitbox.x == -1 && mainEntity.pivotBasedOnHitbox.y == -1);
 
         // APPLY NEW VALUES TO THE INITIAL ENTITY SETTING
         const newRawSettingsData = await this.settingsHandler.UpdateRaw((draft) => {
-            const prefabDraft = SettingsHandler.FindPrefab(draft, mainEntityName);
+            const prefabDraft = SettingsHandler.FindPrefab(draft, mainEntityName) as ArcadeObjectEntity | undefined;
             if (!prefabDraft)
                 throw new Error(`Cannot update missing entity '${mainEntityName}'`);
 
             // PIVOT BASED ON HITBOX
-            if (mainEntity.pivotBasedOnHitbox && !resetPivotBasedOnHitbox/* && !Helper.ObjectsAreEqual(pivotBasedOnHitboxOrig!, mainEntity.pivotBasedOnHitbox)*/)
+            if (typeof mainEntity.pivotBasedOnHitbox === "object" && !resetPivotBasedOnHitbox/* && !Helper.ObjectsAreEqual(pivotBasedOnHitboxOrig!, mainEntity.pivotBasedOnHitbox)*/)
             {
                 prefabDraft.pivotBasedOnHitbox = {...mainEntity.pivotBasedOnHitbox};
             }

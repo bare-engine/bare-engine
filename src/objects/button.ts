@@ -1,7 +1,7 @@
 import type { ButtonHandlers } from "../controllers/hitboxController";
 import { Color, ITextOptions, TextTexture, Vec2 } from "../libraries/new-rapid-render";
 import type { Scene } from "../scenes/scene";
-import type { Rectangle } from "../types/bareTypes";
+import type { Entity, Rectangle } from "../types/bareTypes";
 import { InspectorField, Int, Limit } from "../utils/decorators";
 import { Save } from "../utils/saveFields";
 import { GameObject } from "./gameObject";
@@ -13,8 +13,21 @@ interface TextOptions extends ITextOptions, ButtonHandlers<Button> {
     text: string;
 }
 
+// ENTITY PROPERTIES FOR this.AddGameObject<Button>({ ... })
+export interface ButtonEntity extends Entity
+{
+    text?: string;
+    fontSize?: number;
+    textColor?: Color | string;
+    buttonColor?: Color | string;
+    marge?: number;
+    cornerRadius?: number;
+}
+
 export class Button extends GameObject
 {
+    declare entity: ButtonEntity | null;
+
     textTexture: TextTexture;
 
     @InspectorField @Save

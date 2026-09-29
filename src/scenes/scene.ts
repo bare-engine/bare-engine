@@ -16,7 +16,7 @@ import { Color, RenderTexture, Texture, Vec2 } from "../libraries/new-rapid-rend
 import { GameObject } from "../objects/gameObject";
 import { Bare } from "../types/bare";
 import { defaultSettingsData } from "../types/bareData";
-import { AwakePayload, BareEvent, CollisionHandlingType, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LayerInfo, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
+import { AnyEntity, AwakePayload, BareEvent, CollisionHandlingType, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LayerInfo, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
 import { getInspectorFieldNames, InspectorClass, InspectorField, Label } from "../utils/decorators";
 import { GameObjectSerializer } from "../utils/entitySerializer";
 import { Helper } from "../utils/helper";
@@ -751,7 +751,7 @@ export class Scene implements SceneI
         // OVERRIDE
     }
 
-    ApplyEntityVarsToGameObject(entity: Entity, obj: GameObject, addComponents: boolean = true)
+    ApplyEntityVarsToGameObject(entity: AnyEntity, obj: GameObject, addComponents: boolean = true)
     {
         obj.OnApplyEntityVarsToGameObject(entity, obj);
         
@@ -882,7 +882,7 @@ export class Scene implements SceneI
     // STILL RETURNS SOME ENTITY VALUES AS undefined, EG imagePath, SHOULD BE "". TODO
     GetEntityWithDefaultValues(nameOrEntity: string | Entity, settingsData: SettingsData = this.settingsData, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true }): Entity
     {
-        var entityConstructed = this.ConstructEntity(nameOrEntity, settingsData, options);
+        var entityConstructed: AnyEntity = this.ConstructEntity(nameOrEntity, settingsData, options);
 
         // INITIALIZE GAME OBJECT
         {
@@ -1046,7 +1046,8 @@ export class Scene implements SceneI
     }
 
     // INPUT CAN BE: ENTITY / ENTITY NAME / GAMEOBJECT / CLASS TO INSTANTIATE / TEXTURE
-    AddGameObject<T extends GameObject = GameObject>(input?: Entity | string | GameObject | GameObjectClass | Texture, parent: int | string | GameObject = "objects"): T
+    // THE ENTITY IS TYPED BY T's entity FIELD, EG: AddGameObject<Button>({ text: "Ok" }) CHECKS AGAINST ButtonEntity
+    AddGameObject<T extends GameObject = GameObject>(input?: NonNullable<T["entity"]> | string | GameObject | GameObjectClass | Texture, parent: int | string | GameObject = "objects"): T
     {
         if (!this.settingsHandler)
         {
@@ -1118,11 +1119,10 @@ export class Scene implements SceneI
                         // CAN ALSO PREPEND / EG: this.AddGameObject('/player') TO PREVENT CONSTRUCTING FROM ENTITY 'PLAYER', GETTING THE IMAGE INSTEAD
                         
                         // USAGE OF / OVERIDES ANY :XXX - YOU ARE DEFINING A PATH, NOTHING ELSE
-                        if (input.includes(":"))
-                            input = input.split(":")[0];
-                        
+                        var path = input.includes(":") ? input.split(":")[0] : input;
+
                         // SET LAST ENTRY IN PATH AS NAME
-                        var split = input.split("/");
+                        var split = path.split("/");
                         var imagePath = split.slice(0, split.length - 1).join("/");
                         var name = split[split.length - 1];
 

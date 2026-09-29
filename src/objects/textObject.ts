@@ -1,11 +1,25 @@
 import { Color, ITextOptions, TextTexture, Vec2 } from "../libraries/new-rapid-render";
 import { Scene } from "../scenes/scene";
+import type { Entity } from "../types/bareTypes";
 import { Dropdown, InspectorField, Int, Limit } from "../utils/decorators";
 import { Save } from "../utils/saveFields";
 import { GameObject } from "./gameObject";
 
+// ENTITY PROPERTIES FOR this.AddGameObject<TextObject>({ ... })
+export interface TextObjectEntity extends Entity
+{
+    text?: string;
+    fontSize?: number;
+    align?: "left" | "center" | "right";
+    fill?: Color | string;
+    stroke?: Color | string;
+    strokeThickness?: number;
+}
+
 export class TextObject extends GameObject
 {
+    declare entity: TextObjectEntity | null;
+
     textTexture: TextTexture;
     pivotPercentage: Vec2 = new Vec2(); // SHOULD GAMEOBJECT HAVE THIS? - SOME MORE COMPLEXITY WITH SERIALIZE - TODO
 

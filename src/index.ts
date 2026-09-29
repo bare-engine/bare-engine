@@ -5,9 +5,9 @@ export { BareEngine } from "./bareEngine";
 export { Bare } from "./types/bare";
 export { GameMode, globalEvents } from "./globals";
 export { MakePath, StartBare } from "./main";
-export { Button } from "./objects/button";
+export { Button, type ButtonEntity } from "./objects/button";
 export { GameObject } from "./objects/gameObject";
-export { TextObject } from "./objects/textObject";
+export { TextObject, type TextObjectEntity } from "./objects/textObject";
 
 export { Scene } from "./scenes/scene";
 export type { SoundJsSound } from "./libraries/soundjs/index";
@@ -76,7 +76,7 @@ export
 export type {
   Atlas,
   AtlasFrame,
-  BareScreen, Entity,
+  AnyEntity, BareScreen, Entity,
   FrameRect,
   GameObjectClass, LayerInfo,
   LevelData,

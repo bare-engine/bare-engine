@@ -8,7 +8,7 @@ import { PrefabScene } from "../scenes/prefabScene";
 import { Scene } from "../scenes/scene";
 import { OutlineShader } from "../shaders/outlineShader";
 import { defaultSettingsData } from "../types/bareData";
-import { BareEvent, Entity, EntityVarsNestedEntry, entityVarsNested, LevelData, Position, SaveData, Scalar, SettingsData } from "../types/bareTypes";
+import { AnyEntity, BareEvent, Entity, EntityVarsNestedEntry, entityVarsNested, LevelData, Position, SaveData, Scalar, SettingsData } from "../types/bareTypes";
 import { applyInspectorField, getButtons, getInspectorClasses, getInspectorFieldDescriptions, getInspectorFields, resolveInspectorClassName } from "../utils/decorators";
 import { GameObjectSerializer } from "../utils/entitySerializer";
 import { Helper } from "../utils/helper";
@@ -579,7 +579,7 @@ const gameDebugApi = {
             // pivot/hitbox ARE KEPT MIRRORED ONTO o.entity WITH THE LIVE VALUE (SEE THE "PIVOT / HITBOX"
             // BLOCK BELOW), SO THEY'D ALWAYS "WIN" AS THEIR OWN BASELINE HERE AND NEVER SHOW UP AS
             // CHANGED. STRIP THEM SO THE PRESET DEFAULT IS USED AS THE BASELINE FOR THOSE TWO INSTEAD.
-            var { pivot, hitbox, ...entityForOrigin } = o.entity;
+            var { pivot, hitbox, ...entityForOrigin } = o.entity as AnyEntity;
             origEntity = o.scene.ConstructEntityWithDefaultValues(entityForOrigin, o.scene.settingsData);
         }
         else
@@ -1216,7 +1216,7 @@ const gameDebugApi = {
                 scene.ApplyEntityVarsToGameObject(props as Entity, o, false);
             }
             if (o.entity)
-                o.entity.hitbox = props.hitbox; //
+                (o.entity as AnyEntity).hitbox = props.hitbox; //
         }
 
         //if (props.pivotBasedOnHitbox !== undefined) { o.pivotBasedOnHitbox.x = props.pivotBasedOnHitbox.x; o.pivotBasedOnHitbox.y = props.pivotBasedOnHitbox.y; }

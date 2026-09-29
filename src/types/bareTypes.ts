@@ -1,5 +1,10 @@
 import type { Scene } from "../scenes/scene";
 import type { GameObject } from "../objects/gameObject";
+import type { ArcadeObjectEntity } from "../objects/arcadeObject";
+import type { ButtonEntity } from "../objects/button";
+import type { TextObjectEntity } from "../objects/textObject";
+import type { CircleEntity } from "../libraries/sopiro/circle";
+import type { PolygonEntity } from "../libraries/sopiro/polygon";
 import type { Component } from "../controllers/componentController";
 import { CanvasScaleMode, Color, CustomGlShader, TextureFilterMode, UniformValue } from "../libraries/new-rapid-render";
 
@@ -119,7 +124,6 @@ export interface Entity
     flipped?: any; // boolean
     pivot?: any; // Position
     innerPivot?: any; // Position
-    pivotBasedOnHitbox?: any; // Position
     //innerX?: number;
     //innerY?: number;
     innerPosition?: any; // Position
@@ -134,9 +138,7 @@ export interface Entity
     alpha?: any; // number
     visible?: any; // boolean
 
-    hitbox?: any; // Rectangle2Vec
     tapHitbox?: any; // Rectangle2Vec
-    hitboxType?: string;
 
     children?: any; // Entity[]
 
@@ -152,20 +154,7 @@ export interface Entity
     persistent?: any; // boolean
     save?: any; // boolean
 
-    // PHYSICS
-    collide?: any; // boolean
-    sensor?: any; // boolean
-    static?: any; // boolean
-    stayInBounds?: any; // boolean
-    removeOnOutOfBounds?: any; // boolean
-
-    rigidbodyRect?: any; // Size
-    hitboxRadius?: any; // number; SHARED BY ARCADEOBJECT AND RIGIDBODY
-    mass?: any; // number
-    density?: any; // number
-    drag?: any; // number
-    restitution?: any; // number
-    polygonVertices?: any; // number[]
+    // PHYSICS FIELDS LIVE IN ArcadeObjectEntity / RigidBodyEntity / CircleEntity / PolygonEntity
 
     //tileDimensions?: {width: number; height: number};
     //numberOfTiles?: int; //
@@ -175,6 +164,9 @@ export interface Entity
     constructed ?: boolean;
     entityUID?: string;
 }
+
+// ENTITY OF AN UNKNOWN CLASS (ENGINE INTERNALS, SERIALIZING, EDITORS) - ALLOWS EVERY CLASS-SPECIFIC FIELD
+export type AnyEntity = Entity & ArcadeObjectEntity & CircleEntity & PolygonEntity & ButtonEntity & TextObjectEntity;
 
 export type ConstructEntityOptions = { propsToIgnoreInEntity?: string[], fillPresets?: boolean, forceAllEntityVars?: boolean, includeSaveFields?: boolean, keepRuntimeUIDs?: boolean };
 export type EntityVarsNestedGroup = Record<string, string[]>;

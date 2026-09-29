@@ -4,7 +4,7 @@ import { Color, Texture } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
 import { defaultSettingsData } from "../types/bareData";
-import { Entity, entityVars, Rectangle2Vec, Scalar } from "../types/bareTypes";
+import { AnyEntity, Entity, entityVars, Rectangle2Vec, Scalar } from "../types/bareTypes";
 import { getSaveFields } from "./saveFields";
 import { Helper } from "./helper";
 
@@ -58,12 +58,7 @@ export class GameObjectSerializer
 
         //customSerialize["pivot"] = (pivot: Vec2) => obj.entity?.pivot ?? pivot;
 
-        customSerialize["hitbox"] = (hitbox: Rectangle2Vec) => {
-            if (obj.entity?.hitbox)
-                return obj.entity.hitbox;
-
-            return hitbox;
-        };
+        customSerialize["hitbox"] = (hitbox: Rectangle2Vec) => (obj.entity as AnyEntity | null)?.hitbox || hitbox;
 
         customSerialize["texture"] = (currentValue: Texture) => currentValue.texturePath;
         customSerialize["color"] = (currentValue: Color) => currentValue.toHex();
