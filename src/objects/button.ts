@@ -168,6 +168,18 @@ export class Button extends GameObject
         });
     }
 
+    MakeInteractive(onPress?: () => void, OnRelease?: () => void, onHoverScale:number = 1.1, onClickScale: number = .95, tweenTime: number = .2): this
+    {
+        bare.hitbox.AssignButton(this, {
+            OnPress: () => {bare.tween.To(this, tweenTime/2, { scale: onClickScale }); onPress?.();},
+            OnRelease: () => {bare.tween.To(this, tweenTime, { scale: onHoverScale }), OnRelease?.();},
+            OnEnter: () => bare.tween.To(this, tweenTime, { scale: onHoverScale }),
+            OnLeave: () => bare.tween.To(this, tweenTime, { scale: 1 })
+        });
+        
+        return this;
+    }
+
     // no texture of its own - the rect is drawn in OnRender, so report it here for bounds/hit tests
     override GetLocalContentBounds(): Rectangle
     {
