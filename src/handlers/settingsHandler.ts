@@ -68,6 +68,7 @@ export class SettingsHandler
 
     private raw: SettingsData;
     private processed: SettingsData;
+    private categoryEntryNames = new Set<string>(); // PREFAB NAMES GENERATED FROM CATEGORY ENTRIES, SEE GetCategoryEntryNames
 
     public scene: Scene;
 
@@ -136,6 +137,48 @@ export class SettingsHandler
         return [...folderPaths];
     }
 
+    // the prefab names category entries generate - mirrors the entry parsing in ProcessSync's category step
+    private GetCategoryEntryNames(raw: SettingsData, folderFiles: Map<string, string[]>): Set<string>
+    {
+        const defaultCategories = defaultSettingsData.categories ?? {};
+        const rawCategories = raw?.categories ?? {};
+        const categoryNames = new Set([...Object.keys(defaultCategories), ...Object.keys(rawCategories)]);
+        const names = new Set<string>();
+
+        for (const categoryName of categoryNames)
+        {
+            const entries = { ...defaultCategories[categoryName], ...rawCategories[categoryName] }.entries;
+            if (!entries)
+                continue;
+
+            if (entries instanceof Array)
+            {
+                for (const entry of entries)
+                    names.add(entry.split("/").pop()!);
+                continue;
+            }
+
+            if (this.IsNumberedName(entries))
+            {
+                for (const name of this.ProcessNumberedNames([entries]) ?? [])
+                    names.add(name);
+                continue;
+            }
+
+            const match = entries.match(/(.+)_\[(.+)\]/);
+            if (match)
+            {
+                for (const file of folderFiles.get(`${bare.imagePath}/${match[2]}`) ?? [])
+                    names.add(file.split('.')[0]);
+                continue;
+            }
+
+            names.add(entries);
+        }
+
+        return names;
+    }
+
     private ProcessSync(raw: SettingsData, options:ConstructEntityOptions, folderFiles = new Map<string, string[]>()): SettingsData
     {
         if (raw?.processed)
@@ -193,6 +236,10 @@ export class SettingsHandler
         }
         fillEntityUIDS(raw.basePrefabs, false);
         fillEntityUIDS(raw.prefabs, false);
+
+        // category entries (eg "tile_0000#131") only become prefabs further down, on the processed copy
+        // collect their names now so references to them don't count as dangling
+        this.categoryEntryNames = this.GetCategoryEntryNames(raw, folderFiles);
 
         // settings entities themselves are kept, only their dangling children are removed
         for (const entity of [...raw.basePrefabs, ...raw.prefabs])
@@ -989,7 +1036,8 @@ export class SettingsHandler
         {
             const reference = entity.extends;
             const isDangling = typeof reference === "string" && !this.rawEntitiesMappedByUID[reference]
-                && !SettingsHandler.FindPrefab(raw, reference) && !SettingsHandler.FindPrefab(defaultSettingsData, reference);
+                && !SettingsHandler.FindPrefab(raw, reference) && !SettingsHandler.FindPrefab(defaultSettingsData, reference)
+                && !this.categoryEntryNames.has(reference);
 
             if (isDangling)
             {
