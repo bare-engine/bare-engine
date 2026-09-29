@@ -448,27 +448,24 @@ export class EntityScene extends EditorScene
         return selected;
     }
 
+    // picks the deepest saved descendant under the pointer, like the plugin's right-click select.
+    // runtime-generated descendants (eg MoneyComponent's save:false dollar sprites) resolve to their
+    // nearest saved ancestor. the root itself is never a target, clicking it selects the root in the
+    // plugin like empty space does
     GetTransformToolTargetAt(worldPosition: Vec2): GameObject | null
     {
         const rootObject = this.object.GetByName(this.objectName);
         if (!rootObject)
             return null;
 
-        // Canvas picking in an EntityScene is intentionally one level deep. Descendants may be
-        // runtime-generated helpers (for example MoneyComponent's save:false dollar sprites), so
-        // use them only through their direct parent's combined bounds and select that parent.
-        for (var i = rootObject.children.length - 1; i >= 0; i--)
-        {
-            const child = rootObject.children[i];
-            if (!child.save || !child.visible || !child.visibleInEditor || child.alpha == 0)
-                continue;
+        var target = rootObject.GetDeepestChildAt(worldPosition);
+        while (target && target !== rootObject && !this.GetChildPath(rootObject, target))
+            target = target.parent;
 
-            if (Helper.IsPointInRectangle(worldPosition, child.GetBounds()))
-                return child;
-        }
+        if (!target || target === rootObject)
+            return null;
 
-        // the root itself is never a target, clicking it selects the root in the plugin like empty space does
-        return null;
+        return target;
     }
 
     // picking goes through SelectTransformToolTargetAt only
@@ -477,16 +474,11 @@ export class EntityScene extends EditorScene
         return false;
     }
 
-    // ctrl + click picks the deepest saved descendant, runtime-generated ones resolve to their nearest saved ancestor
-    // the root is never a target
+    // plain click already picks the deepest child here, ctrl + click behaves the same
     override SelectDeepestChildAt(mouseWorld: Vec2): boolean
     {
-        const rootObject = this.object.GetByName(this.objectName);
-        var target = rootObject?.GetDeepestChildAt(mouseWorld);
-        while (target && target !== rootObject && !this.GetChildPath(rootObject!, target))
-            target = target.parent;
-
-        if (!target || target === rootObject)
+        const target = this.GetTransformToolTargetAt(mouseWorld);
+        if (!target)
             return false;
 
         this.SelectTransformToolTargetAt(mouseWorld, target);
