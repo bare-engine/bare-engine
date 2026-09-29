@@ -66,6 +66,60 @@ export class SettingsHandler
         return collection.splice(collection.findIndex(entity => entity.name === name), 1)[0];
     }
 
+    // renames a prefab and every reference to it in settingsData: .extends of prefabs, basePrefabs and their children, and categories
+    static RenamePrefab(settingsData: SettingsData, oldName: string, newName: string): void
+    {
+        if (!newName)
+            throw new Error("Every prefab and basePrefab must have a name");
+        if (SettingsHandler.FindPrefab(defaultSettingsData, oldName))
+            throw new Error(`Default prefab '${oldName}' cannot be renamed`);
+        if (SettingsHandler.FindPrefab(settingsData, newName) || SettingsHandler.FindPrefab(defaultSettingsData, newName))
+            throw new Error(`Prefab '${newName}' already exists`);
+
+        const prefab = SettingsHandler.FindPrefab(settingsData, oldName);
+        if (!prefab)
+            throw new Error(`Cannot rename missing prefab '${oldName}'`);
+
+        prefab.name = newName;
+
+        for (const entity of [...settingsData.prefabs ?? [], ...settingsData.basePrefabs ?? []])
+        {
+            if (SettingsHandler.RenameExtendsReferences(entity, oldName, newName))
+                console.log(`updated reference in prefab '${entity.name}'`);
+        }
+
+        for (const [categoryName, category] of Object.entries(settingsData.categories ?? {}))
+        {
+            const renamed = category.extends === oldName
+                || (Array.isArray(category.entries) ? category.entries.includes(oldName) : category.entries === oldName);
+            if (!renamed)
+                continue;
+
+            if (category.extends === oldName)
+                category.extends = newName;
+
+            if (Array.isArray(category.entries))
+                category.entries = category.entries.map(entry => entry === oldName ? newName : entry);
+            else if (category.entries === oldName)
+                category.entries = newName;
+
+            console.log(`updated reference in category '${categoryName}'`);
+        }
+    }
+
+    // points every .extends of entity and its children that references oldName to newName, returns whether any did
+    static RenameExtendsReferences(entity: Entity, oldName: string, newName: string): boolean
+    {
+        let renamed = entity.extends === oldName;
+        if (renamed)
+            entity.extends = newName;
+
+        for (const child of entity.children ?? [])
+            renamed = SettingsHandler.RenameExtendsReferences(child, oldName, newName) || renamed;
+
+        return renamed;
+    }
+
     private raw: SettingsData;
     private processed: SettingsData;
     private categoryEntryNames = new Set<string>(); // PREFAB NAMES GENERATED FROM CATEGORY ENTRIES, SEE GetCategoryEntryNames

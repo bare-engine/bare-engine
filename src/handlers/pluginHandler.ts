@@ -990,10 +990,16 @@ const gameDebugApi = {
         if (!obj)
             throw new Error(`Could not find runtime entity '${name}'`);
 
+        const isRootRename = childPath.length == 0 && props.name !== undefined && props.name !== prefabScene.objectName;
+
         if (!save)
         {
             for (var prop in props)
             {
+                // the root object stays findable by prefabScene.objectName until the rename is saved
+                if (prop == "name" && isRootRename)
+                    continue;
+
                 var value = props[prop];
 
                 // component field preview (eg textcomponent.fontsize while dragging the inspector
@@ -1048,6 +1054,14 @@ const gameDebugApi = {
             }
 
             return;
+        }
+
+        // renaming the prefab itself also renames every reference to it, the scene below reopens under the new name
+        if (isRootRename)
+        {
+            await plugin.RenamePrefab(prefabScene.objectName, props.name, prefabScene.settingsHandler);
+            prefabScene.objectName = props.name;
+            delete props.name;
         }
 
         // WRITE ENTITY PROPS TO RAW
@@ -2787,6 +2801,49 @@ export class PluginHandler
         }
 
         return Array.from(this.settingsDataHandlers.keys());
+    }
+
+    // renames a prefab in settingsData (not saved yet) and in every level file that uses that settingsData (saved right away)
+    async RenamePrefab(oldName: string, newName: string, settingsHandler: SettingsHandler): Promise<void>
+    {
+        const raw = settingsHandler.GetRaw();
+
+        // every updated reference is logged inside this group
+        console.groupCollapsed(`Renaming prefab '${oldName}' to '${newName}'`);
+        try
+        {
+            SettingsHandler.RenamePrefab(raw, oldName, newName);
+
+            for (const file of await Helper.GetFilesInFolder(`${bare.levelPath}/`))
+            {
+                if (!file.endsWith(".json"))
+                    continue;
+
+                const levelPath = `${bare.levelPath}/${file}`;
+                const level = await Helper.loadJSON<LevelData>(levelPath);
+                if ((level.settingsData ?? "") != (raw.name ?? ""))
+                    continue;
+
+                let renamed = false;
+                for (const entities of Object.values(level.entitiesByLayer ?? {}))
+                    for (const entity of entities)
+                        renamed = SettingsHandler.RenameExtendsReferences(entity, oldName, newName) || renamed;
+
+                if (renamed)
+                {
+                    await fetch('/api/save-level', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ levelPath: levelPath, levelData: level, skipReload: true })
+                    });
+                    console.log(`updated reference in level '${file}'`);
+                }
+            }
+        }
+        finally
+        {
+            console.groupEnd();
+        }
     }
 
     async SaveSettingsData(newData: SettingsData): Promise<void>
