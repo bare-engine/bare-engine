@@ -589,8 +589,6 @@ export class Scene implements SceneI
         if (options.propsToIgnoreInEntity === undefined)
             options.propsToIgnoreInEntity = [];
 
-        var extendsBasePrefab = false;
-
         var entity:Entity;
         
         // PROCESS THE ARGUMENT TO GET THE ENTITY TO WORK ON
@@ -639,8 +637,6 @@ export class Scene implements SceneI
                         var possiblePrefab = this.settingsHandler.GetProcessedPrefab(entityArg.extends, settingsData);
                         if (possiblePrefab)
                         {
-                            extendsBasePrefab = SettingsHandler.IsBasePrefab(settingsData, entityArg.extends);
-
                             // ENTITY WAS FOUND IN ENTITIES ARRAY IN DATA, DELETE SPECIFIED IGNORED PROPS FROM IT
                             // USING IT ATM TO FIND THE PROPS SET ON THE BASE
                             for (var prop of options.propsToIgnoreInEntity)
@@ -711,8 +707,9 @@ export class Scene implements SceneI
 
         this.settingsHandler.ConstructEntity(entity, settingsData, options);
 
+        // name is never derived from extends, an unnamed entity falls back to its texture or stays empty
         if (!entity.name)
-            entity.name = (!extendsBasePrefab ? entity.extends : "") || entity.texture || "GameObject";
+            entity.name = entity.texture != "NAME" && entity.texture || "";
 
         if (entity.texture == "NAME")
         {

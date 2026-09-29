@@ -752,9 +752,10 @@ export class SettingsHandler
             }
 
             // INSERT MEMBERS FROM THE BASE THAT THE ENTITY DIDN'T DEFINE ITSELF
+            // name is never inherited, it's derived when the entity is constructed
             for (const key of Object.keys(extendedPrefab))
             {
-                if (key == "extends" || key == "components" || key == "children" || key == "entityUID")
+                if (key == "extends" || key == "components" || key == "children" || key == "entityUID" || key == "name")
                     continue;
 
                 // IGNORE componentsRemoved, childrenRemoved AND propertiesRemoved? TODO
