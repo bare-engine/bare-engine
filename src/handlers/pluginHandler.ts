@@ -2550,6 +2550,10 @@ export class PluginHandler
             processed
         );
 
+        // a default prefab (ANY, NONE) cannot be renamed, see SettingsHandler.RenamePrefab
+        if (SettingsHandler.FindPrefab(defaultSettingsData, name))
+            entityWithLog["__lockedFields__"] = ["name"];
+
         const obj = prefabScene.object.GetByName(name);
         if (obj)
             this.AddInspectorDataToObject(entityWithLog, obj, true);
