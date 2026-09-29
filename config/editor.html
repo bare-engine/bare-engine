@@ -302,14 +302,11 @@
             overflow: hidden;
         }
 
-        .entity-children::after {
-            content: "";
-            display: table;
-            clear: both;
-        }
-
+        /* flex instead of floats: floated tiles snag on taller ones (e.g. a label wrapping to two lines) */
         .entity-item.expanded .entity-children {
-            display: block;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
         }
 
         .child-entity {
