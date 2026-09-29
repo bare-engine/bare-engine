@@ -446,7 +446,7 @@ const gameDebugApi = {
     await plugin.SaveSettingsData(raw);
   },
   
-  // FIND THE ENTITY IN CURRENT entityData JSON, CONTRUCT IT, ADD EXTRA INFO, RETURN IT FOR PLUGIN VISUALIZATION
+  // FIND THE PREFAB IN CURRENT settingsData JSON, CONTRUCT IT, ADD EXTRA INFO, RETURN IT FOR PLUGIN VISUALIZATION
   // childPath, when given, re-selects that node in-scene after rebuilding - callers reloading to
   // reflect a field edit pass along whatever was selected beforehand so the transform tool stays on it.
   async gotoPrefab(name: string, settingsDataName?: string, childPath?: Array<number | string>)
@@ -868,11 +868,11 @@ const gameDebugApi = {
 
         await prefabScene.settingsHandler.Process();
 
-        var entityData = await window.__GAME_DEBUG_API__.gotoPrefab(prefabScene.objectName, undefined, childPath);
+        var prefabData = await window.__GAME_DEBUG_API__.gotoPrefab(prefabScene.objectName, undefined, childPath);
 
         await plugin.SaveSettingsData(rawSettingsData);
 
-        return entityData;
+        return prefabData;
   },
 
   // deletes one prop off a component authored on this entity, so the inherited value (if any)
@@ -910,11 +910,11 @@ const gameDebugApi = {
 
         await prefabScene.settingsHandler.Process();
 
-        var entityData = await window.__GAME_DEBUG_API__.gotoPrefab(prefabScene.objectName, undefined, childPath);
+        var prefabData = await window.__GAME_DEBUG_API__.gotoPrefab(prefabScene.objectName, undefined, childPath);
 
         await plugin.SaveSettingsData(rawSettingsData);
 
-        return entityData;
+        return prefabData;
   },
 
   // MARK/UNMARK AN INHERITED PROPERTY AS REMOVED ON THIS ENTITY (entity.propertiesRemoved)
@@ -1101,12 +1101,12 @@ const gameDebugApi = {
         // SINCE WE JUST MODIFIED THE RAW ENTITY, WE RE-PROCESS THE settingsData AGAIN, SO IT'S UP TO DATE 
         await prefabScene.settingsHandler.Process(rawSettingsData);
 
-        var entityData;
+        var prefabData;
 
         // SAVE TO FILE
         if (save)
         {
-            entityData = await window.__GAME_DEBUG_API__.gotoPrefab(prefabScene.objectName, undefined, selectedChildPath);
+            prefabData = await window.__GAME_DEBUG_API__.gotoPrefab(prefabScene.objectName, undefined, selectedChildPath);
 
             await plugin.SaveSettingsData(rawSettingsData);
 
@@ -1130,7 +1130,7 @@ const gameDebugApi = {
         if (!SettingsHandler.FindPrefab(rawSettingsData, "ANY"))
             rawSettingsData.basePrefabs.push({ ...SettingsHandler.FindPrefab(defaultSettingsData, "ANY")! });
 
-        return entityData;
+        return prefabData;
     },
 
     async setObject(id: string, props: Record<string, any>, save:boolean = false)
@@ -2881,11 +2881,11 @@ export class PluginHandler
 
         await prefabScene.settingsHandler.Process();
 
-        var entityData = await window.__GAME_DEBUG_API__.gotoPrefab(prefabScene.objectName, undefined, childPath);
+        var prefabData = await window.__GAME_DEBUG_API__.gotoPrefab(prefabScene.objectName, undefined, childPath);
 
         await plugin.SaveSettingsData(rawSettingsData);
 
-        return entityData;
+        return prefabData;
     }
 
     GetCurrentPrefab(): Entity
