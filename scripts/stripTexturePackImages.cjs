@@ -81,12 +81,8 @@ function resolveAlwaysInclude(projectRoot, options = {}) {
         return readStringArray(options.alwaysInclude, "alwaysInclude");
     }
 
-    if (options.texturePackImagesToInclude !== undefined) {
-        return readStringArray(options.texturePackImagesToInclude, "texturePackImagesToInclude");
-    }
-
     const projectPackage = readProjectPackage(projectRoot);
-    return resolveTexturePackImagesConfig(projectPackage, { warn: console.warn }).alwaysInclude;
+    return resolveTexturePackImagesConfig(projectPackage).alwaysInclude;
 }
 
 function readProjectPackage(projectRoot) {
@@ -110,10 +106,7 @@ function collectSettingsDataPrefabKeys(settingsDataPath, references) {
 
     try {
         const data = JSON.parse(fs.readFileSync(settingsDataPath, "utf8"));
-        const entities = Array.isArray(data.prefabs)
-            ? data.prefabs
-            : Object.entries(data.prefabs || {}).map(([name, entity]) => ({ ...entity, name }));
-        for (const entity of entities) {
+        for (const entity of data.prefabs || []) {
             addTextureReference(references, entity.name);
         }
         collectTextureFields(data, references);

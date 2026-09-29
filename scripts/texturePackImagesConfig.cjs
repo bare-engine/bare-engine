@@ -1,38 +1,14 @@
-function resolveTexturePackImagesConfig(projectPackage = {}, options = {}) {
-    const warn = typeof options.warn === "function" ? options.warn : null;
+function resolveTexturePackImagesConfig(projectPackage = {}) {
     const bareEngine = isObject(projectPackage.bareEngine) ? projectPackage.bareEngine : {};
-    const bare = isObject(projectPackage.bare) ? projectPackage.bare : {};
-    const hasBareEngineOptions = Object.prototype.hasOwnProperty.call(bareEngine, "texturePackImages");
-    const hasBareOptions = Object.prototype.hasOwnProperty.call(bare, "texturePackImages");
-    const newOptions = hasBareEngineOptions
-        ? readObject(bareEngine.texturePackImages, "bareEngine.texturePackImages")
-        : (hasBareOptions ? readObject(bare.texturePackImages, "bare.texturePackImages") : null);
-    const legacyStrip = bareEngine.stripTexturePackImages ?? bare.stripTexturePackImages;
-    const legacyInclude = bareEngine.texturePackImagesToInclude ?? bare.texturePackImagesToInclude;
-    const hasLegacyStrip = legacyStrip !== undefined;
-    const hasLegacyInclude = legacyInclude !== undefined;
+    const options = bareEngine.texturePackImages === undefined
+        ? {}
+        : readObject(bareEngine.texturePackImages, "bareEngine.texturePackImages");
 
-    if (newOptions && (hasLegacyStrip || hasLegacyInclude) && warn) {
-        warn("[assets] bareEngine.stripTexturePackImages and bareEngine.texturePackImagesToInclude are deprecated and ignored when bareEngine.texturePackImages is set.");
-    } else if ((hasLegacyStrip || hasLegacyInclude) && warn) {
-        warn("[assets] bareEngine.stripTexturePackImages and bareEngine.texturePackImagesToInclude are deprecated. Use bareEngine.texturePackImages.stripUnused and bareEngine.texturePackImages.alwaysInclude.");
-    }
-
-    const stripUnused = newOptions
-        ? readBoolean(newOptions.stripUnused, "bareEngine.texturePackImages.stripUnused")
-        : legacyStrip === true;
-    const alwaysInclude = newOptions
-        ? readStringArray(newOptions.alwaysInclude, "bareEngine.texturePackImages.alwaysInclude")
-        : readStringArray(legacyInclude, "bareEngine.texturePackImagesToInclude");
-    const nameStyle = newOptions
-        ? readString(newOptions.nameStyle, "bareEngine.texturePackImages.nameStyle", "relative")
-        : "relative";
-    const flattenNames = newOptions
-        ? readBoolean(newOptions.flattenNames, "bareEngine.texturePackImages.flattenNames")
-        : false;
-    const webpQuality = newOptions
-        ? readWebpQuality(newOptions.webpQuality, "bareEngine.texturePackImages.webpQuality")
-        : undefined;
+    const stripUnused = readBoolean(options.stripUnused, "bareEngine.texturePackImages.stripUnused");
+    const alwaysInclude = readStringArray(options.alwaysInclude, "bareEngine.texturePackImages.alwaysInclude");
+    const nameStyle = readString(options.nameStyle, "bareEngine.texturePackImages.nameStyle", "relative");
+    const flattenNames = readBoolean(options.flattenNames, "bareEngine.texturePackImages.flattenNames");
+    const webpQuality = readWebpQuality(options.webpQuality, "bareEngine.texturePackImages.webpQuality");
 
     if (!stripUnused && alwaysInclude.length > 0) {
         throw new Error("bareEngine.texturePackImages.alwaysInclude requires bareEngine.texturePackImages.stripUnused to be true.");

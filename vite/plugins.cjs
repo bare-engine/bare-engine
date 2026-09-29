@@ -2109,12 +2109,8 @@ function generateAssets(projectRoot, outputPath, imageGlobs = []) {
         const settingsPath = path.join(publicDir, "data/settingsData.json");
         if (fs.existsSync(settingsPath)) {
             const data = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
-            prefabDefs = Array.isArray(data.prefabs)
-                ? data.prefabs
-                : Object.keys(data.prefabs || {}).map(name => ({ name }));
-            basePrefabDefs = Array.isArray(data.basePrefabs)
-                ? data.basePrefabs
-                : Object.keys(data.basePrefabs || {}).map(name => ({ name }));
+            prefabDefs = data.prefabs || [];
+            basePrefabDefs = data.basePrefabs || [];
             animations = Object.keys(data.animations || {});
             layers = (data.layers || []).slice();
             // Mirror SettingsHandler.Process(): the engine prepends the default

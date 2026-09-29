@@ -33,9 +33,8 @@ module.exports = ({ mode }) => {
     // Strip the editor-only inspector decorators in prod so decorators.ts tree-shakes away.
     // On by default for prod builds; opt out with "bareEngine.stripDecorators": false.
     const stripDecorators = !isDev && projectPackage.bareEngine?.stripDecorators !== false;
-    const autoRegisterClasses = projectPackage.bareEngine?.autoRegisterClasses !== false
-        && projectPackage.bareEngine?.autoRegisterComponents !== false;
-    const texturePackImages = resolveTexturePackImagesConfig(projectPackage, { warn: console.warn });
+    const autoRegisterClasses = projectPackage.bareEngine?.autoRegisterClasses !== false;
+    const texturePackImages = resolveTexturePackImagesConfig(projectPackage);
 
     return {
         root: projectRoot,
