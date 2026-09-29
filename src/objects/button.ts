@@ -54,7 +54,7 @@ export class Button extends GameObject
 
         this.name = options.text;
         this.marge = options?.marge ?? 10;
-        this.cornerRadius = options?.cornerRadius ?? 9;
+        this.cornerRadius = options?.cornerRadius ?? 0;
         this.buttonColor = options?.buttonColor || Color.fromHex('#000000');
 
         this.textTexture = bare.texture.createTextTexture({
