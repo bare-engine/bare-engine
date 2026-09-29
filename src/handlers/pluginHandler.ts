@@ -127,6 +127,27 @@ const gameDebugApi = {
       return true;
   },
 
+  // multi-selection made in the plugin's object list (ctrl/shift click)
+  selectedObjects(uids: string[])
+  {
+      const objs = (Array.isArray(uids) ? uids : [])
+          .map(uid => getObjectByIdFromAllScenes(uid))
+          .filter((o): o is GameObject => !!o);
+      if (objs.length === 0)
+          return false;
+
+      const editorScene = bare.scene.Get(EditorScene);
+      if (editorScene && objs[0].scene === editorScene)
+      {
+          // don't notify the plugin, it would reset the panel's multi-selection to one object
+          editorScene.editorControlsHandler.SelectGameObjects(objs, true, false);
+          return true;
+      }
+
+      TransformToolHandler.Get().SetTargets(objs);
+      return true;
+  },
+
   selectEntityObject(childPath: number[] = [])
   {
       const entityScene = bare.scene.Get(EntityScene);
@@ -344,7 +365,7 @@ const gameDebugApi = {
     info.texture = "The texture to use for the entity.\n\nSet to 'NAME', to use the entity's name as the texture. Useful in the ANY base entity.";
     info.pivot = "The pivot point of the entity. 0,0 is the top left corner. Can also supply percentual values.";
     info.hitbox = "Hitbox defined as x1,x2,y1,y2, not x/y/width/height. Can supply percentual values. Can also supply a string to use a pre-defined hitbox, eg: FULL";
-    info.name = "The name of the entity";
+    info.name = "The name of the entity.\n\nUsed to identify the entity.\nUse bare.object.GetByName() to find it.";
     info.position = "The position of the entity as x,y. For children, this is relative to the parent.";
     info.scale = "The scale of the entity as x,y.";
     info.rotation = "The rotation of the entity in degrees.";
@@ -1293,6 +1314,83 @@ const gameDebugApi = {
 
         siblings.splice(currentIndex, 1);
         siblings.splice(nextIndex, 0, obj);
+
+        (scene as EditorScene).saveLevelCallback?.();
+
+        return true;
+    },
+
+    // drag & drop from the plugin's object list: moves objects "before"/"after" the target (as its
+    // siblings) or "inside" it (as its last children). targetId "layer:<index>" drops at the start of
+    // that layer. objects keep their world position, and end up adjacent in the given order
+    moveObjectsTo(ids: string[], targetId: string, position: string) {
+        const scene = plugin.GetCurrentScene();
+        const objs = (Array.isArray(ids) ? ids : [])
+            .map(id => scene.object.GetById(id))
+            .filter((o): o is GameObject => !!o);
+
+        const layerMatch = /^layer:(\d+)/.exec(String(targetId ?? ""));
+        const target = layerMatch ? null : scene.object.GetById(targetId);
+        if (!layerMatch && !target) return false;
+
+        const isWithin = (o: GameObject, ancestor: GameObject) => {
+            for (let p: GameObject | null = o; p; p = p.parent)
+                if (p === ancestor) return true;
+            return false;
+        };
+
+        // skip objects the target sits in (can't drop into itself), and objects whose ancestor is
+        // also being moved (they come along with it)
+        const movable = objs.filter(o => !(target && isWithin(target, o)));
+        const moving = movable.filter(o => !movable.some(other => other !== o && isWithin(o, other)));
+        if (moving.length === 0) return false;
+
+        const worldPositions = moving.map(o => o.parent ? o.parent.ToGlobal(new Vec2(o.x, o.y)) : new Vec2(o.x, o.y));
+
+        for (const o of moving) {
+            if (o.parent) {
+                const idx = o.parent.children.indexOf(o);
+                if (idx !== -1) o.parent.children.splice(idx, 1);
+                o.parent = null;
+            } else {
+                scene.object.Remove(o);
+            }
+        }
+
+        let newParent: GameObject | null = null;
+        let siblings: GameObject[];
+        let index: number;
+        let layerIndex = -1;
+        if (layerMatch) {
+            layerIndex = parseInt(layerMatch[1]);
+            siblings = scene.object.GetLayer(layerIndex);
+            index = 0;
+        } else if (position === "inside") {
+            newParent = target;
+            siblings = target.children;
+            index = siblings.length;
+        } else {
+            newParent = target.parent;
+            if (!newParent) layerIndex = scene.object.GetLayerOf(target);
+            siblings = newParent ? newParent.children : scene.object.GetLayer(layerIndex);
+            index = siblings.indexOf(target) + (position === "after" ? 1 : 0);
+        }
+
+        siblings.splice(index, 0, ...moving);
+
+        const layerName = newParent ? newParent.layer : scene.layerNames?.[layerIndex] ?? "";
+        const setLayer = (o: GameObject) => {
+            o.layer = layerName;
+            o.children.forEach(setLayer);
+        };
+
+        moving.forEach((o, i) => {
+            o.parent = newParent;
+            setLayer(o);
+            const world = worldPositions[i];
+            const local = newParent ? newParent.ToLocal(world) : world;
+            o.SetPosition(local.x, local.y);
+        });
 
         (scene as EditorScene).saveLevelCallback?.();
 
