@@ -29,6 +29,7 @@ export class Button extends GameObject
     declare entity: ButtonEntity | null;
 
     textTexture: TextTexture;
+    pivotPercentage: Vec2 = new Vec2(-1, -1); // SAME AS TextObject - SHOULD GAMEOBJECT HAVE THIS? - TODO
 
     @InspectorField @Save
     text = {
@@ -49,8 +50,11 @@ export class Button extends GameObject
     @InspectorField @Save
     buttonColor: Color;
 
+    private _marge = 10;
+
     @InspectorField @Save @Limit(0, Infinity)
-    marge: number;
+    get marge(): number {return this._marge;}
+    set marge(value: number) {this._marge = value; this.ReapplyPivot();}
 
     @InspectorField @Save @Limit(0, Infinity)
     cornerRadius: number;
@@ -86,6 +90,9 @@ export class Button extends GameObject
 
         this.textTexture.text = text;
 
+        // REAPPLY PIVOT AFTER CHANGING TEXT, SINCE THE WIDTH CHANGED
+        this.ReapplyPivot();
+
         // ONLY THE DISPLAY NAME - name IS USED TO LOOK THE OBJECT UP (EG BY THE ENTITY SCENE)
         if (!this.name)
             this.pluginName = text.length > 20 ? text.substring(0, 17) + "..." : text;
@@ -99,6 +106,44 @@ export class Button extends GameObject
     UpdateText()
     {
         this.textTexture.update();
+
+        this.ReapplyPivot();
+    }
+
+    private ReapplyPivot()
+    {
+        // CAN BE CALLED BEFORE THE CONSTRUCTOR IS DONE (EG marge SETTER)
+        if (this.pivotPercentage == undefined || !this.textTexture)
+            return;
+
+        if (this.pivotPercentage.x != -1)
+            this.pivotX = this.width * this.pivotPercentage.x;
+        if (this.pivotPercentage.y != -1)
+            this.pivotY = this.height * this.pivotPercentage.y;
+    }
+
+    override SetPivot(x: number, y: number): this
+    {
+        super.SetPivot(x, y);
+
+        if (this.pivotPercentage == undefined)
+            return this;
+
+        // REMEMBER PIVOT PERCENTAGE TO REAPPLY FOR WHEN THE SIZE CHANGES (TEXT, FONT SIZE, MARGE)
+        this.pivotPercentage.x = (x > 0 && x <= 1) ? x : -1;
+        this.pivotPercentage.y = (y > 0 && y <= 1) ? y : -1;
+
+        return this;
+    }
+
+    override ResetValues(): this
+    {
+        super.ResetValues();
+
+        // POOLED BUTTONS SHOULDN'T KEEP A PERCENTAGE FROM THEIR PREVIOUS USE
+        this.pivotPercentage?.set(-1, -1);
+
+        return this;
     }
 
     override OnRender(inheritedColor?: Color): void
