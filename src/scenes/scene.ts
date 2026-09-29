@@ -17,7 +17,7 @@ import { GameObject } from "../objects/gameObject";
 import { Bare } from "../types/bare";
 import { defaultSettingsData } from "../types/bareData";
 import { AnyEntity, AwakePayload, BareEvent, CollisionHandlingType, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LayerInfo, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
-import { getInspectorFieldNames, InspectorClass, InspectorField, Label } from "../utils/decorators";
+import { InspectorClass, InspectorField, Label } from "../utils/decorators";
 import { GameObjectSerializer } from "../utils/entitySerializer";
 import { Helper } from "../utils/helper";
 import { Hitbox } from "../types/hitbox";
@@ -800,7 +800,6 @@ export class Scene implements SceneI
             entity.components = val;
         }
 
-        const inspectorFieldNames = new Set(getInspectorFieldNames(obj));
         const isInspectorDescriptor = (value: any): boolean => {
             if (value === null || typeof value !== "object")
                 return false;
@@ -836,17 +835,16 @@ export class Scene implements SceneI
             // @InspectorField descriptors hold a { get, set } object on the instance.
             // Route through the descriptor's setter so we don't clobber that object (which would
             // drop the dropdown values / getter and downgrade the field to a plain input).
-            if (inspectorFieldNames.has(key))
+            // DETECTED BY SHAPE, NOT VIA getInspectorFieldNames - PROD BUILDS STRIP THE DECORATORS,
+            // SO THAT METADATA IS EMPTY THERE AND EG TextObject.text WOULD NEVER CALL SetText.
+            // accessor-based @InspectorFields (e.g. `set alpha()`) fall through to the normal
+            // assignment below, which invokes that accessor.
+            const descriptor = obj[key];
+            if (isInspectorDescriptor(descriptor)
+                && (typeof descriptor.set === "function" || typeof descriptor.onChange === "function"))
             {
-                const descriptor = obj[key];
-                if (isInspectorDescriptor(descriptor)
-                    && (typeof descriptor.set === "function" || typeof descriptor.onChange === "function"))
-                {
-                    (descriptor.set || descriptor.onChange).call(obj, value);
-                    continue;
-                }
-                // otherwise it's an accessor-based @InspectorField (e.g. `set alpha()`); fall through to
-                // the normal assignment below, which invokes that accessor.
+                (descriptor.set || descriptor.onChange).call(obj, value);
+                continue;
             }
 
             // detect XY struct
