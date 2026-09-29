@@ -728,7 +728,7 @@ const gameDebugApi = {
   getFieldsSuggestions(entityName: string, childPath: string[]): { source: string, fields: string[] }[]
   {
     var limitNumber = 7;
-    var gameObjectFields = ["extends", "baseClass", "imagePath", "texture", "position", "pivot", "alpha", "visible", "scale", "rotation", "hitbox"];
+    var gameObjectFields = ["name", "extends", "baseClass", "imagePath", "texture", "position", "pivot", "alpha", "visible", "scale", "rotation", "hitbox"];
 
     var scene = bare.scene.Get(PrefabScene);
     // Scene.Add exposes the replacement before Awake/Start have finished. Ignore
