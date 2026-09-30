@@ -532,6 +532,7 @@ export class EditorControlsHandler {
             if (texture)
                 preview.SetTexture(texture);
             this.scene.ApplyEntityToGameObject(constructedEntity, preview, false);
+            this.RemovePreviewHitboxes(preview);
             preview.alpha = 0.5;
             preview.name = 'ignoreInPlugin';
             this.UpdatePreviewVisibility();
@@ -548,6 +549,17 @@ export class EditorControlsHandler {
             else
                 // Load separately so an old request cannot overwrite the new preview's texture.
                 assetsHandler.LoadTexture(texturePath).then(applyPreview);
+        }
+    }
+
+    // the preview's children get editor hitboxes like any added object. hovering one hides the
+    // preview (see UpdatePreviewVisibility), which unhovers it again, so it flickers every frame.
+    private RemovePreviewHitboxes(obj: GameObject): void
+    {
+        for (const child of obj.children)
+        {
+            child.tapHitbox = null;
+            this.RemovePreviewHitboxes(child);
         }
     }
 
