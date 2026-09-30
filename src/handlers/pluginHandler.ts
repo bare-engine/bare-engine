@@ -25,6 +25,24 @@ declare global {
   }
 }
 
+// getObject() runs every frame for the selected object, and building the prefab baseline
+// (ConstructEntityWithDefaultValues) is by far its most expensive step. keep it for the one object
+// being inspected; a different id, or reprocessed settingsData (a fresh object on every Process(),
+// so edited prefabs), rebuilds it
+let entityDefaultValuesCache: { id: string, settingsData: SettingsData, defaults: Entity } | null = null;
+
+function getEntityDefaultValuesCached(o: GameObject, entity: Entity): Entity
+{
+    const settingsData = o.scene.settingsData;
+    const cache = entityDefaultValuesCache;
+    if (cache && cache.id === o.uniqueID && cache.settingsData === settingsData)
+        return cache.defaults;
+
+    const defaults = o.scene.ConstructEntityWithDefaultValues(entity, settingsData);
+    entityDefaultValuesCache = { id: o.uniqueID, settingsData, defaults };
+    return defaults;
+}
+
 function getObjectByIdFromAllScenes(uid: string): GameObject | null
 {
     for (const scene of bare.scene.GetAll(true))
@@ -583,7 +601,7 @@ const gameDebugApi = {
             // BLOCK BELOW), SO THEY'D ALWAYS "WIN" AS THEIR OWN BASELINE HERE AND NEVER SHOW UP AS
             // CHANGED. STRIP THEM SO THE PRESET DEFAULT IS USED AS THE BASELINE FOR THOSE TWO INSTEAD.
             var { pivot, hitbox, ...entityForOrigin } = o.entity as AnyEntity;
-            origEntity = o.scene.ConstructEntityWithDefaultValues(entityForOrigin, o.scene.settingsData);
+            origEntity = getEntityDefaultValuesCached(o, entityForOrigin);
         }
         else
         {
