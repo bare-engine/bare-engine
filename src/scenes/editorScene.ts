@@ -468,7 +468,7 @@ export class EditorScene extends Scene
     }
 
     // what a click at world selects: the top-level object under the pointer (its hitbox respects the
-    // selected layer), with deep (ctrl) the deepest visible child across all layers
+    // selected layer), with deep (alt) the deepest visible child across all layers
     PickAt(world: Vec2, deep: boolean): GameObject | null
     {
         if (!deep)
@@ -494,11 +494,11 @@ export class EditorScene extends Scene
         return null;
     }
 
-    // selects a clicked object (see PickAt), shift toggles it in the selection. null clears it
+    // selects a clicked object (see PickAt), ctrl or shift toggles it in the selection. null clears it
     SelectPicked(obj: GameObject | null, deep: boolean): void
     {
         const controls = this.editorControlsHandler;
-        if (keyboardController.IsKeyDown("shift"))
+        if (keyboardController.IsKeyDown("shift") || keyboardController.IsKeyDown("control"))
         {
             if (obj)
                 controls.ToggleGameObjectSelection(obj);
@@ -509,8 +509,8 @@ export class EditorScene extends Scene
         if (!obj || !this.showUI)
             return;
 
-        // ctrl picks across layers: switch the sidebar to the picked object's layer, keeping all-layer
-        // picking until ctrl is released
+        // alt picks across layers: switch the sidebar to the picked object's layer, keeping all-layer
+        // picking until alt is released
         if (deep)
         {
             this.editorUIHandler.SelectLayerItemByInt(bare.object.GetLayerOf(obj));

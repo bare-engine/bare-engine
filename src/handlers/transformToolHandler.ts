@@ -204,13 +204,13 @@ export class TransformToolHandler
             this.SetCursor(null);
         }
 
-        // in an editor the click picks what to select (see EditorScene.PickAt), ctrl picks deep.
+        // in an editor the click picks what to select (see EditorScene.PickAt), alt picks deep.
         // not while a visible stamp is placed by this click instead
         const editor = this.GetEditor();
         let picked: GameObject | null = null;
         if (editor && !hitsCurrentHandle && !editor.editorControlsHandler.CanPlaceCurrentPreviewObject())
         {
-            const deep = event.ctrlKey;
+            const deep = event.altKey;
             const pointed = editor.PickAt(editor.ScreenToWorld(mouseX, mouseY), deep);
             const pointsIntoCurrentHierarchy = pointed != null &&
                 this.targets.some(target => this.IsDescendantOrSelf(pointed, target));
@@ -1164,7 +1164,7 @@ export class TransformToolHandler
             return;
         }
 
-        // GetAll() only returns top-level objects, so a selected child (eg a ctrl+right-click deep
+        // GetAll() only returns top-level objects, so a selected child (eg an alt+right-click deep
         // select) must be matched via its top-level ancestor - otherwise it'd be pruned every frame.
         const all = scene.object.GetAll();
         this.targets = this.targets.filter(o => o && o.scene === scene && all.includes(this.RootOf(o)));

@@ -269,7 +269,7 @@ export class EditorControlsHandler {
         if (!this.scene.opened)
             return;
 
-        const multiSelect = keyboardController.IsKeyDown("shift");
+        const multiSelect = keyboardController.IsKeyDown("shift") || keyboardController.IsKeyDown("control");
         if (multiSelect)
             return;
 
@@ -279,7 +279,7 @@ export class EditorControlsHandler {
         const selected = this.selectedObjects[this.selectedObjects.length - 1];
         const obj = selected && Helper.IsPointInRectangle(world, selected.GetBounds())
             ? selected
-            : this.scene.PickAt(world, keyboardController.IsKeyDown("control"));
+            : this.scene.PickAt(world, keyboardController.IsKeyDown("alt"));
         if (!obj?.entity)
             return;
 

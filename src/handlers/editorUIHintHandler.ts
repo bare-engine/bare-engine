@@ -32,9 +32,9 @@ export class EditorUIHintHandler {
             'left click: select',
             'right click: remove',
             '<br>',
-            'ctrl: select object layer below',
+            'alt: select deepest child',
             'alt: disable grid',
-            'shift: select multiple',
+            'ctrl / shift: select multiple',
         ]
     };
 
