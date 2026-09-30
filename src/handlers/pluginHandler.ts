@@ -1938,10 +1938,12 @@ export class PluginHandler
       if (ev.button === 2)
       {
         var isControlDown = keyboardController.IsKeyDown("control");
+        // alt does the same as shift, since some browsers (brave, firefox) force their own menu on shift+right click
+        var isAddDown = keyboardController.IsKeyDown("shift") || keyboardController.IsKeyDown("alt");
 
           // like left click in the level editor: clicking inside the current selection keeps it
           // (eg a deep child picked with ctrl) and moves it, instead of reselecting the root
-          if (!isControlDown)
+          if (!isControlDown && !isAddDown)
           {
               var p = bare.GetCanvasScreenPosition(ev.clientX, ev.clientY);
               var selected = TransformToolHandler.Get().GetCurrentTargetAt(p.x, p.y);
@@ -1959,8 +1961,8 @@ export class PluginHandler
           if (obj)
               this.SyncSceneMouseToPointerDown(obj.scene, ev);
 
-          // ctrl also adds the clicked object to the current selection instead of replacing it
-          var selection = isControlDown && obj ? this.GetSelectionWithAdded(obj) : null;
+          // shift/alt adds the clicked object to the current selection instead of replacing it
+          var selection = isAddDown && obj ?this.GetSelectionWithAdded(obj) : null;
           if (selection)
           {
               plugin.TraceObject(obj);
