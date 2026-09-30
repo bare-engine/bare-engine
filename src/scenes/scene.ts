@@ -431,6 +431,10 @@ export class Scene implements SceneI
                 }
 
                 possibleChildCopy.extends = possibleChild.entityUID;
+                // its children are inherited the same way, as references to the source's children. keeping the
+                // source's own children would keep their uids, serializing them as the source itself (in full)
+                if (possibleChild.children)
+                    possibleChildCopy.children = this.MergeChildren(possibleChild.children, undefined);
                 toStripEntityUID.push(possibleChildCopy);
             }
             possibleEntityChildren.push(possibleChildCopy);
