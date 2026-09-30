@@ -192,10 +192,11 @@ const gameDebugApi = {
 
   // called by the game to notify the panel of a MULTI-OBJECT selection.
   // The last id is shown in the inspector (primary), but field edits get applied to all selectedIds.
-  selectObjectsInPlugin(uids: string[], openObjectsTab: boolean = true)
+  // parentIds are the primary's ancestors, so the panel can expand its tree down to it.
+  selectObjectsInPlugin(uids: string[], openObjectsTab: boolean = true, parentIds: string[] = [])
   {
     var primaryId = uids[uids.length - 1];
-    window.postMessage({ __fromGame: true, type: "selectObject", id: primaryId, openObjectsTab, parentIds: [], selectedIds: uids }, "*");
+    window.postMessage({ __fromGame: true, type: "selectObject", id: primaryId, openObjectsTab, parentIds, selectedIds: uids }, "*");
   },
 
   selectPrefabObjectInPlugin(data) {
@@ -1957,7 +1958,16 @@ export class PluginHandler
           if (obj)
               this.SyncSceneMouseToPointerDown(obj.scene, ev);
 
-          plugin.HandleClickObject(obj);
+          // ctrl also adds the clicked object to the current selection instead of replacing it
+          var selection = isControlDown && obj ? this.GetSelectionWithAdded(obj) : null;
+          if (selection)
+          {
+              plugin.TraceObject(obj);
+              TransformToolHandler.Get().SetTargets(selection);
+              this.lastRightClickedObject = obj;
+          }
+          else
+              plugin.HandleClickObject(obj);
 
           if (obj)
           {
@@ -1970,9 +1980,12 @@ export class PluginHandler
                       parentIds.push(parent.uniqueID);
                       parent = parent.parent;
                   }
-              }  
+              }
               var openObjectsTab = obj.scene.settingsData.selectionEnabled !== false;
-              this.SelectObjectInPlugin(obj.uniqueID, openObjectsTab, parentIds);
+              if (selection)
+                  this.SelectObjectsInPlugin(selection.map(o => o.uniqueID), openObjectsTab, parentIds);
+              else
+                  this.SelectObjectInPlugin(obj.uniqueID, openObjectsTab, parentIds);
 
               var mouseWorldAtClick = obj.scene.ScreenToWorldPos(bare.GetCanvasScreenPosition(ev.clientX, ev.clientY));
               TransformToolHandler.Get().StartMoveFromPointer(obj.scene, mouseWorldAtClick, obj);
@@ -1982,6 +1995,28 @@ export class PluginHandler
       ev.preventDefault();
       return false;
   };
+
+    // the current in-game selection with obj added last (the primary), or null when there's no
+    // selection in obj's scene to add to. selected ancestors/descendants of obj are dropped so a
+    // drag doesn't move them twice.
+    private GetSelectionWithAdded(obj: GameObject): GameObject[] | null
+    {
+        if (bare.scene.Get(PrefabScene) || bare.scene.Get(EditorScene))
+            return null;
+
+        var targets = TransformToolHandler.Get().targets;
+        if (targets.length == 0 || targets[0].scene !== obj.scene)
+            return null;
+
+        var isAncestorOrSelf = (ancestor: GameObject, o: GameObject) => {
+            for (var current = o; current; current = current.parent)
+                if (current === ancestor)
+                    return true;
+            return false;
+        };
+
+        return [...targets.filter(t => !isAncestorOrSelf(t, obj) && !isAncestorOrSelf(obj, t)), obj];
+    }
 
     private SyncSceneMouseToPointerDown(scene: Scene, ev: PointerEvent): void
     {
@@ -2137,9 +2172,9 @@ export class PluginHandler
         window.__GAME_DEBUG_API__.selectObjectInPlugin(uid, openObjectsTab, parentIds);
     }
 
-    SelectObjectsInPlugin(uids: string[])
+    SelectObjectsInPlugin(uids: string[], openObjectsTab: boolean = true, parentIds: string[] = [])
     {
-        window.__GAME_DEBUG_API__.selectObjectsInPlugin(uids);
+        window.__GAME_DEBUG_API__.selectObjectsInPlugin(uids, openObjectsTab, parentIds);
     }
 
     AddDebugAction(label: string, callback: () => void)
