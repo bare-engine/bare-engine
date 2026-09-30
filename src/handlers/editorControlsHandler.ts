@@ -683,10 +683,15 @@ export class EditorControlsHandler {
             if (!hover)
                 return false;
 
-            if (this.selectedObjects.includes(hover.parent))
+            // the hover can be a child (eg a person's eyes), remove its root instead
+            let obj = hover.parent;
+            while (obj.parent)
+                obj = obj.parent;
+
+            if (this.selectedObjects.includes(obj))
                 this.RemoveSelectedObjects();
             else
-                this.scene.RemoveGameObject(hover.parent);
+                this.scene.RemoveGameObject(obj);
         }
 
         bare.hitbox.ResetCurrentHover();
