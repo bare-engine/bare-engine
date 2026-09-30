@@ -1981,6 +1981,25 @@ export class PluginHandler
 
           // ctrl/shift adds the clicked object to the current selection instead of replacing it
           var selection = isAddDown && obj ?this.GetSelectionWithAdded(obj) : null;
+
+          // ctrl/shift on an already selected object toggles it off, like in the editors
+          if (selection && !selection.includes(obj))
+          {
+              if (selection.length == 0)
+              {
+                  TransformToolHandler.Get().Clear();
+                  this.lastRightClickedObject = null;
+              }
+              else
+              {
+                  TransformToolHandler.Get().SetTargets(selection);
+                  this.lastRightClickedObject = selection[selection.length - 1];
+                  this.SelectObjectsInPlugin(selection.map(o => o.uniqueID), false);
+              }
+              ev.preventDefault();
+              return false;
+          }
+
           if (selection)
           {
               plugin.TraceObject(obj);
@@ -2019,7 +2038,7 @@ export class PluginHandler
 
     // the current in-game selection with obj added last (the primary), or null when there's no
     // selection in obj's scene to add to. selected ancestors/descendants of obj are dropped so a
-    // drag doesn't move them twice.
+    // drag doesn't move them twice. if obj is already selected it's removed instead.
     private GetSelectionWithAdded(obj: GameObject): GameObject[] | null
     {
         if (bare.scene.Get(PrefabScene) || bare.scene.Get(EditorScene))
@@ -2028,6 +2047,9 @@ export class PluginHandler
         var targets = TransformToolHandler.Get().targets;
         if (targets.length == 0 || targets[0].scene !== obj.scene)
             return null;
+
+        if (targets.includes(obj))
+            return targets.filter(t => t !== obj);
 
         var isAncestorOrSelf = (ancestor: GameObject, o: GameObject) => {
             for (var current = o; current; current = current.parent)
