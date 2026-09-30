@@ -496,6 +496,9 @@ const gameDebugApi = {
         ? { x: previousPrefabScene.camera.target.x, y: previousPrefabScene.camera.target.y, zoom: previousPrefabScene.camera.zoom }
         : undefined;
     
+    // a reload of the same prefab (eg after a field edit) keeps a multi-selection, see below
+    const previousSelection = previousPrefabScene?.objectName == name ? previousPrefabScene.GetSelectedChildPaths() : [];
+
     // IF ZOOM WAS INFINITY, ENTITY HAD NO BOUNDS, DON'T WANT TO RESTORE TO THAT
     if (previousCameraTransform?.zoom == Infinity)
         previousCameraTransform = undefined;
@@ -527,7 +530,24 @@ const gameDebugApi = {
 
     // restore whatever was selected before this reload, so a field edit that reloads the scene
     // doesn't silently drop the transform tool off the object being worked on.
-    if (childPath)
+    // when childPath was part of a multi-selection, restore all of it as it was, keeping its primary
+    // (saving an edit to several children reloads once per child), and tell the panel since it may
+    // have dropped to just the primary during the reload
+    const pathKey = (path: Array<number | string>) => path.join(".");
+    const restoredPaths = childPath && previousSelection.length > 1 && previousSelection.some(path => pathKey(path) == pathKey(childPath))
+        ? previousSelection
+        : null;
+
+    if (restoredPaths)
+    {
+        const root = prefabScene.object.GetByName(prefabScene.objectName);
+        const objs = restoredPaths.map(path => plugin.ResolveRuntimeEntityPath(root, path)).filter(obj => obj);
+        // SelectGameObjects adds its list back to front, reverse so the primary stays last
+        const controls = prefabScene.editorControlsHandler;
+        controls.SelectGameObjects([...objs].reverse(), true, false);
+        prefabScene.NotifySelectionToPlugin(controls.selectedObjects);
+    }
+    else if (childPath)
         window.__GAME_DEBUG_API__.selectPrefabObject(childPath);
 
     return entityWithLog;

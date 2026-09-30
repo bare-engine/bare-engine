@@ -325,13 +325,19 @@ export class PrefabScene extends EditorScene
         if (!childPath)
             return;
 
+        // every selected object's path, so the panel highlights the whole multi-selection
+        const childPaths = objs
+            .map(obj => this.GetChildPath(rootObject, obj))
+            .filter(path => path);
+
         window.__GAME_DEBUG_API__?.selectPrefabObjectInPlugin({
             name: this.objectName,
             childPath,
+            childPaths,
         });
     }
 
-    // the deepest saved descendant under the pointer, deep (ctrl) or not, like the plugin's right-click
+    // the deepest saved descendant under the pointer, deep (alt) or not, like the plugin's right-click
     // select. runtime-generated descendants (eg MoneyComponent's save:false dollar sprites) resolve
     // to their nearest saved ancestor. the root itself is never picked, clicking it selects the root
     // in the plugin like empty space does
@@ -373,6 +379,18 @@ export class PrefabScene extends EditorScene
         return rootObject.children
             .filter(child => child.save && child.visible && child.visibleInEditor && child.alpha != 0)
             .map(child => ({ obj: child, rect: child.GetBounds() }));
+    }
+
+    // child paths of the selected objects, primary last. lets a reload restore a multi-selection
+    GetSelectedChildPaths(): number[][]
+    {
+        const rootObject = this.object.GetByName(this.objectName);
+        if (!rootObject)
+            return [];
+
+        return this.editorControlsHandler.selectedObjects
+            .map(obj => this.GetChildPath(rootObject, obj))
+            .filter(path => path);
     }
 
     private GetChildPath(root: GameObject, target: GameObject): number[] | null
