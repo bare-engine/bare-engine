@@ -45,6 +45,12 @@ export class SettingsHandler
         return !!collection && collection === settingsData.basePrefabs;
     }
 
+    // ANY AND NONE ARE THE DEFAULT PREFABS, THEIR NAME IS NEVER INHERITED
+    static IsDefaultPrefab(name: string | undefined): boolean
+    {
+        return name == "ANY" || name == "NONE";
+    }
+
     static SetPrefab(settingsData: SettingsData, name: string, entity: Entity): Entity
     {
         const collection = SettingsHandler.FindPrefabCollection(settingsData, name);
@@ -806,10 +812,12 @@ export class SettingsHandler
             }
 
             // INSERT MEMBERS FROM THE BASE THAT THE ENTITY DIDN'T DEFINE ITSELF
-            // name is never inherited, it's derived when the entity is constructed
             for (const key of Object.keys(extendedPrefab))
             {
-                if (key == "extends" || key == "components" || key == "children" || key == "entityUID" || key == "name")
+                if (key == "extends" || key == "components" || key == "children" || key == "entityUID")
+                    continue;
+
+                if (key == "name" && SettingsHandler.IsDefaultPrefab(extendedPrefab.name))
                     continue;
 
                 // IGNORE componentsRemoved, childrenRemoved AND propertiesRemoved? TODO

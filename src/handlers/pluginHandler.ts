@@ -2426,8 +2426,7 @@ export class PluginHandler
             if (!extendPrefab)
                 continue;
             var propsExtended = Object.keys(extendPrefab);
-            // name is never inherited, a base's own name is not a field it supplies
-            var propsExtendedFiltered = propsExtended.filter(p => p != "name" && !propsFound.includes(p));
+            var propsExtendedFiltered = propsExtended.filter(p => !(p == "name" && SettingsHandler.IsDefaultPrefab(extendPrefab.name)) && !propsFound.includes(p));
 
             newEntity.extendsLog[extendPrefabName] = propsExtendedFiltered;
 
@@ -2627,8 +2626,7 @@ export class PluginHandler
         var entityWithLog = this.BuildExtendDataLog(entity, extendedEntity, logKey, processedEntity, settingsDataRaw, settingsDataProcessed);
 
         entityWithLog["__defaultFieldsToIgnore__"] = defaultFieldsToIgnore;
-        if (entityName)
-            entityWithLog.name ??= entityName;
+        entityWithLog.name ??= entityName;
 
         if (entityWithLog.children)
         {
@@ -2670,7 +2668,7 @@ export class PluginHandler
                 var processedChild = processedEntity?.children?.[i] || extendedChild;
                 var authoredChild = entity.children?.[i] ?? extendedChild;
 
-                var childName = extendedChild.name || processedChild.name || "";
+                var childName = extendedChild.name || processedChild.name || (!SettingsHandler.IsDefaultPrefab(authoredChild.extends) ? authoredChild.extends : "") || "GameObject";
                 // key the child's own log entry by its uid, never by its name: the name is typically the
                 // same as the entity it references, which is the first base in its extend chain. the
                 // processed child always carries a uid (runtime-generated when the raw record has none).

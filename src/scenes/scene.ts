@@ -707,9 +707,8 @@ export class Scene implements SceneI
 
         this.settingsHandler.ConstructEntity(entity, settingsData, options);
 
-        // name is never derived from extends, an unnamed entity falls back to its texture or stays empty
         if (!entity.name)
-            entity.name = entity.texture != "NAME" && entity.texture || "";
+            entity.name = (!SettingsHandler.IsDefaultPrefab(entity.extends) ? entity.extends : "") || entity.texture || "GameObject";
 
         if (entity.texture == "NAME")
         {
