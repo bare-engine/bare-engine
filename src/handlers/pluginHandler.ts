@@ -1610,7 +1610,9 @@ const gameDebugApi = {
         const json = await res.json().catch(() => null);
 
         // GO TO THE LEVEL EDITOR
-        window.__GAME_DEBUG_API__.gotoLevelEdit(levelData);
+        // by name once the file exists, opening with the data object leaves the editor without a
+        // level path, so saving targets the public folder itself
+        window.__GAME_DEBUG_API__.gotoLevelEdit(res.ok ? levelName : levelData);
         return { ok: res.ok, saved: res.ok, response: json, level: levelData };
       } catch (error: any) {
         console.error('Failed to create level', error);
