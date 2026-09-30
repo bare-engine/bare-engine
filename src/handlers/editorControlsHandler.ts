@@ -11,7 +11,7 @@ import { TransformToolHandler } from "./transformToolHandler";
 
 export class EditorControlsHandler {
     private active: boolean = true;
-    public readonly currentPreviewEntity: GameObject;
+    public currentPreviewEntity: GameObject;
     private previewEntityData: Entity | null = null;
     private previewRevision = 0;
     public currentPreviewActive: boolean = false;
@@ -516,8 +516,7 @@ export class EditorControlsHandler {
             return;
 
         const constructedEntity = this.scene.ConstructEntity(Helper.DeepCopy(this.previewEntityData));
-        const preview = this.currentPreviewEntity;
-        preview.ResetValues();
+        const preview = this.ReplacePreviewObject(constructedEntity.baseClass);
         preview.alpha = 0.5;
         preview.name = 'ignoreInPlugin';
         this.SetCurrentPreviewActive(true);
@@ -547,6 +546,22 @@ export class EditorControlsHandler {
                 // Load separately so an old request cannot overwrite the new preview's texture.
                 assetsHandler.LoadTexture(texturePath).then(applyPreview);
         }
+    }
+
+    // a fresh object of the stamp's class (eg a TextObject to draw text) for every stamp, so nothing
+    // from the previous stamp carries over. a plain GameObject stamp gets an ArcadeObject
+    private ReplacePreviewObject(baseClass: string = "GameObject"): GameObject
+    {
+        const preview = baseClass == "GameObject"
+            ? new ArcadeObject(this.scene, '', -100, -100)
+            : bare.GetObjectFromPool(baseClass, this.scene);
+        preview.Awake();
+        preview.Init('ignoreInPlugin');
+
+        bare.object.Remove(this.currentPreviewEntity);
+        bare.object.Add(preview);
+        this.currentPreviewEntity = preview;
+        return preview;
     }
 
     // the preview's children get editor hitboxes like any added object. hovering one hides the
