@@ -719,10 +719,14 @@ export class EditorControlsHandler {
             if (!hover)
                 return false;
 
-            // the hover can be a child (eg a person's eyes), remove its root instead
+            // the hover can be a child (eg a person's eyes), remove its top-level object instead. in the
+            // entity editor that's a child of the entity, the entity itself can't be removed
+            const root = this.scene.GetPlacementParent();
             let obj = hover.parent;
-            while (obj.parent)
+            while (obj.parent && obj.parent !== root)
                 obj = obj.parent;
+            if (obj === root)
+                return false;
 
             if (this.selectedObjects.includes(obj))
                 this.RemoveSelectedObjects();
