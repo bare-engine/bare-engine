@@ -54,7 +54,7 @@ export class Button extends GameObject
 
     @InspectorField @Save @Limit(0, Infinity)
     get marge(): number {return this._marge;}
-    set marge(value: number) {this._marge = value; this.ReapplyPivot();}
+    set marge(value: number) {this._marge = value; this.OnSizeChanged();}
 
     @InspectorField @Save @Limit(0, Infinity)
     cornerRadius: number;
@@ -90,8 +90,7 @@ export class Button extends GameObject
 
         this.textTexture.text = text;
 
-        // REAPPLY PIVOT AFTER CHANGING TEXT, SINCE THE WIDTH CHANGED
-        this.ReapplyPivot();
+        this.OnSizeChanged();
 
         // ONLY THE DISPLAY NAME - name IS USED TO LOOK THE OBJECT UP (EG BY THE ENTITY SCENE)
         if (!this.name)
@@ -107,10 +106,11 @@ export class Button extends GameObject
     {
         this.textTexture.update();
 
-        this.ReapplyPivot();
+        this.OnSizeChanged();
     }
 
-    private ReapplyPivot()
+    // TEXT, FONT SIZE OR MARGE CHANGED - THE PIVOT AND TAP HITBOX FOLLOW THE NEW SIZE
+    private OnSizeChanged()
     {
         // CAN BE CALLED BEFORE THE CONSTRUCTOR IS DONE (EG marge SETTER)
         if (this.pivotPercentage == undefined || !this.textTexture)
@@ -120,6 +120,16 @@ export class Button extends GameObject
             this.pivotX = this.width * this.pivotPercentage.x;
         if (this.pivotPercentage.y != -1)
             this.pivotY = this.height * this.pivotPercentage.y;
+
+        // THE HITBOX IS SIZED WHEN ASSIGNED, SO A BUTTON CREATED WITH SHORT TEXT WOULDN'T BE CLICKABLE WHERE IT GREW
+        const rect = this.tapHitbox?.rectangle;
+        if (rect)
+        {
+            rect.x = 0;
+            rect.y = 0;
+            rect.width = this.width;
+            rect.height = this.height;
+        }
     }
 
     override SetPivot(x: number, y: number): this
