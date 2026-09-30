@@ -672,8 +672,8 @@ export class Scene implements SceneI
 
                             // an override of a settings child (.extends is the child's uid) keeps the child's name
                             const referencesChildUID = !!this.settingsHandler.rawEntitiesMappedByUID[entityArg.extends];
-                            if (!entityArg.name && !referencesChildUID)
-                                delete entity.name; // DON'T WANT THE NAME COMING FROM possiblePrefab, SETTING NAME AT BOTTOM OF THIS METHOD
+                            if (!entityArg.name && !referencesChildUID && SettingsHandler.IsBasePrefab(settingsData, entity.name))
+                                delete entity.name; // DON'T WANT THE NAME COMING FROM possiblePrefab IF IT'S A BASE PREFAB, EG 'ANY'
                         }
                         else
                         {
@@ -706,9 +706,6 @@ export class Scene implements SceneI
         }
 
         this.settingsHandler.ConstructEntity(entity, settingsData, options);
-
-        if (!entity.name)
-            entity.name = (!SettingsHandler.IsDefaultPrefab(entity.extends) ? entity.extends : "") || entity.texture || "GameObject";
 
         if (entity.texture == "NAME")
         {
