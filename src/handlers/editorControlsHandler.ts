@@ -16,10 +16,8 @@ export class EditorControlsHandler {
     // where placed stamps go: the parent of the object the stamp was sampled from
     private previewParent: GameObject | null = null;
     private previewRevision = 0;
-    public currentPreviewActive: boolean = false;
-    private draggingObject: GameObject | null = null;
 
-    private gesture: 'idle' | 'select' | 'place' | 'drag' | 'remove' = 'idle';
+    private gesture: 'idle' | 'select' | 'remove' = 'idle';
     private readonly onWheel = this.OnScroll.bind(this);
 
     private selectionRect: Rectangle = { x: 0, y: 0, width: 0, height: 0 };
@@ -34,7 +32,7 @@ export class EditorControlsHandler {
         this.copiedObjects = EditorControlsHandler.clipboard;
         this.currentPreviewEntity = new ArcadeObject(scene, '', -100, -100);
         this.currentPreviewEntity.name = 'ignoreInPlugin';
-        this.SetCurrentPreviewActive(false);
+        this.OnStampChanged();
 
         bare.events.on(BareEvent.pointer_down_any, this.AnyPointerDown.bind(this));
         bare.events.on(BareEvent.pointer_down, this.PointerDown.bind(this));
@@ -98,7 +96,7 @@ export class EditorControlsHandler {
 
     private AnyPointerDown({ mouseX, mouseY, event }: BareEventPayload['pointer_down_any']): void
     {
-        if (event.button !== 2 || !this.scene.opened || this.draggingObject || bare.MouseIsOnEditor(event))
+        if (event.button !== 2 || !this.scene.opened || TransformToolHandler.Get().IsTransforming() || bare.MouseIsOnEditor(event))
             return;
 
         // Right-click must still remove transform targets while their handles suppress controls.
@@ -108,7 +106,7 @@ export class EditorControlsHandler {
 
     private PointerDown({ event }: BareEventPayload['pointer_down']): void
     {
-        if (!this.scene.opened || !this.active || this.draggingObject || bare.MouseIsOnEditor(event))
+        if (!this.scene.opened || !this.active || TransformToolHandler.Get().IsTransforming() || bare.MouseIsOnEditor(event))
             return;
 
         if (this.CanPlaceCurrentPreviewObject())
@@ -139,7 +137,7 @@ export class EditorControlsHandler {
 
         const originX = Math.min(...this.copiedObjects.map(entity => entity.position?.x ?? 0));
         const originY = Math.min(...this.copiedObjects.map(entity => entity.position?.y ?? 0));
-        const parent = this.GetPasteParent();
+        const parent = this.GetPlacementParent(this.selectedObjects[this.selectedObjects.length - 1]?.parent);
         // copied positions are local to their parent, so place relative to the mouse in the paste parent's child space
         const mouse = bare.mouse.world.position;
         const { x, y } = parent instanceof GameObject ? parent.ToLocal(mouse) : mouse;
@@ -275,21 +273,13 @@ export class EditorControlsHandler {
         if (multiSelect)
             return;
 
-        // sample what the click selected: the root, or a deeper child picked by the click. neither
-        // the hover (a person's eyes cover the whole person) nor a textureless object's hitbox (eg a
-        // valuesHolder, its children extend past it) match that pick
+        // sample what the click picked. prefer the selection it made: while the transform tool hovers
+        // a selected object its hitbox is off, so picking again could miss it
+        const world = bare.mouse.world.position;
         const selected = this.selectedObjects[this.selectedObjects.length - 1];
-        let obj: GameObject | undefined;
-        if (selected && Helper.IsPointInRectangle(bare.mouse.world.position, selected.GetBounds()))
-            obj = selected;
-        else
-        {
-            // hover is cleared by the time dblclick fires, so re-run the hit test like PointerDown does
-            bare.hitbox.Update();
-            obj = bare.hitbox.GetCurrentHover()?.parent;
-            while (obj?.parent)
-                obj = obj.parent;
-        }
+        const obj = selected && Helper.IsPointInRectangle(world, selected.GetBounds())
+            ? selected
+            : this.scene.PickAt(world, keyboardController.IsKeyDown("control"));
         if (!obj?.entity)
             return;
 
@@ -315,9 +305,11 @@ export class EditorControlsHandler {
             this.SetCurrentPreviewEntity(this.scene.GetEntityFromObject(selectedObj), selectedObj.parent);
     }
 
-    private GetPasteParent(): int | GameObject
+    // where new objects go: next to the object they came from, else under the scene's edit root
+    // (the entity in the entity editor), else in the selected layer
+    private GetPlacementParent(sourceParent: GameObject | null | undefined): int | GameObject
     {
-        return this.selectedObjects[this.selectedObjects.length - 1]?.parent ?? this.GetSelectedLayer();
+        return sourceParent ?? this.scene.GetEditRoot() ?? this.GetSelectedLayer();
     }
 
     GetSelectedLayer(): int
@@ -398,12 +390,10 @@ export class EditorControlsHandler {
 
         TransformToolHandler.Get().SetTargets(this.selectedObjects);
 
-        // notify the plugin of the full current selection. single selection shows that object;
-        // multi selection shows the last one but applies field edits to all selected.
-        if (notifyPlugin && this.selectedObjects.length > 0)
-        {
+        // notify the plugin of the full current selection, or that it's empty. single selection shows
+        // that object; multi selection shows the last one but applies field edits to all selected.
+        if (notifyPlugin)
             this.scene.NotifySelectionToPlugin(this.selectedObjects);
-        }
     }
 
     // Shift-click toggles membership without changing the other selected objects.
@@ -447,52 +437,6 @@ export class EditorControlsHandler {
         ev.preventDefault();
     }
 
-    public StartDrag(obj: GameObject, mouseWorld: Vec2 = this.scene.mouse.world.position)
-    {
-        // PREVENT SELETING THE OBJECT WHEN HAVING STAMP (CURRENTPREVIEW) AND CONTROL KEY DOWN, SO IT'S EASIER TO PLACE
-        if (keyboardController.IsKeyDown("control") && this.currentPreviewActive)
-            return;
-
-        const transformTool = TransformToolHandler.Get();
-        if (transformTool.IsTransforming())
-            return;
-
-        // this same press just stamped the object, so keep placing while held instead of moving it
-        if (this.gesture == 'place')
-            return;
-
-        if (!this.selectedObjects.includes(obj))
-        {
-            const multiSelect = keyboardController.IsKeyDown("shift");
-            this.SelectGameObjects([obj], !multiSelect);
-        }
-
-        if (transformTool.StartMoveFromPointer(this.scene, mouseWorld, obj))
-        {
-            this.draggingObject = obj;
-            this.gesture = 'drag';
-        }
-    }
-
-    public EndDrag(obj: GameObject): void
-    {
-        this.draggingObject = null;
-        const controlDown = keyboardController.IsKeyDown("control");
-        if ((controlDown && this.currentPreviewActive) ||
-            Helper.Distance(bare.mouse.world.position, bare.mouse.world.positionOnDown) !== 0)
-            return;
-
-        if (controlDown)
-        {
-            this.scene.editorUIHandler.SelectLayerItemByInt(bare.object.GetLayerOf(obj));
-            // Keep all-layer picking enabled until Ctrl is released.
-            bare.hitbox.ClearExclusiveLayers();
-        }
-
-        if (this.scene.settingsData.showUI !== false)
-            this.scene.SelectEntity(this.scene.ConstructEntity(this.scene.GetEntityFromObject(obj)));
-    }
-
     private LayerSelected({ layerName }: BareEventPayload['editor_layerSelected']): void
     {
         if (!keyboardController.IsKeyDown("control"))
@@ -501,17 +445,17 @@ export class EditorControlsHandler {
         bare.hitbox.SetExclusiveLayer(this.scene.settingsData.layersInfo[layerName].layerI);
     }
 
-    SetCurrentPreviewActive(active: boolean)
+    // stamp mode while there's stamp data
+    get currentPreviewActive(): boolean
     {
-        active = active && this.previewEntityData !== null;
-        this.currentPreviewActive = active;
-        if (!active)
-            this.lastMultiPlaceGridKey = null;
-        this.UpdatePreviewVisibility();
+        return this.previewEntityData !== null;
+    }
 
-        // stamp mode while a preview entity is selected, edit mode otherwise
+    private OnStampChanged(): void
+    {
+        this.UpdatePreviewVisibility();
         // optional chaining since this also runs in our constructor, before editoruihandler exists
-        this.scene.editorUIHandler?.editorUIHintHandler?.SetMode(active ? 'stamp' : 'edit');
+        this.scene.editorUIHandler?.editorUIHintHandler?.SetMode(this.currentPreviewActive ? 'stamp' : 'edit');
     }
 
     // Accept raw entity data; construction is only needed for rendering the preview.
@@ -521,15 +465,15 @@ export class EditorControlsHandler {
         const revision = ++this.previewRevision;
         this.previewEntityData = entity ? Helper.DeepCopy(entity) : null;
         this.lastMultiPlaceGridKey = null;
-        this.SetCurrentPreviewActive(false);
         if (!this.previewEntityData)
+        {
+            this.OnStampChanged();
             return;
+        }
 
         const constructedEntity = this.scene.ConstructEntity(Helper.DeepCopy(this.previewEntityData));
         const preview = this.ReplacePreviewObject(constructedEntity.baseClass);
-        preview.alpha = 0.5;
-        preview.name = 'ignoreInPlugin';
-        this.SetCurrentPreviewActive(true);
+        this.OnStampChanged();
 
         const applyPreview = (texture?: GameObject['texture']) => {
             if (revision !== this.previewRevision)
@@ -539,6 +483,7 @@ export class EditorControlsHandler {
                 preview.SetTexture(texture);
             this.scene.ApplyEntityToGameObject(constructedEntity, preview, false);
             this.RemovePreviewHitboxes(preview);
+            // the entity can bring its own alpha and name
             preview.alpha = 0.5;
             preview.name = 'ignoreInPlugin';
             this.UpdatePreviewVisibility();
@@ -567,6 +512,7 @@ export class EditorControlsHandler {
             : bare.GetObjectFromPool(baseClass, this.scene);
         preview.Awake();
         preview.Init('ignoreInPlugin');
+        preview.alpha = 0.5;
 
         bare.object.Remove(this.currentPreviewEntity);
         bare.object.Add(preview);
@@ -641,11 +587,11 @@ export class EditorControlsHandler {
     {
         const entityCopy = this.CopyEntityForPlacement(this.previewEntityData);
         // the preview sits in world space, a parent needs its local position
-        const parent = this.previewParent ?? this.scene.GetPlacementParent();
-        const { x, y } = parent
+        const parent = this.GetPlacementParent(this.previewParent);
+        const { x, y } = parent instanceof GameObject
             ? parent.ToLocal(new Vec2(this.currentPreviewEntity.x, this.currentPreviewEntity.y))
             : this.currentPreviewEntity;
-        const obj = this.scene.AddGameObjectAtPosition(x, y, entityCopy, parent ?? layer);
+        const obj = this.scene.AddGameObjectAtPosition(x, y, entityCopy, parent);
 
         // placing replaces the selection: while stamping, shift multi-places, it doesn't multi-select
         this.SelectGameObjects([obj], true);
@@ -653,12 +599,11 @@ export class EditorControlsHandler {
         // TransformTool suppressing these controls, which skips that save
         this.scene.saveLevelCallback();
 
-        this.gesture = 'place';
         this.lastMultiPlaceGridKey = this.GetCurrentPreviewPlacementKey(layer);
         return obj;
     }
 
-    private CanPlaceCurrentPreviewObject(): boolean
+    CanPlaceCurrentPreviewObject(): boolean
     {
         return (
             this.currentPreviewActive &&
@@ -709,23 +654,13 @@ export class EditorControlsHandler {
     }
 
     // removes what the pointer is on: the transform tool's selection (its targets have their hitboxes
-    // disabled, so they never show up as hover) or the hovered object, with the rest of the selection
+    // disabled, so picking misses them) or what a click would pick, with the rest of the selection
     private RemoveObjectAtPointer(screenX: number, screenY: number): boolean
     {
         if (!TransformToolHandler.Get().TryRemoveTargetsAtPointer(this.scene, screenX, screenY))
         {
-            bare.hitbox.Update(); // hover is stale after a removal, and lags a frame behind the pointer
-            const hover = bare.hitbox.GetCurrentHover();
-            if (!hover)
-                return false;
-
-            // the hover can be a child (eg a person's eyes), remove its top-level object instead. in the
-            // entity editor that's a child of the entity, the entity itself can't be removed
-            const root = this.scene.GetPlacementParent();
-            let obj = hover.parent;
-            while (obj.parent && obj.parent !== root)
-                obj = obj.parent;
-            if (obj === root)
+            const obj = this.scene.PickAt(this.scene.ScreenToWorld(screenX, screenY), false);
+            if (!obj)
                 return false;
 
             if (this.selectedObjects.includes(obj))
@@ -794,15 +729,13 @@ export class EditorControlsHandler {
     {
         window.addEventListener('wheel', this.onWheel, { passive: false });
         bare.object.Add(this.currentPreviewEntity);
-        this.SetCurrentPreviewActive(false);
-        this.currentPreviewEntity.alpha = 0;
+        this.SetCurrentPreviewEntity(null);
     }
 
     Clear()
     {
         EditorControlsHandler.clipboard = this.copiedObjects;
         window.removeEventListener('wheel', this.onWheel);
-        this.draggingObject = null;
         this.gesture = 'idle';
 
         bare.hitbox.ClearExclusiveLayers();

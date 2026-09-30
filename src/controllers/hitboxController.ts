@@ -159,6 +159,12 @@ export class HitboxController
         return null;
     }
 
+    // the hitbox at a world point, eg a click the hover hasn't caught up to yet
+    GetHitboxAtPoint(world: Vec2): Hitbox | null
+    {
+        return this.GetHitboxAt(this.scene.object.GetLayers(), world);
+    }
+
     private GetHitboxAt(layers: GameObject[][], mouse: Vec2): Hitbox | null
     {
         var layersSettings = this.scene.settingsData.layers;

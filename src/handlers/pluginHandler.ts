@@ -487,7 +487,6 @@ const gameDebugApi = {
         bare.scene.Remove(EditorScene); // WILL REMOVE LEVEL EDITOR IF EXISTS
 
     var prefabScene = await bare.scene.Add(PrefabScene, {name: name, settingsHandler: settingsHandler});
-    //bare.scene.Add(HitboxScene, {name: name, settingsHandler: plugin.GetCurrentScene().settingsHandler});
     plugin.notifyLeavePrefab = true;
 
     if (previousCameraTransform)
@@ -1983,7 +1982,7 @@ export class PluginHandler
                       parent = parent.parent;
                   }
               }
-              var openObjectsTab = obj.scene.settingsData.selectionEnabled !== false;
+              var openObjectsTab = obj.scene instanceof EditorScene ? obj.scene.selectionEnabled : obj.scene.settingsData.selectionEnabled !== false;
               if (selection)
                   this.SelectObjectsInPlugin(selection.map(o => o.uniqueID), openObjectsTab, parentIds);
               else
@@ -2893,10 +2892,6 @@ export class PluginHandler
         {
             throw new Error('Cannot save processed data. Something went really wrong!');
         }
-
-        // WAS SET FOR ENTITY SCENE
-        delete newData.showUI;
-        delete newData.selectionEnabled;
 
         //var scene = plugin.GetCurrentScene();
         const scene = bare.scene.GetMainScene();

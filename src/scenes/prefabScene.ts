@@ -1,4 +1,3 @@
-import { keyboardController } from "../controllers/keyboardController";
 import { assetsHandler } from "../handlers/assetsHandler";
 import { SettingsHandler } from "../handlers/settingsHandler";
 import { Color, RenderTexture, Vec2 } from "../libraries/new-rapid-render";
@@ -43,15 +42,23 @@ export class PrefabScene extends EditorScene
 {
     objectName: string = "";
 
-    readonly transformToolHandlesBodyMove: boolean = true;
-
     override get gridEnabled(): boolean
+    {
+        return false;
+    }
+
+    override get showUI(): boolean
+    {
+        return false;
+    }
+
+    override get selectionEnabled(): boolean
     {
         return false;
     }
     
     lastPayload: PrefabSceneAwakePayload;
-    degugAtStart: boolean;
+    debugAtStart: boolean;
 
     imagePathBeforePlaceHolder: string = "";
     textureBeforePlaceHolder: string = "";
@@ -63,7 +70,7 @@ export class PrefabScene extends EditorScene
 
     override async OnStart(payload: PrefabSceneAwakePayload = this.lastPayload): Promise<void>
     {
-        this.degugAtStart = window.debug;
+        this.debugAtStart = window.debug;
         window.debug = true;
         this.hitbox.showDebug = false;
         
@@ -113,13 +120,6 @@ export class PrefabScene extends EditorScene
             this.objectName = objectName;
         }
 
-        // Prefab editor UI state is local to this scene; don't write it into the shared settings raw data.
-        //this.HideEditorUIForScene();
-        // PROBLEM: THE ACTUAL RECT INGAME - TODO
-        
-        targetSettingsHandler.GetRaw().showUI = false;
-        targetSettingsHandler.GetRaw().selectionEnabled = false;
-
         var levelData = await this.CreateLevelDataForPrefab(objectName);
         await super.OnStart({levelPathOrData: levelData, saveLevelCallback: this.SavePrefabToSettingsData, settingsHandler: targetSettingsHandler});
     }
@@ -128,23 +128,7 @@ export class PrefabScene extends EditorScene
     {
         if (this.opened)
         {
-            window.debug = this.degugAtStart;
-
-            // UNDO THE showUI / selectionEnabled OVERRIDES WE SET AT OnStart()
-            // OTHERWISE THE LEVEL EDITOR (WHICH SHARES THIS HANDLER) OPENS WITH ITS UI HIDDEN
-            // ONLY WHEN opened, SINCE OnClear ALSO RUNS DURING INIT (LoadLevel), WHERE WE STILL NEED THE OVERRIDE
-            // both raw and processed: OnStart() sets them on the raw, and the level editor's
-            // scene.OnStart() re-processes from GetRaw(), so clearing only the processed copy
-            // would leave the level editor opening without its sidebar
-            var handler = this.lastPayload?.settingsHandler;
-            for (var settings of [handler?.GetRaw(), handler?.Get()])
-            {
-                if (!settings)
-                    continue;
-
-                delete settings.showUI;
-                delete settings.selectionEnabled;
-            }
+            window.debug = this.debugAtStart;
         }
 
         super.OnClear();
@@ -203,73 +187,16 @@ export class PrefabScene extends EditorScene
         };
     }
 
-    override OnUpdate(deltaTime: number): void
-    {
-        /*var pivotObj = this.object.GetByName("dot");
-        var mainObj = this.object.GetByName(this.objectName);
-        var tl = mainObj.GetTopLeftPosition();
-        pivotObj.SetPosition(tl.x + mainObj.pivot.x * mainObj.totalScaleX, tl.y + mainObj.pivot.y * mainObj.totalScaleY);*/
-    }
-
     override async Open(levelPathOrData?: string | LevelData, saveLevelCallback?: () => Promise<LevelData>, settingsHandler?: SettingsHandler): Promise<void>
     {
         var ret = await super.Open(levelPathOrData, saveLevelCallback, settingsHandler);
 
         var obj = this.object.GetByName(this.objectName);
-        //obj.x += obj.pivot.x;
-        //obj.y += obj.pivot.y;
 
         // THE ROOT ENTITY OBJECT REPRESENTS THE ENTITY BEING EDITED ITSELF - IT HAS NO MEANINGFUL
         // POSITION/SCALE/ROTATION OF ITS OWN TO SAVE, SO IT SHOULDN'T BE DRAGGABLE VIA THE
         // TRANSFORM TOOL (SAME MECHANISM THE SOPIRO JOINT HELPER OBJECTS USE TO OPT OUT).
         obj.resizeable = false;
-
-        // COLLISION RECT
-        /*if (obj instanceof ArcadeObject)
-        {
-            var hitbox = obj.physicsHitbox.rectangle;
-            var collisionRectEntity:Entity = {
-                name: "collisionRect",
-                position: {
-                    x: hitbox.x - obj.pivot.x,
-                    y: hitbox.y - obj.pivot.y
-                },
-                scale: {
-                    x: hitbox.width,
-                    y: hitbox.height
-                },
-                components: {
-                    resizableRemove: {}
-                },
-                alpha: .4
-            };
-            this.AddGameObject(collisionRectEntity);
-        }
-                   
-        // PIVOT
-        var pivot = obj.pivot;
-        var pivotEntity:Entity = {
-            name: "dot",
-            texture: "NONE", // WE'LL DRAW A CIRCLE IN PivotComponent OnPostRender()
-            position: {
-                x: pivot.x - obj.pivot.x,
-                y: pivot.y - obj.pivot.y
-            },
-            pivot: {
-                x: .5,
-                y: .5
-            },
-            scale: {
-                x: .75,
-                y: .75
-            },
-            imagePath: "",
-            components: {
-                pivot: {objectName: this.objectName, hitboxName: "collisionRect"},
-                pivotRemove: {}
-            }
-        }
-        this.AddGameObject(pivotEntity);*/
 
         // SET CAMERA ZOOM, BASED ON OBJECT BOUNDS
         var bounds = obj.GetBoundsWithChildren();
@@ -331,7 +258,7 @@ export class PrefabScene extends EditorScene
         return this.currentLevel; // NOT USED IN THIS CASE, BUT EXPECTED FOR METHOD, BIT HACKY
     }
 
-    NotifyTransformToolPreview(operation: "move" | "resize" | "rotate"): void
+    override NotifyTransformToolPreview(operation: "move" | "resize" | "rotate"): void
     {
         const rootObject = this.object.GetByName(this.objectName);
         if (!rootObject)
@@ -404,61 +331,17 @@ export class PrefabScene extends EditorScene
         });
     }
 
-    // THE PANEL CAN ONLY FOCUS ONE NODE AT A TIME (SEE THE game-view-only SCOPE DECISION), SO A
-    // MULTI-SELECT CLICK STILL FOCUSES WHICHEVER CHILD WAS JUST CLICKED/TOGGLED ON, AND FALLS
-    // BACK TO THE GENERIC NotifySelectionToPlugin (LAST-SELECTED, OR clearSelection) WHEN A
-    // SHIFT-CLICK TOGGLES A CHILD OFF INSTEAD.
-    SelectTransformToolTargetAt(worldPosition: Vec2, selected: GameObject | null = this.GetTransformToolTargetAt(worldPosition)): GameObject | null
-    {
-        const multiSelect = keyboardController.IsKeyDown("shift");
-
-        if (!selected)
-        {
-            if (multiSelect)
-                return null; // SHIFT+CLICK ON EMPTY SPACE LEAVES THE CURRENT SELECTION ALONE
-
-            this.editorControlsHandler.ClearSelection();
-            window.__GAME_DEBUG_API__?.selectPrefabObjectInPlugin({
-                name: this.objectName,
-                clearSelection: true,
-            });
-            return null;
-        }
-
-        const rootObject = this.object.GetByName(this.objectName)!;
-
-        if (multiSelect)
-            this.editorControlsHandler.ToggleGameObjectSelection(selected, false);
-        else
-            this.editorControlsHandler.SelectGameObjects([selected], true, false);
-
-        if (!this.editorControlsHandler.selectedObjects.includes(selected))
-        {
-            // JUST TOGGLED selected OFF.
-            this.NotifySelectionToPlugin(this.editorControlsHandler.selectedObjects);
-            return selected;
-        }
-
-        const childPath = this.GetChildPath(rootObject, selected) ?? [];
-        window.__GAME_DEBUG_API__?.selectPrefabObjectInPlugin({
-            name: this.objectName,
-            childPath,
-        });
-
-        return selected;
-    }
-
-    // picks the deepest saved descendant under the pointer, like the plugin's right-click select.
-    // runtime-generated descendants (eg MoneyComponent's save:false dollar sprites) resolve to their
-    // nearest saved ancestor. the root itself is never a target, clicking it selects the root in the
-    // plugin like empty space does
-    GetTransformToolTargetAt(worldPosition: Vec2): GameObject | null
+    // the deepest saved descendant under the pointer, deep (ctrl) or not, like the plugin's right-click
+    // select. runtime-generated descendants (eg MoneyComponent's save:false dollar sprites) resolve
+    // to their nearest saved ancestor. the root itself is never picked, clicking it selects the root
+    // in the plugin like empty space does
+    override PickAt(world: Vec2, _deep: boolean): GameObject | null
     {
         const rootObject = this.object.GetByName(this.objectName);
         if (!rootObject)
             return null;
 
-        var target = rootObject.GetDeepestChildAt(worldPosition);
+        var target = rootObject.GetDeepestChildAt(world);
         while (target && target !== rootObject && !this.GetChildPath(rootObject, target))
             target = target.parent;
 
@@ -468,27 +351,10 @@ export class PrefabScene extends EditorScene
         return target;
     }
 
-    // only the entity's root is saved, so stamps go under it
-    override GetPlacementParent(): GameObject | null
+    // only the entity's root is saved, so everything is edited under it
+    override GetEditRoot(): GameObject | null
     {
         return this.object.GetByName(this.objectName);
-    }
-
-    // picking goes through SelectTransformToolTargetAt only
-    protected override SelectsOnHitboxPress(): boolean
-    {
-        return false;
-    }
-
-    // plain click already picks the deepest child here, ctrl + click behaves the same
-    override SelectDeepestChildAt(mouseWorld: Vec2): boolean
-    {
-        const target = this.GetTransformToolTargetAt(mouseWorld);
-        if (!target)
-            return false;
-
-        this.SelectTransformToolTargetAt(mouseWorld, target);
-        return true;
     }
 
     override AllowsRectSelection(): boolean
@@ -532,22 +398,5 @@ export class PrefabScene extends EditorScene
         }
 
         return path;
-    }
-
-    private HideEditorUIForScene(): void
-    {
-        this.settingsData.showUI = false;
-        this.settingsData.selectionEnabled = false;
-    }
-
-    async OnPreSaveSettingsData(rawData: SettingsData): Promise<void>
-    {
-        delete rawData.showUI;
-        delete rawData.selectionEnabled;
-    }
-
-    async OnPostSaveSettingsData(rawData: SettingsData): Promise<void>
-    {
-        this.HideEditorUIForScene();
     }
 }

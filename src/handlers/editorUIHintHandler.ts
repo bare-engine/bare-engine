@@ -77,7 +77,7 @@ export class EditorUIHintHandler {
         this.infoBtn.id = 'editor-info-btn';
         this.infoBtn.textContent = 'i';
         // HIDE THE INFO ICON WHEN SELECTION IS DISABLED FOR THE SCENE
-        this.infoBtn.style.display = (this.scene.settingsData?.selectionEnabled === false) ? 'none' : 'block';
+        this.infoBtn.style.display = this.scene.selectionEnabled ? 'block' : 'none';
         this.infoBtn.addEventListener('mouseenter', () => this.ShowInfoPopup(true), { signal });
         this.infoBtn.addEventListener('mouseleave', () => this.ShowInfoPopup(false), { signal });
 
