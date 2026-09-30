@@ -468,6 +468,12 @@ export class PrefabScene extends EditorScene
         return target;
     }
 
+    // only the entity's root is saved, so stamps go under it
+    override GetPlacementParent(): GameObject | null
+    {
+        return this.object.GetByName(this.objectName);
+    }
+
     // picking goes through SelectTransformToolTargetAt only
     protected override SelectsOnHitboxPress(): boolean
     {

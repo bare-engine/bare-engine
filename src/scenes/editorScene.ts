@@ -564,6 +564,12 @@ export class EditorScene extends Scene
         return gameObject;
     }
 
+    // parent for a placed stamp that wasn't sampled from an object, null places it in the selected layer
+    GetPlacementParent(): GameObject | null
+    {
+        return null;
+    }
+
     // false for scenes that do all their click selection through the transform tool (PrefabScene)
     protected SelectsOnHitboxPress(): boolean
     {

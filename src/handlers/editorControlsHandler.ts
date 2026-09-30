@@ -13,6 +13,8 @@ export class EditorControlsHandler {
     private active: boolean = true;
     public currentPreviewEntity: GameObject;
     private previewEntityData: Entity | null = null;
+    // where placed stamps go: the parent of the object the stamp was sampled from
+    private previewParent: GameObject | null = null;
     private previewRevision = 0;
     public currentPreviewActive: boolean = false;
     private draggingObject: GameObject | null = null;
@@ -297,7 +299,7 @@ export class EditorControlsHandler {
         // an unedited child (eg a person's eyes) serializes to {}, keep what it extends to stamp it
         entity.extends ??= obj.entity.extends;
         const sameEntity = JSON.stringify(entity) === JSON.stringify(this.previewEntityData);
-        this.SetCurrentPreviewEntity(this.currentPreviewActive && sameEntity ? null : entity);
+        this.SetCurrentPreviewEntity(this.currentPreviewActive && sameEntity ? null : entity, obj.parent);
     }
 
     private ActivateStampFromSelection(): void
@@ -310,7 +312,7 @@ export class EditorControlsHandler {
 
         const selectedObj = this.selectedObjects[this.selectedObjects.length - 1];
         if (selectedObj)
-            this.SetCurrentPreviewEntity(this.scene.GetEntityFromObject(selectedObj));
+            this.SetCurrentPreviewEntity(this.scene.GetEntityFromObject(selectedObj), selectedObj.parent);
     }
 
     private GetPasteParent(): int | GameObject
@@ -513,8 +515,9 @@ export class EditorControlsHandler {
     }
 
     // Accept raw entity data; construction is only needed for rendering the preview.
-    SetCurrentPreviewEntity(entity: Entity | null): void
+    SetCurrentPreviewEntity(entity: Entity | null, parent: GameObject | null = null): void
     {
+        this.previewParent = parent;
         const revision = ++this.previewRevision;
         this.previewEntityData = entity ? Helper.DeepCopy(entity) : null;
         this.lastMultiPlaceGridKey = null;
@@ -637,10 +640,18 @@ export class EditorControlsHandler {
     private PlaceCurrentPreviewObject(layer: int): GameObject
     {
         const entityCopy = this.CopyEntityForPlacement(this.previewEntityData);
-        const obj = this.scene.AddGameObjectAtPosition(this.currentPreviewEntity.x, this.currentPreviewEntity.y, entityCopy, layer);
+        // the preview sits in world space, a parent needs its local position
+        const parent = this.previewParent ?? this.scene.GetPlacementParent();
+        const { x, y } = parent
+            ? parent.ToLocal(new Vec2(this.currentPreviewEntity.x, this.currentPreviewEntity.y))
+            : this.currentPreviewEntity;
+        const obj = this.scene.AddGameObjectAtPosition(x, y, entityCopy, parent ?? layer);
 
         // placing replaces the selection: while stamping, shift multi-places, it doesn't multi-select
         this.SelectGameObjects([obj], true);
+        // save now like a paste does, on pointer up the new selection under the pointer has
+        // TransformTool suppressing these controls, which skips that save
+        this.scene.saveLevelCallback();
 
         this.gesture = 'place';
         this.lastMultiPlaceGridKey = this.GetCurrentPreviewPlacementKey(layer);
