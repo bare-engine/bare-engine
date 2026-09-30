@@ -276,17 +276,17 @@ export class EditorControlsHandler {
         // hover is cleared by the time dblclick fires, so re-run the hit test like PointerDown does
         bare.hitbox.Update();
 
-        const obj = bare.hitbox.GetCurrentHover()?.parent;
+        // stamp the root like a press selects it, a hovered child (eg a person's eyes) alone serializes to {}
+        let obj = bare.hitbox.GetCurrentHover()?.parent;
+        while (obj?.parent)
+            obj = obj.parent;
         if (!obj?.entity)
             return;
 
-        const entity = this.GetRawEntityForStamp(obj);
-        const preview = this.previewEntityData;
-        const sameEntity = preview && (
-            entity.entityUID ? entity.entityUID === preview.entityUID :
-            entity.extends ? entity.extends === preview.extends :
-            entity.texture === preview.texture
-        );
+        // includes edits since load (eg a scale set with the transform tool) and its position,
+        // so only the object the stamp came from matches and toggles the stamp off
+        const entity = this.scene.GetEntityFromObject(obj);
+        const sameEntity = JSON.stringify(entity) === JSON.stringify(this.previewEntityData);
         this.SetCurrentPreviewEntity(this.currentPreviewActive && sameEntity ? null : entity);
     }
 
@@ -300,13 +300,7 @@ export class EditorControlsHandler {
 
         const selectedObj = this.selectedObjects[this.selectedObjects.length - 1];
         if (selectedObj)
-            this.SetCurrentPreviewEntity(this.GetRawEntityForStamp(selectedObj));
-    }
-
-    private GetRawEntityForStamp(obj: GameObject): Entity
-    {
-        return this.scene.settingsHandler.GetUnconstructedEntity(obj.entity)
-            ?? this.scene.GetEntityFromObject(obj);
+            this.SetCurrentPreviewEntity(this.scene.GetEntityFromObject(selectedObj));
     }
 
     private GetPasteParent(): int | GameObject
@@ -484,7 +478,7 @@ export class EditorControlsHandler {
         }
 
         if (this.scene.settingsData.showUI !== false)
-            this.scene.SelectEntity(this.scene.ConstructEntity(this.GetRawEntityForStamp(obj)));
+            this.scene.SelectEntity(this.scene.ConstructEntity(this.scene.GetEntityFromObject(obj)));
     }
 
     private LayerSelected({ layerName }: BareEventPayload['editor_layerSelected']): void
