@@ -273,14 +273,21 @@ export class EditorControlsHandler {
         if (multiSelect)
             return;
 
-        // hover is cleared by the time dblclick fires, so re-run the hit test like PointerDown does
-        bare.hitbox.Update();
-
-        // sample what the click selected: the root, or a child picked with ctrl. the hover itself can
-        // be a child whose hitbox covers the whole object (eg a person's eyes)
-        let obj = bare.hitbox.GetCurrentHover()?.parent;
-        while (obj?.parent && !this.selectedObjects.includes(obj))
-            obj = obj.parent;
+        // sample what the click selected: the root, or a deeper child picked by the click. neither
+        // the hover (a person's eyes cover the whole person) nor a textureless object's hitbox (eg a
+        // valuesHolder, its children extend past it) match that pick
+        const selected = this.selectedObjects[this.selectedObjects.length - 1];
+        let obj: GameObject | undefined;
+        if (selected && Helper.IsPointInRectangle(bare.mouse.world.position, selected.GetBounds()))
+            obj = selected;
+        else
+        {
+            // hover is cleared by the time dblclick fires, so re-run the hit test like PointerDown does
+            bare.hitbox.Update();
+            obj = bare.hitbox.GetCurrentHover()?.parent;
+            while (obj?.parent)
+                obj = obj.parent;
+        }
         if (!obj?.entity)
             return;
 
