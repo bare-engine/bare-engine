@@ -276,9 +276,10 @@ export class EditorControlsHandler {
         // hover is cleared by the time dblclick fires, so re-run the hit test like PointerDown does
         bare.hitbox.Update();
 
-        // stamp the root like a press selects it, a hovered child (eg a person's eyes) alone serializes to {}
+        // sample what the click selected: the root, or a child picked with ctrl. the hover itself can
+        // be a child whose hitbox covers the whole object (eg a person's eyes)
         let obj = bare.hitbox.GetCurrentHover()?.parent;
-        while (obj?.parent)
+        while (obj?.parent && !this.selectedObjects.includes(obj))
             obj = obj.parent;
         if (!obj?.entity)
             return;
@@ -286,6 +287,8 @@ export class EditorControlsHandler {
         // includes edits since load (eg a scale set with the transform tool) and its position,
         // so only the object the stamp came from matches and toggles the stamp off
         const entity = this.scene.GetEntityFromObject(obj);
+        // an unedited child (eg a person's eyes) serializes to {}, keep what it extends to stamp it
+        entity.extends ??= obj.entity.extends;
         const sameEntity = JSON.stringify(entity) === JSON.stringify(this.previewEntityData);
         this.SetCurrentPreviewEntity(this.currentPreviewActive && sameEntity ? null : entity);
     }
