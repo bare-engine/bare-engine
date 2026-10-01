@@ -87,7 +87,8 @@ export class PrefabsTest extends Scene
         assert(extendedPlayerTile.children[0].children[0].name === "tileChild", "nested extends references should extend their children");
         assert(extendedPlayerTile.extends === undefined, "implicit root defaults should not become authored extends links");
         assert(extendedPlayerTile.children[0].extends === "tile", "authored child extends links should be preserved");
-        assert(extendedPlayerTile.children[0].children[0].extends === undefined, "implicit child defaults should not become authored extends links");
+        const tileChildUID = this.settingsHandler.GetRawPrefab("tile").children[0].entityUID;
+        assert(extendedPlayerTile.children[0].children[0].extends === tileChildUID, "inherited children should reference their source child by uid");
 
         const sourceChildren = [
             { name: "first", entityUID: "firstChildUID" },

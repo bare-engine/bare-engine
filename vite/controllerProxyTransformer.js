@@ -876,6 +876,10 @@ function isProjectSourceFile(sourceFile) {
     if (!filePath.startsWith(projectRoot + path.sep)) {
         return false;
     }
+    // building from inside the engine repo (fixtures): engine src sits under the project root
+    if (getEngineSrcInfo(sourceFile.fileName)) {
+        return false;
+    }
     return !filePath.includes(path.sep + "node_modules" + path.sep);
 }
 
