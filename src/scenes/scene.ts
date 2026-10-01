@@ -510,9 +510,13 @@ export class Scene implements SceneI
 
         // REDO CHILDREN - NEEDED FOR IF A CHILD IS REMOVED THE ABOVE DIFF IS NOT CORRECT, SINCE IT'S COMPARING DIFFERENT CHILDREN THEN
         // THIS DOES MAKE THE ABOVE DIFF FINDING ALL DIFFERENCES IN CHILDREN REDUNDANT - OPTIMIZE
-        if (rootObject.children.length > 0)
+        // ALSO WHEN NO CHILDREN ARE LEFT BUT THE ENTITY HAD SOME: THE MERGE BELOW STARTS FROM THE UNCONSTRUCTED
+        // ENTITY, SO ITS children WOULD SURVIVE THE LAST CHILD BEING REMOVED
+        const redoChildren = rootObject.children.length > 0 || (unconstructedSource.children?.length ?? 0) > 0;
+        const savedChildren: Entity[] = [];
+        if (redoChildren)
         {
-            diff.children = [];
+            delete diff.children;
 
             for (const child of rootObject.children)
             {
@@ -521,11 +525,11 @@ export class Scene implements SceneI
 
                 const childEntity = this.GetEntityFromObject(child, options);
                 if (Object.keys(childEntity).length > 0)
-                    diff.children.push(childEntity);
+                    savedChildren.push(childEntity);
             }
 
-            if (diff.children.length == 0)
-                delete diff.children;
+            if (savedChildren.length > 0)
+                diff.children = savedChildren;
         }
 
         const unconstructedEntity = Helper.DeepCopy(unconstructedSource);
@@ -548,6 +552,10 @@ export class Scene implements SceneI
 
             finalEntity = unconstructedEntity;
         }
+
+        // NO CHILDREN LEFT TO SAVE (EG THE LAST ONE WAS REMOVED): DROP THE ONES KEPT FROM THE UNCONSTRUCTED ENTITY
+        if (redoChildren && savedChildren.length == 0)
+            delete finalEntity.children;
 
         // a uid generated at runtime only links the object to its source, don't let it end up in level data
         // the prefab editor writes into the live settings data, where objects keep pointing at it (stripped from the saved copy instead)
