@@ -22,3 +22,5 @@ await bare.scene.Goto(Game, { level: 2 });   // the payload goes to OnAwake/OnSt
 | `SendEvent(type, ...args)` | Send an event to every scene. |
 | `Clear(includePersistent?)` | Remove all scenes. |
 | `Restart()` | Restart all scenes. |
+
+**Examples:** the [Platformer](https://github.com/bare-engine/bare-platformer) [adds its UI scene](https://github.com/bare-engine/bare-platformer/blob/main/src/game.ts#L36), and the [RPG](https://github.com/bare-engine/bare-rpg) [goes to its game over scene](https://github.com/bare-engine/bare-rpg/blob/main/src/game.ts#L58-L61).

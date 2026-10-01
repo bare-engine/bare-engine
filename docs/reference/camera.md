@@ -8,6 +8,8 @@ bare.camera.SetZoom(2);
 bare.camera.StartShake(8, 0.3);
 ```
 
+**Example:** the [Showcase](https://github.com/bare-engine/bare-showcase)'s [camera demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/camera/src/DemoCamera.ts) follows the mouse, shakes, tweens the zoom and switches scale modes.
+
 ## Fitting the level
 
 To show a whole level on any screen size:
@@ -25,6 +27,8 @@ OnPostLoadLevel()
 | `CameraScaleMode.None` | No automatic scaling. |
 | `CameraScaleMode.Contain` | Fit all content on screen, with space around it if needed. |
 | `CameraScaleMode.Cover` | Fill the screen with content. Some content may be cut off, but you never see past its edges. |
+
+**Examples:** the [Platformer](https://github.com/bare-engine/bare-platformer/blob/main/src/game.ts#L49-L53), and the [Showcase](https://github.com/bare-engine/bare-showcase)'s [camera demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/camera/src/DemoCamera.ts#L33-L48), which switches between `Cover` and `Contain`.
 
 ## Methods
 

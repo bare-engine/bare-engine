@@ -13,22 +13,37 @@ bare.storage.Save();                 // write all values
 
 Loading is not automatic, so call `bare.storage.Load()` once when your game starts, for example in `OnAwake`.
 
+**Example:** the [RPG](https://github.com/bare-engine/bare-rpg) [loads its save](https://github.com/bare-engine/bare-rpg/blob/main/src/game.ts#L71) at startup and [saves after every level](https://github.com/bare-engine/bare-rpg/blob/main/src/game.ts#L104).
+
 ## Adding your own fields
 
-Register your fields and their default values with `SetDefaults`:
+Describe your fields once, so TypeScript knows them, and register their default values with `SetDefaults`:
 
 ```ts
+import { SaveData } from 'bare-engine';
+
+declare module 'bare-engine'
+{
+    namespace SaveData
+    {
+        let highScore: number;
+        let unlockedLevels: Set<string>;
+    }
+}
+
 bare.storage.SetDefaults({
     highScore: 0,
     unlockedLevels: new Set<string>(),
 });
 bare.storage.Load();
 
-(SaveData as any).highScore = 1200;
+SaveData.highScore = 1200;
 bare.storage.Save();
 ```
 
 Numbers, strings, booleans, objects, arrays, `Set` and `Map` are all supported.
+
+**Example:** the [Showcase](https://github.com/bare-engine/bare-showcase)'s [extend demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/extend/src/DemoExtend.ts#L55-L65) adds a `happyEmojisClicked` field.
 
 ## Built-in fields
 

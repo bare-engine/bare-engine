@@ -41,6 +41,38 @@ Override these methods on your scene. All are optional.
 `AddGameObject` only works once the scene has awoken, so call it from `OnAwake` or `OnStart`, not the constructor.
 :::
 
+**Example:** the [Platformer](https://github.com/bare-engine/bare-platformer)'s [`game.ts`](https://github.com/bare-engine/bare-platformer/blob/main/src/game.ts#L25-L83) registers its classes and adds a UI scene in `OnAwake`, loads the level in `OnStart`, and sets up the camera and events in `OnPostLoadLevel`.
+
+## Managers
+
+In Unity you'd often make an empty GameObject with a single manager script on it. In Bare, a manager is just a class that your scene holds. Mark it with `@Inspector.Class` and its inspector fields and buttons show up in the [Chrome extension](./chrome-extension), grouped under the scene:
+
+```ts
+import { Inspector, InspectorButton, InspectorField, Scene } from 'bare-engine';
+
+class WaveManager
+{
+    @InspectorField
+    wave: number = 1;
+
+    @InspectorButton
+    NextWave()
+    {
+        this.wave++;
+    }
+}
+
+export class Game extends Scene
+{
+    @Inspector.Class
+    waves = new WaveManager();
+}
+```
+
+Hold as many managers as you need. There's no object to place in a level, nothing that can be removed by accident, and you reach it with `this.waves` from the scene. A manager doesn't get `OnUpdate` calls by itself; call it from the scene where needed.
+
+**Example:** the [Shmup](https://github.com/bare-engine/bare-shmup)'s scene [holds a `Watcher`](https://github.com/bare-engine/bare-shmup/blob/main/src/game.ts#L17-L18) whose [getters](https://github.com/bare-engine/bare-shmup/blob/main/src/game.ts#L126-L136) show live enemy and bullet counts.
+
 ## Controllers are added on demand
 
 Each scene holds controllers: objects, tweens, mouse, camera, and so on. By default only the object controller is active. As soon as your code references another one, for example `bare.tween`, the build includes it and every scene runs it. Controllers you never use don't end up in your game at all. See [The bare Object](../reference/bare).
@@ -71,6 +103,8 @@ bare.uiScene.AddGameObject(joystick);
 
 See [Scene Manager](../reference/scene-manager) for all methods.
 
+**Examples:** the [Platformer](https://github.com/bare-engine/bare-platformer) [adds its UI scene](https://github.com/bare-engine/bare-platformer/blob/main/src/game.ts#L36) on top of the game, the [RPG](https://github.com/bare-engine/bare-rpg) [goes to a game over scene](https://github.com/bare-engine/bare-rpg/blob/main/src/game.ts#L58-L61) when the player dies, and the RPG [puts its joystick on `bare.uiScene`](https://github.com/bare-engine/bare-rpg/blob/main/src/game.ts#L40-L44).
+
 ## Useful scene methods
 
 | Method | Description |
@@ -80,5 +114,5 @@ See [Scene Manager](../reference/scene-manager) for all methods.
 | `LoadLevel(name)` | Load a level into this scene. |
 | `AddLayer(name)` | Add a layer at runtime. |
 | `ScreenToWorld(x, y)` / `WorldToScreen(x, y)` | Convert between screen and world positions. |
-| `Sleep(seconds)` | `await this.Sleep(1)` to wait. |
+| `Sleep(seconds)` | Pause the scene for a while: `await this.Sleep(1)`. To wait without pausing, use [`wait`](../reference/globals#waiting). |
 | `Restart(full?)` | Restart the scene. |

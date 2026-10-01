@@ -23,7 +23,11 @@ While the dev server runs, every image in `texturePackImages/` is packed into on
 Put `.webp` images in `public/images/`, in subfolders if you like. A GameObject using a streamed image appears as soon as its image has loaded. Prefabs can point to a subfolder with `imagePath`:
 
 ```json
-{ "name": "saw", "imagePath": "enemies", "texture": "saw" }
+{
+  "name": "saw",
+  "imagePath": "enemies",
+  "texture": "saw"
+}
 ```
 
 To wait for an image yourself:
@@ -32,7 +36,7 @@ To wait for an image yourself:
 await bare.asset.LoadTexture('backgrounds/sky');
 ```
 
-The [Showcase](https://github.com/BareEngine/Demos) has an image loading demo, and the [Platformer](https://github.com/BareEngine/Platformer) streams in everything, including animations.
+**Examples:** the [Showcase](https://github.com/bare-engine/bare-showcase)'s [image loading demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/imageLoading/src/DemoImageLoading.ts), and the [Platformer](https://github.com/bare-engine/bare-platformer), which streams in everything, including animations.
 
 ## Generated assets
 
@@ -59,6 +63,8 @@ bare.sound.Play('music', { loop: true, volume: 0.5 });
 
 See [Sound](../reference/sound).
 
+**Example:** the [Showcase](https://github.com/bare-engine/bare-showcase)'s [sound demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/sound/src/DemoSound.ts#L17-L24) registers a sound with a different file name and plays it with a random pitch.
+
 ## Fonts
 
 Put fonts in `public/fonts/` and load them by name (`.ttf` by default):
@@ -67,14 +73,19 @@ Put fonts in `public/fonts/` and load them by name (`.ttf` by default):
 await bare.LoadFont('myFont');
 ```
 
+**Example:** the [Platformer](https://github.com/bare-engine/bare-platformer)'s UI [loads a font and an image](https://github.com/bare-engine/bare-platformer/blob/main/src/ui.ts#L17-L20) before it shows the coin counter.
+
 ## Animations
 
 Frame animations are defined in `settingsData.json` and played with `AnimationComponent`:
 
 ```json
 "animations": {
-  "player_walk": { "frames": ["player/player_walk1#2"], "framesPerSecond": 8 }
+  "player_walk": {
+    "frames": ["player/player_walk1#2"],
+    "framesPerSecond": 8
+  }
 }
 ```
 
-`#` is shorthand for a numbered sequence: `player_walk1#2` means `player_walk1` and `player_walk2`, and `run#4` means `run1` to `run4`.
+See [Animations](./animations) for playing them. `#` is shorthand for a numbered sequence: `player_walk1#2` means `player_walk1` and `player_walk2`, and `run#4` means `run1` to `run4`.

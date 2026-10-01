@@ -9,7 +9,8 @@
     "test:e2e": "npm run test",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:preview": "vitepress preview docs",
+    "docs:check": "node scripts/checkDocsLinks.cjs"
   },
   "description": "Bare Game Engine - Build for Web",
   "license": "MIT",

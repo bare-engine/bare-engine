@@ -14,10 +14,12 @@ The [Bare Engine Chrome extension](https://chromewebstore.google.com/detail/bare
 - View and edit prefabs
 - Jump to any level
 - Trigger debug buttons, and add your own
-- Right-click an object to move it or see its properties
+- See the properties of objects you [right-click](./debugging#selecting-objects-in-the-game) in the game
 
 Fields marked `@InspectorField` in your code appear in the extension. See [Components](./components#inspector-fields).
 
+**Examples:** the [Shmup](https://github.com/bare-engine/bare-shmup)'s [`ShootComponent`](https://github.com/bare-engine/bare-shmup/blob/main/src/components/shootComponent.ts#L8-L33) has editable fields and a **Shoot** button, and its scene [shows live enemy and bullet counts](https://github.com/bare-engine/bare-shmup/blob/main/src/game.ts#L126-L136).
+
 ::: info
-The extension is still being worked on. Planned features include an animation setup, a particle editor, layer setup, a collision layer matrix and diagnostics.
+The extension is still being worked on, and will become a paid feature at some point. See the [Roadmap](./roadmap#chrome-extension) for what's planned.
 :::

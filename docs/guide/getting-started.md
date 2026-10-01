@@ -6,7 +6,7 @@ Install [Node.js](https://nodejs.org/en/download) and [Git](https://git-scm.com/
 
 ## Create a project
 
-The easiest start is the [Bare Template](https://github.com/BareEngine/Template).
+The easiest start is the [Bare Template](https://github.com/bare-engine/bare-template).
 
 **Option 1: use the template on GitHub**
 
@@ -61,10 +61,12 @@ export class Game extends Scene
 StartBare(Game);
 ```
 
-- `StartBare(Game)` boots the engine with `Game` as the first scene.
+- `StartBare(Game)` boots the engine with `Game` as the first scene. It takes options as a second argument, like a background color or a fixed resolution. See [Configuration](../reference/configuration).
 - Passing `settingsData.json` to `super` gives the scene your [prefabs](./prefabs) and other game data.
 - `AddGameObject('⚙')` resolves `'⚙'` to a prefab or image and adds a [GameObject](./game-objects) to the scene.
 - Rotation is in degrees, so the gear turns one degree per fixed update.
+
+**Example:** this is [`src/game.ts`](https://github.com/bare-engine/bare-template/blob/main/src/game.ts) in the [template](https://github.com/bare-engine/bare-template).
 
 ## Scripts
 
@@ -79,4 +81,4 @@ StartBare(Game);
 
 - Install the [Chrome extension](./chrome-extension) to inspect and edit your game while it runs.
 - Read [Project Structure](./project-structure) to learn where things go.
-- Explore the [Showcase](https://github.com/BareEngine/Demos) and the example games: [Platformer](https://github.com/BareEngine/Platformer), [Shmup](https://github.com/BareEngine/BareShmup).
+- Explore the [Showcase](https://github.com/bare-engine/bare-showcase) and the example games: [Platformer](https://github.com/bare-engine/bare-platformer), [Shmup](https://github.com/bare-engine/bare-shmup).

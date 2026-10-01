@@ -24,6 +24,8 @@ Build settings for your game go in a `bareEngine` object in your project's `pack
 
 Restart the dev server after changing these.
 
+**Examples:** the [RPG](https://github.com/bare-engine/bare-rpg)'s [`package.json`](https://github.com/bare-engine/bare-rpg/blob/main/package.json#L30-L45) uses `firstLevelLoad`, `texturePackImages` and `index`. The [Showcase](https://github.com/bare-engine/bare-showcase)'s [`package.json`](https://github.com/bare-engine/bare-showcase/blob/main/package.json#L30-L37) uses `preloadCurrentLevel` and `imageGlobs`.
+
 ## Overview
 
 | Option | Default | Description |
@@ -106,7 +108,7 @@ Set to `false` if your game loops over one of these lists, for example to preloa
 
 ## stripDecorators
 
-Inspector decorators like `@InspectorField` are only needed by the editor and the Chrome extension, so production builds remove them. Set to `false` to keep them, for example if you ship the level editor to players.
+Inspector decorators like `@InspectorField` are only needed by the editor and the Chrome extension, so production builds remove them. Set to `false` to keep them.
 
 ```json
 "stripDecorators": false
@@ -123,7 +125,9 @@ Production builds remove class methods that are never referenced anywhere, to ma
 A method that's only called by a name built at runtime (`obj[name]()`) looks unused and gets removed. Keep it with `keep`:
 
 ```json
-"stripUnusedMethods": { "keep": ["OnSpecialEvent"] }
+"stripUnusedMethods": {
+  "keep": ["OnSpecialEvent"]
+}
 ```
 
 Methods whose name appears as a string anywhere in your code are kept automatically.

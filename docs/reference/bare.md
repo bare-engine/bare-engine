@@ -26,11 +26,11 @@ These belong to a scene. When you write `bare.tween`, `bare.object` and so on, t
 | --- | --- |
 | `bare.object` | Add, find and order GameObjects. |
 | `bare.component` | Find, enable and disable [components](../guide/components). |
-| `bare.events` | The scene's event bus. |
+| `bare.events` | The scene's event bus. See [Events](../guide/events). |
 | `bare.mouse` | Mouse and touch input. See [Input](./input). |
 | `bare.hitbox` | Pointer hit detection on GameObjects. See [Input](./input#pointer-events). |
 | `bare.tween` | Tweens and timers. See [Tweens](./tweens). |
-| `bare.particle` | Particle emitters. |
+| `bare.particle` | Particle emitters. See [Particles](../guide/particles). |
 | `bare.camera` | The scene camera. See [Camera](./camera). |
 | `bare.level` | Load and save levels. See [Level](./level). |
 | `bare.arcade` | Simple physics. See [Physics](./physics). |

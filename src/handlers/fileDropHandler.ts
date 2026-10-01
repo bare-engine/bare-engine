@@ -1,3 +1,16 @@
+/*
+THIS IS NOT USED ATM, BUT CAN BE WITH:
+
+    import { FileDropHandler } from 'bare-engine';
+
+    new FileDropHandler(document.body, async (file) => {
+        const level = JSON.parse(await file.text());
+        await bare.level.Load(level);
+    });
+
+WHICH LET'S YOU DRAG AND DROP JSON LEVELS INTO GAME TO EDIT THEM STRAIGHT IN THE LEVEL EDITOR.
+*/
+
 export class FileDropHandler
 {
     private dropZone: HTMLElement;

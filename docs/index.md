@@ -13,7 +13,7 @@ hero:
       link: /reference/bare
     - theme: alt
       text: GitHub
-      link: https://github.com/BareEngine/Engine
+      link: https://github.com/bare-engine/bare-engine
 
 features:
   - title: Tiny

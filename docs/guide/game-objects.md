@@ -24,6 +24,8 @@ A name is resolved in this order:
 
 The second argument is the parent: a layer name, a layer index or another GameObject.
 
+**Example:** the [Showcase](https://github.com/bare-engine/bare-showcase)'s [basics demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/basics/src/DemoBasics.ts) adds and rotates a single GameObject.
+
 ## Transform
 
 Most setters return the object, so you can chain them:
@@ -57,6 +59,8 @@ TweenTo(player, 0.1, { innerScaleY: 0.8 });
 ```
 
 Children follow the inner transform by default. Set `childrenInheritInnerTransform = false` to change that.
+
+**Examples:** [Platformer](https://github.com/bare-engine/bare-platformer) coins [bob up and down with `innerY`](https://github.com/bare-engine/bare-platformer/blob/main/src/components/collectableComponent.ts#L10), and [RPG](https://github.com/bare-engine/bare-rpg) enemies [wiggle with `innerRotation`](https://github.com/bare-engine/bare-rpg/blob/main/src/components/enemyAIComponent.ts#L180) while they walk.
 
 ## Children
 
@@ -116,3 +120,5 @@ obj.SetMask(maskObject);
 ## Custom GameObject classes
 
 Extend `GameObject` and override its lifecycle methods (`OnAwake`, `OnStart`, `OnUpdate`, `OnFixedUpdate`, `OnRender`, `OnRemoved`, …), the same as a scene. For most behavior a [component](./components) is the better choice, because it can be attached from data.
+
+**Example:** the [Trust](https://github.com/bare-engine/bare-trust) game's [`Peep`](https://github.com/bare-engine/bare-trust/blob/main/src/peep.ts#L20) extends `GameObject` and [overrides `OnUpdate`](https://github.com/bare-engine/bare-trust/blob/main/src/peep.ts#L94).

@@ -15,6 +15,8 @@ To avoid a delay the first time, load a sound up front:
 await bare.sound.Load('explosion');
 ```
 
+**Examples:** the [Platformer](https://github.com/bare-engine/bare-platformer) plays [win](https://github.com/bare-engine/bare-platformer/blob/main/src/game.ts#L87) and [lose](https://github.com/bare-engine/bare-platformer/blob/main/src/game.ts#L96) sounds, and the [Showcase](https://github.com/bare-engine/bare-showcase)'s [sound demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/sound/src/DemoSound.ts#L17-L24) uses `Register` and `PlayWithRandomRate`.
+
 ## Play options
 
 | Option | Description |

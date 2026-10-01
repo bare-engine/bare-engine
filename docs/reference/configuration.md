@@ -27,7 +27,11 @@ StartBare(Game, {
 | `showEditorButton` | | Show the level editor button. |
 | `debugKeys` | see below | Keyboard shortcuts during development. |
 
+**Examples:** the [RPG](https://github.com/bare-engine/bare-rpg/blob/main/src/game.ts#L166-L173), [Shmup](https://github.com/bare-engine/bare-shmup/blob/main/src/game.ts#L138-L143), [Platformer](https://github.com/bare-engine/bare-platformer/blob/main/src/game.ts#L105) and [Resolution Demo](https://github.com/bare-engine/bare-resolution-demo/blob/main/src/game.ts#L66-L76) all pass different options.
+
 ### Resolution
+
+See [Resolution & Pixel Art](../guide/resolution) for common setups.
 
 | Field | Description |
 | --- | --- |
@@ -49,7 +53,7 @@ During development these shortcuts are on by default:
 | **L** | Restart the level. |
 | **C** | Restart with cleared save data. |
 
-They're removed from production builds.
+They're removed from production builds. Passing your own `debugKeys` replaces this list, see [Debugging](../guide/debugging#debug-keys).
 
 ## package.json
 

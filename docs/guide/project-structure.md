@@ -19,6 +19,8 @@ my-game/
 └─ vite.config.cjs
 ```
 
+**Example:** every sample game uses this layout. The [Platformer](https://github.com/bare-engine/bare-platformer) is a small, complete one.
+
 ## `src/game.ts`
 
 The starting point of your code. It calls `StartBare(Game)`, where `Game` extends [`Scene`](./scenes).
@@ -58,3 +60,7 @@ Everything here is loaded before your game runs, in parallel with your code.
 ## `public/images/`
 
 Images here are streamed in when first used. No code changes needed: refer to them by name and the engine loads them.
+
+## `package.json`
+
+Besides your npm scripts and dependencies, this holds engine build settings under `bareEngine`, like your game's `gameId`. See [package.json Options](../reference/package-json).

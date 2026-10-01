@@ -21,3 +21,5 @@ await bare.level.Restart();
 From a scene, `this.LoadLevel(name)` does the same as `bare.level.Load(name)`. Override `OnPreLoadLevel(level)` and `OnPostLoadLevel(level)` to run code around loading.
 
 Only GameObjects with `persistent = true` survive loading a new level.
+
+**Examples:** the [Platformer](https://github.com/bare-engine/bare-platformer) [loads its level](https://github.com/bare-engine/bare-platformer/blob/main/src/game.ts#L43-L47). The [RPG](https://github.com/bare-engine/bare-rpg) [loads the player's saved level](https://github.com/bare-engine/bare-rpg/blob/main/src/game.ts#L74-L77), and [fetches neighbouring levels ahead of time](https://github.com/bare-engine/bare-rpg/blob/main/src/game.ts#L107-L123) with `LoadData`.
