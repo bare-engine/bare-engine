@@ -24,7 +24,7 @@ These belong to a scene. When you write `bare.tween`, `bare.object` and so on, t
 
 | Module | Description |
 | --- | --- |
-| `bare.object` | Add, find and order GameObjects. |
+| `bare.object` | Find and order GameObjects. See [Objects](./objects). |
 | `bare.component` | Find, enable and disable [components](../guide/components). |
 | `bare.events` | The scene's event bus. See [Events](../guide/events). |
 | `bare.mouse` | Mouse and touch input. See [Input](./input). |
@@ -33,8 +33,8 @@ These belong to a scene. When you write `bare.tween`, `bare.object` and so on, t
 | `bare.particle` | Particle emitters. See [Particles](../guide/particles). |
 | `bare.camera` | The scene camera. See [Camera](./camera). |
 | `bare.level` | Load and save levels. See [Level](./level). |
-| `bare.arcade` | Simple physics. See [Physics](./physics). |
-| `bare.sopiro` | Realistic physics (experimental). See [Physics](./physics). |
+| `bare.arcade` | Simple physics, imported from `bare-engine/arcade`. See [Physics](./physics). |
+| `bare.sopiro` | Realistic physics (experimental), imported from `bare-engine/sopiro`. See [Physics](./physics). |
 
 A scene module only exists once your code uses it. If you never reference `bare.tween`, the tween code isn't in your build.
 

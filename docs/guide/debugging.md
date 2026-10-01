@@ -24,7 +24,7 @@ OnRender()
 
 ## Selecting objects in the game
 
-While the game runs on `localhost`, **right-click** works like left-click in the [level editor](./level-editor#editing), so you can move objects around to try things out. This works without the [Chrome extension](./chrome-extension); with it, the selected objects also open in the extension, where you can see and edit their properties.
+During development, **right-click** works like left-click in the [level editor](./level-editor#editing), so you can move objects around to try things out. This works without the [Chrome extension](./chrome-extension); with it, the selected objects also open in the extension, where you can see and edit their properties.
 
 | Action | Controls |
 | --- | --- |
@@ -83,7 +83,7 @@ For buttons that belong to one object, use [`@InspectorButton`](../reference/ins
 
 ## Watching values
 
-Fields marked `@InspectorField` update live in the extension. To watch values that aren't on an object, like the number of enemies, put them on a helper class and add it to your scene with `@Inspector.Class`:
+Fields marked `@InspectorField` update live in the extension. To watch values that aren't on an object, like the number of enemies, put them in a [manager](./scenes#managers) with a getter. Getters update live too:
 
 ```ts
 class Stats
@@ -96,12 +96,10 @@ class Stats
 
 export class Game extends Scene
 {
-    @Inspector.Class
+    @InspectorClass
     stats = new Stats(this);
 }
 ```
-
-**Example:** the [Shmup](https://github.com/bare-engine/bare-shmup)'s [`Watcher`](https://github.com/bare-engine/bare-shmup/blob/main/src/game.ts#L126-L136), [added to its scene](https://github.com/bare-engine/bare-shmup/blob/main/src/game.ts#L17-L18).
 
 ## Logging
 

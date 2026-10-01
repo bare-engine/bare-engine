@@ -46,7 +46,7 @@ By default, a new tween on the same object and property replaces the old one. Pa
 | Method | Description |
 | --- | --- |
 | `To(object, seconds, props, overwrite?)` | Start a tween. |
-| `Shake(object, property, duration, …)` | Shake a property and settle back to 0. |
+| `Shake(object, property, duration, …)` | Shake a property and settle back to 0. See [Shake](#shake). |
 | `SetTimer(seconds, onComplete)` | Call a function after a delay. |
 | `AddChain(...tweens)` | Play tweens one after another. |
 | `GetAllFrom(object)` | All tweens running on an object. |
@@ -54,4 +54,25 @@ By default, a new tween on the same object and property replaces the old one. Pa
 | `FinishAllFrom(object)` / `FinishAll()` | Jump tweens to their end. |
 | `RemoveTimers()` | Cancel all timers. |
 
-**Examples:** the [RPG](https://github.com/bare-engine/bare-rpg)'s weapon [checks `GetAllFrom`](https://github.com/bare-engine/bare-rpg/blob/main/src/objects/weapon.ts#L10-L14) so it can't slash again mid-swing, and the [Showcase](https://github.com/bare-engine/bare-showcase) [shakes a heart](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/tweens/src/DemoTweens.ts#L30) when you click it.
+**Example:** the [RPG](https://github.com/bare-engine/bare-rpg)'s weapon [checks `GetAllFrom`](https://github.com/bare-engine/bare-rpg/blob/main/src/objects/weapon.ts#L10-L14) so it can't slash again mid-swing.
+
+## Shake
+
+`Shake` sets a property to a starting value, then springs it back to 0 with a wobble. It suits properties that rest at 0, like `innerRotation` or an `innerPosition` axis:
+
+```ts
+bare.tween.Shake(enemy, 'innerRotation', 0.5, 20);   // a quick wiggle
+```
+
+| Parameter | Default | Description |
+| --- | --- | --- |
+| `object`, `property` | | What to shake. |
+| `duration` | | Seconds until it's back at 0. |
+| `initialMove` | `-1` | The value it starts from. |
+| `decay` | `6` | How fast the wobble dies down. |
+| `frequency` | `4` | How many times it wobbles. |
+| `phase` | `0.075` | Shifts the wobble in time. |
+| `amplitude` | `40` | How far it overshoots. |
+| `overwrite` | `true` | Replace other tweens on the same property. |
+
+**Example:** the [Showcase](https://github.com/bare-engine/bare-showcase) [shakes a heart](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/tweens/src/DemoTweens.ts#L30) with `Shake(heart.innerPosition, "y", 1.2, -0.5, 3, 4, 0.075, 30)`.

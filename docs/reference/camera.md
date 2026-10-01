@@ -15,6 +15,8 @@ bare.camera.StartShake(8, 0.3);
 To show a whole level on any screen size:
 
 ```ts
+import { CameraScaleMode } from 'bare-engine';
+
 OnPostLoadLevel()
 {
     bare.camera.SetScaleMode(CameraScaleMode.Contain);

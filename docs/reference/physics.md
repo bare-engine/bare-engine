@@ -47,24 +47,26 @@ Set gravity at the top level of `settingsData.json`:
 
 ### ArcadeObject
 
-| Property | Description |
-| --- | --- |
-| `velocity` | Speed in units per second (`Vec2`). |
-| `static` | Doesn't move; other objects collide with it. |
-| `collide` | Takes part in collisions. |
-| `sensor` | Reports collisions but doesn't block. |
-| `drag` | Slows the object down over time. |
-| `restitution` | Bounciness. |
-| `stayInBounds` | Keep the object inside the level. |
-| `removeOnOutOfBounds` | Remove the object when it leaves the level. |
-| `hitbox` | Rectangle as `{ x1, y1, x2, y2 }`. Values between 0 and 1 are a fraction of the image size, larger ones are pixels. `"FULL"` covers the whole image. |
-| `hitboxType` / `hitboxRadius` | `"Rectangle"` or `"Circle"`, and the circle's radius. |
+| Property | Default | Description |
+| --- | --- | --- |
+| `velocity` | `{ x: 0, y: 0 }` | Speed in units per second (`Vec2`). |
+| `static` | `false` | Doesn't move; other objects collide with it. |
+| `collide` | `true` | Takes part in collisions. |
+| `sensor` | `false` | Reports collisions but doesn't block, and ignores `stayInBounds`. Use it for triggers, like coins or checkpoints. |
+| `drag` | `0` | Fraction of the velocity lost every 1/60 second, from 0 to 1. |
+| `restitution` | `0` | Bounciness, from 0 to 1. Two objects bounce with the lower value of the two. |
+| `stayInBounds` | `true` | Keep the object inside the level. |
+| `removeOnOutOfBounds` | `false` | Remove the object when it's fully outside the level. |
+| `hitbox` | the image | Rectangle as `{ x1, y1, x2, y2 }`. Values between 0 and 1 are a fraction of the image size, larger ones are pixels. `"FULL"` covers the whole image. |
+| `hitboxType` / `hitboxRadius` | `"Rectangle"` | `"Rectangle"` or `"Circle"`, and the circle's radius. |
+
+A child ArcadeObject always acts as a sensor, so it reports collisions without pushing anything.
 
 | Method | Description |
 | --- | --- |
 | `SetVelocity(vec)` / `SetVelocityXY(x, y)` / `ResetVelocity()` | Change velocity. |
-| `IsGrounded()` | Standing on something. |
-| `IsBlocked(direction)` | Blocked in a `BlockedState` direction. |
+| `IsGrounded()` | Standing on something. Same as `IsBlocked(BlockedState.Down)`. |
+| `IsBlocked(direction)` | Blocked in a direction: `BlockedState.Up`, `Down`, `Left` or `Right`. |
 | `IsMoving()` | Has velocity. |
 
 **Examples:** the [Platformer](https://github.com/bare-engine/bare-platformer)'s player [moves with `velocity` and checks `IsGrounded`](https://github.com/bare-engine/bare-platformer/blob/main/src/components/playerComponent.ts#L40-L72), and [RPG](https://github.com/bare-engine/bare-rpg) enemies [roam with `SetVelocity`](https://github.com/bare-engine/bare-rpg/blob/main/src/components/enemyAIComponent.ts#L84). The [Showcase](https://github.com/bare-engine/bare-showcase) has an [arcade physics demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/arcadePhysics/src/DemoArcadePhysics.ts).

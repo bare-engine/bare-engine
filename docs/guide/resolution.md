@@ -73,6 +73,8 @@ Every game pixel becomes 4×4 screen pixels. The game size follows the window, s
 For levels, the [camera](../reference/camera) can fit the level to the screen instead:
 
 ```ts
+import { CameraScaleMode } from 'bare-engine';
+
 bare.camera.SetScaleMode(CameraScaleMode.Contain);
 bare.camera.SetDimensionsToLevel();
 ```

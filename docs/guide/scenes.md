@@ -45,10 +45,10 @@ Override these methods on your scene. All are optional.
 
 ## Managers
 
-In Unity you'd often make an empty GameObject with a single manager script on it. In Bare, a manager is just a class that your scene holds. Mark it with `@Inspector.Class` and its inspector fields and buttons show up in the [Chrome extension](./chrome-extension), grouped under the scene:
+In Unity you'd often make an empty GameObject with a single manager script on it. In Bare, a manager is just a class that your scene holds. Mark it with `@InspectorClass` and its inspector fields and buttons show up in the [Chrome extension](./chrome-extension), grouped under the scene:
 
 ```ts
-import { Inspector, InspectorButton, InspectorField, Scene } from 'bare-engine';
+import { InspectorButton, InspectorClass, InspectorField, Scene } from 'bare-engine';
 
 class WaveManager
 {
@@ -64,7 +64,7 @@ class WaveManager
 
 export class Game extends Scene
 {
-    @Inspector.Class
+    @InspectorClass
     waves = new WaveManager();
 }
 ```

@@ -5,22 +5,29 @@ Besides regular [components](../guide/components), Bare includes [miniplex](http
 This is mostly a way to organize code: logic lives in systems that work on every object with certain fields.
 
 ```ts
-import { GameObject, World, type With } from 'bare-engine';
+import { GameObject, Scene, World } from 'bare-engine';
 
 type Obj = GameObject & { health?: number; poisoned?: true };
 
 const world = new World<Obj>();
 const poisoned = world.with('health', 'poisoned');
 
-world.add(enemy);
-world.addComponent(enemy, 'health', 10);
-world.addComponent(enemy, 'poisoned', true);
-
-// a system, run every frame
-OnUpdate(deltaTime: number)
+export class Game extends Scene
 {
-    for (const obj of poisoned)
-        obj.health -= deltaTime;
+    OnStart()
+    {
+        const enemy = this.AddGameObject('enemy');
+        world.add(enemy);
+        world.addComponent(enemy, 'health', 10);
+        world.addComponent(enemy, 'poisoned', true);
+    }
+
+    // a system: runs every frame for each object with health and poisoned
+    OnUpdate(deltaTime: number)
+    {
+        for (const obj of poisoned)
+            obj.health -= deltaTime;
+    }
 }
 ```
 

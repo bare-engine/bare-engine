@@ -51,9 +51,13 @@ Production builds remove some things to save space. Try turning them off one at 
 | A method is suddenly undefined | `"stripUnusedMethods": false`, or keep the method with `keep` |
 | Images missing from the atlas | check `texturePackImages.alwaysInclude` |
 
-## Changes in package.json don't apply
+## Changes in package.json or vite.config.cjs don't apply
 
-Restart the dev server. It reads `package.json` only when it starts.
+Restart the dev server. It reads these files only when it starts.
+
+## Debug keys and `trace` don't work on my phone
+
+They only work on an address with `localhost` in it, not on the dev server's network URL. See [Testing on your phone](./mobile#testing-on-your-phone).
 
 ## Save data from another game shows up
 

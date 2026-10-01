@@ -2,6 +2,20 @@
 
 Bare games run in mobile browsers without changes. This page covers what's worth adjusting.
 
+## Testing on your phone
+
+Start the dev server so other devices on your network can reach it:
+
+```sh
+npm run dev -- --host
+```
+
+The terminal then shows a **Network** URL, like `http://192.168.1.20:5173/`. Open it on your phone, connected to the same Wi-Fi.
+
+::: warning
+Some development helpers only work on an address with `localhost` in it. On the network URL, [`trace`](../reference/globals#logging-and-checks) logs nothing, the [debug keys](./debugging#debug-keys) are off, and the [level editor](./level-editor) keeps your edits in the browser instead of saving them to the level file.
+:::
+
 ## Touch is the mouse
 
 `bare.mouse` and pointer events handle touch as well: a tap is a press, and dragging a finger moves the pointer. Code written for the mouse works on touch screens.

@@ -25,7 +25,7 @@ StartBare(Game, {
 | `multiTouch` | `false` | Accept more than one touch at once. |
 | `gameObjectPoolSize` | `50` | Default size of object pools. |
 | `showEditorButton` | | Show the level editor button. |
-| `debugKeys` | see below | Keyboard shortcuts during development. |
+| `debugKeys` | **E**, **P**, **R**, **L**, **C** | Keyboard shortcuts during development. See [Debug keys](#debug-keys). |
 
 **Examples:** the [RPG](https://github.com/bare-engine/bare-rpg/blob/main/src/game.ts#L166-L173), [Shmup](https://github.com/bare-engine/bare-shmup/blob/main/src/game.ts#L138-L143), [Platformer](https://github.com/bare-engine/bare-platformer/blob/main/src/game.ts#L105) and [Resolution Demo](https://github.com/bare-engine/bare-resolution-demo/blob/main/src/game.ts#L66-L76) all pass different options.
 
@@ -43,17 +43,7 @@ See [Resolution & Pixel Art](../guide/resolution) for common setups.
 
 ### Debug keys
 
-During development these shortcuts are on by default:
-
-| Key | Action |
-| --- | --- |
-| **E** | Toggle debug mode (`window.debug`). |
-| **P** | Pause. |
-| **R** | Restart the game. |
-| **L** | Restart the level. |
-| **C** | Restart with cleared save data. |
-
-They're removed from production builds. Passing your own `debugKeys` replaces this list, see [Debugging](../guide/debugging#debug-keys).
+The default keys and how to change them are listed under [Debugging](../guide/debugging#debug-keys). They're removed from production builds.
 
 ## package.json
 

@@ -77,15 +77,4 @@ await bare.LoadFont('myFont');
 
 ## Animations
 
-Frame animations are defined in `settingsData.json` and played with `AnimationComponent`:
-
-```json
-"animations": {
-  "player_walk": {
-    "frames": ["player/player_walk1#2"],
-    "framesPerSecond": 8
-  }
-}
-```
-
-See [Animations](./animations) for playing them. `#` is shorthand for a numbered sequence: `player_walk1#2` means `player_walk1` and `player_walk2`, and `run#4` means `run1` to `run4`.
+Frame animations are defined in `settingsData.json`, and their frames load like any other image. See [Animations](./animations).

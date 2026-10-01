@@ -4,7 +4,8 @@ export default defineConfig({
     title: "Bare Engine",
     // published on GitHub Pages at https://bare-engine.github.io/bare-engine/
     base: "/bare-engine/",
-    description: "Bare Game Engine - Build for Web",
+    description: "A small, fast game engine for the web.",
+    lastUpdated: true,
     srcExclude: ["README.md"],
     cleanUrls: true,
     themeConfig: {
@@ -18,8 +19,8 @@ export default defineConfig({
                 items: [
                     { text: "Getting Started", link: "/guide/getting-started" },
                     { text: "Project Structure", link: "/guide/project-structure" },
+                    { text: "Examples", link: "/guide/examples" },
                     { text: "Chrome Extension", link: "/guide/chrome-extension" },
-                    { text: "Roadmap", link: "/guide/roadmap" },
                 ],
             },
             {
@@ -27,9 +28,11 @@ export default defineConfig({
                 items: [
                     { text: "Scenes", link: "/guide/scenes" },
                     { text: "GameObjects", link: "/guide/game-objects" },
+                    { text: "Custom GameObjects", link: "/guide/custom-game-objects" },
                     { text: "Prefabs", link: "/guide/prefabs" },
-                    { text: "Levels & Layers", link: "/guide/levels-and-layers" },
                     { text: "Components", link: "/guide/components" },
+                    { text: "Levels & Layers", link: "/guide/levels-and-layers" },
+                    { text: "Level Editor", link: "/guide/level-editor" },
                     { text: "Assets", link: "/guide/assets" },
                 ],
             },
@@ -41,8 +44,6 @@ export default defineConfig({
                     { text: "Particles", link: "/guide/particles" },
                     { text: "Text & UI", link: "/guide/text-and-ui" },
                     { text: "Rendering", link: "/guide/rendering" },
-                    { text: "Level Editor", link: "/guide/level-editor" },
-                    { text: "Custom GameObjects", link: "/guide/custom-game-objects" },
                     { text: "Resolution & Pixel Art", link: "/guide/resolution" },
                     { text: "Mobile & Touch", link: "/guide/mobile" },
                 ],
@@ -53,12 +54,14 @@ export default defineConfig({
                     { text: "Debugging", link: "/guide/debugging" },
                     { text: "Building & Publishing", link: "/guide/building-and-publishing" },
                     { text: "Troubleshooting", link: "/guide/troubleshooting" },
+                    { text: "Roadmap", link: "/guide/roadmap" },
                 ],
             },
             {
                 text: "Reference",
                 items: [
                     { text: "The bare Object", link: "/reference/bare" },
+                    { text: "Objects", link: "/reference/objects" },
                     { text: "Input", link: "/reference/input" },
                     { text: "Tweens", link: "/reference/tweens" },
                     { text: "Camera", link: "/reference/camera" },
@@ -73,10 +76,13 @@ export default defineConfig({
                     { text: "Configuration", link: "/reference/configuration" },
                     { text: "package.json Options", link: "/reference/package-json" },
                     { text: "Entity Component System", link: "/reference/ecs" },
-                    { text: "Advanced", link: "/reference/advanced" },
                 ],
             },
         ],
+        editLink: {
+            pattern: "https://github.com/bare-engine/bare-engine/edit/main/docs/:path",
+            text: "Edit this page on GitHub",
+        },
         socialLinks: [
             { icon: "github", link: "https://github.com/bare-engine/bare-engine" },
             { icon: "discord", link: "https://discord.gg/zq3Qh45JE" },

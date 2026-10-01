@@ -18,7 +18,7 @@ The [Bare Engine Chrome extension](https://chromewebstore.google.com/detail/bare
 
 Fields marked `@InspectorField` in your code appear in the extension. See [Components](./components#inspector-fields).
 
-**Examples:** the [Shmup](https://github.com/bare-engine/bare-shmup)'s [`ShootComponent`](https://github.com/bare-engine/bare-shmup/blob/main/src/components/shootComponent.ts#L8-L33) has editable fields and a **Shoot** button, and its scene [shows live enemy and bullet counts](https://github.com/bare-engine/bare-shmup/blob/main/src/game.ts#L126-L136).
+**Example:** the [Shmup](https://github.com/bare-engine/bare-shmup)'s [`ShootComponent`](https://github.com/bare-engine/bare-shmup/blob/main/src/components/shootComponent.ts#L8-L33) has editable fields and a **Shoot** button.
 
 ::: info
 The extension is still being worked on, and will become a paid feature at some point. See the [Roadmap](./roadmap#chrome-extension) for what's planned.

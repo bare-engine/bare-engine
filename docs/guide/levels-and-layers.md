@@ -92,16 +92,16 @@ Lists add to the default `GameObject` list, and a class also gets the lists of t
 A component saves the fields you mark with `@Save`:
 
 ```ts
-import { Component, Inspector, Save } from 'bare-engine';
+import { Component, Inspector, InspectorField, Save } from 'bare-engine';
 
 export class AliveComponent extends Component
 {
     @Save
-    @Inspector.Field
+    @InspectorField
     @Inspector.Int
     health: number = 0;
 
-    @Inspector.Field
+    @InspectorField
     @Inspector.Int
     maxHealth: number = 10;
 }
@@ -110,7 +110,7 @@ export class AliveComponent extends Component
 Here each enemy you place can get its own `health`, which is saved in the level. `maxHealth` is only an inspector field, so it isn't saved with the level; set it in the prefab instead.
 
 - `@Save` works the same on fields of your own [GameObject classes](./custom-game-objects).
-- `@Save` fields also show up in the [Chrome extension](./chrome-extension), so `@Inspector.Field` is only needed for options like `@Inspector.Int`.
+- `@Save` fields also show up in the [Chrome extension](./chrome-extension), so `@InspectorField` is only needed for options like `@Inspector.Int`.
 - A component without any `@Save` field saves its constructor parameters instead.
 
 **Example:** the [RPG](https://github.com/bare-engine/bare-rpg)'s [`AliveComponent`](https://github.com/bare-engine/bare-rpg/blob/main/src/components/aliveComponent.ts#L5-L12) and its [level connector](https://github.com/bare-engine/bare-rpg/blob/main/src/components/levelConnectorComponent.ts#L10-L13), which saves which level each side leads to.

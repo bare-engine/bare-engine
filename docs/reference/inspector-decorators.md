@@ -21,21 +21,21 @@ export class TurretComponent extends Component
 }
 ```
 
-Every decorator is available through `Inspector`, which is handy for autocomplete: `@Inspector.Limit`, `@Inspector.Label`, and so on. Most can also be imported on their own, like `@Limit`.
+Every decorator is available through `Inspector`, which is handy for autocomplete: `@Inspector.Limit`, `@Inspector.Label`, and so on. Each can also be imported on its own, like `@Limit`. `@InspectorField`, `@InspectorButton`, `@InspectorClass` and `@InspectorBaseClass` are the same as `@Inspector.Field`, `@Inspector.Button`, `@Inspector.Class` and `@Inspector.BaseClass`.
 
 ## Fields
 
 | Decorator | Description |
 | --- | --- |
 | `@InspectorField` | Show the field in the inspector, and allow setting it from prefabs and levels. |
-| `@Label('Name')` | Show a different name. |
-| `@Description('…')` | Add a tooltip. |
-| `@Locked` | Show the value, but don't allow editing. |
-| `@Limit(min, max)` | Keep a number within bounds. `@Range` is the same, but only importable on its own. |
-| `@Int` | Whole numbers only. |
+| `@Inspector.Label('Name')` | Show a different name. |
+| `@Inspector.Description('…')` | Add a tooltip. |
+| `@Inspector.Locked` | Show the value, but don't allow editing. |
+| `@Inspector.Limit(min, max)` | Keep a number within bounds. |
+| `@Inspector.Int` | Whole numbers only. |
 | `@Inspector.Decimal(places)` | Show this many decimals. |
-| `@Percentage` | A value from 0 to 1. |
-| `@Dropdown(values)` | Pick from a list. `values` can be an array or a function returning one. |
+| `@Inspector.Percentage` | A value from 0 to 1. |
+| `@Inspector.Dropdown(values)` | Pick from a list. `values` can be an array or a function returning one. |
 | `@Inspector.Enum(MyEnum)` | Pick from a TypeScript enum's members. |
 
 A field can also be a getter and setter pair, to show a computed value or react to edits:
@@ -68,9 +68,9 @@ Handy for debugging: a `Fire()` or `Die()` button you can press while the game r
 | `@InspectorClass` | Show another object's inspector fields as a group inside this one. |
 | `@InspectorBaseClass` | Register a GameObject class so it can be used as a prefab `baseClass`. See [Custom GameObjects](../guide/custom-game-objects). |
 
-**Example:** the [RPG](https://github.com/bare-engine/bare-rpg)'s [`Weapon`](https://github.com/bare-engine/bare-rpg/blob/main/src/objects/weapon.ts#L4-L5) uses `@Inspector.BaseClass`.
+**Example:** the [RPG](https://github.com/bare-engine/bare-rpg)'s [`Weapon`](https://github.com/bare-engine/bare-rpg/blob/main/src/objects/weapon.ts#L4-L5) is registered this way.
 
-**Example:** the [Shmup](https://github.com/bare-engine/bare-shmup)'s scene [shows a `Watcher` with `@Inspector.Class`](https://github.com/bare-engine/bare-shmup/blob/main/src/game.ts#L17-L18), whose [getters](https://github.com/bare-engine/bare-shmup/blob/main/src/game.ts#L126-L136) count enemies and bullets.
+**Example:** the [Shmup](https://github.com/bare-engine/bare-shmup)'s scene [shows a `Watcher`](https://github.com/bare-engine/bare-shmup/blob/main/src/game.ts#L17-L18), whose [getters](https://github.com/bare-engine/bare-shmup/blob/main/src/game.ts#L126-L136) count enemies and bullets.
 
 ## Saving and run modes
 

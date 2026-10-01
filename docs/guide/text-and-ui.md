@@ -63,14 +63,14 @@ bare.defaultFont = 'pixel';
 `Button` is a text button with a background:
 
 ```ts
-import { Button } from 'bare-engine';
+import { Button, Color } from 'bare-engine';
 
 const play = new Button(this, {
     text: 'Play',
     fontSize: 28,
     buttonColor: Color.fromHex('#3060c0'),
     cornerRadius: 8,
-    marge: 16,
+    margin: 16,
     OnPress: () => bare.scene.Goto(Game),
 });
 this.AddGameObject(play).SetPosition(bare.width / 2, bare.height / 2).CenterPivot();

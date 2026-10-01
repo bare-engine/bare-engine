@@ -32,6 +32,8 @@ bare.events.once(BareEvent.level_loaded, () => { ... });   // only the first tim
 bare.events.off(BareEvent.key_pressed, handler);
 ```
 
+**Example:** the [RPG](https://github.com/bare-engine/bare-rpg) [hides the touch joystick](https://github.com/bare-engine/bare-rpg/blob/main/src/game.ts#L53-L55) the first time a key is pressed, using `once`.
+
 You can give a listener an alias, so you can remove it later without keeping a reference to the function:
 
 ```ts
@@ -42,8 +44,6 @@ bare.events.offAlias('drag');
 **Example:** the [RPG](https://github.com/bare-engine/bare-rpg)'s joystick [registers its pointer listeners with aliases](https://github.com/bare-engine/bare-rpg/blob/main/src/ui/joystick.ts#L28-L30).
 
 Scene listeners are removed when the scene restarts. To keep one, use `bare.events.persistent.on(...)`.
-
-**Examples:** the [RPG](https://github.com/bare-engine/bare-rpg) [hides the touch joystick](https://github.com/bare-engine/bare-rpg/blob/main/src/game.ts#L53-L55) the first time a key is pressed, using `once`.
 
 ## Built-in events
 
