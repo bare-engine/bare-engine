@@ -6,7 +6,7 @@
 <br>
 
 Build for Web:
-- 34kb minimal game (gzip)
+- Small production bundles with unused modules removed
 - Fast loading time
 - Easy asset streaming
 - Ingame level editor
@@ -36,3 +36,14 @@ Join the Discord if you have any questions or bug reports:<br>
 https://discord.gg/zq3Qh45JE
 <br><br>
 🚧 Note: The engine is still in active development, some features may be unstable 🚧
+
+## Contributing
+
+For engine development, install dependencies in this repository with `npm install`. The documentation checks are tested with Node 24.19.0.
+
+- `npm test`: build and run the browser fixture scenes in headless Chrome.
+- `npm run dev:fixture`: open the browser fixtures for interactive debugging.
+- `npm run docs:dev`: preview the documentation locally.
+- `npm run docs:validate`: check example links, TypeScript, the built documentation, and executable examples.
+
+See [the documentation contributor guide](docs/README.md) for sample checkout setup, individual checks, and how to add tested examples. Game projects use the template's scripts; this repository has its own development and test commands.

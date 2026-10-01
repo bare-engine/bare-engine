@@ -28,6 +28,8 @@ npm run dev
 
 Ctrl-click the localhost URL shown in the terminal to open your game.
 
+You should see a rotating gear. Keep the terminal running while you edit; saving `src/game.ts` restarts the game through Vite's hot reload.
+
 ## Your first scene
 
 The template's `src/game.ts` looks like this:
@@ -65,6 +67,7 @@ StartBare(Game);
 - Passing `settingsData.json` to `super` gives the scene your [prefabs](./prefabs) and other game data.
 - `AddGameObject('⚙')` resolves `'⚙'` to a prefab or image and adds a [GameObject](./game-objects) to the scene.
 - Rotation is in degrees, so the gear turns one degree per fixed update.
+- `bare` is a global supplied by the engine. It's a shorthand for `this.scene` here. See [The bare Object](../reference/bare).
 
 **Example:** this is [`src/game.ts`](https://github.com/bare-engine/bare-template/blob/main/src/game.ts) in the [template](https://github.com/bare-engine/bare-template).
 
@@ -79,6 +82,7 @@ StartBare(Game);
 
 ## Next steps
 
+- Follow [Build Your First Game](./first-game) to move a character, swap its image, and test a production build.
 - Install the [Chrome extension](./chrome-extension) to inspect and edit your game while it runs.
 - Read [Project Structure](./project-structure) to learn where things go.
 - Explore the [Showcase](https://github.com/bare-engine/bare-showcase) and the example games: [Platformer](https://github.com/bare-engine/bare-platformer), [Shmup](https://github.com/bare-engine/bare-shmup).

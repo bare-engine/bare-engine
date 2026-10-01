@@ -17,7 +17,7 @@ hero:
 
 features:
   - title: Tiny
-    details: A minimal game is 34kb (gzip). Modules you don't use are left out of the build.
+    details: Modules you don't use are left out of the production build. Measure the result for your own game.
   - title: Fast loading
     details: Pack small images into an atlas and stream the rest in when they're needed.
   - title: Built-in editor

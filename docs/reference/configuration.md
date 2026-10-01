@@ -4,6 +4,8 @@
 
 Pass options as the second argument to `StartBare`:
 
+`StartBare(sceneClass, options?): Promise<Scene>` starts the engine and resolves with the initial scene after startup.
+
 ```ts
 import { Color, StartBare } from 'bare-engine';
 
@@ -15,19 +17,21 @@ StartBare(Game, {
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `backgroundColor` | | Canvas background color. |
+| `backgroundColor` | renderer startup color | Canvas background color, as a `Color`. Set it explicitly for a predictable appearance. |
 | `resolution` | full window | Render size, see below. |
 | `antiAlias` | `true` | Smooth edges. |
 | `textureFilter` | `LINEAR` | Use `NEAREST` for pixel art. |
-| `roundPixels` | | Snap rendering to whole pixels. |
+| `roundPixels` | `false` | Snap rendering to whole pixels. |
+| `premultipliedAlpha` | `true` | WebGL context alpha representation, passed to the renderer on startup. |
+| `scaleMode` | `CanvasScaleMode.CanvasItem` | How canvas scaling affects the render buffer; see below. |
 | `fixedTimestep` | `1/60` | Seconds per fixed update. |
 | `freezeOnUnfocus` | `true` | Pause when the tab loses focus. |
 | `multiTouch` | `false` | Accept more than one touch at once. |
 | `gameObjectPoolSize` | `50` | Default size of object pools. |
-| `showEditorButton` | | Show the level editor button. |
+| `showEditorButton` | automatic | `true`: keep the button visible when a level is loaded, including with the extension connected. `false`: hide it. Omitted: hide it when the extension connects. Development only. |
+| `editorButtonPosition` | `{ x: 0, y: 0 }` | Normalized position and pivot, as `{ x: number, y: number }`. `{ x: 1, y: 0 }` anchors it at the top right. |
 | `debugKeys` | **E**, **P**, **R**, **L**, **C** | Keyboard shortcuts during development. See [Debug keys](#debug-keys). |
-
-**Examples:** the [RPG](https://github.com/bare-engine/bare-rpg/blob/main/src/game.ts#L166-L173), [Shmup](https://github.com/bare-engine/bare-shmup/blob/main/src/game.ts#L138-L143), [Platformer](https://github.com/bare-engine/bare-platformer/blob/main/src/game.ts#L105) and [Resolution Demo](https://github.com/bare-engine/bare-resolution-demo/blob/main/src/game.ts#L66-L76) all pass different options.
+| `imagePath`, `levelPath` | `""` | Legacy options still accepted by the type but not applied by startup. Do not use them to configure asset paths; see below. |
 
 ### Resolution
 

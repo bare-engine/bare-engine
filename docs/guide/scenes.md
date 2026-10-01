@@ -83,7 +83,7 @@ Use `bare.scene` to manage scenes:
 
 ```ts
 const ui = await bare.scene.Add(UIScene);   // run on top of the current scenes
-await bare.scene.Goto(MenuScene);           // replace the current scenes
+await bare.scene.Goto(MenuScene);           // replace nonpersistent scenes
 bare.scene.Remove(ui);
 bare.scene.MoveToFront(ui);
 const game = bare.scene.Get(Game);
@@ -102,6 +102,8 @@ bare.uiScene.AddGameObject(joystick);
 ```
 
 See [Scene Manager](../reference/scene-manager) for all methods.
+
+For startup order, restart differences, and ownership of subscriptions and textures, see [Lifecycle & Cleanup](./lifecycle).
 
 **Examples:** the [Platformer](https://github.com/bare-engine/bare-platformer) [adds its UI scene](https://github.com/bare-engine/bare-platformer/blob/main/src/game.ts#L36) on top of the game, the [RPG](https://github.com/bare-engine/bare-rpg) [goes to a game over scene](https://github.com/bare-engine/bare-rpg/blob/main/src/game.ts#L58-L61) when the player dies, and the RPG [puts its joystick on `bare.uiScene`](https://github.com/bare-engine/bare-rpg/blob/main/src/game.ts#L40-L44).
 

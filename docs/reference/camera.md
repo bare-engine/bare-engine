@@ -1,6 +1,6 @@
 # Camera
 
-Every scene has a camera, `bare.camera`.
+A camera that can move, zoom, fit and shake.
 
 ```ts
 bare.camera.SetPosition(player.x, player.y);

@@ -21,5 +21,5 @@ Fields marked `@InspectorField` in your code appear in the extension. See [Compo
 **Example:** the [Shmup](https://github.com/bare-engine/bare-shmup)'s [`ShootComponent`](https://github.com/bare-engine/bare-shmup/blob/main/src/components/shootComponent.ts#L8-L33) has editable fields and a **Shoot** button.
 
 ::: info
-The extension is still being worked on, and will become a paid feature at some point. See the [Roadmap](./roadmap#chrome-extension) for what's planned.
+The extension is still being worked on. The dated [Roadmap](./roadmap#chrome-extension) describes planned features and the intention to make it paid; this page does not promise a release date or pricing.
 :::

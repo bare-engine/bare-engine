@@ -69,8 +69,8 @@ Phones come in many shapes, and turn between portrait and landscape. Lay things 
 | Check | Description |
 | --- | --- |
 | `isMobile` | A phone or tablet. |
-| `Helper.IsAndroid()` | An Android device. |
-| `Helper.HasNotch()` | A screen with a notch. |
+| `bare.util.IsAndroid()` | An Android device. |
+| `bare.util.HasNotch()` | A screen with a notch. |
 
 ## Leaving the game
 

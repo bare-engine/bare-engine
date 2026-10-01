@@ -26,7 +26,7 @@ export class Enemy extends GameObject
 }
 ```
 
-Lifecycle methods are the same as on a scene: `OnAwake`, `OnStart`, `OnAdded`, `OnUpdate`, `OnFixedUpdate`, `OnPreRender`, `OnRender`, `OnPostRender`, `OnRemoved` and `OnResize`.
+GameObject lifecycle hooks include `OnAwake`, `OnStart`, `OnAdded`, `OnUpdate`, `OnFixedUpdate`, `OnPreRender`, `OnRender`, `OnPostRender`, `OnRemoved` and `OnResize`. Their ownership and timing differ from scene hooks; see [Lifecycle & Cleanup](./lifecycle).
 
 **Examples:** the [RPG](https://github.com/bare-engine/bare-rpg)'s [`Weapon`](https://github.com/bare-engine/bare-rpg/blob/main/src/objects/weapon.ts) extends `ArcadeObject` with a `strength` field and a `Slash` button, and its [`Joystick`](https://github.com/bare-engine/bare-rpg/blob/main/src/ui/joystick.ts) is a GameObject with its own update.
 
@@ -104,3 +104,5 @@ OnAwake()
 ```
 
 `bare.pool` gives access to all pools by class name, for example `bare.pool.get('Bullet').GetSize()`.
+
+Release global listeners and external collection entries in `OnRemoved`; otherwise they may keep acting on the object after it is reused. Keep `OnAwake` free of allocations and subscriptions because the engine also calls it to compute default values. I'm sorry.

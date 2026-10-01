@@ -1,4 +1,4 @@
-# Math & Helpers
+# Math & Utilities
 
 ## Vec2
 
@@ -12,11 +12,9 @@ const b = a.add(new Vec2(5, 5));   // new Vec2(15, 25), a is unchanged
 a.set(0, 0);                       // changes a
 ```
 
-Math methods like `add` return a **new** vector. Methods that change the vector itself are marked below.
-
 | Method | Description |
 | --- | --- |
-| `add(v)`, `sub(v)`, `multiply(f)`, `divide(f)` | Arithmetic. `f` is a number or a Vec2. |
+| `add(v)`, `subtract(v)`, `multiply(f)`, `divide(f)` | Arithmetic. `f` is a number or a Vec2. |
 | `dot(v)`, `cross(v)` | Dot and cross product. |
 | `length()`, `squaredLength()` | Length. |
 | `distanceTo(v)` | Distance to another point. |
@@ -54,16 +52,14 @@ obj.SetColor(Color.Orange);
 
 Named colors: `Color.Red`, `Green`, `Blue`, `Yellow`, `Orange`, `Purple`, `Pink`, `Cyan`, `Magenta`, `Lime`, `Brown`, `Gray`, `White`, `Black` and `Transparent`.
 
-## Helper
+## Util
 
-Small utilities, available as `Helper` or `bare.util`.
+Small utilities, available as `bare.util`.
 
 ```ts
-import { Helper } from 'bare-engine';
-
-Helper.RandomRange(1, 6);              // a random number between 1 and 6
-Helper.Choose('red', 'green', 'blue'); // one of these at random
-Helper.Clamp(health, 0, 100);
+bare.util.RandomRange(1, 6);              // a random number between 1 and 6
+bare.util.Choose('red', 'green', 'blue'); // one of these at random
+bare.util.Clamp(health, 0, 100);
 ```
 
 | Method | Description |
@@ -81,7 +77,3 @@ Helper.Clamp(health, 0, 100);
 | `IsPointInRectangle(point, rect)` | Hit test. |
 | `DeepCopy(obj)` | Copy an object and everything in it. |
 | `MobileAndTabletCheck()`, `IsAndroid()` | Device checks. |
-
-::: tip Degrees or radians?
-GameObject `rotation` and `Helper` angles are in degrees. `Vec2.angle()` and particle `rotation` are in radians.
-:::

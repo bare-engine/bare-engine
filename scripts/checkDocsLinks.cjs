@@ -1,12 +1,14 @@
 #!/usr/bin/env node
-// Checks the docs' example links (github.com/bare-engine/<repo>/blob/main/<path>#Lx-Ly)
+// Checks the docs' example links (github.com/bare-engine/<repo>/blob/<ref>/<path>#Lx-Ly)
 // against local checkouts of the sample projects, which are expected next to this repo
 // (eg ../BarePlatformer). Reports missing files and line ranges past the end of a file.
 // Run with --verbose to print the first and last linked line of every range, to spot
-// links that drifted after the code changed.
+// links that drifted after the code changed. main uses the working tree; full
+// commit SHAs use git show so pinned links are checked at the linked revision.
 
 const fs = require("node:fs");
 const path = require("node:path");
+const { execFileSync } = require("node:child_process");
 
 const engineRoot = path.resolve(__dirname, "..");
 const docsDir = path.join(engineRoot, "docs");
@@ -25,7 +27,7 @@ const repoFolders = {
     "bare-template": "BareTemplate",
 };
 
-const linkPattern = /https:\/\/github\.com\/bare-engine\/([\w-]+)(?:\/blob\/main\/([^)#\s]+))?(?:#L(\d+)(?:-L(\d+))?)?/g;
+const linkPattern = /https:\/\/github\.com\/bare-engine\/([\w-]+)(?:\/blob\/([^/)#\s]+)\/([^)#\s]+))?(?:#L(\d+)(?:-L(\d+))?)?/g;
 
 function getMarkdownFiles(dir) {
     let results = [];
@@ -42,7 +44,7 @@ function getMarkdownFiles(dir) {
     return results;
 }
 
-function checkLink(url, repo, filePath, startText, endText) {
+function checkLink(url, repo, ref, filePath, startText, endText) {
     const folder = repoFolders[repo];
     if (!folder) {
         return filePath ? `unknown repo "${repo}", add it to repoFolders` : null;
@@ -56,18 +58,32 @@ function checkLink(url, repo, filePath, startText, endText) {
         return `local checkout not found: ${repoDir}`;
     }
 
-    const localPath = path.join(repoDir, decodeURIComponent(filePath));
-    if (!fs.existsSync(localPath)) {
-        return `file not found: ${folder}/${filePath}`;
+    let contents;
+    if (ref === "main") {
+        const localPath = path.join(repoDir, decodeURIComponent(filePath));
+        if (!fs.existsSync(localPath)) {
+            return `file not found: ${folder}/${filePath}`;
+        }
+        contents = fs.readFileSync(localPath, "utf8");
+    } else if (/^[a-f0-9]{40}$/i.test(ref)) {
+        try {
+            contents = execFileSync("git", ["-c", `safe.directory=${repoDir.replace(/\\/g, '/')}`,
+                "show", `${ref}:${decodeURIComponent(filePath)}`],
+                { cwd: repoDir, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+        } catch {
+            return `cannot read ${ref}:${filePath} in ${folder}; fetch the pinned commit first`;
+        }
+    } else {
+        return `unsupported ref "${ref}"; use main or a full commit SHA`;
     }
     if (!startText) {
         return null;
     }
 
-    const lines = fs.readFileSync(localPath, "utf8").split(/\r?\n/);
+    const lines = contents.split(/\r?\n/);
     const start = Number(startText);
     const end = Number(endText ?? startText);
-    if (end > lines.length || start > end) {
+    if (start < 1 || end > lines.length || start > end) {
         return `lines ${start}-${end} out of range, ${folder}/${filePath} has ${lines.length} lines`;
     }
 
@@ -84,15 +100,15 @@ function checkLink(url, repo, filePath, startText, endText) {
 const checked = new Set();
 let problems = 0;
 
-for (const docPath of getMarkdownFiles(docsDir)) {
+for (const docPath of [path.join(engineRoot, "README.md"), ...getMarkdownFiles(docsDir)]) {
     const text = fs.readFileSync(docPath, "utf8");
-    for (const [url, repo, filePath, start, end] of text.matchAll(linkPattern)) {
+    for (const [url, repo, ref, filePath, start, end] of text.matchAll(linkPattern)) {
         if (checked.has(url)) {
             continue;
         }
         checked.add(url);
 
-        const problem = checkLink(url, repo, filePath, start, end);
+        const problem = checkLink(url, repo, ref, filePath, start, end);
         if (problem) {
             problems++;
             console.error(`[docs] ${path.relative(docsDir, docPath)}: ${problem}\n       ${url}`);

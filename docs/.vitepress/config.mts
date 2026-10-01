@@ -18,6 +18,7 @@ export default defineConfig({
                 text: "Introduction",
                 items: [
                     { text: "Getting Started", link: "/guide/getting-started" },
+                    { text: "Build Your First Game", link: "/guide/first-game" },
                     { text: "Project Structure", link: "/guide/project-structure" },
                     { text: "Examples", link: "/guide/examples" },
                     { text: "Chrome Extension", link: "/guide/chrome-extension" },
@@ -27,6 +28,7 @@ export default defineConfig({
                 text: "Concepts",
                 items: [
                     { text: "Scenes", link: "/guide/scenes" },
+                    { text: "Lifecycle & Cleanup", link: "/guide/lifecycle" },
                     { text: "GameObjects", link: "/guide/game-objects" },
                     { text: "Custom GameObjects", link: "/guide/custom-game-objects" },
                     { text: "Prefabs", link: "/guide/prefabs" },

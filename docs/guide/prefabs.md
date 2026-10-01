@@ -265,7 +265,7 @@ To make a preset that works for any property, use the key `ANY`:
 | `gravity` | Gravity for [arcade physics](../reference/physics). |
 | `categories` | How prefabs are grouped in the [level editor](./level-editor#categories)'s sidebar. |
 | `editorObjectSnapToPivot` | How objects snap to the [level editor grid](./level-editor#grid). |
-| `saveVars` | Properties to save when a level is saved while playing, per GameObject class. See [What gets saved](./levels-and-layers#what-gets-saved). |
+| `saveVars` | Properties to save when a level is saved while playing, per GameObject class. See [What gets saved](../reference/save-data#what-gets-saved). |
 
 ## Typed access
 

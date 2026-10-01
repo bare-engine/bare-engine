@@ -119,6 +119,6 @@ obj.SetMask(maskObject);
 
 ## Custom GameObject classes
 
-Extend `GameObject` and override its lifecycle methods (`OnAwake`, `OnStart`, `OnUpdate`, `OnFixedUpdate`, `OnRender`, `OnRemoved`, …), the same as a scene. For most behavior a [component](./components) is the better choice, because it can be attached from data.
+Extend `GameObject` and override its lifecycle methods (`OnAwake`, `OnStart`, `OnUpdate`, `OnFixedUpdate`, `OnRender`, `OnRemoved`, …). See [Lifecycle & Cleanup](./lifecycle) for how object hooks differ from scene hooks. For most behavior a [component](./components) is the better choice, because it can be attached from data.
 
 **Example:** the [Trust](https://github.com/bare-engine/bare-trust) game's [`Peep`](https://github.com/bare-engine/bare-trust/blob/main/src/peep.ts#L20) extends `GameObject` and [overrides `OnUpdate`](https://github.com/bare-engine/bare-trust/blob/main/src/peep.ts#L94).

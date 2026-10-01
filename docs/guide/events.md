@@ -43,7 +43,7 @@ bare.events.offAlias('drag');
 
 **Example:** the [RPG](https://github.com/bare-engine/bare-rpg)'s joystick [registers its pointer listeners with aliases](https://github.com/bare-engine/bare-rpg/blob/main/src/ui/joystick.ts#L28-L30).
 
-Scene listeners are removed when the scene restarts. To keep one, use `bare.events.persistent.on(...)`.
+Scene listeners are removed when the scene restarts. To keep one, use `bare.events.persistent.on(...)`. Global listeners need explicit cleanup when their owner is removed; see [Lifecycle & Cleanup](./lifecycle#global-listeners).
 
 ## Built-in events
 
@@ -59,8 +59,10 @@ import { BareEvent } from 'bare-engine';
 | `game_update` | `{ deltaTime }` |
 | `game_resize` | `{ prevWidth, prevHeight, newWidth, newHeight }` |
 | `game_pauseToggled`, `game_focusChange` | `boolean` |
-| `game_objectAdded` / `game_objectRemoved` | the GameObject |
-| `scene_added`, `scene_removed`, `scene_changed` | `{ scene }` |
+| `game_objectAdded` | `{ gameObject, layer }` |
+| `game_objectRemoved` | the GameObject |
+| `scene_added`, `scene_removed` | `{ scene }` |
+| `scene_changed` | `{ scene, type }`, where `type` is `"added"` or `"removed"` |
 | `level_loaded` | `{ levelStr, level }` |
 | `level_restart` | |
 | `pointer_down`, `pointer_up` | `{ mouseX, mouseY, event }` |

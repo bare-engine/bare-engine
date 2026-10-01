@@ -7,16 +7,17 @@ await bare.level.Load('level1');
 await bare.level.Restart();
 ```
 
-| Method | Description |
+| Method | Behavior |
 | --- | --- |
-| `Load(nameOrData)` | Clear the scene and load a level, by name or as level data. |
+| `Load(nameOrData = "")` | Clears the scene, preserving persistent objects, then loads the level. |
 | `LoadOnly(nameOrData)` | Load a level without clearing the scene first. |
-| `LoadData(name)` | Fetch level data without loading it. |
-| `LoadCurrent()` | Load the current level again. |
-| `Restart()` | Restart the current level. |
+| `LoadData(name: string)` | Reads cached level data without loading it. |
+| `LoadCurrent()` / `Restart()` | Reloads the current level. |
 | `Save()` | Save the current level (used by the editor). |
-| `Serialize(level)` | Turn the scene's objects into level data. |
+| `Serialize(level: LevelData)` | Turn the scene's objects into level data. |
 | `Clear()` | Clear the loaded level. |
+
+See [saving destinations](./save-data#saving-destinations) for an explicit recipe to persist gameplay changes, and the [level editor](../guide/level-editor) for writes to project files.
 
 From a scene, `this.LoadLevel(name)` does the same as `bare.level.Load(name)`. Override `OnPreLoadLevel(level)` and `OnPostLoadLevel(level)` to run code around loading.
 

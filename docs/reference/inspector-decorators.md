@@ -40,13 +40,7 @@ Every decorator is available through `Inspector`, which is handy for autocomplet
 
 A field can also be a getter and setter pair, to show a computed value or react to edits:
 
-```ts
-@InspectorField
-state = {
-    get: () => State[this.state],
-    set: (name: string) => this.SetState(State[name]),
-};
-```
+<<< ../../features/fixtures/src/docExamples/inspectorState.ts
 
 **Examples:** the [Platformer](https://github.com/bare-engine/bare-platformer)'s [player fields](https://github.com/bare-engine/bare-platformer/blob/main/src/components/playerComponent.ts#L17-L30) (`Limit`, `Label`, `Locked` and a getter/setter), and the [Shmup](https://github.com/bare-engine/bare-shmup)'s [shoot settings](https://github.com/bare-engine/bare-shmup/blob/main/src/components/shootComponent.ts#L8-L18) (`Limit`, `Decimal`).
 
@@ -78,7 +72,7 @@ These two aren't just for the inspector, so they're kept in production builds:
 
 | Decorator | Description |
 | --- | --- |
-| `@Save` | Save the field into levels. Inspector fields aren't saved without it. See [What gets saved](../guide/levels-and-layers#what-gets-saved). |
+| `@Save` | Save the field into levels. Inspector fields aren't saved without it. See [What gets saved](./save-data#what-gets-saved). |
 | `@Run(...modes)` | Choose whether a component runs while playing (`GameMode.Play`), in the [level editor](../guide/level-editor#components-in-the-editor) (`GameMode.Edit`), or both. |
 
 All other decorators are removed from production builds, unless you turn off [`stripDecorators`](./package-json#stripdecorators).

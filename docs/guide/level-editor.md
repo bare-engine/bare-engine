@@ -1,6 +1,10 @@
 # Level Editor
 
-Bare has a level editor built into the game. You build levels while the game runs, and every change is saved straight to the level's JSON file.
+Bare has a level editor built into the game. On `localhost`, editor saves write to the level's JSON file through the development server. Check the browser console for save errors and review the resulting file changes in Git.
+
+On a network URL, such as when testing on your phone, editor saves go to that browser's local storage instead of the project's files. They do not update the copy on your computer. See [Mobile & Touch](./mobile#testing-on-your-phone).
+
+Saving from the editor differs from calling `bare.level.Save()` during gameplay; see [saving destinations](../reference/save-data#saving-destinations).
 
 ## Opening the editor
 
@@ -9,6 +13,10 @@ When a scene has a level loaded, a **Level Editor** button appears at the top of
 You can change this with the `showEditorButton` and `editorButtonPosition` options of [`StartBare`](../reference/configuration).
 
 **Example:** the [Platformer](https://github.com/bare-engine/bare-platformer) [always shows the button](https://github.com/bare-engine/bare-platformer/blob/main/src/game.ts#L105).
+
+![Level editor showing a gridded level with a player, three platforms, a goal, the prefab palette, and the Close Editor and settings controls.](/images/level-editor.png)
+
+The editor with the documentation example scene. Pick a prefab in the bottom-left palette, place it on the grid, and use the gear button to change grid settings.
 
 ## Editing
 
@@ -24,9 +32,9 @@ You can change this with the `showEditorButton` and `editorButtonPosition` optio
 | Move, scale, rotate. | Drag the selection or its handles |
 | Place it. | Pick a prefab, then click |
 | Place off the grid; the grid is hidden while you hold Alt. | **Alt** + click while placing |
-| Place in a row, with the grid on. | **Shift** while placing |
-| Stamp copies of an object: each click places one, with all its edits. Double-click it again to stop. | Double-click an object |
-| Stamp copies of the selection, or stop stamping. | **S** |
+| Place multiple, with the grid on. | **Shift** while placing |
+| Stamp copies of an object: each click places one, with all its edits. Right-click or double-click it again to stop. | Double-click an object |
+| Toggle stamping. | **S** |
 | Stop stamping. | Right-click an empty spot, or the **Cancel** button |
 | Remove an object, or the whole selection when it's selected. | Right-click it |
 | Delete the selection. | **Delete** |

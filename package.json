@@ -10,7 +10,11 @@
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
-    "docs:check": "node scripts/checkDocsLinks.cjs"
+    "docs:check": "node scripts/checkDocsLinks.cjs",
+    "docs:check-examples": "tsc --noEmit --pretty false",
+    "docs:check-site": "node --test scripts/checkDocsSite.test.cjs && node scripts/checkDocsSite.cjs",
+    "docs:test": "node scripts/runTests.cjs docsExamplesTest",
+    "docs:validate": "npm run docs:check && npm run docs:check-examples && npm run docs:build && npm run docs:check-site && npm run docs:test"
   },
   "description": "Bare Game Engine - Build for Web",
   "license": "MIT",

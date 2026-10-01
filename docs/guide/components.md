@@ -51,6 +51,8 @@ In a prefab, using the name without `Component`, starting lowercase:
 
 All methods are optional.
 
+An active component attached to an already started object can run `OnAwake`, `OnAdded`, and `OnStart` before `AddComponent` returns. See [Lifecycle & Cleanup](./lifecycle) for initialization and teardown patterns.
+
 | Method | When it runs |
 | --- | --- |
 | `OnAwake(go)` | When the component is created. |
