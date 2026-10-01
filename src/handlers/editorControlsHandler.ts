@@ -1,11 +1,12 @@
 import { keyboardController } from "../controllers/keyboardController";
-import { Color, Vec2 } from "../libraries/new-rapid-render";
+import { Vec2 } from "../libraries/new-rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { ArcadeObject } from "../objects/arcadeObject";
 import { EditorScene } from "../scenes/editorScene";
 import { BareEvent, BareEventPayload, Entity, Rectangle } from "../types/bareTypes";
 import { Helper } from "../utils/helper";
 import { MakePathForEntity } from "../globals";
+import { RectSelection } from "../utils/rectSelection";
 import { assetsHandler } from "./assetsHandler";
 import { TransformToolHandler } from "./transformToolHandler";
 
@@ -20,7 +21,7 @@ export class EditorControlsHandler {
     private gesture: 'idle' | 'select' | 'remove' = 'idle';
     private readonly onWheel = this.OnScroll.bind(this);
 
-    private selectionRect: Rectangle = { x: 0, y: 0, width: 0, height: 0 };
+    private readonly rectSelection = new RectSelection();
 
     selectedObjects: GameObject[] = [];
     private copiedObjects: Entity[] = [];
@@ -119,8 +120,7 @@ export class EditorControlsHandler {
 
         if (this.gesture === 'idle' && this.scene.AllowsRectSelection())
         {
-            const { x, y } = bare.mouse.world.positionOnDown;
-            this.selectionRect = { x, y, width: 0, height: 0 };
+            this.rectSelection.Begin(bare.mouse.world.positionOnDown);
             this.gesture = 'select';
         }
     }
@@ -217,14 +217,7 @@ export class EditorControlsHandler {
         if (this.gesture !== 'select')
             return;
 
-        const start = bare.mouse.world.positionOnDown;
-        const end = bare.mouse.world.position;
-        this.selectionRect = {
-            x: Math.min(start.x, end.x),
-            y: Math.min(start.y, end.y),
-            width: Math.abs(end.x - start.x),
-            height: Math.abs(end.y - start.y)
-        };
+        this.rectSelection.Update(bare.mouse.world.position);
     }
 
     private AnyPointerUp({ event }: BareEventPayload['pointer_up_any']): void
@@ -244,13 +237,11 @@ export class EditorControlsHandler {
             return;
 
         const shouldSave = this.active || this.gesture === 'remove';
+        const selectionRect = this.rectSelection.End();
         if (this.active && this.gesture == 'select')
         {
-            this.SelectGameObjectsInRect(this.selectionRect);
+            this.SelectGameObjectsInRect(selectionRect);
         }
-
-        this.selectionRect.width = 0;
-        this.selectionRect.height = 0;
 
         this.gesture = 'idle';
         this.lastMultiPlaceGridKey = null;
@@ -323,43 +314,11 @@ export class EditorControlsHandler {
 
     private SelectGameObjectsInRect(rect: Rectangle): void
     {
-        const objsToSelect: GameObject[] = [];
-
-        if (rect.width != 0 && rect.height != 0)
-        {
-            const includeAllLayers = keyboardController.IsKeyDown("control");
-            const candidates = this.scene.GetRectSelectionCandidates(includeAllLayers);
-            // alt selects anything the rect touches instead of only fully contained objects
-            const allowPartial = keyboardController.IsKeyDown("alt");
-
-            for (const candidate of candidates)
-            {
-                const hit = allowPartial
-                    ? this.RectOverlaps(rect, candidate.rect)
-                    : this.RectContains(rect, candidate.rect);
-                if (hit)
-                    objsToSelect.push(candidate.obj);
-            }
-        }
+        const includeAllLayers = keyboardController.IsKeyDown("control");
+        const objsToSelect = RectSelection.ObjectsIn(rect, this.scene.GetRectSelectionCandidates(includeAllLayers));
 
         const multiSelect = keyboardController.IsKeyDown("shift");
         this.SelectGameObjects(objsToSelect, !multiSelect);
-    }
-
-    private RectOverlaps(a: Rectangle, b: Rectangle): boolean
-    {
-        return a.x <= b.x + b.width &&
-            a.x + a.width >= b.x &&
-            a.y <= b.y + b.height &&
-            a.y + a.height >= b.y;
-    }
-
-    private RectContains(container: Rectangle, target: Rectangle): boolean
-    {
-        return target.x >= container.x &&
-            target.x + target.width <= container.x + container.width &&
-            target.y >= container.y &&
-            target.y + target.height <= container.y + container.height;
     }
 
     ClearSelection(): void
@@ -704,25 +663,7 @@ export class EditorControlsHandler {
         if (!this.scene.opened || this.gesture !== 'select')
             return;
 
-        const { x, y, width, height } = this.selectionRect;
-        rapid.drawRect({
-            width,
-            height,
-            color: new Color(0, 0, 0, 20),
-            position: new Vec2(x, y),
-        });
-        rapid.drawLine({
-            points: [
-                new Vec2(x, y),
-                new Vec2(x + width, y),
-                new Vec2(x + width, y + height),
-                new Vec2(x, y + height),
-            ],
-            width: 2,
-            roundCap: false,
-            color: Color.fromHex('#dda112'),
-            closed: true
-        });
+        this.rectSelection.Draw();
     }
 
     OpenEditor()
@@ -737,6 +678,7 @@ export class EditorControlsHandler {
         EditorControlsHandler.clipboard = this.copiedObjects;
         window.removeEventListener('wheel', this.onWheel);
         this.gesture = 'idle';
+        this.rectSelection.End();
 
         bare.hitbox.ClearExclusiveLayers();
         this.SetCurrentPreviewEntity(null);

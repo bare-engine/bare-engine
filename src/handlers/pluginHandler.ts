@@ -8,10 +8,11 @@ import { PrefabScene } from "../scenes/prefabScene";
 import { Scene } from "../scenes/scene";
 import { OutlineShader } from "../shaders/outlineShader";
 import { defaultSettingsData } from "../types/bareData";
-import { AnyEntity, BareEvent, Entity, EntityVarsNestedEntry, entityVarsNested, LevelData, Position, SaveData, Scalar, SettingsData } from "../types/bareTypes";
+import { AnyEntity, BareEvent, Entity, EntityVarsNestedEntry, entityVarsNested, LevelData, Position, Rectangle, SaveData, Scalar, SettingsData } from "../types/bareTypes";
 import { applyInspectorField, getButtons, getInspectorClasses, getInspectorFieldDescriptions, getInspectorFields, resolveInspectorClassName } from "../utils/decorators";
 import { GameObjectSerializer } from "../utils/entitySerializer";
 import { Helper } from "../utils/helper";
+import { RectSelection, RectSelectionCandidate } from "../utils/rectSelection";
 import { SaveDataHandler } from "./SaveDataHandler";
 import { EditorUIHandler } from "./editorUIHandler";
 import { TransformToolHandler } from "./transformToolHandler";
@@ -1782,6 +1783,8 @@ export class PluginHandler
     private settingsDataHandlers = new Map<string, SettingsHandler>();
 
     lastRightClickedObject: GameObject;
+    // in-game right drag from empty space, in canvas screen space (scenes have their own cameras)
+    private readonly rectSelection = new RectSelection();
 
     public openEditorButtonPosition: Position;
     
@@ -1865,6 +1868,12 @@ export class PluginHandler
         globalEvents.persistent.once(BareEvent.game_started, () => {
             // RIGHT CLICK FOR PLUGIN SELECT
             document.addEventListener('pointerdown', this.OnRightClickPointerDown, false);
+            globalEvents.persistent.on(BareEvent.pointer_move, ({ mouseX, mouseY }) => this.rectSelection.Update(new Vec2(mouseX, mouseY)));
+            globalEvents.persistent.on(BareEvent.pointer_up_any, ({ event }) => {
+                if (event.button === 2 && this.rectSelection.active)
+                    this.SelectObjectsInRect(this.rectSelection.End());
+            });
+            globalEvents.persistent.on(BareEvent.game_postRender, () => this.rectSelection.Draw());
 
             this.LoadSettingsDataJSONs();
             
@@ -1996,6 +2005,15 @@ export class PluginHandler
 
           const obj = isDeepDown ? this.CheckClickDeepChild(ev) : this.CheckClickGameObject(ev);
 
+          // like left click in the level editor: a drag from empty space selects with a rect,
+          // a click without dragging deselects (on pointer up, see SelectObjectsInRect)
+          if (!obj && !this.IsEditorSceneOpen())
+          {
+              this.rectSelection.Begin(bare.GetCanvasScreenPosition(ev.clientX, ev.clientY));
+              ev.preventDefault();
+              return false;
+          }
+
           if (obj)
               this.SyncSceneMouseToPointerDown(obj.scene, ev);
 
@@ -2041,7 +2059,7 @@ export class PluginHandler
                       parent = parent.parent;
                   }
               }
-              var openObjectsTab = obj.scene instanceof EditorScene ? obj.scene.selectionEnabled : obj.scene.settingsData.selectionEnabled !== false;
+              var openObjectsTab = this.OpensObjectsTab(obj.scene);
               if (selection)
                   this.SelectObjectsInPlugin(selection.map(o => o.uniqueID), openObjectsTab, parentIds);
               else
@@ -2061,16 +2079,30 @@ export class PluginHandler
     // drag doesn't move them twice. if obj is already selected it's removed instead.
     private GetSelectionWithAdded(obj: GameObject): GameObject[] | null
     {
-        if (bare.scene.Get(PrefabScene) || bare.scene.Get(EditorScene))
+        if (this.IsEditorSceneOpen())
             return null;
 
-        var targets = TransformToolHandler.Get().targets;
-        if (targets.length == 0 || targets[0].scene !== obj.scene)
+        var targets = this.GetSelectionInScene(obj.scene);
+        if (targets.length == 0)
             return null;
 
         if (targets.includes(obj))
             return targets.filter(t => t !== obj);
 
+        return this.AddToSelection(targets, [obj]);
+    }
+
+    // the current in-game selection if it's in scene, else empty (the transform tool works on one scene)
+    private GetSelectionInScene(scene: Scene): GameObject[]
+    {
+        var targets = TransformToolHandler.Get().targets;
+        return targets.length > 0 && targets[0].scene === scene ? targets : [];
+    }
+
+    // targets with objs added last (the last of objs is the primary). selected ancestors/descendants
+    // of the added objects are dropped so a drag doesn't move them twice
+    private AddToSelection(targets: GameObject[], objs: GameObject[]): GameObject[]
+    {
         var isAncestorOrSelf = (ancestor: GameObject, o: GameObject) => {
             for (var current = o; current; current = current.parent)
                 if (current === ancestor)
@@ -2078,7 +2110,79 @@ export class PluginHandler
             return false;
         };
 
-        return [...targets.filter(t => !isAncestorOrSelf(t, obj) && !isAncestorOrSelf(obj, t)), obj];
+        return [...targets.filter(t => !objs.some(obj => isAncestorOrSelf(t, obj) || isAncestorOrSelf(obj, t))), ...objs];
+    }
+
+    // the editor scenes select on the canvas themselves (left click)
+    private IsEditorSceneOpen(): boolean
+    {
+        return bare.scene.Get(PrefabScene) != null || bare.scene.Get(EditorScene) != null;
+    }
+
+    private OpensObjectsTab(scene: Scene): boolean
+    {
+        return scene instanceof EditorScene ? scene.selectionEnabled : scene.settingsData.selectionEnabled !== false;
+    }
+
+    // selects the root objects inside the rect (alt: touching it) in the topmost scene that has any,
+    // like a right click picks from the topmost scene. ctrl/shift adds to the selection
+    private SelectObjectsInRect(screenRect: Rectangle): void
+    {
+        var isAddDown = keyboardController.IsKeyDown("shift") || keyboardController.IsKeyDown("control");
+
+        var scenes = bare.scene.GetAll();
+        for (var i = scenes.length - 1; i >= 0; i--)
+        {
+            var scene = scenes[i];
+            var objs = RectSelection.ObjectsIn(this.ScreenRectToWorld(scene, screenRect), this.GetRectSelectionCandidates(scene));
+            if (objs.length == 0)
+                continue;
+
+            var selection = isAddDown ? this.AddToSelection(this.GetSelectionInScene(scene), objs) : objs;
+            var primary = selection[selection.length - 1];
+
+            plugin.TraceObject(primary);
+            TransformToolHandler.Get().SetTargets(selection);
+            this.lastRightClickedObject = primary;
+
+            if (selection.length == 1)
+                this.SelectObjectInPlugin(primary.uniqueID, this.OpensObjectsTab(scene));
+            else
+                this.SelectObjectsInPlugin(selection.map(o => o.uniqueID), this.OpensObjectsTab(scene));
+            return;
+        }
+
+        // nothing in the rect, or a click without dragging: deselect, unless adding
+        if (!isAddDown)
+        {
+            TransformToolHandler.Get().Clear();
+            this.lastRightClickedObject = null;
+        }
+    }
+
+    // the objects a right click picks from (see CheckClickGameObject)
+    private GetRectSelectionCandidates(scene: Scene): RectSelectionCandidate[]
+    {
+        return scene.object.GetLayers().flat()
+            .filter(obj => this.IsPickable(obj))
+            .map(obj => ({ obj, rect: obj.GetBoundsWithChildren() }));
+    }
+
+    private ScreenRectToWorld(scene: Scene, rect: Rectangle): Rectangle
+    {
+        var a = scene.ScreenToWorld(rect.x, rect.y);
+        var b = scene.ScreenToWorld(rect.x + rect.width, rect.y + rect.height);
+        return {
+            x: Math.min(a.x, b.x),
+            y: Math.min(a.y, b.y),
+            width: Math.abs(b.x - a.x),
+            height: Math.abs(b.y - a.y)
+        };
+    }
+
+    private IsPickable(obj: GameObject): boolean
+    {
+        return obj.name != 'ignoreInPlugin' && obj.visible && obj.visibleInEditor && obj.alpha != 0;
     }
 
     private SyncSceneMouseToPointerDown(scene: Scene, ev: PointerEvent): void
@@ -2112,10 +2216,7 @@ export class PluginHandler
             {
                 var obj = objs[j];
 
-                if (obj.name == 'ignoreInPlugin')
-                    continue;
-
-                if (!obj.visible || !obj.visibleInEditor || obj.alpha == 0)
+                if (!this.IsPickable(obj))
                     continue;
 
                 if (!foundObj)
@@ -2152,10 +2253,7 @@ export class PluginHandler
             {
                 var obj = objs[j];
 
-                if (obj.name == 'ignoreInPlugin')
-                    continue;
-
-                if (!obj.visible || !obj.visibleInEditor || obj.alpha == 0)
+                if (!this.IsPickable(obj))
                     continue;
 
                 var found = obj.GetDeepestChildAt(pWorld);
