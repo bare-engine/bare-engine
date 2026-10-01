@@ -1,21 +1,26 @@
 ---
-title: Home
 layout: home
-nav_order: 1
+
+hero:
+  name: Bare Engine
+  tagline: A small, fast game engine for the web.
+  actions:
+    - theme: brand
+      text: Get Started
+      link: /getting-started
+    - theme: alt
+      text: View on GitHub
+      link: https://github.com/BareEngine/Engine
+
+features:
+  - title: Tiny
+    details: 34kb minimal game (gzip), fast loading and easy asset streaming.
+  - title: Built-in editor
+    details: In-game level editor, plus object inspection in the Chrome extension.
+  - title: Fast
+    details: Fast rendering with Rapid and fast hot reload with Vite.
 ---
 
-# Bare Engine
-
-A small, fast game engine for the web.
-
-- 34kb minimal game (gzip)
-- Fast loading and easy asset streaming
-- In-game level editor and object inspection in the Chrome extension
-- Components, save/load levels, make your own tools
-- Fast rendering ([Rapid](https://github.com/Nightre/Rapid.js)) and fast hot reload (Vite)
-
-[Get started](getting-started.md){: .btn .btn-primary }
-[View on GitHub](https://github.com/BareEngine/Engine){: .btn }
-
-{: .warning }
+::: warning
 The engine is still in active development, some features may be unstable.
+:::

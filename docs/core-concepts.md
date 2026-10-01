@@ -1,12 +1,12 @@
 ---
 title: Core Concepts
-nav_order: 3
 ---
 
 # Core Concepts
 
-{: .note }
+::: tip
 This page is a starting outline. Each section can grow into its own page.
+:::
 
 ## Scenes
 
