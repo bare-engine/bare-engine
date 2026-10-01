@@ -26,22 +26,119 @@ declare global {
   }
 }
 
-// getObject() runs every frame for the selected object, and building the prefab baseline
-// (ConstructEntityWithDefaultValues) is by far its most expensive step. keep it for the one object
-// being inspected; a different id, or reprocessed settingsData (a fresh object on every Process(),
-// so edited prefabs), rebuilds it
-let entityDefaultValuesCache: { id: string, settingsData: SettingsData, defaults: Entity } | null = null;
+// getObject() runs every frame for the selected object, and getAllObjects() checks every top-level
+// prefab object for edits, building the prefab baseline (ConstructEntityWithDefaultValues) is by far
+// the most expensive step of both. keep it per object; reprocessed settingsData (a fresh object on
+// every Process(), so edited prefabs) rebuilds it
+const entityDefaultValuesCache = new WeakMap<GameObject, { settingsData: SettingsData, defaults: Entity }>();
 
 function getEntityDefaultValuesCached(o: GameObject, entity: Entity): Entity
 {
     const settingsData = o.scene.settingsData;
-    const cache = entityDefaultValuesCache;
-    if (cache && cache.id === o.uniqueID && cache.settingsData === settingsData)
+    const cache = entityDefaultValuesCache.get(o);
+    if (cache && cache.settingsData === settingsData)
         return cache.defaults;
 
     const defaults = o.scene.ConstructEntityWithDefaultValues(entity, settingsData);
-    entityDefaultValuesCache = { id: o.uniqueID, settingsData, defaults };
+    entityDefaultValuesCache.set(o, { settingsData, defaults });
     return defaults;
+}
+
+// THE OBJECT'S CURRENT VALUES THAT DIFFER FROM ITS ORIGINAL ONES (ITS ENTITY, ELSE ITS CLASS DEFAULTS),
+// WHAT THE PLUGIN SHOWS BLUE WITH AN OPTION TO REVERT
+function getChangedFields(o: GameObject): { changedFields: any, origEntity: any }
+{
+    var origEntity;
+    if (o.entity)
+    {
+        // pivot/hitbox ARE KEPT MIRRORED ONTO o.entity WITH THE LIVE VALUE (SEE THE "PIVOT / HITBOX"
+        // BLOCK IN getObject), SO THEY'D ALWAYS "WIN" AS THEIR OWN BASELINE HERE AND NEVER SHOW UP AS
+        // CHANGED. STRIP THEM SO THE PRESET DEFAULT IS USED AS THE BASELINE FOR THOSE TWO INSTEAD.
+        var { pivot, hitbox, ...entityForOrigin } = o.entity as AnyEntity;
+        origEntity = getEntityDefaultValuesCached(o, entityForOrigin);
+    }
+    else
+    {
+        // class defaults are cached per class name (like bare.componentDefaulValues), built lazily
+        // from a fresh instance the first time the inspector needs them
+        var className = o.constructor.name;
+        origEntity = bare.gameObjectDefaultValues[className];
+        if (!origEntity)
+        {
+            // MAKE A NEW INSTANCE OF OBJECT, TO GET START ORIGINAL VALUES
+            // IF IT'S A USER OBJECT EXTENDING GAMEOBJECT, THAT CONSTRUCTOR WOULD NEED TO WORK WITH ONLY THE SCENE ARGUMENT
+            // ELSE KEEP TRYING PARENT CLASSES UNTIL ONE CONSTRUCTS SUCCESSFULLY, FALLING BACK TO PLAIN GameObject
+            var gameObject:GameObject;
+            var gameObjectClass = o.constructor as new (scene: Scene) => GameObject;
+            while (true)
+            {
+                try {
+                    gameObject = new gameObjectClass(o.scene);
+                    break;
+                }
+                catch (e)
+                {
+                    // THERE WAS AN ERROR IN CONSTRUCTOR, NEED AN EXTRA ARGUMENT
+                    // TRY PARENT CLASS NEXT, NOT ASKING USER TO FIX IT
+                    var parentClass = Object.getPrototypeOf(gameObjectClass);
+                    if (typeof parentClass !== "function")
+                    {
+                        gameObject = new GameObject(o.scene);
+                        break;
+                    }
+                    gameObjectClass = parentClass;
+                }
+            }
+            origEntity = GameObjectSerializer.SerializeObjectFully(o.scene, gameObject, true, true);
+            bare.gameObjectDefaultValues[className] = origEntity;
+        }
+    }
+
+    var curEntity = GameObjectSerializer.SerializeObjectFully(o.scene, o, true, true);
+    var diffEntity = GameObjectSerializer.GetEntitiesDiff(origEntity, curEntity) || {};
+
+    // FIELDS TO IGNORE - NOT IN INSPECTOR
+    delete diffEntity.name;
+    delete diffEntity.imagePath;
+    delete diffEntity.texture;
+
+    delete diffEntity.save; // EDGE CASE FROM LEVEL
+
+    return { changedFields: diffEntity, origEntity };
+}
+
+// A PREFAB INSTANCE: ITS ENTITY EXTENDS A PREFAB BY NAME (NOT A SOURCE CHILD'S entityUID, NOT JUST
+// THE IMPLICIT ANY/NONE)
+function isPrefabInstance(o: GameObject): boolean
+{
+    const ref = o.entity?.extends;
+    if (!ref || ref == "ANY" || ref == "NONE")
+        return false;
+    return !!SettingsHandler.FindPrefab(o.scene.settingsData, ref);
+}
+
+// WHETHER THE PLUGIN'S OBJECT LIST SHOWS THE OBJECT BLUE: ONE OF ITS OWN FIELDS CHANGED (WHAT ITS
+// INSPECTOR SHOWS BLUE) OR ONE OF ITS CHILDREN'S. LIKE THE PLUGIN'S PREFAB LIST, A PREFAB INSTANCE'S
+// OWN CHANGES DON'T COUNT, ONLY THOSE OF THE CHILDREN IT GOT FROM THE PREFAB. EACH CHILD IS CHECKED
+// AGAINST ITS OWN ENTITY, NOT THROUGH THE children OF THE PARENT'S DIFF, WHICH CAN KEEP DIFFERING
+// FROM THE PARENT'S CONSTRUCTED DEFAULTS AFTER EVERY CHILD FIELD IS REVERTED. memo REUSES RESULTS
+// WHEN CALLED FOR A WHOLE TREE
+function hasChangedFields(o: GameObject, memo: Map<GameObject, boolean> = new Map()): boolean
+{
+    const cached = memo.get(o);
+    if (cached !== undefined)
+        return cached;
+
+    var ownChanged = false;
+    if (!isPrefabInstance(o))
+    {
+        const { children, ...ownChanges } = getChangedFields(o).changedFields;
+        ownChanged = Object.keys(ownChanges).length > 0;
+    }
+    const changed = ownChanged
+        || o.children.some(child => !!child.entity && hasChangedFields(child, memo));
+    memo.set(o, changed);
+    return changed;
 }
 
 function getObjectByIdFromAllScenes(uid: string): GameObject | null
@@ -356,6 +453,8 @@ const gameDebugApi = {
                         hidden: !o.visible,
                         // the entity the object extends, the plugin's object list marks those with a cube icon
                         title: o.entity?.extends,
+                        // a prefab object with edits in its children, the plugin shows its name blue
+                        changed: !!o.entity?.extends && hasChangedFields(o),
                         layerIndex,
                         layerName: scene.layerNames[layerIndex] ?? `Layer ${layerIndex}`,
                         layerCount: layers.length
@@ -565,7 +664,8 @@ const gameDebugApi = {
 
     //var constructedEntity = scene.ConstructEntity(o.levelEntity);
 
-    var AddExtraPropsToData = (data: any, o: GameObject) => {
+    var changedMemo = new Map<GameObject, boolean>();
+    var AddExtraPropsToData = (data: any, o: GameObject, isChild: boolean = false) => {
         data.id = o.uniqueID;
         data.hasChildren = o.children.length > 0;
         // grays the object out in the plugin's object list
@@ -583,6 +683,10 @@ const gameDebugApi = {
         data.innerScaleX = o.innerScale.x;
         data.innerScaleY = o.innerScale.y;
         data.persistent = o.persistent;
+        // a child (of a prefab) with edits, the plugin shows its name blue like getAllObjects() does
+        // for top-level prefab objects. the root's own edits go in __changedFields below
+        if (isChild)
+            data.changed = !!o.entity && hasChangedFields(o, changedMemo);
 
         plugin.AddInspectorDataToObject(data, o, false, false);
 
@@ -590,7 +694,7 @@ const gameDebugApi = {
         {
             for (var i = 0; i < data.children.length; i++)
             {
-                AddExtraPropsToData(data.children[i], o.children[i]);
+                AddExtraPropsToData(data.children[i], o.children[i], true);
             }
         }
     }
@@ -617,63 +721,7 @@ const gameDebugApi = {
     // GET CURRENT VALUES
     // PUT DIFFERENCE IN __changedFields FOR PLUGIN TO SHOW BLUE AND OPTION TO REVERT
     {
-        var origEntity;
-        if (o.entity)
-        {
-            // pivot/hitbox ARE KEPT MIRRORED ONTO o.entity WITH THE LIVE VALUE (SEE THE "PIVOT / HITBOX"
-            // BLOCK BELOW), SO THEY'D ALWAYS "WIN" AS THEIR OWN BASELINE HERE AND NEVER SHOW UP AS
-            // CHANGED. STRIP THEM SO THE PRESET DEFAULT IS USED AS THE BASELINE FOR THOSE TWO INSTEAD.
-            var { pivot, hitbox, ...entityForOrigin } = o.entity as AnyEntity;
-            origEntity = getEntityDefaultValuesCached(o, entityForOrigin);
-        }
-        else
-        {
-            // class defaults are cached per class name (like bare.componentDefaulValues), built lazily
-            // from a fresh instance the first time the inspector needs them
-            var className = o.constructor.name;
-            origEntity = bare.gameObjectDefaultValues[className];
-            if (!origEntity)
-            {
-                // MAKE A NEW INSTANCE OF OBJECT, TO GET START ORIGINAL VALUES
-                // IF IT'S A USER OBJECT EXTENDING GAMEOBJECT, THAT CONSTRUCTOR WOULD NEED TO WORK WITH ONLY THE SCENE ARGUMENT
-                // ELSE KEEP TRYING PARENT CLASSES UNTIL ONE CONSTRUCTS SUCCESSFULLY, FALLING BACK TO PLAIN GameObject
-                var gameObject:GameObject;
-                var gameObjectClass = o.constructor as new (scene: Scene) => GameObject;
-                while (true)
-                {
-                    try {
-                        gameObject = new gameObjectClass(o.scene);
-                        break;
-                    }
-                    catch (e)
-                    {
-                        // THERE WAS AN ERROR IN CONSTRUCTOR, NEED AN EXTRA ARGUMENT
-                        // TRY PARENT CLASS NEXT, NOT ASKING USER TO FIX IT
-                        var parentClass = Object.getPrototypeOf(gameObjectClass);
-                        if (typeof parentClass !== "function")
-                        {
-                            gameObject = new GameObject(o.scene);
-                            break;
-                        }
-                        gameObjectClass = parentClass;
-                    }
-                }
-                origEntity = GameObjectSerializer.SerializeObjectFully(o.scene, gameObject, true, true);
-                bare.gameObjectDefaultValues[className] = origEntity;
-            }
-        }
-        
-        var curEntity = GameObjectSerializer.SerializeObjectFully(o.scene, o, true, true);
-        var diffEntity = GameObjectSerializer.GetEntitiesDiff(origEntity, curEntity) || {};
-
-        // FIELDS TO IGNORE - NOT IN INSPECTOR
-        delete diffEntity.name;
-        delete diffEntity.imagePath;
-        delete diffEntity.texture;
-
-        delete diffEntity.save; // EDGE CASE FROM LEVEL
-
-        var changedFields = diffEntity;
+        var { changedFields, origEntity } = getChangedFields(o);
         data.__changedFields = changedFields;
 
         var defaultValues = {};
@@ -2525,7 +2573,8 @@ export class PluginHandler
         // GROUP) AND FLAG THEM IN __overriddenFields__ SO THE PLUGIN SHOWS A REVERT (R) BUTTON.
         // extends/baseClass ARE STRUCTURAL (EVERY ENTITY IN A CHAIN DECLARES THEM) - ALWAYS OWN.
         // name identifies this node itself, so a base that also has a name never supplies it.
-        var overrideExcluded = new Set(["extends", "baseClass", "name"]);
+        // entityUID is engine bookkeeping identifying this node too, never inherited.
+        var overrideExcluded = new Set(["extends", "baseClass", "name", "entityUID"]);
         // Returns the inherited value for a prop from the nearest base in the chain that declares it,
         // or a sentinel {found:false} when no base declares it.
         var getInheritedValue = (prop: string): { found: boolean, value?: any } =>
