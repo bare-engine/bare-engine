@@ -354,6 +354,8 @@ const gameDebugApi = {
                         name: o.pluginName || o.name || "gameObject",
                         hasChildren: (o.children.length > 0),
                         hidden: !o.visible,
+                        // the entity the object extends, the plugin's object list marks those with a cube icon
+                        title: o.entity?.extends,
                         layerIndex,
                         layerName: scene.layerNames[layerIndex] ?? `Layer ${layerIndex}`,
                         layerCount: layers.length
