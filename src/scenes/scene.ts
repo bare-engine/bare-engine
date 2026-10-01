@@ -1612,7 +1612,7 @@ to package.json to keep the generated assets (can become large for big projects)
     async Restart(full:boolean = false)
     {
         this.events.clear();
-        this.Clear();
+        this.Clear(full);
         this.RestartClasses();
         await this.OnRestart();
         await this.Start();

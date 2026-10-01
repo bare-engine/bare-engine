@@ -277,7 +277,7 @@ export class LevelHandler
 
     }
 
-    LoadTextures(level: LevelData): Promise<Texture>[]
+    LoadTextures(level: LevelData = this.currentLevel): Promise<Texture>[]
     {
         var promisesAr: Array<Promise<Texture>> = [];
         var texturesFound = new Set<string>();
@@ -343,12 +343,19 @@ to package.json to keep the generated assets (can become large for big projects)
         return promisesAr;
     }
 
-    async Save()
+    // THIS SAVES THE LEVEL -IF- bare.storage HAS BEEN CALLED (MAKING SaveDataHandler EXIST).
+    // SaveDataHandler LISTENS FOR THE level_postSave EVENT AND SAVES ITS DATA, INCLUDING THE LEVEL DATA
+    // IF YOU'D WANT TO JUST STORE A LEVEL, YOU CALL Serialize(), THEN TO FINALLY SAVE ALL, CALL Save()
+    //    COULD BE USEFUL FOR A GAME WHERE YOU GO THROUGH LEVELS AND WANT TO REMEMBER THEIR STATE,
+    //    BUT WHEN YOU DIE, THEY SHOULD BE REVERTED TO THEIR PREVIOUS STATE, USING LevelHandler.ClearCache() AND POTENTIALLY Load()
+    //    HOWEVER, WHEN YOU REACH A SAVE POINT, YOU CAN CALL Save() TO SAVE THEM ALL
+    async Save(): Promise<LevelData>
     {
+        const level = this.currentLevel;
+
         //events.emit(BareEvent.level_preSave, {levelStr: SaveData.currentLevelStr});
         bare.SendEvent(BareEvent.level_preSave, {levelStr: SaveData.currentLevelStr});
         
-        const level = this.currentLevel;
         this.Serialize(level);
 
         //events.emit(BareEvent.level_postSave, {levelStr: SaveData.currentLevelStr, level: level});
@@ -358,7 +365,7 @@ to package.json to keep the generated assets (can become large for big projects)
     }
 
     // THIS JUST REPOPULATES THE entitiesByLayer OF THE LEVEL
-    Serialize(level: LevelData)
+    Serialize(level: LevelData = this.currentLevel): LevelData
     {
         var gameLayers = bare.object.GetLayers();
         var layersSettings = this.scene.settingsData.layers;
@@ -400,6 +407,8 @@ to package.json to keep the generated assets (can become large for big projects)
         }
 
         GameObjectSerializer.CleanEntities(Object.values(level.entitiesByLayer), this.scene.settingsHandler.rawEntitiesMappedByUID, ["interactableInEditor", "save"]);
+    
+        return level;
     }
 
     // SERIALIZE OBJECT DIFF
