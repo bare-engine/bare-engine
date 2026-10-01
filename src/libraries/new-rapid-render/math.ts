@@ -178,7 +178,7 @@ export class Vec2 {
         return this;
     }
 
-    static FromArray(array: number[][]): Vec2[] {
+    static fromArray(array: number[][]): Vec2[] {
         return array.map(pair => new Vec2(pair[0], pair[1]));
     }
 

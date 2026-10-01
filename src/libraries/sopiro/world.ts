@@ -249,7 +249,7 @@ export class World
                 if (!(Settings.colorizeBody || Settings.colorizeIsland))
                     l = Util.clamp(l + 10, 0, 100);
 
-                let color = b.type == Type.Static ? "#0f0f0f" : Color.FromHSL(h, s, l).toHex();
+                let color = b.type == Type.Static ? "#0f0f0f" : Color.fromHSL(h, s, l).toHex();
                 
                 r.drawBody(b, Settings.indicateCoM, outlineWidth, true, true, "#000000", color);
             }

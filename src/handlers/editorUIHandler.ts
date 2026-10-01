@@ -402,7 +402,7 @@ export class EditorUIHandler {
                                 {
                                     var rt = new RenderTexture(rapid, { width: 128, height: 128, clearColor: Color.fromHex("#fc0000") });
                                     //var rt = new RenderTexture(128, 128, true, Color.fromHex("#fc0000")); // Fallback tex
-                                    const pixels = rt.GetPixels();
+                                    const pixels = rt.getPixels();
                                     const canvas = document.createElement('canvas');
                                     canvas.width = 128;
                                     canvas.height = 128;

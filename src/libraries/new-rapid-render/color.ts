@@ -216,11 +216,11 @@ export class Color {
      * @example
      * Color.fromNorm(0.9, 0.87, 0.55, 0.1) // moon glow
      */
-    static FromHSL(h: number, s: number, l: number): Color {
+    static fromHSL(h: number, s: number, l: number): Color {
         return new Color(0, 0, 0).setHSL(h, s, l);
     }
 
-    static FromRGB(r: number, g: number, b: number): Color {
+    static fromRGB(r: number, g: number, b: number): Color {
         return new Color(r, g, b);
     }
 

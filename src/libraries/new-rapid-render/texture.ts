@@ -592,7 +592,7 @@ class RenderTexture extends Texture {
      * @param width - Width of the region to read.
      * @param height - Height of the region to read.
      */
-    GetPixels(x: number = 0, y: number = 0, width: number = this.rawWidth, height: number = this.rawHeight): Uint8Array {
+    getPixels(x: number = 0, y: number = 0, width: number = this.rawWidth, height: number = this.rawHeight): Uint8Array {
         if (!this.framebuffer) return new Uint8Array(0);
 
         const ix = Math.floor(x);
@@ -628,8 +628,8 @@ class RenderTexture extends Texture {
      * @param x - X coordinate in logical pixel space (top-left origin).
      * @param y - Y coordinate in logical pixel space (top-left origin).
      */
-    GetColorAt(x: number, y: number): Color {
-        const pixels = this.GetPixels(x, y, 1, 1);
+    getColorAt(x: number, y: number): Color {
+        const pixels = this.getPixels(x, y, 1, 1);
         if (pixels.length < 4) return new Color(0, 0, 0, 0);
         return new Color(pixels[0], pixels[1], pixels[2], pixels[3]);
     }
