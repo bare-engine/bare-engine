@@ -2572,7 +2572,7 @@ export class PluginHandler
         // THEY STAY GROUPED UNDER THE EXTENDED ENTITY IN THE PLUGIN INSTEAD OF JUMPING TO THE OWN
         // GROUP) AND FLAG THEM IN __overriddenFields__ SO THE PLUGIN SHOWS A REVERT (R) BUTTON.
         // extends/baseClass ARE STRUCTURAL (EVERY ENTITY IN A CHAIN DECLARES THEM) - ALWAYS OWN.
-        // name identifies this node itself, so a base that also has a name never supplies it.
+        // an authored name identifies this node itself, it's never an override of a base's name.
         // entityUID is engine bookkeeping identifying this node too, never inherited.
         var overrideExcluded = new Set(["extends", "baseClass", "name", "entityUID"]);
         // Returns the inherited value for a prop from the nearest base in the chain that declares it,
@@ -2637,8 +2637,9 @@ export class PluginHandler
             if (!extendPrefab)
                 continue;
             var propsExtended = Object.keys(extendPrefab);
-            // name is never inherited, a base's own name is not a field it supplies
-            var propsExtendedFiltered = propsExtended.filter(p => p != "name" && !propsFound.includes(p));
+            // name is inherited like any field, except from ANY/NONE (see SettingsHandler.ExtendEntity)
+            var isDefaultBase = extendPrefabName == "ANY" || extendPrefabName == "NONE";
+            var propsExtendedFiltered = propsExtended.filter(p => !(p == "name" && isDefaultBase) && !propsFound.includes(p));
 
             newEntity.extendsLog[extendPrefabName] = propsExtendedFiltered;
 

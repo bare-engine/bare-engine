@@ -682,10 +682,8 @@ export class Scene implements SceneI
                                     entity.children[i] = this.ConstructEntity(child, settingsData, options);
                             }
 
-                            // an override of a settings child (.extends is the child's uid) keeps the child's name
-                            const referencesChildUID = !!this.settingsHandler.rawEntitiesMappedByUID[entityArg.extends];
-                            if (!entityArg.name && !referencesChildUID && SettingsHandler.IsBasePrefab(settingsData, entity.name))
-                                delete entity.name; // DON'T WANT THE NAME COMING FROM possiblePrefab IF IT'S A BASE PREFAB, EG 'ANY'
+                            if (!entityArg.name && (entity.name == "ANY" || entity.name == "NONE"))
+                                delete entity.name; // name IS INHERITED, EXCEPT FROM THE DEFAULT PREFABS ANY AND NONE
                         }
                         else
                         {
