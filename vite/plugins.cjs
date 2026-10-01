@@ -996,8 +996,49 @@ function bareTexturePackImagesPlugin(options = {}) {
         });
     }
 
+    // build has no dev server to run the pack, and public/initial/generated is gitignored,
+    // so a fresh checkout would bundle without the atlas. run it once and wait, before
+    // bare:generated-assets reads the atlas json in its own buildStart
+    function runForBuild() {
+        if (!fs.existsSync(watchDir)) {
+            console.warn(`[assets] texturePackImages folder not found: ${watchDir}`);
+            return Promise.resolve();
+        }
+
+        const [command, ...args] = buildCommand;
+        const resolvedCommand = process.platform === "win32" && command === "npm" ? "npm.cmd" : command;
+        const useShell = process.platform === "win32" && /\.cmd$/i.test(resolvedCommand);
+        console.log(`[assets] Running ${buildCommand.join(" ")} (build)`);
+
+        return new Promise((resolve, reject) => {
+            const buildChild = spawn(resolvedCommand, args, {
+                cwd: projectRoot,
+                stdio: "inherit",
+                shell: useShell
+            });
+            buildChild.on("error", error => reject(new Error(`build:assets failed to start: ${error.message}`)));
+            buildChild.on("close", code => code === 0
+                ? resolve()
+                : reject(new Error(`build:assets failed with code ${code}`)));
+        });
+    }
+
+    let isBuild = false;
+
     return {
         name: "bare:texture-pack-images",
+        configResolved(config) {
+            isBuild = config.command === "build";
+        },
+        buildStart: {
+            order: "pre",
+            sequential: true,
+            async handler() {
+                if (isBuild) {
+                    await runForBuild();
+                }
+            }
+        },
         configureServer(server) {
             serverRef = server;
             if (!fs.existsSync(watchDir)) {
