@@ -2943,7 +2943,8 @@ export class PluginHandler
     GetExtraKeys(entityKeys: string[], baseClass: string): string[]
     {
         var allPossibleEntityKeys:string[] = this.GetAllPossibleEntityKeys(baseClass);
-        var keysToRemove = entityKeys.filter(k => !allPossibleEntityKeys.includes(k));
+        // entityUID is engine bookkeeping that children reference through .extends, it belongs to no class
+        var keysToRemove = entityKeys.filter(k => !allPossibleEntityKeys.includes(k) && k != "entityUID");
         return keysToRemove;
     }
 
