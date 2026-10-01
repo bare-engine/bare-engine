@@ -8,7 +8,7 @@ import { GameObject } from "./gameObject";
 
 interface TextOptions extends ITextOptions, ButtonHandlers<Button> {
     buttonColor?: Color;
-    marge?: number;
+    margin?: number;
     cornerRadius?: number;
     text: string;
 }
@@ -20,7 +20,7 @@ export interface ButtonEntity extends Entity
     fontSize?: number;
     textColor?: Color | string;
     buttonColor?: Color | string;
-    marge?: number;
+    margin?: number;
     cornerRadius?: number;
 }
 
@@ -50,11 +50,11 @@ export class Button extends GameObject
     @InspectorField @Save
     buttonColor: Color;
 
-    private _marge = 10;
+    private _margin = 10;
 
     @InspectorField @Save @Limit(0, Infinity)
-    get marge(): number {return this._marge;}
-    set marge(value: number) {this._marge = value; this.OnSizeChanged();}
+    get margin(): number {return this._margin;}
+    set margin(value: number) {this._margin = value; this.OnSizeChanged();}
 
     @InspectorField @Save @Limit(0, Infinity)
     cornerRadius: number;
@@ -70,7 +70,7 @@ export class Button extends GameObject
         options.text ??= "Text";
 
         this.name = options.text;
-        this.marge = options?.marge ?? 10;
+        this.margin = options?.margin ?? 10;
         this.cornerRadius = options?.cornerRadius ?? 0;
         this.buttonColor = options?.buttonColor || Color.fromHex('#000000');
 
@@ -109,10 +109,10 @@ export class Button extends GameObject
         this.OnSizeChanged();
     }
 
-    // TEXT, FONT SIZE OR MARGE CHANGED - THE PIVOT AND TAP HITBOX FOLLOW THE NEW SIZE
+    // TEXT, FONT SIZE OR MARGIN CHANGED - THE PIVOT AND TAP HITBOX FOLLOW THE NEW SIZE
     private OnSizeChanged()
     {
-        // CAN BE CALLED BEFORE THE CONSTRUCTOR IS DONE (EG marge SETTER)
+        // CAN BE CALLED BEFORE THE CONSTRUCTOR IS DONE (EG margin SETTER)
         if (this.pivotPercentage == undefined || !this.textTexture)
             return;
 
@@ -139,7 +139,7 @@ export class Button extends GameObject
         if (this.pivotPercentage == undefined)
             return this;
 
-        // REMEMBER PIVOT PERCENTAGE TO REAPPLY FOR WHEN THE SIZE CHANGES (TEXT, FONT SIZE, MARGE)
+        // REMEMBER PIVOT PERCENTAGE TO REAPPLY FOR WHEN THE SIZE CHANGES (TEXT, FONT SIZE, MARGIN)
         this.pivotPercentage.x = (x > 0 && x <= 1) ? x : -1;
         this.pivotPercentage.y = (y > 0 && y <= 1) ? y : -1;
 
@@ -173,7 +173,7 @@ export class Button extends GameObject
         bare.drawSprite({
             texture: this.textTexture,
             color: inheritedColor,
-            position: new Vec2(this.marge, this.height / 2),
+            position: new Vec2(this.margin, this.height / 2),
             origin: new Vec2(0, 0.5)
         });
     }
@@ -198,11 +198,11 @@ export class Button extends GameObject
 
     get width(): number
     {
-        return this.textTexture.width + this.marge * 2
+        return this.textTexture.width + this.margin * 2
     }
 
     get height(): number
     {
-        return this.textTexture.height + this.marge * 2
+        return this.textTexture.height + this.margin * 2
     }
 }
