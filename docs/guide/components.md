@@ -131,4 +131,38 @@ Inspector decorators are removed in production builds, so they don't add to your
 | `AnimationComponent` | Plays frame animations. See [Animations](./animations). |
 | `ParticleComponent` | Attaches a particle emitter to the object. See [Particles](./particles). |
 | `TextComponent` | Renders text. See [Text & UI](./text-and-ui). |
-| `CollisionEventComponent` | Sends an event when the object collides with a named object. No code needed. |
+| `CollisionEventComponent` | Sends an event when the object collides with a named object. See [below](#collisioneventcomponent). |
+
+### CollisionEventComponent
+
+Turns a collision into an event, set up entirely in data. Give a trigger prefab the component:
+
+```json
+{
+  "name": "exitDoor",
+  "baseClass": "ArcadeObject",
+  "sensor": true,
+  "components": {
+    "collisionEvent": {
+      "object": "player",
+      "event": "levelExit",
+      "once": true
+    }
+  }
+}
+```
+
+| Field | Description |
+| --- | --- |
+| `object` | Name of the object that triggers it. Leave empty to trigger on any collision. |
+| `event` | Event sent with [`bare.SendEvent`](./events#three-event-buses), with `{ collidingObject, trigger }`. |
+| `once` | Fire only once, then remove the component. |
+| `removeObject` | With `once`, remove the whole object instead. |
+
+Then listen for it anywhere:
+
+```ts
+bare.events.on('levelExit', () => bare.level.Load('level2'));
+```
+
+It needs [physics](../reference/physics). The **Fire** button in the [Chrome extension](./chrome-extension) sends the event by hand.

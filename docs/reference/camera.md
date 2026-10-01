@@ -10,6 +10,25 @@ bare.camera.StartShake(8, 0.3);
 
 **Example:** the [Showcase](https://github.com/bare-engine/bare-showcase)'s [camera demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/camera/src/DemoCamera.ts) follows the mouse, shakes, tweens the zoom and switches scale modes.
 
+## Following a player
+
+`SetPosition` jumps straight to a point. For a smooth follow, move part of the way every frame:
+
+```ts
+OnUpdate(deltaTime: number)
+{
+    const camera = bare.camera.GetPosition();
+    const t = 1 - Math.exp(-5 * deltaTime);   // higher than 5 follows tighter
+
+    bare.camera.SetPosition(
+        bare.util.Lerp(camera.x, player.x, t),
+        bare.util.Lerp(camera.y, player.y, t),
+    );
+}
+```
+
+Using `deltaTime` in `t` keeps the follow speed the same at any frame rate. Combine it with `SetBoundsToLevel()` so the camera stops at the level's edges.
+
 ## Fitting the level
 
 To show a whole level on any screen size:

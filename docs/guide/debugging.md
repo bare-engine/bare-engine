@@ -11,6 +11,8 @@ Press **E** while the game runs, or use **Toggle Debug Visuals** in the [Chrome 
 In code, check the `debug` global, for example to draw your own helpers:
 
 ```ts
+import { Color } from 'bare-engine';
+
 OnRender()
 {
     if (debug)
@@ -86,6 +88,8 @@ For buttons that belong to one object, use [`@InspectorButton`](../reference/ins
 Fields marked `@InspectorField` update live in the extension. To watch values that aren't on an object, like the number of enemies, put them in a [manager](./scenes#managers) with a getter. Getters update live too:
 
 ```ts
+import { InspectorClass, InspectorField, Scene } from 'bare-engine';
+
 class Stats
 {
     constructor(private scene: Scene) {}

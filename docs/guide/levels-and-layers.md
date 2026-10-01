@@ -72,7 +72,7 @@ A level can be saved while playing or from the editor, and only fields marked `@
 
 ## Layers
 
-Within a scene, GameObjects live on layers. Layers decide draw order: later layers draw on top. `objects` is the default layer and always exists.
+Within a scene, GameObjects live on layers. Layers decide draw order: later layers draw on top. `objects` is the default layer and always exists: if your `layers` list leaves it out, it's added at the start, below your own layers.
 
 Add more in `settingsData.json`:
 
@@ -83,6 +83,8 @@ Add more in `settingsData.json`:
 The generated `Data.Layer` updates to include them:
 
 ```ts
+import { Data } from './generated/assets';
+
 this.AddGameObject('cloud', Data.Layer.BACKGROUND);
 this.AddGameObject('cloud', 'background');   // same thing
 ```
@@ -113,6 +115,6 @@ Settings per layer go in `layersInfo`:
 | `collidesWith` | | Layers this layer's objects collide with. See [collision layers](../reference/physics#collision-layers). |
 | `save` | `true` | Save this layer's objects into the level file. |
 | `showInEditor` | `true` | Show the layer in the level editor. |
-| `pointerCollisionType` | `0` | How the pointer picks objects: `0` takes the top object, `1` the nearest one. See [Mobile & Touch](./mobile#fingers-are-less-precise). |
+| `pointerCollisionType` | `"POINT"` | How the pointer picks objects: `"POINT"` takes the top object, `"RADIUS"` the nearest one. In code: `CollisionHandlingType.POINT` / `CollisionHandlingType.RADIUS`. See [Mobile & Touch](./mobile#fingers-are-less-precise). |
 
 **Example:** the [Shmup](https://github.com/bare-engine/bare-shmup) [defines a layer per kind of object](https://github.com/bare-engine/bare-shmup/blob/main/public/data/settingsData.json#L83) (enemies, their bullets, your bullets, the player), and [counts objects per layer](https://github.com/bare-engine/bare-shmup/blob/main/src/game.ts#L126-L136).

@@ -62,9 +62,9 @@ Handy for debugging: a `Fire()` or `Die()` button you can press while the game r
 | `@InspectorClass` | Show another object's inspector fields as a group inside this one. |
 | `@InspectorBaseClass` | Register a GameObject class so it can be used as a prefab `baseClass`. See [Custom GameObjects](../guide/custom-game-objects). |
 
-**Example:** the [RPG](https://github.com/bare-engine/bare-rpg)'s [`Weapon`](https://github.com/bare-engine/bare-rpg/blob/main/src/objects/weapon.ts#L4-L5) is registered this way.
+**`@InspectorBaseClass` example:** the [RPG](https://github.com/bare-engine/bare-rpg)'s [`Weapon`](https://github.com/bare-engine/bare-rpg/blob/main/src/objects/weapon.ts#L4-L5) is registered this way.
 
-**Example:** the [Shmup](https://github.com/bare-engine/bare-shmup)'s scene [shows a `Watcher`](https://github.com/bare-engine/bare-shmup/blob/main/src/game.ts#L17-L18), whose [getters](https://github.com/bare-engine/bare-shmup/blob/main/src/game.ts#L126-L136) count enemies and bullets.
+**`@InspectorClass` example:** the [Shmup](https://github.com/bare-engine/bare-shmup)'s scene [shows a `Watcher`](https://github.com/bare-engine/bare-shmup/blob/main/src/game.ts#L17-L18), whose [getters](https://github.com/bare-engine/bare-shmup/blob/main/src/game.ts#L126-L136) count enemies and bullets.
 
 ## Saving and run modes
 

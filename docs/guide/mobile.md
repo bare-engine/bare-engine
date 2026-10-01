@@ -47,12 +47,12 @@ Or set it in `settingsData.json`:
 ```json
 "layersInfo": {
   "objects": {
-    "pointerCollisionType": 1
+    "pointerCollisionType": "RADIUS"
   }
 }
 ```
 
-`0` is `POINT`, the default, and `1` is `RADIUS`.
+`"POINT"`, the top object under the pointer, is the default.
 
 ## On-screen controls
 

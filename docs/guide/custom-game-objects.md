@@ -94,15 +94,6 @@ To create the objects up front:
 bare.RegisterGameObjectPool(Bullet, 200);
 ```
 
-Pooled objects get their standard values back when they're reused. To be sure your own fields start fresh too, set them in `OnAwake`, which runs every time the object is reused:
-
-```ts
-OnAwake()
-{
-    this.health = 3;
-}
-```
+Pooled objects get their standard values back when they're reused, but your own fields don't. Reset them in `OnAwake`, and release listeners in `OnRemoved`; see [pooled objects](./lifecycle#pooled-objects).
 
 `bare.pool` gives access to all pools by class name, for example `bare.pool.get('Bullet').GetSize()`.
-
-Release global listeners and external collection entries in `OnRemoved`; otherwise they may keep acting on the object after it is reused. Keep `OnAwake` free of allocations and subscriptions because the engine also calls it to compute default values. I'm sorry.

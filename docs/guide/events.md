@@ -65,6 +65,8 @@ import { BareEvent } from 'bare-engine';
 | `scene_changed` | `{ scene, type }`, where `type` is `"added"` or `"removed"` |
 | `level_loaded` | `{ levelStr, level }` |
 | `level_restart` | |
+| `level_savedToDisk` | `{ levelStr, level }`, after the [level editor](./level-editor) saves to disk |
+| `editor_opened`, `editor_closed` | `{ settingsDataName, levelName }` |
 | `pointer_down`, `pointer_up` | `{ mouseX, mouseY, event }` |
 | `pointer_move` | `{ mouseX, mouseY, movedX, movedY, event, isLeftButton }` |
 | `pointer_doubleClick` | `{ mouseX, mouseY, event }` |

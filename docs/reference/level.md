@@ -13,7 +13,7 @@ await bare.level.Restart();
 | `LoadOnly(nameOrData)` | Load a level without clearing the scene first. |
 | `LoadData(name: string)` | Reads cached level data without loading it. |
 | `LoadCurrent()` / `Restart()` | Reloads the current level. |
-| `Save()` | Save the current level (used by the editor). |
+| `Save()` | Save the current level. |
 | `Serialize(level: LevelData)` | Turn the scene's objects into level data. |
 | `Clear()` | Clear the loaded level. |
 

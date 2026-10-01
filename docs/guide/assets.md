@@ -36,6 +36,8 @@ To wait for an image yourself:
 await bare.asset.LoadTexture('backgrounds/sky');
 ```
 
+See [`bare.asset`](../reference/assets) for all methods.
+
 **Examples:** the [Showcase](https://github.com/bare-engine/bare-showcase)'s [image loading demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/imageLoading/src/DemoImageLoading.ts), and the [Platformer](https://github.com/bare-engine/bare-platformer), which streams in everything, including animations.
 
 ## Generated assets

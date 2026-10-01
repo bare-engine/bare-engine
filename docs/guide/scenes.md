@@ -22,6 +22,8 @@ export class Game extends Scene
 StartBare(Game);
 ```
 
+Passing `settingsData` gives the scene your prefabs. Other options, like `UI` and `persistent`, are listed under [Scene options](../reference/configuration#scene-options).
+
 ## Lifecycle
 
 Override these methods on your scene. All are optional.

@@ -21,4 +21,4 @@ The [Chrome extension](./chrome-extension) will become a paid feature at some po
 
 ## Ideas and feedback
 
-Missing something? Ask or suggest it on [Discord](https://discord.gg/zq3Qh45JE).
+Missing something? Ask or suggest it on [Discord](discord:).

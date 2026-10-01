@@ -35,7 +35,7 @@ this.AddGameObject({ texture: 'ball', x: 10 });
 this.AddGameObject({
     name: 'bigBall',
     extends: 'ball',
-    scale: 2,
+    scale: { x: 2, y: 2 },
 });
 ```
 
@@ -58,7 +58,10 @@ A prefab or entity can **extend** another prefab with `extends`. It inherits all
 {
   "name": "bossEnemy",
   "extends": "enemy",
-  "scale": 3
+  "scale": {
+    "x": 3,
+    "y": 3
+  }
 }
 ```
 

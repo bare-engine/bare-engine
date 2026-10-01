@@ -31,7 +31,6 @@ StartBare(Game, {
 | `showEditorButton` | automatic | `true`: keep the button visible when a level is loaded, including with the extension connected. `false`: hide it. Omitted: hide it when the extension connects. Development only. |
 | `editorButtonPosition` | `{ x: 0, y: 0 }` | Normalized position and pivot, as `{ x: number, y: number }`. `{ x: 1, y: 0 }` anchors it at the top right. |
 | `debugKeys` | **E**, **P**, **R**, **L**, **C** | Keyboard shortcuts during development. See [Debug keys](#debug-keys). |
-| `imagePath`, `levelPath` | `""` | Legacy options still accepted by the type but not applied by startup. Do not use them to configure asset paths; see below. |
 
 ### Resolution
 
@@ -48,6 +47,32 @@ See [Resolution & Pixel Art](../guide/resolution) for common setups.
 ### Debug keys
 
 The default keys and how to change them are listed under [Debugging](../guide/debugging#debug-keys). They're removed from production builds.
+
+## Scene options
+
+A scene's constructor passes options to `super`:
+
+```ts
+import { Scene } from 'bare-engine';
+import settingsData from '../public/data/settingsData.json';
+
+export class HUD extends Scene
+{
+    constructor()
+    {
+        super({ settingsData, UI: true, persistent: true });
+    }
+}
+```
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `settingsData` | built-in defaults | The scene's [settings](../guide/prefabs): prefabs, layers, animations. |
+| `UI` | `false` | Not moved by a camera, drawn in screen space, and kept above non-UI scenes. |
+| `resize` | `false` | When the window size changes, move every object so it keeps its relative place on screen. |
+| `persistent` | `false` | Keep the scene when `bare.scene.Goto` clears the others. |
+
+`super(settingsData)` is shorthand for `super({ settingsData })`.
 
 ## package.json
 

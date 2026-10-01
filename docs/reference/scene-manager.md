@@ -14,7 +14,7 @@ await bare.scene.Goto(Game, { level: 2 });   // the payload goes to OnAwake/OnSt
 | `Remove(sceneOrClass)` | Removes that scene, including a persistent scene when explicitly targeted. |
 | `Get(sceneClass)` | Finds a running instance. Check before using when its presence is uncertain. |
 | `Has(sceneClass)` | Whether an instance is running. |
-| `GetAll(includeIgnored = false)` | Returns scenes, excluding internal scenes marked `secret` unless requested. |
+| `GetAll()` | All running scenes, in draw order. |
 | `GetMainScene()` | The first scene in draw order. |
 | `GetLevelScene(checkEnabled = true)` | Prefers an enabled level scene, then falls back to any level scene. |
 | `MoveUp(sceneOrClass)` / `MoveDown(sceneOrClass)` / `MoveToFront(sceneOrClass)` / `MoveToBack(sceneOrClass)` | Changes draw order. |

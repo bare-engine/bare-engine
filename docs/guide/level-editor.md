@@ -14,10 +14,6 @@ You can change this with the `showEditorButton` and `editorButtonPosition` optio
 
 **Example:** the [Platformer](https://github.com/bare-engine/bare-platformer) [always shows the button](https://github.com/bare-engine/bare-platformer/blob/main/src/game.ts#L105).
 
-![Level editor showing a gridded level with a player, three platforms, a goal, the prefab palette, and the Close Editor and settings controls.](/images/level-editor.png)
-
-The editor with the documentation example scene. Pick a prefab in the bottom-left palette, place it on the grid, and use the gear button to change grid settings.
-
 ## Editing
 
 | Action | Controls |

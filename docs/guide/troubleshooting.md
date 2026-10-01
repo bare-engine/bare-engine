@@ -65,4 +65,4 @@ Two games with the same `gameId` on the same domain share their saves. Give each
 
 ## Still stuck?
 
-Ask on [Discord](https://discord.gg/zq3Qh45JE).
+Ask on [Discord](discord:).

@@ -39,13 +39,4 @@ Create a Markdown file in `guide/` or `reference/`, then add it to `.vitepress/c
 
 Complete checked examples live in `features/fixtures/src/docExamples/`. Include them with VitePress's `<<< ../../features/fixtures/src/docExamples/file.ts` syntax so the published code and tested code remain identical. Add behavior assertions to `docsExamplesTest.ts`; do not copy examples into a second implementation. Other inline fragments are not automatically type-checked.
 
-Use relative page links and explicit heading fragments. Public images live in `docs/public/images/` and are linked as `/images/name.svg` or `/images/name.png`; VitePress applies the site's base path. Give every image useful alt text. Keep screenshots free of private data and record their provenance in this file.
-
-## Visuals
-
-- `level-editor.png`: actual engine editor with a deterministic, asset-free scene. Regenerate with `node scripts/captureDocs.cjs` (requires Chrome). Source: `features/fixtures/src/docExamples/editorPreview.ts`.
-- `inspector.png`: existing project screenshot from `bareChromePlugin/WORKFILES/Screenshot 2026-03-24 114200.png`. It shows the March 2026 interface; keep that date in its caption when using it.
-
-## Size claims and roadmap
-
-Include the fixture revision, build environment, and measurement method with bundle-size claims; see [Building & Publishing](./guide/building-and-publishing.md#reproducible-size-measurements). Date roadmap reviews and distinguish plans from released functionality.
+Use relative page links and explicit heading fragments. Link to Discord as `[Discord](discord:)`; the invite URL lives only in `.vitepress/config.mts`. Public images live in `docs/public/images/` and are linked as `/images/name.svg` or `/images/name.png`; VitePress applies the site's base path. Give every image useful alt text. Keep screenshots free of private data and record their provenance in this file.

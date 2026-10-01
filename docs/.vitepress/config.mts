@@ -1,5 +1,8 @@
 import { defineConfig } from "vitepress";
 
+// the only copy of the discord invite in the docs; pages link to it as [Discord](discord:)
+const discord = "https://discord.gg/zq3Qh45JE";
+
 export default defineConfig({
     title: "Bare Engine",
     // published on GitHub Pages at https://bare-engine.github.io/bare-engine/
@@ -8,6 +11,16 @@ export default defineConfig({
     lastUpdated: true,
     srcExclude: ["README.md"],
     cleanUrls: true,
+    markdown: {
+        config(md) {
+            md.core.ruler.push("discord_link", state => {
+                for (const block of state.tokens)
+                    for (const token of block.children ?? [])
+                        if (token.type == "link_open" && token.attrGet("href") == "discord:")
+                            token.attrSet("href", discord);
+            });
+        },
+    },
     themeConfig: {
         nav: [
             { text: "Guide", link: "/guide/getting-started" },
@@ -68,12 +81,13 @@ export default defineConfig({
                     { text: "Tweens", link: "/reference/tweens" },
                     { text: "Camera", link: "/reference/camera" },
                     { text: "Sound", link: "/reference/sound" },
+                    { text: "Assets", link: "/reference/assets" },
                     { text: "Scene Manager", link: "/reference/scene-manager" },
                     { text: "Level", link: "/reference/level" },
                     { text: "Save Data", link: "/reference/save-data" },
                     { text: "Physics", link: "/reference/physics" },
                     { text: "Inspector Decorators", link: "/reference/inspector-decorators" },
-                    { text: "Math & Helpers", link: "/reference/math" },
+                    { text: "Math & Utilities", link: "/reference/math" },
                     { text: "Globals", link: "/reference/globals" },
                     { text: "Configuration", link: "/reference/configuration" },
                     { text: "package.json Options", link: "/reference/package-json" },
@@ -87,7 +101,7 @@ export default defineConfig({
         },
         socialLinks: [
             { icon: "github", link: "https://github.com/bare-engine/bare-engine" },
-            { icon: "discord", link: "https://discord.gg/zq3Qh45JE" },
+            { icon: "discord", link: discord },
         ],
         search: { provider: "local" },
         outline: "deep",

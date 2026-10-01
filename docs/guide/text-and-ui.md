@@ -100,12 +100,7 @@ export class HUD extends Scene
 this.hud = await bare.scene.Add(HUD);
 ```
 
-| Scene option | Description |
-| --- | --- |
-| `UI` | Not moved by a camera, drawn in screen space, and kept above non-UI scenes. |
-| `resize` | When the window size changes, move every object so it keeps its relative place on screen. |
-| `persistent` | Keep the scene when others are cleared. |
-| `settingsData` | The scene's [settings](./prefabs), if it needs prefabs. |
+`UI` and `resize` are [scene options](../reference/configuration#scene-options); `persistent` keeps the scene when others are cleared.
 
 For quick UI there's also `bare.uiScene`, a ready-made UI scene that's created the first time you use it:
 

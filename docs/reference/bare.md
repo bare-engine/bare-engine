@@ -11,12 +11,13 @@ Shared across the whole game.
 | `bare.keyboard` | Keyboard input. See [Input](./input). |
 | `bare.sound` | Sound effects and music. See [Sound](./sound). |
 | `bare.scene` | Add, remove, order and find scenes. See [Scene Manager](./scene-manager). |
-| `bare.asset` | Loads and holds textures, atlases and animations. |
+| `bare.asset` | Loads and holds textures, atlases and animations. See [Assets](./assets). |
 | `bare.storage` | Persistent save data. See [Save Data](./save-data). |
 | `bare.pool` | Object pools by class name, to recycle GameObjects. |
 | `bare.uiScene` | A built-in, always-on-top UI scene, created on first use. |
 | `bare.globalEvents` | A game-wide event bus. |
 | `bare.editor` | The level editor scene, if it's open. |
+| `bare.util` | Math, random and device helpers. See [Math & Utilities](./math#util). |
 
 ## Scene modules
 
@@ -48,6 +49,8 @@ bare.scene.Get(Game).level.Load('level1');
 ```
 :::
 
+`bScene` is the current scene, rewritten the same way. See [Globals](./globals#values).
+
 ## General properties
 
 | Property | Description |
@@ -55,8 +58,10 @@ bare.scene.Get(Game).level.Load('level1');
 | `bare.deltaTime` | Seconds since the last frame, capped by `maxDeltaTime`. |
 | `bare.count` | Frames rendered so far. |
 | `bare.width` / `bare.height` | The game's render size in game units. |
-| `bare.paused` | Whether the game is paused. `bare.TogglePause()` toggles it. |
-| `bare.gameSpeed` | Time multiplier. |
+| `bare.paused` | Whether the game is paused. |
+| `bare.gameSpeed` | Read-only. The current frame rate relative to 60 fps: `1` at 60 fps, `0.5` at 30 fps. Updated every frame. |
+| `bare.levelEditorOpen` | Whether the [level editor](../guide/level-editor) is open. |
+| `bare.defaultFont` | Font family used by text that doesn't set `fontFamily`. See [Fonts](../guide/text-and-ui#fonts). |
 | `bare.fixedTimestep` | Seconds per fixed update (default `1/60`). |
 
 ## Methods
@@ -64,6 +69,7 @@ bare.scene.Get(Game).level.Load('level1');
 | Method | Description |
 | --- | --- |
 | `bare.Restart(options?)` | Clear all scenes and restart, optionally with `{ sceneClass, bareOptions, clearSaveData }`. |
+| `bare.TogglePause()` | Pause or unpause the game. Returns nothing; read `bare.paused`. |
 | `bare.SendEvent(type, ...args)` | Send an event to `bare.globalEvents` and to every active scene's `bare.events`. |
 | `bare.AddClass(SomeClass)` | Register a class. A controller (like `ArcadePhysicsController`) is switched on for all scenes; a GameObject class gets an object pool so it can be created by name. |
 | `bare.RegisterGameObjectPool(cls, size?)` | Create an object pool for a GameObject class yourself. |
