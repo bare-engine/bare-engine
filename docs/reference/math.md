@@ -27,7 +27,7 @@ Math methods like `add` return a **new** vector. Methods that change the vector 
 | `set(x, y)` | **Changes** the vector. |
 | `normalize()`, `invert()`, `perpendicular()` | **Change** the vector. |
 | `Vec2.fromAngle(radians)` | A vector pointing in a direction. |
-| `Vec2.FromArray([[x, y], …])` | A list of vectors. |
+| `Vec2.fromArray([[x, y], …])` | A list of vectors. |
 
 ## Color
 
@@ -45,7 +45,7 @@ obj.SetColor(Color.Orange);
 | Method | Description |
 | --- | --- |
 | `Color.fromHex(hex)` | From `#rrggbb` or `#rrggbbaa`. |
-| `Color.FromRGB(r, g, b)` / `Color.FromHSL(h, s, l)` | From other formats. |
+| `Color.fromRGB(r, g, b)` / `Color.fromHSL(h, s, l)` | From other formats. |
 | `Color.fromNorm(r, g, b, a?)` | From 0–1 values. |
 | `toHex()` | To a hex string. |
 | `r`, `g`, `b`, `a` | Read or change a channel. |

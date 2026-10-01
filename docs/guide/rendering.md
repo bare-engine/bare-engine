@@ -93,7 +93,7 @@ OnRender()
     });
     bare.drawLine({
         position: new Vec2(380, 150),
-        points: Vec2.FromArray([[0, 30], [120, 20], [130, 100]]),
+        points: Vec2.fromArray([[0, 30], [120, 20], [130, 100]]),
         width: 5,
         closed: true,
         color: Color.Green,
