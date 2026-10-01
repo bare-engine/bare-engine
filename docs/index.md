@@ -7,18 +7,27 @@ hero:
   actions:
     - theme: brand
       text: Get Started
-      link: /getting-started
+      link: /guide/getting-started
     - theme: alt
-      text: View on GitHub
+      text: The bare Object
+      link: /reference/bare
+    - theme: alt
+      text: GitHub
       link: https://github.com/BareEngine/Engine
 
 features:
   - title: Tiny
-    details: 34kb minimal game (gzip), fast loading and easy asset streaming.
+    details: A minimal game is 34kb (gzip). Modules you don't use are left out of the build.
+  - title: Fast loading
+    details: Pack small images into an atlas and stream the rest in when they're needed.
   - title: Built-in editor
-    details: In-game level editor, plus object inspection in the Chrome extension.
-  - title: Fast
-    details: Fast rendering with Rapid and fast hot reload with Vite.
+    details: Build levels in the game, and inspect and edit objects with the Chrome extension.
+  - title: Prefabs & components
+    details: Describe objects as data, attach behavior with components, and reuse it everywhere.
+  - title: Fast rendering
+    details: WebGL rendering with Rapid, plus tweens, particles, shaders and physics.
+  - title: Instant reload
+    details: Vite hot reload keeps your edit-and-test loop short.
 ---
 
 ::: warning
