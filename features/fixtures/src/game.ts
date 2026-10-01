@@ -11,6 +11,8 @@ import { BasicsTest } from "./testScenes/basicsTest";
 import { CameraTest } from "./testScenes/cameraTest";
 import { PrefabsTest } from "./testScenes/prefabsTest";
 import { SaveComponentTest } from "./testScenes/saveComponentTest";
+import { DocsExamplesTest } from "./testScenes/docsExamplesTest";
+import { EditorPreview } from "./docExamples/editorPreview";
 
 function sceneName(scene: SceneClass): string {
     return scene.name[0].toLowerCase() + scene.name.slice(1);
@@ -20,6 +22,7 @@ declare global
 {
     interface Window
     {
+        __bareDocsPreview?: () => Promise<void>;
         __bareBrowserTests?: 
         {
             start: (name: string) => Promise<BrowserSceneResult>;
@@ -36,6 +39,7 @@ class MainGame extends Scene
         PrefabsTest,
         CameraTest,
         SaveComponentTest,
+        DocsExamplesTest,
     ];
 
     constructor() 
@@ -49,6 +53,8 @@ class MainGame extends Scene
         bare.AddClass(Circle);
 
         installBrowserTestHarness();
+
+        window.__bareDocsPreview = async () => { await bare.scene.Goto(EditorPreview); };
 
         window.__bareBrowserTests = {
             start: (name: string) => this.startTest(name),
