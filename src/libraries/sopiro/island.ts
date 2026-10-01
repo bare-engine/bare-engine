@@ -26,6 +26,7 @@ export class Island
     solve(delta: number)
     {
         let awakeIsland = false;
+        const gravityStep = this.world.gravity * Settings.dt;
 
         // Integrate forces, yield tentative velocities that possibly violate the constraint
         for (let i = 0; i < this.bodies.length; i++)
@@ -72,9 +73,7 @@ export class Island
             // Apply gravity 
             if (Settings.applyGravity && !this.sleeping)
             {
-                let gravity = new Vec2(0, Settings.gravity * Settings.gravityScale * Settings.dt);
-                b.linearVelocity.x += gravity.x;
-                b.linearVelocity.y += gravity.y;
+                b.linearVelocity.y += gravityStep;
             }
         }
 

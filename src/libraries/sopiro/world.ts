@@ -49,6 +49,12 @@ export class World
         this.renderer = new Renderer();
     }
 
+    // settingsData gravity when set, same as arcade physics. else sopiro's own default
+    get gravity(): number
+    {
+        return this.scene.settingsHandler.GetRaw()?.gravity ?? Settings.gravity * Settings.gravityScale;
+    }
+
     update(delta: number): void
     {
         let newManifolds: ContactManifold[] = [];
