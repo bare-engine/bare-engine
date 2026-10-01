@@ -1184,22 +1184,14 @@ export class GameObject
         if (!ownBounds)
             return this.GetBoundsWithChildren(global);
 
-        if (!global || !this.parent)
-        {
-            const bounds = ownBounds;
-            return {
-                x: this.x + (bounds.x - this.pivot.x) * this.totalScaleX,
-                y: this.y + (bounds.y - this.pivot.y) * this.totalScaleY,
-                width: bounds.width * this.totalScaleX,
-                height: bounds.height * this.totalScaleY
-            };
-        }
-
         var m = rapid.matrixStack;
         m.save();
         m.identity();
-        
-        this.buildAncestorMatrix(m);
+
+        // without the ancestors the corners are in parent space. the object's own transform is
+        // always applied, so its rotation and inner transform count (also for root objects)
+        if (global)
+            this.buildAncestorMatrix(m);
         m.save();
         this.applyContentTransform(m, this);
 
