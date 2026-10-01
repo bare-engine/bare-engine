@@ -11,7 +11,7 @@ export class EditorUIScene extends Scene
     
     constructor()
     {
-        super({UI: true, resize: true, secret: !true, persistent: true});
+        super({UI: true, resize: true, persistent: true});
     }
 
     OnStart(payload?: EditorUIScenePayload): void | Promise<void>

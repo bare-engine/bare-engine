@@ -21,8 +21,6 @@ export type BareOptions =
     fixedTimestep?: number;
     freezeOnUnfocus?: boolean;
     multiTouch?: boolean;
-    imagePath?: string;
-    levelPath?: string;
     editorButtonPosition?: Position;
     showEditorButton?: boolean;
     debugKeys?: Record<string, () => void>[];
@@ -338,8 +336,8 @@ export interface LayerInfo {
 
 export enum CollisionHandlingType
 {
-    POINT,
-    RADIUS
+    POINT = "POINT",
+    RADIUS = "RADIUS"
 }
 
 // EVENTS MONSTER - SINCE IT WANT TO EASILY ADD BARE-EVENTS WITHOUT DUPLICATING CODE
@@ -500,11 +498,13 @@ export class Shader
 export type SceneOptions = {
     settingsData?: SettingsData;
     persistent?: boolean;
-    secret?: boolean;
     UI?: boolean;
     resize?: boolean;
     solo?: boolean;
 }
+
+// every SceneOptions key, typed as a Record so adding an option without listing it here is a compile error
+export const sceneOptionKeys: Record<keyof SceneOptions, true> = { settingsData: true, persistent: true, UI: true, resize: true, solo: true };
 
 export type SceneClass<T extends Scene = Scene> = new (sceneOptions?: SceneOptions) => T;
 export type AwakePayload<T> = T extends { OnAwake: (payload: infer P) => any } ? P : T extends { Awake: (payload: infer P) => any } ? P : never;

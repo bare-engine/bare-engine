@@ -143,7 +143,7 @@ function hasChangedFields(o: GameObject, memo: Map<GameObject, boolean> = new Ma
 
 function getObjectByIdFromAllScenes(uid: string): GameObject | null
 {
-    for (const scene of bare.scene.GetAll(true))
+    for (const scene of bare.scene.GetAll())
     {
         const objectController = scene.object;
         const obj = objectController.GetById(uid);

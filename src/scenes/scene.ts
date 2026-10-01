@@ -16,7 +16,7 @@ import { Color, RenderTexture, Texture, Vec2 } from "../libraries/new-rapid-rend
 import { GameObject } from "../objects/gameObject";
 import { Bare } from "../types/bare";
 import { defaultSettingsData } from "../types/bareData";
-import { AnyEntity, AwakePayload, BareEvent, CollisionHandlingType, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LayerInfo, LevelData, SaveData, SceneClass, SceneI, SceneOptions, SettingsData } from "../types/bareTypes";
+import { AnyEntity, AwakePayload, BareEvent, CollisionHandlingType, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LayerInfo, LevelData, SaveData, SceneClass, SceneI, SceneOptions, sceneOptionKeys, SettingsData } from "../types/bareTypes";
 import { InspectorClass, InspectorField, Label } from "../utils/decorators";
 import { GameObjectSerializer } from "../utils/entitySerializer";
 import { Helper } from "../utils/helper";
@@ -53,7 +53,6 @@ export class Scene implements SceneI
         this.solo = solo;
     }
     
-    public secret: boolean = false; // IF TRUE, WILL MAKE THE SCENE NOT INCLUDE IN bare.scene.GetAll() - USED FOR PLUGIN ATM
     public isLevel: boolean = false;
 
     // CONTROLLERS ARE LAZY: FIRST ACCESS INSTANTIATES THE CLASS FROM THE globalThis[<name>Class]
@@ -138,7 +137,7 @@ export class Scene implements SceneI
         const isSceneOptions =
             sceneOptions &&
             typeof sceneOptions === "object" &&
-            ("settingsData" in sceneOptions || "UI" in sceneOptions || "persistent" in sceneOptions);
+            Object.keys(sceneOptionKeys).some(key => key in sceneOptions);
 
         if (isSceneOptions)
         {
@@ -159,7 +158,6 @@ export class Scene implements SceneI
         this.UI = options.UI ?? false;
         this.resize = options.resize ?? false;
         this.persistent = options.persistent ?? false;
-        this.secret = options.secret ?? false;
         this.solo = options.solo ?? false;
 
         bare.AddClass(GameObject);

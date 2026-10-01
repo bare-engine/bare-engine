@@ -21,8 +21,6 @@ function GetBareOptions(options?: BareOptions): BareOptions
         gameObjectPoolSize: 50,
         freezeOnUnfocus: true,
         multiTouch: false,
-        imagePath: '',
-        levelPath: '',
         textureFilter: TextureFilterMode.LINEAR,
         editorButtonPosition: {x: 0, y: 0},
         showEditorButton: undefined,

@@ -808,7 +808,7 @@ export class BareEngine
         globalEvents.emit(type, ...event);
 
         // SEND LOCALLY - TO ACTIVE SCENES
-        var scenes = bare.scene.GetAll(true);
+        var scenes = bare.scene.GetAll();
         for (var scene of scenes)
         {
             if (!scene.enabled || scene.paused) // HERE TO PREVENT INPUT ON DISABLED SCENES, FOR ONE

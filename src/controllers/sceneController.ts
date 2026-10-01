@@ -288,9 +288,9 @@ export class SceneController
         return this.currentScenes.find(current => current instanceof sceneClass) as T;
     }
 
-    GetAll(includeIgnored: boolean = false): Scene[]
+    GetAll(): Scene[]
     {
-        return this.currentScenes.filter(current => includeIgnored || !current.secret);
+        return this.currentScenes.slice();
     }
 
     GetAllObjects()
