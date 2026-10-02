@@ -754,11 +754,12 @@ export class TransformToolHandler
 
     private GetGridSize(scene: Scene): number | null
     {
+        const editor = this.EditorOf(scene);
+        if (!editor) return null;
+
         const settings = scene.settingsData?.settings;
         const gridSize = settings?.gridSize;
-        const editor = this.EditorOf(scene);
-        const gridEnabled = editor ? editor.gridEnabled : settings?.gridEnabled;
-        if (!gridEnabled || !gridSize || gridSize <= 0) return null;
+        if (!editor.gridEnabled || !gridSize || gridSize <= 0) return null;
 
         return gridSize;
     }
