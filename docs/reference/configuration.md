@@ -67,7 +67,7 @@ export class HUD extends Scene
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `settingsData` | built-in defaults | The scene's [settings](../guide/prefabs): prefabs, layers, animations. |
+| `settingsData` | built-in defaults | The scene's [settings](../guide/settings-data): prefabs, layers, animations. |
 | `UI` | `false` | Not moved by a camera, drawn in screen space, and kept above non-UI scenes. |
 | `resize` | `false` | When the window size changes, move every object so it keeps its relative place on screen. |
 | `persistent` | `false` | Keep the scene when `bare.scene.Goto` clears the others. |

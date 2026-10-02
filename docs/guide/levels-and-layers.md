@@ -110,11 +110,6 @@ Settings per layer go in `layersInfo`:
 }
 ```
 
-| Setting | Default | Description |
-| --- | --- | --- |
-| `collidesWith` | | Layers this layer's objects collide with. See [collision layers](../reference/physics#collision-layers). |
-| `save` | `true` | Save this layer's objects into the level file. |
-| `showInEditor` | `true` | Show the layer in the level editor. |
-| `pointerCollisionType` | `"POINT"` | How the pointer picks objects: `"POINT"` takes the top object, `"RADIUS"` the nearest one. In code: `CollisionHandlingType.POINT` / `CollisionHandlingType.RADIUS`. See [Mobile & Touch](./mobile#fingers-are-less-precise). |
+See [all layer settings](./settings-data#layers): which layers collide, whether a layer is saved and shown in the editor, and how the pointer picks objects on it.
 
 **Example:** the [Shmup](https://github.com/bare-engine/bare-shmup) [defines a layer per kind of object](https://github.com/bare-engine/bare-shmup/blob/main/public/data/settingsData.json#L83) (enemies, their bullets, your bullets, the player), and [counts objects per layer](https://github.com/bare-engine/bare-shmup/blob/main/src/game.ts#L126-L136).

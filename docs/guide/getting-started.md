@@ -64,7 +64,7 @@ StartBare(Game);
 ```
 
 - `StartBare(Game)` boots the engine with `Game` as the first scene. It takes options as a second argument, like a background color or a fixed resolution. See [Configuration](../reference/configuration).
-- Passing `settingsData.json` to `super` gives the scene your [prefabs](./prefabs) and other game data.
+- Passing `settingsData.json` to `super` gives the scene your [prefabs](./prefabs) and [other game data](./settings-data).
 - `AddGameObject('⚙')` resolves `'⚙'` to a prefab or image and adds a [GameObject](./game-objects) to the scene.
 - Rotation is in degrees, so the gear turns one degree per fixed update.
 - `bare` is a global supplied by the engine. It's a shorthand for `this.scene` here. See [The bare Object](../reference/bare).

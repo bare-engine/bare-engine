@@ -39,7 +39,7 @@ import { Asset, Data } from './generated/assets';
 this.AddGameObject(Asset.Image.EMOJI_GEAR);
 ```
 
-`Asset` holds images, sounds, fonts and levels. `Data` holds prefabs, base prefabs, animations and layers.
+`Asset` holds images, sounds, fonts and levels. `Data` holds prefabs, base prefabs, animations and layers from [`settingsData.json`](./settings-data#generated-names).
 
 ::: warning
 The lists (`Asset.Images`, `Data.Prefabs`, …) are cleared in production builds to save space. To keep them, add `"stripGeneratedAssets": false` under `bareEngine` in `package.json`. See [package.json Options](../reference/package-json#stripgeneratedassets). The single-value maps like `Asset.Image.X` are not affected.
@@ -47,7 +47,7 @@ The lists (`Asset.Images`, `Data.Prefabs`, …) are cleared in production builds
 
 ## `public/data/settingsData.json`
 
-The heart of the project: prefabs, base prefabs, animations, layers and game settings. You can edit it by hand, but the [Chrome extension](./chrome-extension) is made for it. See [Prefabs](./prefabs).
+Prefabs, base prefabs, animations, layers and game settings. See [settingsData.json](./settings-data).
 
 ## `texturePackImages/`
 

@@ -45,6 +45,7 @@ export default defineConfig({
                     { text: "GameObjects", link: "/guide/game-objects" },
                     { text: "Custom GameObjects", link: "/guide/custom-game-objects" },
                     { text: "Prefabs", link: "/guide/prefabs" },
+                    { text: "settingsData.json", link: "/guide/settings-data" },
                     { text: "Components", link: "/guide/components" },
                     { text: "Levels & Layers", link: "/guide/levels-and-layers" },
                     { text: "Level Editor", link: "/guide/level-editor" },

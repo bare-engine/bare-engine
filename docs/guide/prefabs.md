@@ -1,6 +1,6 @@
 # Prefabs
 
-A **prefab** is a named data object that describes a GameObject. You define prefabs in `public/data/settingsData.json` and turn them into GameObjects by name.
+A **prefab** is a named data object that describes a GameObject. You define prefabs in [`settingsData.json`](./settings-data) and turn them into GameObjects by name.
 
 ```json
 {
@@ -257,19 +257,6 @@ To make a preset that works for any property, use the key `ANY`:
 
 **Example:** the [Platformer](https://github.com/bare-engine/bare-platformer)'s coins use the [`PARTICLE_EFFECT` preset](https://github.com/bare-engine/bare-platformer/blob/main/public/data/settingsData.json#L129-L170) for their sparkle.
 
-## Other settingsData sections
-
-| Key | Description |
-| --- | --- |
-| `animations` | Named frame animations, used by `AnimationComponent`. |
-| `layers` | Layer names, see [Levels & Layers](./levels-and-layers). |
-| `settings` | Editor settings, for example `gridEnabled` and `gridSize`. |
-| `layersInfo` | Settings per layer, like which layers collide. See [Levels & Layers](./levels-and-layers#layer-settings). |
-| `gravity` | Gravity for [arcade physics](../reference/physics). |
-| `categories` | How prefabs are grouped in the [level editor](./level-editor#categories)'s sidebar. |
-| `editorObjectSnapToPivot` | How objects snap to the [level editor grid](./level-editor#grid). |
-| `saveVars` | Properties to save when a level is saved while playing, per GameObject class. See [What gets saved](../reference/save-data#what-gets-saved). |
-
 ## Typed access
 
 The generated `Data` object gives you autocomplete for prefab names:
@@ -279,3 +266,5 @@ import { Data } from './generated/assets';
 
 this.AddGameObject(Data.Prefab.PLAYER);
 ```
+
+See [Generated names](./settings-data#generated-names) for the rest of `Data`.
