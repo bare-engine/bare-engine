@@ -34,8 +34,6 @@ StartBare(FirstGame);
 
 You should see an orange square in the center. Click the game, then hold the left or right arrow key (A/D also work). It moves at 200 game units per second; multiplying by `deltaTime` makes the speed independent of frame rate.
 
-The square can leave the screen: this example has no physics or bounds yet. Reload to put it back in the center.
-
 ## Give it an image
 
 Put a PNG named `player.png` in `texturePackImages/`. The dev server rebuilds the atlas. Change `AddGameObject('PIXEL')` to `AddGameObject('player')`, remove `.SetScale(32)` to use the image's own dimensions, and remove `.SetColor(Color.Orange)` to keep its original colors.

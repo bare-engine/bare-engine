@@ -32,7 +32,7 @@ A level is a JSON file in `public/data/levels/`. It holds layers of [entities](.
 }
 ```
 
-You build levels with the in-game level editor rather than by hand.
+You build levels with the in-game [level editor](./level-editor) rather than by hand. To create a new level, click the **+** button under the **Levels** tab of the [Chrome extension](./chrome-extension).
 
 **Example:** the [Platformer](https://github.com/bare-engine/bare-platformer)'s [`level.json`](https://github.com/bare-engine/bare-platformer/blob/main/public/data/levels/level.json).
 
