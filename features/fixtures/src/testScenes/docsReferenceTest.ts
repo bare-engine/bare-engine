@@ -62,8 +62,7 @@ export class DocsReferenceTest extends Scene
         c.check(bare.count > count, "bare.count should increase as frames render");
         c.check(typeof bare.gameSpeed === "number", "gameSpeed should be a number");
         c.check(bScene === this, "bScene should be the current scene");
-        // the runner serves on 127.0.0.1, which has no "localhost" in it
-        c.check(isLocalhost === location.hostname.includes("localhost"), "isLocalhost should follow the hostname");
+        c.check(isDev === __DEV__, "isDev should follow __DEV__");
         c.check(typeof isMobile === "boolean" && typeof hasFocus === "boolean", "isMobile and hasFocus should be booleans");
 
         const pausedBefore = bare.paused;

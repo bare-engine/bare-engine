@@ -30,7 +30,7 @@ await waitFrame(3);     // wait three game frames
 | `bScene` | The current scene, rewritten to `this` or `this.scene` like the [scene modules](./bare#scene-modules). |
 | `rapid` | The renderer. See [below](#the-renderer). |
 | `debug` | Whether debug drawing is on. See [Debugging](../guide/debugging). |
-| `isLocalhost` | Running on `localhost`, so during development. |
+| `isDev` | Running from the Vite dev server (`__DEV__`), not a production build. |
 | `isMobile` | Running on a phone or tablet. |
 | `hasFocus` | The game's tab has focus. |
 

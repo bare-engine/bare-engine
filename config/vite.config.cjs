@@ -70,7 +70,8 @@ module.exports = ({ mode }) => {
             bareHtmlPlugin({
                 projectRoot,
                 indexHtmlPath: engineIndexPath,
-                gameId
+                gameId,
+                isDev
             }),
             bareIndexOutputPlugin(),
             bareInitialAssetsPlugin({ projectRoot }),

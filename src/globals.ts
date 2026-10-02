@@ -33,7 +33,7 @@ declare global
     var whiteShader:CustomGlShader;
 
     var rapid: Rapid;
-    var isLocalhost:boolean;
+    var isDev:boolean;
     var isMobile:boolean;
 
     var destroyTextFunc:Function | null;
@@ -60,7 +60,7 @@ window.debug = false;
 window.onFocusChange = (hasFocus) => {};
 
 window.trace = (message: any, ...optionalParams: any[]): void => {
-    if (!isLocalhost) return;
+    if (!__DEV__) return;
     console.log(message, ...optionalParams);
 };
 
@@ -69,8 +69,7 @@ window.assert = (condition: boolean, message?: string): void => {
         throw new Error(message);
 };
 
-window.isLocalhost = ['localhost'].some(domain => window.location.href.includes(domain));
-//window.isLocalhost = __DEV__;
+window.isDev = __DEV__;
 window.isMobile = Helper.MobileAndTabletCheck();
     
 let _waitGen = 0;

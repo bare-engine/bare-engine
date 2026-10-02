@@ -380,7 +380,7 @@ export class EditorScene extends Scene
     
         bare.level.Serialize(level);
             
-        if (!window.isLocalhost)
+        if (!__DEV__)
         {
             SaveData.levelsEditedCache.set(SaveData.currentLevelStr, level);
             SaveDataHandler.Save();
@@ -551,7 +551,7 @@ export class EditorScene extends Scene
         this.settingsHandler.FilterSettingsDataDefaults(dataToSave);
 
         // Persist to disk via dev-server endpoint when available (local only)
-        if (!window.isLocalhost) {
+        if (!__DEV__) {
           return { ok: true, saved: false, message: 'Save skipped (not localhost)' };
         }
     

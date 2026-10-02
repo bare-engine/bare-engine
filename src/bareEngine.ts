@@ -193,7 +193,7 @@ export class BareEngine
     {
         globalEvents.persistent.offAlias('debugKeys');
 
-        if (!window.isLocalhost || !debugKeys || debugKeys.length == 0)
+        if (!__DEV__ || !debugKeys || debugKeys.length == 0)
             return;
 
         const debugKeyActions = new Map<string, () => void>();

@@ -623,6 +623,7 @@ function bareHtmlPlugin(options = {}) {
     const indexHtmlPath = options.indexHtmlPath || path.resolve(__dirname, "../config/index.html");
     const projectPackage = readProjectPackage(projectRoot);
     const gameId = options.gameId || projectPackage.bareEngine?.gameId || "";
+    const isDev = options.isDev === true;
     const htmlOptions = projectPackage.bareEngine?.index || {};
     const title = htmlOptions.title || projectPackage.bareEngine?.name || projectPackage.name || "Bare Game";
     const backgroundColor = htmlOptions.backgroundColor || "rgb(255, 255, 255)";
@@ -667,6 +668,7 @@ function bareHtmlPlugin(options = {}) {
                     .replace(/%BARE_FIRST_LEVEL_LOAD%/g, JSON.stringify(firstLevelLoad))
                     .replace(/%BARE_PRELOAD_CURRENT_LEVEL%/g, JSON.stringify(preloadCurrentLevel))
                     .replace(/%BARE_GAME_ID%/g, JSON.stringify(gameId))
+                    .replace(/%BARE_DEV%/g, JSON.stringify(isDev))
                     .replace("<!-- js:bootstrap -->", bootstrap);
             }
         }

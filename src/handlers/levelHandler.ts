@@ -126,7 +126,7 @@ export class LevelHandler
     {
         // WHEN IN PRODUCTION, WE DON'T LOAD LEVELS FROM CACHE
         // BUT ONCE PLAYER EDITS IT IN LEVEL EDITOR, IT'S LOADED FROM CACHE (SINCE IN PROD WE CAN'T SAVE EDITS TO DISK)
-        if (!window.isLocalhost)
+        if (!__DEV__)
         {
             var levelStr = SaveData.currentLevelStr;
             if (typeof levelInput === "string")
