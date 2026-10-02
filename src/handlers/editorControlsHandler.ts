@@ -1,5 +1,5 @@
 import { keyboardController } from "../controllers/keyboardController";
-import { Vec2 } from "../libraries/new-rapid-render";
+import { Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { ArcadeObject } from "../objects/arcadeObject";
 import { EditorScene } from "../scenes/editorScene";

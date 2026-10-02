@@ -4,7 +4,7 @@ import { GameObject } from "../../../objects/gameObject";
 import { BareEvent } from "../../../types/bareTypes";
 import { Enum, InspectorField } from "../../../utils/decorators";
 import { Save } from "../../../utils/saveFields";
-import { Color, Vec2 } from "../../new-rapid-render";
+import { Color, Vec2 } from "../../rapid-render";
 import { testPointInside } from "../detection";
 import { DistanceJoint } from "../distance";
 import { Joint } from "../joint";

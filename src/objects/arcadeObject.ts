@@ -1,5 +1,5 @@
 import { MakePathForEntity } from "../globals";
-import { Texture, Vec2 } from "../libraries/new-rapid-render";
+import { Texture, Vec2 } from "../libraries/rapid-render";
 import { Scene } from "../scenes/scene";
 import { BareEvent, BlockedState, ConstructEntityOptions, Entity, HitboxType, Position, Rectangle, Rectangle2Vec } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";

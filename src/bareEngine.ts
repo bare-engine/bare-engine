@@ -17,7 +17,7 @@ import { PoolHandler } from "./handlers/poolHandler";
 import { SaveDataHandler } from "./handlers/SaveDataHandler";
 import { SoundHandler } from "./handlers/soundHandler";
 import { Emitter, EventArgs } from "./libraries/mitt";
-import { Color, CustomGlShader, TextureManager, Vec2 } from "./libraries/new-rapid-render";
+import { Color, CustomGlShader, TextureManager, Vec2 } from "./libraries/rapid-render";
 import { GameObject } from "./objects/gameObject";
 import { EditorScene } from "./scenes/editorScene";
 import { Scene } from "./scenes/scene";

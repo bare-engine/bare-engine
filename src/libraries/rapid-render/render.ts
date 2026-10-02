@@ -1,646 +1,1001 @@
-import { ICircleRenderOptions, IGraphicRenderOptions, ILayerRenderOptions, IRapidOptions, IRectRenderOptions, IRenderLineOptions, ISpriteRenderOptions, ShaderType as ShaderType, ITransformOptions, MaskType, WebGLContext, BlendMode, IParticleOptions, ICameraOptions } from "./interface"
-import { getLineGeometry } from "./line"
-import { Color, MatrixStack, Vec2 } from "./math"
-import GraphicRegion from "./regions/graphic_region"
-import RenderRegion from "./regions/region"
-import SpriteRegion from "./regions/sprite_region"
-import { FrameBufferObject, RenderTexture, Texture, TextureCache } from "./texture"
-import GLShader from "./webgl/glshader"
-import { getContext } from "./webgl/utils"
+import { getContext, WebGLContext } from "./webgl/utils";
+import GLShader, { CustomGlShader } from "./webgl/glshader";
+import { Region } from "./region/region";
+import { SpriteRegion } from "./region/spriteRegion";
+import { MatrixStack, MatrixStore, ITransformOptions } from "./matrix-engine";
+import { GraphicRegion } from "./region/graphicRegion";
+import { RenderTexture, Texture, TextureManager } from "./texture";
+import { Color } from "./color";
+import {
+    ICircleOptions,
+    IDrawParticleBatchOptions,
+    IGraphicOptions,
+    ILineOptions,
+    IMaskImageOptions,
+    IRectOptions,
+    IRoundedRectOptions,
+    ISpriteOptions,
+    drawCircle,
+    drawGraphic,
+    drawLine,
+    drawMaskImage,
+    drawParticles,
+    drawRect,
+    drawRoundedRect,
+    drawSprite,
+    getColorUint32,
+} from "./draw";
+import { Vec2 } from "./math";
+import { AtlasSpriteRegion } from "./region/atlasSpriteRegion";
+import { ParticleRegion } from "./region/particleRegion";
 
 /**
- * The `Rapid` class provides a WebGL-based rendering engine. 
+ * Options for initializing the Rapid application.
  */
-class Rapid {
-    gl: WebGLContext
-    canvas: HTMLCanvasElement
-    projection!: Float32Array
-    projectionDirty: boolean = true
+export interface IAppOptions {
+    /** The HTML canvas element to render onto. */
+    canvas: HTMLCanvasElement;
 
-    matrixStack = new MatrixStack()
-    textures: TextureCache
+    /** Alias ​​for logicWidth */
+    width?: number,
+    /** Alias ​​for logicHeight */
+    height?: number,
 
-    width: number
-    height: number
+    /** The logical width of the application (CSS pixels). */
+    logicWidth?: number;
+    /** The logical height of the application (CSS pixels). */
+    logicHeight?: number;
 
-    backgroundColor: Color
-    readonly devicePixelRatio = window.devicePixelRatio || 1
-    readonly maxTextureUnits: number
-    private readonly defaultColor = new Color(255, 255, 255, 255)
-    private premultiplyAlpha: boolean
-    //    private readonly defaultColorBlack = new Color(0, 0, 0, 255)
+    /** The physical width of the application (actual pixels). */
+    physicsWidth?: number;
+    /** The physical height of the application (actual pixels). */
+    physicsHeight?: number;
 
-    private currentRegion?: RenderRegion
-    private currentRegionName?: string
-    private regions: Map<string, RenderRegion> = new Map
-    private currentMaskType: MaskType[] = []
-    private currentTransform: ITransformOptions[] = []
-    private currentFBO: FrameBufferObject[] = []
-    private lastTime: number = 0
-    private maskWriteEnabled: boolean = false
-    private maskAlphaCutoff: number = 0.001
-    /**
-     * Constructs a new `Rapid` instance with the given options.
-     * @param options - Options for initializing the `Rapid` instance.
-     */
-    constructor(options: IRapidOptions) {
-        const gl = getContext(options.canvas)
-        this.gl = gl
-        this.canvas = options.canvas
-        this.textures = new TextureCache(options.antialias ?? false)
-        this.premultiplyAlpha = options.premultiplyAlpha ?? false
+    /** The default clear color for the application background. */
+    backgroundColor?: Color;
 
-        //this.maxTextureUnits = gl.getParameter(this.gl.MAX_TEXTURE_IMAGE_UNITS);
+    /** Whether to enable MSAA antialiasing on the WebGL canvas. Default: false. */
+    antialias?: boolean;
 
-        // LIMITED TO 32 SINCE WE DONT NEED MORE AND SOME DEVICES (FLORIAN'S) SET IT TO 128 BUT THEN COMPLAIN IT'S TOO COMPLEX
-        this.maxTextureUnits = Math.min(gl.getParameter(this.gl.MAX_TEXTURE_IMAGE_UNITS), 32);
+    textureFilter?: TextureFilterMode;
 
-        this.width = options.width || this.canvas.width
-        this.height = options.width || this.canvas.height
+    /** Whether textures are uploaded with premultiplied alpha. Default: true. */
+    premultipliedAlpha?: boolean;
 
-        this.backgroundColor = options.backgroundColor || new Color(255, 255, 255, 255)
-        this.registerBuildInRegion()
-        this.initWebgl(gl)
-        this.projectionDirty = false
-    }
+    roundPixels?: boolean;
 
-    SetPremultiplyAlpha(premultiplyAlpha: boolean)
-    {
-        this.premultiplyAlpha = premultiplyAlpha
-    }
-
-    /**
-     * Initializes WebGL context settings.
-     * @param gl - The WebGL context.
-     */
-    private initWebgl(gl: WebGLContext) {
-        this.resize(this.width, this.height)
-        gl.enable(gl.BLEND);
-        gl.disable(gl.DEPTH_TEST);
-        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-        gl.enable(gl.STENCIL_TEST);
-        gl.enable(gl.SCISSOR_TEST);
-    }
-    /**
-     * @ignore
-     */
-    clearTextureUnit() {
-        for (let i = 0; i < this.maxTextureUnits; i++) {
-            this.gl.activeTexture(this.gl.TEXTURE0 + i);
-            this.gl.bindTexture(this.gl.TEXTURE_2D, null);
-        }
-    }
-    /**
-     * Registers built-in regions such as sprite and graphic regions.
-     */
-    private registerBuildInRegion() {
-        this.registerRegion("sprite", SpriteRegion)
-        this.registerRegion("graphic", GraphicRegion)
-    }
-
-    /**
-     * Registers a custom render region with a specified name.
-     * @param name - The name of the region.
-     * @param regionClass - The class of the region to register.
-     */
-    registerRegion(name: string, regionClass: typeof RenderRegion) {
-        this.regions.set(name, new regionClass(this))
-    }
-    private quitCurrentRegion() {
-        if (this.currentRegion && this.currentRegion.hasPendingContent()) {
-            this.currentRegion.render();
-            this.currentRegion.exitRegion();
-        }
-    }
-    /**
-     * Sets the current render region by name and optionally a custom shader.
-     * @param regionName - The name of the region to set as current.
-     * @param customShader - An optional custom shader to use with the region.
-     * @param hasUnifrom - have costum unifrom
-     */
-    setRegion(regionName: string, customShader?: GLShader) {
-        if (
-            // isRegionChanged
-            regionName != this.currentRegionName ||
-            // isShaderChanged
-            (this.currentRegion && this.currentRegion.isShaderChanged(customShader))
-        ) {
-            const region = this.regions.get(regionName)!;
-            this.quitCurrentRegion()
-            this.currentRegion = region;
-            this.currentRegionName = regionName
-            region.enterRegion(customShader);
-        }
-    }
-
-    /**
-     * Saves the current matrix state to the stack.
-     */
-    save() {
-        this.matrixStack.pushMat()
-    }
-
-    /**
-     * Restores the matrix state from the stack.
-     */
-    restore() {
-        this.matrixStack.popMat()
-    }
-
-    /**
-     * Executes a callback function within a saved and restored matrix state scope.
-     * @param cb - The callback function to execute within the saved and restored matrix state scope.
-     */
-    withTransform(cb: () => void) {
-        this.save()
-        cb()
-        this.restore()
-    }
-
-    /**
-     * Starts the rendering process, resetting the matrix stack and clearing the current region.
-     * @param clear - Whether to clear the matrix stack. Defaults to true.
-     */
-    startRender(clear: boolean = true) {
-        this.clear()
-        clear && this.matrixStack.clear()
-        this.matrixStack.pushIdentity()
-        this.currentRegion = undefined
-        this.currentRegionName = undefined
-        this.maskWriteEnabled = false
-
-        const now = performance.now();
-        const dt = this.lastTime ? (now - this.lastTime) / 1000 : 0;
-        this.lastTime = now;
-        return dt
-    }
-
-    /**
-     * Ends the rendering process by rendering the current region.
-     */
-    endRender() {
-        this.currentRegion?.render()
-        this.projectionDirty = false
-    }
-    /**
-     * Render
-     * @param cb - The function to render.
-     */
-    render(cb: (dt:number) => void) {
-        const dt = this.startRender()
-        cb(dt)
-        this.endRender()
-    }
-
-    renderCamera(options: ICameraOptions) {
-        this.matrixStack.applyTransform(options)
-        this.matrixStack.setTransform(this.matrixStack.getInverse())
-    }
-
-    /**
-     * Renders a sprite with the specified options.
-     * 
-     * @param options - The rendering options for the sprite, including texture, position, color, and shader.
-     */
-    renderSprite(options: ISpriteRenderOptions): void {
-        const texture = options.texture
-        if (!texture || !texture.base) return
-
-        const { offsetX, offsetY } = this.startDraw(options, texture.width, texture.height)
-        this.setRegion("sprite", options.shader);
-
-        (this.currentRegion as SpriteRegion).renderSprite(
-            texture.base.texture,
-            texture.width,
-            texture.height,
-            texture.clipX,
-            texture.clipY,
-            texture.clipW,
-            texture.clipH,
-            texture.isRotated,
-            offsetX,
-            offsetY,
-            this.packColor(options.color || this.defaultColor),
-            options.uniforms,
-            options.flipX,
-            options.flipY
-        )
-
-        this.afterDraw()
-    }
-
-    /*renderParticles(particleEmitter: ParticleEmitter) {
-        if (particleEmitter.localSpace) {
-            this.startDraw(particleEmitter.getTransform())
-            particleEmitter.render();
-            this.afterDraw()
-        } else {
-            particleEmitter.render();
-        }
-    }*/
-
-    /**
-     * Renders a texture directly without additional options.
-     * This is a convenience method that calls renderSprite with just the texture.
-     * 
-     * @param texture - The texture to render at the current transformation position.
-     */
-    renderTexture(texture: Texture): void {
-        if (!texture.base) return
-        this.renderSprite({ texture })
-    }
-
-    /**
-     * Render a source texture into a rendertexture.
-     * @param source - The texture to draw.
-     * @param target - A FrameBufferObject or a Texture created from one.
-     * @returns True when rendering succeeded.
-     */
-    renderTextureTo(source: Texture, target: RenderTexture | FrameBufferObject, clear: boolean = true): boolean {
-        const fbo = target instanceof FrameBufferObject
-            ? target
-            : (target.base instanceof FrameBufferObject ? target.base : undefined)
-
-        if (!fbo || !source.base) {
-            return false
-        }
-
-        this.drawToFBO(fbo, () => {
-            this.renderSprite({ texture: source })
-        }, clear)
-
-        return true
-    }
-
-    /**
-     * Renders a line with the specified options.
-     * 
-     * @param options - The options for rendering the line, including points, color, width, and join/cap types.
-     */
-    renderLine(options: IRenderLineOptions): void {
-        const linePoints = options.closed ? [...options.points, options.points[0]] : options.points;
-        const { vertices, uv } = getLineGeometry({ ...options, points: linePoints })!;
-        this.renderGraphic({ ...options, drawType: this.gl.TRIANGLES, points: vertices, uv });
-    }
-
-    /**
-     * Renders graphics based on the provided options.
-     * 
-     * @param options - The options for rendering the graphic, including points, color, texture, and draw type.
-     */
-    renderGraphic(options: IGraphicRenderOptions): void {
-        this.startGraphicDraw(options)
-        options.points.forEach((vec, index) => {
-            const color = Array.isArray(options.color) ? options.color[index] : options.color
-            const uv = options.uv?.[index] as Vec2
-            this.addGraphicVertex(vec.x, vec.y, uv, color)
-        });
-        this.endGraphicDraw()
-    }
-    /**
-     * Starts the graphic drawing process.
-     * 
-     * @param options - The options for the graphic drawing, including shader, texture, and draw type.
-     */
-    startGraphicDraw(options: IGraphicRenderOptions) {
-        const { offsetX, offsetY } = this.startDraw(options)
-        this.setRegion("graphic", options.shader)
-        const currentRegion = this.currentRegion as GraphicRegion
-        currentRegion.startRender(offsetX, offsetY, options.texture, options.uniforms)
-        if (options.drawType) {
-            currentRegion.drawType = options.drawType;
-        }
-    }
-
-    /**
-     * Adds a vertex to the current graphic being drawn.
-     * 
-     * @param offsetX - The X coordinate of the vertex.
-     * @param offsetY - The Y coordinate of the vertex.
-     * @param uv - The texture UV coordinates for the vertex.
-     * @param color - The color of the vertex. Defaults to the renderer's default color.
-     */
-    private addGraphicVertex(offsetX: number, offsetY: number, uv: Vec2, color?: Color): void {
-        const currentRegion = this.currentRegion as GraphicRegion
-        currentRegion.addVertex(offsetX, offsetY, uv?.x, uv?.y, this.packColor(color || this.defaultColor));
-    }
-
-    /**
-     * Completes the graphic drawing process and renders the result.
-     */
-    private endGraphicDraw() {
-        const currentRegion = this.currentRegion as GraphicRegion
-        currentRegion.render()
-
-        this.afterDraw()
-    }
-
-    private startDraw(options: ITransformOptions, width: number = 0, height: number = 0) {
-        this.currentTransform.push(options)
-        return this.matrixStack.applyTransform(options, width, height)
-    }
-
-    private afterDraw() {
-        if (this.currentTransform.length > 0) {
-            this.matrixStack.applyTransformAfter(this.currentTransform.pop()!)
-        }
-    }
-    private packColor(color: Color): number {
-        return this.premultiplyAlpha ? color.premultipliedUint32 : color.uint32;
-    }
-
-    /**
-     * Renders a rectangle with the specified options.
-     * 
-     * @param options - The options for rendering the rectangle, including width, height, position, and color.
-     */
-    renderRect(options: IRectRenderOptions): void {
-        const { width, height } = options
-        const points = [
-            new Vec2(0, 0),
-            new Vec2(width, 0),
-            new Vec2(width, height),
-            new Vec2(0, height)
-        ];
-        this.renderGraphic({ ...options, points, drawType: this.gl.TRIANGLE_FAN });
-    }
-
-    /**
-     * Renders a circle with the specified options.
-     * 
-     * @param options - The options for rendering the circle, including radius, position, color, and segment count.
-     */
-    renderCircle(options: ICircleRenderOptions): void {
-        const segments = options.segments || 32
-        const radius = options.radius
-        const color = options.color || this.defaultColor
-
-        const points: Vec2[] = [];
-        for (let i = 0; i <= segments; i++) {
-            const angle = (i / segments) * Math.PI * 2;
-            const x = Math.cos(angle) * radius;
-            const y = Math.sin(angle) * radius;
-            points.push(new Vec2(x, y));
-        }
-        this.renderGraphic({ ...options, points, color, drawType: this.gl.TRIANGLE_FAN });
-    }
-
-    /**
-     * Resizes the canvas and updates the viewport and projection matrix.
-     * @param width - The new width of the canvas.
-     * @param height - The new height of the canvas.
-     */
-    resize(width: number, height: number) {
-        // Store logical dimensions
-        this.width = width;
-        this.height = height;
-        
-        // Calculate physical dimensions
-        const physicalWidth = width * this.devicePixelRatio;
-        const physicalHeight = height * this.devicePixelRatio;
-        
-        // Set canvas internal resolution (physical pixels)
-        this.canvas.width = physicalWidth;
-        this.canvas.height = physicalHeight;
-        
-        // Set canvas display size (logical pixels) - NO devicePixelRatio here
-        this.canvas.style.width = width + 'px';
-        this.canvas.style.height = height + 'px';
-        
-        // Set WebGL viewport to physical dimensions
-        this.gl.viewport(0, 0, physicalWidth, physicalHeight);
-        
-        // Use logical dimensions for projection matrix
-        this.projection = this.createOrthMatrix(0, width, height, 0);
-        this.projectionDirty = true;
-        this.resizeWebglSize(width, height);
-    }
-    
-    /*resize(logicalWidth: number, logicalHeight: number) {
-        const physicalWidth = logicalWidth * this.devicePixelRatio
-        const physicalHeight = logicalHeight * this.devicePixelRatio
-        this.canvas.width = physicalWidth
-        this.canvas.height = physicalHeight
-
-        this.resizeWebglSize(logicalWidth, logicalHeight)
-
-        this.canvas.style.width = logicalWidth + 'px'
-        this.canvas.style.height = logicalHeight + 'px'
-
-        this.width = logicalWidth
-        this.height = logicalHeight
-    }*/
-    
-    private resizeWebglSize(width: number, height: number, devicePixelRatio?: number) {
-        const physicalWidth = width * (devicePixelRatio || this.devicePixelRatio)
-        const physicalHeight = height * (devicePixelRatio || this.devicePixelRatio)
-        this.gl.viewport(0, 0, physicalWidth, physicalHeight)
-        this.updateProjection(0, width, height, 0)
-        this.gl.scissor(0, 0, physicalWidth, physicalHeight)
-    }
-    private updateProjection(left: number, right: number, bottom: number, top: number) {
-        this.projection = this.createOrthMatrix(left, right, bottom, top)
-        this.projectionDirty = true
-    }
-
-    /**
-     * Clears the canvas with the background color.
-     * @param bgColor - The background color to clear the canvas with.
-     */
-    clear(bgColor?: Color) {
-        const gl = this.gl
-        const c = bgColor || this.backgroundColor
-        gl.clearColor(c.r / 255, c.g / 255, c.b / 255, c.a / 255);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-        this.clearMask()
-    }
-
-    /**
-     * Creates an orthogonal projection matrix.
-     * @param left - The left bound of the projection.
-     * @param right - The right bound of the projection.
-     * @param bottom - The bottom bound of the projection.
-     * @param top - The top bound of the projection.
-     * @returns The orthogonal projection matrix as a `Float32Array`.
-     */
-    private createOrthMatrix(left: number, right: number, bottom: number, top: number): Float32Array {
-        return new Float32Array([
-            2 / (right - left), 0, 0, 0,
-            0, 2 / (top - bottom), 0, 0,
-            0, 0, -1, 0,
-            -(right + left) / (right - left), -(top + bottom) / (top - bottom), 0, 1
-        ]);
-    }
-
-    /**
-     * Draw a mask. Automatically calls startDrawMask.
-     * @param type - The type of mask to draw.
-     * @param cb - The callback function to execute.
-     */
-    drawMask(type: MaskType = MaskType.Include, cb: () => void) {
-        this.startDrawMask(type)
-        cb()
-        this.endDrawMask()
-    }
-    /**
-     * Start drawing a mask using the stencil buffer.
-     * This method configures the WebGL context to begin defining a mask area.
-     */
-    startDrawMask(type: MaskType = MaskType.Include) {
-        const gl = this.gl;
-        this.currentMaskType.push(type);
-        this.setMaskType(type, true);
-        this.maskWriteEnabled = true
-        this.updateMaskUniforms()
-
-        gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
-        gl.colorMask(false, false, false, false);
-    }
-
-    /**
-     * End the mask drawing process.
-     * This method configures the WebGL context to use the defined mask for subsequent rendering.
-     */
-    endDrawMask() {
-        const gl = this.gl;
-        this.quitCurrentRegion();
-
-        gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
-        gl.colorMask(true, true, true, true);
-        this.setMaskType(this.currentMaskType.pop() ?? MaskType.Include, false);
-        this.maskWriteEnabled = false
-        this.updateMaskUniforms()
-    }
-
-    /**
-     * Set the mask type for rendering
-     * @param type - The mask type to apply
-     * @param start - Whether this is the start of mask drawing
-     */
-    private setMaskType(type: MaskType, start: boolean = false) {
-        const gl = this.gl;
-        this.quitCurrentRegion();
-        if (start) {
-            this.clearMask();
-            gl.stencilFunc(gl.ALWAYS, 1, 0xFF);
-        } else {
-            switch (type) {
-                case MaskType.Include:
-                    gl.stencilFunc(gl.EQUAL, 1, 0xFF);
-                    break;
-                case MaskType.Exclude:
-                    gl.stencilFunc(gl.NOTEQUAL, 1, 0xFF);
-                    break;
-            }
-        }
-    }
-
-    /**
-     * Clear the current mask by clearing the stencil buffer.
-     * This effectively removes any previously defined mask.
-     */
-    clearMask() {
-        const gl = this.gl;
-        this.quitCurrentRegion();
-        gl.clearStencil(0);
-        gl.clear(gl.STENCIL_BUFFER_BIT);
-        gl.stencilFunc(gl.ALWAYS, 1, 0xFF);
-    }
-
-    isMaskWriteEnabled() {
-        return this.maskWriteEnabled
-    }
-
-    getMaskAlphaCutoff() {
-        return this.maskAlphaCutoff
-    }
-
-    private updateMaskUniforms() {
-        this.currentRegion?.applyMaskUniforms(this.maskWriteEnabled, this.maskAlphaCutoff)
-    }
-
-    /**
-     * Creates a custom shader.
-     * @param vs - Vertex shader code.
-     * @param fs - Fragment shader code.
-     * @param type - Shader type.
-     * @returns The created shader object.
-     */
-    createCostumShader(
-        vs: string,
-        fs: string,
-        type: ShaderType,
-        textureUnitNum: number = 0,
-        padding: number | { x: number, y: number } = 0
-    ) {
-        return GLShader.createCostumShader(this, vs, fs, type, textureUnitNum, padding)
-    }
-    /**
-     * Starts rendering to a Frame Buffer Object (FBO)
-     * Sets up the FBO for rendering by binding it, adjusting viewport size and projection
-     * @param fbo - The Frame Buffer Object to render to
-     */
-    startFBO(fbo: FrameBufferObject, clear: boolean = false) {
-        this.quitCurrentRegion()
-
-        fbo.bind(clear)
-        this.clearTextureUnit()
-
-        this.resizeWebglSize(fbo.width, fbo.height, 1)
-        this.updateProjection(0, fbo.width, 0, fbo.height)
-        this.save()
-        this.matrixStack.identity()
-        this.currentFBO.push(fbo)
-    }
-
-    /**
-     * Ends rendering to a Frame Buffer Object
-     * Restores the default framebuffer and original viewport settings
-     * @param fbo - The Frame Buffer Object to unbind
-     */
-    endFBO() {
-        if (this.currentFBO.length > 0) {
-            const fbo = this.currentFBO.pop()!
-            this.quitCurrentRegion()
-            fbo.unbind()
-            this.clearTextureUnit()
-
-            this.resizeWebglSize(this.width, this.height)
-            this.updateProjection(0, this.width, this.height, 0)
-            this.restore()
-        }
-    }
-
-    /**
-     * Convenience method to render to a Frame Buffer Object
-     * Handles starting and ending the FBO rendering automatically
-     * @param fbo - The Frame Buffer Object to render to
-     * @param cb - Callback function containing render commands to execute on the FBO
-     */
-    drawToFBO(fbo: FrameBufferObject, cb: () => void, clear: boolean = false) {
-        this.startFBO(fbo, clear)
-        cb()
-        this.endFBO()
-    }
-    /**
-     * Set the blend mode for rendering
-     * @param mode - The blend mode to apply
-     */
-    setBlendMode(mode: BlendMode) {
-        switch (mode) {
-            case BlendMode.Additive:
-                this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE);
-                break;
-            case BlendMode.Subtractive:
-                this.gl.blendFunc(this.gl.ZERO, this.gl.ONE_MINUS_SRC_COLOR);
-                break;
-            case BlendMode.Mix:
-                this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
-                break;
-            default:
-                break;
-        }
-    }
+    scaleMode?: CanvasScaleMode;
 }
 
-export default Rapid
+/**
+ * The type of mask to apply.
+ */
+export enum MaskType {
+    /**
+     * Draw inside the mask.
+     */
+    EQUAL,
+    /**
+     * Draw outside the mask.
+     */
+    NOT_EQUAL
+}
+
+/**
+ * Supported blend modes for rendering.
+ */
+export enum BlendMode {
+    /** Normal alpha blending. */
+    NORMAL,
+    /** Additive blending (useful for glow effects). */
+    ADD,
+    /** Multiply blending (useful for shadows and darkening). */
+    MULTIPLY,
+    /** Screen blending (produces a softer additive effect). */
+    SCREEN,
+    /** Erase blending (removes alpha based on source). */
+    ERASE
+}
+
+export enum TextureFilterMode {
+    LINEAR,
+    NEAREST
+}
+
+export enum CanvasScaleMode {
+    /**
+     * Scales the canvas by increasing the WebGL backbuffer size.
+     * The logical game size stays the same, but rendering happens at the final display resolution,
+     * so rotated sprites, lines, and geometry get more rasterized pixels and look smoother.
+     */
+    CanvasItem,
+    /**
+     * Scales only the final canvas element on the page.
+     * The WebGL backbuffer stays at the logical game size, then the browser stretches that bitmap
+     * to the CSS display size. This preserves low-resolution/pixel-art rendering and does not add
+     * more fragments while scaling up.
+     */
+    Viewport,
+}
+
+/**
+ * The main application class for the Rapid rendering engine.
+ * Manages the WebGL context, rendering regions, state, and matrices.
+ */
+export class Rapid {
+    /** The active WebGL context. */
+    gl: WebGLContext;
+    /** The target HTMLCanvasElement. */
+    canvas: HTMLCanvasElement;
+
+    /** The current orthographic projection matrix (16 elements). */
+    projection: Float32Array = new Float32Array(16);
+    /** Indicates if the projection matrix has changed and needs to be uploaded to shaders. */
+    projectionDirty: boolean = true;
+
+    /** The current device pixel ratio. */
+    dpr: number;
+
+    /** Background clear color [r, g, b, a], values range from 0 to 255. */
+    backgroundColor: Color = Color.Black;
+
+    /** Logical width in CSS pixels, used for coordinate system and projection matrix. */
+    logicWidth: number = 0;
+    /** Logical height in CSS pixels, used for coordinate system and projection matrix. */
+    logicHeight: number = 0;
+
+    /** Physical width (canvas actual pixels = logical width * dpr). */
+    physicsWidth: number = 0;
+    /** Physical height (canvas actual pixels = logical height * dpr). */
+    physicsHeight: number = 0;
+
+    /** The currently active rendering region. */
+    currentRegion: Region | null = null;
+
+    /** Maximum number of texture units supported by the device. */
+    maxTextureUnits: number = 0;
+
+    /** Matrix stack for hierarchical transformations. */
+    matrixStack: MatrixStack = new MatrixStack(this);
+    /** Direct access to the underlying matrix store. */
+    matrix: MatrixStore;
+
+    /** Region dedicated to fast sprite rendering. */
+    spriteRegion: SpriteRegion;
+    /** Region dedicated to arbitrary geometry and shapes rendering. */
+    graphicRegion: GraphicRegion;
+
+    atlasSpriteRegion: AtlasSpriteRegion;
+
+    particleRegion: ParticleRegion;
+
+    /** Counts the number of WebGL draw calls made in the current frame. */
+    drawcallCount: number = 0;
+    /** Indicates whether we are currently writing to the stencil buffer to create a mask. */
+    inCreateMask: boolean = false;
+
+    /** Manager for creating and organizing textures. */
+    texture: TextureManager;
+
+    /** Whether textures use premultiplied alpha. Set once at construction. */
+    premultipliedAlpha: boolean;
+    /** Default texture filtering preference and requested canvas MSAA setting. */
+    antialias: boolean;
+
+    roundPixels: boolean;
+
+    /** Default filtering mode used when sampling textures. */
+    textureFilter: TextureFilterMode;
+
+    scaleMode?: CanvasScaleMode;
+
+    /** Internal ping-pong RenderTextures for multi-filter chains. */
+    private _filterRT: [RenderTexture | null, RenderTexture | null] = [null, null];
+    private _filterInput = new Texture()
+
+    get height() {
+        return this.logicHeight
+    }
+    get width() {
+        return this.logicWidth
+    }
+    /**
+     * Creates a new Rapid application instance.
+     * @param options Initialization options including the target canvas.
+     */
+    constructor(options: IAppOptions) {
+        this.canvas = options.canvas;
+        this.dpr = window.devicePixelRatio || 1;
+        this.antialias = options.antialias ?? false;
+        this.textureFilter = options.textureFilter ?? TextureFilterMode.NEAREST;
+        this.premultipliedAlpha = options.premultipliedAlpha ?? true;
+        this.roundPixels = options.roundPixels ?? false;
+        this.scaleMode = options.scaleMode ?? CanvasScaleMode.CanvasItem
+
+        const gl = getContext(this.canvas, this.antialias, this.premultipliedAlpha);
+        this.gl = gl;
+
+        this.maxTextureUnits = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
+        this.matrix = this.matrixStack.matrix;
+
+        this.spriteRegion = new SpriteRegion(this);
+        this.graphicRegion = new GraphicRegion(this);
+        this.atlasSpriteRegion = new AtlasSpriteRegion(this);
+        this.particleRegion = new ParticleRegion(this);
+
+        const cssW = this.canvas.clientWidth || this.canvas.width;
+        const cssH = this.canvas.clientHeight || this.canvas.height;
+
+        // Initialize physics dimensions; fall back to CSS size * DPR if not provided
+        this.physicsWidth = options.physicsWidth || Math.round(cssW * this.dpr);
+        this.physicsHeight = options.physicsHeight || Math.round(cssH * this.dpr);
+
+        this.logicWidth = options.logicWidth || options.width || (this.physicsWidth / this.dpr);
+        this.logicHeight = options.logicHeight || options.height || (this.physicsHeight / this.dpr);
+
+        this.resize(this.logicWidth, this.logicHeight, this.physicsWidth, this.physicsHeight);
+
+        this.texture = new TextureManager(this);
+
+        if (options.backgroundColor) {
+            this.backgroundColor = options.backgroundColor;
+        }
+
+        gl.enable(gl.BLEND);
+        if (this.premultipliedAlpha) {
+            // Premultiplied alpha: RGB is already multiplied by A
+            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        } else {
+            // Straight alpha
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        }
+
+        gl.enable(gl.STENCIL_TEST);
+
+        // Default stencil configuration: always pass, keep existing values
+        gl.stencilFunc(gl.ALWAYS, 1, 0xFF);
+        gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+    }
+
+    setTextureFilter(filter: TextureFilterMode) {
+        this.textureFilter = filter;
+    }
+
+    setAntialias(antialias: boolean) {
+        this.antialias = antialias;
+    }
+
+    getColorUint32(color?: Color): number {
+        return getColorUint32(this.premultipliedAlpha, color)
+    }
+
+    /**
+     * Enters a specific rendering region, flushing the previous one if necessary.
+     * @param region The rendering region to enter.
+     * @param customShader An optional custom shader to use for this region.
+     */
+    enterRegion(region: Region, customShader?: GLShader | CustomGlShader): void {
+        if (this.currentRegion === region && this.currentRegion.isSameShader(customShader)) {
+            return;
+        }
+        this.flush();
+        this.currentRegion = region;
+        region.enter(customShader);
+    }
+
+    drawParticles(options: IDrawParticleBatchOptions): void {
+        drawParticles(this, options);
+    }
+
+    drawSprite(options: ISpriteOptions): void {
+        drawSprite(this, options);
+    }
+
+    drawLine(options: ILineOptions): void {
+        drawLine(this, options);
+    }
+
+    drawGraphic(options: IGraphicOptions): void {
+        drawGraphic(this, options);
+    }
+
+    drawRect(options: IRectOptions): void {
+        drawRect(this, options);
+    }
+
+    drawRoundedRect(options: IRoundedRectOptions): void {
+        drawRoundedRect(this, options);
+    }
+
+    drawCircle(options: ICircleOptions): void {
+        drawCircle(this, options);
+    }
+
+    /**
+     * Starts rendering arbitrary graphics geometries.
+     * @param drawMode The WebGL drawing mode (e.g., gl.TRIANGLES, gl.TRIANGLE_FAN).
+     * @param texture  An optional texture applied to the graphic vertices.
+     * @param customShader An optional custom shader overriding the region's default shader.
+     */
+    startGraphic(
+        drawMode: number = this.gl.TRIANGLES,
+        texture?: Texture,
+        customShader?: GLShader | CustomGlShader,
+        customMatrix?: number
+    ): void {
+        this.enterRegion(this.graphicRegion, customShader);
+        this.graphicRegion.startGraphic(customMatrix ?? this.matrixStack.curWorldM, drawMode, texture);
+    }
+
+    /**
+     * Starts rendering graphics explicitly for use as a mask, overriding the shader.
+     * @param drawMode The WebGL drawing mode (e.g., gl.TRIANGLES).
+     * @param texture  An optional texture whose alpha channel may dictate masking rules.
+     */
+    startMaskGraphic(drawMode: number = this.gl.TRIANGLES, texture?: Texture, customMatrix?: number): void {
+        this.startGraphic(drawMode, texture, this.graphicRegion.maskShader, customMatrix);
+    }
+
+    /**
+     * Utility method: Draws an image directly as a mask using a generic rectangle geometry.
+     * @param texture The texture to be used as a mask.
+     */
+    drawMaskImage(options: IMaskImageOptions): void {
+        drawMaskImage(this, options);
+    }
+
+    /**
+     * Pushes vertices for a rectangle geometry. Should be enclosed by startGraphic and endGraphic.
+     * @param w The width of the rectangle.
+     * @param h The height of the rectangle.
+     * @param color An optional tint color.
+     */
+    addRectVertex(w: number, h: number, color?: Color): void {
+        const unitColor = this.getColorUint32(color);
+        this.addGraphicVertex(0, 0, 0, 0, unitColor);
+        this.addGraphicVertex(w, 0, 1, 0, unitColor);
+        this.addGraphicVertex(w, h, 1, 1, unitColor);
+        this.addGraphicVertex(0, h, 0, 1, unitColor);
+    }
+
+    /**
+     * Pushes vertices for a rectangle with rounded corners, as a triangle fan around
+     * its centre. Should be enclosed by startGraphic and endGraphic.
+     * @param w The width of the rectangle.
+     * @param h The height of the rectangle.
+     * @param radius The corner radius, or [topLeft, topRight, bottomRight, bottomLeft].
+     * @param color An optional tint color.
+     * @param segments The number of segments used to approximate each corner arc.
+     */
+    addRoundedRectVertex(
+        w: number, h: number,
+        radius: number | [number, number, number, number],
+        color?: Color,
+        segments: number = 8,
+    ): void {
+        const unitColor = this.getColorUint32(color);
+        // A corner can never eat more than half of either side, however big it is asked to be.
+        const max = Math.min(w, h) / 2;
+        const radii = (typeof radius == "number" ? [radius, radius, radius, radius] : radius)
+            .map((r) => Math.max(0, Math.min(r, max)));
+
+        // Without any rounding this is a plain rectangle, and its four corners are enough.
+        if (radii[0] <= 0 && radii[1] <= 0 && radii[2] <= 0 && radii[3] <= 0) {
+            this.addRectVertex(w, h, color);
+            return;
+        }
+
+        // The fan spreads from the middle, so every edge and arc is one ring of triangles.
+        this.addGraphicVertex(w / 2, h / 2, 0.5, 0.5, unitColor);
+
+        const cornerSegments = Math.max(1, Math.floor(segments));
+        // Clockwise from the top left, in the same winding as addRectVertex.
+        const corners = [
+            { cx: radii[0], cy: radii[0], r: radii[0], start: Math.PI },
+            { cx: w - radii[1], cy: radii[1], r: radii[1], start: Math.PI * 1.5 },
+            { cx: w - radii[2], cy: h - radii[2], r: radii[2], start: 0 },
+            { cx: radii[3], cy: h - radii[3], r: radii[3], start: Math.PI * 0.5 },
+        ];
+
+        let firstX = 0;
+        let firstY = 0;
+        for (let i = 0; i < corners.length; i++) {
+            const corner = corners[i];
+            // A square corner is a single point; a rounded one is an arc of a quarter turn.
+            const steps = corner.r <= 0 ? 0 : cornerSegments;
+            for (let step = 0; step <= steps; step++) {
+                const angle = corner.start + (Math.PI / 2) * (steps == 0 ? 0 : step / steps);
+                const x = corner.cx + Math.cos(angle) * corner.r;
+                const y = corner.cy + Math.sin(angle) * corner.r;
+                this.addGraphicVertex(x, y, x / w, y / h, unitColor);
+                if (i == 0 && step == 0) {
+                    firstX = x;
+                    firstY = y;
+                }
+            }
+        }
+
+        // Close the ring back onto the first point of the first corner.
+        this.addGraphicVertex(firstX, firstY, firstX / w, firstY / h, unitColor);
+    }
+
+    /**
+     * Pushes vertices for a circle geometry using TRIANGLES or similar primitives.
+     * @param r The radius of the circle.
+     * @param color An optional tint color.
+     * @param segments The number of segments (polygons) used to approximate the circle.
+     */
+    addCircleVertex(r: number, color?: Color, segments: number = 32): void {
+        const angleStep = (Math.PI * 2) / segments;
+        const unitColor = this.getColorUint32(color);
+        for (let i = 0; i < segments; i++) {
+            const angle = angleStep * i;
+            const x = Math.cos(angle) * r;
+            const y = Math.sin(angle) * r;
+            const u = 0.5 + Math.cos(angle) * 0.5;
+            const v = 0.5 + Math.sin(angle) * 0.5;
+            this.addGraphicVertex(x, y, u, v, unitColor);
+        }
+    }
+
+    /**
+     * Adds an individual vertex to the current graphics batch.
+     * @param x The relative X coordinate of the vertex.
+     * @param y The relative Y coordinate of the vertex.
+     * @param u The U texture coordinate (0 to 1).
+     * @param v The V texture coordinate (0 to 1).
+     * @param color The vertex color as a 32-bit unsigned integer.
+     */
+    addGraphicVertex(
+        x: number, y: number,
+        u: number = 0, v: number = 0,
+        color: Color | number,
+    ): void {
+        this.graphicRegion.addVertex(x, y, u, v, typeof color == "number" ? color : this.getColorUint32(color));
+    }
+
+    /**
+     * Ends the current graphics geometry definition, readying it for rendering.
+     */
+    endGraphic(): void {
+        this.graphicRegion.endGraphic();
+    }
+
+    /**
+     * Resizes the canvas, updates internal viewport values, and recreates projection boundaries.
+     * @param logicWidth The new logical display width.
+     * @param logicHeight The new logical display height.
+     * @param cssWidth Optional CSS display width.
+     * @param cssHeight Optional CSS display height.
+     */
+    resize(logicWidth: number, logicHeight: number, cssWidth?: number, cssHeight?: number): void {
+        this.flush();
+        const cssW = cssWidth ?? this.canvas.clientWidth ?? this.canvas.width;
+        const cssH = cssHeight ?? this.canvas.clientHeight ?? this.canvas.height;
+
+        if (cssWidth !== undefined) {
+            this.canvas.style.width = cssW + 'px';
+        }
+
+        if (cssHeight !== undefined) {
+            this.canvas.style.height = cssH + 'px';
+        }
+
+        this.physicsWidth = cssW * this.dpr;
+        this.physicsHeight = cssH * this.dpr;
+
+        this.logicWidth = logicWidth;
+        this.logicHeight = logicHeight;
+
+        switch (this.scaleMode) {
+            case CanvasScaleMode.Viewport:
+                // no new pixel
+                this.canvas.width = logicWidth;
+                this.canvas.height = logicHeight;
+                this.canvas.style.imageRendering = "pixelated";
+                this.gl.viewport(0, 0, logicWidth, logicHeight);
+                break;
+            case CanvasScaleMode.CanvasItem:
+                this.canvas.width = this.physicsWidth;
+                this.canvas.height = this.physicsHeight;
+                this.canvas.style.imageRendering = "auto";
+                this.gl.viewport(0, 0, this.physicsWidth, this.physicsHeight);
+                break;
+            default:
+                throw new Error("scaleMode can only be CanvasScaleMode.Viewport or CanvasScaleMode.CanvasItem")
+        }
+
+        this.updateProjection(0, this.logicWidth, this.logicHeight, 0);
+    }
+
+    /**
+     * Updates the projection matrix using an orthographic mapping.
+     * Automatically sets local flag projectionDirty.
+     */
+    private updateProjection(left: number, right: number, bottom: number, top: number): void {
+        this.updateOrthMatrix(this.projection, left, right, bottom, top);
+        this.projectionDirty = true;
+    }
+
+    /**
+     * Clears the active framebuffer applying the default background color.
+     */
+    clear(): void {
+        const gl = this.gl;
+        this.backgroundColor.setClearColor(gl);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+        this.drawcallCount = 0;
+        this.matrixStack.reset()
+    }
+
+    /**
+     * Populates an orthographic projection matrix in place.
+     * Avoids continuous Float32Array allocations for performance reasons.
+     */
+    private updateOrthMatrix(out: Float32Array, left: number, right: number, bottom: number, top: number): void {
+        out[0] = 2 / (right - left);
+        out[1] = 0;
+        out[2] = 0;
+        out[3] = 0;
+        out[4] = 0;
+        out[5] = 2 / (top - bottom);
+        out[6] = 0;
+        out[7] = 0;
+        out[8] = 0;
+        out[9] = 0;
+        out[10] = -1;
+        out[11] = 0;
+        out[12] = -(right + left) / (right - left);
+        out[13] = -(top + bottom) / (top - bottom);
+        out[14] = 0;
+        out[15] = 1;
+    }
+
+    /**
+     * Flushes currently buffered rendering operations across all active regions.
+     */
+    flush(): void {
+        if (this.currentRegion) {
+            this.currentRegion.exit();
+            this.currentRegion = null;
+        }
+    }
+
+    /**
+     * Applies a chain of shaders to a texture sequentially using ping-pong RenderTextures.
+     * Each shader receives the output of the previous one as its input.
+     * Two internal RenderTextures are reused across calls (resized as needed).
+     *
+     * @param source   The input texture to start the filter chain from.
+     * @param shaders  An ordered array of CustomGlShader to apply in sequence.
+     * @returns The RenderTexture containing the final filtered result.
+     *          Draw it with `rapid.drawSprite({ texture: result })` to display it on screen.
+     *
+     * @example
+     * const result = rapid.applyFilters(tex, [blurShader, outlineShader]);
+     * rapid.drawSprite({ texture: result });
+     */
+    applyFilters(source: Texture, shaders: CustomGlShader[]): RenderTexture {
+        if (shaders.length === 0) {
+            throw new Error("applyFilters: shaders array must not be empty.");
+        }
+        const maxPadding = Math.max(...shaders.map(s => s.padding))
+        const paddingOffset = maxPadding
+        // source.width/height already reflects the region size (not the full base texture).
+        // drawSprite uses the region UV, so only the region pixels are rendered into the RT.
+        // The output RT contains the "baked" region content — no region metadata needed.
+
+
+        const width = source.rawWidth + maxPadding * 2;
+        const height = source.rawHeight + maxPadding * 2;
+
+        // Ensure both ping-pong RTs exist and match the source size (grow-only: no GPU
+        // reallocation unless size exceeds the previous maximum)
+
+        for (let i = 0; i < 2; i++) {
+            if (!this._filterRT[i]) {
+                this._filterRT[i] = this.texture.createRenderTexture({ width, height });
+            } else {
+                this._filterRT[i]!.resize(width, height);
+            }
+        }
+
+        let inputTex: Texture = source.clone(this._filterInput); // no new object
+        let rtIndex = 0;
+
+        this.matrixStack.save()
+        this.matrixStack.identity();
+        for (let i = 0; i < shaders.length; i++) {
+            const outputRT = this._filterRT[rtIndex % 2]!;
+            outputRT.offsetX = 0;
+            outputRT.offsetY = 0;
+
+            this.enterRenderTexture(outputRT);
+            this.clearRenderTexture();
+            // Draw the full source (or previous pass output) as a full-RT quad at (0,0).
+            // The projection is already set to (0, w, h, 0) by enterRenderTexture.
+
+            // We can't let `drawsprite` handle the padding offset because `renderTexture` has a limited size.
+            // Render from the top left corner the image will render outside the `renderTexture`.
+            // We need to render the image in the center of the `renderTexture`.
+            this.drawSprite({
+                texture: inputTex,
+                shader: shaders[i],
+                offsetX: i == 0 ? paddingOffset : 0, // padding back
+                offsetY: i == 0 ? paddingOffset : 0,
+                padding: maxPadding,
+            });
+
+            this.leaveRenderTexture();
+
+            inputTex = outputRT;
+
+            rtIndex++;
+        }
+        this.matrixStack.restore()
+
+        inputTex.offsetX = -paddingOffset
+        inputTex.offsetY = -paddingOffset
+
+        return inputTex as RenderTexture;
+    }
+
+
+    enterRenderTexture(rt: RenderTexture): void {
+        this.flush();
+        rt.activate();
+
+        this.gl.viewport(0, 0, rt.rawWidth, rt.rawHeight);
+        this.updateProjection(0, rt.rawWidth, rt.rawHeight, 0);
+    }
+
+    /**
+     * Clears a RenderTexture to a solid color.
+     * Must be called while the RT is the active render target (i.e. inside enterRenderTexture/leaveRenderTexture).
+     * Can also be called standalone — it will bind the RT, clear it, but NOT restore the main framebuffer.
+     * @param rt    The render texture to clear.
+     * @param color Clear color. Defaults to transparent black (0, 0, 0, 0).
+     */
+    clearRenderTexture(color: Color = new Color(0, 0, 0, 0)): void {
+        this.flush();
+        const gl = this.gl;
+        color.setClearColor(gl)
+        gl.clear(gl.COLOR_BUFFER_BIT);
+    }
+
+    /**
+     * Completes rendering to an offscreen render texture and reverts rendering back to the main canvas.
+     */
+    leaveRenderTexture(): void {
+        this.flush();
+
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+        this.gl.viewport(0, 0, this.physicsWidth, this.physicsHeight);
+        this.updateProjection(0, this.logicWidth, this.logicHeight, 0);
+    }
+
+    /**
+     * Convenience wrapper: enters a RenderTexture, optionally clears it, runs a callback, then leaves.
+     * @param rt    The RenderTexture to render into.
+     * @param cb    The callback containing draw calls to execute inside the RT.
+     * @param color Clear color before rendering. Pass `null` to skip clearing. Defaults to transparent black.
+     *
+     * @example
+     * rapid.drawToRenderTexture(myRT, () => {
+     *     rapid.drawSprite({ texture: mySprite });
+     * });
+     */
+    drawToRenderTexture(rt: RenderTexture, cb: () => void, color: Color | null = new Color(0, 0, 0, 0)): void {
+        this.enterRenderTexture(rt);
+        try {
+            if (color !== null) {
+                this.clearRenderTexture(color);
+            }
+            cb();
+        } finally {
+            this.leaveRenderTexture();
+        }
+    }
+
+    /**
+     * Convenience wrapper: writes a mask using the stencil buffer, then renders within it, then exits the mask.
+     * @param maskCb   Callback that defines the mask geometry (drawn to stencil, not visible).
+     * @param drawCb   Callback containing the actual draw calls masked by the stencil.
+     * @param type     Mask type: EQUAL (draw inside) or NOT_EQUAL (draw outside). Defaults to EQUAL.
+     * @param ref      Stencil reference value. Defaults to 1.
+     *
+     * @example
+     * rapid.withMask(
+     *     () => rapid.drawRect({ width: 200, height: 200 }),
+     *     () => rapid.drawSprite({ texture: myTexture }),
+     * );
+     */
+    withMask(maskCb: () => void, drawCb: () => void, type: MaskType = MaskType.EQUAL, ref: number = 1): void {
+        this.clearMask();
+        this.startDrawMask(ref);
+        try {
+            maskCb();
+        } finally {
+            this.endDrawMask();
+        }
+
+        this.enterMask(type, ref);
+        try {
+            drawCb();
+        } finally {
+            this.exitMask();
+        }
+    }
+
+    /**
+     * Convenience wrapper: saves the matrix stack, applies an optional transform, runs a callback, then restores.
+     * When `transform` is provided, delegates to `matrixStack.applyTransform()` which handles
+     * position, rotation, scale, offset, and origin automatically.
+     * @param cb        The callback to execute within the saved transform context.
+     * @param transform Optional transform options to apply before running the callback.
+     * @param width     The logical width used to resolve `origin` anchoring. Defaults to 0.
+     * @param height    The logical height used to resolve `origin` anchoring. Defaults to 0.
+     *
+     * @example
+     * // Simple save/restore
+     * rapid.withTransform(() => {
+     *     rapid.matrixStack.translate(100, 100);
+     *     rapid.drawSprite({ texture: myTexture });
+     * });
+     *
+     * @example
+     * // With a transform applied
+     * rapid.withTransform(() => {
+     *     rapid.drawSprite({ texture: myTexture });
+     * }, { x: 100, y: 50, rotation: Math.PI / 4, origin: 0.5 }, myTexture.width, myTexture.height);
+     */
+    withTransform(cb: () => void, transform?: ITransformOptions, width: number = 0, height: number = 0): void {
+        this.matrixStack.save();
+        try {
+            if (transform) {
+                this.matrixStack.applyTransform(transform, width, height);
+            }
+            cb();
+        } finally {
+            this.matrixStack.restore();
+        }
+    }
+
+    /**
+     * Convenience wrapper: enables scissor clipping for a region, runs a callback, then disables it.
+     * @param x      Left edge in logical pixels.
+     * @param y      Top edge in logical pixels.
+     * @param width  Width in logical pixels.
+     * @param height Height in logical pixels.
+     * @param cb     The callback to execute within the scissor region.
+     *
+     * @example
+     * rapid.withScissor(50, 50, 300, 200, () => {
+     *     rapid.drawSprite({ texture: myTexture });
+     * });
+     */
+    withScissor(x: number, y: number, width: number, height: number, cb: () => void): void {
+        this.startScissor(x, y, width, height);
+        try {
+            cb();
+        } finally {
+            this.endScissor();
+        }
+    }
+
+    /**
+     * Convenience wrapper: sets a blend mode, runs a callback, then restores NORMAL blend mode.
+     * @param mode The BlendMode to apply for the duration of the callback.
+     * @param cb   The callback to execute under the given blend mode.
+     *
+     * @example
+     * rapid.withBlendMode(BlendMode.ADD, () => {
+     *     rapid.drawSprite({ texture: glowTexture });
+     * });
+     */
+    withBlendMode(mode: BlendMode, cb: () => void): void {
+        this.setBlendMode(mode);
+        try {
+            cb();
+        } finally {
+            this.setBlendMode(BlendMode.NORMAL);
+        }
+    }
+
+    /**
+     * Starts drawing into the stencil buffer to construct a rendering mask.
+     * @param ref The stencil reference value.
+     * @param mask The stencil bitmask.
+     */
+    startDrawMask(ref: number = 1, mask: number = 0xFF): void {
+        this.flush();
+        const gl = this.gl;
+
+        gl.stencilMask(mask);
+        // Disable rendering to color buffers
+        gl.colorMask(false, false, false, false);
+
+        gl.stencilFunc(gl.ALWAYS, ref, mask);
+        gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
+
+        this.enterRegion(this.graphicRegion, this.graphicRegion.maskShader);
+        this.inCreateMask = true;
+    }
+
+    /**
+     * Finishes the mask drawing phase and restores color buffer writing.
+     */
+    endDrawMask(): void {
+        this.flush();
+        const gl = this.gl;
+        gl.colorMask(true, true, true, true);
+        gl.stencilMask(0x00);
+        this.inCreateMask = false;
+    }
+
+    /**
+     * Clears bounds created into the stencil mask.
+     * @param mask The bitmask specifying which stencil layer to clear.
+     */
+    clearMask(mask: number = 0xFF): void {
+        this.flush();
+        const gl = this.gl;
+        gl.stencilMask(mask);
+        gl.clear(gl.STENCIL_BUFFER_BIT);
+        this.inCreateMask = false;
+    }
+
+    /**
+     * Enters a constrained rendering phase masked by the existing stencil buffer values.
+     * @param type Equality check type. Use "equal" to draw inside the mask, or "notEqual" to draw outside.
+     * @param ref The reference value to test against.
+     * @param mask The bitmask specifying which stencil bits to consider.
+     */
+    enterMask(type: MaskType, ref: number = 1, mask: number = 0xFF): void {
+        this.flush();
+        const gl = this.gl;
+
+        gl.colorMask(true, true, true, true);
+        gl.stencilMask(0x00);
+        gl.stencilFunc(type === MaskType.EQUAL ? gl.EQUAL : gl.NOTEQUAL, ref, mask);
+        gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+        this.inCreateMask = false;
+    }
+
+    /**
+     * Exits the masked rendering phase, restoring default full-screen stencil values tests.
+     */
+    exitMask(): void {
+        this.flush();
+        const gl = this.gl;
+
+        gl.colorMask(true, true, true, true);
+        gl.stencilMask(0xFF);
+        gl.stencilFunc(gl.ALWAYS, 1, 0xFF);
+        gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+        this.inCreateMask = false;
+    }
+
+    /**
+     * Configures the global WebGL blending behavior.
+     * @param mode The targeted BlendMode to switch onto.
+     */
+    setBlendMode(mode: BlendMode): void {
+        this.flush(); // Must flush previous draw calls rendering with the old blend mode
+        const gl = this.gl;
+
+        // Use blendFuncSeparate to correctly handle alpha channels
+        // Important for offscreen targets (FBOs) to resolve alpha mixing issues (e.g., rendering darkening bugs)
+        switch (mode) {
+            case BlendMode.NORMAL:
+                if (this.premultipliedAlpha) {
+                    gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+                } else {
+                    gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+                }
+                break;
+
+            case BlendMode.ADD:
+                // Additive blending (glow effects) — works the same with premultiplied
+                gl.blendFuncSeparate(gl.ONE, gl.ONE, gl.ONE, gl.ONE);
+                break;
+
+            case BlendMode.MULTIPLY:
+                // Multiply blending (shadows)
+                gl.blendFuncSeparate(gl.DST_COLOR, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+                break;
+
+            case BlendMode.SCREEN:
+                // Screen blending (softer additive)
+                gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_COLOR, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+                break;
+
+            case BlendMode.ERASE:
+                // Erase: subtract source alpha from destination
+                gl.blendFuncSeparate(gl.ZERO, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE_MINUS_SRC_ALPHA);
+                break;
+        }
+    }
+
+    /**
+     * Enables rectangular scissor clipping. Only pixels within the specified
+     * rectangle (in logical coordinates) will be rendered.
+     * Coordinates use the same system as your drawing calls (top-left origin).
+     * @param x Left edge in logical pixels.
+     * @param y Top edge in logical pixels.
+     * @param width Width in logical pixels.
+     * @param height Height in logical pixels.
+     */
+    startScissor(x: number, y: number, width: number, height: number): void {
+        this.flush();
+        const gl = this.gl;
+        const scaleX = this.physicsWidth / this.logicWidth;
+        const scaleY = this.physicsHeight / this.logicHeight;
+
+        // Convert logical coords to physical pixels, flipping Y for WebGL (bottom-left origin)
+        const px = Math.round(x * scaleX);
+        const py = Math.round(this.physicsHeight - (y + height) * scaleY);
+        const pw = Math.round(width * scaleX);
+        const ph = Math.round(height * scaleY);
+
+        gl.enable(gl.SCISSOR_TEST);
+        gl.scissor(px, py, pw, ph);
+    }
+
+    /**
+     * Disables scissor clipping, restoring full-canvas rendering.
+     */
+    endScissor(): void {
+        this.flush();
+        this.gl.disable(this.gl.SCISSOR_TEST);
+    }
+
+    applyCamera(transform: ITransformOptions) {
+        this.matrixStack.applyTransform(transform)
+
+        const m = this.matrixStack.curWorldM
+        this.matrix.invert(m)
+    }
+
+    logicToPhysics(p: Vec2) {
+        return p.multiply(new Vec2(
+            this.physicsWidth / this.logicWidth,
+            this.physicsHeight / this.logicHeight
+        ))
+    }
+
+    physicsToLogic(p: Vec2) {
+        return p.multiply(new Vec2(
+            this.logicWidth / this.physicsWidth,
+            this.logicHeight / this.physicsHeight
+        ))
+    }
+
+    cssToDevicePixel(p: Vec2) {
+        return p.mul(this.dpr)
+    }
+
+    cssToLogic(p: Vec2) {
+        const devicePixel = this.cssToDevicePixel(p);
+        const logicPoint = this.physicsToLogic(devicePixel);
+        return logicPoint
+    }
+
+    devicePixelToCss(p: Vec2) {
+        return p.divide(this.dpr)
+    }
+
+    /**
+     * Exports a world matrix as a CSS `matrix(...)` string, ready to assign
+     * directly to a DOM element's `style.transform`.
+     * Unlike `matrixStack.toCSSMatrix()`, this bakes in the logic-pixel → CSS-pixel
+     * scale (accounting for dpr and a custom `logicWidth`/`logicHeight`), so the
+     * result lines up with the canvas without any extra `scale(...)` on your end.
+     * @param index - Matrix index to export. Defaults to the current world matrix.
+     */
+    toCSSMatrix(index?: number): string {
+        const scaleX = (this.physicsWidth / this.dpr) / this.logicWidth;
+        const scaleY = (this.physicsHeight / this.dpr) / this.logicHeight;
+        return this.matrix.toCSSMatrix(index ?? this.matrixStack.curWorldM, scaleX, scaleY);
+    }
+}

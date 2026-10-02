@@ -1,5 +1,5 @@
 import type { CameraHandler } from "../handlers/cameraHandler";
-import { Color } from "../libraries/new-rapid-render";
+import { Color } from "../libraries/rapid-render";
 import type { GameObject } from "../objects/gameObject";
 import { Shader } from "../types/bareTypes";
 

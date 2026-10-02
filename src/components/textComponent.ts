@@ -1,6 +1,6 @@
 import { Component } from "../controllers/componentController";
 import { GameMode, Scene } from "../globals";
-import { Color, ITextOptions, TextTexture, Vec2 } from "../libraries/new-rapid-render";
+import { Color, ITextOptions, TextTexture, Vec2 } from "../libraries/rapid-render";
 import { Dropdown, InspectorField, Int, Limit } from "../utils/decorators";
 import { Save } from "../utils/saveFields";
 import { Run } from "../utils/runModes";

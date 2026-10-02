@@ -1,6 +1,6 @@
 import { Box } from "./box";
 import { Circle } from "./circle";
-import { Vec2 } from "../new-rapid-render";
+import { Vec2 } from "../rapid-render";
 import { Polygon } from "./polygon";
 import { RigidBody } from "./rigidbody";
 import type { Scene } from "../../scenes/scene";

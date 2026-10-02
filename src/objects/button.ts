@@ -1,5 +1,5 @@
 import type { ButtonHandlers } from "../controllers/hitboxController";
-import { Color, ITextOptions, TextTexture, Vec2 } from "../libraries/new-rapid-render";
+import { Color, ITextOptions, TextTexture, Vec2 } from "../libraries/rapid-render";
 import type { Scene } from "../scenes/scene";
 import type { Entity, Rectangle } from "../types/bareTypes";
 import { InspectorField, Int, Limit } from "../utils/decorators";

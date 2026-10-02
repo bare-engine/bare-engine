@@ -1,4 +1,4 @@
-import { Color, ITextOptions, TextTexture, Vec2 } from "../libraries/new-rapid-render";
+import { Color, ITextOptions, TextTexture, Vec2 } from "../libraries/rapid-render";
 import { Scene } from "../scenes/scene";
 import type { Entity } from "../types/bareTypes";
 import { Dropdown, InspectorField, Int, Limit } from "../utils/decorators";

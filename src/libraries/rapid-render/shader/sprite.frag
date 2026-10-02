@@ -1,18 +1,49 @@
+#version 300 es
 precision mediump float;
-uniform sampler2D uTextures[%TEXTURE_NUM%];
-uniform int uMaskWrite;
-uniform float uMaskAlphaCutoff;
 
-varying vec2 vRegion;
-varying float vTextureId;
-varying vec4 vColor;
+uniform sampler2D uTextures[%TEXTURE_NUM%];
+
+in vec2 vRegion;
+flat in int vTextureId;
+in vec4 vColor;
+
+in vec4 vUVRect;
+
+out vec4 fragColor;
+in vec2 vPadding;
+
+bool clampUV(vec2 uv) {
+    return uv.x < vUVRect.x || uv.x > vUVRect.z || uv.y < vUVRect.y || uv.y > vUVRect.w;
+}
+
+vec4 sampleTexture(vec2 uv) {
+    %GET_COLOR%
+}
+
+vec4 sampleClampTexture(vec2 uv) {
+    if (clampUV(uv)) {
+        return vec4(0.0, 0.0, 0.0, 0.0);
+    }
+    return sampleTexture(uv);
+}
+
+vec4 sampleTextureLocal(vec2 uv){
+    vec2 gUV = mix(vUVRect.xy, vUVRect.zw, uv);
+    if (clampUV(gUV)) {
+        return vec4(0.0, 0.0, 0.0, 0.0);
+    }
+    return sampleTexture(gUV);
+}
+
+// CUSTOM_CODE
 
 void main(void) {
-    vec4 color;
-    %GET_COLOR%
-    // fragment
-    if (uMaskWrite == 1 && color.a <= uMaskAlphaCutoff) {
-        discard;
-    }
-    gl_FragColor = color * vColor;
+    fragColor = sampleTexture(vRegion) * vColor;
+    // if (vPadding.x != 0.0) {
+    //     if (clampUV(vRegion)) {
+    //         fragColor = vec4(0.0, 0.0, 0.0, 0.0);
+    //     }
+    // }
+
+    // CUSTOM_CODE_CALL
 }

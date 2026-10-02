@@ -1,5 +1,5 @@
 import { keyboardController } from "../controllers/keyboardController";
-import { Color, Vec2 } from "../libraries/new-rapid-render";
+import { Color, Vec2 } from "../libraries/rapid-render";
 import type { GameObject } from "../objects/gameObject";
 import { Rectangle } from "../types/bareTypes";
 

@@ -1,6 +1,6 @@
 import { assetsHandler } from "../handlers/assetsHandler";
 import { SettingsHandler } from "../handlers/settingsHandler";
-import { Color, RenderTexture, Vec2 } from "../libraries/new-rapid-render";
+import { Color, RenderTexture, Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { TextObject } from "../objects/textObject";
 import { AwakePayload, Entity, LevelData, Rectangle, SettingsData } from "../types/bareTypes";

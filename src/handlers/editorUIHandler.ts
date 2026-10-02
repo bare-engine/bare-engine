@@ -3,7 +3,7 @@ import { assetsHandler } from "./assetsHandler";
 import { FlashShader } from "../shaders/flashShader";
 import { TweenTo } from "../controllers/tweenController";
 import { EditorScene } from '../scenes/editorScene';
-import { Color, RenderTexture, Texture, TextureFilterMode } from '../libraries/new-rapid-render';
+import { Color, RenderTexture, Texture, TextureFilterMode } from '../libraries/rapid-render';
 import { MakePath, MakePathForEntity } from '../globals';
 import { SaveDataHandler } from './SaveDataHandler';
 import { EditorUIHintHandler } from './editorUIHintHandler';

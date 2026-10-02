@@ -2,7 +2,7 @@ import type { Scene } from "../../scenes/scene";
 import { Entity, Size } from "../../types/bareTypes";
 import { InspectorField, Limit } from "../../utils/decorators";
 import { Save } from "../../utils/saveFields";
-import { Vec2 } from "../new-rapid-render";
+import { Vec2 } from "../rapid-render";
 import { RigidBody, RigidBodyEntity, Type } from "./rigidbody";
 import { Settings } from "./settings";
 import * as Util from "./util";

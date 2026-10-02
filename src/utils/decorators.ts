@@ -1,4 +1,4 @@
-import { Color } from "../libraries/new-rapid-render";
+import { Color } from "../libraries/rapid-render";
 import { prototypeChain, SAVE_METADATA_KEY } from "./saveFields";
 
 const BUTTON_METADATA_KEY = "__editorButtons__";

@@ -1,5 +1,5 @@
 import { RegisterController } from "../globals";
-import { Vec2 } from "../libraries/new-rapid-render";
+import { Vec2 } from "../libraries/rapid-render";
 import type { Scene } from "../scenes/scene";
 import { BareEvent, CameraScaleMode, Rectangle, type Size } from "../types/bareTypes";
 import { Enum, InspectorField, Limit, Locked } from "../utils/decorators";

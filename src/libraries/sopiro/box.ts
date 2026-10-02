@@ -1,7 +1,7 @@
 import { GameObject } from "../../objects/gameObject";
 import type { Scene } from "../../scenes/scene";
 import { Entity } from "../../types/bareTypes";
-import { Vec2 } from "../new-rapid-render";
+import { Vec2 } from "../rapid-render";
 import { Polygon, PolygonEntity } from "./polygon";
 import { Type } from "./rigidbody";
 import { Settings } from "./settings";

@@ -12,7 +12,7 @@ import { assetsHandler } from "../handlers/assetsHandler";
 import type { LevelHandler } from "../handlers/levelHandler";
 import { SettingsHandler } from "../handlers/settingsHandler";
 import mitt from "../libraries/mitt";
-import { Color, RenderTexture, Texture, Vec2 } from "../libraries/new-rapid-render";
+import { Color, RenderTexture, Texture, Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { Bare } from "../types/bare";
 import { defaultSettingsData } from "../types/bareData";

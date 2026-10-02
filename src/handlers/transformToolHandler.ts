@@ -1,6 +1,6 @@
 import { keyboardController } from "../controllers/keyboardController";
 import { GameMode, globalEvents } from "../globals";
-import { Color, Vec2 } from "../libraries/new-rapid-render";
+import { Color, Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import type { EditorScene } from "../scenes/editorScene";
 import type { Scene } from "../scenes/scene";

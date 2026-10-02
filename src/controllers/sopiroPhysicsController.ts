@@ -9,7 +9,7 @@ import { RigidBody, Type } from "../libraries/sopiro/rigidbody";
 import { Settings } from "../libraries/sopiro/settings";
 import { Polygon } from "../libraries/sopiro/polygon";
 import { Circle } from "../libraries/sopiro/circle";
-import { Color, Vec2 } from "../libraries/new-rapid-render";
+import { Color, Vec2 } from "../libraries/rapid-render";
 import { make_pair_natural } from "../libraries/sopiro/util";
 import { BareEvent } from "../types/bareTypes";
 import { PhysicsControllerBase } from "./physicsControllerBase";

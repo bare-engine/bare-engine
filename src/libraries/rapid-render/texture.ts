@@ -1,644 +1,879 @@
-import Rapid from "./render"
-import { Images, ITextTextureOptions, TextureWrapMode, WebGLContext } from "./interface"
-import { Color } from "./math"
-import { createTexture } from "./webgl/utils"
-import { Helper } from "../../utils/helper"
+import { Rapid, TextureFilterMode } from "./render"
+import { createTexture, setTextureFilterMode, setTextureWrapMode } from "./webgl/utils"
+import { Color } from "./color"
+
+export type Images =
+    | HTMLImageElement
+    | HTMLCanvasElement
+    | HTMLVideoElement
+    | ImageBitmap
+    | OffscreenCanvas;
+
+export enum TextureWrapMode {
+    REPEAT,
+    CLAMP,
+    MIRRORED_REPEAT
+}
 
 /**
- * texture manager
- * @ignore
+ * Options for configuring texture creation.
  */
-class TextureCache {
-    private antialias: boolean
+export interface ITextureOptions {
+    textureFilter?: TextureFilterMode;
+    wrap?: TextureWrapMode;
+    premultipliedAlpha?: boolean;
+    key?: string;
+}
 
-    constructor(antialias: boolean) {
-        this.antialias = antialias
+/**
+ * Manages texture loading, caching, and creation.
+ */
+class TextureManager {
+    private render: Rapid
+    private cache: Map<string, BaseTexture> = new Map()
+
+    constructor(render: Rapid) {
+        this.render = render
     }
 
-    setAntialias(antialias: boolean) {
-        this.antialias = antialias
-    }
-
-    getAntialias() {
-        return this.antialias
-    }
-    
     /**
-     * create texture from url
-     * Equivalent to {@link Texture.fromUrl} method
-     * @param url 
-     * @param antialias 
-     * @returns 
+     * Asynchronously loads a texture from a URL.
+     * @param url - The image URL to load.
+     * @param options - Optional configuration for the texture.
+     * @returns A promise that resolves to the loaded Texture.
      */
-    async textureFromUrl(url: string, antialias: boolean = this.antialias, wrapMode: TextureWrapMode = TextureWrapMode.CLAMP) {
-        var image = await this.loadImage(url);
-        var base = BaseTexture.fromImageSource(image, antialias, wrapMode);
-        base.sourceUrl = url;
+    async load(url: string, options?: ITextureOptions): Promise<Texture> {
+        let base = this.cache.get(url)
+        if (base) {
+            return new Texture(base)
+        }
+
+        try {
+            const image = await this._fetchImage(url);
+            base = BaseTexture.fromSource(this.render, image, options);
+            base.uid = url;
+            this.cache.set(url, base);
+
+            return new Texture(base);
+        } catch (e) {
+            console.error(`[TextureManager] Failed to load: ${url}`, e);
+            throw e;
+        }
+    }
+
+    /**
+     * Creates a texture synchronously from an existing HTML element (Image, Canvas, Video).
+     * @param source - The source image element.
+     * @param options - Optional configuration for the texture.
+     * @returns The newly created Texture.
+     */
+    create(source: Images, options?: ITextureOptions): Texture {
+        if (options?.key && this.cache.has(options.key)) {
+            return new Texture(this.cache.get(options.key)!);
+        }
+
+        const base = BaseTexture.fromSource(this.render, source, options);
+
+        if (options?.key) {
+            base.uid = options.key;
+            this.cache.set(options.key, base);
+        }
+
         return new Texture(base);
     }
 
-    addImageFromSource(image: HTMLImageElement, antialias: boolean = this.antialias, wrapMode: TextureWrapMode = TextureWrapMode.CLAMP) {
-        var base = BaseTexture.fromImageSource(image, antialias, wrapMode);
-        return new Texture(base)
-    }
-    
     /**
-     * Create a new `Texture` instance from a FrameBufferObject.
-     * @param fbo - The FrameBufferObject to create the texture from.
-     * @returns A new `Texture` instance created from the specified FrameBufferObject.
+     * Creates a generic Render Texture (FrameBuffer).
+     * @param width - The width of the render texture.
+     * @param height - The height of the render texture.
+     * @param options - Optional configuration for the texture.
+     * @returns The newly created RenderTexture.
      */
-    textureFromFrameBufferObject(fbo: FrameBufferObject) {
-        return new Texture(fbo)
+    createRenderTexture(options?: IRenderTextureOptions): RenderTexture {
+        return new RenderTexture(this.render, options);
     }
 
     /**
-     * Create a new `Texture` instance from an image source.
-     * @param source - The image source to create the texture from.
-     * @param antialias - Whether to enable antialiasing.
-     * @returns A new `Texture` instance created from the specified image source.
+     * Creates a TextTexture for rendering text.
+     * @param options - Optional configuration for the texture.
+     * @returns The newly created TextTexture.
      */
-    /*async textureFromSource(source: Images, antialias: boolean = this.antialias, wrapMode: TextureWrapMode = TextureWrapMode.CLAMP) {
-        let base = this.cache.get(source)
-        if (!base) {
-            base = BaseTexture.fromImageSource(this.render, source, antialias, wrapMode)
-            this.cache.set(source, base)
-        }
-        return new Texture(base)
-    }*/
-    
-    /**
-     * Load an image from the specified URL.
-     * @param url - The URL of the image to load.
-     * @returns A promise that resolves to the loaded HTMLImageElement.
-     */
-    async loadImage(url: string): Promise<HTMLImageElement> {
-        return new Promise((resolve, reject) => {
-            const image = new Image();
-            image.onload = () => {
-                resolve(image);
-            };
-            image.onerror = () => {
-                reject(new Error(`Failed to load image: ${url}`));
-            };
-            image.src = url;
-        });
-    };
-    /**
-     * Create a new `Text` instance.
-     * @param options - The options for rendering the text, such as font, size, color, etc.
-     * @returns A new `Text` instance.
-     */
-    createText(options: ITextTextureOptions) {
-        return new BareText(options)
+    createTextTexture(options?: ITextOptions): TextTexture {
+        return new TextTexture(this.render, options);
     }
+
     /**
-     * Destroy the texture
-     * @param texture 
+     * Destroys a texture and potentially removes its BaseTexture from the cache.
+     * If a Texture instance is provided, it decrements the reference count of the BaseTexture.
+     * The BaseTexture will only be destroyed if its reference count drops to 0, or if `force` is true.
+     * @param textureOrUrl - The texture instance, base texture, or cache key (URL) to destroy.
+     * @param force - If true, destroys the underlying BaseTexture immediately regardless of reference count.
      */
-    destroy(texture: Texture | BaseTexture) {
-        if (texture instanceof Texture) {
-            texture.base?.destroy(rapid.gl)
+    destroy(textureOrUrl: Texture | BaseTexture | string, force: boolean = false): void {
+        let base: BaseTexture | undefined;
+        let uid: string | undefined;
+
+        if (typeof textureOrUrl === 'string') {
+            uid = textureOrUrl;
+            base = this.cache.get(uid);
+        } else if (textureOrUrl instanceof Texture) {
+            base = textureOrUrl.base;
+            uid = base?.uid;
+            textureOrUrl.destroy(); // Safely decreases the reference count
         } else {
-            texture.destroy(rapid.gl)
+            base = textureOrUrl;
+            uid = base.uid;
+        }
+
+        // Only physically destroy the WebGL texture if ref count is <= 0 or if explicitly forced
+        if (base && (base.refCount <= 0 || force)) {
+            base.destroy(this.render.gl);
+            if (uid) this.cache.delete(uid);
         }
     }
+
     /**
-     * Create a new FrameBufferObject instance
-     * @param width - Width of the framebuffer
-     * @param height - Height of the framebuffer
-     * @param antialias - Whether to enable antialiasing
-     * @returns A new FrameBufferObject instance
+     * Destroys all cached textures and clears the cache, ignoring reference counts.
      */
-    createFrameBufferObject(width: number, height: number, antialias: boolean = this.antialias) {
-        return new FrameBufferObject(width, height, antialias)
+    destroyAll(): void {
+        for (const base of this.cache.values()) {
+            base.destroy(this.render.gl);
+        }
+        this.cache.clear();
+    }
+
+    private _fetchImage(url: string): Promise<HTMLImageElement> {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error(`Failed to load image resource: ${url}`));
+            img.src = url;
+        });
     }
 }
 
 /**
- * Each {@link Texture} references a baseTexture, and different textures may have the same baseTexture
+ * The underlying GPU resource holder for a texture.
+ * Implements simple reference counting.
  */
-class BaseTexture {
-    texture: WebGLTexture
-    width: number
-    height: number
-    wrapMode: TextureWrapMode
-    sourceUrl?: string
-    constructor(texture: WebGLTexture, width: number, height: number, wrapMode: TextureWrapMode = TextureWrapMode.CLAMP) {
-        this.texture = texture
-        this.width = width
-        this.height = height
-        this.wrapMode = wrapMode
+export class BaseTexture {
+    public glTexture: WebGLTexture | null = null;
+    public width: number;
+    public height: number;
+    public uid?: string;
+    public refCount: number = 0;
+
+    constructor(texture: WebGLTexture, width: number, height: number) {
+        this.glTexture = texture;
+        this.width = width;
+        this.height = height;
     }
-    static fromImageSource(image: Images, antialias: boolean = false, wrapMode: TextureWrapMode = TextureWrapMode.CLAMP) {
-        return new BaseTexture(
-            createTexture(rapid.gl, image, antialias, false, false, wrapMode),
-            image.width,
-            image.height
-        )
-    }
+
     /**
-     * Destroy the texture
-     * @param gl 
-     * @ignore
+     * Creates a BaseTexture from an image source.
+     * @param render - The Rapid renderer instance.
+     * @param source - The image source.
+     * @param options - Optional configuration.
+     * @returns The created BaseTexture.
      */
-    destroy(gl: WebGLContext) {
-        gl.deleteTexture(this.texture)
+    static fromSource(render: Rapid, source: Images, options: ITextureOptions = {}): BaseTexture {
+        const glTexture = createTexture(render, source, options);
+        return new BaseTexture(glTexture, source.width, source.height);
+    }
+
+    /**
+     * Updates the content of the existing texture (e.g. for Video or dynamic Canvas).
+     * Uses texSubImage2D if dimensions haven't changed for better performance.
+     * @param gl - The WebGL rendering context.
+     * @param source - The new image source.
+     */
+    updateSource(gl: WebGL2RenderingContext, source: Images, options: ITextureOptions = {}): void {
+        if (!this.glTexture) return;
+        gl.bindTexture(gl.TEXTURE_2D, this.glTexture);
+
+        if (options.textureFilter !== undefined) {
+            setTextureFilterMode(gl, options.textureFilter);
+        }
+        if (options.wrap !== undefined) {
+            setTextureWrapMode(gl, options.wrap)
+        }
+
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+        if (options.premultipliedAlpha !== undefined) {
+            gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, options.premultipliedAlpha);
+        }
+
+        if (this.width === source.width && this.height === source.height) {
+            // High-performance path: replace texture content when size is identical
+            gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, source);
+        } else {
+            // Re-allocate texture storage if dimensions have changed
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+            this.width = source.width;
+            this.height = source.height;
+        }
+
+        if (options.premultipliedAlpha !== undefined) {
+            gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+        }
+    }
+
+    /**
+     * Dynamically updates the texture filtering mode.
+     */
+    setFilterMode(gl: WebGL2RenderingContext, filterMode: TextureFilterMode): void {
+        if (!this.glTexture) return;
+        gl.bindTexture(gl.TEXTURE_2D, this.glTexture);
+        setTextureFilterMode(gl, filterMode);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+    }
+
+    /**
+     * Dynamically updates the texture wrap mode.
+     */
+    setWrapMode(gl: WebGL2RenderingContext, wrapMode: TextureWrapMode): void {
+        if (!this.glTexture) return;
+        gl.bindTexture(gl.TEXTURE_2D, this.glTexture);
+        setTextureWrapMode(gl, wrapMode);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+    }
+
+    /**
+     * Destroys the WebGL texture resource.
+     * @param gl - The WebGL rendering context.
+     */
+    destroy(gl: WebGL2RenderingContext): void {
+        if (this.glTexture) {
+            gl.deleteTexture(this.glTexture);
+            this.glTexture = null;
+        }
     }
 }
 
+/**
+ * A lightweight reference to a BaseTexture, containing UV clipping and logical size information.
+ */
 class Texture {
-    /**
-     * Reference to the {@link BaseTexture} used by this texture.
-     */
-    base?: BaseTexture;
+    public base?: BaseTexture;
+
+    public uvX: number = 0;
+    public uvY: number = 0;
+    public uvW: number = 1;
+    public uvH: number = 1;
+
+    public rawWidth: number = 0;
+    public rawHeight: number = 0;
+
+    public offsetX: number = 0;
+    public offsetY: number = 0;
+
+    public scale: number = 1;
+
+    public isAtlas: boolean = false;
+
+    public flipY: boolean = false;
+    public isRotated: boolean = false;
+    public glTexture: WebGLTexture | null = null;
+
+    get width(): number {
+        return this.isRotated ? this.rawHeight : this.rawWidth;
+    }
+
+    get height(): number {
+        return this.isRotated ? this.rawWidth : this.rawHeight;
+    }
 
     /**
-     * The x-coordinate of the top-left corner of the clipped region.
+     * The quad occupied by this texture in an object's local coordinate space.
+     * Use this instead of assuming the texture starts at (0, 0),
+     * since text alignment and render effects can offset the visible quad.
      */
-    clipX!: number;
+    get localBounds(): { x: number; y: number; width: number; height: number } {
+        return {
+            x: this.offsetX,
+            y: this.offsetY,
+            width: this.width,
+            height: this.height,
+        };
+    }
 
-    /**
-     * The y-coordinate of the top-left corner of the clipped region.
-     */
-    clipY!: number;
+    // Stored pixel-space region (before UV conversion), used by getSubTexture()
+    protected _px: number = 0;
+    protected _py: number = 0;
+    protected _pw: number = 0;
+    protected _ph: number = 0;
 
-    /**
-     * The width of the clipped region.
-     */
-    clipW!: number;
+    texturePath: string
+    sourceSize: { w: number, h: number }
+    spriteSourceSize: { x: number, y: number, w: number, h: number }
+    frame: { x: number, y: number, w: number, h: number }
 
-    /**
-     * The height of the clipped region.
-     */
-    clipH!: number;
-
-    /**
-     * The width of the texture.
-     */
-    width!: number;
-
-    /**
-     * The height of the texture.
-     */
-    height!: number;
-
-    isRotated: boolean = false; // true when texture region is rotated 90 degrees clockwise
-
-    sourceSize: {w: number, h: number} 
-    spriteSourceSize: {x: number, y: number, w: number, h: number}
-    frame: {x: number, y: number, w: number, h: number}  
-
-    /**
-     * Image scaling factor
-     */
-    protected scale: number = 1
-    public texturePath: string = ""; // ADDED
-    /**
-     * Creates a new `Texture` instance with the specified base texture reference.
-     * @param base - The {@link BaseTexture} to be used by the texture.
-     */
     constructor(base?: BaseTexture) {
-        this.setBaseTexture(base)
+        if (base) this.setBase(base);
     }
+
     /**
-     * Set or change BaseTexture
-     * @param base 
-     * @param scale 
+     * Sets the base texture and increments its reference count.
+     * @param base - The BaseTexture instance.
+     * @returns The current Texture instance.
      */
-    setBaseTexture(base?: BaseTexture) {
-        if (base) {
-            this.base = base
-            this.setClipRegion(0, 0, base.width, base.height)
+    setBase(base: BaseTexture): this {
+        if (this.base === base) return this;
+
+        if (this.base) {
+            this.base.refCount--;
         }
+
+        this.base = base;
+        this.base.refCount++;
+
+        this.setRegion(0, 0, base.width, base.height);
+        this.glTexture = base.glTexture;
+        return this;
     }
+
     /**
-     * Sets the region of the texture to be used for rendering.
-     * @param x - The x-coordinate of the top-left corner of the region.
-     * @param y - The y-coordinate of the top-left corner of the region.
-     * @param w - The width of the region.
-     * @param h - The height of the region.
+     * Sets the visible region (clipping) in pixels relative to the BaseTexture.
+     * @param x - The x coordinate in pixels.
+     * @param y - The y coordinate in pixels.
+     * @param w - The width in pixels.
+     * @param h - The height in pixels.
+     * @returns The current Texture instance.
      */
-    setClipRegion(x: number, y: number, w: number, h: number) {
+    setRegion(x: number, y: number, w: number, h: number): this {
         if (!this.base) return this;
 
-        const bw = this.base.width;
-        const bh = this.base.height;
+        // Store pixel-space region for use by withPadding()
+        this._px = x; this._py = y; this._pw = w; this._ph = h;
+        this.isAtlas = x !== 0 || y !== 0 || w !== this.base.width || h !== this.base.height;
 
-        const u0 = x / bw;
-        const v0 = y / bh;
-        const u1 = (x + w) / bw;
-        const v1 = (y + h) / bh;
+        this.uvX = x / this.base.width;
+        this.uvY = y / this.base.height;
+        this.uvW = this.uvX + (w / this.base.width);
+        this.uvH = this.uvY + (h / this.base.height);
 
-        this.clipX = u0;
-        this.clipY = v0;
-        this.clipW = u1;
-        this.clipH = v1;
-
-        this.width = (this.isRotated ? h : w) * this.scale;
-        this.height = (this.isRotated ? w : h) * this.scale;
+        this.rawWidth = w * this.scale;
+        this.rawHeight = h * this.scale;
 
         return this;
     }
 
+    /**
+     * Creates a new Texture representing a sub-region of this Texture.
+     * @param x - The x coordinate in pixels, relative to this texture's logical start.
+     * @param y - The y coordinate in pixels, relative to this texture's logical start.
+     * @param width - The width of the sub-texture in pixels.
+     * @param height - The height of the sub-texture in pixels.
+     * @returns A new Texture pointing to the sub-region.
+     */
+    getSubTexture(x: number, y: number, width: number, height: number): Texture {
+        if (!this.base) return new Texture();
+
+        const tex = this.clone();
+
+        // Convert current UV offset back to pixels and add the sub-coordinates
+        const startX = this._px;
+        const startY = this._py;
+
+        tex.setRegion(startX + x, startY + y, width, height);
+        return tex;
+    }
 
     /**
-     * Creates a new `Texture` instance from the specified image source.
-     * @param image - The image source to create the texture from.
-     * @param antialias - Whether to enable antialiasing for the texture. Default is `false`.
-     * @returns A new `Texture` instance created from the image source.
+     * Creates a shallow copy of this Texture, sharing the same BaseTexture.
+     * @returns A new Texture instance.
      */
-    static fromImageSource(image: Images, antialias: boolean = false) {
-        return new Texture(
-            BaseTexture.fromImageSource(image, antialias)
-        )
+    clone(target?: Texture): Texture {
+        const t = target ?? new Texture(this.base);
+        if (target) {
+            target.setBase(this.base)
+        }
+        t.scale = this.scale;
+        t.uvX = this.uvX; t.uvY = this.uvY;
+        t.uvW = this.uvW; t.uvH = this.uvH;
+        t.rawWidth = this.rawWidth; t.rawHeight = this.rawHeight;
+        t.offsetX = this.offsetX; t.offsetY = this.offsetY;
+        t.flipY = this.flipY;
+        t.isRotated = this.isRotated;
+        t.isAtlas = this.isAtlas;
+        // Copy stored pixel region so getSubTexture() works on clones too
+        t._px = this._px; t._py = this._py;
+        t._pw = this._pw; t._ph = this._ph;
+        return t;
     }
+
     /**
-     * Creates a new `Texture` instance from the specified URL.
-     * @param url - The URL of the image to create the texture from.
-     * @returns A new `Texture` instance created from the specified URL.
+     * Utility to split this texture into a grid of sprite textures.
+     * Sub-textures will respect the current UV offsets.
+     * @param cellWidth - The width of each cell in pixels.
+     * @param cellHeight - The height of each cell in pixels.
+     * @param cols - Optional number of columns. Truncates based on texture width if omitted.
+     * @param rows - Optional number of rows. Truncates based on texture height if omitted.
+     * @returns An array of split Textures.
      */
-    static fromUrl(url: string) {
-        return rapid.textures.textureFromUrl(url)
-    }
-    /**
-     * Converts the current texture into a spritesheet.
-     * @param spriteWidth - The width of each sprite in the spritesheet.
-     * @param spriteHeight - The height of each sprite in the spritesheet.
-     * @returns An array of `Texture` instances representing the sprites in the spritesheet.
-     */
-    createSpritesheet(spriteWidth: number, spriteHeight: number): Texture[] {
+    splitGrid(cellWidth: number, cellHeight: number, cols?: number, rows?: number): Texture[] {
         if (!this.base) return [];
-        const sprites: Texture[] = [];
-        const columns = Math.floor(this.base.width / spriteWidth);
-        const rows = Math.floor(this.base.height / spriteHeight);
-        for (let y = 0; y < rows; y++) {
-            for (let x = 0; x < columns; x++) {
-                const sprite = this.clone();
-                sprite.setClipRegion(
-                    x * spriteWidth,
-                    y * spriteHeight,
-                    spriteWidth,
-                    spriteHeight
-                );
-                sprites.push(sprite);
+        const res: Texture[] = [];
+
+        const baseW = this.rawWidth;
+        const baseH = this.rawHeight;
+
+        const c = cols ?? Math.floor(baseW / cellWidth);
+        const r = rows ?? Math.floor(baseH / cellHeight);
+
+        for (let y = 0; y < r; y++) {
+            for (let x = 0; x < c; x++) {
+                res.push(this.getSubTexture(x * cellWidth, y * cellHeight, cellWidth, cellHeight));
             }
         }
-        return sprites;
+        return res;
     }
+
     /**
-     * Clone the current texture
-     * @returns A new `Texture` instance with the same base texture reference.
+     * Creates a Texture directly from an image source, bypassing the TextureManager.
+     * @param source - The image element, canvas, video, or bitmap.
+     * @param options - Optional antialias and wrap mode settings.
      */
-    clone() {
-        return new Texture(this.base)
+    static fromImageSource(render: Rapid, source: Images, options?: ITextureOptions): Texture {
+        const glTex = createTexture(render, source, options);
+        return new Texture(new BaseTexture(glTex, source.width, source.height));
+    }
+
+    /**
+     * Marks this Texture as destroyed, decrementing the BaseTexture reference count.
+     */
+    destroy(): void {
+        if (this.base) {
+            this.base.refCount--;
+            this.base = undefined;
+        }
+        this.glTexture = null;
     }
 }
 
-class RenderTexture extends Texture {
-    fbo: FrameBufferObject;
+export interface IRenderTextureOptions extends ITextureOptions {
+    width: number;
+    height: number;
     clearColor?: Color;
+}
+
+/**
+ * A texture that can be rendered to (wraps a WebGL Framebuffer).
+ */
+class RenderTexture extends Texture {
+    private framebuffer: WebGLFramebuffer | null;
+    private renderbuffer: WebGLRenderbuffer | null;
+    private gl: WebGL2RenderingContext;
+    public flipY: boolean = true;
+    public clearColor?: Color;
+
+    /** Actual GPU-allocated dimensions — grow-only, never shrink */
+    private _allocW: number = 0;
+    private _allocH: number = 0;
+
+    constructor(render: Rapid, options?: IRenderTextureOptions) {
+        super();
+        this.gl = render.gl;
+
+        this.clearColor = options.clearColor ?? Color.Black;
+
+        const width = Math.max(Math.round(options.width), 1);
+        const height = Math.max(Math.round(options.height), 1);
+        const source = { width, height }
+        const glTex = createTexture(render, source, { ...options, onlySize: true });
+        this.setBase(new BaseTexture(glTex, width, height));
+
+        this.framebuffer = this.gl.createFramebuffer();
+        this.renderbuffer = this.gl.createRenderbuffer();
+
+        if (!this.framebuffer || !this.renderbuffer) {
+            throw new Error("Failed to create Framebuffer or Renderbuffer");
+        }
+
+        this.resize(width, height, true);
+    }
 
     /**
-     * Creates a new render texture backed by an FBO.
-     * @param width - Width of the framebuffer
-     * @param height - Height of the framebuffer
-     * @param antialias - Whether to enable antialiasing
-     * @param color - Optional clear color to use when rendering to this texture
+     * Resizes the render texture using a grow-only GPU allocation strategy.
+     *
+     * - GPU memory is only reallocated when the new size **exceeds** the current allocation.
+     * - Shrinking only updates the logical dimensions and UV sub-region — no GPU work.
+     *
+     * This makes it safe to call every frame with varying sizes (e.g. inside applyFilters).
+     *
+     * @param width  - New logical width.
+     * @param height - New logical height.
+     * @param force  - Force full GPU reallocation regardless of current allocation size.
      */
-    constructor(
-        width: number,
-        height: number,
-        antialias: boolean = rapid.textures.getAntialias(),
-        color?: Color
-    ) {
-        const fbo = new FrameBufferObject(width, height, antialias);
-        super(fbo);
-        this.fbo = fbo;
-        this.clearColor = color;
-        if (this.clearColor) {
-            this.fillColor(this.clearColor);
+    resize(width: number, height: number, force: boolean = false): void {
+
+        // A render target must never be smaller than the requested logical area.
+        // Fractional filter padding otherwise loses pixels on the right/bottom edge.
+        width = Math.max(Math.ceil(width), 1);
+        height = Math.max(Math.ceil(height), 1);
+
+        const sameLogical = this.rawWidth === width && this.rawHeight === height;
+        if (!force && sameLogical) return;
+
+        const gl = this.gl;
+        const needsGpuAlloc = force || width > this._allocW || height > this._allocH;
+
+        if (needsGpuAlloc) {
+            this._allocW = Math.max(this._allocW, width);
+            this._allocH = Math.max(this._allocH, height);
+            this.base.width = this._allocW;
+            this.base.height = this._allocH;
+
+            gl.bindTexture(gl.TEXTURE_2D, this.base.glTexture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this._allocW, this._allocH, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+            gl.bindRenderbuffer(gl.RENDERBUFFER, this.renderbuffer);
+            gl.renderbufferStorage(gl.RENDERBUFFER, gl.STENCIL_INDEX8, this._allocW, this._allocH);
+
+            gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.base.glTexture, 0);
+            gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.STENCIL_ATTACHMENT, gl.RENDERBUFFER, this.renderbuffer);
+
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+            gl.bindTexture(gl.TEXTURE_2D, null);
+        }
+
+        // Update logical dimensions
+        this.rawWidth = width;
+        this.rawHeight = height;
+
+        // UV maps the logical portion within the (possibly larger) GPU allocation.
+        // RenderTexture orientation is handled by flipY at draw time, so UV stays canonical.
+        this.uvX = 0;
+        this.uvW = width / this._allocW;
+        this.uvY = 0;
+        this.uvH = height / this._allocH;
+    }
+
+    /**
+     * Activates this texture as the current render target.
+     * @param clear - Whether to clear the render target after activation.
+     */
+    activate(clear: boolean = false): void {
+        if (!this.framebuffer) return;
+        const gl = this.gl;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+        gl.viewport(0, 0, this.rawWidth, this.rawHeight);
+
+        if (clear) this.clear()
+    }
+
+    clear(clearColor?: Color) {
+        if (!this.framebuffer) return;
+        const gl = this.gl;
+
+        const c = clearColor ?? this.clearColor;
+        if (c) {
+            c.setClearColor(gl)
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
         }
     }
 
     /**
-     * Fill the entire render texture with a color.
-     * If no color is provided, uses the configured clearColor (if any).
+     * Deactivates this texture, returning rendering to the default frame buffer.
      */
-    fillColor(color?: Color) {
-        const fill = color || this.clearColor;
-        if (!fill) return;
-
-        const gl = rapid.gl;
-        const prevFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING) as WebGLFramebuffer | null;
-        const prevViewport = gl.getParameter(gl.VIEWPORT) as Int32Array;
-        const prevScissor = gl.getParameter(gl.SCISSOR_BOX) as Int32Array;
-        const prevClear = gl.getParameter(gl.COLOR_CLEAR_VALUE) as Float32Array;
-
-        this.fbo.bind(false);
-        gl.viewport(0, 0, this.fbo.width, this.fbo.height);
-        gl.scissor(0, 0, this.fbo.width, this.fbo.height);
-        gl.clearColor(fill.r / 255, fill.g / 255, fill.b / 255, fill.a / 255);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-
-        gl.clearColor(prevClear[0], prevClear[1], prevClear[2], prevClear[3]);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, prevFramebuffer);
-        gl.viewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
-        gl.scissor(prevScissor[0], prevScissor[1], prevScissor[2], prevScissor[3]);
-    }
-
-    /**
-     * Resize the underlying framebuffer and update clip region.
-     * @param width - New width
-     * @param height - New height
-     */
-    resize(width: number, height: number) {
-        this.fbo.resize(width, height);
-        this.setClipRegion(0, 0, width, height);
+    deactivate(): void {
+        const gl = this.gl;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
 
     /**
      * Get raw pixels from the render texture.
-     * @param x - X coordinate in pixel space (top-left origin).
-     * @param y - Y coordinate in pixel space (top-left origin).
+     * @param x - X coordinate in logical pixel space (top-left origin).
+     * @param y - Y coordinate in logical pixel space (top-left origin).
      * @param width - Width of the region to read.
      * @param height - Height of the region to read.
      */
-    GetPixels(x: number = 0, y: number = 0, width: number = this.width, height: number = this.height): Uint8Array {
-        if (!this.base) return new Uint8Array(0);
+    getPixels(x: number = 0, y: number = 0, width: number = this.rawWidth, height: number = this.rawHeight): Uint8Array {
+        if (!this.framebuffer) return new Uint8Array(0);
 
-        const texWidth = this.fbo.width;
-        const texHeight = this.fbo.height;
         const ix = Math.floor(x);
         const iy = Math.floor(y);
         const iw = Math.floor(width);
         const ih = Math.floor(height);
 
         if (iw <= 0 || ih <= 0) return new Uint8Array(0);
-        if (ix < 0 || iy < 0 || ix >= texWidth || iy >= texHeight) {
+        if (ix < 0 || iy < 0 || ix >= this.rawWidth || iy >= this.rawHeight) {
             return new Uint8Array(0);
         }
 
-        const readW = Math.min(iw, texWidth - ix);
-        const readH = Math.min(ih, texHeight - iy);
-        const readY = iy;
+        const readW = Math.min(iw, this.rawWidth - ix);
+        const readH = Math.min(ih, this.rawHeight - iy);
 
-        const gl = rapid.gl;
+        const readY = this.rawHeight - iy - readH;
+
+        const gl = this.gl;
         const prevFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING) as WebGLFramebuffer | null;
-        const prevTexture = gl.getParameter(gl.TEXTURE_BINDING_2D) as WebGLTexture | null;
-        const pixels = new Uint8Array(readW * readH * 4);
 
-        this.fbo.bind(false);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+
+        const pixels = new Uint8Array(readW * readH * 4);
         gl.readPixels(ix, readY, readW, readH, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
         gl.bindFramebuffer(gl.FRAMEBUFFER, prevFramebuffer);
-        gl.bindTexture(gl.TEXTURE_2D, prevTexture);
 
         return pixels;
     }
 
     /**
      * Get the color at a pixel in the render texture.
-     * @param x - X coordinate in pixel space (top-left origin).
-     * @param y - Y coordinate in pixel space (top-left origin).
+     * @param x - X coordinate in logical pixel space (top-left origin).
+     * @param y - Y coordinate in logical pixel space (top-left origin).
      */
-    GetColorAt(x: number, y: number): Color {
-        const pixels = this.GetPixels(x, y, 1, 1);
-        if (pixels.length < 4) return Color.TRANSPARENT.clone();
+    getColorAt(x: number, y: number): Color {
+        const pixels = this.getPixels(x, y, 1, 1);
+        if (pixels.length < 4) return new Color(0, 0, 0, 0);
         return new Color(pixels[0], pixels[1], pixels[2], pixels[3]);
     }
 
     /**
-     * Destroy framebuffer resources.
+     * Destroys the framebuffer, renderbuffer, and base texture.
      */
-    destroy() {
-        if (this.base) {
-            this.base.destroy(rapid.gl);
-            this.base = undefined;
-        }
+    destroy(): void {
+        super.destroy(); // Dec ref
+        if (this.framebuffer) this.gl.deleteFramebuffer(this.framebuffer);
+        if (this.renderbuffer) this.gl.deleteRenderbuffer(this.renderbuffer);
+        this.base?.destroy(this.gl);
     }
+}
+export interface ITextStyle {
+    fontFamily?: string;
+    fontSize?: number;
+    fontWeight?: string;
+    fill?: string | CanvasGradient | CanvasPattern;
+    stroke?: string | CanvasGradient | CanvasPattern;
+    strokeThickness?: number;
+    align?: "left" | "center" | "right";
+    lineHeight?: number,
+    baseline?: CanvasTextBaseline,
+}
+
+const defaultTextStyle: ITextStyle = {
+    fontFamily: "Arial",
+    fontSize: 24,
+    fontWeight: "normal",
+    fill: "#000000",
+    strokeThickness: 0,
+    align: "left",
+    lineHeight: 1
+};
+
+export interface ITextOptions extends ITextStyle, ITextureOptions {
+    text?: string
 }
 
 /**
- * @ignore
+ * A texture that renders text using an internal HTML Canvas.
  */
-export const SCALEFACTOR = 2
-class BareText extends Texture {
-    private options: ITextTextureOptions;
-    protected override scale: number = 1 / SCALEFACTOR
-    text: string;
+class TextTexture extends Texture {
+    private canvas: HTMLCanvasElement;
+    private ctx: CanvasRenderingContext2D;
+    private render: Rapid;
+    private _text: string;
+    private _style: ITextStyle;
+    private options: ITextOptions
+    flipY = true
+
+    constructor(render: Rapid, options?: ITextOptions) {
+        super();
+        this.render = render;
+        this._style = { ...defaultTextStyle, ...options };
+        this._text = options?.text ?? "";
+        this.options = {
+            premultipliedAlpha: render.premultipliedAlpha,
+            textureFilter: TextureFilterMode.LINEAR,
+            ...options
+        };
+
+        this.canvas = document.createElement("canvas");
+        const ctx = this.canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) throw new Error("Failed to get 2d context for TextTexture");
+        this.ctx = ctx;
+
+        this.canvas.width = 1;
+        this.canvas.height = 1;
+        const glTexture = createTexture(render, this.canvas, this.options);
+        this.setBase(new BaseTexture(glTexture, 1, 1));
+        this.update();
+    }
+
+    public get text(): string {
+        return this._text;
+    }
 
     /**
-     * Creates a new `Text` instance.
-     * @param options - The options for rendering the text, such as font, size, color, etc.
+     * Set new text and update the texture
      */
-    constructor(options: ITextTextureOptions) {
-        super()
-        this.texturePath = "text";
-        this.options = options;
-        this.text = options.text || ' '
-        this.updateTextImage()
-    }
-    public updateTextImage() {
-        const canvas = this.createTextCanvas();
-        this.setBaseTexture(BaseTexture.fromImageSource(canvas, true))
-    }
-    /**
-     * Creates a canvas element for rendering text.
-     * @returns HTMLCanvasElement - The created canvas element.
-     */
-    private createTextCanvas(): HTMLCanvasElement {
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-
-        if (!context) {
-            throw new Error('Failed to get canvas context');
+    public set text(value: string) {
+        if (this._text !== value) {
+            this._text = value;
+            this.update();
         }
+    }
 
-        context.font = `${this.options.fontSize || 16}px ${this.options.fontFamily || 'Arial'}`;
-        context.fillStyle = this.options.color || '#000';
-        context.textAlign = this.options.textAlign || 'left';
-        context.textBaseline = this.options.textBaseline || 'top';
+    public get style(): ITextStyle {
+        return this._style;
+    }
 
-        // Measure text to adjust canvas size
-        const lines = this.text.split('\n');
+    /**
+     * Set new style partially and update the texture
+     */
+    public set style(value: Partial<ITextStyle>) {
+        this._style = { ...this._style, ...value };
+        this.update();
+    }
+
+    private updateOffset(width: number, padding: number) {
+        switch (this._style.align) {
+            case "center":
+                return width / 2;
+            case "right":
+                return width - padding;
+            case "left":
+            default:
+                return padding;
+        }
+    }
+
+    /**
+     * Updates the internal canvas and uploads it to WebGL
+     */
+    public update(): void {
+        const ctx = this.ctx;
+        const style = this.style;
+
+        const resolution = this.render.dpr;
+        this.scale = 1 / resolution;
+
+        const fontSize = style.fontSize!;
+        const fontWeight = style.fontWeight!;
+        const fontFamily = style.fontFamily!;
+        const lineHeightRate = style.lineHeight!;
+        const font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+
+        const baseline: CanvasTextBaseline = style.baseline ?? "top";
+        const align = style.align ?? "left";
+        const strokeThickness = style.strokeThickness ?? 0;
+        const hasStroke = strokeThickness > 0;
+
+        const lines = this._text.split("\n");
+        const defaultText = "国g"
+        const reference = lines[0] || defaultText;
+
+        // 内部始终使用 alphabetic 测量和绘制。
+        ctx.font = font;
+        ctx.textBaseline = "alphabetic";
+        ctx.textAlign = "left";
+
         let maxWidth = 0;
-        let totalHeight = 0;
+        let ascent = 0;
+        let descent = 0;
 
         for (const line of lines) {
-            const metrics = context.measureText(line);
-            maxWidth = Math.max(maxWidth, metrics.width);
-            totalHeight += (this.options.fontSize || 16);
+            const metrics = ctx.measureText(line || defaultText);
+
+            maxWidth = Math.max(maxWidth, line ? metrics.width : 0);
+            ascent = Math.max(ascent, metrics.actualBoundingBoxAscent);
+            descent = Math.max(descent, metrics.actualBoundingBoxDescent);
         }
 
-        canvas.width = maxWidth * SCALEFACTOR;
-        canvas.height = totalHeight * SCALEFACTOR;
-        context.scale(SCALEFACTOR, SCALEFACTOR);
-        
-        // Redraw the text on the correctly sized canvas
-        context.font = `${this.options.fontSize || 16}px ${this.options.fontFamily || 'Arial'}`;
-        context.fillStyle = this.options.color || '#000';
-        context.textAlign = this.options.textAlign || 'left';
-        context.textBaseline = this.options.textBaseline || 'top';
+        // 测量用户基线相对于 alphabetic 的偏移量
+        ctx.textBaseline = "alphabetic";
 
-        // Adjust x position based on text alignment
-        let xPosition = 0;
-        if (this.options.textAlign === 'center') {
-            xPosition = maxWidth / 2;
-        } else if (this.options.textAlign === 'right') {
-            xPosition = maxWidth;
+        const alphabeticDescent =
+            ctx.measureText(reference).fontBoundingBoxDescent;
+
+        ctx.textBaseline = baseline;
+
+        const targetDescent =
+            ctx.measureText(reference).fontBoundingBoxDescent;
+
+        const lineStep = fontSize * lineHeightRate;
+        const totalHeight =
+            ascent + descent + (lines.length - 1) * lineStep;
+
+        const padding = Math.ceil(strokeThickness / 2) + 2;
+
+        const logicalWidth = Math.max(
+            1,
+            Math.ceil(maxWidth + padding * 2)
+        );
+        const logicalHeight = Math.max(
+            1,
+            Math.ceil(totalHeight + padding * 2)
+        );
+
+        const pixelWidth = Math.ceil(logicalWidth * resolution);
+        const pixelHeight = Math.ceil(logicalHeight * resolution);
+
+        if (
+            this.canvas.width !== pixelWidth ||
+            this.canvas.height !== pixelHeight
+        ) {
+            this.canvas.width = pixelWidth;
+            this.canvas.height = pixelHeight;
         }
 
-        function iOS() {
-            return [
-                'iPad Simulator',
-                'iPhone Simulator',
-                'iPod Simulator',
-                'iPad',
-                'iPhone',
-                'iPod'
-            ].includes(navigator.platform)
-            // iPad on iOS 13 detection
-            || (navigator.userAgent.includes("Mac") && "ontouchend" in document)
+        ctx.setTransform(resolution, 0, 0, resolution, 0, 0);
+        ctx.clearRect(
+            0,
+            0,
+            pixelWidth / resolution,
+            pixelHeight / resolution
+        );
+        ctx.font = font;
+        ctx.textBaseline = "alphabetic";
+        ctx.textAlign = align;
+
+        const startX = this.updateOffset(logicalWidth, padding)
+
+        if (hasStroke) {
+            ctx.lineWidth = strokeThickness;
+            ctx.strokeStyle = style.stroke ?? "#000000";
+            ctx.lineJoin = "round";
         }
-        let yOffset = (Helper.MobileAndTabletCheck() && iOS()) ? -7 : 0;/////////// TODO
+
+        if (style.fill) {
+            ctx.fillStyle = style.fill;
+        }
+
+        // 因为是 alphabetic baseline。是在字母底座开始，要增加ascent，才是字母顶上
+        const alphabeticY = padding + ascent;
+        let y = alphabeticY;
+
         for (const line of lines) {
-            context.fillText(line, xPosition, yOffset);
-            yOffset += (this.options.fontSize || 16);
+            if (hasStroke) {
+                ctx.strokeText(line, startX, y);
+            }
+
+            if (style.fill) {
+                ctx.fillText(line, startX, y);
+            }
+
+            y += lineStep;
         }
 
-        return canvas;
-    }
-    /**
-     * Update the displayed text
-     * @param text 
-     */
-    setText(text: string) {
-        if (this.text == text) return
+        this.base?.updateSource(this.render.gl, this.canvas, this.options);
+        this.setRegion(0, 0, pixelWidth, pixelHeight);
 
-        this.text = text
-        this.updateTextImage()
+        const alphabeticBaselineOffset =
+            targetDescent - alphabeticDescent;
+
+        this.offsetY =
+            (-padding - ascent + alphabeticBaselineOffset);
     }
 }
-
-class FrameBufferObject extends BaseTexture {
-    public framebuffer: WebGLFramebuffer;
-    private gl: WebGLContext;
-
-    /**
-     * Creates a new FrameBufferObject instance
-     * @param width - Width of the framebuffer
-     * @param height - Height of the framebuffer
-     * @param antialias - Whether to enable antialiasing
-     */
-    constructor(width: number, height: number, antialias: boolean = false) {
-        // Create the texture first
-        const gl = rapid.gl;
-        const texture = createTexture(gl, { width, height }, antialias, true, false)
-
-        // Create and setup framebuffer
-        const framebuffer = gl.createFramebuffer();
-        if (!framebuffer) {
-            gl.deleteTexture(texture);
-            throw new Error('Failed to create WebGL framebuffer');
-        }
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-        gl.framebufferTexture2D(
-            gl.FRAMEBUFFER,
-            gl.COLOR_ATTACHMENT0,
-            gl.TEXTURE_2D,
-            texture,
-            0
-        );
-
-        const stencilBuffer = gl.createRenderbuffer();
-        if (!stencilBuffer) {
-            gl.deleteFramebuffer(framebuffer);
-            gl.deleteTexture(texture);
-            throw new Error("Failed to create depth-stencil renderbuffer");
-        }
-
-        gl.bindRenderbuffer(gl.RENDERBUFFER, stencilBuffer);
-        gl.renderbufferStorage(gl.RENDERBUFFER, gl.STENCIL_INDEX8, width, height);
-        gl.framebufferRenderbuffer(
-            gl.FRAMEBUFFER,
-            gl.STENCIL_ATTACHMENT,
-            gl.RENDERBUFFER,
-            stencilBuffer
-        );
-
-        super(texture, width, height);
-
-        this.gl = gl;
-        this.framebuffer = framebuffer;
-
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    }
-
-    /**
-     * Bind the framebuffer for rendering
-     * @ignore
-     */
-    bind(clear: boolean = true) {
-        const gl = this.gl
-
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-
-        if (clear) {
-            gl.clearColor(0, 0, 0, 0);
-            gl.clear(gl.COLOR_BUFFER_BIT);
-        }
-    }
-
-    /**
-     * Unbind the framebuffer and restore default framebuffer
-     * @ignore
-     */
-    unbind() {
-        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
-        this.gl.bindTexture(this.gl.TEXTURE_2D, null);
-    }
-
-    /**
-     * Resize the framebuffer
-     * @param width - New width
-     * @param height - New height
-     */
-    resize(width: number, height: number) {
-        this.width = width;
-        this.height = height;
-
-        this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture);
-        this.gl.texImage2D(
-            this.gl.TEXTURE_2D,
-            0,
-            this.gl.RGBA,
-            width,
-            height,
-            0,
-            this.gl.RGBA,
-            this.gl.UNSIGNED_BYTE,
-            null
-        );
-        this.gl.bindTexture(this.gl.TEXTURE_2D, null);
-    }
-
-    /**
-     * Override destroy method to clean up framebuffer resources
-     * @param gl - WebGL context
-     */
-    override destroy(gl: WebGLContext) {
-        gl.deleteFramebuffer(this.framebuffer);
-        super.destroy(gl);
-    }
-}
-
 export {
-    BareText,
+    TextureManager,
     Texture,
     RenderTexture,
-    BaseTexture,
-    TextureCache,
-    FrameBufferObject
+    TextTexture
 }

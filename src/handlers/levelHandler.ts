@@ -1,6 +1,6 @@
 
 import { MakePathForEntity, RegisterController } from "../globals";
-import { Color, Texture } from "../libraries/new-rapid-render";
+import { Color, Texture } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { Scene } from "../scenes/scene";
 import { Bare } from "../types/bare";

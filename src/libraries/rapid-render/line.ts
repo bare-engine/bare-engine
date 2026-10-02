@@ -1,13 +1,31 @@
-import { ILineRenderOptions, LineTextureMode } from "./interface";
-import { Vec2 } from "../rapid-render";
+import { Color } from "./color";
+import { Vec2 } from "./math";
+import { Texture } from "./texture";
+
+export enum LineTextureMode {
+    STRETCH,
+    REPEAT
+}
+
+export interface ILineRenderOptions {
+    points: Vec2[];
+    width?: number;
+    closed?: boolean;
+    roundCap?: boolean;
+    textureMode?: LineTextureMode;
+    texture?: Texture;
+    color?: Color;
+}
 
 const LINE_ROUND_SEGMENTS = 10;
 
-const addSemicircle = (center: Vec2, normal: Vec2, width: number, isStart: boolean) => {
-    const result: Vec2[] = [];
+const addSemicircle = (center: Vec2, normal: Vec2, width: number, isStart: boolean, u: number, uvScaleU: number) => {
+    const vertices: Vec2[] = [];
+    const uv: Vec2[] = [];
 
     const startAngle = isStart ? Math.atan2(normal.y, normal.x) : Math.atan2(-normal.y, -normal.x);
     const totalAngle = Math.PI;
+    const dir = new Vec2(normal.y, -normal.x); // 线段朝向方向
 
     for (let i = 0; i < LINE_ROUND_SEGMENTS; i++) {
         const t1 = i / LINE_ROUND_SEGMENTS;
@@ -15,17 +33,20 @@ const addSemicircle = (center: Vec2, normal: Vec2, width: number, isStart: boole
         const angle1 = startAngle + t1 * totalAngle;
         const angle2 = startAngle + t2 * totalAngle;
 
-        const x1 = Math.cos(angle1) * width;
-        const y1 = Math.sin(angle1) * width;
-        const x2 = Math.cos(angle2) * width;
-        const y2 = Math.sin(angle2) * width;
+        const offset1 = new Vec2(Math.cos(angle1) * width, Math.sin(angle1) * width);
+        const offset2 = new Vec2(Math.cos(angle2) * width, Math.sin(angle2) * width);
 
-        result.push(center);
-        result.push(center.add(new Vec2(x1, y1)));
-        result.push(center.add(new Vec2(x2, y2)));
+        vertices.push(center);
+        uv.push(new Vec2(u, 0.5));
+
+        vertices.push(center.add(offset1));
+        uv.push(new Vec2(u + offset1.dot(dir) * uvScaleU, 0.5 - 0.5 * offset1.dot(normal) / width));
+
+        vertices.push(center.add(offset2));
+        uv.push(new Vec2(u + offset2.dot(dir) * uvScaleU, 0.5 - 0.5 * offset2.dot(normal) / width));
     }
 
-    return result;
+    return { vertices, uv };
 };
 /**
  * @ignore
@@ -38,7 +59,7 @@ export const getLineNormal = (points: Vec2[], closed: boolean = false): { normal
     const epsilon = 0.001; // 直线检测阈值
     const n = points.length;
     let length = 0;
-    
+
     // 先计算总长度
     if (closed) {
         for (let i = 0; i < n; i++) {
@@ -51,7 +72,7 @@ export const getLineNormal = (points: Vec2[], closed: boolean = false): { normal
             length += points[i].distanceTo(points[i + 1]);
         }
     }
-    
+
     // 计算法线和斜接长度的通用函数
     const calculateNormal = (prev: Vec2, point: Vec2, next: Vec2) => {
         const dirA = point.subtract(prev).normalize();
@@ -70,13 +91,12 @@ export const getLineNormal = (points: Vec2[], closed: boolean = false): { normal
 
     if (closed) {
         // 处理闭合路径
-        for (let i = 0; i < n - 1; i++) {
-            const prev = i === 0 ? points[n - 2] : points[i - 1];
+        for (let i = 0; i < n; i++) {
+            const prev = i === 0 ? points[n - 1] : points[i - 1];
             const point = points[i];
-            const next = points[i + 1];
+            const next = i === n - 1 ? points[0] : points[i + 1];
             normals.push(calculateNormal(prev, point, next));
         }
-        normals.push(normals[0]); // 复制首点法线到尾点
     } else {
         // 处理非闭合路径
         for (let i = 0; i < n; i++) {
@@ -110,26 +130,29 @@ export const getLineGeometry = (options: ILineRenderOptions) => {
     const roundCap = options.roundCap || false
     const textureMode = options.textureMode || LineTextureMode.STRETCH;
     let currentLength = 0;
-    const textureWidth = options.texture?.width || 1;
-    
-    for (let i = 0; i < points.length - 1; i++) {
+    const textureWidth = options.texture?.rawWidth || 1;
+
+    const segmentCount = options.closed ? points.length : points.length - 1;
+
+    for (let i = 0; i < segmentCount; i++) {
         const point = points[i];
         const normal = normals[i].normal;
         const miters = normals[i].miters;
 
+        const nextIdx = (i + 1) % points.length;
+        const nextPoint = points[nextIdx];
+        const nextNormal = normals[nextIdx].normal;
+        const nextMiter = normals[nextIdx].miters;
+
         const top = point.add(normal.multiply(miters * lineWidth));
         const bottom = point.subtract(normal.multiply(miters * lineWidth));
-
-        const nextPoint = points[i + 1];
-        const nextNormal = normals[i + 1].normal;
-        const nextMiter = normals[i + 1].miters;
 
         const nextTop = nextPoint.add(nextNormal.multiply(nextMiter * lineWidth));
         const nextBottom = nextPoint.subtract(nextNormal.multiply(nextMiter * lineWidth));
 
         // 计算当前线段长度
         const segmentLength = point.distanceTo(nextPoint);
-        
+
         // 根据纹理模式计算UV
         let u1 = 0, u2 = 0;
         if (textureMode === LineTextureMode.STRETCH) {
@@ -165,19 +188,23 @@ export const getLineGeometry = (options: ILineRenderOptions) => {
 
         currentLength += segmentLength;
     }
-    
+
     if (roundCap && !options.closed) {
         const startPoint = points[0];
         const startNormal = normals[0].normal;
-        const startVertices = addSemicircle(startPoint, startNormal, lineWidth, true);
-        vertices.push(...startVertices);
+        const startUvScaleU = textureMode === LineTextureMode.STRETCH ? (length > 0 ? 1 / length : 0) : 1 / textureWidth;
+        const startRes = addSemicircle(startPoint, startNormal, lineWidth, true, 0, startUvScaleU);
+        vertices.push(...startRes.vertices);
+        uv.push(...startRes.uv);
 
         const endPoint = points[points.length - 1];
         const endNormal = normals[points.length - 1].normal;
-        const endVertices = addSemicircle(endPoint, endNormal, lineWidth, false);
-        vertices.push(...endVertices);
-
+        const endU = textureMode === LineTextureMode.STRETCH ? 1 : currentLength / textureWidth;
+        const endUvScaleU = textureMode === LineTextureMode.STRETCH ? (length > 0 ? 1 / length : 0) : 1 / textureWidth;
+        const endRes = addSemicircle(endPoint, endNormal, lineWidth, false, endU, endUvScaleU);
+        vertices.push(...endRes.vertices);
+        uv.push(...endRes.uv);
     }
-    
+
     return { vertices, uv };
 };

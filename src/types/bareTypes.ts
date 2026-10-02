@@ -6,7 +6,7 @@ import type { TextObjectEntity } from "../objects/textObject";
 import type { CircleEntity } from "../libraries/sopiro/circle";
 import type { PolygonEntity } from "../libraries/sopiro/polygon";
 import type { Component } from "../controllers/componentController";
-import { CanvasScaleMode, Color, CustomGlShader, TextureFilterMode, UniformValue } from "../libraries/new-rapid-render";
+import { CanvasScaleMode, Color, CustomGlShader, TextureFilterMode, UniformValue } from "../libraries/rapid-render";
 
 export type Scalar = (number | string | boolean);
 

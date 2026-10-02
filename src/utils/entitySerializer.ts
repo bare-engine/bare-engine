@@ -1,6 +1,6 @@
 import type { Component } from "../controllers/componentController";
 import { GameMode } from "../globals";
-import { Color, Texture } from "../libraries/new-rapid-render";
+import { Color, Texture } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
 import { defaultSettingsData } from "../types/bareData";

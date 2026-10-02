@@ -1,7 +1,7 @@
 import type { Component } from "../controllers/componentController";
 import { assetsHandler } from "../handlers/assetsHandler";
 import mitt from "../libraries/mitt";
-import { Color, MaskType, MatrixStack, Texture, Vec2 } from "../libraries/new-rapid-render";
+import { Color, MaskType, MatrixStack, Texture, Vec2 } from "../libraries/rapid-render";
 import type { Scene } from "../scenes/scene";
 import type { ComponentCtor, Ctor, DropFirst, Events, Rectangle, Shader } from "../types/bareTypes";
 import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';

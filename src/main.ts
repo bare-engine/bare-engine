@@ -1,7 +1,7 @@
 
 import { BareEngine } from './bareEngine';
-import { BaseTexture, Color, CustomGlShader, Rapid, Texture, TextureFilterMode } from './libraries/new-rapid-render';
-import { supportsWebGL } from './libraries/new-rapid-render/webgl/utils';
+import { BaseTexture, Color, CustomGlShader, Rapid, Texture, TextureFilterMode } from './libraries/rapid-render';
+import { supportsWebGL } from './libraries/rapid-render/webgl/utils';
 import { BareEvent, BareOptions, SceneClass } from './types/bareTypes';
 import { globalEvents, Scene } from './globals';
 export { MakePath, MakePathForEntity } from "./globals";

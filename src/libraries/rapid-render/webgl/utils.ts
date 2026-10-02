@@ -1,25 +1,24 @@
-import { WebGLContext } from "../interface";
+import { Rapid, TextureFilterMode } from "../render";
+import { ITextOptions, TextureWrapMode } from "../texture";
 
+export type WebGLContext = WebGL2RenderingContext;
 
 export const supportsWebGL = (canvas: HTMLCanvasElement): boolean => {
     const options = { stencil: true }
     const gl = canvas.getContext("webgl2", options) || canvas.getContext("webgl", options)
     return !!gl
 }
-
 /**
- * get webgl rendering context
- * @param canvas 
- * @returns webgl1 or webgl2
+ * get webgl2 rendering context
+ * @param canvas
+ * @returns webgl2
  */
-
-export const getContext = (canvas: HTMLCanvasElement): WebGLContext => {
-    const options = { stencil: true }
-    const gl = canvas.getContext("webgl2", options) || canvas.getContext("webgl", options)
+export const getContext = (canvas: HTMLCanvasElement, antialias: boolean = false, premultipliedAlpha: boolean = true): WebGLContext => {
+    const gl = canvas.getContext("webgl2", { stencil: true, antialias, premultipliedAlpha });
     if (!gl) {
-        throw new Error("Unable to initialize WebGL. Your browser may not support it.");
+        throw new Error("WebGL2 is not supported in this browser.");
     }
-    return gl as WebGLContext;
+    return gl;
 }
 
 /**
@@ -37,7 +36,6 @@ export const compileShader = (gl: WebGLContext, source: string, type: number) =>
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
 
-    // 检查编译状态
     const compileStatus = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
     if (!compileStatus) {
         const errorLog = gl.getShaderInfoLog(shader);
@@ -73,73 +71,89 @@ export const createShaderProgram = (gl: WebGLContext, vsSource: string, fsSource
     return program;
 }
 
+export function setTextureWrapMode(gl: WebGLRenderingContext | WebGL2RenderingContext, wrapMode: TextureWrapMode) {
+    const wrapParam = {
+        [TextureWrapMode.CLAMP]: gl.CLAMP_TO_EDGE,
+        [TextureWrapMode.REPEAT]: gl.REPEAT,
+        [TextureWrapMode.MIRRORED_REPEAT]: gl.MIRRORED_REPEAT,
+    }[wrapMode] || gl.CLAMP_TO_EDGE;
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapParam);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapParam);
+}
+
+export function setTextureFilterMode(gl: WebGLRenderingContext | WebGL2RenderingContext, filterMode: TextureFilterMode) {
+    const filter = {
+        [TextureFilterMode.LINEAR]: gl.LINEAR,
+        [TextureFilterMode.NEAREST]: gl.NEAREST,
+    }[filterMode] ?? gl.NEAREST;
+    
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
+}
+
+export interface ICreateTextureOptions extends ITextOptions{
+    onlySize?: boolean
+}
 /**
  * Creates a WebGL texture either from an image source or as a blank texture
  * @param gl - The WebGL rendering context
  * @param source - The image source or dimensions for a blank texture
- * @param antialias - Whether to enable antialiasing
+ * @param filterMode - texture filter mode
  * @returns A WebGL texture
  */
 export function createTexture(
-    gl: WebGLContext,
+    render:Rapid,
     source: TexImageSource | { width: number; height: number },
-    antialias: boolean,
-    withSize: boolean = false,
-    flipY: boolean = false,
-    wrapMode: 'repeat' | 'mirror' | 'clamp' = 'clamp'
+    options: ICreateTextureOptions,
 ): WebGLTexture {
+    const gl = render.gl
     const texture = gl.createTexture();
     if (!texture) {
-        throw new Error("unable to create texture");
+        throw new Error("Unable to create WebGL texture");
     }
 
     gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, antialias ? gl.LINEAR : gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, antialias ? gl.LINEAR : gl.NEAREST);
-    
-    // 根据不同的环绕模式设置纹理参数
-    let wrapParam: number;
-    switch (wrapMode) {
-        case 'repeat':
-            wrapParam = gl.REPEAT;
-            break;
-        case 'mirror':
-            wrapParam = gl.MIRRORED_REPEAT;
-            break;
-        case 'clamp':
-        default:
-            wrapParam = gl.CLAMP_TO_EDGE;
-            break;
-    }
-    
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapParam);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapParam);
-    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, flipY);
 
-    if (withSize) {
-        source = source as { width: number; height: number };
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, source.width, source.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 0);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+
+    setTextureWrapMode(gl, options.wrap ?? TextureWrapMode.CLAMP);
+    setTextureFilterMode(gl, options.textureFilter ?? render.textureFilter);
+
+    if (options.onlySize) {
+        // RenderTexture: blank allocation, no source pixels to premultiply
+        const s = source as { width: number; height: number };
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, s.width, s.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
     } else {
+        const premultipliedAlpha = options.premultipliedAlpha ?? render.premultipliedAlpha
+        if (premultipliedAlpha) {
+            gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+        }
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source as TexImageSource);
+        if (premultipliedAlpha) {
+            gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+        }
     }
+
+    gl.bindTexture(gl.TEXTURE_2D, null);
 
     return texture;
 }
 
-export function generateFragShader(fs: string, max: number) {
+export function generateShader(fs: string, max: number) {
     if (fs.includes("%TEXTURE_NUM%")) fs = fs.replace("%TEXTURE_NUM%", max.toString())
     if (fs.includes("%GET_COLOR%")) {
         let code = ""
         for (let index = 0; index < max; index++) {
             if (index == 0) {
-                code += `if(vTextureId == ${index}.0)`
+                code += `if(vTextureId == ${index})`
             } else if (index == max - 1) {
                 code += `else`
             } else {
-                code += `else if(vTextureId == ${index}.0)`
+                code += `else if(vTextureId == ${index})`
             }
-            code += `{color = texture2D(uTextures[${index}], vRegion);}`
+            code += `{return texture(uTextures[${index}], uv);}`
         }
         fs = fs.replace("%GET_COLOR%", code)
     }
@@ -148,3 +162,17 @@ export function generateFragShader(fs: string, max: number) {
 }
 export const FLOAT = 5126;
 export const UNSIGNED_BYTE = 5121;
+
+export function vertexAttribDivisor(gl: WebGLContext, index: number, divisor: number): void {
+    gl.vertexAttribDivisor(index, divisor);
+}
+
+export function drawArraysInstanced(
+    gl: WebGLContext,
+    mode: number,
+    first: number,
+    count: number,
+    instanceCount: number
+): void {
+    gl.drawArraysInstanced(mode, first, count, instanceCount);
+}
