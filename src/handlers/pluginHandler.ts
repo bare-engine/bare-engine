@@ -2390,6 +2390,15 @@ export class PluginHandler
 
     AddDebugAction(label: string, callback: () => void)
     {
+        // re-registering (eg a controller recreated on restart) rebinds the existing entry in place,
+        // so the button targets the newest instance instead of a stale one
+        var existing = this.debugActions.find(action => action.label === label);
+        if (existing)
+        {
+            existing.callback = callback;
+            return;
+        }
+
         this.debugActions.push({label, callback});
     }
 
