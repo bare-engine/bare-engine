@@ -1983,7 +1983,7 @@ export class PluginHandler
         this.AddDebugBreak();
 
         // DEBUG
-        this.AddDebugAction("Toggle Debug Visuals", () => window.debug = !window.debug);
+        this.AddDebugAction("Toggle Debug Visuals", () => bare.debug = !bare.debug);
         this.AddDebugBreak();
         this.AddDebugBreak();
     }

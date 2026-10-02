@@ -106,7 +106,7 @@ export class SopiroPhysicsController extends PhysicsControllerBase
 
     override Render(): void
     {
-        if (window.debug)
+        if (bare.debug)
             this.world.render();
 
         this.RenderGrab();

@@ -1,5 +1,5 @@
 
-import { Texture } from '../libraries/rapid-render';
+import { BaseTexture, Texture } from '../libraries/rapid-render';
 import { AnimationData, Atlas } from '../types/bareTypes';
 import { Helper } from '../utils/helper';
 
@@ -9,6 +9,39 @@ class AssetsHandler
     loading: Map<string, Promise<Texture>> = new Map();
 
     private animationData: Map<string, AnimationData> = new Map();
+
+    private _whiteTexture?: Texture;
+    private _missingTexture?: Texture;
+
+    // 1x1 white pixel, handy for solid rects and debug shapes - registered as "PIXEL"
+    get whiteTexture(): Texture
+    {
+        return this._whiteTexture ??= this.CreatePixelTexture([255, 255, 255, 255]);
+    }
+
+    // 1x1 red pixel, returned in place of textures that failed to load
+    get missingTexture(): Texture
+    {
+        return this._missingTexture ??= this.CreatePixelTexture([255, 0, 0, 255]);
+    }
+
+    // always nearest filtering, so stretching the pixel stays crisp even with antialias on
+    private CreatePixelTexture(rgba: [number, number, number, number]): Texture
+    {
+        const gl = rapid.gl;
+        const glTexture = gl.createTexture();
+        if (!glTexture)
+            throw new Error("Failed to create texture");
+
+        gl.bindTexture(gl.TEXTURE_2D, glTexture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(rgba));
+
+        return new Texture(new BaseTexture(glTexture, 1, 1));
+    }
 
     async LoadTexture(texturePath: string = ""): Promise<Texture>
     {
@@ -27,7 +60,7 @@ class AssetsHandler
             return tex;
         }).catch(() => {
             this.loading.delete(texturePath);
-            return window.redPixelTexture; // JUST TO RETURN SOMETHING, TODO? MAYBE SHOULD BE A TEXTURE WITH RED CROSS
+            return this.missingTexture; // JUST TO RETURN SOMETHING, TODO? MAYBE SHOULD BE A TEXTURE WITH RED CROSS
         });
 
         this.loading.set(texturePath, texturePromise);
@@ -146,7 +179,7 @@ class AssetsHandler
     Clear()
     {
         for (var tex of this.textures.values())
-            if (tex != window.whitePixelTexture)
+            if (tex != this.whiteTexture)
                 rapid.texture.destroy(tex);
 
         this.textures.clear();
@@ -155,7 +188,7 @@ class AssetsHandler
 
         // BIT HACKY, BUT WE STILL NEED THE PIXEL TEXTURE, INITIALLY CREATED IN BareEngine.ts Init()
         // ALSO PREVENTED DESTROYING IT ABOVE
-        assetsHandler.AddTexture("PIXEL", window.whitePixelTexture);
+        this.AddTexture("PIXEL", this.whiteTexture);
     }
 }
 

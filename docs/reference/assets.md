@@ -18,6 +18,8 @@ Texture names are paths relative to `public/images/`, without the extension. Ima
 | `GetTexture(name)` / `HasTexture(name)` | A loaded texture, or whether it's loaded. |
 | `AddTexture(name, texture)` | Register a texture you made, for example a `RenderTexture`, so it can be used by name. |
 | `RemoveTexture(name)` | Forget a texture. |
+| `whiteTexture` | Property: a 1x1 white pixel, also registered as `PIXEL`. |
+| `missingTexture` | Property: the 1x1 red pixel a failed load resolves with. |
 
 ## Atlases
 

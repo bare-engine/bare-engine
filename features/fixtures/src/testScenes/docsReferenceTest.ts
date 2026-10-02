@@ -63,7 +63,7 @@ export class DocsReferenceTest extends Scene
         c.check(typeof bare.gameSpeed === "number", "gameSpeed should be a number");
         c.check(bScene === this, "bScene should be the current scene");
         c.check(isDev === __DEV__, "isDev should follow __DEV__");
-        c.check(typeof isMobile === "boolean" && typeof hasFocus === "boolean", "isMobile and hasFocus should be booleans");
+        c.check(typeof bare.util.isMobile === "boolean" && typeof bare.hasFocus === "boolean", "bare.util.isMobile and bare.hasFocus should be booleans");
 
         const pausedBefore = bare.paused;
         bare.TogglePause();

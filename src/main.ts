@@ -1,9 +1,10 @@
 
 import { BareEngine } from './bareEngine';
-import { BaseTexture, Color, CustomGlShader, Rapid, Texture, TextureFilterMode } from './libraries/rapid-render';
+import { Color, Rapid, TextureFilterMode } from './libraries/rapid-render';
 import { supportsWebGL } from './libraries/rapid-render/webgl/utils';
 import { BareEvent, BareOptions, SceneClass } from './types/bareTypes';
 import { globalEvents, Scene } from './globals';
+import { Helper } from './utils/helper';
 export { MakePath, MakePathForEntity } from "./globals";
 
 var canvas = document.querySelector<HTMLCanvasElement>("canvas.canvas");
@@ -25,7 +26,7 @@ function GetBareOptions(options?: BareOptions): BareOptions
         editorButtonPosition: {x: 0, y: 0},
         showEditorButton: undefined,
         debugKeys: __DEV__ ? [
-            {e: () => window.debug = !window.debug},
+            {e: () => bare.debug = !bare.debug},
             {p: () => { bare.TogglePause(); }},
             {r: () => bare.Restart()},
             {l: () => bare.scene.GetLevelScene()?.level.Restart()},
@@ -72,63 +73,10 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise
                 rapid.canvas.focus();
             });
 
-            window.whiteShader = new CustomGlShader(rapid,
-                // Vertex shader (unchanged)
-                `precision mediump float;
-                attribute vec2 aPosition;
-                attribute vec2 aRegion;
-                uniform mat4 uProjectionMatrix;
-                varying vec2 vRegion;
-                void main(void) {
-                    vRegion = aRegion;
-                    gl_Position = uProjectionMatrix * vec4(aPosition, 0.0, 1.0);
-                }`,
-                // Fragment shader
-                `precision mediump float;
-                uniform sampler2D uTexture;
-                uniform float uFadeTime;  // 0.0 = white, 1.0 = normal texture
-                varying vec2 vRegion;
-                void main(void) {
-                    vec4 originalColor = texture2D(uTexture, vRegion);
-                    if(originalColor.a > 0.0) { 
-                        vec4 whiteColor = vec4(1.0, 1.0, 1.0, originalColor.a);
-                        // Interpolate between white and original color based on fade time
-                        gl_FragColor = mix(whiteColor, originalColor, uFadeTime);
-                    } else {
-                        gl_FragColor = vec4(0.0);
-                    }
-                }`
-            );
-
             //document.body.appendChild(rapid.canvas);
             //rapid.canvas.style.display = "none"; // HIDE GAME, SHOWN AGAIN WHEN LOADED
 
             window.rapid = rapid;
-
-            const gl = rapid.gl;
-            const glTexture:WebGLTexture | null = gl.createTexture();
-            if (!glTexture) {throw new Error("Failed to create texture");}
-            gl.bindTexture(gl.TEXTURE_2D, glTexture);
-            // Force nearest filtering for the 1x1 white pixel, even if global antialias is on.
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 255, 255, 255]));
-            const baseTexture = new BaseTexture(glTexture, 1, 1);
-            window.whitePixelTexture = new Texture(baseTexture);
-            //window.whitePixelTexture = new RenderTexture(1, 1, false, Color.White);
-
-            const glTexture2: WebGLTexture | null = gl.createTexture();
-            if (!glTexture2) { throw new Error("Failed to create texture"); }
-            gl.bindTexture(gl.TEXTURE_2D, glTexture2);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 0, 0, 255]));
-            const baseTexture2 = new BaseTexture(glTexture2, 1, 1);
-            window.redPixelTexture = new Texture(baseTexture2);
 
             // PREVENT TEXT SELECTION AND IOS MAGNIFIER
             var style = (rapid.canvas.style as any);
@@ -201,16 +149,14 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise
                     return;
 
                 // SENDS TO KEYBOARD CONTROLLER
-                globalEvents.emit(BareEvent.game_focusChange, window.hasFocus);//
-                //bare.scene.SendEvent(BareEvent.game_focusChange, window.hasFocus);
+                globalEvents.emit(BareEvent.game_focusChange, bare.hasFocus);//
+                //bare.scene.SendEvent(BareEvent.game_focusChange, bare.hasFocus);
             };
 
-            window.hasFocus = true;
             /*document.addEventListener('visibilitychange', function() {
-                window.hasFocus = !document.hidden;
-                window.onFocusChange(hasFocus);
+                bare.hasFocus = !document.hidden;
 
-                if (window.hasFocus)
+                if (bare.hasFocus)
                     bareEngine.lastUpdateTimeRef = performance.now(); // TO PREVENT DELTA TIME FROM SHOOTING UP
 
                 updateFocus();
@@ -218,27 +164,27 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise
 
             // Additional window focus/blur events for better coverage
             /*window.addEventListener('focus', function() {
-                window.hasFocus = true;
+                bare.hasFocus = true;
                 updateFocus();
             });
 
             window.addEventListener('blur', function() {
-                window.hasFocus = false;
+                bare.hasFocus = false;
                 updateFocus();
             });*/
 
             // NO FOCUS EVENTS FOR MOBILE
             // SINCE SOMETIMES THEY FIRE ON MOBILE
             // ALSO NOT IN DEV BECAUSE BIT ANNOYING TO SEE THIS OVERLAY EVERY TIME
-            if (!isMobile && !__DEV__)
+            if (!Helper.isMobile && !__DEV__)
             {
                 rapid.canvas.addEventListener('focus', function() {
-                    window.hasFocus = true;
+                    bare.hasFocus = true;
                     updateFocus();
                 });
 
                 rapid.canvas.addEventListener('blur', function() {
-                    window.hasFocus = false;
+                    bare.hasFocus = false;
                     updateFocus();
                 });
             }

@@ -47,6 +47,8 @@ export class BareEngine
     public count: int = 0;
 
     public paused: boolean = false;
+    public debug: boolean = false;
+    public hasFocus: boolean = true;
     public freezeOnUnfocus: boolean = true;
     public multiTouch: boolean = false;
     
@@ -113,7 +115,7 @@ export class BareEngine
     level:LevelHandler;
     camera:CameraHandler;
 
-    get texture(): TextureManager { return rapid.texture } // UNUSED ATM, REPURPOSE TO ASSETHANDLER? TODO
+    get texture(): TextureManager { return rapid.texture }
     
     rootDir: string = "";
     imageDir: string = "images";
@@ -238,14 +240,42 @@ export class BareEngine
 
         this.initialSceneClass = sceneClass;
         
-        // REGISTER THE whitePixelTexture, HANDY FOR MANY THINGS
-        assetsHandler.AddTexture("PIXEL", window.whitePixelTexture);
+        // REGISTER THE WHITE PIXEL TEXTURE, HANDY FOR MANY THINGS
+        assetsHandler.AddTexture("PIXEL", assetsHandler.whiteTexture);
         // GETS USED FOR COLLISION RECT ATM
         // DOWNSIDE IS THAT IT'S NOT PART OF THE ATLAS GENERATED FROM INITIAL TEXTURES (texturePackImages)
         // SO YOU GET EXTRA DRAW CALL(S)
         // YOU COULD ADD AN IMAGE IN THE texturePackImages FOLDER NAMED whitePixel AND IT WILL OVERRIDE THIS
         // BUT IF ANTI-ALIAS IS ON, THAT TEXTURE USES LINEAR FILTERING, SO STRETCHING THAT PIXEL IS NOT GREAT AND GETS BLURRY
         
+        this.shaders.white = new CustomGlShader(rapid,
+            // Vertex shader (unchanged)
+            `precision mediump float;
+            attribute vec2 aPosition;
+            attribute vec2 aRegion;
+            uniform mat4 uProjectionMatrix;
+            varying vec2 vRegion;
+            void main(void) {
+                vRegion = aRegion;
+                gl_Position = uProjectionMatrix * vec4(aPosition, 0.0, 1.0);
+            }`,
+            // Fragment shader
+            `precision mediump float;
+            uniform sampler2D uTexture;
+            uniform float uFadeTime;  // 0.0 = white, 1.0 = normal texture
+            varying vec2 vRegion;
+            void main(void) {
+                vec4 originalColor = texture2D(uTexture, vRegion);
+                if(originalColor.a > 0.0) { 
+                    vec4 whiteColor = vec4(1.0, 1.0, 1.0, originalColor.a);
+                    // Interpolate between white and original color based on fade time
+                    gl_FragColor = mix(whiteColor, originalColor, uFadeTime);
+                } else {
+                    gl_FragColor = vec4(0.0);
+                }
+            }`
+        );
+
         this.ImplementInitialTextures();
         this.ResizeCanvas(this.resolution);
 
@@ -472,7 +502,7 @@ export class BareEngine
 
     RunMainLoop()
     {
-        if (!this.freezeOnUnfocus || hasFocus)
+        if (!this.freezeOnUnfocus || this.hasFocus)
         {
             const currentTime = performance.now();
             this.deltaTime = Math.min((currentTime - this.lastUpdateTimeRef) / 1000, this.maxDeltaTime);

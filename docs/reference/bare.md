@@ -59,6 +59,8 @@ bare.scene.Get(Game).level.Load('level1');
 | `bare.count` | Frames rendered so far. |
 | `bare.width` / `bare.height` | The game's render size in game units. |
 | `bare.paused` | Whether the game is paused. |
+| `bare.hasFocus` | Whether the game has focus. Changes are sent as the `game_focusChange` event. |
+| `bare.debug` | Whether debug drawing is on. See [Debugging](../guide/debugging). |
 | `bare.gameSpeed` | Read-only. The current frame rate relative to 60 fps: `1` at 60 fps, `0.5` at 30 fps. Updated every frame. |
 | `bare.levelEditorOpen` | Whether the [level editor](../guide/level-editor) is open. |
 | `bare.defaultFont` | Font family used by text that doesn't set `fontFamily`. See [Fonts](../guide/text-and-ui#fonts). |

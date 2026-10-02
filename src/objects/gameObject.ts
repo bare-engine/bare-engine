@@ -421,7 +421,7 @@ export class GameObject
 
         this.texture = texture;
 
-        if (this.texture != window.redPixelTexture) // redPixelTexture MEANS IT'S NOT FOUND
+        if (this.texture != bare.asset.missingTexture) // missingTexture MEANS IT'S NOT FOUND
         {
             var onTextureLoadedCallbacksCached = this._OnTextureLoadedCallbacks;
             this._OnTextureLoadedCallbacks = null;
@@ -438,7 +438,7 @@ export class GameObject
 
     WhenTextureLoaded(callback: () => void)
     {
-        if (this.texture && this.texture != window.redPixelTexture)
+        if (this.texture && this.texture != bare.asset.missingTexture)
         {
             // TEXTURE IS ALREADY THERE
             callback();
@@ -668,7 +668,7 @@ export class GameObject
         if (!this.visible)
             return;
         
-        if (window.debug)
+        if (bare.debug)
         {
             // OUTER PIVOT / ORIGIN — BLACK CIRCLE (world space so nested children draw correctly)
             var originWorld = this.ToGlobal(this.pivot);

@@ -1,9 +1,8 @@
 import mitt, { type Emitter } from './libraries/mitt';
 import type { BareEngine } from './bareEngine';
-import type { CustomGlShader, Rapid, Texture } from './libraries/rapid-render';
+import type { Rapid } from './libraries/rapid-render';
 import type { Scene } from './scenes/scene';
 import type { Entity, Events } from './types/bareTypes';
-import { Helper } from './utils/helper';
 
 export const globalEvents = mitt<Events>();
 //export const pipes = matt<Pipes>(); // NOT USING ANYMORE - STILL KEEPING PIPES IN ENGINE, JUST NOT REFERENCED. USER CAN STIL USE IT
@@ -22,42 +21,26 @@ declare global
     type int = number;
 
     var bare:BareEngine;
+    var rapid: Rapid;
 
-    var textureNotFoundString:string;
+    var isDev:boolean;
+
+    var bScene: Scene; // bare.scene... -> this.scene
 
     var initialAssetsReady:Function;
     var initialAssets:Record<string, any>;
-
-    var debug:boolean;
-
-    var whiteShader:CustomGlShader;
-
-    var rapid: Rapid;
-    var isDev:boolean;
-    var isMobile:boolean;
-
+    
     var destroyTextFunc:Function | null;
 
-    var bScene: Scene; // bare.scene... -> this.scene
-    
-    var whitePixelTexture:Texture;
-    var redPixelTexture:Texture;
-
-    var hasFocus:boolean;
-    var onFocusChange: (hasFocus: boolean) => void;
-
     function trace(message: any, ...optionalParams: any[]): void;
+    function assert(condition: boolean, message?: string): void;
 
     function wait(seconds: number, persistent?: boolean): Promise<void>;
     function waitFrame(frames?: number, persistent?: boolean): Promise<void>;
     function cancelWaits(): void;
-
-    function assert(condition: boolean, message?: string): void;
 }
 
-window.debug = false;
-
-window.onFocusChange = (hasFocus) => {};
+window.isDev = __DEV__;
 
 window.trace = (message: any, ...optionalParams: any[]): void => {
     if (!__DEV__) return;
@@ -69,9 +52,6 @@ window.assert = (condition: boolean, message?: string): void => {
         throw new Error(message);
 };
 
-window.isDev = __DEV__;
-window.isMobile = Helper.MobileAndTabletCheck();
-    
 let _waitGen = 0;
 window.wait = (seconds: number, persistent = false): Promise<void> => {
     const gen = _waitGen;

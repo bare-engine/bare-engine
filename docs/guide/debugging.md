@@ -8,14 +8,14 @@ Press **E** while the game runs, or use **Toggle Debug Visuals** in the [Chrome 
 - physics hitboxes
 - pointer hitboxes, the areas that react to clicks
 
-In code, check the `debug` global, for example to draw your own helpers:
+In code, check `bare.debug`, for example to draw your own helpers:
 
 ```ts
 import { Color } from 'bare-engine';
 
 OnRender()
 {
-    if (debug)
+    if (bare.debug)
         bare.drawCircle({
             position: this.go.position,
             radius: this.range,
@@ -59,7 +59,7 @@ To add your own, pass `debugKeys` to `StartBare`. This **replaces** the defaults
 ```ts
 StartBare(Game, {
     debugKeys: [
-        { e: () => debug = !debug },
+        { e: () => bare.debug = !bare.debug },
         { r: () => bare.Restart() },
         { k: () => bare.object.GetByName('player')?.Remove() },  // kill the player
         { n: () => bare.level.Load('level2') },                  // skip to the next level

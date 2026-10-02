@@ -10,6 +10,9 @@ import { EditorUIHintHandler } from './editorUIHintHandler';
 import { Bare } from '../types/bare';
 import { SettingsHandler } from './settingsHandler';
 
+// data url of the red fallback image for entities without a texture, built on first use
+let textureNotFoundString: string | undefined;
+
 /*
     BUILD SETUP/CONTROLS UI
     Handles editor UI setup, sidebar population, and UI interactions
@@ -398,7 +401,7 @@ export class EditorUIHandler {
                                 img.style.borderRadius = '3px';
                                 childEntity.appendChild(img);
                             } else {
-                                if (!window.textureNotFoundString)
+                                if (!textureNotFoundString)
                                 {
                                     var rt = new RenderTexture(rapid, { width: 128, height: 128, clearColor: Color.fromHex("#fc0000") });
                                     //var rt = new RenderTexture(128, 128, true, Color.fromHex("#fc0000")); // Fallback tex
@@ -410,10 +413,10 @@ export class EditorUIHandler {
                                     const imageData = new ImageData(new Uint8ClampedArray(pixels), 128, 128);
                                     ctx.putImageData(imageData, 0, 0);
                                     var img = canvas.toDataURL();
-                                    window.textureNotFoundString = img;
+                                    textureNotFoundString = img;
                                 }
 
-                                childEntity.style.backgroundImage = `url(${window.textureNotFoundString})`;
+                                childEntity.style.backgroundImage = `url(${textureNotFoundString})`;
                                 childEntity.style.backgroundSize = 'contain';
                                 childEntity.style.backgroundRepeat = 'no-repeat';
                                 childEntity.style.backgroundPosition = 'center';

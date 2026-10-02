@@ -143,7 +143,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
     Render(): void
     {
-        if (__DEV__ && window.debug)
+        if (__DEV__ && bare.debug)
         {
             const color = Color.fromHex('#f700ff57');
 

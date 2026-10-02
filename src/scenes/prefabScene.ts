@@ -70,8 +70,8 @@ export class PrefabScene extends EditorScene
 
     override async OnStart(payload: PrefabSceneAwakePayload = this.lastPayload): Promise<void>
     {
-        this.debugAtStart = window.debug;
-        window.debug = true;
+        this.debugAtStart = bare.debug;
+        bare.debug = true;
         this.hitbox.showDebug = false;
         
         if (!assetsHandler.HasTexture("placeHolder"))
@@ -128,7 +128,7 @@ export class PrefabScene extends EditorScene
     {
         if (this.opened)
         {
-            window.debug = this.debugAtStart;
+            bare.debug = this.debugAtStart;
         }
 
         super.OnClear();

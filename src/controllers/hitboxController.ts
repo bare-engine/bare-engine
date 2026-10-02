@@ -77,7 +77,7 @@ export class HitboxController
         if (!this.active)
             return;
 
-        if (isMobile && !bare.mouse.IsDown())
+        if (Helper.isMobile && !bare.mouse.IsDown())
             return;
 
         // A HIGHER SCENE ALREADY GRABBED THE POINTER THIS FRAME - DROP OUR STALE HOVER AND YIELD.
@@ -96,7 +96,7 @@ export class HitboxController
 
     Render()
     {
-        if (!window.debug || !this.showDebug)
+        if (!bare.debug || !this.showDebug)
             return;
 
         var objs = this.GetAllObjectsWithChildren();
@@ -526,7 +526,7 @@ export class HitboxController
                 hitboxDown.OnRelease?.(hitboxDown.parent, event);
 
             this.currentTouchHitboxesDown.delete(event.pointerId);
-            if (isMobile && this.currentTouchHitboxesDown.size === 0)
+            if (Helper.isMobile && this.currentTouchHitboxesDown.size === 0)
                 this.SetHover(null);
 
             event.preventDefault();
@@ -542,7 +542,7 @@ export class HitboxController
         this.currentHitboxDown = null;
         this.currentTouchHitboxesDown.clear();
 
-        if (isMobile)
+        if (Helper.isMobile)
         {
             if (this.currentHitboxHover)
             {
