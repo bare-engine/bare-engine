@@ -71,8 +71,8 @@ Saves are stored under your game's `gameId` from `package.json`, so games on the
 | `bare.level.Serialize()` | Serializes the current objects into the in-memory level. |
 | `await bare.level.Save()` | Serializes the level, if `bare.storage` is active (referenced anywhere in user code), calls `bare.storage.Save()`. |
 | `bare.storage.Save()` | Writes `SaveData` (including every serialized/cached level) to browser `localStorage` under the game's `gameId`. |
-| Save in the editor on `localhost` | Writes the level to disk. |
-| Save in the editor on a network URL | Writes the level to browser `localStorage`. |
+| Save in the editor on the dev server | Writes the level to disk. |
+| Save in the editor in a production build | Writes the level to browser `localStorage`. |
 
 ## What gets saved
 

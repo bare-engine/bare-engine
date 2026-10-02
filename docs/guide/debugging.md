@@ -52,7 +52,7 @@ During development, these keys are available:
 | **L** | Restart the level. |
 | **C** | Restart with cleared save data. |
 
-They only work on `localhost`, and only when the key is pressed on its own, so shortcuts like **Ctrl+C** still work normally.
+They only work on the dev server, not in production builds, and only when the key is pressed on its own, so shortcuts like **Ctrl+C** still work normally.
 
 To add your own, pass `debugKeys` to `StartBare`. This **replaces** the defaults, so include the ones you want to keep:
 
@@ -107,7 +107,7 @@ export class Game extends Scene
 
 ## Logging
 
-`trace(...)` works like `console.log`, but only logs on `localhost`, so you can leave it in. See [Globals](../reference/globals#logging-and-checks).
+`trace(...)` works like `console.log`, but only logs on the dev server, so you can leave it in. See [Globals](../reference/globals#logging-and-checks).
 
 ## More help
 

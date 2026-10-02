@@ -12,9 +12,7 @@ npm run dev -- --host
 
 The terminal then shows a **Network** URL, like `http://192.168.1.20:5173/`. Open it on your phone, connected to the same Wi-Fi.
 
-::: warning
-Some development helpers only work on an address with `localhost` in it. On the network URL, [`trace`](../reference/globals#logging-and-checks) logs nothing, the [debug keys](./debugging#debug-keys) are off, and the [level editor](./level-editor) keeps your edits in the browser instead of saving them to the level file.
-:::
+Everything works as on your computer: [`trace`](../reference/globals#logging-and-checks) logs, and saves from the [level editor](./level-editor) on your phone write to the level file on your computer.
 
 ## Touch is the mouse
 

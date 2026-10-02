@@ -55,10 +55,6 @@ Production builds remove some things to save space. Try turning them off one at 
 
 Restart the dev server. It reads these files only when it starts.
 
-## Debug keys and `trace` don't work on my phone
-
-They only work on an address with `localhost` in it, not on the dev server's network URL. See [Testing on your phone](./mobile#testing-on-your-phone).
-
 ## Save data from another game shows up
 
 Two games with the same `gameId` on the same domain share their saves. Give each game its own [`gameId`](../reference/package-json#gameid).

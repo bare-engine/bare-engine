@@ -20,7 +20,7 @@ await waitFrame(3);     // wait three game frames
 
 | Function | Description |
 | --- | --- |
-| `trace(...values)` | Like `console.log`, but only on `localhost`, so it stays quiet in your released game. |
+| `trace(...values)` | Like `console.log`, but only on the dev server, so it stays quiet in your released game. |
 | `assert(condition, message?)` | Throws an error with `message` when `condition` is false. |
 
 ## Values

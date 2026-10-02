@@ -1,8 +1,8 @@
 # Level Editor
 
-Bare has a level editor built into the game. On `localhost`, editor saves write to the level's JSON file through the development server. Check the browser console for save errors and review the resulting file changes in Git.
+Bare has a level editor built into the game. While the dev server runs, editor saves write to the level's JSON file through it. Check the browser console for save errors and review the resulting file changes in Git.
 
-On a network URL, such as when testing on your phone, editor saves go to that browser's local storage instead of the project's files. They do not update the copy on your computer. See [Mobile & Touch](./mobile#testing-on-your-phone).
+In a [production build](./building-and-publishing), the editor still works, but saves go to that browser's local storage instead of the project's files. Once a level has been edited there, it's loaded from local storage instead of its JSON file.
 
 Saving from the editor differs from calling `bare.level.Save()` during gameplay; see [saving destinations](../reference/save-data#saving-destinations).
 
