@@ -727,6 +727,11 @@ let skipReloadUntil = 0;
 // build finishes and the atlas is back on disk.
 let texturePackBuilding = false;
 
+// Set by bare:generated-assets in dev. The texturePackImages plugin calls it once a
+// build finishes, since on Windows the watcher can miss the atlas json being replaced
+// (renamed over), which left assets.ts stale until the next unrelated change.
+let regenerateGeneratedAssets = null;
+
 function bareEditorAndApiPlugin(options = {}) {
     const projectRoot = options.projectRoot || process.cwd();
     const editorHtmlPath = options.editorHtmlPath || path.resolve(__dirname, "../config/editor.html");
@@ -941,14 +946,20 @@ function bareTexturePackImagesPlugin(options = {}) {
     let child = null;
     let queued = false;
     let serverRef = null;
+    let scheduleId = 0;
 
     function schedule(reason) {
         if (timer) {
             clearTimeout(timer);
         }
-        timer = setTimeout(() => {
+        const id = ++scheduleId;
+        timer = setTimeout(async () => {
             timer = null;
-            run(reason);
+            await waitForStableFiles(watchDir);
+            // a newer event arrived while waiting; its own schedule will run the build
+            if (id === scheduleId) {
+                run(reason);
+            }
         }, debounceMs);
     }
 
@@ -968,6 +979,7 @@ function bareTexturePackImagesPlugin(options = {}) {
         texturePackBuilding = true;
         const finish = (sendReload) => {
             child = null;
+            regenerateGeneratedAssets?.();
             if (sendReload && serverRef) {
                 serverRef.ws.send({ type: "full-reload", path: "/initial" });
             }
@@ -1634,6 +1646,39 @@ function cleanId(id) {
     return normalize(id.split("?")[0]);
 }
 
+// Wait until every file under dir has stopped changing size and isn't locked. A
+// copy/save into texturePackImages fires "add" while the file is still being written
+// (and locked on Windows), so packing right away silently leaves the new image out.
+async function waitForStableFiles(dir, { intervalMs = 100, stableMs = 500, timeoutMs = 10000 } = {}) {
+    const snapshot = () => {
+        if (!fs.existsSync(dir)) {
+            return "";
+        }
+        return getFilesRecursive(dir).map((filePath) => {
+            try {
+                fs.closeSync(fs.openSync(filePath, "r+"));
+                return `${filePath}:${fs.statSync(filePath).size}`;
+            } catch {
+                return `${filePath}:locked:${Date.now()}`;
+            }
+        }).join("|");
+    };
+
+    const deadline = Date.now() + timeoutMs;
+    let previous = snapshot();
+    let stableSince = Date.now();
+    while (Date.now() < deadline) {
+        await new Promise(resolve => setTimeout(resolve, intervalMs));
+        const current = snapshot();
+        if (current !== previous) {
+            previous = current;
+            stableSince = Date.now();
+        } else if (Date.now() - stableSince >= stableMs) {
+            return;
+        }
+    }
+}
+
 function normalize(value) {
     return value.replace(/\\/g, "/");
 }
@@ -1874,6 +1919,12 @@ function bareGeneratedAssetsPlugin(options = {}) {
                 if (norm === outputNorm) {
                     return; // never react to our own output
                 }
+                // Mid-build, public/initial holds a half-moved atlas (the new webp before its
+                // json is moved next to it), which would generate a bogus assets.ts. The
+                // texturePackImages plugin regenerates once the build has finished.
+                if (texturePackBuilding) {
+                    return;
+                }
                 const isSource = sources.some(src => norm === src || norm.startsWith(src + "/"));
                 if (isSource && generateAssets(projectRoot, outputPath, imageGlobs)) {
                     // assets.ts is excluded from the dev watcher (vite.config server.watch.ignored)
@@ -1892,6 +1943,17 @@ function bareGeneratedAssetsPlugin(options = {}) {
                     // texturePackImages plugin reloads once the atlas is back on disk).
                     if (Date.now() > skipReloadUntil && !texturePackBuilding) {
                         server.ws.send({ type: "full-reload", path: "*" });
+                    }
+                }
+            };
+
+            regenerateGeneratedAssets = () => {
+                if (generateAssets(projectRoot, outputPath, imageGlobs)) {
+                    const mods = server.moduleGraph.getModulesByFile(outputResolved);
+                    if (mods) {
+                        for (const mod of mods) {
+                            server.moduleGraph.invalidateModule(mod);
+                        }
                     }
                 }
             };
