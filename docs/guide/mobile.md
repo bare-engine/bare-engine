@@ -54,7 +54,7 @@ Or set it in `settingsData.json`:
 
 ## On-screen controls
 
-Put touch controls in a [UI scene](./text-and-ui#ui-scenes), or on `bare.uiScene`, so they don't move with the camera. Show them only on touch devices with `bare.util.isMobile`, or hide them as soon as a key is pressed.
+Put touch controls in a [UI scene](./text-and-ui#ui-scenes), or on `bare.uiScene`, so they don't move with the camera. Show them only on touch devices with `bare.mobile`, or hide them as soon as a key is pressed.
 
 **Example:** the [RPG](https://github.com/bare-engine/bare-rpg) has a [touch joystick](https://github.com/bare-engine/bare-rpg/blob/main/src/ui/joystick.ts), which it [adds to `bare.uiScene`](https://github.com/bare-engine/bare-rpg/blob/main/src/game.ts#L40-L44) and [hides on the first key press](https://github.com/bare-engine/bare-rpg/blob/main/src/game.ts#L53-L55).
 
@@ -66,7 +66,7 @@ Phones come in many shapes, and turn between portrait and landscape. Lay things 
 
 | Check | Description |
 | --- | --- |
-| `bare.util.isMobile` | A phone or tablet. |
+| `bare.mobile` | A phone or tablet. |
 | `bare.util.IsAndroid()` | An Android device. |
 | `bare.util.HasNotch()` | A screen with a notch. |
 

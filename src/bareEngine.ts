@@ -49,6 +49,7 @@ export class BareEngine
     public paused: boolean = false;
     public debug: boolean = false;
     public hasFocus: boolean = true;
+    public readonly mobile: boolean = Helper.MobileAndTabletCheck(); // phone or tablet (touch device)
     public freezeOnUnfocus: boolean = true;
     public multiTouch: boolean = false;
     

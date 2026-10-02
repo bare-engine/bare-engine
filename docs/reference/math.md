@@ -76,5 +76,4 @@ bare.util.Clamp(health, 0, 100);
 | `AlmostEqual(a, b, eps?)` | Compare numbers with a margin. |
 | `IsPointInRectangle(point, rect)` | Hit test. |
 | `DeepCopy(obj)` | Copy an object and everything in it. |
-| `isMobile` | Property: running on a phone or tablet. |
 | `MobileAndTabletCheck()`, `IsAndroid()`, `HasNotch()` | Device checks. |

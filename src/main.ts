@@ -176,7 +176,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise
             // NO FOCUS EVENTS FOR MOBILE
             // SINCE SOMETIMES THEY FIRE ON MOBILE
             // ALSO NOT IN DEV BECAUSE BIT ANNOYING TO SEE THIS OVERLAY EVERY TIME
-            if (!Helper.isMobile && !__DEV__)
+            if (!Helper.MobileAndTabletCheck() && !__DEV__)
             {
                 rapid.canvas.addEventListener('focus', function() {
                     bare.hasFocus = true;

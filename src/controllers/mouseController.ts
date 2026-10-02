@@ -217,7 +217,7 @@ export class MouseController
         if (this.world.position.x == -1000 && this.world.position.y == -1000)
             return;
 
-        if (Helper.isMobile && !this.mouseIsDown)
+        if (bare.mobile && !this.mouseIsDown)
             return;
 
         const moveVector = new Vec2(

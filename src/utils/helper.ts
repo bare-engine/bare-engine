@@ -11,9 +11,6 @@ export interface Size {
 
 export class Helper
 {
-    // phone or tablet (touch device)
-    static readonly isMobile: boolean = Helper.MobileAndTabletCheck();
-
     static DeepCopy<T>(obj: T): T
     {
         //return JSON.parse(JSON.stringify(obj)) as T;
