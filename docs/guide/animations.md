@@ -55,11 +55,12 @@ Frames load automatically when an animation first plays, so they can be streamed
 Add `"animation": {}` to a prefab's components, or add it in code:
 
 ```ts
+const player = this.AddGameObject('player');    // name is "player"
 const anim = player.AddComponent(AnimationComponent);
 anim.Play('walk');      // plays "player_walk"
 ```
 
-You pass the part after the `_`. The generated names work too: `anim.Play(Data.Animation.PLAYER_WALK)`.
+The GameObject's name is put in front, so you pass the part after the `_`. The generated names work too: `anim.Play(Data.Animation.PLAYER_WALK)`.
 
 An animation with exactly the object's name, like `saw` for a GameObject named `saw`, plays automatically.
 

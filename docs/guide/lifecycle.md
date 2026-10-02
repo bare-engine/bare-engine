@@ -32,7 +32,7 @@ Registered GameObject classes are [pooled](./custom-game-objects#object-pools): 
   ```
 
 - **Keep `OnAwake` free of subscriptions and allocations.** The engine also calls it to work out an object's default values, so anything it registers may leak.
-- **Release in `OnRemoved`.** Unsubscribe global listeners and remove the object from your own collections (or an ECS world) there; otherwise they keep acting on the object after it's reused.
+- **Release in `OnRemoved`.** Unsubscribe global listeners and remove the object from your own collections there; otherwise they keep acting on the object after it's reused.
 
 ## Restart, clear, and persistence
 
