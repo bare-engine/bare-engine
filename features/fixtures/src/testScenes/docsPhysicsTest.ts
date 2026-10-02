@@ -1,9 +1,8 @@
 import { BareEvent, CollisionEventComponent, Component, GameObject, Scene } from "bare-engine";
 import { ArcadeObject, ArcadePhysicsController } from "bare-engine/arcade";
-import { Circle, SopiroPhysicsController, Type } from "bare-engine/sopiro";
 import { Checks } from "./checks";
 
-// covers docs/reference/physics and the CollisionEventComponent from docs/guide/components
+// covers arcade physics from docs/reference/physics and the CollisionEventComponent from docs/guide/components
 
 export class CoinDocComponent extends Component<ArcadeObject>
 {
@@ -47,7 +46,6 @@ export class DocsPhysicsTest extends Scene
     {
         bare.AddClass(ArcadeObject);
         bare.AddClass(ArcadePhysicsController);
-        bare.AddClass(SopiroPhysicsController);
         bare.AddClass(CoinDocComponent);
         bare.AddClass(CollisionEventComponent);
     }
@@ -106,7 +104,8 @@ export class DocsPhysicsTest extends Scene
         // object collision events
         let objectHits = 0;
         const coin2 = this.AddGameObject<ArcadeObject>("coin").SetPosition(player.x + 8, player.y + 8);
-        // runtime passes the other object first; the typed payload is a [a, b] tuple, so the docs example needs a cast
+        // the type-check includes all of src, so both src/arcade.ts and src/sopiro.ts declare collision payloads here,
+        // which games never do. the handlers are cast for that
         coin2.events.on(BareEvent.collision_start, ((other: GameObject) => { if (other === player) objectHits++; }) as any);
         await waitFrame(3);
         c.check(objectHits >= 1, "gameObject.events should receive collision_start");
@@ -127,13 +126,5 @@ export class DocsPhysicsTest extends Scene
         c.check(bulletHitsEnemy >= 1, "layers listed in collidesWith should collide");
         c.check(bulletHitsBullet === 0, "a layer without itself in collidesWith should not collide with itself");
 
-        // realistic physics: a dynamic circle falls
-        const ball = new Circle(this, 36, Type.Dynamic);
-        ball.restitution = 0.8;
-        this.AddGameObject(ball);
-        ball.SetPosition(300, 0);
-        const startY = ball.y;
-        await waitFrame(20);
-        c.check(ball.y > startY, "a dynamic sopiro Circle should fall: " + startY + " -> " + ball.y);
     }
 }

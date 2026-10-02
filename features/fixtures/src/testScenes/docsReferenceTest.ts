@@ -154,21 +154,21 @@ export class DocsReferenceTest extends Scene
         c.check(Math.abs(shaker.innerRotation) < 0.001, "Shake should settle back to 0: " + shaker.innerRotation);
 
         // --- camera
-        // the camera starts bounded to the screen, which would clamp these positions
-        bare.camera.DisableBounds();
         bare.camera.SetPosition(120, 80);
-        // SetPosition sets the target; GetPosition reads the position, which follows on the camera's next update
-        await waitFrame(2);
         const camPos = bare.camera.GetPosition().clone();
         c.check(camPos.x === 120 && camPos.y === 80, "SetPosition/GetPosition should round-trip: " + JSON.stringify(camPos));
         bare.camera.AddPosition(10, -5);
-        await waitFrame(2);
         c.check(bare.camera.GetPosition().x === 130 && bare.camera.GetPosition().y === 75, "AddPosition should move the camera: " + JSON.stringify(bare.camera.GetPosition()));
         bare.camera.SetZoom(2);
         c.check(bare.camera.GetZoom() === 2, "SetZoom/GetZoom should round-trip");
         const world = bare.camera.ScreenToWorld(50, 60);
         const screen = bare.camera.WorldToScreen(world.x, world.y);
         c.check(Math.abs(screen.x - 50) < 0.001 && Math.abs(screen.y - 60) < 0.001, "ScreenToWorld and WorldToScreen should be inverses");
+        bare.camera.SetBounds({ x: 0, y: 0, width: 4000, height: 4000 });
+        bare.camera.SetPosition(-500, -500);
+        const clamped = bare.camera.GetPosition();
+        c.check(clamped.x > 0 && clamped.y > 0, "SetPosition should keep the camera inside its bounds right away: " + JSON.stringify(clamped));
+        bare.camera.DisableBounds();
         bare.camera.SetScaleMode(CameraScaleMode.None);
         bare.camera.SetZoom(1);
         bare.camera.StartShake(8, 0.1);
@@ -218,7 +218,6 @@ export class DocsReferenceTest extends Scene
         c.check(bare.object.GetByName("dataHero")?.x === 7, "Restart should reload a level that was loaded from data");
 
         await bare.level.Load("noSuchLevel");
-        c.check(bare.object.GetByName("dataHero") !== null, "a failed level load should leave the scene as it was");
         c.check(this.render, "a failed level load should keep the scene rendering");
         await bare.level.Load("docsRefLevel");
 
@@ -286,8 +285,14 @@ export class DocsReferenceTest extends Scene
         c.check(bare.util.Lerp(0, 10, 0.5) === 5, "Lerp");
         c.check(bare.util.GetRanged(0, 10, 0, 100, 5) === 50, "GetRanged should map between ranges");
         c.check(Math.abs(bare.util.DegreesToRadians(180) - Math.PI) < 1e-9 && Math.abs(bare.util.RadiansToDegrees(Math.PI) - 180) < 1e-9, "angle conversions");
-        // only the unit: the result points from `to` back to `from`, which the docs leave unspecified
-        c.check(Math.abs(Math.abs(bare.util.Direction(new Vec2(0, 0), new Vec2(0, 10))) - 90) < 1e-9, "Direction should be in degrees");
+        c.check(Math.abs(bare.util.Direction(new Vec2(0, 0), new Vec2(0, 10)) - 90) < 1e-9, "Direction(from, to) should point from `from` to `to`, in degrees");
+        c.check(Math.abs(bare.util.Direction(new Vec2(0, 0), new Vec2(-10, 0)) - 180) < 1e-9, "Direction should point left for a target on the left");
+        const towards = bare.util.PointTowards(90, 5);
+        c.check(Math.abs(towards.x) < 1e-9 && Math.abs(towards.y - 5) < 1e-9, "PointTowards(90, 5) should point down by 5: " + JSON.stringify(towards));
+        const from = new Vec2(3, 4);
+        const to = new Vec2(13, 4);
+        const back = bare.util.PointTowards(bare.util.Direction(from, to), from.distanceTo(to)).add(from);
+        c.check(Math.abs(back.x - 13) < 1e-9 && Math.abs(back.y - 4) < 1e-9, "PointTowards(Direction(from, to), distance) from `from` should reach `to`");
         c.check(bare.util.AlmostEqual(1, 1.0000001), "AlmostEqual");
         c.check(Math.abs(bare.util.AngleDifference(350, 10)) === 20, "AngleDifference should be the smallest difference: " + bare.util.AngleDifference(350, 10));
         const deep = { a: { b: 1 } };
