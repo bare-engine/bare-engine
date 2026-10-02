@@ -16,7 +16,7 @@ export class EditorUIScene extends Scene
 
     OnStart(payload?: EditorUIScenePayload): void | Promise<void>
     {
-        var position = payload?.openEditorButtonPosition ?? { x: .5, y: 0 };
+        var position = payload?.openEditorButtonPosition ?? { x: 0, y: 0 };
 
         this.editorButton = new Button(this, {text: "Level Editor", fontFamily: bare.defaultEngineFont, OnPress: this.OnClickEditorButton.bind(this)});
         this.AddGameObject(this.editorButton);
