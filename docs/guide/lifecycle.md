@@ -8,7 +8,7 @@ A scene owns its GameObjects and controllers. Your code still owns external reso
 | --- | --- |
 | Scene constructor | Set scene options and initialize plain fields. Do not call `AddGameObject` yet. |
 | Scene `OnAwake(payload)` | Register classes and initialize scene-wide resources. Bare awaits an async override. |
-| Scene `OnStart(payload)` | Add objects or await a level load. Bare awaits this before starting the scene's objects and components. Runs again on restart. |
+| Scene `OnStart(payload)` | Add objects or await a level load. Bare awaits this before starting the scene's objects and components. Runs again on restart. Don't await a tween here: tweens only run once the scene has started. See [Tweens](../reference/tweens). |
 | Object `OnAwake(entity)` | Reset custom fields for this use of the object. See [pooled objects](#pooled-objects). |
 | Object/component `OnAdded` | React to attachment. Components receive their GameObject as an argument. |
 | Object/component `OnStart` | Initialize behavior for this attachment. A component added to an already started object may start immediately, before `AddComponent` returns. |

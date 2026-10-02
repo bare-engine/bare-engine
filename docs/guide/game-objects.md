@@ -43,18 +43,31 @@ this.AddGameObject('ball')
 | `x`, `y`, `position` | Position (`position` is a `Vec2`). |
 | `scale`, `scaleX`, `scaleY` | Scale. |
 | `rotation` | Rotation in **degrees**. |
-| `pivot`, `pivotX`, `pivotY` | Anchor point from 0 to 1. `CenterPivot()` sets it to 0.5. |
+| `pivot`, `pivotX`, `pivotY` | Anchor point, in texture pixels from the top left. See [Pivot](#pivot). |
 | `alpha`, `color`, `visible` | Appearance. |
 | `flipped` | Mirror horizontally. |
 | `width`, `height` | Size (read-only). |
 | `active` | Inactive objects are not updated. |
 | `tags`, `customData` | Your own data, saved with the object. |
 
+### Pivot
+
+The pivot is the point of the image that sits at the object's position, and that it rotates and scales around. `SetPivot(x, y)` takes fractions of the texture size: values above 0 and up to 1 are a fraction, larger values are pixels. `CenterPivot()` is `SetPivot(0.5, 0.5)`.
+
+```ts
+obj.SetPivot(0.5, 1);   // bottom center
+obj.CenterPivot();
+```
+
+The fraction is of the texture's own size, not the scaled size. Reading `pivot`, `pivotX` or `pivotY` always gives pixels, and assigning to them directly sets pixels too: on a 64×64 image, `obj.SetPivot(0.5, 0.5)` gives a `pivot` of `{ x: 32, y: 32 }`, and `obj.pivotX = 0.5` means half a pixel. A prefab's `pivot` works like `SetPivot`.
+
 ## Inner transform
 
 Unique to Bare, every GameObject also has an **inner** transform: `innerPosition`, `innerScale`, `innerRotation`, `innerPivot` and `innerFlipped`. It moves the texture without moving the object itself. This makes many effects possible without nesting objects, for example squashing a character while its position stays the same:
 
 ```ts
+import { TweenTo } from 'bare-engine';
+
 TweenTo(player, 0.1, { innerScaleY: 0.8 });
 ```
 

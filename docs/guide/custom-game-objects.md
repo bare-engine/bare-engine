@@ -5,11 +5,19 @@ Most behavior belongs in [components](./components), because they can be mixed a
 ## Creating a class
 
 ```ts
-import { GameObject, InspectorBaseClass, InspectorField } from 'bare-engine';
+import { Entity, GameObject, InspectorBaseClass, InspectorField } from 'bare-engine';
+
+// the prefab fields this class adds, for autocomplete and type checks
+export interface EnemyEntity extends Entity
+{
+    health?: number;
+}
 
 @InspectorBaseClass
 export class Enemy extends GameObject
 {
+    declare entity: EnemyEntity | null;
+
     @InspectorField
     health = 3;
 
@@ -62,23 +70,7 @@ Fields marked `@InspectorField` can be set from prefabs and edited in the extens
 
 ## Typed prefab fields
 
-To get autocomplete for your class's prefab fields, describe them:
-
-```ts
-import { Entity } from 'bare-engine';
-
-export interface EnemyEntity extends Entity
-{
-    health?: number;
-}
-
-export class Enemy extends GameObject
-{
-    declare entity: EnemyEntity | null;
-}
-
-this.AddGameObject<Enemy>({ health: 5 });   // checked
-```
+The `EnemyEntity` interface and the `declare entity` line in the class above describe the prefab fields your class adds. They make `this.AddGameObject<Enemy>({ health: 5 })` type-checked and give you autocomplete. Without them, TypeScript only accepts the standard entity fields, and `health: 5` is an error.
 
 **Example:** the engine's own [`Button`](https://github.com/bare-engine/bare-engine/blob/main/src/objects/button.ts#L17-L29) does this with `ButtonEntity`, which adds `text`, `fontSize`, `buttonColor` and more.
 

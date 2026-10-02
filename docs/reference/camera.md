@@ -55,13 +55,13 @@ OnPostLoadLevel()
 
 | Method | Description |
 | --- | --- |
-| `SetPosition(x, y)` | Center the camera on a point. |
+| `SetPosition(x, y)` | Center the camera on a point, kept inside the bounds if there are any. |
 | `SetPositionTopLeft(x, y)` | Place the camera by its top-left corner. |
-| `AddPosition(dx, dy)` / `GetPosition()` | Move or read the position. |
+| `AddPosition(dx, dy)` / `GetPosition()` | Move or read the position. `GetPosition` returns the center within the bounds, without shake, and reflects `SetPosition` right away. |
 | `SetZoom(zoom)` / `GetZoom()` | Zoom level. |
 | `SetDimensions(width, height)` | The area the camera shows. |
 | `SetScaleMode(mode)` | How that area is fitted to the screen. |
-| `SetBounds(rect)` | Keep the camera inside a rectangle. |
+| `SetBounds(rect)` | Keep the camera inside a rectangle. A camera has no bounds until you set them, but loading a level sets them to the level's size. |
 | `SetBoundsToLevel()` / `SetBoundsToScreen()` / `DisableBounds()` | Common bounds. |
 | `SetDimensionsToLevel()` / `SetBoundsAndDimensionsToLevel()` | Match the loaded level. |
 | `ScreenToWorld(x, y)` / `WorldToScreen(x, y)` | Convert positions. |

@@ -142,7 +142,7 @@ Prefabs and entities can have these properties. Most can also be a [preset](#pre
 | `scale` | Scale as `{ x, y }`. |
 | `rotation` | Rotation in degrees. |
 | `flipped` | Flip horizontally. |
-| `pivot` | Pivot point. `{ x: 0, y: 0 }` is the top left; values between 0 and 1 are a fraction of the image size. |
+| `pivot` | Pivot point. `{ x: 0, y: 0 }` is the top left; values above 0 and up to 1 are a fraction of the image size, larger values are pixels. On the GameObject it reads back in pixels. See [Pivot](./game-objects#pivot). |
 
 ### Inner transform
 

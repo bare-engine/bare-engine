@@ -31,7 +31,11 @@ score.SetText('Score: 10');
 | `align` | `"left"` | `"left"`, `"center"` or `"right"` for multiple lines. |
 | `lineHeight` | `1` | Line spacing. |
 
-Text objects can also be created from a prefab, with `"baseClass": "TextObject"` and the same fields.
+Text objects can also be created from a prefab, with `"baseClass": "TextObject"` and the same fields. Like any `baseClass`, register the class first, for example in your scene's `OnAwake`:
+
+```ts
+bare.AddClass(TextObject);
+```
 
 **Example:** the [Platformer](https://github.com/bare-engine/bare-platformer)'s [coin counter](https://github.com/bare-engine/bare-platformer/blob/main/src/ui.ts#L29-L41).
 

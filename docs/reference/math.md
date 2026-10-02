@@ -70,8 +70,8 @@ bare.util.Clamp(health, 0, 100);
 | `Lerp(a, b, t)` | Blend between two numbers. |
 | `GetRanged(inMin, inMax, outMin, outMax, value)` | Map a value from one range to another. |
 | `DegreesToRadians(deg)` / `RadiansToDegrees(rad)` | Convert angles. |
-| `Direction(from, to)` | Angle between two points, in **degrees**. |
-| `PointTowards(direction, distance)` | A point at an angle and distance. |
+| `Direction(from, to)` | Angle from one point towards another, in **degrees**. 0 points right, 90 down. |
+| `PointTowards(direction, distance)` | The offset at an angle (degrees) and distance, so `PointTowards(Direction(from, to), d)` points from `from` towards `to`. |
 | `AngleDifference(a, b)` | Smallest difference between two angles. |
 | `AlmostEqual(a, b, eps?)` | Compare numbers with a margin. |
 | `IsPointInRectangle(point, rect)` | Hit test. |

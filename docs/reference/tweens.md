@@ -3,6 +3,8 @@
 Tweens animate any numeric property over time.
 
 ```ts
+import { TweenTo } from 'bare-engine';
+
 TweenTo(player, 0.5, { x: 300, rotation: 90 });
 ```
 
@@ -11,6 +13,10 @@ TweenTo(player, 0.5, { x: 300, rotation: 90 });
 ```ts
 await TweenTo(door, 1, { y: 0 }).promise;
 ```
+
+::: warning
+Tweens only run once the scene has started, and a scene starts after its `OnStart` has finished. So don't await a tween inside a scene's `OnStart`: it would wait forever. Start the tween there without awaiting it, or await it later, for example from `OnUpdate` or an event. During development, reading `.promise` before the scene has started logs an error.
+:::
 
 **Example:** a [Platformer](https://github.com/bare-engine/bare-platformer) coin [waits for its fade-out tween](https://github.com/bare-engine/bare-platformer/blob/main/src/components/collectableComponent.ts#L33-L35) before removing itself.
 
@@ -30,7 +36,7 @@ Add these to `props` next to the values you animate:
 | `persistent` | Keep the tween when the scene is cleared. |
 
 ```ts
-import { Easing } from 'bare-engine';
+import { Easing, TweenTo } from 'bare-engine';
 
 TweenTo(coin, 0.4, { innerY: '+=10', ease: Easing.Sinusoidal.InOut, yoyo: true, repeat: -1 });
 ```
