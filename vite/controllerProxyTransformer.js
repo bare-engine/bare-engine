@@ -89,12 +89,23 @@ function normalizeSlashes(value) {
     return value.replace(/\\/g, "/");
 }
 
+// the engine's own src next to this file comes first, so builds that don't run from the
+// project root (the test fixture builds from features/fixtures) still find the engine
+const engineSrcDirs = Array.from(new Set([
+    path.resolve(__dirname, "../src"),
+    path.resolve(process.cwd(), "../BareEngine/src"),
+    path.resolve(process.cwd(), "node_modules/bare-engine/src"),
+].map((dir) => {
+    try {
+        return fs.realpathSync(dir);
+    } catch (e) {
+        return dir;
+    }
+})));
+
 const engineSrcRoots = (() => {
     const roots = new Set();
-    const candidates = [
-        path.resolve(process.cwd(), "../BareEngine/src"),
-        path.resolve(process.cwd(), "node_modules/bare-engine/src"),
-    ];
+    const candidates = engineSrcDirs;
     for (const candidate of candidates) {
         try {
             roots.add(normalizeSlashes(fs.realpathSync(candidate)));
@@ -160,19 +171,12 @@ function toControllerName(name, registeredControllers) {
 }
 
 const externalClassInfoMap = collectClassInfoFromDirs([
-    path.resolve(process.cwd(), "../BareEngine/src"),
-    path.resolve(process.cwd(), "node_modules/bare-engine/src"),
+    ...engineSrcDirs,
     path.resolve(process.cwd(), "src")
 ]);
-const externalAddClassDirectiveMap = collectAddClassDirectiveMapFromDirs([
-    path.resolve(process.cwd(), "../BareEngine/src"),
-    path.resolve(process.cwd(), "node_modules/bare-engine/src")
-]);
+const externalAddClassDirectiveMap = collectAddClassDirectiveMapFromDirs(engineSrcDirs);
 const externalControllerUsageByClass = collectControllerUsageByClassFromDirs(
-    [
-        path.resolve(process.cwd(), "../BareEngine/src"),
-        path.resolve(process.cwd(), "node_modules/bare-engine/src")
-    ],
+    engineSrcDirs,
     allControllerNames
 );
 

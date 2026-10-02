@@ -3,6 +3,8 @@ const fs = require("fs");
 const path = require("path");
 
 const externalClassInfoMap = collectClassInfoFromDirs([
+    // the engine's own src next to this file, for builds that don't run from the project root
+    path.resolve(__dirname, "../src"),
     path.resolve(process.cwd(), "../BareEngine/src"),
     path.resolve(process.cwd(), "node_modules/bare-engine/src"),
     path.resolve(process.cwd(), "src")

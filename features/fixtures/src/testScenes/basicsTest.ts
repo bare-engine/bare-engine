@@ -3,6 +3,7 @@ import { GameObject, Scene, Vec2 } from "bare-engine";
 export class BasicsTest extends Scene
 {
     cog!: GameObject;
+    checkedRotation = false;
 
     OnStart(): void
     {
@@ -48,6 +49,9 @@ export class BasicsTest extends Scene
     OnUpdate(): void
     {
         this.cog.rotation++;
-        assert(this.cog.rotation === 1, "basic object should rotate during update");
+        // only the first update: later ones would fail it, racing the runner's check
+        if (!this.checkedRotation)
+            assert(this.cog.rotation === 1, "basic object should rotate during update");
+        this.checkedRotation = true;
     }
 }
