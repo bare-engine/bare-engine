@@ -2,7 +2,7 @@
 
 Bare has a level editor built into the game. While the dev server runs, editor saves write to the level's JSON file through it. Check the browser console for save errors and review the resulting file changes in Git.
 
-In a [production build](./building-and-publishing), the editor still works, but saves go to that browser's local storage instead of the project's files. Once a level has been edited there, it's loaded from local storage instead of its JSON file.
+In a [production build](./building-and-publishing), the editor still works, but saves go to that browser's local storage instead of the project's files. Once a level has been edited there, it's loaded from local storage instead of its JSON file. The **Level Editor** button is not added there; see [Level editor in production](#level-editor-in-production).
 
 Saving from the editor differs from calling `bare.level.Save()` during gameplay; see [saving destinations](../reference/save-data#saving-destinations).
 
@@ -123,8 +123,24 @@ The [RPG](https://github.com/bare-engine/bare-rpg) has a second editor for its w
 5. **Using the result.** The game [reads the saved map](https://github.com/bare-engine/bare-rpg/blob/main/src/handlers/mapHandler.ts#L93-L113) to know where each exit leads, and [updates it](https://github.com/bare-engine/bare-rpg/blob/main/src/handlers/mapHandler.ts#L35-L42) on `BareEvent.level_savedToDisk` when you save the map.
 6. **Previews.** Whenever a level is saved, the RPG's [`SnapshotHandler`](https://github.com/bare-engine/bare-rpg/blob/main/src/handlers/snapshotHandler.ts) renders it to an image in `editorImages`, so the map always shows what the levels look like.
 
-## Level editor for players
+## Level editor in production
 
-::: info Coming soon
-Letting players use the level editor in your released game, for example to build and share their own levels, will be possible in a future version.
-:::
+Production builds don't add the **Level Editor** button, and `showEditorButton` and `editorButtonPosition` have no effect there. To show it, add `EditorUIScene` yourself once the game has started:
+
+```ts
+import { EditorUIScene } from "bare-engine";
+
+await bare.scene.Add(EditorUIScene, { openEditorButtonPosition: { x: 1, y: 0 } });
+```
+
+`openEditorButtonPosition` is optional and works like `editorButtonPosition`: a normalized position and pivot, so `{ x: 1, y: 0 }` is the top right. It defaults to `{ x: 0, y: 0 }`, the top left. The button stays across scene changes and is only visible while a level is loaded.
+
+The button only opens the editor, so you can also open it from your own button or key while a level is loaded:
+
+```ts
+import { EditorScene } from "bare-engine";
+
+bare.scene.Add(EditorScene);
+```
+
+Players' edits are saved in their browser's local storage, as described at the [top of this page](#level-editor).
