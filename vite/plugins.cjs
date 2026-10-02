@@ -1043,6 +1043,23 @@ function bareTexturePackImagesPlugin(options = {}) {
         },
         configureServer(server) {
             serverRef = server;
+            // On Windows a file that is still being copied/saved is locked, so chokidar's
+            // fs.watch on it throws EBUSY/EPERM. Without an "error" listener that kills the
+            // dev server; instead retry watching once the lock is released.
+            server.watcher.on("error", (error) => {
+                const filePath = error?.path || error?.filename;
+                if (!filePath || (error.code !== "EBUSY" && error.code !== "EPERM")) {
+                    console.error(`[watcher] ${error?.message || error}`);
+                    return;
+                }
+                setTimeout(() => {
+                    server.watcher.unwatch(filePath);
+                    server.watcher.add(filePath);
+                    if (normalize(filePath).startsWith(normalize(watchDir))) {
+                        schedule(`retry:${path.relative(watchDir, filePath)}`);
+                    }
+                }, 500);
+            });
             if (!fs.existsSync(watchDir)) {
                 console.warn(`[assets] texturePackImages folder not found: ${watchDir}`);
                 return;
