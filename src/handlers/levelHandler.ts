@@ -1,5 +1,5 @@
 
-import { MakePathForEntity, RegisterController } from "../globals";
+import { globalEvents, MakePathForEntity, RegisterController } from "../globals";
 import { Color, Texture } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { Scene } from "../scenes/scene";
@@ -456,3 +456,7 @@ to package.json to keep the generated assets (can become large for big projects)
 }
 
 RegisterController(LevelHandler);
+
+globalEvents.persistent.on(BareEvent.game_completeClear, () => {
+    LevelHandler.ClearCache();
+});
