@@ -12,6 +12,10 @@ import { CameraTest } from "./testScenes/cameraTest";
 import { PrefabsTest } from "./testScenes/prefabsTest";
 import { SaveComponentTest } from "./testScenes/saveComponentTest";
 import { DocsExamplesTest } from "./testScenes/docsExamplesTest";
+import { DocsGuideObjectsTest } from "./testScenes/docsGuideObjectsTest";
+import { DocsGuideSystemsTest } from "./testScenes/docsGuideSystemsTest";
+import { DocsReferenceTest } from "./testScenes/docsReferenceTest";
+import { DocsPhysicsTest } from "./testScenes/docsPhysicsTest";
 import { EditorPreview } from "./docExamples/editorPreview";
 
 function sceneName(scene: SceneClass): string {
@@ -40,6 +44,10 @@ class MainGame extends Scene
         CameraTest,
         SaveComponentTest,
         DocsExamplesTest,
+        DocsGuideObjectsTest,
+        DocsGuideSystemsTest,
+        DocsReferenceTest,
+        DocsPhysicsTest,
     ];
 
     constructor() 

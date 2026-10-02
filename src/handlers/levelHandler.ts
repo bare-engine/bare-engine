@@ -173,6 +173,7 @@ export class LevelHandler
         catch (error: any)
         {
             console.error('Failed to load level', error);
+            this.scene.render = true;
             return;
         }
 
@@ -205,6 +206,10 @@ export class LevelHandler
             // LEVEL DATA
             level = levelInput;
             levelStr = level.name; // DON'T REALLY WANT TO USE THIS LEVEL PROPERTY? NOT SAME AS ACTUAL NAME OF FILE - CHANGED IT SO IT IS
+
+            // cache it under its name, so Restart()/LoadCurrent() can reload it instead of fetching a file that may not exist
+            if (!level.isData && levelStr)
+                LevelHandler.levelCache.set(levelStr, level);
         }
 
         // WHEN A LEVEL IS SET AS DATA, WE DON'T SET SaveData.currentLevelStr TO NOT LOAD IT WHEN CLOSING THE EDITOR
