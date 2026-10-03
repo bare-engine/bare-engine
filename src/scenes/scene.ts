@@ -120,6 +120,7 @@ export class Scene implements SceneI
     public settingsHandler: SettingsHandler = new SettingsHandler(this);
     
     get settingsData(): SettingsData { return this.settingsHandler.Get(); } // PROCESSED SETTINGSDATA
+    get settings() { return this.settingsData.settings; } // CONSISTENT WITH OTHER BARE MODULE NAMINGS
 
     sceneOptionsSettingsData: SettingsData;
 
