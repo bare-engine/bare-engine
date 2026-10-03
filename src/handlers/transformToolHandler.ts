@@ -125,6 +125,7 @@ export class TransformToolHandler
         // "BARE EVENT" DRIVEN: mouse-down to grab a handle, update to drag/release, render to draw.
         // PERSISTENT SO IT SURVIVES GAME RESTARTS (THE SINGLETON IS ONLY EVER CREATED ONCE).
         globalEvents.persistent.on(BareEvent.pointer_down, this.OnPointerDown);
+        globalEvents.persistent.on(BareEvent.pointer_down_any, this.OnRightPointerDown);
         globalEvents.persistent.on(BareEvent.pointer_move, this.OnPointerMove);
         globalEvents.persistent.on(BareEvent.pointer_up_any, this.OnPointerUp);
         globalEvents.persistent.on(BareEvent.game_update, this.OnUpdate);
@@ -270,6 +271,13 @@ export class TransformToolHandler
         // dragging the selection's body moves it in an editor, in-game only the handles transform
         if (this.EditorOf(scene) && this.FrameContains(frame, mouse))
             this.StartMoveFromPointer(scene, mouse, picked);
+    };
+
+    // in-game the handles also respond to right click (the plugin's select button), like left click
+    private OnRightPointerDown = ({ mouseX, mouseY, event }: BareEventPayload['pointer_down_any']): void =>
+    {
+        if (event.button == 2 && !this.GetEditor() && this.PointerHitsCurrentHandle(mouseX, mouseY))
+            this.OnPointerDown({ mouseX, mouseY, event });
     };
 
     private OnPointerMove = ({ mouseX, mouseY }: BareEventPayload['pointer_move']): void =>

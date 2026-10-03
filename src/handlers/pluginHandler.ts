@@ -2032,7 +2032,8 @@ export class PluginHandler
       if (bare.paused || bare.levelEditorOpen)
           return;
 
-      if (ev.button === 2)
+      // a right click on a transform handle already started resizing/rotating
+      if (ev.button === 2 && !TransformToolHandler.Get().IsTransforming())
       {
         // alt picks the deepest child, ctrl or shift adds to the selection
         var isDeepDown = keyboardController.IsKeyDown("alt");
