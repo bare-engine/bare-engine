@@ -942,6 +942,7 @@ function bareTexturePackImagesPlugin(options = {}) {
     const buildCommand = options.buildCommand || [process.execPath, path.resolve(__dirname, "../scripts/buildAssets.cjs")];
     const debounceMs = options.debounceMs ?? 200;
     const runOnStart = options.runOnStart ?? false;
+    const outputDir = options.outputDir || path.join(projectRoot, "public/initial/generated");
     let timer = null;
     let child = null;
     let queued = false;
@@ -977,10 +978,14 @@ function bareTexturePackImagesPlugin(options = {}) {
 
         // Suppress the generated-assets watcher's reload until the atlas is rewritten.
         texturePackBuilding = true;
+        // AssetPack output is deterministic, so a rebuild of unchanged images (eg the
+        // runOnStart build) leaves the atlas byte-identical - don't reload the page for that.
+        const before = snapshotDir(outputDir);
         const finish = (sendReload) => {
             child = null;
-            regenerateGeneratedAssets?.();
-            if (sendReload && serverRef) {
+            const assetsChanged = regenerateGeneratedAssets?.();
+            const atlasChanged = !sameSnapshot(before, snapshotDir(outputDir));
+            if (sendReload && serverRef && (atlasChanged || assetsChanged)) {
                 serverRef.ws.send({ type: "full-reload", path: "/initial" });
             }
             // Swallow the trailing generated-assets watcher events from the freshly
@@ -1088,6 +1093,32 @@ function bareTexturePackImagesPlugin(options = {}) {
             }
         }
     };
+}
+
+// name -> contents of every file directly in dir (missing dir -> empty map)
+function snapshotDir(dir) {
+    const snapshot = new Map();
+    if (!fs.existsSync(dir)) {
+        return snapshot;
+    }
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (entry.isFile()) {
+            snapshot.set(entry.name, fs.readFileSync(path.join(dir, entry.name)));
+        }
+    }
+    return snapshot;
+}
+
+function sameSnapshot(a, b) {
+    if (a.size !== b.size) {
+        return false;
+    }
+    for (const [name, contents] of a) {
+        if (!b.has(name) || !contents.equals(b.get(name))) {
+            return false;
+        }
+    }
+    return true;
 }
 
 function bareStripTexturePackImagesPlugin(options = {}) {
@@ -1948,14 +1979,16 @@ function bareGeneratedAssetsPlugin(options = {}) {
             };
 
             regenerateGeneratedAssets = () => {
-                if (generateAssets(projectRoot, outputPath, imageGlobs)) {
-                    const mods = server.moduleGraph.getModulesByFile(outputResolved);
-                    if (mods) {
-                        for (const mod of mods) {
-                            server.moduleGraph.invalidateModule(mod);
-                        }
+                if (!generateAssets(projectRoot, outputPath, imageGlobs)) {
+                    return false;
+                }
+                const mods = server.moduleGraph.getModulesByFile(outputResolved);
+                if (mods) {
+                    for (const mod of mods) {
+                        server.moduleGraph.invalidateModule(mod);
                     }
                 }
+                return true;
             };
 
             server.watcher.on("add", regenerate);

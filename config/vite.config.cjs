@@ -91,6 +91,12 @@ module.exports = ({ mode }) => {
         ],
         server: {
             open: false,
+            // Transform the entry (and, via pre-transform, its whole import graph) as soon as
+            // the server starts, instead of waiting for the browser's first request. Every
+            // module goes through the TypeScript transformer, so a cold first load is slow.
+            warmup: {
+                clientFiles: ["./src/game.ts"]
+            },
             watch: {
                 ignored: [
                     "**/node_modules/**",
