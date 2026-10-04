@@ -1,33 +1,36 @@
-import { getContext, WebGLContext } from "./webgl/utils";
+import { getContext } from "./webgl/utils";
+import type { WebGLContext } from "./webgl/utils";
 import GLShader, { CustomGlShader } from "./webgl/glshader";
 import { Region } from "./region/region";
 import { SpriteRegion } from "./region/spriteRegion";
-import { MatrixStack, MatrixStore, ITransformOptions } from "./matrix-engine";
+import { MatrixStack, MatrixStore } from "./matrix-engine";
+import type { ITransformOptions } from "./matrix-engine";
 import { GraphicRegion } from "./region/graphicRegion";
-import { RenderTexture, Texture, TextureManager } from "./texture";
+import { RenderTexture, Texture, TextureManager, TextureFilterMode } from "./texture";
 import { Color } from "./color";
 import {
-    ICircleOptions,
-    IDrawParticleBatchOptions,
-    IGraphicOptions,
-    ILineOptions,
-    IMaskImageOptions,
-    IRectOptions,
-    IRoundedRectOptions,
-    ISpriteOptions,
     drawCircle,
     drawGraphic,
     drawLine,
     drawMaskImage,
     drawParticles,
     drawRect,
-    drawRoundedRect,
     drawSprite,
     getColorUint32,
+} from "./draw";
+import type {
+    ICircleOptions,
+    IDrawParticleBatchOptions,
+    IGraphicOptions,
+    ILineOptions,
+    IMaskImageOptions,
+    IRectOptions,
+    ISpriteOptions,
 } from "./draw";
 import { Vec2 } from "./math";
 import { AtlasSpriteRegion } from "./region/atlasSpriteRegion";
 import { ParticleRegion } from "./region/particleRegion";
+import { ExpandMode, ViewPort, type ICamera } from "./viewport";
 
 /**
  * Options for initializing the Rapid application.
@@ -36,15 +39,10 @@ export interface IAppOptions {
     /** The HTML canvas element to render onto. */
     canvas: HTMLCanvasElement;
 
-    /** Alias ​​for logicWidth */
+    /** logicWidth */
     width?: number,
-    /** Alias ​​for logicHeight */
+    /** logicHeight */
     height?: number,
-
-    /** The logical width of the application (CSS pixels). */
-    logicWidth?: number;
-    /** The logical height of the application (CSS pixels). */
-    logicHeight?: number;
 
     /** The physical width of the application (actual pixels). */
     physicsWidth?: number;
@@ -64,7 +62,14 @@ export interface IAppOptions {
 
     roundPixels?: boolean;
 
+    window: IWindowsOptions;
+}
+
+export interface IWindowsOptions {
     scaleMode?: CanvasScaleMode;
+    expand?: ExpandMode;
+    expandPosition?: Vec2;
+    scale?: number
 }
 
 /**
@@ -95,11 +100,6 @@ export enum BlendMode {
     SCREEN,
     /** Erase blending (removes alpha based on source). */
     ERASE
-}
-
-export enum TextureFilterMode {
-    LINEAR,
-    NEAREST
 }
 
 export enum CanvasScaleMode {
@@ -168,6 +168,7 @@ export class Rapid {
     atlasSpriteRegion: AtlasSpriteRegion;
 
     particleRegion: ParticleRegion;
+    regions: Region[]
 
     /** Counts the number of WebGL draw calls made in the current frame. */
     drawcallCount: number = 0;
@@ -187,7 +188,7 @@ export class Rapid {
     /** Default filtering mode used when sampling textures. */
     textureFilter: TextureFilterMode;
 
-    scaleMode?: CanvasScaleMode;
+	viewport: ViewPort;
 
     /** Internal ping-pong RenderTextures for multi-filter chains. */
     private _filterRT: [RenderTexture | null, RenderTexture | null] = [null, null];
@@ -210,7 +211,6 @@ export class Rapid {
         this.textureFilter = options.textureFilter ?? TextureFilterMode.NEAREST;
         this.premultipliedAlpha = options.premultipliedAlpha ?? true;
         this.roundPixels = options.roundPixels ?? false;
-        this.scaleMode = options.scaleMode ?? CanvasScaleMode.CanvasItem
 
         const gl = getContext(this.canvas, this.antialias, this.premultipliedAlpha);
         this.gl = gl;
@@ -222,20 +222,23 @@ export class Rapid {
         this.graphicRegion = new GraphicRegion(this);
         this.atlasSpriteRegion = new AtlasSpriteRegion(this);
         this.particleRegion = new ParticleRegion(this);
-
-        const cssW = this.canvas.clientWidth || this.canvas.width;
-        const cssH = this.canvas.clientHeight || this.canvas.height;
+        this.viewport = new ViewPort(this, options.window);
+        this.texture = new TextureManager(this);
+        this.regions = [
+            this.spriteRegion,
+            this.atlasSpriteRegion,
+        ]
+        const cssW = this.canvas.clientWidth ?? this.canvas.width;
+        const cssH = this.canvas.clientHeight ?? this.canvas.height;
 
         // Initialize physics dimensions; fall back to CSS size * DPR if not provided
-        this.physicsWidth = options.physicsWidth || Math.round(cssW * this.dpr);
-        this.physicsHeight = options.physicsHeight || Math.round(cssH * this.dpr);
+        this.physicsWidth = options.physicsWidth ?? Math.round(cssW * this.dpr);
+        this.physicsHeight = options.physicsHeight ?? Math.round(cssH * this.dpr);
 
-        this.logicWidth = options.logicWidth || options.width || (this.physicsWidth / this.dpr);
-        this.logicHeight = options.logicHeight || options.height || (this.physicsHeight / this.dpr);
+        this.logicWidth = options.width ?? (this.physicsWidth / this.dpr);
+        this.logicHeight = options.height ?? (this.physicsHeight / this.dpr);
 
         this.resize(this.logicWidth, this.logicHeight, this.physicsWidth, this.physicsHeight);
-
-        this.texture = new TextureManager(this);
 
         if (options.backgroundColor) {
             this.backgroundColor = options.backgroundColor;
@@ -259,10 +262,6 @@ export class Rapid {
 
     setTextureFilter(filter: TextureFilterMode) {
         this.textureFilter = filter;
-    }
-
-    setAntialias(antialias: boolean) {
-        this.antialias = antialias;
     }
 
     getColorUint32(color?: Color): number {
@@ -301,10 +300,6 @@ export class Rapid {
 
     drawRect(options: IRectOptions): void {
         drawRect(this, options);
-    }
-
-    drawRoundedRect(options: IRoundedRectOptions): void {
-        drawRoundedRect(this, options);
     }
 
     drawCircle(options: ICircleOptions): void {
@@ -359,67 +354,6 @@ export class Rapid {
     }
 
     /**
-     * Pushes vertices for a rectangle with rounded corners, as a triangle fan around
-     * its centre. Should be enclosed by startGraphic and endGraphic.
-     * @param w The width of the rectangle.
-     * @param h The height of the rectangle.
-     * @param radius The corner radius, or [topLeft, topRight, bottomRight, bottomLeft].
-     * @param color An optional tint color.
-     * @param segments The number of segments used to approximate each corner arc.
-     */
-    addRoundedRectVertex(
-        w: number, h: number,
-        radius: number | [number, number, number, number],
-        color?: Color,
-        segments: number = 8,
-    ): void {
-        const unitColor = this.getColorUint32(color);
-        // A corner can never eat more than half of either side, however big it is asked to be.
-        const max = Math.min(w, h) / 2;
-        const radii = (typeof radius == "number" ? [radius, radius, radius, radius] : radius)
-            .map((r) => Math.max(0, Math.min(r, max)));
-
-        // Without any rounding this is a plain rectangle, and its four corners are enough.
-        if (radii[0] <= 0 && radii[1] <= 0 && radii[2] <= 0 && radii[3] <= 0) {
-            this.addRectVertex(w, h, color);
-            return;
-        }
-
-        // The fan spreads from the middle, so every edge and arc is one ring of triangles.
-        this.addGraphicVertex(w / 2, h / 2, 0.5, 0.5, unitColor);
-
-        const cornerSegments = Math.max(1, Math.floor(segments));
-        // Clockwise from the top left, in the same winding as addRectVertex.
-        const corners = [
-            { cx: radii[0], cy: radii[0], r: radii[0], start: Math.PI },
-            { cx: w - radii[1], cy: radii[1], r: radii[1], start: Math.PI * 1.5 },
-            { cx: w - radii[2], cy: h - radii[2], r: radii[2], start: 0 },
-            { cx: radii[3], cy: h - radii[3], r: radii[3], start: Math.PI * 0.5 },
-        ];
-
-        let firstX = 0;
-        let firstY = 0;
-        for (let i = 0; i < corners.length; i++) {
-            const corner = corners[i];
-            // A square corner is a single point; a rounded one is an arc of a quarter turn.
-            const steps = corner.r <= 0 ? 0 : cornerSegments;
-            for (let step = 0; step <= steps; step++) {
-                const angle = corner.start + (Math.PI / 2) * (steps == 0 ? 0 : step / steps);
-                const x = corner.cx + Math.cos(angle) * corner.r;
-                const y = corner.cy + Math.sin(angle) * corner.r;
-                this.addGraphicVertex(x, y, x / w, y / h, unitColor);
-                if (i == 0 && step == 0) {
-                    firstX = x;
-                    firstY = y;
-                }
-            }
-        }
-
-        // Close the ring back onto the first point of the first corner.
-        this.addGraphicVertex(firstX, firstY, firstX / w, firstY / h, unitColor);
-    }
-
-    /**
      * Pushes vertices for a circle geometry using TRIANGLES or similar primitives.
      * @param r The radius of the circle.
      * @param color An optional tint color.
@@ -449,7 +383,7 @@ export class Rapid {
     addGraphicVertex(
         x: number, y: number,
         u: number = 0, v: number = 0,
-        color: Color | number,
+        color: Color | number = 0xFFFFFFFF,
     ): void {
         this.graphicRegion.addVertex(x, y, u, v, typeof color == "number" ? color : this.getColorUint32(color));
     }
@@ -469,51 +403,15 @@ export class Rapid {
      * @param cssHeight Optional CSS display height.
      */
     resize(logicWidth: number, logicHeight: number, cssWidth?: number, cssHeight?: number): void {
-        this.flush();
-        const cssW = cssWidth ?? this.canvas.clientWidth ?? this.canvas.width;
-        const cssH = cssHeight ?? this.canvas.clientHeight ?? this.canvas.height;
-
-        if (cssWidth !== undefined) {
-            this.canvas.style.width = cssW + 'px';
-        }
-
-        if (cssHeight !== undefined) {
-            this.canvas.style.height = cssH + 'px';
-        }
-
-        this.physicsWidth = cssW * this.dpr;
-        this.physicsHeight = cssH * this.dpr;
-
-        this.logicWidth = logicWidth;
-        this.logicHeight = logicHeight;
-
-        switch (this.scaleMode) {
-            case CanvasScaleMode.Viewport:
-                // no new pixel
-                this.canvas.width = logicWidth;
-                this.canvas.height = logicHeight;
-                this.canvas.style.imageRendering = "pixelated";
-                this.gl.viewport(0, 0, logicWidth, logicHeight);
-                break;
-            case CanvasScaleMode.CanvasItem:
-                this.canvas.width = this.physicsWidth;
-                this.canvas.height = this.physicsHeight;
-                this.canvas.style.imageRendering = "auto";
-                this.gl.viewport(0, 0, this.physicsWidth, this.physicsHeight);
-                break;
-            default:
-                throw new Error("scaleMode can only be CanvasScaleMode.Viewport or CanvasScaleMode.CanvasItem")
-        }
-
-        this.updateProjection(0, this.logicWidth, this.logicHeight, 0);
+        this.viewport.resize(logicWidth, logicHeight, cssWidth, cssHeight)
     }
 
     /**
      * Updates the projection matrix using an orthographic mapping.
      * Automatically sets local flag projectionDirty.
      */
-    private updateProjection(left: number, right: number, bottom: number, top: number): void {
-        this.updateOrthMatrix(this.projection, left, right, bottom, top);
+    updateProjection(left: number, right: number, bottom: number, top: number): void {
+        this.viewport.updateOrthMatrix(this.projection, left, right, bottom, top);
         this.projectionDirty = true;
     }
 
@@ -522,33 +420,21 @@ export class Rapid {
      */
     clear(): void {
         const gl = this.gl;
-        this.backgroundColor.setClearColor(gl);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+        this.flush();
+        gl.disable(gl.SCISSOR_TEST);
+        if (this.viewport.scissorViewport && gl.getParameter(gl.FRAMEBUFFER_BINDING) === null) {
+            // Clear the whole canvas to black, then fill only the retained view.
+            gl.clearColor(0, 0, 0, 1);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+            this.backgroundColor.setClearColor(gl);
+            this.viewport.restoreViewportScissor();
+            gl.clear(gl.COLOR_BUFFER_BIT);
+        } else {
+            this.backgroundColor.setClearColor(gl);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+        }
         this.drawcallCount = 0;
         this.matrixStack.reset()
-    }
-
-    /**
-     * Populates an orthographic projection matrix in place.
-     * Avoids continuous Float32Array allocations for performance reasons.
-     */
-    private updateOrthMatrix(out: Float32Array, left: number, right: number, bottom: number, top: number): void {
-        out[0] = 2 / (right - left);
-        out[1] = 0;
-        out[2] = 0;
-        out[3] = 0;
-        out[4] = 0;
-        out[5] = 2 / (top - bottom);
-        out[6] = 0;
-        out[7] = 0;
-        out[8] = 0;
-        out[9] = 0;
-        out[10] = -1;
-        out[11] = 0;
-        out[12] = -(right + left) / (right - left);
-        out[13] = -(top + bottom) / (top - bottom);
-        out[14] = 0;
-        out[15] = 1;
     }
 
     /**
@@ -613,7 +499,7 @@ export class Rapid {
             this.enterRenderTexture(outputRT);
             this.clearRenderTexture();
             // Draw the full source (or previous pass output) as a full-RT quad at (0,0).
-            // The projection is already set to (0, w, h, 0) by enterRenderTexture.
+            // RenderTexture uses a bottom-up projection so its logical top row is stored at v=0.
 
             // We can't let `drawsprite` handle the padding offset because `renderTexture` has a limited size.
             // Render from the top left corner the image will render outside the `renderTexture`.
@@ -645,8 +531,9 @@ export class Rapid {
         this.flush();
         rt.activate();
 
+        this.viewport.restoreViewportScissor();
         this.gl.viewport(0, 0, rt.rawWidth, rt.rawHeight);
-        this.updateProjection(0, rt.rawWidth, rt.rawHeight, 0);
+        this.updateProjection(0, rt.rawWidth, 0, rt.rawHeight);
     }
 
     /**
@@ -670,8 +557,9 @@ export class Rapid {
         this.flush();
 
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
-        this.gl.viewport(0, 0, this.physicsWidth, this.physicsHeight);
-        this.updateProjection(0, this.logicWidth, this.logicHeight, 0);
+        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        this.viewport.updateProjection()
+        this.viewport.restoreViewportScissor();
     }
 
     /**
@@ -919,42 +807,27 @@ export class Rapid {
 
     /**
      * Enables rectangular scissor clipping. Only pixels within the specified
-     * rectangle (in logical coordinates) will be rendered.
-     * Coordinates use the same system as your drawing calls (top-left origin).
+     * rectangle (in the current projection's logical coordinates) will be rendered.
+     * On the main canvas, coordinates use a top-left origin. The rectangle is
+     * screen-aligned and does not inherit matrixStack or camera transforms.
      * @param x Left edge in logical pixels.
      * @param y Top edge in logical pixels.
      * @param width Width in logical pixels.
      * @param height Height in logical pixels.
      */
     startScissor(x: number, y: number, width: number, height: number): void {
-        this.flush();
-        const gl = this.gl;
-        const scaleX = this.physicsWidth / this.logicWidth;
-        const scaleY = this.physicsHeight / this.logicHeight;
-
-        // Convert logical coords to physical pixels, flipping Y for WebGL (bottom-left origin)
-        const px = Math.round(x * scaleX);
-        const py = Math.round(this.physicsHeight - (y + height) * scaleY);
-        const pw = Math.round(width * scaleX);
-        const ph = Math.round(height * scaleY);
-
-        gl.enable(gl.SCISSOR_TEST);
-        gl.scissor(px, py, pw, ph);
+        this.viewport.startScissor(x, y, width, height);
     }
 
     /**
      * Disables scissor clipping, restoring full-canvas rendering.
      */
     endScissor(): void {
-        this.flush();
-        this.gl.disable(this.gl.SCISSOR_TEST);
+        this.viewport.endScissor();
     }
 
-    applyCamera(transform: ITransformOptions) {
-        this.matrixStack.applyTransform(transform)
-
-        const m = this.matrixStack.curWorldM
-        this.matrix.invert(m)
+    applyCamera(transform: ICamera) {
+        this.viewport.applyCamera(transform)
     }
 
     logicToPhysics(p: Vec2) {
@@ -972,7 +845,7 @@ export class Rapid {
     }
 
     cssToDevicePixel(p: Vec2) {
-        return p.mul(this.dpr)
+        return p.multiply(this.dpr)
     }
 
     cssToLogic(p: Vec2) {

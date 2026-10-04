@@ -1,7 +1,7 @@
 import { SpriteRegion } from "./spriteRegion";
 import VsShaderSource from "../shader/particle.vert?raw";
 import FsShaderSource from "../shader/particle.frag?raw";
-import { Rapid } from "../render";
+import type { Rapid } from "../render";
 import GLShader, { CustomGlShader } from "../webgl/glshader";
 import { drawArraysInstanced, UNSIGNED_BYTE } from "../webgl/utils";
 import { Texture } from "../texture";
@@ -24,14 +24,10 @@ export class ParticleRegion extends SpriteRegion {
     texture?: Texture
     customMatrix?: number
     particleLoopCache = new Map<string, Function>();
+    protected extraTextureUnit: number = 1;
 
     constructor(rapid: Rapid) {
         super(rapid)
-    }
-
-    createCustomShader(customShader: CustomGlShader) {
-        // override sprite Region
-        return customShader.getGLShader(this, this.KEY, VsShaderSource, FsShaderSource)
     }
 
     createDefaultShader() {
@@ -45,7 +41,7 @@ export class ParticleRegion extends SpriteRegion {
 
     enter(customShader?: GLShader | CustomGlShader): void {
         super.enter(customShader)
-        this.currentShader.setUniform("u_projection", this.rapid.projection);
+        this.currentShader.setUniform("u_matrix", this.rapid.projection);
     }
 
     createShader(vs: string, fs: string) {
@@ -109,8 +105,8 @@ export class ParticleRegion extends SpriteRegion {
 
         const textureUVWidth = texture.uvW - texture.uvX;
         const textureUVHeight = texture.uvH - texture.uvY;
-        const uvWidthToTextureWidth = textureUVWidth === 0 ? 0 : 1 / textureUVWidth;
-        const uvHeightToTextureHeight = textureUVHeight === 0 ? 0 : 1 / textureUVHeight;
+        const uv2texW = textureUVWidth === 0 ? 0 : 1 / textureUVWidth;
+        const uv2texH = textureUVHeight === 0 ? 0 : 1 / textureUVHeight;
 
         let rawWidth = texture.rawWidth * (flipX ? -1 : 1);
         if (uniScaleX) {
@@ -122,9 +118,10 @@ export class ParticleRegion extends SpriteRegion {
             rawHeight *= scaleY
         }
         if (uniUV) {
-            rawWidth *= (u1 as number - (u0 as number)) * uvWidthToTextureWidth
-            rawHeight *= (v1 as number - (v0 as number)) * uvHeightToTextureHeight
+            rawWidth *= (u1 as number - (u0 as number)) * uv2texW
+            rawHeight *= (v1 as number - (v0 as number)) * uv2texH
         }
+
         let rotationOffset = isRotated ? Math.PI / 2 : 0;
         if (uniRotation) {
             rotationOffset += rotation
@@ -156,9 +153,9 @@ export class ParticleRegion extends SpriteRegion {
 
         index = loopFunction(
             x, y, scaleX, scaleY, rotation, u0, v0, u1, v1, color,
-            f32, u32, rawWidth, rawHeight, uvWidthToTextureWidth, uvHeightToTextureHeight,
+            f32, u32, rawWidth, rawHeight, uv2texW, uv2texH,
             rotationOffset, staticColor,
-            originX, originY, count, batchCount, index
+            1 - originX, 1 - originY, count, batchCount, index
         )
 
         buf.usedElemNum = index;
@@ -186,7 +183,7 @@ export class ParticleRegion extends SpriteRegion {
         }
 
         let code = `
-return function( x, y, scaleX, scaleY, rotation, u0, v0, u1, v1, color, f32, u32, rawWidth, rawHeight, uvWidthToTextureWidth, uvHeightToTextureHeight, rotationOffset, staticColor, originX, originY, count, batchCount, index ) {
+return function( x, y, scaleX, scaleY, rotation, u0, v0, u1, v1, color, f32, u32, rawWidth, rawHeight, uv2texW, uv2texH, rotationOffset, staticColor, originX, originY, count, batchCount, index ) {
     ${(uniScaleX && uniUV) ? `const baseSx = rawWidth;` : ''}
     ${(uniScaleY && uniUV) ? `const baseSy = rawHeight;` : ''}
 
@@ -211,8 +208,8 @@ return function( x, y, scaleX, scaleY, rotation, u0, v0, u1, v1, color, f32, u32
         f32[idx + 8] = v1;
         ` : `
         const cu0 = u0[src], cv0 = v0[src], cu1 = u1[src], cv1 = v1[src];
-        f32[idx + 2] = (rawWidth * (cu1 - cu0) * uvWidthToTextureWidth) ${uniScaleX ? '' : '* scaleX[src]'};
-        f32[idx + 3] = (rawHeight * (cv1 - cv0) * uvHeightToTextureHeight) ${uniScaleY ? '' : '* scaleY[src]'};
+        f32[idx + 2] = (rawWidth * (cu1 - cu0) * uv2texW) ${uniScaleX ? '' : '* scaleX[src]'};
+        f32[idx + 3] = (rawHeight * (cv1 - cv0) * uv2texH) ${uniScaleY ? '' : '* scaleY[src]'};
         f32[idx + 4] = ${uniRotation ? 'rotationOffset' : 'rotation[src] + rotationOffset'};
         f32[idx + 5] = cu0;
         f32[idx + 6] = cv0;
@@ -260,7 +257,7 @@ return function( x, y, scaleX, scaleY, rotation, u0, v0, u1, v1, color, f32, u32
         const worldMatrix = m.getMatrix(this.customMatrix ?? ms.curWorldM)
 
         const matrix = composeProjectionWithAffine(this.rapid.projection, worldMatrix)
-        this.currentShader.setUniform("u_projection", matrix);
+        this.currentShader.setUniform("u_matrix", matrix);
 
         drawArraysInstanced(gl, gl.TRIANGLE_STRIP, 0, 4, this.instanceCount);
         this.rapid.drawcallCount++;

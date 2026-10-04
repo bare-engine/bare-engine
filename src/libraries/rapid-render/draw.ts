@@ -1,9 +1,10 @@
 import { Color } from "./color";
-import { ITransformOptions } from "./matrix-engine";
+import type { ITransformOptions } from "./matrix-engine";
 import { Vec2 } from "./math";
 import { Texture } from "./texture";
 import GLShader, { CustomGlShader } from "./webgl/glshader";
-import { ILineRenderOptions, getLineGeometry } from "./line";
+import { getLineGeometry } from "./line";
+import type { ILineRenderOptions } from "./line";
 import type { Rapid } from "./render";
 
 export type DrawShader = GLShader | CustomGlShader;
@@ -24,8 +25,8 @@ export interface IDrawParticleBatchOptions extends IDisplayOptions {
     rotation?: ArrayLike<number> | number;
     color?: ArrayLike<Color> | ArrayLike<number> | number;
     count?: number;
-    scaleX?: ArrayLike<number>;
-    scaleY?: ArrayLike<number>;
+    scaleX?: ArrayLike<number> | number;
+    scaleY?: ArrayLike<number> | number;
     originX?: number;
     originY?: number;
     flipX?: boolean;
@@ -67,17 +68,6 @@ export interface IRectOptions extends IDrawOptions {
     texture?: Texture;
 }
 
-export interface IRoundedRectOptions extends IRectOptions {
-    /**
-     * The corner radius in pixels. A single value rounds every corner equally,
-     * or pass [topLeft, topRight, bottomRight, bottomLeft] to round them apart.
-     * Radii are clamped so they can never overrun the rectangle.
-     */
-    radius: number | [number, number, number, number];
-    /** The number of segments used to approximate each corner arc. */
-    segments?: number;
-}
-
 export interface ICircleOptions extends IDrawOptions {
     radius: number;
     color?: Color;
@@ -90,8 +80,17 @@ const withOptionsTransform = (
     width: number,
     height: number,
 ) => {
+    const temporary = rapid.matrix.temporary
+
     if (options.customMatrix !== undefined) {
-        return options.customMatrix;
+        rapid.matrixStack.applyTransform(
+            options,
+            width,
+            height,
+            temporary,
+            options.customMatrix,
+        );
+        return temporary;
     }
 
     if (options.modifyStack) {
@@ -103,12 +102,12 @@ const withOptionsTransform = (
 
         return
     } else {
-        const temporary = rapid.matrix.temporary
         rapid.matrixStack.applyTransform(
             options,
             width,
             height,
-            temporary
+            temporary,
+            rapid.matrixStack.curWorldM,
         );
         return temporary
     }
@@ -282,18 +281,5 @@ export const drawCircle = (rapid: Rapid, options: ICircleOptions): void => {
     rapid.addGraphicVertex(0, 0, 0.5, 0.5, unitColor);
     rapid.addCircleVertex(options.radius, options.color, segments);
     rapid.addGraphicVertex(options.radius, 0, 1, 0.5, unitColor);
-    rapid.endGraphic();
-};
-
-export const drawRoundedRect = (rapid: Rapid, options: IRoundedRectOptions): void => {
-    const matrix = withOptionsTransform(rapid, options, options.width, options.height)
-
-    rapid.startGraphic(
-        rapid.gl.TRIANGLE_FAN,
-        options.texture,
-        options.shader,
-        matrix ?? options.customMatrix,
-    );
-    rapid.addRoundedRectVertex(options.width, options.height, options.radius, options.color, options.segments);
     rapid.endGraphic();
 };

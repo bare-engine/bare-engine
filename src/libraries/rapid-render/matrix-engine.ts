@@ -1,6 +1,6 @@
 import { DynamicArrayBuffer, ArrayType } from "./buffer";
 import { Vec2 } from "./math";
-import { Rapid } from "./render";
+import type { Rapid } from "./render";
 
 
 export interface ITransformOptions {
@@ -26,14 +26,19 @@ const NUM_ELEMENTS = 6;
  * Matrices are stored flat in a dynamic Float32Array to improve memory locality and cache performance.
  */
 export class MatrixStore {
-    /** Total number of matrices currently allocated in the store. */
+    /** Number of matrix slots created, including released slots available for reuse. */
     public matrixCount: number = 0;
     /** The dynamic buffer used to hold matrix data. */
     public buffer: DynamicArrayBuffer;
     /** The raw floating-point data of all matrices. */
     public data: Float32Array;
+    /** Per-matrix allocation flags: 1 for live matrices, 0 for released matrices. */
+    public freeFlag: DynamicArrayBuffer;
+    /** Stack of released matrix indices available for reuse. */
+    public freeMatrixStack: DynamicArrayBuffer;
 
     public temporary: number = -1;
+    public identityMatrix:number = -1;
 
     /**
      * Creates a new MatrixStore.
@@ -43,6 +48,8 @@ export class MatrixStore {
         this.buffer = new DynamicArrayBuffer(ArrayType.Float32);
         this.buffer.resize(capacity * NUM_ELEMENTS);
         this.data = this.buffer.getArray() as Float32Array;
+        this.freeFlag = new DynamicArrayBuffer(ArrayType.Uint32);
+        this.freeMatrixStack = new DynamicArrayBuffer(ArrayType.Uint32);
         this.reset();
     }
 
@@ -61,12 +68,34 @@ export class MatrixStore {
      * @returns The index of the newly allocated matrix.
      */
     allocDirty(): number {
+        if (this.freeMatrixStack.length > 0) {
+            const index = this.freeMatrixStack.pop();
+            this.freeFlag.typedArray[index] = 1;
+            return index;
+        }
+
         if (this.buffer.resize(NUM_ELEMENTS)) {
             this.data = this.buffer.getArray() as Float32Array
         }
         this.buffer.usedElemNum += NUM_ELEMENTS;
+
+        this.freeFlag.resize(1);
         const index = this.matrixCount++;
+        this.freeFlag.typedArray[this.freeFlag.usedElemNum++] = 1;
         return index;
+    }
+
+    /** Releases a matrix index so it can be reused by a later allocation. */
+    free(index: number): void {
+        if (!Number.isInteger(index) || index < 0 || index >= this.matrixCount) {
+            return;
+        }
+        if (this.freeFlag.typedArray[index] === 0) {
+            return;
+        }
+
+        this.freeFlag.typedArray[index] = 0;
+        this.freeMatrixStack.push(index);
     }
 
     /**
@@ -75,7 +104,10 @@ export class MatrixStore {
     reset(): void {
         this.matrixCount = 0;
         this.buffer.usedElemNum = 0;
+        this.freeFlag.clear();
+        this.freeMatrixStack.clear();
         this.temporary = this.alloc()
+        this.identityMatrix = this.alloc()
     }
 
     /**
@@ -257,8 +289,7 @@ export class MatrixStore {
         const localPoint = this.transformPoint(tempIdx, x, y);
 
         // Discard the temporary matrix
-        this.matrixCount--;
-        this.buffer.usedElemNum -= NUM_ELEMENTS;
+        this.free(tempIdx);
 
         return localPoint;
     }
@@ -391,6 +422,7 @@ export class MatrixStore {
         data[o + 4] = ma * tx + mc * ty + mx;
         data[o + 5] = mb * tx + md * ty + my;
     }
+
     multiplyAffine(
         indexIn: number,
         indexOut: number,
@@ -423,6 +455,136 @@ export class MatrixStore {
         data[o + 4] = ma * tx + mc * ty + mx;
         data[o + 5] = mb * tx + md * ty + my;
     }
+
+    clampBounds(
+        index: number,
+        viewWidth: number,
+        viewHeight: number,
+        limitLeft?: number,
+        limitRight?: number,
+        limitTop?: number,
+        limitBottom?: number
+    ): void {
+        if (limitLeft === undefined && limitRight === undefined && 
+            limitTop === undefined && limitBottom === undefined) {
+            return;
+        }
+
+        const o = index * NUM_ELEMENTS;
+        const d = this.data;
+
+        const scaleX = Math.sqrt(d[o] * d[o] + d[o + 1] * d[o + 1]) || 1;
+        const scaleY = Math.sqrt(d[o + 2] * d[o + 2] + d[o + 3] * d[o + 3]) || 1;
+
+        const halfW = (viewWidth * 0.5) * scaleX;
+        const halfH = (viewHeight * 0.5) * scaleY;
+
+        let tx = d[o + 4];
+        let ty = d[o + 5];
+
+        if (limitLeft !== undefined && limitRight !== undefined) {
+            const spanX = limitRight - limitLeft;
+            tx = spanX < halfW * 2 ? (limitLeft + limitRight) * 0.5 : Math.max(limitLeft + halfW, Math.min(tx, limitRight - halfW));
+        } else if (limitLeft !== undefined) {
+            tx = Math.max(tx, limitLeft + halfW);
+        } else if (limitRight !== undefined) {
+            tx = Math.min(tx, limitRight - halfW);
+        }
+
+        if (limitTop !== undefined && limitBottom !== undefined) {
+            const spanY = limitBottom - limitTop;
+            ty = spanY < halfH * 2 ? (limitTop + limitBottom) * 0.5 : Math.max(limitTop + halfH, Math.min(ty, limitBottom - halfH));
+        } else if (limitTop !== undefined) {
+            ty = Math.max(ty, limitTop + halfH);
+        } else if (limitBottom !== undefined) {
+            ty = Math.min(ty, limitBottom - halfH);
+        }
+
+        d[o + 4] = tx;
+        d[o + 5] = ty;
+    }
+
+    applyTransform(
+        transform: ITransformOptions,
+        width: number = 0,
+        height: number = 0,
+    ) {
+        let x = transform.x ?? 0;
+        let y = transform.y ?? 0;
+
+        if (transform.position) {
+            x += transform.position.x;
+            y += transform.position.y;
+        }
+
+        let scaleX = 1;
+        let scaleY = 1;
+
+        const scale = transform.scale;
+
+        if (scale !== undefined) {
+            if (typeof scale === "number") {
+                scaleX = scale;
+                scaleY = scale;
+            } else {
+                scaleX = scale.x;
+                scaleY = scale.y;
+            }
+        }
+
+        const rotation = transform.rotation ?? 0;
+
+        let offsetX = transform.offsetX ?? 0;
+        let offsetY = transform.offsetY ?? 0;
+
+        if (transform.offset) {
+            offsetX += transform.offset.x;
+            offsetY += transform.offset.y;
+        }
+
+        const origin = transform.origin;
+
+        if (origin !== undefined) {
+            if (typeof origin === "number") {
+                offsetX -= origin * width;
+                offsetY -= origin * height;
+            } else {
+                offsetX -= origin.x * width;
+                offsetY -= origin.y * height;
+            }
+        }
+
+        const cos = rotation ? Math.cos(rotation) : 1;
+        const sin = rotation ? Math.sin(rotation) : 0;
+
+        // R * S
+        const a = cos * scaleX;
+        const b = sin * scaleX;
+        const c = -sin * scaleY;
+        const d = cos * scaleY;
+
+        // translate(x, y)
+        // rotate(rotation)
+        // scale(scaleX, scaleY)
+        // translate(offsetX, offsetY)
+        const tx = x + a * offsetX + c * offsetY;
+        const ty = y + b * offsetX + d * offsetY;
+
+        return [
+            a,
+            b,
+            c,
+            d,
+            tx,
+            ty
+        ]
+    }
+}
+
+export interface MatrixSaveState {
+    world: number,
+    local: number,
+    parent: number,
 }
 
 /**
@@ -433,21 +595,9 @@ export class MatrixStack {
     /** The underlying store for matrices. */
     matrix = new MatrixStore()
 
-    /** The current step or depth in the transformation hierarchy. */
-    step: number = 0
-
     /** Internal stack maintaining structural information. */
     stack = new DynamicArrayBuffer(ArrayType.Uint32)
-
-    /** Records the world matrices generated at each step. */
-    stepWorldM = new DynamicArrayBuffer(ArrayType.Uint32)
-    /** Records actions (push/pop) taken during the traversal. */
-    stepAction = new DynamicArrayBuffer(ArrayType.Uint32)
-    /** Records the parent world matrix for each step (used by updateMatrixSubtree). */
-    stepParentM = new DynamicArrayBuffer(ArrayType.Uint32)
-
-    /** Buffer used during hierarchy traversal updates. */
-    parentStack = new DynamicArrayBuffer(ArrayType.Uint32)
+    currStack = new DynamicArrayBuffer(ArrayType.Uint32)
 
     /** The index of the current local matrix in the matrix store. */
     curLocalM = -1
@@ -467,23 +617,22 @@ export class MatrixStack {
     /**
      * Saves the current matrix state and pushes it onto the stack.
      * Equivalent to context.save().
-     * @returns The current step counter before saving.
+     * @returns Matrix IDs for the saved parent, local, and world transforms.
      */
-    save() {
+    save(): MatrixSaveState {
+        this.stack.push(this.curLocalM)
         this.stack.push(this.curWorldM)
         const parentWorldM = this.curWorldM;
 
         this.curLocalM = this.matrix.alloc(); // localM
         this.curWorldM = this.matrix.allocDirty(); // worldM
 
-        // update step info
-        this.stepWorldM.push(this.curWorldM)
-        this.stepParentM.push(parentWorldM)
-        this.stepAction.push(1)
-
         this.matrix.copy(this.curWorldM, parentWorldM);
 
-        return { world: this.curWorldM, local: this.curLocalM, step: this.step++ }
+        this.currStack.push(this.curLocalM)
+        this.currStack.push(this.curWorldM)
+
+        return { parent:parentWorldM, world: this.curWorldM, local: this.curLocalM }
     }
 
     /**
@@ -494,48 +643,43 @@ export class MatrixStack {
         if (this.stack.length == 0) {
             return;
         } else {
-
             this.curWorldM = this.stack.pop()
-            this.curLocalM = this.curWorldM - 1
+            this.curLocalM = this.stack.pop()
+        }
+    }
 
-            // update step info
-            this.stepParentM.push(this.stack.get(this.stack.length - 1)) // get stack top
-            this.stepWorldM.push(this.curWorldM)
-            this.stepAction.push(0);
-
-            this.step ++;
+    restoreAll() {
+        while (this.stack.length > 0) {
+            this.restore();
         }
     }
 
     /**
-     * Evaluates and updates matrices from the given step. Used primarily for deferred transformation.
-     * @param step - The initial step to update matrices from.
+     * Removes a matrix from the current and previous frame recycle queues so
+     * it remains valid across `reset()` calls.
+     *
+     * Passing a `MatrixSaveState` retains its `local` and `world` matrices;
+     * `parent` is not retained because it belongs to the parent stack state.
+     * Retained matrices must eventually be released with `matrix.free()`.
+     *
+     * @param matrix A matrix ID or the state returned by `save()`.
      */
-    updateMatrixSubtree(step: number | { step: number }) {
-        const currentIndex = (typeof step == "number" ? step : step.step)
+    retainMatrix(matrix: number | MatrixSaveState) {
+        const matrixIds = new Set(
+            typeof matrix === "number"
+                ? [matrix]
+                : [matrix.local, matrix.world]
+        );
 
-        let depth = 0
-        let index = currentIndex
-        while (index < this.step) {
-            const action = this.stepAction.get(index)
+        const indices: number[] = [];
 
-            if (action === 1) { // save 
-                const worldMatrix = this.stepWorldM.get(index)
-                const localMatrix = worldMatrix - 1
-                const parentMatrix = this.stepParentM.get(index)
-
-                this.matrix.multiplyOut(worldMatrix, parentMatrix, localMatrix)
-                depth++
-            } else { // restore
-                depth--
-                if (depth === 0) {
-                    // 作用域结束
-                    break
-                }
+        for (let index = 0; index < this.currStack.length; index++) {
+            if (matrixIds.has(this.currStack.get(index))) {
+                indices.push(index);
             }
-
-            index++
         }
+
+        DynamicArrayBuffer.removeAtIndices(indices, [this.currStack]);
     }
 
     /**
@@ -601,15 +745,17 @@ export class MatrixStack {
      * Resets the entire stack state context, clearing matrices and step actions.
      */
     reset(): void {
-        this.matrix.reset();
-        this.stack.reset();
-        this.stepAction.reset();
-        this.stepWorldM.reset();
-        this.stepParentM.reset();
-        this.step = 0;
+        //this.matrix.reset();
+        for (let index = 0; index < this.currStack.length; index++) {
+            this.matrix.free(this.currStack.typedArray[index])
+        }
+        this.currStack.clear();
+        this.stack.clear();
 
         this.curLocalM = this.matrix.alloc(); // localM
         this.curWorldM = this.matrix.alloc(); // worldM
+        this.currStack.push(this.curLocalM)
+        this.currStack.push(this.curWorldM)
     }
 
     /**
@@ -685,76 +831,27 @@ export class MatrixStack {
         return this.matrix.transformPoint(this.curLocalM, x, y);
     }
 
-    /**
-     * Applies a transform options object to the current matrix state.
-     * Optionally saves the matrix first
-     */
-    applyTransform(transform: ITransformOptions, width: number = 0, height: number = 0, customMatrix: number = -1) {
-        let x = transform.x ?? 0;
-        let y = transform.y ?? 0;
+    applyTransform(
+        transform: ITransformOptions,
+        width: number = 0,
+        height: number = 0,
+        customMatrix?: number,
+        worldMatrix: number=this.curWorldM,
+        localMatrix: number=this.curLocalM
+    ) {
+        const [
+            a,
+            b,
+            c,
+            d,
+            tx,
+            ty
+        ] = this.matrix.applyTransform(transform,width,height)
 
-        if (transform.position) {
-            x += transform.position.x;
-            y += transform.position.y;
-        }
-
-        let scaleX = 1;
-        let scaleY = 1;
-
-        const scale = transform.scale;
-
-        if (scale) {
-            if (typeof scale === "number") {
-                scaleX = scale;
-                scaleY = scale;
-            } else {
-                scaleX = scale.x;
-                scaleY = scale.y;
-            }
-        }
-
-        const rotation = transform.rotation ?? 0;
-
-        let offsetX = transform.offsetX ?? 0;
-        let offsetY = transform.offsetY ?? 0;
-
-        if (transform.offset) {
-            offsetX += transform.offset.x;
-            offsetY += transform.offset.y;
-        }
-
-        const origin = transform.origin;
-
-        if (origin !== undefined) {
-            if (typeof origin === "number") {
-                offsetX -= origin * width;
-                offsetY -= origin * height;
-            } else {
-                offsetX -= origin.x * width;
-                offsetY -= origin.y * height;
-            }
-        }
-
-        const cos = rotation ? Math.cos(rotation) : 1;
-        const sin = rotation ? Math.sin(rotation) : 0;
-
-        // R * S
-        const a = cos * scaleX;
-        const b = sin * scaleX;
-        const c = -sin * scaleY;
-        const d = cos * scaleY;
-
-        // translate(x, y)
-        // rotate(rotation)
-        // scale(scaleX, scaleY)
-        // translate(offsetX, offsetY)
-        const tx = x + a * offsetX + c * offsetY;
-        const ty = y + b * offsetX + d * offsetY;
-
-        if (customMatrix !== -1) {
+        if (customMatrix != undefined) {
             // 不修改matrix stack
             this.matrix.multiplyAffine(
-                this.curWorldM,
+                worldMatrix,
                 customMatrix,
                 a,
                 b,
@@ -763,29 +860,28 @@ export class MatrixStack {
                 tx,
                 ty
             )
-            return
+        } else {
+            // localMatrix = localMatrix * localTransform
+            this.matrix.multiplyAffineInPlace(
+                localMatrix,
+                a,
+                b,
+                c,
+                d,
+                tx,
+                ty
+            );
+
+            // worldMatrix = worldMatrix * localTransform
+            this.matrix.multiplyAffineInPlace(
+                worldMatrix,
+                a,
+                b,
+                c,
+                d,
+                tx,
+                ty
+            );
         }
-
-        // localMatrix = localMatrix * localTransform
-        this.matrix.multiplyAffineInPlace(
-            this.curLocalM,
-            a,
-            b,
-            c,
-            d,
-            tx,
-            ty
-        );
-
-        // worldMatrix = worldMatrix * localTransform
-        this.matrix.multiplyAffineInPlace(
-            this.curWorldM,
-            a,
-            b,
-            c,
-            d,
-            tx,
-            ty
-        );
     }
 }

@@ -1,4 +1,4 @@
-import { Rapid } from "../render";
+import type { Rapid } from "../render";
 import { Region } from "./region";
 import GLShader from "../webgl/glshader";
 import { ArrayType, WebglBufferArray } from "../buffer";
@@ -19,7 +19,8 @@ const VERTEX_STRIDE = 20;
 export class GraphicRegion extends Region {
     private vertexBuffer!: WebglBufferArray;
     private vertexCount: number = 0;
-
+    protected extraTextureUnit: number = 1;
+    
     matrixIndex: number = -1
     drawMode: number = this.gl.TRIANGLES
 
@@ -102,6 +103,7 @@ export class GraphicRegion extends Region {
         this.matrixIndex = matrixIndex;
         this.drawMode = drawMode;
         this.texture = texture;
+
         if (this.texture?.glTexture) {
             // It does not rely on the region to set the texture;
             // it merely occupies a texture unit to prevent the custom shader from overwriting it

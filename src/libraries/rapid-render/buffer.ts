@@ -1,4 +1,4 @@
-import { WebGLContext } from "./webgl/utils"
+import type { WebGLContext } from "./webgl/utils"
 
 /**
  * Defines the type of the underlying array buffer elements.
@@ -241,13 +241,6 @@ export class DynamicArrayBuffer {
         return this.usedElemNum
     }
 
-    /**
-     * Resets the buffer's used element count, effectively emptying it.
-     * Same behavior as `clear`.
-     */
-    reset(): void {
-        this.usedElemNum = 0;
-    }
 }
 
 /**
