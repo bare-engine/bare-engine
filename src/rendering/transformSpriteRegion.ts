@@ -1,8 +1,8 @@
-import { SpriteRegion } from "./spriteRegion";
-import { Region } from "./region";
-import { Texture } from "../texture";
-import { UNSIGNED_BYTE, generateShader } from "../webgl/utils";
-import FsShaderSource from "../shader/sprite.frag?raw";
+import type { Color, Rapid, Texture } from "../libraries/rapid-render";
+import { SpriteRegion } from "../libraries/rapid-render/region/spriteRegion";
+import { Region } from "../libraries/rapid-render/region/region";
+import { UNSIGNED_BYTE, generateShader } from "../libraries/rapid-render/webgl/utils";
+import FsShaderSource from "../libraries/rapid-render/shader/sprite.frag?raw";
 
 // Ordinary sprites can send their local transform directly to the GPU. Keep this
 // separate from the affine region so existing custom shader layouts stay valid.
@@ -107,4 +107,18 @@ export class TransformSpriteRegion extends SpriteRegion {
         this.currentShader.setUniform("u_parent1", this.parent1);
         super.render();
     }
+}
+
+// created on first use, so scenes without plain sprites never compile its shader
+let transformSpriteRegion: TransformSpriteRegion | undefined;
+
+/** draws a default, unfiltered sprite with its local transform applied on the GPU. */
+export function drawSpriteTransform(rapid: Rapid, texture: Texture, x: number, y: number, rotation: number,
+    scaleX: number, scaleY: number, pivotX: number, pivotY: number, color?: Color): void
+{
+    if (transformSpriteRegion?.rapid !== rapid)
+        transformSpriteRegion = new TransformSpriteRegion(rapid);
+
+    rapid.enterRegion(transformSpriteRegion);
+    transformSpriteRegion.drawTransformed(texture, x, y, rotation, scaleX, scaleY, pivotX, pivotY, rapid.getColorUint32(color));
 }

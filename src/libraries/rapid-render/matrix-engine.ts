@@ -604,13 +604,6 @@ export class MatrixStack {
     /** The index of the current world matrix in the matrix store. */
     curWorldM = -1
 
-    /**
-     * a matrix slot reserved for callers that compose a world matrix themselves instead of pushing a
-     * stack frame. kept separate from MatrixStore.temporary, which the draw helpers overwrite.
-     * allocated once and never put on currStack, so reset() doesn't recycle it.
-     */
-    scratch = -1
-
     rapid: Rapid
 
     /**
@@ -618,7 +611,6 @@ export class MatrixStack {
      */
     constructor(rapid: Rapid) {
         this.reset()
-        this.scratch = this.matrix.alloc()
         this.rapid = rapid
     }
 

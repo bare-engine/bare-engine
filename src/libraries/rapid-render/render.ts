@@ -2,7 +2,6 @@ import { getContext } from "./webgl/utils";
 import type { WebGLContext } from "./webgl/utils";
 import GLShader, { CustomGlShader } from "./webgl/glshader";
 import { Region } from "./region/region";
-import { TransformSpriteRegion } from "./region/transformSpriteRegion";
 import { SpriteRegion } from "./region/spriteRegion";
 import { MatrixStack, MatrixStore } from "./matrix-engine";
 import type { ITransformOptions } from "./matrix-engine";
@@ -18,7 +17,6 @@ import {
     drawRect,
     drawRoundedRect,
     drawSprite,
-    drawSpriteWithMatrix,
     getColorUint32,
 } from "./draw";
 import type {
@@ -166,7 +164,6 @@ export class Rapid {
 
     /** Region dedicated to fast sprite rendering. */
     spriteRegion: SpriteRegion;
-    private transformSpriteRegion?: TransformSpriteRegion;
     /** Region dedicated to arbitrary geometry and shapes rendering. */
     graphicRegion: GraphicRegion;
 
@@ -291,25 +288,12 @@ export class Rapid {
         region.enter(customShader);
     }
 
-    /** @internal GPU local transforms for default, unfiltered sprites. */
-    drawSpriteTransform(texture: Texture, x: number, y: number, rotation: number,
-        scaleX: number, scaleY: number, pivotX: number, pivotY: number, color?: Color): void {
-        const region = this.transformSpriteRegion ??= new TransformSpriteRegion(this);
-        this.enterRegion(region);
-        region.drawTransformed(texture, x, y, rotation, scaleX, scaleY, pivotX, pivotY, this.getColorUint32(color));
-    }
-
     drawParticles(options: IDrawParticleBatchOptions): void {
         drawParticles(this, options);
     }
 
     drawSprite(options: ISpriteOptions): void {
         drawSprite(this, options);
-    }
-
-    /** @internal Submit a sprite using an existing matrix without an options transform. */
-    drawSpriteWithMatrix(texture: Texture, matrix: number, color?: Color): void {
-        drawSpriteWithMatrix(this, texture, matrix, color);
     }
 
     drawLine(options: ILineOptions): void {

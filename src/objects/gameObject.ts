@@ -1,7 +1,8 @@
 import type { Component } from "../controllers/componentController";
 import { assetsHandler } from "../handlers/assetsHandler";
 import mitt from "../libraries/mitt";
-import { Color, MaskType, MatrixStack, MatrixStore, Texture, Vec2 } from "../libraries/rapid-render";
+import { Color, drawSpriteWithMatrix, MaskType, MatrixStack, MatrixStore, Texture, Vec2 } from "../libraries/rapid-render";
+import { drawSpriteTransform } from "../rendering/transformSpriteRegion";
 import type { Scene } from "../scenes/scene";
 import type { ComponentCtor, Ctor, DropFirst, Events, Rectangle, Shader } from "../types/bareTypes";
 import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';
@@ -86,6 +87,11 @@ export class Transform {
 export class GameObject
 {
     private static registeredGameObjects: Record<string, GameObjectClass> = {};
+
+    // matrix slot for sprites that compose their world matrix without pushing a stack frame.
+    // allocated once and never put on the stack's per-frame list, so rapid never recycles it
+    private static scratchMatrix = -1;
+    private static scratchStack: MatrixStack | null = null;
 
     static gameObjectCounter = -1; // ONE BACK TO NOT COUNT THE DUMMY GAMEOBJECT INSTANCED IN BAREGAME
  
@@ -742,14 +748,15 @@ export class GameObject
                 && inner.position.x === 0 && inner.position.y === 0)
             {
                 const pivot = this.pivot;
-                rapid.drawSpriteTransform(texture, transform.position.x, transform.position.y,
+                drawSpriteTransform(rapid, texture, transform.position.x, transform.position.y,
                     transform.rotation * DEG_TO_RAD, transform.scale.x, transform.scale.y,
                     pivot.x, pivot.y, inheritedColor);
             }
             else
             {
-                this.ComposeContentMatrix(stack.matrix, stack.scratch, stack.curWorldM);
-                this.RenderSprite(inheritedColor, stack.scratch);
+                const scratch = GameObject.GetScratchMatrix(stack);
+                this.ComposeContentMatrix(stack.matrix, scratch, stack.curWorldM);
+                this.RenderSprite(inheritedColor, scratch);
             }
         }
 
@@ -820,6 +827,16 @@ export class GameObject
     }
 
     /** Content space: what this object's own sprite draws in - the outer transform, then the inner one. */
+    private static GetScratchMatrix(stack: MatrixStack): number
+    {
+        if (GameObject.scratchStack !== stack)
+        {
+            GameObject.scratchStack = stack;
+            GameObject.scratchMatrix = stack.matrix.alloc();
+        }
+        return GameObject.scratchMatrix;
+    }
+
     private ComposeContentMatrix(store: MatrixStore, out: number, parent: number): void
     {
         // The outer stage never applies the outer flip; outer and inner flips share the inner stage.
@@ -956,7 +973,7 @@ export class GameObject
             texture = rapid.applyFilters(this.texture, glShaders);
         }
 
-        rapid.drawSpriteWithMatrix(texture, matrixIndex, renderColor);
+        drawSpriteWithMatrix(rapid, texture, matrixIndex, renderColor);
 
         if (this.mask)
         {
