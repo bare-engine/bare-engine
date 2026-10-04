@@ -39,7 +39,7 @@ export class WobbleShader extends Shader
                 position.x += sin(uTime * 5.0 + position.y * 0.01) * 10.0;
             }
         `, `
-            void fragment(inout vec4 color) {
+            void fragment(inout vec4 color, vec2 vRegion) {
                 // leave the color as it is
             }
         `);

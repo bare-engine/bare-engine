@@ -1,7 +1,7 @@
-import { Rapid } from "../render";
+import type { Rapid } from "../render";
 import { MatrixStore } from "../matrix-engine";
 import GLShader, { CustomGlShader } from "../webgl/glshader";
-import { WebGLContext } from "../webgl/utils";
+import { generateShader, type WebGLContext } from "../webgl/utils";
 
 export class Region {
     defaultShader!: GLShader
@@ -20,6 +20,7 @@ export class Region {
 
     protected usedTextures: WebGLTexture[] = []
     protected usedTexturePadding: number[] = []
+    protected extraTextureUnit = 0
 
     constructor(public rapid: Rapid) {
         this.gl = rapid.gl;
@@ -27,7 +28,7 @@ export class Region {
         this.matrixStore = rapid.matrix;
     }
 
-    protected createBuffer(){
+    protected createBuffer() {
 
     }
 
@@ -75,12 +76,24 @@ export class Region {
         return textureUnit
     }
 
+    getMaxTexutreUnit(customShader?: CustomGlShader) {
+        return this.rapid.maxTextureUnits - this.extraTextureUnit - (customShader?.usedTextureUnitNum ?? 0)
+    }
+
     createShader(vs: string, fs: string) {
+        const maxTextureUnits = this.getMaxTexutreUnit()
+        fs = generateShader(fs, maxTextureUnits);
+        vs = generateShader(vs, maxTextureUnits);
         return new GLShader(this.gl, vs, fs);
     }
 
     createCustomShader(customShader: CustomGlShader) {
-        return customShader.getGLShader(this, this.KEY, this.vs, this.fs)
+        const maxTextureUnits = this.getMaxTexutreUnit(customShader)
+
+        const fs = generateShader(this.fs, maxTextureUnits);
+        const vs = generateShader(this.vs, maxTextureUnits);
+
+        return customShader.getGLShader(this, this.KEY, vs, fs)
     }
 
     getCustomShader(customShader?: GLShader | CustomGlShader): GLShader {
@@ -147,9 +160,12 @@ export class Region {
 
         if (this.customShader) {
             const customShader = this.customShader;
-            const textureUniforms: Record<string, number> = {};
-            for (const loc in customShader.uniformTextures) {
-                textureUniforms[loc] = this.useTexture(customShader.uniformTextures[loc]);
+            const textureUniforms: Record<string, number | number[]> = {};
+            for (const [loc, texture] of Object.entries(customShader.uniformTextures)) {
+                textureUniforms[loc] = this.useTexture(texture);
+            }
+            for (const [loc, textures] of Object.entries(customShader.uniformArrayTexture)) {
+                textureUniforms[loc] = textures.map(u => this.useTexture(u))
             }
             this.customShader.applyUniform(this.KEY, textureUniforms);
         }
@@ -168,6 +184,12 @@ export class Region {
     }
 
     resetRender() {
+        const gl = this.gl
+        for (let unit = 0; unit < this.usedTextures.length; unit++) {
+            gl.activeTexture(gl.TEXTURE0 + unit)
+            gl.bindTexture(gl.TEXTURE_2D, null)
+        }
+
         this.usedTextures.length = 0;
         this.usedTexturePadding.length = 0;
     }

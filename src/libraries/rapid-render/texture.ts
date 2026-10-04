@@ -1,6 +1,11 @@
-import { Rapid, TextureFilterMode } from "./render"
+import type { Rapid } from "./render"
 import { createTexture, setTextureFilterMode, setTextureWrapMode } from "./webgl/utils"
 import { Color } from "./color"
+
+export enum TextureFilterMode {
+    LINEAR,
+    NEAREST,
+}
 
 export type Images =
     | HTMLImageElement
@@ -31,9 +36,20 @@ export interface ITextureOptions {
 class TextureManager {
     private render: Rapid
     private cache: Map<string, BaseTexture> = new Map()
+	texture = new Set<Texture>
 
     constructor(render: Rapid) {
         this.render = render
+    }
+
+    addTexture<T extends Texture = Texture>(t: T): T {
+        this.texture.add(t)
+        return t
+    }
+
+    removeTexture<T extends Texture = Texture>(t: T): T {
+        this.texture.delete(t)
+        return t
     }
 
     /**
@@ -45,7 +61,7 @@ class TextureManager {
     async load(url: string, options?: ITextureOptions): Promise<Texture> {
         let base = this.cache.get(url)
         if (base) {
-            return new Texture(base)
+            return this.addTexture(new Texture(base))
         }
 
         try {
@@ -54,7 +70,7 @@ class TextureManager {
             base.uid = url;
             this.cache.set(url, base);
 
-            return new Texture(base);
+            return this.addTexture(new Texture(base));
         } catch (e) {
             console.error(`[TextureManager] Failed to load: ${url}`, e);
             throw e;
@@ -69,7 +85,7 @@ class TextureManager {
      */
     create(source: Images, options?: ITextureOptions): Texture {
         if (options?.key && this.cache.has(options.key)) {
-            return new Texture(this.cache.get(options.key)!);
+            return this.addTexture(new Texture(this.cache.get(options.key)!));
         }
 
         const base = BaseTexture.fromSource(this.render, source, options);
@@ -79,7 +95,7 @@ class TextureManager {
             this.cache.set(options.key, base);
         }
 
-        return new Texture(base);
+        return this.addTexture(new Texture(base));
     }
 
     /**
@@ -89,8 +105,8 @@ class TextureManager {
      * @param options - Optional configuration for the texture.
      * @returns The newly created RenderTexture.
      */
-    createRenderTexture(options?: IRenderTextureOptions): RenderTexture {
-        return new RenderTexture(this.render, options);
+    createRenderTexture(options: IRenderTextureOptions): RenderTexture {
+        return this.addTexture(new RenderTexture(this.render, options))
     }
 
     /**
@@ -99,7 +115,7 @@ class TextureManager {
      * @returns The newly created TextTexture.
      */
     createTextTexture(options?: ITextOptions): TextTexture {
-        return new TextTexture(this.render, options);
+        return this.addTexture(new TextTexture(this.render, options));
     }
 
     /**
@@ -119,6 +135,7 @@ class TextureManager {
         } else if (textureOrUrl instanceof Texture) {
             base = textureOrUrl.base;
             uid = base?.uid;
+            this.removeTexture(textureOrUrl)
             textureOrUrl.destroy(); // Safely decreases the reference count
         } else {
             base = textureOrUrl;
@@ -302,8 +319,6 @@ class Texture {
     // Stored pixel-space region (before UV conversion), used by getSubTexture()
     protected _px: number = 0;
     protected _py: number = 0;
-    protected _pw: number = 0;
-    protected _ph: number = 0;
 
     texturePath: string
     sourceSize: { w: number, h: number }
@@ -313,6 +328,8 @@ class Texture {
     constructor(base?: BaseTexture) {
         if (base) this.setBase(base);
     }
+
+    public updateResolution(){}
 
     /**
      * Sets the base texture and increments its reference count.
@@ -346,7 +363,7 @@ class Texture {
         if (!this.base) return this;
 
         // Store pixel-space region for use by withPadding()
-        this._px = x; this._py = y; this._pw = w; this._ph = h;
+        this._px = x; this._py = y;
         this.isAtlas = x !== 0 || y !== 0 || w !== this.base.width || h !== this.base.height;
 
         this.uvX = x / this.base.width;
@@ -387,7 +404,7 @@ class Texture {
      */
     clone(target?: Texture): Texture {
         const t = target ?? new Texture(this.base);
-        if (target) {
+        if (target && this.base) {
             target.setBase(this.base)
         }
         t.scale = this.scale;
@@ -400,7 +417,6 @@ class Texture {
         t.isAtlas = this.isAtlas;
         // Copy stored pixel region so getSubTexture() works on clones too
         t._px = this._px; t._py = this._py;
-        t._pw = this._pw; t._ph = this._ph;
         return t;
     }
 
@@ -411,21 +427,25 @@ class Texture {
      * @param cellHeight - The height of each cell in pixels.
      * @param cols - Optional number of columns. Truncates based on texture width if omitted.
      * @param rows - Optional number of rows. Truncates based on texture height if omitted.
+     * @param gap - Optional pixel gap between cells.
      * @returns An array of split Textures.
      */
-    splitGrid(cellWidth: number, cellHeight: number, cols?: number, rows?: number): Texture[] {
+    splitGrid(cellWidth: number, cellHeight: number, cols?: number, rows?: number, gap: number = 0): Texture[] {
         if (!this.base) return [];
         const res: Texture[] = [];
 
         const baseW = this.rawWidth;
         const baseH = this.rawHeight;
+        const cellGap = Math.max(0, gap);
+        const stepX = cellWidth + cellGap;
+        const stepY = cellHeight + cellGap;
 
-        const c = cols ?? Math.floor(baseW / cellWidth);
-        const r = rows ?? Math.floor(baseH / cellHeight);
+        const c = cols ?? Math.floor((baseW + cellGap) / stepX);
+        const r = rows ?? Math.floor((baseH + cellGap) / stepY);
 
         for (let y = 0; y < r; y++) {
             for (let x = 0; x < c; x++) {
-                res.push(this.getSubTexture(x * cellWidth, y * cellHeight, cellWidth, cellHeight));
+                res.push(this.getSubTexture(x * stepX, y * stepY, cellWidth, cellHeight));
             }
         }
         return res;
@@ -436,7 +456,7 @@ class Texture {
      * @param source - The image element, canvas, video, or bitmap.
      * @param options - Optional antialias and wrap mode settings.
      */
-    static fromImageSource(render: Rapid, source: Images, options?: ITextureOptions): Texture {
+    static fromImageSource(render: Rapid, source: Images, options: ITextureOptions = {}): Texture {
         const glTex = createTexture(render, source, options);
         return new Texture(new BaseTexture(glTex, source.width, source.height));
     }
@@ -466,14 +486,13 @@ class RenderTexture extends Texture {
     private framebuffer: WebGLFramebuffer | null;
     private renderbuffer: WebGLRenderbuffer | null;
     private gl: WebGL2RenderingContext;
-    public flipY: boolean = true;
     public clearColor?: Color;
 
     /** Actual GPU-allocated dimensions — grow-only, never shrink */
     private _allocW: number = 0;
     private _allocH: number = 0;
 
-    constructor(render: Rapid, options?: IRenderTextureOptions) {
+    constructor(render: Rapid, options: IRenderTextureOptions) {
         super();
         this.gl = render.gl;
 
@@ -509,10 +528,8 @@ class RenderTexture extends Texture {
      */
     resize(width: number, height: number, force: boolean = false): void {
 
-        // A render target must never be smaller than the requested logical area.
-        // Fractional filter padding otherwise loses pixels on the right/bottom edge.
-        width = Math.max(Math.ceil(width), 1);
-        height = Math.max(Math.ceil(height), 1);
+        width = Math.max(Math.round(width), 1);
+        height = Math.max(Math.round(height), 1);
 
         const sameLogical = this.rawWidth === width && this.rawHeight === height;
         if (!force && sameLogical) return;
@@ -520,7 +537,7 @@ class RenderTexture extends Texture {
         const gl = this.gl;
         const needsGpuAlloc = force || width > this._allocW || height > this._allocH;
 
-        if (needsGpuAlloc) {
+        if (needsGpuAlloc && this.base) {
             this._allocW = Math.max(this._allocW, width);
             this._allocH = Math.max(this._allocH, height);
             this.base.width = this._allocW;
@@ -546,7 +563,7 @@ class RenderTexture extends Texture {
         this.rawHeight = height;
 
         // UV maps the logical portion within the (possibly larger) GPU allocation.
-        // RenderTexture orientation is handled by flipY at draw time, so UV stays canonical.
+        // The render-target projection stores logical y=0 at texture v=0.
         this.uvX = 0;
         this.uvW = width / this._allocW;
         this.uvY = 0;
@@ -608,15 +625,13 @@ class RenderTexture extends Texture {
         const readW = Math.min(iw, this.rawWidth - ix);
         const readH = Math.min(ih, this.rawHeight - iy);
 
-        const readY = this.rawHeight - iy - readH;
-
         const gl = this.gl;
         const prevFramebuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING) as WebGLFramebuffer | null;
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
 
         const pixels = new Uint8Array(readW * readH * 4);
-        gl.readPixels(ix, readY, readW, readH, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+        gl.readPixels(ix, iy, readW, readH, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, prevFramebuffer);
 
@@ -644,6 +659,7 @@ class RenderTexture extends Texture {
         this.base?.destroy(this.gl);
     }
 }
+
 export interface ITextStyle {
     fontFamily?: string;
     fontSize?: number;
@@ -680,7 +696,7 @@ class TextTexture extends Texture {
     private _text: string;
     private _style: ITextStyle;
     private options: ITextOptions
-    flipY = true
+    resolution: number = 1
 
     constructor(render: Rapid, options?: ITextOptions) {
         super();
@@ -692,7 +708,6 @@ class TextTexture extends Texture {
             textureFilter: TextureFilterMode.LINEAR,
             ...options
         };
-
         this.canvas = document.createElement("canvas");
         const ctx = this.canvas.getContext("2d", { willReadFrequently: true });
         if (!ctx) throw new Error("Failed to get 2d context for TextTexture");
@@ -702,7 +717,8 @@ class TextTexture extends Texture {
         this.canvas.height = 1;
         const glTexture = createTexture(render, this.canvas, this.options);
         this.setBase(new BaseTexture(glTexture, 1, 1));
-        this.update();
+        this.updateResolution()
+        this.update()
     }
 
     public get text(): string {
@@ -743,21 +759,35 @@ class TextTexture extends Texture {
         }
     }
 
+    public updateResolution(){
+        let requiredResolution = 1
+        requiredResolution *= this.render.viewport.resolution
+
+        if (requiredResolution != this.resolution) {
+            this.resolution = requiredResolution;
+            this.update()
+        }
+    }
+
     /**
      * Updates the internal canvas and uploads it to WebGL
      */
     public update(): void {
         const ctx = this.ctx;
         const style = this.style;
-
-        const resolution = this.render.dpr;
-        this.scale = 1 / resolution;
-
         const fontSize = style.fontSize!;
         const fontWeight = style.fontWeight!;
         const fontFamily = style.fontFamily!;
         const lineHeightRate = style.lineHeight!;
+
+        const MIN_FONT_SIZE = 32;
+        const measureFontSize = Math.max(fontSize, MIN_FONT_SIZE);
+        const fontScale = fontSize / measureFontSize;
+
         const font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+        const getSizefont = `${fontWeight} ${measureFontSize}px ${fontFamily}`;
+
+        const resolution = this.resolution
 
         const baseline: CanvasTextBaseline = style.baseline ?? "top";
         const align = style.align ?? "left";
@@ -769,50 +799,48 @@ class TextTexture extends Texture {
         const reference = lines[0] || defaultText;
 
         // 内部始终使用 alphabetic 测量和绘制。
-        ctx.font = font;
+        ctx.font = getSizefont;
         ctx.textBaseline = "alphabetic";
         ctx.textAlign = "left";
 
         let maxWidth = 0;
-        let ascent = 0;
-        let descent = 0;
+        let topAscent = 0;
+        let lastDescent = 0;
 
         for (const line of lines) {
             const metrics = ctx.measureText(line || defaultText);
 
-            maxWidth = Math.max(maxWidth, line ? metrics.width : 0);
-            ascent = Math.max(ascent, metrics.actualBoundingBoxAscent);
-            descent = Math.max(descent, metrics.actualBoundingBoxDescent);
+            maxWidth = Math.max(maxWidth, line ? metrics.width * fontScale : 0);
+            if (line == lines[0]) {
+                topAscent = metrics.actualBoundingBoxAscent * fontScale
+            }
+            if (line == lines[lines.length - 1]){
+                lastDescent = metrics.actualBoundingBoxDescent * fontScale
+            }
         }
 
         // 测量用户基线相对于 alphabetic 的偏移量
         ctx.textBaseline = "alphabetic";
 
         const alphabeticDescent =
-            ctx.measureText(reference).fontBoundingBoxDescent;
+            ctx.measureText(reference).fontBoundingBoxDescent * fontScale;
 
         ctx.textBaseline = baseline;
 
         const targetDescent =
-            ctx.measureText(reference).fontBoundingBoxDescent;
+            ctx.measureText(reference).fontBoundingBoxDescent * fontScale;
 
         const lineStep = fontSize * lineHeightRate;
         const totalHeight =
-            ascent + descent + (lines.length - 1) * lineStep;
+            topAscent + lastDescent + (lines.length - 1) * lineStep
 
-        const padding = Math.ceil(strokeThickness / 2) + 2;
+        const padding = strokeThickness / 2 + 2 / resolution
 
-        const logicalWidth = Math.max(
-            1,
-            Math.ceil(maxWidth + padding * 2)
-        );
-        const logicalHeight = Math.max(
-            1,
-            Math.ceil(totalHeight + padding * 2)
-        );
-
-        const pixelWidth = Math.ceil(logicalWidth * resolution);
-        const pixelHeight = Math.ceil(logicalHeight * resolution);
+        const contentWidth = maxWidth + padding * 2;
+        const contentHeight = totalHeight + padding * 2;
+        const pixelWidth = Math.max(1, Math.ceil(contentWidth * resolution));
+        const pixelHeight = Math.max(1, Math.ceil(contentHeight * resolution));
+        const logicalWidth = pixelWidth / resolution;
 
         if (
             this.canvas.width !== pixelWidth ||
@@ -822,7 +850,7 @@ class TextTexture extends Texture {
             this.canvas.height = pixelHeight;
         }
 
-        ctx.setTransform(resolution, 0, 0, resolution, 0, 0);
+        ctx.setTransform(resolution, 0, 0, -resolution, 0, pixelHeight);
         ctx.clearRect(
             0,
             0,
@@ -846,7 +874,7 @@ class TextTexture extends Texture {
         }
 
         // 因为是 alphabetic baseline。是在字母底座开始，要增加ascent，才是字母顶上
-        const alphabeticY = padding + ascent;
+        const alphabeticY = padding + topAscent;
         let y = alphabeticY;
 
         for (const line of lines) {
@@ -861,16 +889,20 @@ class TextTexture extends Texture {
             y += lineStep;
         }
 
-        this.base?.updateSource(this.render.gl, this.canvas, this.options);
-        this.setRegion(0, 0, pixelWidth, pixelHeight);
-
         const alphabeticBaselineOffset =
             targetDescent - alphabeticDescent;
 
-        this.offsetY =
-            (-padding - ascent + alphabeticBaselineOffset);
+        this.scale = 1 / this.resolution;
+        // BareEngine places text by the texture's width from 0, so the quad keeps starting at x=0
+        // (upstream: this.offsetX = -startX, which makes the anchor the origin)
+        this.offsetX = 0
+        this.offsetY = (-padding - topAscent + alphabeticBaselineOffset);
+
+        this.base?.updateSource(this.render.gl, this.canvas, this.options);
+        this.setRegion(0, 0, pixelWidth, pixelHeight);
     }
 }
+
 export {
     TextureManager,
     Texture,

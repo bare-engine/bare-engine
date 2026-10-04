@@ -125,10 +125,10 @@ export class Color {
      * @param a - The alpha component (0-255).
      */
     setRGBA(r: number, g: number, b: number, a: number) {
-        this.r = r;
-        this.g = g;
-        this.b = b;
-        this.a = a;
+        this._r = r;
+        this._g = g;
+        this._b = b;
+        this._a = a;
         this.updateUint();
     }
 
@@ -194,15 +194,11 @@ export class Color {
      * @param color - The color to compare with.
      * @returns True if the colors are equal, otherwise false.
      */
-    equal(color: Color) {
+    equals(color: Color) {
         return color.r === this.r &&
             color.g === this.g &&
             color.b === this.b &&
             color.a === this.a;
-    }
-
-    equals(color: Color) {
-        return this.equal(color);
     }
 
     /**
@@ -233,12 +229,6 @@ export class Color {
         );
     }
 
-    static clampColorByte(value: number): number {
-        if (value <= 0) return 0;
-        if (value >= 255) return 255;
-        return Math.round(value);
-    };
-
     static packColor(
         r: number,
         g: number,
@@ -246,11 +236,11 @@ export class Color {
         a: number,
         premultipliedAlpha: boolean,
     ): number {
-        const alpha = Color.clampColorByte(a);
+        const alpha = Color.clampByte(a);
         const alphaScale = premultipliedAlpha ? alpha / 255 : 1;
-        const red = Color.clampColorByte(r * alphaScale);
-        const green = Color.clampColorByte(g * alphaScale);
-        const blue = Color.clampColorByte(b * alphaScale);
+        const red = Color.clampByte(r * alphaScale);
+        const green = Color.clampByte(g * alphaScale);
+        const blue = Color.clampByte(b * alphaScale);
         return ((alpha << 24) | (blue << 16) | (green << 8) | red) >>> 0;
     };
 
@@ -339,10 +329,11 @@ export class Color {
         }
     }
     clamp() {
-        this.r = Math.max(0, Math.min(255, this.r));
-        this.g = Math.max(0, Math.min(255, this.g));
-        this.b = Math.max(0, Math.min(255, this.b));
-        this.a = Math.max(0, Math.min(255, this.a));
+        this._r = Math.max(0, Math.min(255, this._r));
+        this._g = Math.max(0, Math.min(255, this._g));
+        this._b = Math.max(0, Math.min(255, this._b));
+        this._a = Math.max(0, Math.min(255, this._a));
+        this.updateUint();
     }
 
     static Red = new Color(255, 0, 0, 255);
@@ -360,5 +351,4 @@ export class Color {
     static White = new Color(255, 255, 255, 255);
     static Black = new Color(0, 0, 0, 255);
     static Transparent = new Color(0, 0, 0, 0);
-    static TRANSPARENT = new Color(0, 0, 0, 0);
 }

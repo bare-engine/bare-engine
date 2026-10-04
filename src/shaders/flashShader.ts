@@ -17,7 +17,7 @@ export class FlashShader extends Shader
 
         const flashFragmentShaderSource = `
             uniform float uFlashTime;  // 0.0 = white flash, 1.0 = normal
-            void fragment(inout vec4 color) {
+            void fragment(inout vec4 color, vec2 vRegion) {
                 if(color.a > 0.5) {  // Only apply flash to more opaque pixels
                     vec4 whiteColor = vec4(1.0, 1.0, 1.0, color.a);
                     color = mix(whiteColor, color, uFlashTime);

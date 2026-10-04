@@ -1,9 +1,10 @@
 import { Color } from "./color";
-import { ITransformOptions } from "./matrix-engine";
+import type { ITransformOptions } from "./matrix-engine";
 import { Vec2 } from "./math";
 import { Texture } from "./texture";
 import GLShader, { CustomGlShader } from "./webgl/glshader";
-import { ILineRenderOptions, getLineGeometry } from "./line";
+import { getLineGeometry } from "./line";
+import type { ILineRenderOptions } from "./line";
 import type { Rapid } from "./render";
 
 export type DrawShader = GLShader | CustomGlShader;
@@ -24,8 +25,8 @@ export interface IDrawParticleBatchOptions extends IDisplayOptions {
     rotation?: ArrayLike<number> | number;
     color?: ArrayLike<Color> | ArrayLike<number> | number;
     count?: number;
-    scaleX?: ArrayLike<number>;
-    scaleY?: ArrayLike<number>;
+    scaleX?: ArrayLike<number> | number;
+    scaleY?: ArrayLike<number> | number;
     originX?: number;
     originY?: number;
     flipX?: boolean;
@@ -90,8 +91,17 @@ const withOptionsTransform = (
     width: number,
     height: number,
 ) => {
+    const temporary = rapid.matrix.temporary
+
     if (options.customMatrix !== undefined) {
-        return options.customMatrix;
+        rapid.matrixStack.applyTransform(
+            options,
+            width,
+            height,
+            temporary,
+            options.customMatrix,
+        );
+        return temporary;
     }
 
     if (options.modifyStack) {
@@ -103,12 +113,12 @@ const withOptionsTransform = (
 
         return
     } else {
-        const temporary = rapid.matrix.temporary
         rapid.matrixStack.applyTransform(
             options,
             width,
             height,
-            temporary
+            temporary,
+            rapid.matrixStack.curWorldM,
         );
         return temporary
     }

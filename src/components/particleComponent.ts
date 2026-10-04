@@ -61,19 +61,24 @@ export class ParticleComponent extends Component
     OnAdded(go: GameObject): void
     {
         this.initEmitter();
-        this.emitter.position.set(go.x + this.position.x, go.y + this.position.y);
+        this.followGameObject(go);
+    }
+
+    private followGameObject(go: GameObject): void
+    {
+        ParticleController.SetPosition(this.emitter, go.x + this.position.x, go.y + this.position.y);
     }
 
     @InspectorButton
     Fire()
     {
-        this.emitter.oneShot();
+        ParticleController.Emit(this.emitter);
     }
 
     OnUpdate(deltaTime: number): void
     {
-        this.emitter.position.set(this.go.x + this.position.x, this.go.y + this.position.y);
-        this.emitter.update(deltaTime);
+        this.followGameObject(this.go);
+        ParticleController.UpdateEmitter(this.emitter, deltaTime);
     }
 
     OnPostRender(): void
@@ -82,7 +87,7 @@ export class ParticleComponent extends Component
         if (!ParticleController.IsReady(this.emitter))
             return;
 
-        this.emitter.render();
+        ParticleController.RenderEmitter(this.emitter);
     }
 
     OnRemoved()

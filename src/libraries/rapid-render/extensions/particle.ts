@@ -1,10 +1,10 @@
-import { Color } from "./color";
-import { Vec2 } from "./math";
-import { Rapid } from "./render";
-import { Texture } from "./texture";
-import { isPlainObject, Random } from "./utils";
-import { ArrayType, DynamicArrayBuffer } from "./buffer";
-import { CustomGlShader } from "./webgl/glshader";
+import { Color } from "../color";
+import { Vec2 } from "../math";
+import type { Rapid } from "../render";
+import { Texture } from "../texture";
+import { isPlainObject, Random } from "../utils";
+import { ArrayType, DynamicArrayBuffer } from "../buffer";
+import { CustomGlShader } from "../webgl/glshader";
 
 /**
  * Describes an animated attribute: it transitions from `start` to `end`
@@ -56,8 +56,7 @@ export interface IParticleAnimation {
 export interface IParticleOptions {
     /** Texture(s) to pick from. Pass a weighted tuple `[Texture, weight][]` for weighted random. */
     texture: Texture;
-    shader?: CustomGlShader,
-    position: Vec2,
+    shader?: CustomGlShader
     /** Particle lifetime in seconds, or a [min, max] range. */
     life: number | [number, number];
     /** Animation / per-attribute configuration. */
@@ -79,11 +78,6 @@ export interface IParticleOptions {
     emitTime?: number;
     /** Whether particles are positioned relative to the emitter (default: true). */
     localSpace?: boolean;
-    /**
-     * Scales the whole burst - particle size and how far the particles travel - around the
-     * emitter's position (default: 1). Use it to fit one effect to differently sized things.
-     */
-    scale?: number;
 
     origin?: Vec2;
 }
@@ -222,13 +216,6 @@ export class ParticleEmitter {
     /** Whether spawned particles are positioned in local emitter space (default: true). */
     localSpace: boolean = DEFAULT_LOCAL_SPACE;
 
-    /**
-     * Scales the whole burst around the emitter's position: the particles are drawn that
-     * much bigger and spread that much further, so an effect keeps its shape whatever size
-     * the thing it belongs to is. Can be changed at any time, live particles included.
-     */
-    scale: number = 1;
-
     private rapid: Rapid;
 
     x = new DynamicArrayBuffer(ArrayType.Float32)
@@ -237,7 +224,7 @@ export class ParticleEmitter {
     scaleY = new DynamicArrayBuffer(ArrayType.Float32)
     rotation = new DynamicArrayBuffer(ArrayType.Float32)
     color = new DynamicArrayBuffer(ArrayType.Uint32)
-    remainingLife = new DynamicArrayBuffer(ArrayType.Float32)
+    private remainingLife = new DynamicArrayBuffer(ArrayType.Float32)
 
     animations = {
         speed: new ParticleAttributeStore(),
@@ -247,7 +234,7 @@ export class ParticleEmitter {
         velocity: new ParticleAttributeStore(2),
     }
     count: number = 0
-    position: Vec2
+
     /**
      * Creates a new particle emitter.
      * @param rapid   - The Rapid renderer instance
@@ -259,8 +246,6 @@ export class ParticleEmitter {
         this.emitRate = options.emitRate ?? DEFAULT_EMIT_RATE;
         this.emitTime = options.emitTime ?? DEFAULT_EMIT_TIME;
         this.localSpace = options.localSpace ?? DEFAULT_LOCAL_SPACE;
-        this.position = options.position ?? new Vec2(0, 0)
-        this.scale = options.scale ?? 1;
     }
 
     getAllArrayBuffer(): DynamicArrayBuffer[] {
@@ -429,6 +414,7 @@ export class ParticleEmitter {
                 removeIndex.push(index)
                 continue
             }
+
             const rotation = ani.rotation.get(index);
             const scale = ani.scale.get(index);
             const speed = ani.speed.get(index);
@@ -455,43 +441,33 @@ export class ParticleEmitter {
      * Renders all live particles.
      * In local-space mode the emitter's own transform is applied around the batch.
      */
-    render() {
+    render(customMatrix?: number) {
         const options = this.options
-        const customMatrix = this.localSpace ? undefined : this.rapid.matrix.alloc()
-        const stack = this.rapid.matrixStack
-        if (this.localSpace) {
-            stack.save()
-            stack.translate(this.position.x, this.position.y)
-            if (this.scale !== 1) {
-                stack.scale(this.scale)
+        const renderMatrix = customMatrix ?? (this.localSpace ? undefined : this.rapid.matrix.alloc())
+
+        try {
+            this.rapid.drawParticles({
+                texture: options.texture,
+                shader: options.shader,
+
+                x: this.x.typedArray,
+                y: this.y.typedArray,
+                scaleX: this.scaleX.typedArray,
+                scaleY: this.scaleY.typedArray,
+                rotation: this.rotation.typedArray,
+                color: this.color.typedArray,
+                count: this.count,
+                reverseOrder: true,
+
+                originX: options.origin?.x ?? 0.5,
+                originY: options.origin?.y ?? 0.5,
+
+                customMatrix: renderMatrix
+            })
+        } finally {
+            if (customMatrix === undefined && renderMatrix !== undefined && !this.localSpace) {
+                this.rapid.matrix.free(renderMatrix)
             }
-        } else {
-            this.rapid.matrix.translate(customMatrix, this.position.x, this.position.y)
-            if (this.scale !== 1) {
-                this.rapid.matrix.scale(customMatrix!, this.scale, this.scale)
-            }
-        }
-
-        this.rapid.drawParticles({
-            texture: options.texture,
-            shader: options.shader,
-
-            x: this.x.typedArray,
-            y: this.y.typedArray,
-            scaleX: this.scaleX.typedArray,
-            scaleY: this.scaleY.typedArray,
-            rotation: this.rotation.typedArray,
-            color: this.color.typedArray,
-            count: this.count,
-            reverseOrder: true,
-
-            originX: options.origin?.x ?? 0.5,
-            originY: options.origin?.y ?? 0.5,
-
-            customMatrix
-        })
-        if (this.localSpace) {
-            stack.restore()
         }
     }
 
@@ -507,3 +483,4 @@ export class ParticleEmitter {
         this.emit(this.emitRate);
     }
 }
+

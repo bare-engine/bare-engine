@@ -327,7 +327,8 @@ export class CameraHandler {
         this.offset.y = -screenH / 2 / scale;
 
         // SET TRANSFORM
-        rapid.matrixStack.translate(this.offset.x, this.offset.y);
+        // applyCamera centers on rapid's view itself; only a custom viewportSize needs the difference
+        rapid.matrixStack.translate((screenW - rapid.width) / 2, (screenH - rapid.height) / 2);
         rapid.applyCamera({
                 position: this.position,
                 scale: 1 / scale,

@@ -1,5 +1,4 @@
-import { ParticleEmitter } from "../libraries/rapid-render/particle";
-import { Color, IParticleAnimation, IParticleOptions, ParticleShape, Texture, Vec2 } from "../libraries/rapid-render";
+import { Color, IParticleAnimation, IParticleOptions, ParticleEmitter, ParticleShape, Texture, Vec2 } from "../libraries/rapid-render";
 import { assetsHandler } from "../handlers/assetsHandler";
 import { Scene } from "../scenes/scene";
 import { RegisterController } from "../globals";
@@ -24,6 +23,14 @@ export type ParticleOneShotOptions = {
     position?: Vec2;
 };
 
+// where an emitter sits and how big its burst is - Rapid's emitter has no transform of its own,
+// it takes it from the matrix stack, so the controller pushes this around every emit and draw
+export type ParticleTransform = {
+    x: number;
+    y: number;
+    scale: number;
+};
+
 // PLAIN DATA AS IT COMES OUT OF settingsData.json / AN @InspectorField COMPONENT:
 // TEXTURE AND COLORS AS STRINGS, VECTORS AS { x, y } OBJECTS, EMIT SHAPE AS "CIRCLE"
 export type ParticleData = Record<string, any>;
@@ -35,6 +42,8 @@ export class ParticleController
     // EMITTERS WHOSE TEXTURE IS STILL LOADING - THEY MUST NOT RENDER YET, DRAWING WITHOUT A
     // TEXTURE THROWS. STATIC SO IT ALSO HOLDS FOR EMITTERS USED OUTSIDE THEIR OWN SCENE.
     private static awaitingTexture: WeakSet<ParticleEmitter> = new WeakSet();
+
+    private static transforms: WeakMap<ParticleEmitter, ParticleTransform> = new WeakMap();
 
     public scene: Scene;
 
@@ -69,7 +78,7 @@ export class ParticleController
 
         if (options.autoOneShot)
         {
-            emitter.oneShot();
+            ParticleController.Emit(emitter);
         }
         else if (options.autoStart)
         {
@@ -100,7 +109,7 @@ export class ParticleController
             const entry = this.emitters[i];
             if (entry.update)
             {
-                entry.emitter.update(deltaTime);
+                ParticleController.UpdateEmitter(entry.emitter, deltaTime);
             }
 
             if (entry.emitter.isActive())
@@ -121,9 +130,79 @@ export class ParticleController
         {
             if (entry.render && ParticleController.IsReady(entry.emitter))
             {
-                entry.emitter.render();
+                ParticleController.RenderEmitter(entry.emitter);
             }
         }
+    }
+
+    static GetTransform(emitter: ParticleEmitter): ParticleTransform
+    {
+        var transform = ParticleController.transforms.get(emitter);
+        if (!transform)
+        {
+            transform = { x: 0, y: 0, scale: 1 };
+            ParticleController.transforms.set(emitter, transform);
+        }
+        return transform;
+    }
+
+    static SetPosition(emitter: ParticleEmitter, x: number, y: number): void
+    {
+        const transform = ParticleController.GetTransform(emitter);
+        transform.x = x;
+        transform.y = y;
+    }
+
+    static SetScale(emitter: ParticleEmitter, scale: number): void
+    {
+        ParticleController.GetTransform(emitter).scale = scale;
+    }
+
+    // world-space emitters bake the matrix stack into each particle as it spawns, so spawning
+    // (update / oneShot) has to happen while the emitter's position is on the stack
+    private static WithSpawnTransform(emitter: ParticleEmitter, spawn: () => void): void
+    {
+        if (emitter.localSpace)
+        {
+            spawn();
+            return;
+        }
+
+        const transform = ParticleController.GetTransform(emitter);
+        const ms = rapid.matrixStack;
+        ms.save();
+        ms.translate(transform.x, transform.y);
+        spawn();
+        ms.restore();
+    }
+
+    static UpdateEmitter(emitter: ParticleEmitter, deltaTime: number): void
+    {
+        ParticleController.WithSpawnTransform(emitter, () => emitter.update(deltaTime));
+    }
+
+    static Emit(emitter: ParticleEmitter): void
+    {
+        ParticleController.WithSpawnTransform(emitter, () => emitter.oneShot());
+    }
+
+    // scale is applied at draw time around the emitter's position, so it resizes size and
+    // spread of live particles too. call inside the camera's scope (scene render)
+    static RenderEmitter(emitter: ParticleEmitter): void
+    {
+        const transform = ParticleController.GetTransform(emitter);
+        const ms = rapid.matrixStack;
+        ms.save();
+        ms.translate(transform.x, transform.y);
+        if (transform.scale !== 1)
+            ms.scale(transform.scale);
+        // world-space particles already carry the emitter's position
+        if (!emitter.localSpace)
+            ms.translate(-transform.x, -transform.y);
+        // passing the current matrix keeps the camera - without it, Rapid draws world-space
+        // particles with an identity matrix
+        emitter.render(ms.curWorldM);
+        ms.restore();
     }
 
     // FALSE WHILE AN EMITTER MADE BY CreateEmitter IS STILL WAITING FOR ITS TEXTURE - RENDERING
@@ -141,7 +220,6 @@ export class ParticleController
         const animation: ParticleData = data.animation ?? {};
 
         return {
-            position: ParticleController.ToVec2(data.position) ?? new Vec2(0, 0),
             life: data.life ?? 1,
             texture: texture ?? (typeof data.texture === "string" ? assetsHandler.GetTexture(data.texture) : data.texture),
             shader: data.shader,
@@ -149,7 +227,6 @@ export class ParticleController
             emitRate: data.emitRate,
             emitTime: data.emitTime,
             localSpace: data.localSpace,
-            scale: data.scale,
             emitShape: ParticleController.ToEmitShape(data.emitShape),
             emitRadius: data.emitRadius,
             emitRect: data.emitRect,
@@ -171,6 +248,9 @@ export class ParticleController
     {
         const particleOptions = this.ToOptions(data);
         const emitter = new ParticleEmitter(rapid, particleOptions);
+
+        const position = ParticleController.ToVec2(data.position);
+        ParticleController.transforms.set(emitter, { x: position?.x ?? 0, y: position?.y ?? 0, scale: data.scale ?? 1 });
 
         if (!particleOptions.texture && typeof data.texture === "string" && data.texture)
         {
@@ -236,14 +316,14 @@ export class ParticleController
     {
         if (options.position)
         {
-            emitter.position.set(options.position.x, options.position.y);
+            ParticleController.SetPosition(emitter, options.position.x, options.position.y);
         }
 
         // ALREADY MANAGED BY THIS CONTROLLER (EG ADDED ONCE AT STARTUP) - Add() WOULD IGNORE
         // THE autoOneShot AND NOTHING WOULD BE EMITTED, SO FIRE IT DIRECTLY
         if (this.Has(emitter))
         {
-            emitter.oneShot();
+            ParticleController.Emit(emitter);
             return;
         }
 
