@@ -5,9 +5,9 @@ export { BareEngine } from "./bareEngine";
 export { Bare } from "./types/bare";
 export { GameMode, globalEvents } from "./globals";
 export { MakePath, StartBare } from "./main";
-export { Button } from "./objects/button";
+export { Button, type ButtonEntity } from "./objects/button";
 export { GameObject } from "./objects/gameObject";
-export { TextObject } from "./objects/textObject";
+export { TextObject, type TextObjectEntity } from "./objects/textObject";
 
 export { Scene } from "./scenes/scene";
 export type { SoundJsSound } from "./libraries/soundjs/index";
@@ -54,7 +54,7 @@ export { FlashShader } from "./shaders/flashShader";
 export { OutlineShader } from "./shaders/outlineShader";
 export { defaultSettingsData } from "./types/bareData";
 export { Hitbox } from "./types/hitbox";
-export { Description, Dropdown, Inspector, InspectorButton, InspectorField, InspectorClass, InspectorBaseClass, Int, Label, Limit, Locked, Percentage, Range } from "./utils/decorators";
+export { Decimal, Description, Dropdown, Enum, Inspector, InspectorButton, InspectorField, InspectorClass, InspectorBaseClass, Int, Label, Limit, Locked, Percentage, Range } from "./utils/decorators";
 export { Save } from "./utils/saveFields";
 export { Run } from "./utils/runModes";
 export { Helper } from "./utils/helper";
@@ -76,7 +76,7 @@ export
 export type {
   Atlas,
   AtlasFrame,
-  BareScreen, Entity,
+  AnyEntity, BareScreen, Entity,
   FrameRect,
   GameObjectClass, LayerInfo,
   LevelData,
@@ -95,19 +95,19 @@ export type {
 // Sopiro physics (RigidBody, SopiroPhysicsController) are available at "bare-engine/sopiro"
 
 // Libraries: rapid-render
-// export * from "./libraries/new-rapid-render/interface";
-// export * from "./libraries/new-rapid-render/math";
-// export { Particle, ParticleEmitter } from "./libraries/new-rapid-render/particle";
-// export { graphicAttributes, spriteAttributes } from "./libraries/new-rapid-render/regions/attributes";
-// export * from "./libraries/new-rapid-render/render";
-// export { default as Rapid } from "./libraries/new-rapid-render/render";
-// export * from "./libraries/new-rapid-render/texture";
-// export { BareText } from "./libraries/new-rapid-render/texture";
+// export * from "./libraries/rapid-render/interface";
+// export * from "./libraries/rapid-render/math";
+// export { Particle, ParticleEmitter } from "./libraries/rapid-render/particle";
+// export { graphicAttributes, spriteAttributes } from "./libraries/rapid-render/regions/attributes";
+// export * from "./libraries/rapid-render/render";
+// export { default as Rapid } from "./libraries/rapid-render/render";
+// export * from "./libraries/rapid-render/texture";
+// export { BareText } from "./libraries/rapid-render/texture";
 // export { QuadTree } from "./libraries/quadTree";
 // export type { QuadTreeItem } from "./libraries/quadTree";
-// export { default as GLShader } from "./libraries/new-rapid-render/webgl/glshader";
-// export { Uniform } from "./libraries/new-rapid-render/webgl/uniform";
-export * from "./libraries/new-rapid-render";
+// export { default as GLShader } from "./libraries/rapid-render/webgl/glshader";
+// export { Uniform } from "./libraries/rapid-render/webgl/uniform";
+export * from "./libraries/rapid-render";
 
 // Libraries: tweenJS
 export { Easing } from "./libraries/tweenJS/Easing";

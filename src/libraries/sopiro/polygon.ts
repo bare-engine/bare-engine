@@ -1,14 +1,23 @@
 import type { Scene } from "../../scenes/scene";
-import { Entity } from "../../types/bareTypes";
+import { Entity, Size } from "../../types/bareTypes";
 import { InspectorField, Limit } from "../../utils/decorators";
 import { Save } from "../../utils/saveFields";
-import { Vec2 } from "../new-rapid-render";
-import { RigidBody, Type } from "./rigidbody";
+import { Vec2 } from "../rapid-render";
+import { RigidBody, RigidBodyEntity, Type } from "./rigidbody";
 import { Settings } from "./settings";
 import * as Util from "./util";
 
+// ALSO USED BY Box
+export interface PolygonEntity extends RigidBodyEntity
+{
+    polygonVertices?: number[]; // FLAT: [x1, y1, x2, y2, ...]
+    rigidbodyRect?: Size | string;
+}
+
 export class Polygon extends RigidBody
 {
+    declare entity: PolygonEntity | null;
+
     public vertices: Vec2[];
     public area: number;
 

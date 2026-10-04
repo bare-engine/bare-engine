@@ -1,4 +1,4 @@
-import { Vec2 } from "../new-rapid-render";
+import { Vec2 } from "../rapid-render";
 import { Simplex } from "./simplex";
 
 export interface ClosestEdgeInfo

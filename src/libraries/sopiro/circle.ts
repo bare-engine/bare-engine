@@ -2,14 +2,21 @@
 import type { Scene } from "../../scenes/scene";
 import { GameObject } from "../../objects/gameObject";
 import { Entity } from "../../types/bareTypes";
-import { RigidBody, Type } from "./rigidbody";
+import { RigidBody, RigidBodyEntity, Type } from "./rigidbody";
 import { Settings } from "./settings";
 import * as Util from "./util";
 import { InspectorField } from "../../utils/decorators";
 import { Save } from "../../utils/saveFields";
 
+export interface CircleEntity extends RigidBodyEntity
+{
+    hitboxRadius?: number;
+}
+
 export class Circle extends RigidBody
 {
+    declare entity: CircleEntity | null;
+
     public radius: number;
     public area: number;
 
@@ -45,7 +52,7 @@ export class Circle extends RigidBody
         this.density = this._density;
     }
 
-    override OnApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
+    override OnApplyEntityVarsToGameObject(entity: CircleEntity, obj: GameObject)
     {
         if (!entity.hitboxRadius)
         {

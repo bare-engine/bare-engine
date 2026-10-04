@@ -1,5 +1,5 @@
 import { HitboxType, Rectangle } from "../types/bareTypes";
-import { Color, Vec2 } from "../libraries/new-rapid-render";
+import { Color, Vec2 } from "../libraries/rapid-render";
 import { QuadTree, QuadTreeItem, QuadTreePair } from "../libraries/quadTree";
 import type { Scene } from "../scenes/scene";
 import { GameObject } from "../objects/gameObject";
@@ -143,7 +143,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
     Render(): void
     {
-        if (__DEV__ && window.debug)
+        if (__DEV__ && bare.debug)
         {
             const color = Color.fromHex('#f700ff57');
 

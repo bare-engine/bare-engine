@@ -2,14 +2,15 @@ import { keyboardController } from "../controllers/keyboardController";
 import { GameMode, globalEvents } from "../globals";
 import { EditorControlsHandler } from "../handlers/editorControlsHandler";
 import { EditorUIHandler } from "../handlers/editorUIHandler";
-import { FileDropHandler } from "../handlers/fileDropHandler";
+import { TransformToolHandler } from "../handlers/transformToolHandler";
 import { LevelHandler } from "../handlers/levelHandler";
 import { SaveDataHandler } from "../handlers/SaveDataHandler";
 import { SettingsHandler } from "../handlers/settingsHandler";
-import { Color, Vec2 } from "../libraries/new-rapid-render";
+import { Color, Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { BareEvent, BareOptions, CameraScaleMode, Entity, HitboxType, LevelData, Rectangle, SaveData, SceneOptions, SettingsData, Size } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
+import { GameObjectSerializer } from "../utils/entitySerializer";
 import { Helper } from "../utils/helper";
 import { Scene } from "./scene";
 
@@ -21,10 +22,21 @@ type EditorSceneAwakePayload = {
 
 export class EditorScene extends Scene
 {
-    readonly transformToolHandlesBodyMove: boolean = true;
     get gridEnabled(): boolean
     {
         return !!this.settingsData?.settings?.gridEnabled;
+    }
+
+    // the sidebar/panels, and object selection. scenes like the entity editor override these
+    // instead of writing them into the settings data they share with the game
+    get showUI(): boolean
+    {
+        return this.settingsData.showUI !== false;
+    }
+
+    get selectionEnabled(): boolean
+    {
+        return this.settingsData.selectionEnabled !== false;
     }
 
     public opened: boolean = false; // DOUBLES TRUTH WITH this.levelEditorOpen
@@ -36,7 +48,6 @@ export class EditorScene extends Scene
     // State management
     private backgroundColorOrig: Color;
     private gameResolution: BareOptions['resolution'] = undefined;
-    public draggingLevelEntity: GameObject | null = null;
     public currentLevelPath: string = '';
     
     saveLevelCallback: () => Promise<LevelData>;
@@ -44,8 +55,6 @@ export class EditorScene extends Scene
     constructor(sceneOptions: SceneOptions | SettingsData = {solo: true, persistent: true, settingsData: bare.scene.GetLevelScene()?.settingsHandler.GetRaw()})
     {  
         super(sceneOptions);
-        
-        this.SetupFileDropZone();
     }
 
     override Awake(payload?: any): Promise<void>
@@ -56,9 +65,6 @@ export class EditorScene extends Scene
 
     async OnStart(payload?: EditorSceneAwakePayload): Promise<void>
     {
-        if (__DEV__)
-            this.RegisterEditorComponents(); // JUST FOR PLUGIN - ENTITY EDITOR
-
         bare.camera.SetScaleMode(CameraScaleMode.Contain);
 
         this.editorControlsHandler = new EditorControlsHandler(this);
@@ -150,22 +156,19 @@ export class EditorScene extends Scene
         var layerElement = document.getElementById('objects') as HTMLElement;
         this.editorUIHandler.SelectLayerItem(layerElement);
 
-        if (this.settingsData.showUI === false)
-        {
-            this.editorUIHandler.Hide();
-        }
-        else
-        {
+        if (this.showUI)
             this.editorUIHandler.Show();
-        }
+        else
+            this.editorUIHandler.Hide();
         this.editorControlsHandler.OpenEditor();
 
         this.opened = true;
+        TransformToolHandler.Get().editor = this;
 
         // HANDLE CAMERA POSITION
         var dims:Size = this.currentLevel.dimensions;
         var s = Math.max(dims.width / rapid.width, dims.height / rapid.height);
-        var shouldFrameNextToSidebar = this.settingsData.showUI !== false && SaveData.minimized !== true;
+        var shouldFrameNextToSidebar = this.showUI && SaveData.minimized !== true;
 
         if (shouldFrameNextToSidebar)
         {
@@ -201,6 +204,10 @@ export class EditorScene extends Scene
         }
         
         rapid.backgroundColor = this.backgroundColorOrig;
+
+        const transformTool = TransformToolHandler.Get();
+        if (transformTool.editor === this)
+            transformTool.editor = null;
 
         this.editorUIHandler.Clear();
         this.editorControlsHandler.Clear();
@@ -239,109 +246,40 @@ export class EditorScene extends Scene
         this.editorControlsHandler?.Update(deltaTime);
     }
 
-    // COULD DO THIS BETTER, BY JUST CLEARING THE LEVEL AND REPOPULATING IT
-    // THOUGH THAT'S NOT ALWAYS SUFFICIENT FOR ALL USE CASES, EG CATEGORIES GET CHANGED
-    // THIS COVERS ALL CASES OVER-SUFFICIENTLY ATM
-    /*async Restart()
-    {
-        var levelPath: string | LevelData;
-        
-        if (this.currentSettingsHandler.GetRaw().name == 'hitboxEditor')
-            levelPath = await this.CreateHitboxDataFor(this.currentLevel.name, this.hitboxData);
-        else
-            levelPath = this.currentLevel ? this.currentLevel : this.currentLevelPath;
-        
-        var saveLevelCallback = this.saveLevelCallback;
-        var settingsHandler = this.currentSettingsHandler;
-        
-        this.Clear();
-        await this.Open(levelPath, saveLevelCallback, settingsHandler);
-    }*/
 
-    private SetupFileDropZone()
-    {
-        if (__DEV__)
-        {
-            const dropZone = document.getElementById('game-container') || document.body;
-
-            new FileDropHandler(dropZone, async (file: File) => {
-                await this.handleJSONFile(file);
-            });
-        }
-    }
-
-    private async handleJSONFile(file: File)
-    {
-        try
-        {
-            // JSON FILE DROPPED, SHOULD BE IN ${this.levelPath}/, BUT CAN STILL BE IN SUBDIRECTORY
-            // SO LOOKING THROUGH ALL THE SUBDIRECTORIES TO FIND DROPPED FILE AND ITS PATH, JUST SO IT CAN BE LOADED BACK FROM DISK LATER
-            // ASSUMING ALL LEVEL FILE NAMES ARE UNIQUE
-            var files = await Helper.GetFilesInFolder(`${bare.levelPath}/`, true);
-            var filePath = '';
-            for (var i = 0; i < files.length; i++)
-            {
-                if (files[i].includes(file.name))
-                {
-                    filePath = files[i];
-                    break;
-                }
-            }
-
-            const levelData = await Helper.loadJSONFile<LevelData>(file);
-            const subDir = filePath.replace(bare.levelPath + "/", "").replace(".json", "");
-            levelData.name = subDir;
-
-            //levelController.LoadLevel(levelData);
-        }
-        catch (error)
-        {
-            console.error('Failed to load JSON:', error);
-        }
-    }
-
-    private RegisterEditorComponents()
-    {
-        /*bareEngine.AddClass(PivotComponent);
-        bareEngine.AddClass(PivotRemoveComponent);
-        bareEngine.AddClass(ResizableComponent);
-        bareEngine.AddClass(ResizableRemoveComponent);
-        bareEngine.AddClass(PositionPivotComponent);*/
-    }
-
-    SelectEntity(entity: Entity, childEntity: HTMLElement | null = null): void {
+        SelectEntity(entity: Entity, childEntity: HTMLElement | null = null): void {
         this.editorUIHandler.SelectUIEntity(entity, childEntity);
-
-        /*if (entity.name != this.editorControlsHandler.currentPreviewEntity.name || !this.editorControlsHandler.currentPreviewEntity.visible)
-            this.editorControlsHandler.SetCurrentPreviewEntity(entity);
-        else
-            this.editorControlsHandler.SetCurrentPreviewEntity(null);*/
     }
 
-    // NOTIFIES THE PLUGIN OF THE CURRENT SELECTION. OVERRIDDEN BY SCENES (EG EntityScene) THAT
+    // NOTIFIES THE PLUGIN OF THE CURRENT SELECTION. OVERRIDDEN BY SCENES (EG PrefabScene) THAT
     // NEED A DIFFERENT PLUGIN MESSAGE SHAPE FOR THEIR SELECTION (EG CHILDPATH-BASED).
     NotifySelectionToPlugin(objs: GameObject[]): void
     {
         var selectedIds = objs.map(o => o.uniqueID);
         if (selectedIds.length == 1)
-            globalThis.plugin?.SelectObjectInPlugin(selectedIds[0], true);
+        {
+            // parent ids let the plugin expand the tree down to a selected child
+            var parentIds: string[] = [];
+            for (var parent = objs[0].parent; parent; parent = parent.parent)
+                parentIds.push(parent.uniqueID);
+
+            globalThis.plugin?.SelectObjectInPlugin(selectedIds[0], true, parentIds);
+        }
         else if (selectedIds.length > 1)
             globalThis.plugin?.SelectObjectsInPlugin(selectedIds);
     }
 
-    // WHETHER EditorControlsHandler MAY START A MARQUEE/RECT SELECTION DRAG (AND WHETHER
-    // TransformToolHandler MAY DEFER AN EMPTY-SPACE CLICK TO LET ONE START - SEE ITS
-    // OnPointerDown). SEPARATE FROM settingsData.selectionEnabled, WHICH ALSO GATES THE OLDER
-    // PER-OBJECT TAP-HITBOX CLICK/DRAG PATH THAT ENTITY-STYLE SCENES DELIBERATELY DON'T USE.
+    // whether a drag from empty space starts a marquee/rect selection (the transform tool then
+    // defers an empty-space click to pointer up, see its OnPointerDown)
     AllowsRectSelection(): boolean
     {
-        return this.settingsData.selectionEnabled !== false;
+        return this.selectionEnabled;
     }
 
     // CANDIDATE OBJECTS AND THEIR SELECTION BOUNDS FOR RECT/MARQUEE SELECTION. DEFAULT USES THE
     // EDITOR TAP HITBOX OF OBJECTS ON THE SELECTED LAYER (OR ALL OBJECTS WITH includeAllLayers).
-    // OVERRIDDEN BY EntityScene, WHOSE OBJECTS HAVE NO TAP HITBOX (SEE EditorScene.AddGameObject
-    // VS EntityScene.AddGameObject).
+    // OVERRIDDEN BY PrefabScene, WHOSE OBJECTS HAVE NO TAP HITBOX (SEE EditorScene.AddGameObject
+    // VS PrefabScene.AddGameObject).
     GetRectSelectionCandidates(includeAllLayers: boolean): Array<{ obj: GameObject, rect: Rectangle }>
     {
         var objs: GameObject[];
@@ -431,17 +369,6 @@ export class EditorScene extends Scene
         }
     }
 
-    /*Clear()
-    {
-        trace(44)
-    }*/
-
-
-
-    // LEVEL STUFF:
-    
-    componentsData: Record<string, Record<string, any>> = {};
-
     // HERE WE ACTUALLY SAVE THE LEVEL TO DISK
     // DIFFERENT FROM LEVELCONTROLLER WHERE WE SAVE TO LOCALSTORAGE
     async SaveLevel(): Promise<LevelData>
@@ -453,7 +380,7 @@ export class EditorScene extends Scene
     
         bare.level.Serialize(level);
             
-        if (!window.isLocalhost)
+        if (!__DEV__)
         {
             SaveData.levelsEditedCache.set(SaveData.currentLevelStr, level);
             SaveDataHandler.Save();
@@ -477,6 +404,10 @@ export class EditorScene extends Scene
             if (response.ok) {
                 const result = await response.json();
                 console.log('✅ Level saved:', result.message);
+
+                // a level child overriding a settings child references the child's uid, which may only exist at runtime so far
+                if (SettingsHandler.PersistUIDsReferencedBy(level))
+                    await this.SaveSettingsData(this.settingsHandler.GetRaw());
             } else {
                 const errorResult = await response.json();
                 console.error('❌ Failed to save level:', errorResult.error);
@@ -506,29 +437,10 @@ export class EditorScene extends Scene
 
         //gameObject.physicsHitbox.rectangle = {x: 0, y: 0, width: 0, height: 0};
 
-        // Hitbox linkage
+        // hitbox for picking (see PickAt), hover and rect selection. the transform tool does the clicking
         if (!gameObject.entity || gameObject.entity.interactableInEditor !== false) // UNDEFINED OR TRUE...
         {
             gameObject.tapHitbox ??= new Hitbox(gameObject, 0);
-            gameObject.tapHitbox.shouldReleaseOnTop = false;
-            let pointerSelectionTarget: GameObject = gameObject;
-            gameObject.tapHitbox.OnPress = (_levelEntiy: GameObject, event: PointerEvent) => {
-                if (bare.MouseIsOnEditor(event))
-                    return;
-
-                pointerSelectionTarget = gameObject;
-                if (!event.ctrlKey)
-                {
-                    while (pointerSelectionTarget.parent)
-                        pointerSelectionTarget = pointerSelectionTarget.parent;
-                }
-
-                this.editorControlsHandler.StartDrag(pointerSelectionTarget);
-            };
-            gameObject.tapHitbox.OnRelease = (_levelEntiy: GameObject, event: PointerEvent) => {
-                this.editorControlsHandler.EndDrag(pointerSelectionTarget)
-            };
-
             gameObject.tapHitbox.type = HitboxType.Rectangle;
 
             if (gameObject.texture)
@@ -549,31 +461,75 @@ export class EditorScene extends Scene
         return gameObject;
     }
 
+    // the object edits happen under, null when the scene's top-level objects are edited (level editor)
+    GetEditRoot(): GameObject | null
+    {
+        return null;
+    }
+
+    // what a click at world selects: the top-level object under the pointer (its hitbox respects the
+    // selected layer), with deep (alt) the deepest visible child across all layers
+    PickAt(world: Vec2, deep: boolean): GameObject | null
+    {
+        if (!deep)
+        {
+            let obj = this.hitbox.GetHitboxAtPoint(world)?.parent ?? null;
+            while (obj?.parent)
+                obj = obj.parent;
+            return obj;
+        }
+
+        const roots = this.object.GetLayers().flat();
+        for (let i = roots.length - 1; i >= 0; i--)
+        {
+            const root = roots[i];
+            if (!root.visible || !root.visibleInEditor || root.entity?.interactableInEditor === false)
+                continue;
+
+            const found = root.GetDeepestChildAt(world);
+            if (found)
+                return found;
+        }
+
+        return null;
+    }
+
+    // selects a clicked object (see PickAt), ctrl or shift toggles it in the selection. null clears it
+    SelectPicked(obj: GameObject | null, deep: boolean): void
+    {
+        const controls = this.editorControlsHandler;
+        if (keyboardController.IsKeyDown("shift") || keyboardController.IsKeyDown("control"))
+        {
+            if (obj)
+                controls.ToggleGameObjectSelection(obj);
+            return;
+        }
+
+        controls.SelectGameObjects(obj ? [obj] : []);
+        if (!obj || !this.showUI)
+            return;
+
+        // alt picks across layers: switch the sidebar to the picked object's layer, keeping all-layer
+        // picking until alt is released
+        if (deep)
+        {
+            this.editorUIHandler.SelectLayerItemByInt(bare.object.GetLayerOf(obj));
+            bare.hitbox.ClearExclusiveLayers();
+        }
+
+        this.SelectEntity(this.ConstructEntity(this.GetEntityFromObject(obj)));
+    }
+
     AddGameObjectAtPosition(x: number, y: number, entityOrName: Entity | string, parent?: int | string | GameObject): GameObject
     {
         // TURING ARG INTO AN ENTITY WITH POSITION - SO BY THE TIME GameObject REACHES OnStart(), ITS POSITION HAS BEEN SET
         if (typeof entityOrName == "string")
-            entityOrName = {entity: entityOrName, position: {x: x, y: y}};
+            entityOrName = {extends: entityOrName, position: {x: x, y: y}};
         else
             entityOrName.position = {x: x, y: y};
 
         var gameObject = this.AddGameObject(entityOrName, parent);
         return gameObject;
-    }
-
-    GetTilesheetEntity(name: string): Entity
-    {
-        var tilesheetEntity = this.settingsData.tilesheets!.find((e: any) => e.name == name)
-        if (!tilesheetEntity)
-        {
-            // ENTITY NAME NOT FOUND, SO TAKE THE 'ANY' ENTRY, CLONE IT, AND ASSIGN A NEW NAME
-            var cloneEntity = Object.assign({}, this.settingsData.tilesheets!.find((e: any) => e.name == "ANY")!);
-            cloneEntity.name = name;
-            
-            tilesheetEntity = cloneEntity;
-        }
-
-        return tilesheetEntity;
     }
 
     async SaveSettingsData(newRawData: SettingsData)
@@ -587,18 +543,20 @@ export class EditorScene extends Scene
         //    globalThis.plugin.FilterSettingsDataDefaults(newRawData);
 
         const dataToSave = Helper.DeepCopy(newRawData);
-        
+
+        // strip the unreferenced runtime uids of settings children, and editor-only props
+        GameObjectSerializer.CleanEntities([dataToSave.prefabs ?? [], dataToSave.basePrefabs ?? []], this.settingsHandler.rawEntitiesMappedByUID,
+            undefined, entityUID => this.settingsHandler.IsRuntimeGeneratedUID(entityUID));
+
         this.settingsHandler.FilterSettingsDataDefaults(dataToSave);
 
-        await this.OnPreSaveSettingsData(dataToSave);
-
         // Persist to disk via dev-server endpoint when available (local only)
-        if (!window.isLocalhost) {
+        if (!__DEV__) {
           return { ok: true, saved: false, message: 'Save skipped (not localhost)' };
         }
     
         try {
-            const res = await fetch('/api/save-entity-data', {
+            const res = await fetch('/api/save-settings-data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -609,11 +567,6 @@ export class EditorScene extends Scene
           });
           const json = await res.json().catch(() => null);
         
-          // TELL THE PLUGIN
-          //window.__GAME_DEBUG_API__.notifyEntityDataChanged(dataToSave)
-
-          await this.OnPostSaveSettingsData(dataToSave);
-
           return { ok: res.ok, saved: res.ok, response: json };
         } catch (error: any) {
           console.error('Failed to save settings data', error);
@@ -621,25 +574,14 @@ export class EditorScene extends Scene
         }
     }
 
-    async OnPreSaveSettingsData(rawData: SettingsData)
+    // live transform tool changes, before the save on release
+    NotifyTransformToolPreview(_operation: "move" | "resize" | "rotate"): void
     {
-        // FOR OVERRIDE
     }
 
-    async OnPostSaveSettingsData(rawData: SettingsData)
-    {
-        // FOR OVERRIDE
-    }
-
-    // duck-typed hook transformtoolhandler calls during a body-move gesture to grid/pivot-snap the
-    // primary dragged object. entityscene inherits this since it extends editorscene.
+    // grid/pivot-snaps the primary object the transform tool moves
     GetTransformToolMovePosition(obj: GameObject, desiredX: number, desiredY: number, mouseX: number, mouseY: number, ignoreGrid: boolean): Vec2
     {
         return this.editorControlsHandler.GetGridAlignedDragPosition(obj, desiredX, desiredY, mouseX, mouseY, ignoreGrid);
     }
 }
-
-//SaveDataHandler.Load();
-
-//export const editorController = new EditorController();
-//globalThis.editorController = editorController;

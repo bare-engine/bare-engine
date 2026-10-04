@@ -1,4 +1,4 @@
-import { Color } from "../../new-rapid-render";
+import { Color } from "../../rapid-render";
 import { AngleJoint } from "../angle";
 import { RigidBody } from "../rigidbody";
 import { World } from "../world";

@@ -140,24 +140,20 @@ export class SceneController
         }
     }
 
-    Restart()
+    async Restart(): Promise<void>
     {
-        for (var scene of this.currentScenes)
+        const scenes = this.currentScenes.filter(scene => !scene.persistent);
+        for (const scene of scenes)
         {
-            if (!scene.persistent)
-            {
-                scene.events.clear();
-                scene.Clear(false);
-            }
+            scene.events.clear();
+            scene.Clear(false);
         }
-        for (var scene of this.currentScenes)
+        await Promise.all(scenes.map(async scene =>
         {
-            if (!scene.persistent)
-            {
-                scene.RestartClasses();
-                scene.Start();
-            }
-        }
+            scene.RestartClasses();
+            await scene.OnRestart();
+            await scene.Start();
+        }));
     }
 
     Clear(includePersistent: boolean = false): void
@@ -292,9 +288,9 @@ export class SceneController
         return this.currentScenes.find(current => current instanceof sceneClass) as T;
     }
 
-    GetAll(includeIgnored: boolean = false): Scene[]
+    GetAll(): Scene[]
     {
-        return this.currentScenes.filter(current => includeIgnored || !current.secret);
+        return this.currentScenes.slice();
     }
 
     GetAllObjects()

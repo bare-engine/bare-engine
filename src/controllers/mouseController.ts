@@ -1,4 +1,4 @@
-import { Vec2 } from "../libraries/new-rapid-render";
+import { Vec2 } from "../libraries/rapid-render";
 import { Scene } from '../scenes/scene';
 import { BareEvent, BareEventPayload } from '../types/bareTypes';
 import { Helper } from "../utils/helper";
@@ -217,7 +217,7 @@ export class MouseController
         if (this.world.position.x == -1000 && this.world.position.y == -1000)
             return;
 
-        if (isMobile && !this.mouseIsDown)
+        if (bare.mobile && !this.mouseIsDown)
             return;
 
         const moveVector = new Vec2(

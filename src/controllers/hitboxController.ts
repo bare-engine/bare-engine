@@ -1,4 +1,4 @@
-import { Color, Vec2 } from "../libraries/new-rapid-render";
+import { Color, Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
 import { BareEvent, BareEventPayload, CollisionHandlingType, HitboxType, Rectangle2Vec } from '../types/bareTypes';
@@ -77,7 +77,7 @@ export class HitboxController
         if (!this.active)
             return;
 
-        if (isMobile && !bare.mouse.IsDown())
+        if (bare.mobile && !bare.mouse.IsDown())
             return;
 
         // A HIGHER SCENE ALREADY GRABBED THE POINTER THIS FRAME - DROP OUR STALE HOVER AND YIELD.
@@ -96,7 +96,7 @@ export class HitboxController
 
     Render()
     {
-        if (!window.debug || !this.showDebug)
+        if (!bare.debug || !this.showDebug)
             return;
 
         var objs = this.GetAllObjectsWithChildren();
@@ -157,6 +157,12 @@ export class HitboxController
         }
 
         return null;
+    }
+
+    // the hitbox at a world point, eg a click the hover hasn't caught up to yet
+    GetHitboxAtPoint(world: Vec2): Hitbox | null
+    {
+        return this.GetHitboxAt(this.scene.object.GetLayers(), world);
     }
 
     private GetHitboxAt(layers: GameObject[][], mouse: Vec2): Hitbox | null
@@ -520,7 +526,7 @@ export class HitboxController
                 hitboxDown.OnRelease?.(hitboxDown.parent, event);
 
             this.currentTouchHitboxesDown.delete(event.pointerId);
-            if (isMobile && this.currentTouchHitboxesDown.size === 0)
+            if (bare.mobile && this.currentTouchHitboxesDown.size === 0)
                 this.SetHover(null);
 
             event.preventDefault();
@@ -536,7 +542,7 @@ export class HitboxController
         this.currentHitboxDown = null;
         this.currentTouchHitboxesDown.clear();
 
-        if (isMobile)
+        if (bare.mobile)
         {
             if (this.currentHitboxHover)
             {

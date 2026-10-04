@@ -1,7 +1,8 @@
 import { keyboardController } from "../controllers/keyboardController";
 import { GameMode, globalEvents } from "../globals";
-import { Color, Vec2 } from "../libraries/new-rapid-render";
+import { Color, Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
+import type { EditorScene } from "../scenes/editorScene";
 import type { Scene } from "../scenes/scene";
 import { BareEvent, BareEventPayload } from "../types/bareTypes";
 
@@ -55,6 +56,7 @@ interface PendingTargetPick
 {
     mouseX: number;
     mouseY: number;
+    deep: boolean;
     moved: boolean;
 }
 
@@ -95,6 +97,9 @@ export class TransformToolHandler
     }
 
     targets: GameObject[] = [];
+    // the open editor registers itself: it decides what a click selects and saves transforms.
+    // without one (eg the plugin's in-game right click) targets are only transformed live
+    editor: EditorScene | null = null;
 
     private resizing = false;
     private rotating = false;
@@ -120,6 +125,7 @@ export class TransformToolHandler
         // "BARE EVENT" DRIVEN: mouse-down to grab a handle, update to drag/release, render to draw.
         // PERSISTENT SO IT SURVIVES GAME RESTARTS (THE SINGLETON IS ONLY EVER CREATED ONCE).
         globalEvents.persistent.on(BareEvent.pointer_down, this.OnPointerDown);
+        globalEvents.persistent.on(BareEvent.pointer_down_any, this.OnRightPointerDown);
         globalEvents.persistent.on(BareEvent.pointer_move, this.OnPointerMove);
         globalEvents.persistent.on(BareEvent.pointer_up_any, this.OnPointerUp);
         globalEvents.persistent.on(BareEvent.game_update, this.OnUpdate);
@@ -169,11 +175,11 @@ export class TransformToolHandler
         if (!frame || !this.FrameContains(frame, scene.ScreenToWorld(mouseX, mouseY)))
             return false;
 
-        const controls = (scene as any).editorControlsHandler;
-        if (!controls || typeof controls.RemoveSelectedObjects != 'function')
+        const editor = this.EditorOf(scene);
+        if (!editor)
             return false;
 
-        controls.RemoveSelectedObjects();
+        editor.editorControlsHandler.RemoveSelectedObjects();
         return true;
     }
 
@@ -181,7 +187,7 @@ export class TransformToolHandler
 
     private OnPointerDown = ({ mouseX, mouseY, event }: BareEventPayload['pointer_down']): void =>
     {
-        if (this.resizing || this.rotating || this.moving) return;
+        if (this.IsTransforming()) return;
         if (bare.MouseIsOnEditor(event)) return;
 
         this.pendingTargetPick = null;
@@ -199,44 +205,36 @@ export class TransformToolHandler
             this.SetCursor(null);
         }
 
-        if (!hitsCurrentHandle)
+        // in an editor the click picks what to select (see EditorScene.PickAt), alt picks deep.
+        // not while a visible stamp is placed by this click instead
+        const editor = this.GetEditor();
+        let picked: GameObject | null = null;
+        if (editor && !hitsCurrentHandle && !editor.editorControlsHandler.CanPlaceCurrentPreviewObject())
         {
-            const pickerScene = this.GetTransformTargetPickerScene();
-            const pointedTarget = pickerScene
-                ? this.GetTransformTargetAt(pickerScene, mouseX, mouseY)
-                : null;
-            const pointsIntoCurrentHierarchy = pointedTarget != null &&
-                this.targets.some(target => this.IsDescendantOrSelf(pointedTarget, target));
+            const deep = event.altKey;
+            const pointed = editor.PickAt(editor.ScreenToWorld(mouseX, mouseY), deep);
+            const pointsIntoCurrentHierarchy = pointed != null &&
+                this.targets.some(target => this.IsDescendantOrSelf(pointed, target));
 
-            // A click can land inside the current selection's own frame without resolving to a
-            // pickable object there (eg a textureless container's area not covered by any child -
-            // FindDeepestObjectAt/GetTransformToolTargetAt intentionally returns null for that, so
-            // it doesn't steal clicks in gaps between children). That's still "inside the current
-            // selection", not empty space - the object is already selected, so dragging there
-            // should move it, not fall through to a marquee-select that clears the selection.
-            const currentFrame = pickerScene ? this.GetFrame(this.GetTransformableTargets(this.targets)) : null;
-            const pointsWithinCurrentFrame = !!currentFrame &&
-                this.FrameContains(currentFrame, pickerScene!.ScreenToWorld(mouseX, mouseY));
-
-            if (pickerScene && this.SceneHandlesBodyMove(pickerScene) && (pointsIntoCurrentHierarchy || pointsWithinCurrentFrame))
+            if (pointsIntoCurrentHierarchy || hitsCurrentBody)
             {
-                // Descendants belong to the current drag target's hierarchy. Keep the current
-                // selection while dragging, but let a stationary click select that child on up.
-                this.pendingTargetPick = { mouseX, mouseY, moved: false };
+                // Inside the current selection (its hierarchy, or its frame where nothing pickable
+                // covers it, eg a textureless container's gaps): keep the selection while dragging,
+                // and let a stationary click select what was pointed at on up.
+                this.pendingTargetPick = { mouseX, mouseY, deep, moved: false };
             }
-            else if (pointedTarget == null && pickerScene && this.AllowsRectSelection(pickerScene))
+            else if (pointed == null && editor.AllowsRectSelection())
             {
-                // Empty space in a scene that supports marquee selection: defer the click-to-
-                // deselect until pointer-up so a drag can become a marquee instead of clearing
-                // the selection immediately. Return now, skipping the body-move fallthrough below -
-                // there's no object here to drag, and the current selection's frame could otherwise
-                // swallow the drag as a move if this point happens to fall inside its bounds.
-                this.pendingTargetPick = { mouseX, mouseY, moved: false };
+                // Empty space: defer the click-to-deselect until pointer-up so a drag can become a
+                // marquee instead of clearing the selection immediately. Return now, skipping the
+                // body-move below - there's no object here to drag.
+                this.pendingTargetPick = { mouseX, mouseY, deep, moved: false };
                 return;
             }
             else
             {
-                this.PickTransformTarget(mouseX, mouseY);
+                editor.SelectPicked(pointed, deep);
+                picked = pointed;
             }
         }
 
@@ -270,10 +268,16 @@ export class TransformToolHandler
             return;
         }
 
-        // Entity-style editors opt in to body movement because their objects deliberately
-        // have no editor hitbox/drag behavior. Other scenes keep their existing drag path.
-        if (this.SceneHandlesBodyMove(scene) && this.FrameContains(frame, mouse))
-            this.StartMoveFromPointer(scene, mouse);
+        // dragging the selection's body moves it in an editor, in-game only the handles transform
+        if (this.EditorOf(scene) && this.FrameContains(frame, mouse))
+            this.StartMoveFromPointer(scene, mouse, picked);
+    };
+
+    // in-game the handles also respond to right click (the plugin's select button), like left click
+    private OnRightPointerDown = ({ mouseX, mouseY, event }: BareEventPayload['pointer_down_any']): void =>
+    {
+        if (event.button == 2 && !this.GetEditor() && this.PointerHitsCurrentHandle(mouseX, mouseY))
+            this.OnPointerDown({ mouseX, mouseY, event });
     };
 
     private OnPointerMove = ({ mouseX, mouseY }: BareEventPayload['pointer_move']): void =>
@@ -320,8 +324,12 @@ export class TransformToolHandler
             this.completedPointerEvents.add(event);
         }
 
-        if (pendingTargetPick && !pendingTargetPick.moved)
-            this.PickTransformTarget(pendingTargetPick.mouseX, pendingTargetPick.mouseY);
+        const editor = this.GetEditor();
+        if (editor && pendingTargetPick && !pendingTargetPick.moved)
+        {
+            const { mouseX, mouseY, deep } = pendingTargetPick;
+            editor.SelectPicked(editor.PickAt(editor.ScreenToWorld(mouseX, mouseY), deep), deep);
+        }
     };
 
     private OnUpdate = (): void =>
@@ -376,7 +384,7 @@ export class TransformToolHandler
             {
                 const handle = this.HitTest(scene, frame, mouse);
                 if (handle) cursor = this.CursorFor(handle.name);
-                else if (this.SceneHandlesBodyMove(scene) && this.FrameContains(frame, mouse)) cursor = 'move';
+                else if (this.EditorOf(scene) && this.FrameContains(frame, mouse)) cursor = 'move';
             }
         }
 
@@ -585,23 +593,23 @@ export class TransformToolHandler
         }
     }
 
-    // GRID/PIVOT SNAPPING IS OWNED BY THE SCENE (SEE EditorScene.GetTransformToolMovePosition):
+    // GRID/PIVOT SNAPPING IS OWNED BY THE EDITOR (SEE EditorScene.GetTransformToolMovePosition):
     // IT NEEDS THE DRAGGED OBJECT'S TEXTURE/HITBOX RECT AND THE EDITOR'S SNAP-TO-PIVOT SETTING,
     // NEITHER OF WHICH THIS GENERIC HANDLER KNOWS ABOUT. SNAP ONLY THE PRIMARY TARGET (THE OBJECT
     // THAT WAS ACTUALLY CLICKED, SEE movePrimaryObj) AND APPLY THE SAME RESULTING DELTA TO THE
-    // REST, SO A MULTI-SELECTION MOVES AS ONE RIGID GROUP. SCENES THAT DON'T EXPOSE THE HOOK
-    // (EG A PLAIN GAME SCENE DRAGGED VIA THE PLUGIN) GET THE RAW POINTER DELTA, UNSNAPPED.
+    // REST, SO A MULTI-SELECTION MOVES AS ONE RIGID GROUP. OUTSIDE AN EDITOR (EG A PLAIN GAME
+    // SCENE DRAGGED VIA THE PLUGIN) IT'S THE RAW POINTER DELTA, UNSNAPPED.
     private GetSnappedMoveDelta(scene: Scene, dx: number, dy: number, pointerPosition: Vec2): Vec2
     {
         const primary = (this.movePrimaryObj && this.starts.find(st => st.obj === this.movePrimaryObj)) || this.starts[0];
-        const getSnapped = primary && (scene as any).GetTransformToolMovePosition;
-        if (typeof getSnapped != 'function')
+        const editor = this.EditorOf(scene);
+        if (!primary || !editor)
             return new Vec2(dx, dy);
 
         const desiredX = primary.pos.x + dx;
         const desiredY = primary.pos.y + dy;
         const ignoreGrid = keyboardController.IsKeyDown('alt');
-        const snapped: Vec2 = getSnapped.call(scene, primary.obj, desiredX, desiredY, pointerPosition.x, pointerPosition.y, ignoreGrid);
+        const snapped = editor.GetTransformToolMovePosition(primary.obj, desiredX, desiredY, pointerPosition.x, pointerPosition.y, ignoreGrid);
 
         return new Vec2(snapped.x - primary.pos.x, snapped.y - primary.pos.y);
     }
@@ -622,6 +630,12 @@ export class TransformToolHandler
             deltaDeg = snapped - baseDeg;
         }
 
+        // a group rotates as a whole around the frame centre, a single object around its own pivot
+        const orbit = this.starts.length > 1;
+        const delta = deltaDeg * Math.PI / 180;
+        const cos = Math.cos(delta);
+        const sin = Math.sin(delta);
+
         for (const st of this.starts)
         {
             const o = st.obj;
@@ -630,6 +644,13 @@ export class TransformToolHandler
             // Position is the object's pivot in parent space. Leaving it untouched makes the
             // outer transform rotate around that pivot instead of orbiting the frame centre.
             o.rotation = st.rotation + deltaDeg;
+
+            if (orbit)
+            {
+                const dx = st.pos.x - f.cx;
+                const dy = st.pos.y - f.cy;
+                this.SetWorldPosition(o, f.cx + dx * cos - dy * sin, f.cy + dx * sin + dy * cos);
+            }
         }
     }
 
@@ -679,10 +700,8 @@ export class TransformToolHandler
         if (!changed)
             return;
 
-        // Persist in the level editor (EditorScene exposes saveLevelCallback). In-game it's live-only.
-        const save = (scene as any).saveLevelCallback;
-        if (typeof save == 'function')
-            save();
+        // persist in an editor, in-game it's live-only
+        this.EditorOf(scene)?.saveLevelCallback();
     }
 
     private HasTransformChanged(): boolean
@@ -706,12 +725,7 @@ export class TransformToolHandler
 
     private NotifyTransformPreview(scene: Scene): void
     {
-        const notify = (scene as any).NotifyTransformToolPreview;
-        if (typeof notify == 'function')
-        {
-            const operation = this.moving ? "move" : this.rotating ? "rotate" : "resize";
-            notify.call(scene, operation);
-        }
+        this.EditorOf(scene)?.NotifyTransformToolPreview(this.moving ? "move" : this.rotating ? "rotate" : "resize");
     }
 
     private SetWorldPosition(o: GameObject, worldX: number, worldY: number): void
@@ -748,10 +762,12 @@ export class TransformToolHandler
 
     private GetGridSize(scene: Scene): number | null
     {
-        const settings = (scene as any).settingsData?.settings;
+        const editor = this.EditorOf(scene);
+        if (!editor) return null;
+
+        const settings = scene.settingsData?.settings;
         const gridSize = settings?.gridSize;
-        const gridEnabled = (scene as any).gridEnabled ?? settings?.gridEnabled;
-        if (!gridEnabled || !gridSize || gridSize <= 0) return null;
+        if (!editor.gridEnabled || !gridSize || gridSize <= 0) return null;
 
         return gridSize;
     }
@@ -768,40 +784,17 @@ export class TransformToolHandler
         return this.targets[0]?.scene ?? null;
     }
 
-    private PickTransformTarget(mouseX: number, mouseY: number): void
+    // the open editor, see editor
+    private GetEditor(): EditorScene | null
     {
-        const scene = this.GetTransformTargetPickerScene();
-        if (!scene) return;
-
-        (scene as any).SelectTransformToolTargetAt(scene.ScreenToWorld(mouseX, mouseY));
+        return this.editor?.opened && this.editor.enabled ? this.editor : null;
     }
 
-    private GetTransformTargetPickerScene(): Scene | null
+    // the open editor when it's the targets' scene, not for in-game targets
+    private EditorOf(scene: Scene | null): EditorScene | null
     {
-        const scenes = bare.scene.GetAll(true);
-        for (var i = scenes.length - 1; i >= 0; i--)
-        {
-            const scene = scenes[i];
-            if (scene.enabled && typeof (scene as any).SelectTransformToolTargetAt == 'function')
-                return scene;
-        }
-
-        return null;
-    }
-
-    private GetTransformTargetAt(scene: Scene, mouseX: number, mouseY: number): GameObject | null
-    {
-        const getTarget = (scene as any).GetTransformToolTargetAt;
-        if (typeof getTarget != 'function')
-            return null;
-
-        return getTarget.call(scene, scene.ScreenToWorld(mouseX, mouseY));
-    }
-
-    private AllowsRectSelection(scene: Scene): boolean
-    {
-        const allows = (scene as any).AllowsRectSelection;
-        return typeof allows == 'function' && allows.call(scene);
+        const editor = this.GetEditor();
+        return editor && editor === scene ? editor : null;
     }
 
     private IsDescendantOrSelf(obj: GameObject, possibleAncestor: GameObject): boolean
@@ -845,9 +838,22 @@ export class TransformToolHandler
         return this.FrameContains(frame, scene.ScreenToWorld(mouseX, mouseY));
     }
 
-    private SceneHandlesBodyMove(scene: Scene): boolean
+    // the current target under the screen point, or null when the point is outside the selection.
+    // falls back to the last target when the point is only inside the combined frame
+    GetCurrentTargetAt(mouseX: number, mouseY: number): GameObject | null
     {
-        return (scene as any).transformToolHandlesBodyMove === true;
+        if (!this.PointerHitsCurrentBody(mouseX, mouseY))
+            return null;
+
+        const mouse = this.GetScene()!.ScreenToWorld(mouseX, mouseY);
+        for (var i = this.targets.length - 1; i >= 0; i--)
+        {
+            const frame = this.GetFrame([this.targets[i]]);
+            if (frame && this.FrameContains(frame, mouse))
+                return this.targets[i];
+        }
+
+        return this.targets[this.targets.length - 1];
     }
 
     // A single textured object (or a texture-less container of textured descendants, eg an
@@ -915,15 +921,18 @@ export class TransformToolHandler
     {
         const origin = o.ToGlobal(new Vec2(0, 0), false);
         const xPt    = o.ToGlobal(new Vec2(1, 0), false);
+        const yPt    = o.ToGlobal(new Vec2(0, 1), false);
         let ax = xPt.x - origin.x;
         let ay = xPt.y - origin.y;
         const len = Math.hypot(ax, ay) || 1;
         ax /= len; ay /= len;          // outer X axis (unit)
 
-        // `flipped` mirrors the sprite through the outer transform's X axis. The gizmo should
-        // still treat the object's unmirrored orientation as "top", otherwise the frame angle
-        // jumps by 180 degrees and the rotation knob appears below the box.
-        if (o.scale.x * (o.flipped ? -1 : 1) < 0)
+        // A mirror anywhere in the chain (own flip/negative scale OR an ancestor's) reverses the
+        // world X axis. The gizmo should still treat the unmirrored orientation as "top", otherwise
+        // the frame angle jumps by 180 degrees and the rotation knob appears below the box.
+        // Detect it from the world transform's determinant rather than just this object's flags.
+        const det = (xPt.x - origin.x) * (yPt.y - origin.y) - (xPt.y - origin.y) * (yPt.x - origin.x);
+        if (det < 0)
         {
             ax = -ax;
             ay = -ay;
@@ -1177,7 +1186,7 @@ export class TransformToolHandler
             return;
         }
 
-        // GetAll() only returns top-level objects, so a selected child (eg a ctrl+right-click deep
+        // GetAll() only returns top-level objects, so a selected child (eg an alt+right-click deep
         // select) must be matched via its top-level ancestor - otherwise it'd be pruned every frame.
         const all = scene.object.GetAll();
         this.targets = this.targets.filter(o => o && o.scene === scene && all.includes(this.RootOf(o)));
@@ -1215,8 +1224,8 @@ export class TransformToolHandler
     {
         if (this.editorControlsSuppressed === suppress) return;
 
-        const controls = (this.GetScene() as any)?.editorControlsHandler;
-        if (!controls || typeof controls.SetActive !== 'function') return;
+        const controls = this.EditorOf(this.GetScene())?.editorControlsHandler;
+        if (!controls) return;
 
         controls.SetActive(!suppress);
         this.editorControlsSuppressed = suppress;

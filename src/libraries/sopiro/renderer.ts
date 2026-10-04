@@ -15,7 +15,7 @@ import { WeldJoint } from "./weld";
 import { LineJoint } from "./line";
 import { PrismaticJoint } from "./prismatic";
 import { MotorJoint } from "./motor";
-import { Color, Vec2 } from "../new-rapid-render";
+import { Color, Vec2 } from "../rapid-render";
 
 export class Renderer
 {

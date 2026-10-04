@@ -2,7 +2,7 @@ import { Circle } from "./circle";
 import { RigidBody } from "./rigidbody";
 import { ContactManifold } from "./contact";
 import { Edge } from "./edge";
-import { Vec2 } from "../new-rapid-render";
+import { Vec2 } from "../rapid-render";
 import { Polygon } from "./polygon";
 import { ClosestEdgeInfo, Polytope } from "./polytope";
 import { Simplex } from "./simplex";

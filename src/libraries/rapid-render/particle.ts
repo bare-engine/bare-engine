@@ -1,458 +1,509 @@
-import { GameObject } from "../../objects/gameObject";
-import { IParticleOptions, ITransformOptions, ParticleAttribute, ParticleAttributeData, ParticleAttributeTypes, ParticleShape } from "./interface";
-import { Color, Vec2 } from "./math";
+import { Color } from "./color";
+import { Vec2 } from "./math";
+import { Rapid } from "./render";
 import { Texture } from "./texture";
-import { isPlainObject } from "./utils";
+import { isPlainObject, Random } from "./utils";
+import { ArrayType, DynamicArrayBuffer } from "./buffer";
+import { CustomGlShader } from "./webgl/glshader";
 
-// Define constants for magic numbers
+/**
+ * Describes an animated attribute: it transitions from `start` to `end`
+ * over the particle's lifetime, optionally with a per-second damping factor.
+ */
+export interface ParticleAttribute<T = number> {
+    /** Starting value (scalar, range tuple, or fixed value). */
+    start?: T | [T, T];
+    /** Ending value. Defaults to `start` if omitted (no change over time). */
+    end?: T | [T, T];
+    /**
+     * Multiplicative damping applied each second.
+     * e.g. 0.9 means the value is multiplied by 0.9^deltaTime every frame.
+     */
+    damping?: number;
+    /**
+     * Explicit per-second delta override. If omitted it is derived from
+     * start/end/lifetime automatically.
+     */
+    delta?: T;
+}
+
+/** Internal resolved state of one animated attribute. */
+export interface ParticleAttributeData<T = number> {
+    value: T;
+    delta?: T;
+    damping?: number;
+}
+
+export enum ParticleShape {
+    POINT = "point",
+    CIRCLE = "circle",
+    RECT = "rect",
+}
+
+export interface IParticleAnimation {
+    /** Directional speed along the rotation axis (pixels/sec). */
+    speed?: ParticleAttribute<number> | number;
+    /** Rotation angle in radians. */
+    rotation?: ParticleAttribute<number> | number;
+    /** Uniform scale. */
+    scale?: ParticleAttribute<number> | number;
+    /** Tint color (0-255 components, uses engine Color class). */
+    color?: ParticleAttribute<Color> | Color;
+    /** Additive velocity vector (pixels/sec). Use `velocity.delta` to simulate constant acceleration (e.g. gravity). */
+    velocity?: ParticleAttribute<Vec2> | Vec2;
+}
+
+export interface IParticleOptions {
+    /** Texture(s) to pick from. Pass a weighted tuple `[Texture, weight][]` for weighted random. */
+    texture: Texture;
+    shader?: CustomGlShader,
+    position: Vec2,
+    /** Particle lifetime in seconds, or a [min, max] range. */
+    life: number | [number, number];
+    /** Animation / per-attribute configuration. */
+    animation: IParticleAnimation;
+    /** Emit shape. */
+    emitShape?: ParticleShape;
+    /** Radius used when emitShape === CIRCLE. */
+    emitRadius?: number;
+    /** Dimensions used when emitShape === RECT. */
+    emitRect?: { width: number; height: number };
+    /** Maximum simultaneous particles (default: unlimited). */
+    maxParticles?: number;
+    /** Particles emitted per second (continuous) or per interval (when emitTime > 0). */
+    emitRate?: number;
+    /**
+     * If > 0, particles are emitted in bursts every `emitTime` seconds
+     * rather than continuously.
+     */
+    emitTime?: number;
+    /** Whether particles are positioned relative to the emitter (default: true). */
+    localSpace?: boolean;
+    /**
+     * Scales the whole burst - particle size and how far the particles travel - around the
+     * emitter's position (default: 1). Use it to fit one effect to differently sized things.
+     */
+    scale?: number;
+
+    origin?: Vec2;
+}
+
 const DEFAULT_EMIT_RATE = 10;
 const DEFAULT_EMIT_TIME = 0;
 const DEFAULT_LOCAL_SPACE = true;
 
-/**
- * Represents a single particle's properties
- */
-export class Particle {
-    private life: number = 0;
-    private maxLife: number;
+type ParticleAttributeValue = number | Vec2 | Color;
 
-    private texture!: Texture;
-    private options: IParticleOptions;
-    private position: Vec2;
-    private datas: Record<string, ParticleAttributeData<any>> = {};
-    /**
-     * Creates a new particle instance
-     * @param rapid - The Rapid renderer instance
-     * @param options - Particle configuration options
-     */
-    constructor(options: IParticleOptions) {
-        this.options = options;
-        if (options.texture instanceof Texture) {
-            this.texture = options.texture
-        } else if (options.texture instanceof Array && options.texture[0] instanceof Array) {
-            this.texture = Random.pickWeight(options.texture as [Texture, number][])
-        } else if (options.texture instanceof Array) {
-            this.texture = Random.pick(options.texture)
+class ParticleAttributeStore {
+    readonly components: {
+        value: DynamicArrayBuffer;
+        delta: DynamicArrayBuffer;
+        damping: DynamicArrayBuffer;
+    }[];
+
+    constructor(size: number = 1) {
+        if (!Number.isInteger(size) || size <= 0) {
+            throw new RangeError("ParticleAttributeStore size must be a positive integer");
         }
 
-        this.maxLife = Random.scalarOrRange(options.life, 1)
-
-        this.datas = {
-            speed: this.processAttribute(options.animation.speed, 0)!,
-            rotation: this.processAttribute(options.animation.rotation, 0)!,
-            scale: this.processAttribute(options.animation.scale, 1)!,
-            color: this.processAttribute(options.animation.color, Color.White)!,
-            velocity: this.processAttribute(options.animation.velocity, Vec2.ZERO)!,
-            acceleration: this.processAttribute(options.animation.acceleration, Vec2.ZERO)!,
-        }
-
-        this.position = Vec2.ZERO
-
-        this.initializePosition();
+        this.components = Array.from({ length: size }, () => ({
+            value: new DynamicArrayBuffer(ArrayType.Float32),
+            delta: new DynamicArrayBuffer(ArrayType.Float32),
+            damping: new DynamicArrayBuffer(ArrayType.Float32),
+        }));
     }
-    private processAttribute<T extends ParticleAttributeTypes>(attribute: ParticleAttribute<T> | undefined | ParticleAttributeTypes, defaultData: T): ParticleAttributeData<T> {
-        if (!attribute) return { value: defaultData };
-        if (isPlainObject(attribute)) {
-            attribute = attribute as ParticleAttribute<T>
-            const start = Random.scalarOrRange(attribute.start, defaultData)
-            const end = Random.scalarOrRange(attribute.end || start, defaultData)
-            return {
-                delta: attribute.delta ?? this.getDelta(start, end, this.maxLife),
-                value: start,
-                damping: attribute.damping
-            }
-        } else {
-            return this.processAttribute({ start: attribute as T }, defaultData) as ParticleAttributeData<T>
-        }
+
+    getArrayBuffer(): DynamicArrayBuffer[] {
+        return this.components.flatMap(({ value, delta, damping }) => [value, delta, damping]);
     }
-    private updateDamping(deltaTime: number) {
-        for (const att of Object.values(this.datas)) {
-            if (att.damping) {
-                const value = att.value
-                const timeBasedDamping = Math.pow(att.damping, deltaTime);
-                
-                if (typeof value === 'number') {
-                    att.value = value * timeBasedDamping
-                } else {
-                    att.value = value.multiply(timeBasedDamping)
-                }
+
+    update(deltaTime: number): void {
+        for (const { value, delta, damping } of this.components) {
+            for (let index = 0; index < value.usedElemNum; index++) {
+                value.typedArray[index] *= Math.pow(damping.get(index), deltaTime);
+                value.typedArray[index] += delta.get(index) * deltaTime;
             }
         }
     }
-    private updateDelta(deltaTime: number) {
-        const datas = this.datas
 
-        for (const att of Object.values(this.datas)) {
-            if (att.delta) {
-                const value = att.value
-
-                if (typeof value === 'number') {
-                    att.value += deltaTime * att.delta
-                } else {
-                    att.value = value.add(att.delta.multiply(deltaTime))
-                }
-            }
-        }
-
-        datas.color.value.clamp();
-        const direction = Vec2.fromAngle(datas.rotation.value)
-        const speedOffset = direction.multiply(datas.speed.value * deltaTime);
-        this.position = this.position.add(speedOffset).add(datas.velocity.value.multiply(deltaTime)).add(datas.acceleration.value.multiply(deltaTime));
+    get(particleIndex: number, componentIndex: number = 0): number {
+        return this.components[componentIndex].value.get(particleIndex);
     }
 
-    private getDelta<T extends ParticleAttributeTypes>(start: T, end: T, lifeTime: number): T {
-        if (typeof start === 'number' && typeof end === 'number') {
-            return (end - start) / lifeTime as T
-        } else if ((start instanceof Vec2 && end instanceof Vec2)) {
-            return end.subtract(start).divide(lifeTime) as T
-        } else if (start instanceof Color && end instanceof Color) {
-            return end.subtract(start).divide(lifeTime) as T
+    private getComponent(value: ParticleAttributeValue, index: number): number {
+        if (typeof value === "number") {
+            return value;
         }
-        return start as T
+        if (value instanceof Vec2) {
+            return index === 0 ? value.x : value.y;
+        }
+
+        switch (index) {
+            case 0: return value.r;
+            case 1: return value.g;
+            case 2: return value.b;
+            case 3: return value.a;
+            default: return 0;
+        }
     }
 
-    /**
-     * Updates particle state
-     * @param deltaTime - Time in seconds since last update
-     * @returns Whether the particle is still active
-     */
-    update(deltaTime: number): boolean {
-        this.life += deltaTime;
-        if (this.life >= this.maxLife) {
-            return false;
+    private resolveComponent(
+        value: ParticleAttributeValue | [ParticleAttributeValue, ParticleAttributeValue] | undefined,
+        index: number,
+        defaultValue: number,
+    ): number {
+        if (value === undefined) {
+            return defaultValue;
         }
-        this.updateDamping(deltaTime)
-        this.updateDelta(deltaTime)
-
-        return true;
+        if (Array.isArray(value)) {
+            return Random.float(
+                this.getComponent(value[0], index),
+                this.getComponent(value[1], index),
+            );
+        }
+        return this.getComponent(value, index);
     }
 
-    /**
-     * Renders the particle
-     */
-    render() {
-        rapid.renderSprite({
-            ...this.options,
-            position: this.position,
-            scale: this.datas.scale.value,
-            rotation: this.datas.rotation.value,
-            color: this.datas.color.value,
-            texture: this.texture,
-        });
-    }
+    create<T extends ParticleAttributeValue>(
+        attribute: ParticleAttribute<T> | T | undefined,
+        defaultData: T,
+        lifeTime: number = 1,
+    ): number {
+        const attr = isPlainObject(attribute)
+            ? attribute as ParticleAttribute<T>
+            : undefined;
+        const fixedValue = attr === undefined ? attribute as T | undefined : undefined;
+        const duration = lifeTime > 0 ? lifeTime : 1;
+        let firstValue = 0;
 
-    private initializePosition() {
-        switch (this.options.emitShape) {
-            case ParticleShape.POINT:
-                this.position = Vec2.ZERO;
-                break;
-            case ParticleShape.CIRCLE:
-                const angle = Math.random() * Math.PI * 2;
-                const radius = (this.options.emitRadius || 0) * Math.sqrt(Math.random());
-                this.position = new Vec2(
-                    Math.cos(angle) * radius,
-                    Math.sin(angle) * radius
-                );
-                break;
-            case ParticleShape.RECT:
-                this.position = new Vec2(
-                    (Math.random() - 0.5) * (this.options.emitRect?.width || 0),
-                    (Math.random() - 0.5) * (this.options.emitRect?.height || 0)
-                );
-                break;
-            default:
-                break;
+        for (let index = 0; index < this.components.length; index++) {
+            const { value, delta, damping } = this.components[index];
+            const componentDefault = this.getComponent(defaultData, index);
+            const start = fixedValue === undefined
+                ? this.resolveComponent(attr?.start, index, componentDefault)
+                : this.getComponent(fixedValue, index);
+            const end = attr?.end === undefined
+                ? start
+                : this.resolveComponent(attr.end, index, componentDefault);
+
+            value.push(start);
+            delta.push(attr?.delta === undefined
+                ? (end - start) / duration
+                : this.getComponent(attr.delta, index));
+            damping.push(attr?.damping ?? 1);
+
+            if (index === 0) firstValue = start;
         }
 
-        if (!this.options.localSpace && this.options.position) {
-            this.position = this.position.add(this.options.position);
-        }
+        return firstValue;
     }
 }
-
 /**
- * Particle emitter for creating and managing particle systems
+ * Creates and manages a pool of Particle instances.
+ *
+ * @example
+ * ```ts
+ * const emitter = new ParticleEmitter(rapid, { ... });
+ * emitter.start();
+ *
+ * // inside your game loop:
+ * emitter.update(dt);
+ * emitter.render();
+ * ```
  */
 export class ParticleEmitter {
-    private particles: Particle[] = [];
     private options: IParticleOptions;
     private emitting: boolean = false;
     private emitTimer: number = 0;
-    private emitRate: number = DEFAULT_EMIT_RATE; // Particles per second
-    private emitTime: number = DEFAULT_EMIT_TIME;  // Time interval between emissions
+    private emitRate: number = DEFAULT_EMIT_RATE;
+    private emitTime: number = DEFAULT_EMIT_TIME;
     private emitTimeCounter: number = 0;
+
+    /** Whether spawned particles are positioned in local emitter space (default: true). */
     localSpace: boolean = DEFAULT_LOCAL_SPACE;
-    position: Vec2 = Vec2.ZERO;
 
     /**
-     * Creates a new particle emitter
-     * @param rapid - The Rapid renderer instance
+     * Scales the whole burst around the emitter's position: the particles are drawn that
+     * much bigger and spread that much further, so an effect keeps its shape whatever size
+     * the thing it belongs to is. Can be changed at any time, live particles included.
+     */
+    scale: number = 1;
+
+    private rapid: Rapid;
+
+    x = new DynamicArrayBuffer(ArrayType.Float32)
+    y = new DynamicArrayBuffer(ArrayType.Float32)
+    scaleX = new DynamicArrayBuffer(ArrayType.Float32)
+    scaleY = new DynamicArrayBuffer(ArrayType.Float32)
+    rotation = new DynamicArrayBuffer(ArrayType.Float32)
+    color = new DynamicArrayBuffer(ArrayType.Uint32)
+    remainingLife = new DynamicArrayBuffer(ArrayType.Float32)
+
+    animations = {
+        speed: new ParticleAttributeStore(),
+        rotation: new ParticleAttributeStore(),
+        scale: new ParticleAttributeStore(),
+        color: new ParticleAttributeStore(4),
+        velocity: new ParticleAttributeStore(2),
+    }
+    count: number = 0
+    position: Vec2
+    /**
+     * Creates a new particle emitter.
+     * @param rapid   - The Rapid renderer instance
      * @param options - Emitter configuration options
      */
-    constructor(options: IParticleOptions) {
+    constructor(rapid: Rapid, options: IParticleOptions) {
+        this.rapid = rapid;
         this.options = options;
-        this.emitRate = options.emitRate !== undefined ? options.emitRate : DEFAULT_EMIT_RATE;
-        this.emitTime = options.emitTime !== undefined ? options.emitTime : DEFAULT_EMIT_TIME;
-        this.localSpace = options.localSpace !== undefined ? options.localSpace : DEFAULT_LOCAL_SPACE;
-        this.position = options.position || Vec2.ZERO;
+        this.emitRate = options.emitRate ?? DEFAULT_EMIT_RATE;
+        this.emitTime = options.emitTime ?? DEFAULT_EMIT_TIME;
+        this.localSpace = options.localSpace ?? DEFAULT_LOCAL_SPACE;
+        this.position = options.position ?? new Vec2(0, 0)
+        this.scale = options.scale ?? 1;
     }
 
-    SetTexture(texture: Texture) {
-        this.options.texture = texture
+    getAllArrayBuffer(): DynamicArrayBuffer[] {
+        return [
+            this.x,
+            this.y,
+            this.scaleX,
+            this.scaleY,
+            this.rotation,
+            this.color,
+            this.remainingLife,
+            ...Object.values(this.animations).flatMap(v => v.getArrayBuffer())
+        ]
+    }
+
+    /** Replaces the emitter's texture at runtime. */
+    setTexture(texture: Texture) {
+        this.options.texture = texture;
     }
 
     /**
-     * Creates a new emitter with the same options.
-     * Particles/state are not copied.
+     * Creates a new emitter sharing the same options object.
+     * Particle state is NOT copied.
      */
     clone(): ParticleEmitter {
-        return new ParticleEmitter(this.options);
+        return new ParticleEmitter(this.rapid, { ...this.options });
     }
 
-    /**
-     * Gets the transform options
-     */
-    getTransform(): ITransformOptions {
-        return this.options;
-    }
-
-    /**
-     * Sets particle emission rate
-     * @param rate - Particles per second
-     */
+    /** Sets particles-per-second emission rate (continuous mode). */
     setEmitRate(rate: number) {
         this.emitRate = rate;
     }
 
-    /**
-     * Sets time interval between emissions
-     * @param time - Time interval in seconds
-     */
+    /** Sets the burst interval in seconds (0 = continuous). */
     setEmitTime(time: number) {
         this.emitTime = time;
     }
 
-    /**
-     * Starts emitting particles
-     */
+    /** Starts continuous particle emission. */
     start() {
         this.emitting = true;
         this.emitTimeCounter = 0;
     }
 
-    /**
-     * Stops emitting new particles but allows existing ones to complete their lifecycle
-     */
+    /** Stops new particle emission; existing particles finish their lifecycle. */
     stop() {
         this.emitting = false;
     }
 
-    /**
-     * Clears all particles and resets the emitter
-     */
+    /** Removes all particles and resets timers. */
     clear() {
-        this.particles = [];
+        for (const data of this.getAllArrayBuffer()) {
+            data.clear()
+        }
+        this.count = 0
         this.emitTimeCounter = 0;
     }
 
     /**
-     * Emits specified number of particles
-     * @param count - Number of particles to emit
+     * Spawns `count` particles immediately.
+     * Respects `maxParticles` if set.
      */
     emit(count: number) {
-        const actualCount = Math.min(count, (this.options.maxParticles || Infinity) - this.particles.length);
-
-        for (let i = 0; i < actualCount; i++) {
-            const options = { ...this.options };
-            const particle = new Particle(options);
-            this.particles.unshift(particle);
+        const max = this.options.maxParticles ?? Infinity;
+        const actual = Math.min(count, max - this.count);
+        for (let i = 0; i < actual; i++) {
+            this.createParticle();
         }
     }
 
+    createParticle() {
+        const lifeTime = Random.scalarOrRange(this.options.life, 1)
+        this.remainingLife.push(lifeTime)
+        let spawnX = 0
+        let spawnY = 0
+
+        switch (this.options.emitShape) {
+            case ParticleShape.CIRCLE: {
+                const angle = Math.random() * Math.PI * 2;
+                const radius = (this.options.emitRadius ?? 0) * Math.sqrt(Math.random());
+                spawnX = Math.cos(angle) * radius
+                spawnY = Math.sin(angle) * radius
+                break;
+            }
+            case ParticleShape.RECT: {
+                spawnX = (Math.random() - 0.5) * (this.options.emitRect?.width ?? 0)
+                spawnY = (Math.random() - 0.5) * (this.options.emitRect?.height ?? 0)
+                break;
+            }
+            case ParticleShape.POINT:
+            default:
+                break;
+        }
+        const ms = this.rapid.matrixStack
+        if (this.localSpace) {
+            this.x.push(spawnX)
+            this.y.push(spawnY)
+        } else {
+            const { x, y } = ms.localToWorld(spawnX, spawnY)
+            this.x.push(x)
+            this.y.push(y)
+        }
+
+        const animation = this.options.animation
+        const particleAttribute = this.animations
+
+        const s = particleAttribute.scale.create(animation.scale, 1, lifeTime)
+        const r = particleAttribute.rotation.create(animation.rotation, 0, lifeTime)
+        particleAttribute.speed.create(animation.speed, 0, lifeTime)
+
+        particleAttribute.velocity.create(animation.velocity, Vec2.ZERO, lifeTime)
+        particleAttribute.color.create(animation.color, Color.White, lifeTime)
+
+        this.rotation.push(r)
+        this.scaleX.push(s)
+        this.scaleY.push(s)
+        this.color.pushUint32(Color.packColor(
+            particleAttribute.color.get(this.count, 0),
+            particleAttribute.color.get(this.count, 1),
+            particleAttribute.color.get(this.count, 2),
+            particleAttribute.color.get(this.count, 3),
+            this.rapid.premultipliedAlpha,
+        ))
+
+        this.count += 1
+    }
+
     /**
-     * Updates particle emitter state
-     * @param deltaTime - Time in seconds since last update
+     * Updates the emitter and all live particles.
+     * @param deltaTime - Seconds elapsed since last frame
      */
     update(deltaTime: number) {
-        // Auto-emit particles
         if (this.emitting && this.emitRate > 0) {
-            // If emitTime is set, only emit particles at specified interval
             if (this.emitTime > 0) {
+                // Burst Mode
                 this.emitTimeCounter += deltaTime;
-
                 if (this.emitTimeCounter >= this.emitTime) {
-                    // Calculate how many intervals have passed
                     const intervals = Math.floor(this.emitTimeCounter / this.emitTime);
-                    // Emit particles based on emitRate (per emission, not per second)
                     this.emit(this.emitRate * intervals);
-                    // Subtract the time consumed
                     this.emitTimeCounter -= intervals * this.emitTime;
                 }
             } else {
-                // Original continuous emission logic
+                // Continuous mode
                 this.emitTimer += deltaTime;
-                const particlesPerFrame = this.emitRate * deltaTime;
-                const wholeParticles = Math.floor(particlesPerFrame);
-
-                if (wholeParticles > 0) {
-                    this.emit(wholeParticles);
-                    this.emitTimer -= wholeParticles / this.emitRate;
-                }
-
-                // Handle fractional part
-                const fractionalPart = this.emitTimer * this.emitRate;
-                if (fractionalPart >= 1) {
-                    this.emit(1);
-                    this.emitTimer -= 1 / this.emitRate;
+                const count = Math.floor(this.emitTimer * this.emitRate);
+                if (count > 0) {
+                    this.emit(count);
+                    this.emitTimer -= count / this.emitRate;
                 }
             }
         }
 
-        // Update existing particles
-        for (let i = this.particles.length - 1; i >= 0; i--) {
-            if (!this.particles[i].update(deltaTime)) {
-                this.particles.splice(i, 1);
+        const removeIndex = this.updateParticle(deltaTime)
+        this.count -= removeIndex.length
+        DynamicArrayBuffer.removeAtIndices(removeIndex, this.getAllArrayBuffer())
+    }
+
+    updateParticle(deltaTime: number) {
+        const removeIndex: number[] = []
+        const ani = this.animations
+
+        Object.values(ani).forEach(a => a.update(deltaTime))
+        for (let index = 0; index < this.count; index++) {
+            this.remainingLife.typedArray[index] -= deltaTime
+            if (this.remainingLife.typedArray[index] <= 0) {
+                removeIndex.push(index)
+                continue
             }
+            const rotation = ani.rotation.get(index);
+            const scale = ani.scale.get(index);
+            const speed = ani.speed.get(index);
+
+            this.rotation.typedArray[index] = rotation;
+            this.scaleX.typedArray[index] = scale;
+            this.scaleY.typedArray[index] = scale;
+            this.color.uint32![index] = Color.packColor(
+                ani.color.get(index, 0),
+                ani.color.get(index, 1),
+                ani.color.get(index, 2),
+                ani.color.get(index, 3),
+                this.rapid.premultipliedAlpha,
+            );
+
+            this.x.typedArray[index] += (speed * Math.cos(rotation) + ani.velocity.get(index, 0)) * deltaTime
+            this.y.typedArray[index] += (speed * Math.sin(rotation) + ani.velocity.get(index, 1)) * deltaTime
         }
+
+        return removeIndex
     }
 
     /**
-     * Renders all particles
+     * Renders all live particles.
+     * In local-space mode the emitter's own transform is applied around the batch.
      */
     render() {
+        const options = this.options
+        const customMatrix = this.localSpace ? undefined : this.rapid.matrix.alloc()
+        const stack = this.rapid.matrixStack
         if (this.localSpace) {
-            rapid.save()
-            rapid.matrixStack.applyTransform(this.getTransform())
+            stack.save()
+            stack.translate(this.position.x, this.position.y)
+            if (this.scale !== 1) {
+                stack.scale(this.scale)
+            }
+        } else {
+            this.rapid.matrix.translate(customMatrix, this.position.x, this.position.y)
+            if (this.scale !== 1) {
+                this.rapid.matrix.scale(customMatrix!, this.scale, this.scale)
+            }
         }
-        
-        for (const particle of this.particles) {
-            particle.render()
-        }
-        
+
+        this.rapid.drawParticles({
+            texture: options.texture,
+            shader: options.shader,
+
+            x: this.x.typedArray,
+            y: this.y.typedArray,
+            scaleX: this.scaleX.typedArray,
+            scaleY: this.scaleY.typedArray,
+            rotation: this.rotation.typedArray,
+            color: this.color.typedArray,
+            count: this.count,
+            reverseOrder: true,
+
+            originX: options.origin?.x ?? 0.5,
+            originY: options.origin?.y ?? 0.5,
+
+            customMatrix
+        })
         if (this.localSpace) {
-            rapid.restore()
+            stack.restore()
         }
     }
 
-    /**
-     * Gets current particle count
-     */
-    getParticleCount(): number {
-        return this.particles.length;
-    }
-
-    /**
-     * Checks if the particle emitter is active (has particles or is emitting)
-     */
+    /** Returns `true` if the emitter is running or still has live particles. */
     isActive(): boolean {
-        return this.emitting || this.particles.length > 0;
+        return this.emitting || this.count > 0;
     }
+
+    /**
+     * Convenience: emit `emitRate` particles in one shot (fire-and-forget burst).
+     */
     oneShot() {
-        this.emit(this.emitRate)
-    }
-}
-
-export class Random {
-    /**
-     * 生成指定范围内的随机浮点数
-     * @param min - 最小值
-     * @param max - 最大值
-     * @returns 随机浮点数
-     */
-    static float(min: number, max: number): number {
-        return Math.random() * (max - min) + min;
-    }
-
-    /**
-     * 生成指定范围内的随机整数
-     * @param min - 最小值
-     * @param max - 最大值
-     * @returns 随机整数
-     */
-    static int(min: number, max: number): number {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
-
-    /**
-     * 生成随机角度（0-360度）
-     * @returns 随机角度（弧度）
-     */
-    static angle(): number {
-        return Math.random() * Math.PI * 2;
-    }
-
-    /**
-     * 生成指定范围内的随机向量
-     * @param minX - 最小X值
-     * @param maxX - 最大X值
-     * @param minY - 最小Y值
-     * @param maxY - 最大Y值
-     * @returns 随机向量
-     */
-    static vector(minX: number, maxX: number, minY: number, maxY: number): Vec2 {
-        return new Vec2(
-            Random.float(minX, maxX),
-            Random.float(minY, maxY)
-        );
-    }
-
-    static randomColor(minColor: Color, maxColor: Color): Color {
-        return new Color(
-            Random.float(minColor.r, maxColor.r),
-            Random.float(minColor.g, maxColor.g),
-            Random.float(minColor.b, maxColor.b),
-            Random.float(minColor.a, maxColor.a)
-        );
-    }
-
-    static pick(array: any[]): any {
-        return array[Random.int(0, array.length - 1)];
-    }
-
-    static pickWeight(array: [any, number][]): any {
-        if (!array || array.length === 0) {
-            return null;
-        }
-
-        // 计算总权重
-        let totalWeight = 0;
-        for (const item of array) {
-            totalWeight += item[1];
-        }
-
-        // 生成一个0到总权重之间的随机数
-        const random = Math.random() * totalWeight;
-
-        // 减去每个项目的权重直到找到选择的项目
-        let currentWeight = 0;
-        for (const item of array) {
-            currentWeight += item[1];
-            if (random <= currentWeight) {
-                return item[0];
-            }
-        }
-
-        // 防止浮点数精度问题，返回最后一项
-        return array[array.length - 1][0];
-    }
-
-
-    static scalarOrRange<T extends number | Vec2 | Color>(range?: T | [T, T], defaultValue?: T): T {
-        if (range === undefined) {
-            return defaultValue as T;
-        }
-        if (Array.isArray(range)) {
-            if (typeof range[0] === 'number') {
-                return Random.float(range[0] as number, range[1] as number) as T;
-            } else if (range[0] instanceof Vec2) {
-                return Random.vector(range[0].x, (range[1] as Vec2).x, range[0].y, (range[1] as Vec2).y) as T;
-            } else if (range[0] instanceof Color) {
-                return Random.randomColor(range[0] as Color, range[1] as Color) as T;
-            }
-        }
-        if (typeof range === 'number') {
-            return range as T;
-        }
-        return (range as Vec2 | Color).clone() as T;
+        this.emit(this.emitRate);
     }
 }

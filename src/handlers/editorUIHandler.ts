@@ -3,12 +3,15 @@ import { assetsHandler } from "./assetsHandler";
 import { FlashShader } from "../shaders/flashShader";
 import { TweenTo } from "../controllers/tweenController";
 import { EditorScene } from '../scenes/editorScene';
-import { Color, RenderTexture, Texture, TextureFilterMode } from '../libraries/new-rapid-render';
+import { Color, RenderTexture, Texture, TextureFilterMode } from '../libraries/rapid-render';
 import { MakePath, MakePathForEntity } from '../globals';
 import { SaveDataHandler } from './SaveDataHandler';
 import { EditorUIHintHandler } from './editorUIHintHandler';
 import { Bare } from '../types/bare';
 import { SettingsHandler } from './settingsHandler';
+
+// data url of the red fallback image for entities without a texture, built on first use
+let textureNotFoundString: string | undefined;
 
 /*
     BUILD SETUP/CONTROLS UI
@@ -148,7 +151,7 @@ export class EditorUIHandler {
         if (categoryName == "images")
             return {texture: entityId};
 
-        return {entity: entityId};
+        return {extends: entityId};
     }
 
     private SetupPreviewImage(img: HTMLImageElement, src: string, id?: string): void {
@@ -213,6 +216,56 @@ export class EditorUIHandler {
         this.SyncSettingsUI();
     }
 
+    // the categories shown in the sidebar: the user's categories, the prefabs not in any of them
+    // ("prefabs", or "uncategorized prefabs" once categories are set up) and the loaded images.
+    // also used by the plugin's add child menu, so both stay in sync
+    static GetSidebarCategories(data: SettingsData): Record<string, Category>
+    {
+        var categoriesFinal: Record<string, Category>  = {};
+        var allPrefabNames = data.prefabs.map(entity => entity.name!);
+        var categoryEntries: Array<[string, Category]> = Object.entries(data.categories);
+
+        for (const [categoryName, categoryData] of categoryEntries)
+        {
+            categoriesFinal[categoryName] = categoryData;
+
+            if (categoryData.entries)
+            {
+                for (const entityName of categoryData.entries)
+                {
+                    // DON'T WANT ENTRIES IN uncategorized THAT ARE ALREALY IN ENTITIES
+                    var i = allPrefabNames.indexOf(entityName);
+                    if (i != -1)
+                        allPrefabNames.splice(i, 1);
+                }
+            }
+        }
+
+        for (var i = allPrefabNames.length - 1; i >= 0; i--)
+        {
+            var entityName = allPrefabNames[i];
+            if (entityName.includes('#'))
+                allPrefabNames.splice(i, 1);
+        }
+
+        // IF ANY ENTRIES LEFT, ADD THEM TO UNCATEGORIZED
+        if (allPrefabNames.length > 0)
+        {
+            var uncategorizedName = "uncategorized prefabs";
+
+            if (categoryEntries.length == 0)
+                uncategorizedName = "prefabs"; // IF NO CATEGORIES SET, CALL THEM PREFABS
+
+            categoriesFinal[uncategorizedName] = {...data.categories.uncategorized, entries: allPrefabNames};
+        }
+
+        // 
+        if (Bare.assets.images.length > 0)
+            categoriesFinal["images"] = { entries: Bare.assets.images };
+
+        return categoriesFinal;
+    }
+
     PopulateSidebar(data: SettingsData): void {
         const sidebarContent = document.querySelector('.sidebar-content') as HTMLElement;
         if (!sidebarContent) {
@@ -223,39 +276,7 @@ export class EditorUIHandler {
         // Clear existing content
         sidebarContent.innerHTML = '';
 
-        var categoriesFinal: Record<string, Category>  = {};
-        var allEntityNames = data.entities.map(entity => entity.name!);
-
-        for (const [categoryName, categoryData] of Object.entries(data.categories))
-        {
-            categoriesFinal[categoryName] = categoryData;
-
-            if (categoryData.entries)
-            {
-                for (const entityName of categoryData.entries)
-                {
-                    // DON'T WANT ENTRIES IN uncategorized THAT ARE ALREALY IN ENTITIES
-                    var i = allEntityNames.indexOf(entityName);
-                    if (i != -1)
-                        allEntityNames.splice(i, 1);
-                }
-            }
-        }
-
-        for (var i = allEntityNames.length - 1; i >= 0; i--)
-        {
-            var entityName = allEntityNames[i];
-            if (entityName.includes('#'))
-                allEntityNames.splice(i, 1);
-        }
-
-        // IF ANY ENTRIES LEFT, ADD THEM TO UNCATEGORIZED
-        if (allEntityNames.length > 0)
-            categoriesFinal["uncategorized"] = {...data.categories.uncategorized, entries: allEntityNames};
-
-        // 
-        if (Bare.assets.images.length > 0)
-            categoriesFinal["images"] = { entries: Bare.assets.images };
+        var categoriesFinal = EditorUIHandler.GetSidebarCategories(data);
 
         // Process each category
         var categoriesEntries = Object.entries(categoriesFinal)
@@ -287,20 +308,28 @@ export class EditorUIHandler {
             
             const categoryIcon = document.createElement('div');
             categoryIcon.className = 'entity-image';
-            
-            if (categoryData.image)
+
+            // fall back to the first entry when no category image is set
+            const categoryImage = categoryData.image
+                ?? (Array.isArray(categoryData.entries) ? categoryData.entries[0] : undefined);
+
+            if (categoryImage)
             {
                 // Get category image from loaded texture or fallback to path
-                const texture = assetsHandler.HasTexture(categoryData.image)
-                    ? assetsHandler.GetTexture(categoryData.image)
-                    : null;
+                // try the raw key first (image paths), then the resolved entity texture (e.g. atlas frames)
+                const entityTexKey = MakePathForEntity(this.scene.ConstructEntity(categoryImage));
+                const texture = assetsHandler.HasTexture(categoryImage)
+                    ? assetsHandler.GetTexture(categoryImage)
+                    : assetsHandler.HasTexture(entityTexKey)
+                        ? assetsHandler.GetTexture(entityTexKey)
+                        : null;
 
                 if (texture?.base?.uid) {
                     this.SetTextureBackground(categoryIcon, texture);
                 } else {
-                    if (categoryData.image)
+                    if (categoryImage)
                     {
-                        const categoryImagePath = this.GetCategoryImagePath(categoryData.image);
+                        const categoryImagePath = this.GetCategoryImagePath(categoryImage);
                         if (categoryImagePath) {
                             const img = document.createElement('img');
                             this.SetupPreviewImage(img, categoryImagePath);
@@ -372,11 +401,11 @@ export class EditorUIHandler {
                                 img.style.borderRadius = '3px';
                                 childEntity.appendChild(img);
                             } else {
-                                if (!window.textureNotFoundString)
+                                if (!textureNotFoundString)
                                 {
                                     var rt = new RenderTexture(rapid, { width: 128, height: 128, clearColor: Color.fromHex("#fc0000") });
                                     //var rt = new RenderTexture(128, 128, true, Color.fromHex("#fc0000")); // Fallback tex
-                                    const pixels = rt.GetPixels();
+                                    const pixels = rt.getPixels();
                                     const canvas = document.createElement('canvas');
                                     canvas.width = 128;
                                     canvas.height = 128;
@@ -384,17 +413,17 @@ export class EditorUIHandler {
                                     const imageData = new ImageData(new Uint8ClampedArray(pixels), 128, 128);
                                     ctx.putImageData(imageData, 0, 0);
                                     var img = canvas.toDataURL();
-                                    window.textureNotFoundString = img;
+                                    textureNotFoundString = img;
                                 }
 
-                                childEntity.style.backgroundImage = `url(${window.textureNotFoundString})`;
+                                childEntity.style.backgroundImage = `url(${textureNotFoundString})`;
                                 childEntity.style.backgroundSize = 'contain';
                                 childEntity.style.backgroundRepeat = 'no-repeat';
                                 childEntity.style.backgroundPosition = 'center';
                             }
                         }
 
-                        if (categoryData.showLabels)
+                        if (categoryData.showLabels ?? true)
                         {
                             const childEntityItem = document.createElement('div');
                             childEntityItem.className = 'child-entity-item';

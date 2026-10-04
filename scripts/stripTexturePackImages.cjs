@@ -1,5 +1,6 @@
 const fs = require("node:fs");
 const path = require("node:path");
+const { createRequire } = require("node:module");
 const { pathToFileURL } = require("node:url");
 const {
     readStringArray,
@@ -7,6 +8,7 @@ const {
 } = require("./texturePackImagesConfig.cjs");
 
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"]);
+const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"]);
 
 async function stripTexturePackImages(options = {}) {
     const projectRoot = path.resolve(options.projectRoot || process.cwd());
@@ -22,7 +24,8 @@ async function stripTexturePackImages(options = {}) {
     const references = collectTextureReferences(projectRoot, options);
     const files = getFilesRecursive(textureDir)
         .filter(filePath => IMAGE_EXTENSIONS.has(path.extname(filePath).toLowerCase()));
-    const keptFiles = files.filter(filePath => isTextureReferenced(textureDir, filePath, references));
+    const wildcards = [...references].filter(reference => reference.includes("*")).map(wildcardToRegExp);
+    const keptFiles = files.filter(filePath => isTextureReferenced(textureDir, filePath, references, wildcards));
 
     fs.rmSync(tempDir, { recursive: true, force: true });
 
@@ -60,12 +63,18 @@ function collectTextureReferences(projectRoot, options = {}) {
         addTextureReference(references, textureName);
     }
 
-    collectSettingsDataEntityKeys(
+    collectSettingsDataPrefabKeys(
         options.settingsDataPath || path.join(projectRoot, "public/data/settingsData.json"),
         references
     );
     collectLevelEntityNames(
         options.levelsDir || path.join(projectRoot, "public/data/levels"),
+        references
+    );
+    collectSourceReferences(
+        projectRoot,
+        options.srcDir || path.join(projectRoot, "src"),
+        options.generatedAssetsPath || path.join(projectRoot, "src/generated/assets.ts"),
         references
     );
 
@@ -81,12 +90,8 @@ function resolveAlwaysInclude(projectRoot, options = {}) {
         return readStringArray(options.alwaysInclude, "alwaysInclude");
     }
 
-    if (options.texturePackImagesToInclude !== undefined) {
-        return readStringArray(options.texturePackImagesToInclude, "texturePackImagesToInclude");
-    }
-
     const projectPackage = readProjectPackage(projectRoot);
-    return resolveTexturePackImagesConfig(projectPackage, { warn: console.warn }).alwaysInclude;
+    return resolveTexturePackImagesConfig(projectPackage).alwaysInclude;
 }
 
 function readProjectPackage(projectRoot) {
@@ -103,20 +108,18 @@ function readProjectPackage(projectRoot) {
     }
 }
 
-function collectSettingsDataEntityKeys(settingsDataPath, references) {
+function collectSettingsDataPrefabKeys(settingsDataPath, references) {
     if (!fs.existsSync(settingsDataPath)) {
         return;
     }
 
     try {
         const data = JSON.parse(fs.readFileSync(settingsDataPath, "utf8"));
-        const entities = Array.isArray(data.entities)
-            ? data.entities
-            : Object.entries(data.entities || {}).map(([name, entity]) => ({ ...entity, name }));
-        for (const entity of entities) {
+        for (const entity of data.prefabs || []) {
             addTextureReference(references, entity.name);
         }
         collectTextureFields(data, references);
+        collectAnimationFrames(data.animations, references);
     } catch (error) {
         console.warn(`[assets] Could not read ${settingsDataPath}: ${error.message}`);
     }
@@ -140,6 +143,139 @@ function collectTextureFields(value, references) {
         }
 
         collectTextureFields(childValue, references);
+    }
+}
+
+// animations list their images under "frames", optionally inside an "imagePath" folder
+function collectAnimationFrames(animations, references) {
+    if (!animations || typeof animations !== "object") {
+        return;
+    }
+
+    for (const animation of Object.values(animations)) {
+        if (!animation || !Array.isArray(animation.frames)) {
+            continue;
+        }
+
+        const imagePath = typeof animation.imagePath === "string" && animation.imagePath
+            ? animation.imagePath.replace(/\/?$/, "/")
+            : "";
+
+        for (const frame of animation.frames) {
+            if (typeof frame !== "string") {
+                continue;
+            }
+
+            for (const name of expandNumberedName(frame)) {
+                addTextureReference(references, imagePath + name);
+            }
+        }
+    }
+}
+
+// mirrors SettingsHandler's frame expansion: "walk#3" -> walk1..walk3, "walk1#2" -> walk1..walk2,
+// "walk01#03" -> walk01..walk03, segments joined with "+" (eg "walk1#2+5" -> walk1, walk2, walk5)
+function expandNumberedName(name) {
+    const match = name.includes("#") ? name.match(/^(.+?)(\d*#\d+.*)$/) : null;
+    if (!match) {
+        return [name];
+    }
+
+    const base = match[1];
+    const names = [];
+    for (const segment of match[2].split("+")) {
+        const shorthandRangeMatch = segment.match(/^#(\d+)$/);
+        const rangeMatch = segment.match(/^(\d+)#(\d+)$/);
+        if (shorthandRangeMatch || rangeMatch) {
+            const startText = rangeMatch ? rangeMatch[1] : "1";
+            const endText = rangeMatch ? rangeMatch[2] : shorthandRangeMatch[1];
+            const paddingText = rangeMatch ? startText : endText;
+            const paddingLength = paddingText.startsWith("0") ? paddingText.length : 0;
+            for (let i = parseInt(startText); i <= parseInt(endText); i++) {
+                names.push(base + i.toString().padStart(paddingLength, "0"));
+            }
+        } else {
+            names.push(base + segment);
+        }
+    }
+    return names;
+}
+
+// any string literal in the game's code may name an image (eg AddGameObject("logo")), and
+// Asset.Image.X resolves through the generated assets file. the generated folder itself is
+// skipped, since assets.ts lists every image and would keep them all
+function collectSourceReferences(projectRoot, srcDir, generatedAssetsPath, references) {
+    if (!fs.existsSync(srcDir)) {
+        return;
+    }
+
+    const ts = loadTypeScript(projectRoot);
+    const assetImages = readGeneratedAssetImages(generatedAssetsPath);
+    const generatedDir = path.resolve(path.dirname(generatedAssetsPath));
+
+    for (const filePath of getFilesRecursive(srcDir)) {
+        const extension = path.extname(filePath).toLowerCase();
+        if (!SOURCE_EXTENSIONS.has(extension) || filePath.endsWith(".d.ts")) {
+            continue;
+        }
+        if (path.resolve(filePath).startsWith(generatedDir + path.sep)) {
+            continue;
+        }
+
+        const code = fs.readFileSync(filePath, "utf8");
+        const sourceFile = ts.createSourceFile(filePath, code, ts.ScriptTarget.Latest, false);
+
+        const visit = (node) => {
+            if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+                addTextureReference(references, node.text);
+            } else if (ts.isPropertyAccessExpression(node)) {
+                const imageKey = getAssetImageKey(ts, node);
+                if (imageKey && assetImages.has(imageKey)) {
+                    addTextureReference(references, assetImages.get(imageKey));
+                }
+            }
+            ts.forEachChild(node, visit);
+        };
+        visit(sourceFile);
+    }
+}
+
+// Asset.Image.KEY -> "KEY"
+function getAssetImageKey(ts, node) {
+    const parent = node.expression;
+    if (!ts.isPropertyAccessExpression(parent) || parent.name.text !== "Image") {
+        return null;
+    }
+    if (!ts.isIdentifier(parent.expression) || parent.expression.text !== "Asset") {
+        return null;
+    }
+    return node.name.text;
+}
+
+// reads the "Image: { KEY: "value", ... }" map from the generated assets.ts
+function readGeneratedAssetImages(generatedAssetsPath) {
+    const images = new Map();
+    if (!fs.existsSync(generatedAssetsPath)) {
+        return images;
+    }
+
+    const code = fs.readFileSync(generatedAssetsPath, "utf8");
+    const block = code.match(/\bImage:\s*\{([\s\S]*?)\n\s*\}/);
+    if (!block) {
+        return images;
+    }
+
+    for (const entry of block[1].matchAll(/([A-Za-z_$][\w$]*)\s*:\s*("(?:[^"\\]|\\.)*")/g)) {
+        images.set(entry[1], JSON.parse(entry[2]));
+    }
+    return images;
+}
+
+function loadTypeScript(projectRoot) {
+    try {
+        return createRequire(path.join(projectRoot, "package.json"))("typescript");
+    } catch {
+        return require("typescript");
     }
 }
 
@@ -184,9 +320,9 @@ function collectEntityName(entity, references) {
     }
 
     // Level entries reference textures either directly ("texture") or through an
-    // entity name ("entity" / "name") which resolves to a texture of the same name
-    // via the base entity "texture": "NAME" rule.
-    for (const key of ["name", "entity", "texture"]) {
+    // entity name ("extends" / "name") which resolves to a texture of the same name
+    // via the base prefab "texture": "NAME" rule.
+    for (const key of ["name", "extends", "texture"]) {
         if (typeof entity[key] === "string") {
             addTextureReference(references, entity[key]);
         }
@@ -206,11 +342,18 @@ function addTextureReference(references, value) {
     }
 }
 
-function isTextureReferenced(textureDir, filePath, references) {
+function isTextureReferenced(textureDir, filePath, references, wildcards = []) {
     const relativeKey = normalizeTextureKey(path.relative(textureDir, filePath));
     const basenameKey = normalizeTextureKey(path.basename(filePath));
 
-    return references.has(relativeKey) || references.has(basenameKey);
+    return references.has(relativeKey) || references.has(basenameKey)
+        || wildcards.some(wildcard => wildcard.test(relativeKey) || wildcard.test(basenameKey));
+}
+
+// "iterated_*" -> /^iterated_.*$/, * MATCHES ANY CHARACTERS
+function wildcardToRegExp(pattern) {
+    const escaped = pattern.split("*").map(part => part.replace(/[.+?^${}()|[\]\\]/g, "\\$&"));
+    return new RegExp(`^${escaped.join(".*")}$`);
 }
 
 function normalizeTextureKey(value) {

@@ -1,6 +1,6 @@
 // helper.ts
 
-import { Vec2, Color } from "../libraries/new-rapid-render";
+import { Vec2, Color } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { Entity, Rectangle, SettingsData } from "../types/bareTypes";
 
@@ -324,16 +324,16 @@ export class Helper
     // ANGLE IN DEGREES
     static Direction(p1:{x:number,y:number}, p2:{x:number,y:number})
     {
-        var dx = p1.x - p2.x;
-        var dy = p1.y - p2.y;
+        var dx = p2.x - p1.x;
+        var dy = p2.y - p1.y;
         return Math.atan2(dy,dx) * 180 / Math.PI;
     };
 
     static PointTowards(direction:number, distance:number = 1):Vec2
     {
         var p = new Vec2();
-        p.x = -Math.cos(direction * Math.PI / 180) * distance;
-        p.y = -Math.sin(direction * Math.PI / 180) * distance;
+        p.x = Math.cos(direction * Math.PI / 180) * distance;
+        p.y = Math.sin(direction * Math.PI / 180) * distance;
         return p;
     };
 
@@ -348,10 +348,7 @@ export class Helper
 
     static PointTowardsFromTo(from:Vec2, to:Vec2, distance:number)
     {
-        var dx = to.x - from.x;
-        var dy = to.y - from.y;
-        var direction = Math.atan2(dy, dx) * 180 / Math.PI + 180;
-        return Helper.PointTowardsFrom(from, direction, distance);
+        return Helper.PointTowardsFrom(from, Helper.Direction(from, to), distance);
     };
 
     static AngleDifference(angle0:number, angle1:number, positive?:boolean):number

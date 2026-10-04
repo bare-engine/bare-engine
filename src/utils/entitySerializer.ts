@@ -1,10 +1,10 @@
 import type { Component } from "../controllers/componentController";
 import { GameMode } from "../globals";
-import { Color, Texture } from "../libraries/new-rapid-render";
+import { Color, Texture } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
 import { defaultSettingsData } from "../types/bareData";
-import { Entity, entityVars, Rectangle2Vec, Scalar } from "../types/bareTypes";
+import { AnyEntity, Entity, entityVars, Rectangle2Vec, Scalar } from "../types/bareTypes";
 import { getSaveFields } from "./saveFields";
 import { Helper } from "./helper";
 
@@ -58,12 +58,7 @@ export class GameObjectSerializer
 
         //customSerialize["pivot"] = (pivot: Vec2) => obj.entity?.pivot ?? pivot;
 
-        customSerialize["hitbox"] = (hitbox: Rectangle2Vec) => {
-            if (obj.entity?.hitbox)
-                return obj.entity.hitbox;
-
-            return hitbox;
-        };
+        customSerialize["hitbox"] = (hitbox: Rectangle2Vec) => (obj.entity as AnyEntity | null)?.hitbox || hitbox;
 
         customSerialize["texture"] = (currentValue: Texture) => currentValue.texturePath;
         customSerialize["color"] = (currentValue: Color) => currentValue.toHex();
@@ -142,7 +137,7 @@ export class GameObjectSerializer
     // the given props, and any entities/children left empty afterwards.
     // all lists are considered together when counting UID references.
     // NOT REALLY PART OF OBJECT SERIALIZION, BUT STILL HERE..
-    static CleanEntities(entityLists: Entity[][], rawEntitiesMappedByUID: Record<string, Entity>, propsToDelete: string[] = ["interactableInEditor"]): void
+    static CleanEntities(entityLists: Entity[][], rawEntitiesMappedByUID: Record<string, Entity>, propsToDelete: string[] = ["interactableInEditor"], canStripUID: (entityUID: string) => boolean = () => true): void
     {
         var didClean: boolean;
 
@@ -173,7 +168,7 @@ export class GameObjectSerializer
                         var lastIndex = stringifiedEntities.lastIndexOf(entity.entityUID);
                         var moreThanOneRef = (firstIndex != lastIndex);
 
-                        if (!moreThanOneRef)
+                        if (!moreThanOneRef && canStripUID(entity.entityUID))
                         {
                             delete entity.entityUID; // THIS UID IS NOT REFERENCED ANYWHERE ELSE, REMOVE IT
                             didClean = true;
@@ -183,8 +178,8 @@ export class GameObjectSerializer
                     // A bare UID reference adds no authored data; its source entity supplies the
                     // child. This also handles serialized references that have no temporary
                     // entityUID of their own.
-                    if (Object.keys(entity).length == 1 && entity.entity && rawEntitiesMappedByUID[entity.entity])
-                        delete entity.entity;
+                    if (Object.keys(entity).length == 1 && entity.extends && rawEntitiesMappedByUID[entity.extends])
+                        delete entity.extends;
 
                     for (const prop of propsToDelete)
                         delete (entity as any)[prop];

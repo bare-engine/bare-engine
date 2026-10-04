@@ -6,7 +6,7 @@ import type { ArcadeObject } from "./objects/arcadeObject";
 export { ArcadePhysicsController } from "./controllers/arcadePhysicsController";
 
 // Object
-export { ArcadeObject } from "./objects/arcadeObject";
+export { ArcadeObject, type ArcadeObjectEntity } from "./objects/arcadeObject";
 
 // Collision pair typing — only merged into the global union when a project
 // opts into Arcade physics by importing from "bare-engine/arcade". Kept out of

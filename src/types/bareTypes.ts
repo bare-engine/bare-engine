@@ -1,7 +1,12 @@
 import type { Scene } from "../scenes/scene";
 import type { GameObject } from "../objects/gameObject";
+import type { ArcadeObjectEntity } from "../objects/arcadeObject";
+import type { ButtonEntity } from "../objects/button";
+import type { TextObjectEntity } from "../objects/textObject";
+import type { CircleEntity } from "../libraries/sopiro/circle";
+import type { PolygonEntity } from "../libraries/sopiro/polygon";
 import type { Component } from "../controllers/componentController";
-import { CanvasScaleMode, Color, CustomGlShader, TextureFilterMode, UniformValue } from "../libraries/new-rapid-render";
+import { CanvasScaleMode, Color, CustomGlShader, TextureFilterMode, UniformValue } from "../libraries/rapid-render";
 
 export type Scalar = (number | string | boolean);
 
@@ -16,8 +21,6 @@ export type BareOptions =
     fixedTimestep?: number;
     freezeOnUnfocus?: boolean;
     multiTouch?: boolean;
-    imagePath?: string;
-    levelPath?: string;
     editorButtonPosition?: Position;
     showEditorButton?: boolean;
     debugKeys?: Record<string, () => void>[];
@@ -119,7 +122,6 @@ export interface Entity
     flipped?: any; // boolean
     pivot?: any; // Position
     innerPivot?: any; // Position
-    pivotBasedOnHitbox?: any; // Position
     //innerX?: number;
     //innerY?: number;
     innerPosition?: any; // Position
@@ -134,9 +136,7 @@ export interface Entity
     alpha?: any; // number
     visible?: any; // boolean
 
-    hitbox?: any; // Rectangle2Vec
     tapHitbox?: any; // Rectangle2Vec
-    hitboxType?: string;
 
     children?: any; // Entity[]
 
@@ -146,37 +146,27 @@ export interface Entity
     propertiesRemoved?: any; // string[]
 
     baseClass?: string;
-    entity?: string;
+    extends?: string;
     imagePath?: string;
     interactableInEditor?: any; // boolean
     persistent?: any; // boolean
     save?: any; // boolean
 
-    // PHYSICS
-    collide?: any; // boolean
-    sensor?: any; // boolean
-    static?: any; // boolean
-    stayInBounds?: any; // boolean
-    removeOnOutOfBounds?: any; // boolean
-
-    rigidbodyRect?: any; // Size
-    hitboxRadius?: any; // number; SHARED BY ARCADEOBJECT AND RIGIDBODY
-    mass?: any; // number
-    density?: any; // number
-    drag?: any; // number
-    restitution?: any; // number
-    polygonVertices?: any; // number[]
+    // PHYSICS FIELDS LIVE IN ArcadeObjectEntity / RigidBodyEntity / CircleEntity / PolygonEntity
 
     //tileDimensions?: {width: number; height: number};
     //numberOfTiles?: int; //
 
-    baseEntityLog?: Record<string, any>;
-    __entityOptions?: Array<{ value: string, label: string, source?: string }>;
+    extendsLog?: Record<string, any>;
+    __extendsOptions?: Array<{ value: string, label: string, source?: string }>;
     constructed ?: boolean;
     entityUID?: string;
 }
 
-export type ConstructEntityOptions = { propsToIgnoreInEntity?: string[], fillPresets?: boolean, forceAllEntityVars?: boolean, includeSaveFields?: boolean };
+// ENTITY OF AN UNKNOWN CLASS (ENGINE INTERNALS, SERIALIZING, EDITORS) - ALLOWS EVERY CLASS-SPECIFIC FIELD
+export type AnyEntity = Entity & ArcadeObjectEntity & CircleEntity & PolygonEntity & ButtonEntity & TextObjectEntity;
+
+export type ConstructEntityOptions = { propsToIgnoreInEntity?: string[], fillPresets?: boolean, forceAllEntityVars?: boolean, includeSaveFields?: boolean, keepRuntimeUIDs?: boolean };
 export type EntityVarsNestedGroup = Record<string, string[]>;
 export type EntityVarsNestedEntry = string | EntityVarsNestedGroup;
 
@@ -212,12 +202,15 @@ export var entityVarsNestedRecord: Record<string, string[]> =
         "rigidbodyRect",
         "hitboxRadius",
         "polygonVertices"
+    ],
+    "TextObject": [
     ]
 }
 
 export var entityVarsAr: string[] =
 [
-    "entity",
+    "name",
+    "extends",
     "baseClass",
     "imagePath",
     "texture"
@@ -259,7 +252,7 @@ export interface Category
     image?: string;
     expanded?: boolean;
     entries?: Array<string> | string;
-    entity?: string;
+    extends?: string;
     showLabels?: boolean;
 }
 
@@ -279,8 +272,8 @@ export interface SettingsData
 {
     name?: string; // WHEN SettingsData IS SAVED TO FILE, THIS NAME IS USED AS THE FILE NAME. IF LEFT EMPTY, THE DEFAULT settingsData.json IS USED. SO ANY EXTRA SettingsData json NEEDS A UNIQUE NAME, ELSE THEY WILL OVERRIDE THE DEFAULT ONE
     categories?: Record<string, Category>;
-    baseEntities?: Entity[];
-    entities?: Entity[];
+    basePrefabs?: Entity[];
+    prefabs?: Entity[];
     tilesheets?: Array<Entity>;//
     layers?: Array<string>;
     layersInfo?: Record<string, Partial<LayerInfo>>; // Partial, SINCE I'LL BE ASSIGNING MORE KEYS TO IT DURING PROCESSING
@@ -343,8 +336,8 @@ export interface LayerInfo {
 
 export enum CollisionHandlingType
 {
-    POINT,
-    RADIUS
+    POINT = "POINT",
+    RADIUS = "RADIUS"
 }
 
 // EVENTS MONSTER - SINCE IT WANT TO EASILY ADD BARE-EVENTS WITHOUT DUPLICATING CODE
@@ -505,11 +498,13 @@ export class Shader
 export type SceneOptions = {
     settingsData?: SettingsData;
     persistent?: boolean;
-    secret?: boolean;
     UI?: boolean;
     resize?: boolean;
     solo?: boolean;
 }
+
+// every SceneOptions key, typed as a Record so adding an option without listing it here is a compile error
+export const sceneOptionKeys: Record<keyof SceneOptions, true> = { settingsData: true, persistent: true, UI: true, resize: true, solo: true };
 
 export type SceneClass<T extends Scene = Scene> = new (sceneOptions?: SceneOptions) => T;
 export type AwakePayload<T> = T extends { OnAwake: (payload: infer P) => any } ? P : T extends { Awake: (payload: infer P) => any } ? P : never;

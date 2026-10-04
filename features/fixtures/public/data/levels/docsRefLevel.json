@@ -1,0 +1,19 @@
+{
+  "name": "docsRefLevel",
+  "dimensions": {
+    "width": 800,
+    "height": 600
+  },
+  "entitiesByLayer": {
+    "objects": [
+      {
+        "extends": "hero",
+        "name": "lvlHero",
+        "position": {
+          "x": 5,
+          "y": 6
+        }
+      }
+    ]
+  }
+}

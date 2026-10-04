@@ -8,9 +8,9 @@ import { Island } from "./island";
 import { GrabJoint } from "./grab";
 import { AABBTree } from "./aabbtree";
 import { AABB, containsAABB, createAABB, toRigidBody } from "./aabb";
-import { Vec2 } from "../new-rapid-render";
+import { Vec2 } from "../rapid-render";
 import { Renderer } from "./renderer";
-import { Color } from "../new-rapid-render";
+import { Color } from "../rapid-render";
 import type { Scene } from "../../scenes/scene";
 
 type Registrable = RigidBody | Joint;
@@ -47,6 +47,12 @@ export class World
     {
         this.scene = scene;
         this.renderer = new Renderer();
+    }
+
+    // settingsData gravity when set, same as arcade physics. else sopiro's own default
+    get gravity(): number
+    {
+        return this.scene.settingsHandler.GetRaw()?.gravity ?? Settings.gravity * Settings.gravityScale;
     }
 
     update(delta: number): void
@@ -243,7 +249,7 @@ export class World
                 if (!(Settings.colorizeBody || Settings.colorizeIsland))
                     l = Util.clamp(l + 10, 0, 100);
 
-                let color = b.type == Type.Static ? "#0f0f0f" : Color.FromHSL(h, s, l).toHex();
+                let color = b.type == Type.Static ? "#0f0f0f" : Color.fromHSL(h, s, l).toHex();
                 
                 r.drawBody(b, Settings.indicateCoM, outlineWidth, true, true, "#000000", color);
             }

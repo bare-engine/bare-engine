@@ -1,14 +1,35 @@
 import { MakePathForEntity } from "../globals";
-import { Texture, Vec2 } from "../libraries/new-rapid-render";
+import { Texture, Vec2 } from "../libraries/rapid-render";
 import { Scene } from "../scenes/scene";
-import { BareEvent, BlockedState, ConstructEntityOptions, Entity, HitboxType, Rectangle, Rectangle2Vec } from "../types/bareTypes";
+import { BareEvent, BlockedState, ConstructEntityOptions, Entity, HitboxType, Position, Rectangle, Rectangle2Vec } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
 import { Dropdown, InspectorField, Int } from "../utils/decorators";
 import { Save } from "../utils/saveFields";
 import { GameObject } from "./gameObject";
 
+// ENTITY PROPERTIES FOR this.AddGameObject<ArcadeObject>({ ... })
+// OBJECT VALUES CAN ALSO BE A PRESET NAME, EG: hitbox: "FULL"
+export interface ArcadeObjectEntity extends Entity
+{
+    static?: boolean;
+    collide?: boolean;
+    sensor?: boolean;
+    velocity?: Position | string;
+    drag?: number;
+    restitution?: number;
+    stayInBounds?: boolean;
+    removeOnOutOfBounds?: boolean;
+    hitboxInheritsInnerTransform?: boolean;
+    hitboxType?: "Rectangle" | "Circle";
+    hitbox?: Rectangle2Vec | string;
+    hitboxRadius?: number;
+    pivotBasedOnHitbox?: Position | string;
+}
+
 export class ArcadeObject extends GameObject
 {
+    declare entity: ArcadeObjectEntity | null;
+
     public isPhysicsObject = true;
     
     physicsHitbox: Hitbox = new Hitbox(this, {x1 : 0, y1 : 0, x2 : 0, y2 : 0});
@@ -79,11 +100,13 @@ export class ArcadeObject extends GameObject
             this.physicsHitbox.rectangle = {x: 0, y: 0, width: this.texture!.width, height: this.texture!.height};
     }
 
-    override OnAdded(): void
+    override Added(): void
     {
         // TOUCH THE LAZY scene.arcade CONTROLLER SO IT EXISTS AND IS LISTENING BEFORE
         // game_objectAdded FIRES FOR THIS OBJECT (IT TRACKS PHYSICS OBJECTS VIA THAT EVENT)
         this.scene.arcade;
+
+        super.Added();
     }
 
     override SetTexture(texture:Texture): this
@@ -137,7 +160,7 @@ export class ArcadeObject extends GameObject
         };
     }
 
-    override OnApplyEntityToGameObject(entity: Entity, addComponents: boolean)
+    override OnApplyEntityToGameObject(entity: ArcadeObjectEntity, addComponents: boolean)
     {
         // RECTANGLE IS SET BY THE hitbox SPECIAL MAP HANDLER (RUNS FIRST); HERE WE APPLY THE
         // ENTITY-DEPENDENT EXTRAS (CIRCLE TYPE / RADIUS / pivotBasedOnHitbox) ON TOP OF IT.
@@ -160,7 +183,7 @@ export class ArcadeObject extends GameObject
                     // TODO, CACHE IMAGE SIZES?
                     var hbRect = (this.physicsHitbox.rectangle!);
 
-                    if (entity.pivotBasedOnHitbox)
+                    if (typeof entity.pivotBasedOnHitbox === "object") // PRESET STRINGS ARE FILLED BY NOW
                     {
                         var pivot = new Vec2();
 

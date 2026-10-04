@@ -1,5 +1,5 @@
 import { RegisterController } from "../globals";
-import { Vec2 } from "../libraries/new-rapid-render";
+import { Vec2 } from "../libraries/rapid-render";
 import type { Scene } from "../scenes/scene";
 import { BareEvent, CameraScaleMode, Rectangle, type Size } from "../types/bareTypes";
 import { Enum, InspectorField, Limit, Locked } from "../utils/decorators";
@@ -78,6 +78,7 @@ export class CameraHandler {
             const dims: Size = level.dimensions;
             
             //if (this.bounds.x == 0 && this.bounds.y == 0 && this.bounds.width == 0 && this.bounds.height == 0)
+            if (dims)
                 this.SetBounds({ x: 0, y: 0, width: dims.width, height: dims.height });
 
             this.CalculateZoomFit();
@@ -159,6 +160,7 @@ export class CameraHandler {
     {
         this.target.x = x;
         this.target.y = y;
+        this.ClampTargetToBounds(this.GetZoom());
     }
 
     // top-left position
@@ -173,9 +175,11 @@ export class CameraHandler {
         return this.target;
     }
 
+    // the center the camera shows, already kept within the bounds, without shake.
+    // read right after SetPosition, it gives the new position, not the one from the last frame
     GetPosition(): Vec2
     {
-        return this.position;
+        return this.target;
     }
 
     SetDimensions(width: number, height: number)
@@ -311,40 +315,12 @@ export class CameraHandler {
 
         const { width: screenW, height: screenH } = this.GetViewport();
 
-        let cx = this.target.x;
-        let cy = this.target.y;
-
-        const hasBounds = this.bounds.width > 0 && this.bounds.height > 0;
-
-        if (!bare.levelEditorOpen && hasBounds)
-        {
-            const bx = this.bounds.x;
-            const by = this.bounds.y;
-            const bw = this.bounds.width;
-            const bh = this.bounds.height;
-
-            const viewW = screenW / scale;
-            const viewH = screenH / scale;
-
-            // For BOTH modes:
-            // - if viewport bigger than bounds on an axis => center on that axis
-            // - else clamp on that axis
-            if (viewW >= bw) cx = bx + bw / 2;
-            else cx = Helper.Clamp(cx, bx + viewW / 2, bx + bw - viewW / 2);
-
-            if (viewH >= bh) cy = by + bh / 2;
-            else cy = Helper.Clamp(cy, by + viewH / 2, by + bh - viewH / 2);
-
-            // Write the clamped center back into target so it can't drift
-            // unbounded while pressed against an edge (otherwise AddPosition
-            // accumulates off-screen and reversing direction does nothing).
-            this.target.x = cx;
-            this.target.y = cy;
-        }
+        // zoom or screen size may have changed since SetPosition
+        this.ClampTargetToBounds(scale);
 
         const shake = this.GetShakeOffset(scale);
-        this.position.x = cx + shake.x;
-        this.position.y = cy + shake.y;
+        this.position.x = this.target.x + shake.x;
+        this.position.y = this.target.y + shake.y;
 
         // offset so that camera center maps to screen center (world units)
         this.offset.x = -screenW / 2 / scale;
@@ -356,6 +332,34 @@ export class CameraHandler {
                 position: this.position,
                 scale: 1 / scale,
             });
+    }
+
+    private ClampTargetToBounds(scale: number): void
+    {
+        const hasBounds = this.bounds.width > 0 && this.bounds.height > 0;
+        if (bare.levelEditorOpen || !hasBounds)
+            return;
+
+        const { width: screenW, height: screenH } = this.GetViewport();
+
+        const bx = this.bounds.x;
+        const by = this.bounds.y;
+        const bw = this.bounds.width;
+        const bh = this.bounds.height;
+
+        const viewW = screenW / scale;
+        const viewH = screenH / scale;
+
+        // For BOTH modes:
+        // - if viewport bigger than bounds on an axis => center on that axis
+        // - else clamp on that axis
+        // Written back into target so it can't drift unbounded while pressed against an edge
+        // (otherwise AddPosition accumulates off-screen and reversing direction does nothing).
+        if (viewW >= bw) this.target.x = bx + bw / 2;
+        else this.target.x = Helper.Clamp(this.target.x, bx + viewW / 2, bx + bw - viewW / 2);
+
+        if (viewH >= bh) this.target.y = by + bh / 2;
+        else this.target.y = Helper.Clamp(this.target.y, by + viewH / 2, by + bh - viewH / 2);
     }
 
     ScreenToWorld(x: number, y: number)

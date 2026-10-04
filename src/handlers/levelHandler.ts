@@ -1,6 +1,6 @@
 
-import { MakePathForEntity, RegisterController } from "../globals";
-import { Color, Texture } from "../libraries/new-rapid-render";
+import { globalEvents, MakePathForEntity, RegisterController } from "../globals";
+import { Color, Texture } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { Scene } from "../scenes/scene";
 import { Bare } from "../types/bare";
@@ -126,7 +126,7 @@ export class LevelHandler
     {
         // WHEN IN PRODUCTION, WE DON'T LOAD LEVELS FROM CACHE
         // BUT ONCE PLAYER EDITS IT IN LEVEL EDITOR, IT'S LOADED FROM CACHE (SINCE IN PROD WE CAN'T SAVE EDITS TO DISK)
-        if (!window.isLocalhost)
+        if (!__DEV__)
         {
             var levelStr = SaveData.currentLevelStr;
             if (typeof levelInput === "string")
@@ -173,6 +173,7 @@ export class LevelHandler
         catch (error: any)
         {
             console.error('Failed to load level', error);
+            this.scene.render = true;
             return;
         }
 
@@ -205,6 +206,10 @@ export class LevelHandler
             // LEVEL DATA
             level = levelInput;
             levelStr = level.name; // DON'T REALLY WANT TO USE THIS LEVEL PROPERTY? NOT SAME AS ACTUAL NAME OF FILE - CHANGED IT SO IT IS
+
+            // cache it under its name, so Restart()/LoadCurrent() can reload it instead of fetching a file that may not exist
+            if (!level.isData && levelStr)
+                LevelHandler.levelCache.set(levelStr, level);
         }
 
         // WHEN A LEVEL IS SET AS DATA, WE DON'T SET SaveData.currentLevelStr TO NOT LOAD IT WHEN CLOSING THE EDITOR
@@ -224,6 +229,9 @@ export class LevelHandler
         // });
         if (level.settingsData && level.settingsData != this.scene.settingsData.name)
             await this.LoadSettingsData(level.settingsData);
+
+        for (const layerName in level.entitiesByLayer)
+            level.entitiesByLayer[layerName] = this.scene.settingsHandler.RemoveDanglingReferences(level.entitiesByLayer[layerName], level.name);
 
         this.currentLevel = level;
 
@@ -274,7 +282,7 @@ export class LevelHandler
 
     }
 
-    LoadTextures(level: LevelData): Promise<Texture>[]
+    LoadTextures(level: LevelData = this.currentLevel): Promise<Texture>[]
     {
         var promisesAr: Array<Promise<Texture>> = [];
         var texturesFound = new Set<string>();
@@ -340,12 +348,19 @@ to package.json to keep the generated assets (can become large for big projects)
         return promisesAr;
     }
 
-    async Save()
+    // THIS SAVES THE LEVEL -IF- bare.storage HAS BEEN CALLED (MAKING SaveDataHandler EXIST).
+    // SaveDataHandler LISTENS FOR THE level_postSave EVENT AND SAVES ITS DATA, INCLUDING THE LEVEL DATA
+    // IF YOU'D WANT TO JUST STORE A LEVEL, YOU CALL Serialize(), THEN TO FINALLY SAVE ALL, CALL Save()
+    //    COULD BE USEFUL FOR A GAME WHERE YOU GO THROUGH LEVELS AND WANT TO REMEMBER THEIR STATE,
+    //    BUT WHEN YOU DIE, THEY SHOULD BE REVERTED TO THEIR PREVIOUS STATE, USING LevelHandler.ClearCache() AND POTENTIALLY Load()
+    //    HOWEVER, WHEN YOU REACH A SAVE POINT, YOU CAN CALL Save() TO SAVE THEM ALL
+    async Save(): Promise<LevelData>
     {
+        const level = this.currentLevel;
+
         //events.emit(BareEvent.level_preSave, {levelStr: SaveData.currentLevelStr});
         bare.SendEvent(BareEvent.level_preSave, {levelStr: SaveData.currentLevelStr});
         
-        const level = this.currentLevel;
         this.Serialize(level);
 
         //events.emit(BareEvent.level_postSave, {levelStr: SaveData.currentLevelStr, level: level});
@@ -355,7 +370,7 @@ to package.json to keep the generated assets (can become large for big projects)
     }
 
     // THIS JUST REPOPULATES THE entitiesByLayer OF THE LEVEL
-    Serialize(level: LevelData)
+    Serialize(level: LevelData = this.currentLevel): LevelData
     {
         var gameLayers = bare.object.GetLayers();
         var layersSettings = this.scene.settingsData.layers;
@@ -397,12 +412,14 @@ to package.json to keep the generated assets (can become large for big projects)
         }
 
         GameObjectSerializer.CleanEntities(Object.values(level.entitiesByLayer), this.scene.settingsHandler.rawEntitiesMappedByUID, ["interactableInEditor", "save"]);
+    
+        return level;
     }
 
     // SERIALIZE OBJECT DIFF
     SerializeObject(obj: GameObject, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false, includeSaveFields: false }): Entity
     {
-        var entity = this.scene.GetEnitityFromObject(obj, options);
+        var entity = this.scene.GetEntityFromObject(obj, options);
 
         //delete entity.name;
 
@@ -439,3 +456,7 @@ to package.json to keep the generated assets (can become large for big projects)
 }
 
 RegisterController(LevelHandler);
+
+globalEvents.persistent.on(BareEvent.game_completeClear, () => {
+    LevelHandler.ClearCache();
+});

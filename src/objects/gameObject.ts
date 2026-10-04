@@ -1,14 +1,14 @@
 import type { Component } from "../controllers/componentController";
 import { assetsHandler } from "../handlers/assetsHandler";
 import mitt from "../libraries/mitt";
-import { Color, MaskType, MatrixStack, MatrixStore, Texture, Vec2 } from "../libraries/new-rapid-render";
+import { Color, MaskType, MatrixStack, MatrixStore, Texture, Vec2 } from "../libraries/rapid-render";
 import type { Scene } from "../scenes/scene";
 import type { ComponentCtor, Ctor, DropFirst, Events, Rectangle, Shader } from "../types/bareTypes";
 import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';
 import { Hitbox } from '../types/hitbox';
 import { getOwnInspectorFieldNames, InspectorField, isInspectorFieldDescriptor, Percentage } from "../utils/decorators";
-import { getOwnSaveFieldNames, Save } from "../utils/saveFields";
 import { Helper } from '../utils/helper';
+import { getOwnSaveFieldNames, Save } from "../utils/saveFields";
 
 // Lifecycle hook bits. GameObject's hooks are empty virtuals, so walking a whole scene to call them
 // costs real time and does nothing. Every object caches which hooks its own class implements (`hooks`)
@@ -91,6 +91,7 @@ export class GameObject
  
     scene: Scene;
 
+    @InspectorField
     name:string;
     pluginName:string;
     uniqueID:string = "";
@@ -98,7 +99,16 @@ export class GameObject
     active:boolean = true;
     texture: Texture | null;
     
-    shaders: Shader[] = [];
+    private _shaders: Shader[] | null = null;
+
+    get shaders(): Shader[]
+    {
+        return this._shaders ??= [];
+    }
+    set shaders(value: Shader[])
+    {
+        this._shaders = value;
+    }
     private mask: GameObject | null = null;
     private maskType: MaskType = MaskType.EQUAL;
 
@@ -132,9 +142,28 @@ export class GameObject
     
     visibleInEditor:boolean = true;
 
-    OnTextureLoadedCallbacks: Function[] = [];
+    private _OnTextureLoadedCallbacks: Function[] | null = null;
 
-    events = mitt<Events>();
+    get OnTextureLoadedCallbacks(): Function[]
+    {
+        return this._OnTextureLoadedCallbacks ??= [];
+    }
+    set OnTextureLoadedCallbacks(value: Function[])
+    {
+        this._OnTextureLoadedCallbacks = value;
+    }
+
+    private _events: ReturnType<typeof mitt<Events>> | null = null;
+
+    // ONLY ALLOCATING EVENTS WHEN NEEDED, SAVES SOME MEMORY
+    get events(): ReturnType<typeof mitt<Events>>
+    {
+        return this._events ??= mitt<Events>();
+    }
+    set events(value: ReturnType<typeof mitt<Events>>)
+    {
+        this._events = value;
+    }
 
     layer:string = "";
 
@@ -457,11 +486,12 @@ export class GameObject
 
         this.texture = texture;
 
-        if (this.texture != window.redPixelTexture) // redPixelTexture MEANS IT'S NOT FOUND
+        if (this.texture != bare.asset.missingTexture) // missingTexture MEANS IT'S NOT FOUND
         {
-            var onTextureLoadedCallbacksCached = this.OnTextureLoadedCallbacks;
-            this.OnTextureLoadedCallbacks = [];
-            
+            var onTextureLoadedCallbacksCached = this._OnTextureLoadedCallbacks;
+            this._OnTextureLoadedCallbacks = null;
+
+            if (onTextureLoadedCallbacksCached)
             for (var i = 0; i < onTextureLoadedCallbacksCached.length; i++)
             {
                 onTextureLoadedCallbacksCached[i]();
@@ -473,7 +503,7 @@ export class GameObject
 
     WhenTextureLoaded(callback: () => void)
     {
-        if (this.texture && this.texture != window.redPixelTexture)
+        if (this.texture && this.texture != bare.asset.missingTexture)
         {
             // TEXTURE IS ALREADY THERE
             callback();
@@ -656,15 +686,17 @@ export class GameObject
             return;
         
         // UPDATE SHADERS
-        for (var i = this.shaders.length - 1; i >= 0; i--)
+        var shaders = this._shaders;
+        if (shaders)
+        for (var i = shaders.length - 1; i >= 0; i--)
         {
-            var shader = this.shaders[i];
+            var shader = shaders[i];
 
             if (shader.Update)
             {
                 var remove = shader.Update(this);
                 if (remove)
-                    this.shaders.splice(i, 1);
+                    shaders.splice(i, 1);
             }
         }
 
@@ -838,7 +870,7 @@ export class GameObject
         if (!this.visible)
             return;
         
-        if (window.debug)
+        if (bare.debug)
         {
             // OUTER PIVOT / ORIGIN — BLACK CIRCLE (world space so nested children draw correctly)
             var originWorld = this.ToGlobal(this.pivot);
@@ -874,7 +906,7 @@ export class GameObject
         {
             var child = children[i];
 
-            if (window.debug || (child.subtreeHooks & HOOK_POST_RENDER))
+            if (bare.debug || (child.subtreeHooks & HOOK_POST_RENDER))
                 child.PostRender();
         }
     }
@@ -918,9 +950,9 @@ export class GameObject
         
         var texture = this.texture;
 
-        if (this.shaders.length > 0)
+        if (this._shaders && this._shaders.length > 0)
         {
-            const glShaders = this.shaders.map(shader => shader.shader);
+            const glShaders = this._shaders.map(shader => shader.shader);
             texture = rapid.applyFilters(this.texture, glShaders);
         }
 
@@ -1090,11 +1122,29 @@ export class GameObject
     @InspectorField @Save
     save: boolean = false;
 
-    @InspectorField @Save
-    tags:Array<string> = [];
+    private _tags: Array<string> | null = null;
 
     @InspectorField @Save
-    customData: Record<string, any> = {};
+    get tags(): Array<string>
+    {
+        return this._tags ??= [];
+    }
+    set tags(value: Array<string>)
+    {
+        this._tags = value;
+    }
+
+    private _customData: Record<string, any> | null = null;
+
+    @InspectorField @Save
+    get customData(): Record<string, any>
+    {
+        return this._customData ??= {};
+    }
+    set customData(value: Record<string, any>)
+    {
+        this._customData = value;
+    }
 
     get x(): number
     {
@@ -1263,28 +1313,41 @@ export class GameObject
         return this.texture ? this.texture.localBounds : null;
     }
 
+    // deepest visible child whose bounds contain pWorld, or this object itself, or null
+    GetDeepestChildAt(pWorld: Vec2): GameObject | null
+    {
+        for (var i = this.children.length - 1; i >= 0; i--)
+        {
+            var child = this.children[i];
+
+            if (!child.visible || !child.visibleInEditor)
+                continue;
+
+            var found = child.GetDeepestChildAt(pWorld);
+            if (found)
+                return found;
+        }
+
+        if (Helper.IsPointInRectangle(pWorld, this.GetBounds()))
+            return this;
+
+        return null;
+    }
+
     GetBounds(global:boolean = true): Rectangle
     {
         const ownBounds = this.GetLocalContentBounds();
         if (!ownBounds)
             return this.GetBoundsWithChildren(global);
 
-        if (!global || !this.parent)
-        {
-            const bounds = ownBounds;
-            return {
-                x: this.x + (bounds.x - this.pivot.x) * this.totalScaleX,
-                y: this.y + (bounds.y - this.pivot.y) * this.totalScaleY,
-                width: bounds.width * this.totalScaleX,
-                height: bounds.height * this.totalScaleY
-            };
-        }
-
         var m = rapid.matrixStack;
         m.save();
         m.identity();
-        
-        this.buildAncestorMatrix(m);
+
+        // without the ancestors the corners are in parent space. the object's own transform is
+        // always applied, so its rotation and inner transform count (also for root objects)
+        if (global)
+            this.buildAncestorMatrix(m);
         m.save();
         this.ComposeContentMatrix(m.matrix, m.curWorldM, -1);
 
@@ -1582,6 +1645,18 @@ export class GameObject
 
         return this;
     }
+
+    FlipX(): this
+    {
+        this.scale.x *= -1;
+        return this;
+    }
+
+    FlipY(): this
+    {
+        this.scale.y *= -1;
+        return this;
+    }
     
     SetName(name: string): this
     {
@@ -1704,13 +1779,13 @@ export class GameObject
         }
     }
 
-    AddChild(input?: Entity | string | GameObject | GameObjectClass | Texture): GameObject
+    AddChild<T extends GameObject = GameObject>(input?: NonNullable<T["entity"]> | string | GameObject | GameObjectClass | Texture): T
     {
         // RESET CACHED VALUES SO THEY GET RECALCULATED
         //this.cachedChildrenWidth = -1;
         //this.cachedChildrenHeight = -1;
 
-        return this.scene.AddGameObject(input, this);
+        return this.scene.AddGameObject<T>(input, this);
     }
 
     RemoveChild(child: GameObject)
@@ -1763,12 +1838,13 @@ export class GameObject
 
     }
 
-    GetChildByName(name: string)
+    // EG: GetChildByName<TextObject>("score").SetText("0")
+    GetChildByName<T extends GameObject = GameObject>(name: string): T | null
     {
         for (var i = 0; i < this.children.length; i++)
         {
             if (this.children[i].name == name)
-                return this.children[i];
+                return this.children[i] as T;
         }
         
         return null;
@@ -1791,7 +1867,7 @@ export class GameObject
         this.active = true;
         this.visible = true;
         this.visibleInEditor = true;
-        this.tags = [];
+        this._tags = null;
         this.tapHitbox = null;
         this.revertPivotOnSave = false;
         this.resizeable = true;
@@ -1805,11 +1881,11 @@ export class GameObject
         this.childrenInheritInnerTransform = true;
         this.renderParentTransform = null;
 
-        this.OnTextureLoadedCallbacks = [];
+        this._OnTextureLoadedCallbacks = null;
 
-        this.customData = {};
+        this._customData = null;
 
-        this.events.clearAll();
+        this._events?.clearAll();
 
         this.RemoveMask();
 
@@ -1847,7 +1923,7 @@ export class GameObject
     
     RemoveShaders()
     {
-        this.shaders = [];
+        this._shaders = null;
     }
     
     Remove(clear:boolean = true)

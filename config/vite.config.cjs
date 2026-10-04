@@ -33,9 +33,8 @@ module.exports = ({ mode }) => {
     // Strip the editor-only inspector decorators in prod so decorators.ts tree-shakes away.
     // On by default for prod builds; opt out with "bareEngine.stripDecorators": false.
     const stripDecorators = !isDev && projectPackage.bareEngine?.stripDecorators !== false;
-    const autoRegisterClasses = projectPackage.bareEngine?.autoRegisterClasses !== false
-        && projectPackage.bareEngine?.autoRegisterComponents !== false;
-    const texturePackImages = resolveTexturePackImagesConfig(projectPackage, { warn: console.warn });
+    const autoRegisterClasses = projectPackage.bareEngine?.autoRegisterClasses !== false;
+    const texturePackImages = resolveTexturePackImagesConfig(projectPackage);
 
     return {
         root: projectRoot,
@@ -71,7 +70,8 @@ module.exports = ({ mode }) => {
             bareHtmlPlugin({
                 projectRoot,
                 indexHtmlPath: engineIndexPath,
-                gameId
+                gameId,
+                isDev
             }),
             bareIndexOutputPlugin(),
             bareInitialAssetsPlugin({ projectRoot }),
@@ -91,6 +91,12 @@ module.exports = ({ mode }) => {
         ],
         server: {
             open: false,
+            // Transform the entry (and, via pre-transform, its whole import graph) as soon as
+            // the server starts, instead of waiting for the browser's first request. Every
+            // module goes through the TypeScript transformer, so a cold first load is slow.
+            warmup: {
+                clientFiles: ["./src/game.ts"]
+            },
             watch: {
                 ignored: [
                     "**/node_modules/**",

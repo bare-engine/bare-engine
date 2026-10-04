@@ -11,7 +11,7 @@ export async function createAssetPackConfig(options = {}) {
     const entry = options.entry || "./texturePackImages";
     const output = options.output || "./public/initial/generated";
     const projectPackage = readProjectPackage(projectRoot);
-    const texturePackImages = resolveTexturePackImagesConfig(projectPackage, { warn: console.warn });
+    const texturePackImages = resolveTexturePackImagesConfig(projectPackage);
 
     const { compress } = await importAssetPack(projectRoot, "@assetpack/core/image");
     const { checkExt, createNewAssetAt, swapExt } = await importAssetPack(projectRoot, "@assetpack/core");

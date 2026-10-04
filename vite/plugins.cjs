@@ -1,4 +1,5 @@
 const fs = require("node:fs");
+const { cleanSettingsUIDs } = require("./settingsUIDs.cjs");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
 const { parse: acornParse } = require("acorn");
@@ -267,7 +268,7 @@ function bareAutoRegisterClassesPlugin(options = {}) {
         } catch {
             return names;
         }
-        for (const group of [data.entities, data.baseEntities]) {
+        for (const group of [data.prefabs, data.basePrefabs]) {
             if (!group || typeof group !== "object") continue;
             const entities = Array.isArray(group) ? group : Object.values(group);
             for (const entity of entities) {
@@ -623,6 +624,7 @@ function bareHtmlPlugin(options = {}) {
     const indexHtmlPath = options.indexHtmlPath || path.resolve(__dirname, "../config/index.html");
     const projectPackage = readProjectPackage(projectRoot);
     const gameId = options.gameId || projectPackage.bareEngine?.gameId || "";
+    const isDev = options.isDev === true;
     const htmlOptions = projectPackage.bareEngine?.index || {};
     const title = htmlOptions.title || projectPackage.bareEngine?.name || projectPackage.name || "Bare Game";
     const backgroundColor = htmlOptions.backgroundColor || "rgb(255, 255, 255)";
@@ -667,6 +669,7 @@ function bareHtmlPlugin(options = {}) {
                     .replace(/%BARE_FIRST_LEVEL_LOAD%/g, JSON.stringify(firstLevelLoad))
                     .replace(/%BARE_PRELOAD_CURRENT_LEVEL%/g, JSON.stringify(preloadCurrentLevel))
                     .replace(/%BARE_GAME_ID%/g, JSON.stringify(gameId))
+                    .replace(/%BARE_DEV%/g, JSON.stringify(isDev))
                     .replace("<!-- js:bootstrap -->", bootstrap);
             }
         }
@@ -710,7 +713,7 @@ function bareInitialAssetsPlugin(options = {}) {
     };
 }
 
-// Shared "suppress the next dev full-reload" window. The save-entity-data endpoint
+// Shared "suppress the next dev full-reload" window. The save-settings-data endpoint
 // (bareEditorAndApiPlugin) opens it when a save passes skipReload, and BOTH the
 // settingsData HMR handler AND the generated-assets watcher honor it - otherwise
 // regenerating assets.ts on an entity add/remove would full-reload the page even
@@ -724,6 +727,11 @@ let skipReloadUntil = 0;
 // empty. The texturePackImages plugin does the single authoritative reload once the
 // build finishes and the atlas is back on disk.
 let texturePackBuilding = false;
+
+// Set by bare:generated-assets in dev. The texturePackImages plugin calls it once a
+// build finishes, since on Windows the watcher can miss the atlas json being replaced
+// (renamed over), which left assets.ts stale until the next unrelated change.
+let regenerateGeneratedAssets = null;
 
 function bareEditorAndApiPlugin(options = {}) {
     const projectRoot = options.projectRoot || process.cwd();
@@ -839,12 +847,12 @@ function bareEditorAndApiPlugin(options = {}) {
                         fs.writeFileSync(fullPath, componentTemplate(className));
                         // No need to write bare.AddClass anywhere: the bare:auto-register-classes
                         // plugin scans the new file and injects it in-memory on the next compile.
-                        // Attach the component to the entity in settingsData.json here (server-side)
+                        // Attach the component to the prefab in settingsData.json here (server-side)
                         // so the write can't be interrupted by the hot-restart the file write triggers.
                         let attached = false;
-                        if (attach && attach.entity) {
-                            attached = attachComponentToEntity(projectRoot, {
-                                entity: String(attach.entity),
+                        if (attach && attach.prefab) {
+                            attached = attachComponentToPrefab(projectRoot, {
+                                prefab: String(attach.prefab),
                                 childPath: Array.isArray(attach.childPath) ? attach.childPath : [],
                                 componentName
                             });
@@ -860,7 +868,7 @@ function bareEditorAndApiPlugin(options = {}) {
                     return;
                 }
 
-                if (req.method === "POST" && requestUrl.pathname === "/api/save-entity-data") {
+                if (req.method === "POST" && requestUrl.pathname === "/api/save-settings-data") {
                     readJson(req, res, ({ settingsData, path: customPath, skipReload }) => {
                         if (!settingsData) {
                             throw new Error("No settingsData provided");
@@ -879,6 +887,7 @@ function bareEditorAndApiPlugin(options = {}) {
                             lastSettingsDataPath = relativePath.replace(/\\/g, "/");
                         }
 
+                        cleanSettingsUIDs(settingsData, publicDir, fullPath);
                         writeFormattedJsonFile(fullPath, settingsData);
                         return { success: true, message: `Entity data saved to ${fullPath}` };
                     });
@@ -935,18 +944,25 @@ function bareTexturePackImagesPlugin(options = {}) {
     const buildCommand = options.buildCommand || [process.execPath, path.resolve(__dirname, "../scripts/buildAssets.cjs")];
     const debounceMs = options.debounceMs ?? 200;
     const runOnStart = options.runOnStart ?? false;
+    const outputDir = options.outputDir || path.join(projectRoot, "public/initial/generated");
     let timer = null;
     let child = null;
     let queued = false;
     let serverRef = null;
+    let scheduleId = 0;
 
     function schedule(reason) {
         if (timer) {
             clearTimeout(timer);
         }
-        timer = setTimeout(() => {
+        const id = ++scheduleId;
+        timer = setTimeout(async () => {
             timer = null;
-            run(reason);
+            await waitForStableFiles(watchDir);
+            // a newer event arrived while waiting; its own schedule will run the build
+            if (id === scheduleId) {
+                run(reason);
+            }
         }, debounceMs);
     }
 
@@ -964,9 +980,14 @@ function bareTexturePackImagesPlugin(options = {}) {
 
         // Suppress the generated-assets watcher's reload until the atlas is rewritten.
         texturePackBuilding = true;
+        // AssetPack output is deterministic, so a rebuild of unchanged images (eg the
+        // runOnStart build) leaves the atlas byte-identical - don't reload the page for that.
+        const before = snapshotDir(outputDir);
         const finish = (sendReload) => {
             child = null;
-            if (sendReload && serverRef) {
+            const assetsChanged = regenerateGeneratedAssets?.();
+            const atlasChanged = !sameSnapshot(before, snapshotDir(outputDir));
+            if (sendReload && serverRef && (atlasChanged || assetsChanged)) {
                 serverRef.ws.send({ type: "full-reload", path: "/initial" });
             }
             // Swallow the trailing generated-assets watcher events from the freshly
@@ -996,10 +1017,68 @@ function bareTexturePackImagesPlugin(options = {}) {
         });
     }
 
+    // build has no dev server to run the pack, and public/initial/generated is gitignored,
+    // so a fresh checkout would bundle without the atlas. run it once and wait, before
+    // bare:generated-assets reads the atlas json in its own buildStart
+    function runForBuild() {
+        if (!fs.existsSync(watchDir)) {
+            console.warn(`[assets] texturePackImages folder not found: ${watchDir}`);
+            return Promise.resolve();
+        }
+
+        const [command, ...args] = buildCommand;
+        const resolvedCommand = process.platform === "win32" && command === "npm" ? "npm.cmd" : command;
+        const useShell = process.platform === "win32" && /\.cmd$/i.test(resolvedCommand);
+        console.log(`[assets] Running ${buildCommand.join(" ")} (build)`);
+
+        return new Promise((resolve, reject) => {
+            const buildChild = spawn(resolvedCommand, args, {
+                cwd: projectRoot,
+                stdio: "inherit",
+                shell: useShell
+            });
+            buildChild.on("error", error => reject(new Error(`build:assets failed to start: ${error.message}`)));
+            buildChild.on("close", code => code === 0
+                ? resolve()
+                : reject(new Error(`build:assets failed with code ${code}`)));
+        });
+    }
+
+    let isBuild = false;
+
     return {
         name: "bare:texture-pack-images",
+        configResolved(config) {
+            isBuild = config.command === "build";
+        },
+        buildStart: {
+            order: "pre",
+            sequential: true,
+            async handler() {
+                if (isBuild) {
+                    await runForBuild();
+                }
+            }
+        },
         configureServer(server) {
             serverRef = server;
+            // On Windows a file that is still being copied/saved is locked, so chokidar's
+            // fs.watch on it throws EBUSY/EPERM. Without an "error" listener that kills the
+            // dev server; instead retry watching once the lock is released.
+            server.watcher.on("error", (error) => {
+                const filePath = error?.path || error?.filename;
+                if (!filePath || (error.code !== "EBUSY" && error.code !== "EPERM")) {
+                    console.error(`[watcher] ${error?.message || error}`);
+                    return;
+                }
+                setTimeout(() => {
+                    server.watcher.unwatch(filePath);
+                    server.watcher.add(filePath);
+                    if (normalize(filePath).startsWith(normalize(watchDir))) {
+                        schedule(`retry:${path.relative(watchDir, filePath)}`);
+                    }
+                }, 500);
+            });
             if (!fs.existsSync(watchDir)) {
                 console.warn(`[assets] texturePackImages folder not found: ${watchDir}`);
                 return;
@@ -1016,6 +1095,32 @@ function bareTexturePackImagesPlugin(options = {}) {
             }
         }
     };
+}
+
+// name -> contents of every file directly in dir (missing dir -> empty map)
+function snapshotDir(dir) {
+    const snapshot = new Map();
+    if (!fs.existsSync(dir)) {
+        return snapshot;
+    }
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (entry.isFile()) {
+            snapshot.set(entry.name, fs.readFileSync(path.join(dir, entry.name)));
+        }
+    }
+    return snapshot;
+}
+
+function sameSnapshot(a, b) {
+    if (a.size !== b.size) {
+        return false;
+    }
+    for (const [name, contents] of a) {
+        if (!b.has(name) || !contents.equals(b.get(name))) {
+            return false;
+        }
+    }
+    return true;
 }
 
 function bareStripTexturePackImagesPlugin(options = {}) {
@@ -1429,9 +1534,9 @@ function toComponentClassName(name) {
     return `${base.charAt(0).toUpperCase()}${base.slice(1)}Component`;
 }
 
-// Add the component (by its decapitalized name) to an entity's `components` map in
+// Add the component (by its decapitalized name) to a prefab's `components` map in
 // settingsData.json, walking childPath into nested children if given.
-function attachComponentToEntity(projectRoot, { entity, childPath, componentName }) {
+function attachComponentToPrefab(projectRoot, { prefab, childPath, componentName }) {
     const settingsPath = path.join(projectRoot, "public", "data", "settingsData.json");
     if (!fs.existsSync(settingsPath)) {
         return false;
@@ -1442,15 +1547,15 @@ function attachComponentToEntity(projectRoot, { entity, childPath, componentName
     } catch {
         return false;
     }
-    const findEntity = group => Array.isArray(group)
-        ? group.find(value => value.name === entity)
-        : group && group[entity];
-    const normalEntity = findEntity(data.entities);
-    const baseEntity = findEntity(data.baseEntities);
-    if (normalEntity && baseEntity) {
-        throw new Error(`Entity name '${entity}' exists in both entities and baseEntities`);
+    const findPrefab = group => Array.isArray(group)
+        ? group.find(value => value.name === prefab)
+        : group && group[prefab];
+    const normalPrefab = findPrefab(data.prefabs);
+    const basePrefab = findPrefab(data.basePrefabs);
+    if (normalPrefab && basePrefab) {
+        throw new Error(`Prefab name '${prefab}' exists in both prefabs and basePrefabs`);
     }
-    let target = normalEntity || baseEntity;
+    let target = normalPrefab || basePrefab;
     if (!target) {
         return false;
     }
@@ -1572,6 +1677,39 @@ function escapeHtml(value) {
 
 function cleanId(id) {
     return normalize(id.split("?")[0]);
+}
+
+// Wait until every file under dir has stopped changing size and isn't locked. A
+// copy/save into texturePackImages fires "add" while the file is still being written
+// (and locked on Windows), so packing right away silently leaves the new image out.
+async function waitForStableFiles(dir, { intervalMs = 100, stableMs = 500, timeoutMs = 10000 } = {}) {
+    const snapshot = () => {
+        if (!fs.existsSync(dir)) {
+            return "";
+        }
+        return getFilesRecursive(dir).map((filePath) => {
+            try {
+                fs.closeSync(fs.openSync(filePath, "r+"));
+                return `${filePath}:${fs.statSync(filePath).size}`;
+            } catch {
+                return `${filePath}:locked:${Date.now()}`;
+            }
+        }).join("|");
+    };
+
+    const deadline = Date.now() + timeoutMs;
+    let previous = snapshot();
+    let stableSince = Date.now();
+    while (Date.now() < deadline) {
+        await new Promise(resolve => setTimeout(resolve, intervalMs));
+        const current = snapshot();
+        if (current !== previous) {
+            previous = current;
+            stableSince = Date.now();
+        } else if (Date.now() - stableSince >= stableMs) {
+            return;
+        }
+    }
 }
 
 function normalize(value) {
@@ -1742,7 +1880,7 @@ const ASSET_LEVEL_EXTENSIONS = new Set([".json"]);
 // Generates src/generated/assets.ts, giving the project typed enum-like constants
 // for every public asset and every named definition in settingsData.json, eg:
 //   Asset.Image.HUD_COIN  Asset.Sound.COIN  Asset.Font.QILKA_BOLD  Asset.Level.LEVEL
-//   Data.Entity.PLAYER    Data.Animation.PLAYER_IDLE                Data.Layer.OBJECTS
+//   Data.Prefab.PLAYER    Data.Animation.PLAYER_IDLE                Data.Layer.OBJECTS
 function bareGeneratedAssetsPlugin(options = {}) {
     const projectRoot = options.projectRoot || process.cwd();
     const outputPath = options.outputPath || path.join(projectRoot, "src/generated/assets.ts");
@@ -1814,6 +1952,12 @@ function bareGeneratedAssetsPlugin(options = {}) {
                 if (norm === outputNorm) {
                     return; // never react to our own output
                 }
+                // Mid-build, public/initial holds a half-moved atlas (the new webp before its
+                // json is moved next to it), which would generate a bogus assets.ts. The
+                // texturePackImages plugin regenerates once the build has finished.
+                if (texturePackBuilding) {
+                    return;
+                }
                 const isSource = sources.some(src => norm === src || norm.startsWith(src + "/"));
                 if (isSource && generateAssets(projectRoot, outputPath, imageGlobs)) {
                     // assets.ts is excluded from the dev watcher (vite.config server.watch.ignored)
@@ -1834,6 +1978,19 @@ function bareGeneratedAssetsPlugin(options = {}) {
                         server.ws.send({ type: "full-reload", path: "*" });
                     }
                 }
+            };
+
+            regenerateGeneratedAssets = () => {
+                if (!generateAssets(projectRoot, outputPath, imageGlobs)) {
+                    return false;
+                }
+                const mods = server.moduleGraph.getModulesByFile(outputResolved);
+                if (mods) {
+                    for (const mod of mods) {
+                        server.moduleGraph.invalidateModule(mod);
+                    }
+                }
+                return true;
             };
 
             server.watcher.on("add", regenerate);
@@ -2102,19 +2259,15 @@ function generateAssets(projectRoot, outputPath, imageGlobs = []) {
         const fontEntries = dedupeAssetEntries(fonts, file => file.base);
         const levelEntries = dedupeAssetEntries(levels, file => file.relNoExt);
 
-        let entityDefs = [];
-        let baseEntityDefs = [];
+        let prefabDefs = [];
+        let basePrefabDefs = [];
         let animations = [];
         let layers = [];
         const settingsPath = path.join(publicDir, "data/settingsData.json");
         if (fs.existsSync(settingsPath)) {
             const data = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
-            entityDefs = Array.isArray(data.entities)
-                ? data.entities
-                : Object.keys(data.entities || {}).map(name => ({ name }));
-            baseEntityDefs = Array.isArray(data.baseEntities)
-                ? data.baseEntities
-                : Object.keys(data.baseEntities || {}).map(name => ({ name }));
+            prefabDefs = data.prefabs || [];
+            basePrefabDefs = data.basePrefabs || [];
             animations = Object.keys(data.animations || {});
             layers = (data.layers || []).slice();
             // Mirror SettingsHandler.Process(): the engine prepends the default
@@ -2124,8 +2277,8 @@ function generateAssets(projectRoot, outputPath, imageGlobs = []) {
             }
         }
 
-        const entityEntries = dedupeNamedEntries(entityDefs.map(entity => entity.name));
-        const baseEntityEntries = dedupeNamedEntries(baseEntityDefs.map(entity => entity.name));
+        const prefabEntries = dedupeNamedEntries(prefabDefs.map(entity => entity.name));
+        const basePrefabEntries = dedupeNamedEntries(basePrefabDefs.map(entity => entity.name));
         const animationEntries = dedupeNamedEntries(animations);
         const layerEntries = layers.map((name, index) => ({ key: toEnumKey(name), value: index }));
 
@@ -2137,8 +2290,8 @@ function generateAssets(projectRoot, outputPath, imageGlobs = []) {
                 Level: levelEntries
             },
             Data: {
-                Entity: entityEntries,
-                BaseEntity: baseEntityEntries,
+                Prefab: prefabEntries,
+                BasePrefab: basePrefabEntries,
                 Animation: animationEntries,
                 Layer: layerEntries
             }
@@ -2148,7 +2301,7 @@ function generateAssets(projectRoot, outputPath, imageGlobs = []) {
         const existing = fs.existsSync(outputPath) ? fs.readFileSync(outputPath, "utf8") : "";
         if (existing !== output) {
             fs.writeFileSync(outputPath, output);
-            console.log(`Generated assets.ts (${imageEntries.length} images, ${soundEntries.length} sounds, ${fontEntries.length} fonts, ${levelEntries.length} levels, ${entityEntries.length} entities, ${baseEntityEntries.length} base entities, ${animationEntries.length} animations, ${layerEntries.length} layers)`);
+            console.log(`Generated assets.ts (${imageEntries.length} images, ${soundEntries.length} sounds, ${fontEntries.length} fonts, ${levelEntries.length} levels, ${prefabEntries.length} prefabs, ${basePrefabEntries.length} base prefabs, ${animationEntries.length} animations, ${layerEntries.length} layers)`);
             return true;
         }
     } catch (error) {
@@ -2409,7 +2562,7 @@ function replaceEmojiWithNames(value) {
 
 function buildAssetsFile(groups) {
     const renderValue = value => typeof value === "number" ? value : JSON.stringify(value);
-    // Image -> Images, BaseEntity -> BaseEntities. The plural holds every value of
+    // Image -> Images, BasePrefab -> BasePrefabs. The plural holds every value of
     // the group, so Asset.Images is the "get all" counterpart of Asset.Image.X.
     const pluralName = section => section.endsWith("y") ? `${section.slice(0, -1)}ies` : `${section}s`;
 
@@ -2433,7 +2586,7 @@ function buildAssetsFile(groups) {
 
 // IMPORTANT, THESE FIELDS GET CLEARED FOR PRODUCTION:
 // Asset.Images, Asset.Sounds, Asset.Fonts, Asset.Levels
-// Data.Entities, Data.BaseEntities, Data.Animations, Data.Layers
+// Data.Prefabs, Data.BasePrefabs, Data.Animations, Data.Layers
 // IF YOU WANT TO KEEP THEM, ADD THIS IN package.json:
 //  "bareEngine": {
 //      "stripGeneratedAssets": false
@@ -2452,8 +2605,8 @@ Bare.assets.images = Object.values(Asset.Image);
 Bare.assets.sounds = Object.values(Asset.Sound);
 Bare.assets.fonts = Object.values(Asset.Font);
 Bare.assets.levels = Object.values(Asset.Level);
-Bare.data.entities = Object.values(Data.Entity);
-Bare.data.baseEntities = Object.values(Data.BaseEntity);
+Bare.data.prefabs = Object.values(Data.Prefab);
+Bare.data.basePrefabs = Object.values(Data.BasePrefab);
 Bare.data.animations = Object.values(Data.Animation);
 Bare.data.layers = Object.values(Data.Layer);
 `;

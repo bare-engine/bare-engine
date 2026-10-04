@@ -1,5 +1,5 @@
 import { ContactInfo } from "./contact";
-import { Texture, Vec2 } from "../new-rapid-render";
+import { Texture, Vec2 } from "../rapid-render";
 import { Settings } from "./settings";
 import * as Util from "./util";
 import { Node } from "./aabbtree";
@@ -7,7 +7,7 @@ import { GameObject } from "../../objects/gameObject";
 import { Matrix3 } from "./math";
 import { GameMode, globalEvents } from "../../globals";
 import type { Scene } from "../../scenes/scene";
-import { BareEvent, Entity } from '../../types/bareTypes';
+import { BareEvent, Entity, Position } from '../../types/bareTypes';
 import { Enum, InspectorField, Limit, Locked, Percentage } from "../../utils/decorators";
 import { Save } from "../../utils/saveFields";
 
@@ -18,9 +18,26 @@ export enum Type
 }
 
 
+// ENTITY PROPERTIES FOR this.AddGameObject<Circle / Polygon / Box>({ ... })
+// OBJECT VALUES CAN ALSO BE A PRESET NAME
+export interface RigidBodyEntity extends Entity
+{
+    type?: Type;
+    collide?: boolean;
+    linearVelocity?: Position | string;
+    angularVelocity?: number;
+    restitution?: number;
+    friction?: number;
+    surfaceSpeed?: number;
+    density?: number;
+    mass?: number;
+}
+
 // Children: Circle, Polygon
 export abstract class RigidBody extends GameObject
 {
+    declare entity: RigidBodyEntity | null;
+
     public isPhysicsObject = true;
     public collide: boolean = true;
     
@@ -105,7 +122,7 @@ export abstract class RigidBody extends GameObject
         return tex;
     }
 
-    override OnApplyEntityToGameObject(entity: Entity, addComponents: boolean): void
+    override OnApplyEntityToGameObject(entity: RigidBodyEntity, addComponents: boolean): void
     {
         // IN THE EDITOR THE PIVOT STAYS WHATEVER THE ENTITY SAYS, SO SAVING KEEPS POSITION/PIVOT UNTOUCHED
         // IN GAME THE PIVOT MUST BE CENTERED (PHYSICS POSITION = CENTER OF MASS)

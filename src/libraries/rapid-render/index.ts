@@ -1,21 +1,15 @@
-import Rapid from "./render";
-import GLShader from "./webgl/glshader";
-import { BareText } from "./texture";
-import { Uniform } from "./webgl/uniform";
-import { spriteAttributes, graphicAttributes } from "./regions/attributes";
-import { ParticleEmitter } from "./particle";
-
-export {
-    BareText,
-    Rapid,
-    GLShader,
-    Uniform,
-    ParticleEmitter,
-    graphicAttributes,
-    spriteAttributes,
-}
-export * from "./math";
-export * from "./interface"
-export * from "./texture"
+export * from "./buffer"
+export * from "./color"
+export * from "./matrix-engine"
 export * from "./render"
+export * from "./draw"
+export * from "./texture"
+export * from "./webgl/glshader"
+export * from "./region/region"
+export * from "./region/spriteRegion"
+export * from "./region/graphicRegion"
+export * from "./math"
 export * from "./particle"
+// drawLine accepts `texture` + `textureMode`, but the mode enum was not
+// reachable from the package, which made the feature unusable from outside.
+export { LineTextureMode, type ILineRenderOptions } from "./line"

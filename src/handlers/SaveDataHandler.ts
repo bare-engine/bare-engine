@@ -1,6 +1,7 @@
 import { globalEvents } from "../globals";
 import { SaveData, BareEvent } from '../types/bareTypes';
 import { Helper } from "../utils/helper";
+
 export class SaveDataHandler
 {
     static saveEnabled: boolean = true;
@@ -77,7 +78,6 @@ export class SaveDataHandler
         }
 
         localStorage.setItem(this.GetStorageKey(), JSON.stringify(save));
-        this.ClearLegacyKeys();
     }
 
     static Load()
@@ -88,15 +88,16 @@ export class SaveDataHandler
         const item = localStorage.getItem(this.GetStorageKey());
         const save = item === null ? null : JSON.parse(item);
 
+        if (save === null)
+            return;
+        
         for (const key in SaveData)
         {
             if (typeof (SaveData as any)[key] === 'function' || key[0] === key[0].toUpperCase())
                 continue;
 
             const defaultValue = this.defaults.get(key);
-            if (save === null)
-                (SaveData as any)[key] = this.LoadLegacyItem(key, defaultValue);
-            else if (!Object.prototype.hasOwnProperty.call(save, key))
+            if (!Object.prototype.hasOwnProperty.call(save, key))
                 (SaveData as any)[key] = defaultValue;
             else if (defaultValue instanceof Set)
                 (SaveData as any)[key] = new Set(save[key]);
@@ -118,7 +119,6 @@ export class SaveDataHandler
         SaveData.levelCache.clear();
 
         localStorage.removeItem(this.GetStorageKey());
-        this.ClearLegacyKeys();
 
         // Reset all properties to their default values
         for (const [key, defaultValue] of this.defaults)
@@ -133,50 +133,6 @@ export class SaveDataHandler
                 (SaveData as any)[key] = defaultValue;
             }
         }
-    }
-
-    private static ClearLegacyKeys(): void
-    {
-        for (let index = localStorage.length - 1; index >= 0; index--)
-        {
-            const key = localStorage.key(index);
-            if (key?.startsWith(this.storagePrefix))
-                localStorage.removeItem(key);
-        }
-    }
-
-    private static LoadLegacyItem<T>(key: string, defaultValue: T): T
-    {
-        key = `${this.storagePrefix}${key}`;
-        const item = localStorage.getItem(key);
-        
-        if (item === null) {
-            return defaultValue;
-        }
-
-        const defaultType = typeof defaultValue;
-        
-        if (defaultType === 'boolean') {
-            return (item === 'true') as T;
-        }
-        
-        if (defaultType === 'number') {
-            return parseInt(item) as T;
-        }
-        
-        if (defaultType === 'string') {
-            return item as T;
-        }
-        
-        if (defaultValue instanceof Set) {
-            return new Set(JSON.parse(item)) as T;
-        }
-        
-        if (defaultValue instanceof Map) {
-            return new Map(JSON.parse(item)) as T;
-        }
-        
-        return JSON.parse(item) as T;
     }
 }
 

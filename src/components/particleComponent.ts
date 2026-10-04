@@ -1,6 +1,6 @@
 import { Component } from "../controllers/componentController";
 import { ParticleController } from "../controllers/particleController";
-import { ParticleEmitter } from "../libraries/new-rapid-render";
+import { ParticleEmitter } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
 import { InspectorButton, InspectorField } from "../utils/decorators";

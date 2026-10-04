@@ -1,7 +1,7 @@
 import { GameMode, Scene } from "../../../globals";
 import { InspectorField } from "../../../utils/decorators";
 import { Save } from "../../../utils/saveFields";
-import { Color, Vec2 } from "../../new-rapid-render";
+import { Color, Vec2 } from "../../rapid-render";
 import { MotorJoint } from "../motor";
 import { RigidBody } from "../rigidbody";
 import { World } from "../world";

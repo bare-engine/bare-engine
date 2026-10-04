@@ -3,7 +3,7 @@ import { RigidBody } from "./rigidbody";
 import { Settings } from "./settings";
 import * as Util from "./util";
 import { Joint } from "./joint";
-import { Vec2 } from "../new-rapid-render";
+import { Vec2 } from "../rapid-render";
 
 export class RevoluteJoint extends Joint
 {

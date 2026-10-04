@@ -18,7 +18,7 @@ export class CollisionEventComponent extends Component
 
     OnCollisionStart(other: GameObject): void
     {
-        if (this.object != "" && other.name == this.object)
+        if (this.object == "" || other.name == this.object)
             this.Fire(other);
     }
 

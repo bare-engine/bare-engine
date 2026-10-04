@@ -9,8 +9,14 @@ import
     } from "./browserTestHarness";
 import { BasicsTest } from "./testScenes/basicsTest";
 import { CameraTest } from "./testScenes/cameraTest";
-import { EntitiesTest } from "./testScenes/entitiesTest";
+import { PrefabsTest } from "./testScenes/prefabsTest";
 import { SaveComponentTest } from "./testScenes/saveComponentTest";
+import { DocsExamplesTest } from "./testScenes/docsExamplesTest";
+import { DocsGuideObjectsTest } from "./testScenes/docsGuideObjectsTest";
+import { DocsGuideSystemsTest } from "./testScenes/docsGuideSystemsTest";
+import { DocsReferenceTest } from "./testScenes/docsReferenceTest";
+import { DocsPhysicsTest } from "./testScenes/docsPhysicsTest";
+import { EditorPreview } from "./docExamples/editorPreview";
 
 function sceneName(scene: SceneClass): string {
     return scene.name[0].toLowerCase() + scene.name.slice(1);
@@ -20,6 +26,7 @@ declare global
 {
     interface Window
     {
+        __bareDocsPreview?: () => Promise<void>;
         __bareBrowserTests?: 
         {
             start: (name: string) => Promise<BrowserSceneResult>;
@@ -33,9 +40,14 @@ class MainGame extends Scene
 {
     private tests: SceneClass[] = [
         BasicsTest,
-        EntitiesTest,
+        PrefabsTest,
         CameraTest,
         SaveComponentTest,
+        DocsExamplesTest,
+        DocsGuideObjectsTest,
+        DocsGuideSystemsTest,
+        DocsReferenceTest,
+        DocsPhysicsTest,
     ];
 
     constructor() 
@@ -49,6 +61,8 @@ class MainGame extends Scene
         bare.AddClass(Circle);
 
         installBrowserTestHarness();
+
+        window.__bareDocsPreview = async () => { await bare.scene.Goto(EditorPreview); };
 
         window.__bareBrowserTests = {
             start: (name: string) => this.startTest(name),

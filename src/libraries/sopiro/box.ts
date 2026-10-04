@@ -1,8 +1,8 @@
 import { GameObject } from "../../objects/gameObject";
 import type { Scene } from "../../scenes/scene";
 import { Entity } from "../../types/bareTypes";
-import { Vec2 } from "../new-rapid-render";
-import { Polygon } from "./polygon";
+import { Vec2 } from "../rapid-render";
+import { Polygon, PolygonEntity } from "./polygon";
 import { Type } from "./rigidbody";
 import { Settings } from "./settings";
 
@@ -28,7 +28,7 @@ export class Box extends Polygon
         return this;
     }
 
-    override OnApplyEntityVarsToGameObject(entity: Entity, obj: GameObject)
+    override OnApplyEntityVarsToGameObject(entity: PolygonEntity, obj: GameObject)
     {
         if (!entity.rigidbodyRect)
         {

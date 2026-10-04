@@ -1,4 +1,4 @@
-import { Color } from "../libraries/new-rapid-render";
+import { Color } from "../libraries/rapid-render";
 import { prototypeChain, SAVE_METADATA_KEY } from "./saveFields";
 
 const BUTTON_METADATA_KEY = "__editorButtons__";
@@ -423,7 +423,7 @@ export function Percentage(target?: any, propertyKey?: string): any
     return apply;
 }
 
-// EG: @Dropdown(Bare.data.entities)
+// EG: @Dropdown(Bare.data.prefabs)
 // OR: @Dropdown(() => new Array(1,2,3))
 // OR: @Dropdown(function (this: AnimationComponent) { return this.allAnimationNamesForObject; })
 export function Dropdown(values: InspectorDropdownValues): (target: any, propertyKey: string) => void
