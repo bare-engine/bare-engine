@@ -4,7 +4,7 @@ import GLShader, { CustomGlShader } from "../webgl/glshader";
 import { generateShader, type WebGLContext } from "../webgl/utils";
 
 export class Region {
-    defaultShader!: GLShader
+    private _defaultShader?: GLShader
     currentShader!: GLShader
     customShader: CustomGlShader | null = null
     customShaderUsedTextureNum: number = 0
@@ -32,8 +32,24 @@ export class Region {
 
     }
 
-    protected createDefaultShader() {
+    /**
+     * built on first use, so a scene only compiles the programs it draws with.
+     * prepare() starts compiling ahead of time, so the link overlaps other work.
+     */
+    get defaultShader(): GLShader {
+        return this._defaultShader ??= this.createDefaultShader();
+    }
 
+    set defaultShader(shader: GLShader) {
+        this._defaultShader = shader;
+    }
+
+    prepare() {
+        void this.defaultShader;
+    }
+
+    protected createDefaultShader(): GLShader {
+        throw new Error("Region.createDefaultShader must be implemented");
     }
 
     get freeTextureUnitNum(): number {
@@ -88,6 +104,7 @@ export class Region {
     }
 
     createCustomShader(customShader: CustomGlShader) {
+        void this.defaultShader; // this.vs / this.fs are set alongside the default shader
         const maxTextureUnits = this.getMaxTexutreUnit(customShader)
 
         const fs = generateShader(this.fs, maxTextureUnits);

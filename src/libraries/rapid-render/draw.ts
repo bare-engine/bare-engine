@@ -145,7 +145,7 @@ export const drawSpriteWithMatrix = (
         return;
     }
 
-    const region = texture.isAtlas ? rapid.atlasSpriteRegion : rapid.spriteRegion
+    const region = rapid.spriteRegion
     rapid.enterRegion(region, shader);
 
     let u0 = texture.uvX;
@@ -178,6 +178,7 @@ export const drawSpriteWithMatrix = (
         flipX,
         flipY,
         texture.isRotated,
+        texture.isAtlas,
     );
 };
 

@@ -26,21 +26,24 @@ export class GraphicRegion extends Region {
 
     texture?: Texture
 
-    maskShader!: GLShader
+    private _maskShader?: GLShader
     KEY = "Graphic"
 
     constructor(rapid: Rapid) {
         super(rapid);
 
         this.createBuffer()
-        this.createDefaultShader()
     }
 
     createBuffer(){
         const gl = this.gl;
 
         this.vertexBuffer = new WebglBufferArray(gl, ArrayType.Float32, gl.ARRAY_BUFFER, gl.DYNAMIC_DRAW);
-        this.maskShader = this.createMaskShader(MaskVsShaderSource, MaskFsShaderSource);
+    }
+
+    /** built on first use, like the default shader; most scenes never mask */
+    get maskShader(): GLShader {
+        return this._maskShader ??= this.createMaskShader(MaskVsShaderSource, MaskFsShaderSource);
     }
 
     createDefaultShader() {
@@ -53,17 +56,15 @@ export class GraphicRegion extends Region {
     createMaskShader(vs: string, fs: string) {
         const gl = this.gl;
         const shader = new GLShader(gl, vs, fs);
-        shader.use();
-        shader.bindVAO();
-        this.vertexBuffer.bindBuffer();
-        shader.setAttributes([
-            { name: "aPosition", size: 2, type: gl.FLOAT, stride: VERTEX_STRIDE - 4, offset: 0, divisor: 0 },
-            { name: "aUV", size: 2, type: gl.FLOAT, stride: VERTEX_STRIDE - 4, offset: 8, divisor: 0 },
-        ]);
-        shader.unbindVAO();
-        if (this.currentShader) {
-            this.currentShader.use();
-        }
+        shader.onReady(() => {
+            shader.bindVAO();
+            this.vertexBuffer.bindBuffer();
+            shader.setAttributes([
+                { name: "aPosition", size: 2, type: gl.FLOAT, stride: VERTEX_STRIDE - 4, offset: 0, divisor: 0 },
+                { name: "aUV", size: 2, type: gl.FLOAT, stride: VERTEX_STRIDE - 4, offset: 8, divisor: 0 },
+            ]);
+            shader.unbindVAO();
+        });
         return shader;
     }
 
@@ -71,18 +72,16 @@ export class GraphicRegion extends Region {
         const gl = this.gl;
         const shader = super.createShader(vs, fs);
 
-        shader.use();
-        shader.bindVAO();
-        this.vertexBuffer.bindBuffer();
-        shader.setAttributes([
-            { name: "aPosition", size: 2, type: gl.FLOAT, stride: VERTEX_STRIDE, offset: 0, divisor: 0 },
-            { name: "aColor", size: 4, type: gl.UNSIGNED_BYTE, normalized: true, stride: VERTEX_STRIDE, offset: 8, divisor: 0 },
-            { name: "aUV", size: 2, type: gl.FLOAT, stride: VERTEX_STRIDE, offset: 12, divisor: 0 },
-        ]);
-        shader.unbindVAO();
-        if (this.currentShader) {
-            this.currentShader.use();
-        }
+        shader.onReady(() => {
+            shader.bindVAO();
+            this.vertexBuffer.bindBuffer();
+            shader.setAttributes([
+                { name: "aPosition", size: 2, type: gl.FLOAT, stride: VERTEX_STRIDE, offset: 0, divisor: 0 },
+                { name: "aColor", size: 4, type: gl.UNSIGNED_BYTE, normalized: true, stride: VERTEX_STRIDE, offset: 8, divisor: 0 },
+                { name: "aUV", size: 2, type: gl.FLOAT, stride: VERTEX_STRIDE, offset: 12, divisor: 0 },
+            ]);
+            shader.unbindVAO();
+        });
         return shader;
     }
 
@@ -127,7 +126,7 @@ export class GraphicRegion extends Region {
         const buf = this.vertexBuffer;
         buf.pushFloat32(x);
         buf.pushFloat32(y);
-        if (this.currentShader != this.maskShader) {
+        if (this.currentShader != this._maskShader) {
             buf.pushUint32(color);
         }
         buf.pushFloat32(u);

@@ -5,6 +5,7 @@ uniform sampler2D uTextures[%TEXTURE_NUM%];
 
 in vec2 vRegion;
 flat in int vTextureId;
+flat in int vClampUV;
 in vec4 vColor;
 
 in vec4 vUVRect;
@@ -31,7 +32,9 @@ vec4 sampleTextureLocal(vec2 uv){
 // CUSTOM_CODE
 
 void main(void) {
-    fragColor = sampleTexture(vRegion) * vColor;
+    // atlas regions clamp so padding never samples a neighbouring frame; plain textures keep
+    // their wrap mode. one program for both, picked per instance
+    fragColor = (vClampUV == 1 ? sampleClampTexture(vRegion) : sampleTexture(vRegion)) * vColor;
 
     // CUSTOM_CODE_CALL
 }

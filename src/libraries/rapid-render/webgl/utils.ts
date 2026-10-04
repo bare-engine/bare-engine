@@ -19,6 +19,9 @@ export const getContext = (canvas: HTMLCanvasElement, antialias: boolean = false
     if (!gl) {
         throw new Error("WebGL2 is not supported in this browser.");
     }
+    // lets the browser compile and link programs on worker threads, so the deferred
+    // status check in verifyShaderProgram rarely has to wait
+    gl.getExtension("KHR_parallel_shader_compile");
     return gl;
 }
 
@@ -36,23 +39,21 @@ export const compileShader = (gl: WebGLContext, source: string, type: number) =>
     }
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
-
-    const compileStatus = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-    if (!compileStatus) {
-        const errorLog = gl.getShaderInfoLog(shader);
-        console.error("Shader compilation failed:", errorLog);
-        throw new Error("Unable to compile shader: " + errorLog + source);
-    }
-
+    // no COMPILE_STATUS query here: it would block until the driver has finished compiling.
+    // errors surface in verifyShaderProgram once the program is first used
     return shader;
 }
 
+const pendingShaders = new WeakMap<WebGLProgram, { vShader: WebGLShader, fShader: WebGLShader }>();
+
 /**
- * create webgl program by shader string
- * @param gl 
- * @param vsSource 
- * @param fsSource 
- * @returns 
+ * create webgl program by shader string.
+ * compiles and links without waiting for the result, so the driver builds the program in
+ * the background while the caller carries on. call verifyShaderProgram before first use.
+ * @param gl
+ * @param vsSource
+ * @param fsSource
+ * @returns
  */
 export const createShaderProgram = (gl: WebGLContext, vsSource: string, fsSource: string) => {
     var program = gl.createProgram(),
@@ -64,12 +65,30 @@ export const createShaderProgram = (gl: WebGLContext, vsSource: string, fsSource
     gl.attachShader(program, vShader);
     gl.attachShader(program, fShader);
     gl.linkProgram(program);
-    const linkStatus = gl.getProgramParameter(program, gl.LINK_STATUS);
-    if (!linkStatus) {
-        const errorLog = gl.getProgramInfoLog(program);
-        throw new Error("Unable to link shader program: " + errorLog);
-    }
+    // commands wait in the command buffer until something flushes them; without this the
+    // link wouldn't even start until the first status query forces a round trip
+    gl.flush();
+    pendingShaders.set(program, { vShader, fShader });
     return program;
+}
+
+/**
+ * waits for a program made by createShaderProgram to finish linking and throws with the
+ * compiler logs if it failed. safe to call more than once; only the first call blocks.
+ */
+export const verifyShaderProgram = (gl: WebGLContext, program: WebGLProgram) => {
+    const shaders = pendingShaders.get(program);
+    if (!shaders) return;
+    pendingShaders.delete(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        const errorLog = gl.getProgramInfoLog(program);
+        const vsLog = gl.getShaderInfoLog(shaders.vShader);
+        const fsLog = gl.getShaderInfoLog(shaders.fShader);
+        gl.deleteProgram(program);
+        throw new Error(`Unable to link shader program: ${errorLog}\nvertex: ${vsLog}\nfragment: ${fsLog}`);
+    }
+    gl.deleteShader(shaders.vShader);
+    gl.deleteShader(shaders.fShader);
 }
 
 export function setTextureWrapMode(gl: WebGLRenderingContext | WebGL2RenderingContext, wrapMode: TextureWrapMode) {

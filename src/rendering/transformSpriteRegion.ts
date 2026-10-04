@@ -22,6 +22,7 @@ uniform vec3 u_parent0;
 uniform vec3 u_parent1;
 out vec2 vRegion;
 flat out int vTextureId;
+flat out int vClampUV;
 out vec4 vColor;
 out vec4 vUVRect;
 out vec2 vPadding;
@@ -35,6 +36,7 @@ void main() {
     vUVRect = aUVRect;
     vPadding = vec2(0.0);
     vTextureId = int(aTextureId);
+    vClampUV = 0;
     vColor = aColor;
 }`;
 
@@ -51,21 +53,23 @@ export class TransformSpriteRegion extends SpriteRegion {
 
     override createShader(vs: string, fs: string) {
         const shader = Region.prototype.createShader.call(this, vs, fs);
-        shader.use();
-        shader.bindVAO();
-        this.instanceBuffer.bindBuffer();
-        shader.setAttributes([
-            { name: "aPosition", size: 2, stride: STRIDE, offset: 0, divisor: 1 },
-            { name: "aSize", size: 2, stride: STRIDE, offset: 8, divisor: 1 },
-            { name: "aRotation", size: 1, stride: STRIDE, offset: 16, divisor: 1 },
-            { name: "aOffset", size: 2, stride: STRIDE, offset: 20, divisor: 1 },
-            { name: "aUVRect", size: 4, stride: STRIDE, offset: 28, divisor: 1 },
-            { name: "aColor", size: 4, type: UNSIGNED_BYTE, normalized: true, stride: STRIDE, offset: 44, divisor: 1 },
-            { name: "aTextureId", size: 1, type: UNSIGNED_BYTE, stride: STRIDE, offset: 48, divisor: 1 },
-        ]);
-        this.quadBuffer.bindBuffer();
-        shader.setAttributes([{ name: "aVertex", size: 2, stride: 8, offset: 0, divisor: 0 }]);
-        shader.unbindVAO();
+        // locations exist once the program has linked, i.e. on the shader's first use()
+        shader.onReady(() => {
+            shader.bindVAO();
+            this.instanceBuffer.bindBuffer();
+            shader.setAttributes([
+                { name: "aPosition", size: 2, stride: STRIDE, offset: 0, divisor: 1 },
+                { name: "aSize", size: 2, stride: STRIDE, offset: 8, divisor: 1 },
+                { name: "aRotation", size: 1, stride: STRIDE, offset: 16, divisor: 1 },
+                { name: "aOffset", size: 2, stride: STRIDE, offset: 20, divisor: 1 },
+                { name: "aUVRect", size: 4, stride: STRIDE, offset: 28, divisor: 1 },
+                { name: "aColor", size: 4, type: UNSIGNED_BYTE, normalized: true, stride: STRIDE, offset: 44, divisor: 1 },
+                { name: "aTextureId", size: 1, type: UNSIGNED_BYTE, stride: STRIDE, offset: 48, divisor: 1 },
+            ]);
+            this.quadBuffer.bindBuffer();
+            shader.setAttributes([{ name: "aVertex", size: 2, stride: 8, offset: 0, divisor: 0 }]);
+            shader.unbindVAO();
+        });
         return shader;
     }
 
