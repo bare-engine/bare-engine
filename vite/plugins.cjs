@@ -1,4 +1,5 @@
 const fs = require("node:fs");
+const { cleanSettingsUIDs } = require("./settingsUIDs.cjs");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
 const { parse: acornParse } = require("acorn");
@@ -886,6 +887,7 @@ function bareEditorAndApiPlugin(options = {}) {
                             lastSettingsDataPath = relativePath.replace(/\\/g, "/");
                         }
 
+                        cleanSettingsUIDs(settingsData, publicDir, fullPath);
                         writeFormattedJsonFile(fullPath, settingsData);
                         return { success: true, message: `Entity data saved to ${fullPath}` };
                     });

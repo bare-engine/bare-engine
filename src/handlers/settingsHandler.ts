@@ -1126,11 +1126,17 @@ export class SettingsHandler
     // returns whether there were any, the settings data then needs saving too
     static PersistUIDsReferencedBy(level: LevelData): boolean
     {
-        const levelJson = JSON.stringify(level);
+        const referencedUIDs = new Set<string>();
+        const collectReferences = (entity: Entity): void => {
+            if (typeof entity.extends === "string")
+                referencedUIDs.add(entity.extends);
+            entity.children?.forEach(collectReferences);
+        };
+        Object.values(level.entitiesByLayer).forEach(entities => entities.forEach(collectReferences));
         var persisted = false;
         for (const entityUID of SettingsHandler.runtimeGeneratedUIDs)
         {
-            if (levelJson.includes(entityUID))
+            if (referencedUIDs.has(entityUID))
             {
                 SettingsHandler.runtimeGeneratedUIDs.delete(entityUID);
                 persisted = true;
