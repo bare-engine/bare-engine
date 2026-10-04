@@ -1,6 +1,6 @@
 
 import { BareEngine } from './bareEngine';
-import { Color, Rapid, TextureFilterMode } from './libraries/rapid-render';
+import { Color, ExpandMode, Rapid, TextureFilterMode } from './libraries/rapid-render';
 import { supportsWebGL } from './libraries/rapid-render/webgl/utils';
 import { BareEvent, BareOptions, SceneClass } from './types/bareTypes';
 import { globalEvents, Scene } from './globals';
@@ -63,7 +63,8 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise
                 antialias: options.antiAlias,
                 premultipliedAlpha: options.premultipliedAlpha,
                 roundPixels: options.roundPixels,
-                scaleMode: options.scaleMode,
+                // IGNORE keeps the projection at 0..logicWidth / 0..logicHeight - ResizeCanvas does the fitting
+                window: { scaleMode: options.scaleMode, expand: ExpandMode.IGNORE },
             });
                 
             rapid.canvas.tabIndex = 0; // Make canvas focusable

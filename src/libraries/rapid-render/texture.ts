@@ -302,9 +302,28 @@ class Texture {
         return this.isRotated ? this.rawWidth : this.rawHeight;
     }
 
+    /**
+     * The quad occupied by this texture in an object's local coordinate space.
+     * Use this instead of assuming the texture starts at (0, 0),
+     * since text alignment and render effects can offset the visible quad.
+     */
+    get localBounds(): { x: number; y: number; width: number; height: number } {
+        return {
+            x: this.offsetX,
+            y: this.offsetY,
+            width: this.width,
+            height: this.height,
+        };
+    }
+
     // Stored pixel-space region (before UV conversion), used by getSubTexture()
     protected _px: number = 0;
     protected _py: number = 0;
+
+    texturePath: string
+    sourceSize: { w: number, h: number }
+    spriteSourceSize: { x: number, y: number, w: number, h: number }
+    frame: { x: number, y: number, w: number, h: number }
 
     constructor(base?: BaseTexture) {
         if (base) this.setBase(base);
@@ -590,7 +609,7 @@ class RenderTexture extends Texture {
      * @param width - Width of the region to read.
      * @param height - Height of the region to read.
      */
-    GetPixels(x: number = 0, y: number = 0, width: number = this.rawWidth, height: number = this.rawHeight): Uint8Array {
+    getPixels(x: number = 0, y: number = 0, width: number = this.rawWidth, height: number = this.rawHeight): Uint8Array {
         if (!this.framebuffer) return new Uint8Array(0);
 
         const ix = Math.floor(x);
@@ -624,8 +643,8 @@ class RenderTexture extends Texture {
      * @param x - X coordinate in logical pixel space (top-left origin).
      * @param y - Y coordinate in logical pixel space (top-left origin).
      */
-    GetColorAt(x: number, y: number): Color {
-        const pixels = this.GetPixels(x, y, 1, 1);
+    getColorAt(x: number, y: number): Color {
+        const pixels = this.getPixels(x, y, 1, 1);
         if (pixels.length < 4) return new Color(0, 0, 0, 0);
         return new Color(pixels[0], pixels[1], pixels[2], pixels[3]);
     }
@@ -686,8 +705,8 @@ class TextTexture extends Texture {
         this._text = options?.text ?? "";
         this.options = {
             premultipliedAlpha: render.premultipliedAlpha,
-            ...options,
-            textureFilter: TextureFilterMode.NEAREST,
+            textureFilter: TextureFilterMode.LINEAR,
+            ...options
         };
         this.canvas = document.createElement("canvas");
         const ctx = this.canvas.getContext("2d", { willReadFrequently: true });
@@ -792,10 +811,10 @@ class TextTexture extends Texture {
             const metrics = ctx.measureText(line || defaultText);
 
             maxWidth = Math.max(maxWidth, line ? metrics.width * fontScale : 0);
-            if (line == lines.at(0)) {
+            if (line == lines[0]) {
                 topAscent = metrics.actualBoundingBoxAscent * fontScale
             }
-            if (line == lines.at(-1)){
+            if (line == lines[lines.length - 1]){
                 lastDescent = metrics.actualBoundingBoxDescent * fontScale
             }
         }
@@ -874,7 +893,9 @@ class TextTexture extends Texture {
             targetDescent - alphabeticDescent;
 
         this.scale = 1 / this.resolution;
-        this.offsetX = -startX
+        // BareEngine places text by the texture's width from 0, so the quad keeps starting at x=0
+        // (upstream: this.offsetX = -startX, which makes the anchor the origin)
+        this.offsetX = 0
         this.offsetY = (-padding - topAscent + alphabeticBaselineOffset);
 
         this.base?.updateSource(this.render.gl, this.canvas, this.options);

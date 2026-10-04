@@ -153,6 +153,12 @@ export class Color {
         return this;
     }
 
+    toHex(): string {
+        const c = (v: number) =>
+            Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
+        return `#${c(this._r)}${c(this._g)}${c(this._b)}${c(this._a)}`;
+    }
+
     /**
      * Copies the RGBA values from another color.
      * @param color - The color to copy from.
@@ -206,11 +212,11 @@ export class Color {
      * @example
      * Color.fromNorm(0.9, 0.87, 0.55, 0.1) // moon glow
      */
-    static FromHSL(h: number, s: number, l: number): Color {
+    static fromHSL(h: number, s: number, l: number): Color {
         return new Color(0, 0, 0).setHSL(h, s, l);
     }
 
-    static FromRGB(r: number, g: number, b: number): Color {
+    static fromRGB(r: number, g: number, b: number): Color {
         return new Color(r, g, b);
     }
 
@@ -246,6 +252,9 @@ export class Color {
     static fromHex(hexString: string): Color {
         if (hexString.startsWith('#')) {
             hexString = hexString.slice(1);
+        }
+        if (hexString.length === 3 || hexString.length === 4) {
+            hexString = hexString.split('').map(c => c + c).join('');
         }
         const r = parseInt(hexString.slice(0, 2), 16);
         const g = parseInt(hexString.slice(2, 4), 16);

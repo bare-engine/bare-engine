@@ -143,7 +143,7 @@ export function createTexture(
 }
 
 export function generateShader(fs: string, max: number, id = "vTextureId", uv = "uv", set = "return") {
-    if (fs.includes("%TEXTURE_NUM%")) fs = fs.replaceAll("%TEXTURE_NUM%", max.toString())
+    if (fs.includes("%TEXTURE_NUM%")) fs = fs.split("%TEXTURE_NUM%").join(max.toString())
     if (fs.includes("%GET_COLOR%")) {
         let code = ""
         for (let index = 0; index < max; index++) {
@@ -156,7 +156,7 @@ export function generateShader(fs: string, max: number, id = "vTextureId", uv = 
             }
             code += `{${set} texture(uTextures[${index}], ${uv});}`
         }
-        fs = fs.replaceAll("%GET_COLOR%", code)
+        fs = fs.split("%GET_COLOR%").join(code)
     }
     return fs
 }

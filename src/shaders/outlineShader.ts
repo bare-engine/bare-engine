@@ -24,7 +24,7 @@ export class OutlineShader extends Shader
             uniform float uOutlineWidth;
             uniform vec2 uTextureSize;
 
-            void fragment(inout vec4 color) {
+            void fragment(inout vec4 color, vec2 vRegion) {
                 vec2 uvSize = abs(vUVRect.zw - vUVRect.xy);
                 vec2 px = uvSize / max(uTextureSize, vec2(0.00000001));
                 vec4 ownColor = sampleClampTexture(vRegion);

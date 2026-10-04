@@ -15,6 +15,7 @@ import {
     drawMaskImage,
     drawParticles,
     drawRect,
+    drawRoundedRect,
     drawSprite,
     getColorUint32,
 } from "./draw";
@@ -25,6 +26,7 @@ import type {
     ILineOptions,
     IMaskImageOptions,
     IRectOptions,
+    IRoundedRectOptions,
     ISpriteOptions,
 } from "./draw";
 import { Vec2 } from "./math";
@@ -264,6 +266,10 @@ export class Rapid {
         this.textureFilter = filter;
     }
 
+    setAntialias(antialias: boolean) {
+        this.antialias = antialias;
+    }
+
     getColorUint32(color?: Color): number {
         return getColorUint32(this.premultipliedAlpha, color)
     }
@@ -300,6 +306,10 @@ export class Rapid {
 
     drawRect(options: IRectOptions): void {
         drawRect(this, options);
+    }
+
+    drawRoundedRect(options: IRoundedRectOptions): void {
+        drawRoundedRect(this, options);
     }
 
     drawCircle(options: ICircleOptions): void {
@@ -351,6 +361,67 @@ export class Rapid {
         this.addGraphicVertex(w, 0, 1, 0, unitColor);
         this.addGraphicVertex(w, h, 1, 1, unitColor);
         this.addGraphicVertex(0, h, 0, 1, unitColor);
+    }
+
+    /**
+     * Pushes vertices for a rectangle with rounded corners, as a triangle fan around
+     * its centre. Should be enclosed by startGraphic and endGraphic.
+     * @param w The width of the rectangle.
+     * @param h The height of the rectangle.
+     * @param radius The corner radius, or [topLeft, topRight, bottomRight, bottomLeft].
+     * @param color An optional tint color.
+     * @param segments The number of segments used to approximate each corner arc.
+     */
+    addRoundedRectVertex(
+        w: number, h: number,
+        radius: number | [number, number, number, number],
+        color?: Color,
+        segments: number = 8,
+    ): void {
+        const unitColor = this.getColorUint32(color);
+        // A corner can never eat more than half of either side, however big it is asked to be.
+        const max = Math.min(w, h) / 2;
+        const radii = (typeof radius == "number" ? [radius, radius, radius, radius] : radius)
+            .map((r) => Math.max(0, Math.min(r, max)));
+
+        // Without any rounding this is a plain rectangle, and its four corners are enough.
+        if (radii[0] <= 0 && radii[1] <= 0 && radii[2] <= 0 && radii[3] <= 0) {
+            this.addRectVertex(w, h, color);
+            return;
+        }
+
+        // The fan spreads from the middle, so every edge and arc is one ring of triangles.
+        this.addGraphicVertex(w / 2, h / 2, 0.5, 0.5, unitColor);
+
+        const cornerSegments = Math.max(1, Math.floor(segments));
+        // Clockwise from the top left, in the same winding as addRectVertex.
+        const corners = [
+            { cx: radii[0], cy: radii[0], r: radii[0], start: Math.PI },
+            { cx: w - radii[1], cy: radii[1], r: radii[1], start: Math.PI * 1.5 },
+            { cx: w - radii[2], cy: h - radii[2], r: radii[2], start: 0 },
+            { cx: radii[3], cy: h - radii[3], r: radii[3], start: Math.PI * 0.5 },
+        ];
+
+        let firstX = 0;
+        let firstY = 0;
+        for (let i = 0; i < corners.length; i++) {
+            const corner = corners[i];
+            // A square corner is a single point; a rounded one is an arc of a quarter turn.
+            const steps = corner.r <= 0 ? 0 : cornerSegments;
+            for (let step = 0; step <= steps; step++) {
+                const angle = corner.start + (Math.PI / 2) * (steps == 0 ? 0 : step / steps);
+                const x = corner.cx + Math.cos(angle) * corner.r;
+                const y = corner.cy + Math.sin(angle) * corner.r;
+                this.addGraphicVertex(x, y, x / w, y / h, unitColor);
+                if (i == 0 && step == 0) {
+                    firstX = x;
+                    firstY = y;
+                }
+            }
+        }
+
+        // Close the ring back onto the first point of the first corner.
+        this.addGraphicVertex(firstX, firstY, firstX / w, firstY / h, unitColor);
     }
 
     /**
