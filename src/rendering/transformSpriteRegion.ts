@@ -113,16 +113,30 @@ export class TransformSpriteRegion extends SpriteRegion {
     }
 }
 
-// created on first use, so scenes without plain sprites never compile its shader
 let transformSpriteRegion: TransformSpriteRegion | undefined;
+
+function getTransformSpriteRegion(rapid: Rapid): TransformSpriteRegion
+{
+    if (transformSpriteRegion?.rapid !== rapid)
+        transformSpriteRegion = new TransformSpriteRegion(rapid);
+    return transformSpriteRegion;
+}
+
+/**
+ * starts compiling the GPU-transform sprite shader right away. plain game object sprites draw
+ * through it, so building it lazily would make the first frame wait for a fresh compile + link;
+ * started at boot, the link runs in the driver while assets are still loading.
+ */
+export function prepareSpriteTransform(rapid: Rapid): void
+{
+    getTransformSpriteRegion(rapid).prepare();
+}
 
 /** draws a default, unfiltered sprite with its local transform applied on the GPU. */
 export function drawSpriteTransform(rapid: Rapid, texture: Texture, x: number, y: number, rotation: number,
     scaleX: number, scaleY: number, pivotX: number, pivotY: number, color?: Color): void
 {
-    if (transformSpriteRegion?.rapid !== rapid)
-        transformSpriteRegion = new TransformSpriteRegion(rapid);
-
-    rapid.enterRegion(transformSpriteRegion);
-    transformSpriteRegion.drawTransformed(texture, x, y, rotation, scaleX, scaleY, pivotX, pivotY, rapid.getColorUint32(color));
+    const region = getTransformSpriteRegion(rapid);
+    rapid.enterRegion(region);
+    region.drawTransformed(texture, x, y, rotation, scaleX, scaleY, pivotX, pivotY, rapid.getColorUint32(color));
 }

@@ -2,6 +2,7 @@
 import { BareEngine } from './bareEngine';
 import { Color, ExpandMode, Rapid, TextureFilterMode } from './libraries/rapid-render';
 import { supportsWebGL } from './libraries/rapid-render/webgl/utils';
+import { prepareSpriteTransform } from './rendering/transformSpriteRegion';
 import { BareEvent, BareOptions, SceneClass } from './types/bareTypes';
 import { globalEvents, Scene } from './globals';
 import { Helper } from './utils/helper';
@@ -78,6 +79,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise
             //rapid.canvas.style.display = "none"; // HIDE GAME, SHOWN AGAIN WHEN LOADED
 
             window.rapid = rapid;
+            prepareSpriteTransform(rapid);
 
             // PREVENT TEXT SELECTION AND IOS MAGNIFIER
             var style = (rapid.canvas.style as any);
