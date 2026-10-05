@@ -165,6 +165,10 @@ export const drawSpriteWithMatrix = (
     const paddingX = (u0 <= u1 ? p : -p);
     const paddingY = (v0 <= v1 ? p : -p);
 
+    // padded quads sample outside the texture rect - clamp so that area stays transparent
+    // instead of smearing the edge pixels (CLAMP_TO_EDGE) of plain textures
+    const clampUV = texture.isAtlas || p > 0;
+
     region.drawSprite(
         texture,
         matrix,
@@ -178,7 +182,7 @@ export const drawSpriteWithMatrix = (
         flipX,
         flipY,
         texture.isRotated,
-        texture.isAtlas,
+        clampUV,
     );
 };
 
