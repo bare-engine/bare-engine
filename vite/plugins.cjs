@@ -869,7 +869,7 @@ function bareEditorAndApiPlugin(options = {}) {
                 }
 
                 if (req.method === "POST" && requestUrl.pathname === "/api/save-settings-data") {
-                    readJson(req, res, ({ settingsData, path: customPath, skipReload }) => {
+                    readJson(req, res, ({ settingsData, path: customPath, skipReload, onlyIfExists }) => {
                         if (!settingsData) {
                             throw new Error("No settingsData provided");
                         }
@@ -882,6 +882,11 @@ function bareEditorAndApiPlugin(options = {}) {
                             : path.join("data", fileName);
                         const fullPath = path.join(publicDir, relativePath);
 
+                        // update-only save: never create the file
+                        if (onlyIfExists && !fs.existsSync(fullPath)) {
+                            return { success: true, saved: false, message: `Save skipped, ${fullPath} does not exist` };
+                        }
+
                         if (skipReload) {
                             skipReloadUntil = Date.now() + 500;
                             lastSettingsDataPath = relativePath.replace(/\\/g, "/");
@@ -889,7 +894,7 @@ function bareEditorAndApiPlugin(options = {}) {
 
                         cleanSettingsUIDs(settingsData, publicDir, fullPath);
                         writeFormattedJsonFile(fullPath, settingsData);
-                        return { success: true, message: `Entity data saved to ${fullPath}` };
+                        return { success: true, saved: true, message: `Entity data saved to ${fullPath}` };
                     });
                     return;
                 }

@@ -562,12 +562,13 @@ export class EditorScene extends Scene
             body: JSON.stringify({
                 path: bare.dataPath,
                 settingsData: dataToSave,
-                skipReload: true
+                skipReload: true,
+                onlyIfExists: true
             })
           });
           const json = await res.json().catch(() => null);
-        
-          return { ok: res.ok, saved: res.ok, response: json };
+
+          return { ok: res.ok, saved: res.ok && json?.saved !== false, response: json };
         } catch (error: any) {
           console.error('Failed to save settings data', error);
           return { ok: false, error: error?.message ?? String(error) };
