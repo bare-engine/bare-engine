@@ -9,7 +9,7 @@ Bare is a small, fast game engine for the web, written in TypeScript. Create Gam
 ## Features
 
 - Small minimum size: 38kb gzip
-- Fast loading time ([benchmark](https://github.com/bare-engine/bare-benchmarks))
+- Fast loading time ([Benchmark](https://github.com/bare-engine/bare-benchmarks))
 - Easy asset streaming
 - In-game level editor
 - Live object inspection/editing ([Chrome Extension](https://chromewebstore.google.com/detail/bare-engine/))
