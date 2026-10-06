@@ -488,6 +488,26 @@ export class Scene implements SceneI
     // FINDS THE DIFFERENCE BETWEEN CURRENT SERIALIZED OBJECT AND STARTING SERIALIZED OBJECT
     // DIFFERENCE GETS MERGED WITH unconstructedEntity
     // USING unconstructedEntity, SINCE IT CAN CONTAIN VALUES LIKE PIVOT .5,.5, imagePath, entity, WHICH CAN'T BE SERIALIZED BACK FROM A GAMEOBJECT
+    // a child built from its parent's entity has no unconstructed entity registered. rebuild one: the reference it
+    // extends, plus what its parent's entity (eg a level override) changed on top of that reference. without it,
+    // those changes are already in the child's entity, count as unchanged, and get dropped on the next save
+    private GetChildSourceEntity(entity: Entity): Entity | undefined
+    {
+        if (!entity.constructed)
+            return undefined;
+
+        const source = this.ConstructEntity({ extends: entity.extends ?? "ANY" });
+        const overrides: Entity = GameObjectSerializer.GetEntitiesDiff(source, entity) ?? {};
+
+        // bookkeeping, not authored data. children are rebuilt from the live child objects
+        delete overrides.constructed;
+        delete overrides.extends;
+        delete overrides.entityUID;
+        delete overrides.children;
+
+        return entity.extends ? { extends: entity.extends, ...overrides } : overrides;
+    }
+
     GetEntityFromObject(rootObject: GameObject, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false, includeSaveFields: false }): Entity
     {
         if (!rootObject.parent)
@@ -496,7 +516,9 @@ export class Scene implements SceneI
         }
 
         const startingEntity = rootObject.entity || {};
-        const unconstructedSource = this.settingsHandler.GetUnconstructedEntity(rootObject.entity) ?? {};
+        const unconstructedSource = this.settingsHandler.GetUnconstructedEntity(rootObject.entity)
+            ?? (rootObject.parent ? this.GetChildSourceEntity(startingEntity) : undefined)
+            ?? {};
 
         // SERIALIZE ORIGINAL GAMEOBJECT USING STARTING ENTITY
         const serializedRootObjectOrig = this.ConstructEntityWithDefaultValues(startingEntity, this.settingsData, options);
@@ -523,6 +545,12 @@ export class Scene implements SceneI
                     continue;
 
                 const childEntity = this.GetEntityFromObject(child, options);
+
+                // children are only saved when marked save. a child marked in code, not by its entity, needs the mark saved
+                // too, or it's no longer saved after loading
+                if (child.save && !child.entity?.save)
+                    childEntity.save = true;
+
                 if (Object.keys(childEntity).length > 0)
                     savedChildren.push(childEntity);
             }

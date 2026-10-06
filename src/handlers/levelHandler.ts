@@ -401,6 +401,9 @@ to package.json to keep the generated assets (can become large for big projects)
                     
                     var entity = this.SerializeObject(obj);
 
+                    // top-level objects are always saved, so they don't need the mark. children keep theirs (see GetEntityFromObject)
+                    delete entity.save;
+
                     // POSITION HAS BEEN STORED, CAN APPLY PIVOT AGAIN
                     if (obj.revertPivotOnSave)
                     {
@@ -411,13 +414,13 @@ to package.json to keep the generated assets (can become large for big projects)
                 });
         }
 
-        GameObjectSerializer.CleanEntities(Object.values(level.entitiesByLayer), this.scene.settingsHandler.rawEntitiesMappedByUID, ["interactableInEditor", "save"]);
+        GameObjectSerializer.CleanEntities(Object.values(level.entitiesByLayer), this.scene.settingsHandler.rawEntitiesMappedByUID, ["interactableInEditor"]);
     
         return level;
     }
 
     // SERIALIZE OBJECT DIFF
-    SerializeObject(obj: GameObject, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false, includeSaveFields: false }): Entity
+    SerializeObject(obj: GameObject, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false, includeSaveFields: true }): Entity
     {
         var entity = this.scene.GetEntityFromObject(obj, options);
 

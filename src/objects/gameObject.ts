@@ -1571,9 +1571,15 @@ export class GameObject
 
     SetPivotWhileKeepingPosition(x: number, y: number): this
     {
-        const oldPivot = new Vec2(this.pivot.x, this.pivot.y);
+        // keep the image's top-left where it was, in the space the position is in,
+        // so scale, rotation and flips are accounted for
+        const toPositionSpace = (world: Vec2) => this.parent ? this.parent.ToLocal(world) : world;
+
+        const before = toPositionSpace(this.ToGlobal(new Vec2(), false));
         this.SetPivot(x, y);
-        this.SetPosition(this.x + this.pivot.x - oldPivot.x, this.y + this.pivot.y - oldPivot.y);
+        const after = toPositionSpace(this.ToGlobal(new Vec2(), false));
+
+        this.SetPosition(this.x + before.x - after.x, this.y + before.y - after.y);
 
         return this;
     }

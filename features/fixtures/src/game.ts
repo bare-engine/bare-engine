@@ -19,6 +19,8 @@ import { DocsPhysicsTest } from "./testScenes/docsPhysicsTest";
 import { TweensAdvancedTest } from "./testScenes/tweensAdvancedTest";
 import { InputAdvancedTest } from "./testScenes/inputAdvancedTest";
 import { AnimationsAdvancedTest } from "./testScenes/animationsAdvancedTest";
+import { HierarchyAdvancedTest } from "./testScenes/hierarchyAdvancedTest";
+import { LevelSaveTest } from "./testScenes/levelSaveTest";
 import { EditorPreview } from "./docExamples/editorPreview";
 
 function sceneName(scene: SceneClass): string {
@@ -54,6 +56,8 @@ class MainGame extends Scene
         TweensAdvancedTest,
         InputAdvancedTest,
         AnimationsAdvancedTest,
+        HierarchyAdvancedTest,
+        LevelSaveTest,
     ];
 
     constructor() 

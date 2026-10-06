@@ -81,9 +81,11 @@ When a level is saved, each object is stored as an entity. Leaving out as much d
 Which properties are saved depends on where you save from:
 
 - **In the [level editor](../guide/level-editor)**, the serializer considers built-in entity properties and custom fields marked `@Save`. This includes properties of components.
-- **While playing**, with `bare.level.Save()`, it considers GameObject properties selected by `saveVars`, plus custom fields marked `@Save`.
+- **While playing**, with `bare.level.Save()`, it considers GameObject properties selected by `saveVars`, plus fields marked `@Save`. This includes properties of components.
 
 Layers with `save: false`, persistent objects, and objects with `save: false` are omitted. Component fields follow the separate rules below: an inspector field alone does not make a custom field persistent.
+
+Top-level objects are always saved, but a child is only saved when it's marked `save: true`: in its prefab or entity, like `{ "name": "flag", "save": true }`, or with `child.save = true` in code. Other children aren't stored: when the level loads, the prefab's children come back as the prefab defines them, and children added while playing are gone.
 
 By default, `saveVars` saves `position`, `children` and `components` for every GameObject. Add more per class in `settingsData.json`:
 
