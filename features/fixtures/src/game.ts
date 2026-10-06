@@ -21,6 +21,9 @@ import { InputAdvancedTest } from "./testScenes/inputAdvancedTest";
 import { AnimationsAdvancedTest } from "./testScenes/animationsAdvancedTest";
 import { HierarchyAdvancedTest } from "./testScenes/hierarchyAdvancedTest";
 import { LevelSaveTest } from "./testScenes/levelSaveTest";
+import { SerializeModesTest } from "./testScenes/serializeModesTest";
+import { TextObjectTest } from "./testScenes/textObjectTest";
+import { SettingsEditingTest } from "./testScenes/settingsEditingTest";
 import { EditorPreview } from "./docExamples/editorPreview";
 
 function sceneName(scene: SceneClass): string {
@@ -58,6 +61,9 @@ class MainGame extends Scene
         AnimationsAdvancedTest,
         HierarchyAdvancedTest,
         LevelSaveTest,
+        SerializeModesTest,
+        TextObjectTest,
+        SettingsEditingTest,
     ];
 
     constructor() 

@@ -5,7 +5,7 @@ import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
 import { defaultSettingsData } from "../types/bareData";
 import { AnyEntity, Entity, entityVars, Rectangle2Vec, Scalar } from "../types/bareTypes";
-import { getSerializeFields, hasSerializeFields } from "./serializeFields";
+import { getSerializeFieldEntries, getSerializeFields, hasSerializeFields, isSerializedInMode } from "./serializeFields";
 import { Helper } from "./helper";
 
 export class GameObjectSerializer
@@ -38,6 +38,16 @@ export class GameObjectSerializer
         {
             varsToSave = entityVars.slice();
             varsToSave.splice(varsToSave.indexOf("tapHitbox"), 1);
+
+            // entityVars holds the editor fields of every registered class by name, so leave out the ones this object's
+            // class redeclared for other modes (eg a subclass making a parent's GameMode.Edit field GameMode.Play)
+            if (!forceAllEntityVars)
+            {
+                const notSavedInEditor = getSerializeFieldEntries(obj)
+                    .filter(entry => !isSerializedInMode(entry, GameMode.Edit))
+                    .map(entry => entry.name);
+                varsToSave = varsToSave.filter(varName => !notSavedInEditor.includes(varName));
+            }
         }
 
         // EDGE CASE, WANT TO ALWAYS SAVE (TOP LEVEL) OBJECT WITHOUT A PARENT, NO NEED TO SUPPLY THE SAVE PROPERTY

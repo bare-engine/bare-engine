@@ -1,7 +1,7 @@
 import { GameMode } from "../globals";
 import { Color, ITextOptions, TextTexture, Vec2 } from "../libraries/rapid-render";
 import { Scene } from "../scenes/scene";
-import type { Entity } from "../types/bareTypes";
+import { HitboxType, type Entity, type Rectangle } from "../types/bareTypes";
 import { Dropdown, Int, Limit } from "../utils/decorators";
 import { SerializeField } from "../utils/serializeFields";
 import { GameObject } from "./gameObject";
@@ -79,14 +79,20 @@ export class TextObject extends GameObject
 
     OnStart(): void
     {
-        if (this.name)
+        if (this.HasOwnName())
             this.pluginName = this.name;
+    }
+
+    // objects are called "gameObject" until they're given a name
+    private HasOwnName(): boolean
+    {
+        return !!this.name && this.name !== "gameObject";
     }
 
     SetNameBasedOnText(text: string)
     {
         // LIMIT TEXT BY 20 CHARS, ELSE ADD ...
-        if (!this.name)
+        if (!this.HasOwnName())
             this.pluginName = text.length > 20 ? text.substring(0, 17) + "..." : text;
     }
 
@@ -95,10 +101,11 @@ export class TextObject extends GameObject
         if (this.textTexture.text === text)
             return;
 
+        const previousBounds = this.textTexture.localBounds;
         this.textTexture.text = text;
 
         // REAPPLY PIVOT AFTER CHANGING TEXT(URE)
-        this.ReapplyPivot();
+        this.OnSizeChanged(previousBounds);
 
         this.SetNameBasedOnText(text);
     }
@@ -110,17 +117,27 @@ export class TextObject extends GameObject
 
     UpdateText()
     {
+        const previousBounds = this.textTexture.localBounds;
         this.textTexture.update();
 
-        this.ReapplyPivot();
+        this.OnSizeChanged(previousBounds);
     }
 
-    private ReapplyPivot()
+    // the text or its style changed: the pivot and a hitbox covering the text follow the new size
+    private OnSizeChanged(previousBounds: Rectangle)
     {
         if (this.pivotPercentage.x != -1)
             this.pivotX = this.textTexture.width * this.pivotPercentage.x;
         if (this.pivotPercentage.y != -1)
             this.pivotY = this.textTexture.height * this.pivotPercentage.y;
+
+        // a hitbox sized to the text when it was assigned (eg by OnPointerDown) keeps covering it, a custom one is left alone
+        const rect = this.tapHitbox?.type == HitboxType.Rectangle ? this.tapHitbox.rectangle : null;
+        if (rect && rect.x == previousBounds.x && rect.y == previousBounds.y
+            && rect.width == previousBounds.width && rect.height == previousBounds.height)
+        {
+            Object.assign(rect, this.textTexture.localBounds);
+        }
     }
 
     override SetPivot(x: number, y: number): this
