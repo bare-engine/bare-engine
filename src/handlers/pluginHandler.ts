@@ -2428,7 +2428,16 @@ export class PluginHandler
 
     GetCurrentScene(): Scene
     {
-        return this.GetScene(this.currentSceneClassString);
+        const resolved = this.ResolveSceneByName(this.currentSceneClassString);
+        if (resolved) return resolved;
+
+        // CURRENT SCENE WAS REMOVED (EG DURING Goto), RESYNC TO MAIN SCENE
+        const fallback = bare.scene.GetMainScene();
+        if (!fallback)
+            throw new Error("PluginHandler.GetCurrentScene: no active scenes to resolve.");
+
+        this.SetCurrentScene(fallback.constructor.name);
+        return fallback;
     }
 
     private ResolveSceneByName(sceneClassString: string): Scene | null
@@ -2445,17 +2454,10 @@ export class PluginHandler
         return null;
     }
 
-    GetScene(sceneClassString: string): Scene
+    // NULL WHEN NOT FOUND - PLUGIN CAN ASK FOR A SCENE THAT WAS JUST REMOVED (STALE SELECTION)
+    GetScene(sceneClassString: string): Scene | null
     {
-        const resolved = this.ResolveSceneByName(sceneClassString);
-        if (resolved) return resolved;
-
-        const fallback = bare.scene.GetMainScene();
-        if (!fallback)
-            throw new Error("PluginHandler.GetScene: no active scenes to resolve.");
-
-        console.warn(`PluginHandler.GetScene: could not resolve '${sceneClassString}', falling back to '${fallback.constructor?.name ?? "unknown"}'.`);
-        return fallback;
+        return this.ResolveSceneByName(sceneClassString);
     }
 
     ProcessSettingsDataForPlugin(entityName: string, settingsHandler: SettingsHandler)
