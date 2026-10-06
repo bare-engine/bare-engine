@@ -102,13 +102,14 @@ export class TweenController
                     if (existingTween.getProgress() < 1) // existingTween NOT ALREADY COMPLETED? COULD BE WE ARE IN THE ONCOMPLETE OF IT
                     {
                         // Check for property overlap, excluding config properties
-                        const hasOverlap = Object.keys(normalizedProps).some(propName => 
+                        const hasOverlap = Object.keys(normalizedProps).some(propName =>
                             propName != 'delay' &&
-                            !configProps.has(propName) && 
-                            propName in existingTween.valuesEnd
+                            !configProps.has(propName) &&
+                            propName in existingTween.valuesEnd &&
+                            this.PropsOverlap(normalizedProps[propName], existingTween.valuesEnd[propName])
                         );
-                        
-                        if (hasOverlap) 
+
+                        if (hasOverlap)
                         {
                             this.tweens.splice(i, 1);
                         }
@@ -166,7 +167,7 @@ export class TweenController
         }
 
         if (props.onStop) {
-            tween.onRepeat(props.onStop);
+            tween.onStop(props.onStop);
         }
 
         const promise = new Promise<Tween>((resolve) => {
@@ -196,6 +197,17 @@ export class TweenController
         this.Add(tween).start();
 
         return (tween as TweenWithPromise);
+    }
+
+    // nested props only overlap where they share a leaf, so innerPosition.x and innerPosition.y can run side by side
+    private PropsOverlap(a: any, b: any): boolean
+    {
+        const isNested = (value: any) => value && typeof value === 'object' && !Array.isArray(value);
+
+        if (!isNested(a) || !isNested(b))
+            return true;
+
+        return Object.keys(a).some(key => key in b && this.PropsOverlap(a[key], b[key]));
     }
 
     private NormalizeProps(props: any): any
@@ -242,11 +254,9 @@ export class TweenController
 
     AddChain(...tweens: Tween[]): Tween
     {
-        // Add all tweens to the controller
-        tweens.forEach(tween => {
-            this.Add(tween);
-        });
-    
+        // only the first is added: Update drops tweens that aren't playing, and adds chained ones once they start
+        this.Add(tweens[0]);
+
         // Chain the tweens together
         for (let i = 0; i < tweens.length - 1; i++) {
             tweens[i].chain(tweens[i + 1]);
@@ -301,6 +311,13 @@ export class TweenController
             if (!isPlaying && this.tweens[i] == tween)
             {
                 this.tweens.splice(i, 1);
+
+                // a finished tween starts its chained tweens, which have to be updated from now on
+                for (const chained of tween._chainedTweens)
+                {
+                    if (chained.isPlaying() && !this.tweens.includes(chained))
+                        this.tweens.push(chained);
+                }
             }
             else
             {

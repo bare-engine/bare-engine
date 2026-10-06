@@ -48,6 +48,8 @@ export class CameraHandler {
     private shakeIntensityX: number = 0;
     private shakeIntensityY: number = 0;
     private shakeDecay: boolean = true;
+    // the offset applied when the camera was last drawn
+    private shakeOffset: Vec2 = new Vec2(0, 0);
 
     get topLeftTargetX(): number
     {
@@ -161,6 +163,11 @@ export class CameraHandler {
         this.target.x = x;
         this.target.y = y;
         this.ClampTargetToBounds(this.GetZoom());
+
+        // move the drawn position along, keeping the current shake, so ScreenToWorld and
+        // WorldToScreen match the new position right away instead of from the next frame
+        this.position.x = this.target.x + this.shakeOffset.x;
+        this.position.y = this.target.y + this.shakeOffset.y;
     }
 
     // top-left position
@@ -318,9 +325,9 @@ export class CameraHandler {
         // zoom or screen size may have changed since SetPosition
         this.ClampTargetToBounds(scale);
 
-        const shake = this.GetShakeOffset(scale);
-        this.position.x = this.target.x + shake.x;
-        this.position.y = this.target.y + shake.y;
+        this.shakeOffset = this.GetShakeOffset(scale);
+        this.position.x = this.target.x + this.shakeOffset.x;
+        this.position.y = this.target.y + this.shakeOffset.y;
 
         // offset so that camera center maps to screen center (world units)
         this.offset.x = -screenW / 2 / scale;
@@ -411,6 +418,7 @@ export class CameraHandler {
         this.shakeDurationMs = 0;
         this.shakeIntensityX = 0;
         this.shakeIntensityY = 0;
+        this.shakeOffset = new Vec2(0, 0);
     }
 
     private GetShakeOffset(scale: number): Vec2

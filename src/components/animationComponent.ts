@@ -248,30 +248,31 @@ export class AnimationComponent extends Component
 
     private OnAnimationComplete()
     {
-        if (this.currentAnimation.loop)
+        // a callback can play the next animation, which replaces currentAnimation
+        const finished = this.currentAnimation;
+
+        if (finished.loop)
         {
-            this.currentAnimation.currentFrame = 0;
+            finished.currentFrame = 0;
             this.GotoFrame(0);
-            this.events.emit(AnimationEvent.looped, { animation: this.currentAnimation });
+            this.events.emit(AnimationEvent.looped, { animation: finished });
         }
         else
         {
             this.Pause();
-            this.events.emit(AnimationEvent.completed, { animation: this.currentAnimation });
+            this.events.emit(AnimationEvent.completed, { animation: finished });
         }
 
-        if (this.singleCallbacks.has(this.currentAnimation.name))
+        const singleCallback = this.singleCallbacks.get(finished.name);
+        if (singleCallback)
         {
-            this.singleCallbacks.get(this.currentAnimation.name)!(this);
-            this.singleCallbacks.delete(this.currentAnimation.name);
+            this.singleCallbacks.delete(finished.name);
+            singleCallback(this);
         }
 
-        if (this.callbacks.has(this.currentAnimation.name))
-        {
-            this.callbacks.get(this.currentAnimation.name)!(this);
-        }
+        this.callbacks.get(finished.name)?.(this);
 
-        if (this.currentAnimation.removeOnComplete)
+        if (finished.removeOnComplete)
         {
             this.go.Remove();
         }
