@@ -57,7 +57,7 @@ Set gravity at the top level of `settingsData.json`:
 | `stayInBounds` | `true` | Keep the object inside the level. |
 | `removeOnOutOfBounds` | `false` | Remove the object when it's fully outside the level. |
 | `hitbox` | the image | Rectangle as `{ x1, y1, x2, y2 }`. Values between 0 and 1 are a fraction of the image size, larger ones are pixels. `"FULL"` covers the whole image. |
-| `hitboxType` / `hitboxRadius` | `"Rectangle"` | `"Rectangle"` or `"Circle"`, and the circle's radius. |
+| `hitboxType` / `hitboxRadius` | `"Rectangle"` | `"Rectangle"` or `"Circle"`, and the circle's radius. The circle is centered on the object's [pivot](../guide/game-objects#pivot), so use a `CENTER` pivot to center it on the image. |
 
 A child ArcadeObject always acts as a sensor, so it reports collisions without pushing anything.
 

@@ -245,8 +245,8 @@ export class InputAdvancedTest extends Scene
 
         // bare.mouse follows the camera, and remembers where the pointer went down
         bare.camera.SetPosition(bare.width / 2 + 200, bare.height / 2 + 100);
-        // the camera transform is applied on its next update
-        await waitFrame(2);
+        const center = bare.camera.WorldToScreen(bare.width / 2 + 200, bare.height / 2 + 100);
+        c.check(Math.abs(center.x - bare.width / 2) < 1 && Math.abs(center.y - bare.height / 2) < 1, "WorldToScreen should follow SetPosition right away: " + JSON.stringify(center));
         let pointerDownPayload: any = null;
         bare.events.once(BareEvent.pointer_down, (payload) => pointerDownPayload = payload);
         await this.MoveTo(1000, 800);

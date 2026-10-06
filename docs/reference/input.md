@@ -81,7 +81,7 @@ More on `bare.hitbox`:
 | Method | Description |
 | --- | --- |
 | `AssignButton(obj, onPress)` | Make an object behave like a button. |
-| `SetCircleHitbox(obj, radius?)` | Use a circle instead of the texture rectangle. |
+| `SetCircleHitbox(obj, radius?)` | Use a circle instead of the texture rectangle. The circle is centered on the object's [pivot](../guide/game-objects#pivot), so call `CenterPivot()` to center it on the image. The radius defaults to half the image's smaller side. |
 | `SetShowPointerCursor(obj, show)` | Show the hand cursor on hover. |
 | `GetCurrentHover()` / `GetCurrentDown()` | The hitbox under the pointer, or being pressed. |
 | `SetExclusiveLayer(...layers)` | Only accept pointer input on these layers. |
