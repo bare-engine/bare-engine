@@ -16,6 +16,9 @@ import { DocsGuideObjectsTest } from "./testScenes/docsGuideObjectsTest";
 import { DocsGuideSystemsTest } from "./testScenes/docsGuideSystemsTest";
 import { DocsReferenceTest } from "./testScenes/docsReferenceTest";
 import { DocsPhysicsTest } from "./testScenes/docsPhysicsTest";
+import { TweensAdvancedTest } from "./testScenes/tweensAdvancedTest";
+import { InputAdvancedTest } from "./testScenes/inputAdvancedTest";
+import { AnimationsAdvancedTest } from "./testScenes/animationsAdvancedTest";
 import { EditorPreview } from "./docExamples/editorPreview";
 
 function sceneName(scene: SceneClass): string {
@@ -48,6 +51,9 @@ class MainGame extends Scene
         DocsGuideSystemsTest,
         DocsReferenceTest,
         DocsPhysicsTest,
+        TweensAdvancedTest,
+        InputAdvancedTest,
+        AnimationsAdvancedTest,
     ];
 
     constructor() 
