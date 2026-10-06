@@ -3145,7 +3145,8 @@ export class PluginHandler
                 body: JSON.stringify({
                     path: bare.dataPath,
                     settingsData: dataToSave,
-                    skipReload: true
+                    skipReload: true,
+                    onlyIfExists: true
                 })
             });
 
