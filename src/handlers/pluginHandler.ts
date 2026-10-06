@@ -688,7 +688,8 @@ const gameDebugApi = {
         if (isChild)
             data.changed = !!o.entity && hasChangedFields(o, changedMemo);
 
-        plugin.AddInspectorDataToObject(data, o);
+        // in the level editor only the fields saved there, like the prefab view. while playing, every field
+        plugin.AddInspectorDataToObject(data, o, false, bare.gameMode == GameMode.Edit ? GameMode.Edit : undefined);
 
         if (data.children)
         {
@@ -2926,15 +2927,15 @@ export class PluginHandler
             data.__buttons = objButtons.map(b => ({ label: b.label, method: b.methodKey, order: b.order, source: b.source }));
 
         // @Hidden fields are still saved, keep them out of the panel. the prefab panel skips the
-        // __defaultFieldsToIgnore__ ones, the in-game data is only for display so they can go
+        // __defaultFieldsToIgnore__ ones, getObject's data (in game and in the level editor) is only for display so they can go
         var hiddenFields = getHiddenFieldNames(o);
         if (hiddenFields.length > 0)
         {
-            if (serializedInMode === undefined)
+            if (Array.isArray(data.__defaultFieldsToIgnore__))
+                data.__defaultFieldsToIgnore__ = [...data.__defaultFieldsToIgnore__, ...hiddenFields];
+            else
                 for (const name of hiddenFields)
                     delete data[name];
-            else
-                data.__defaultFieldsToIgnore__ = [...(data.__defaultFieldsToIgnore__ ?? []), ...hiddenFields];
         }
 
         var objFields = getInspectorFields(o, serializedInMode);
