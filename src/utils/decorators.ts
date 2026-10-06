@@ -1,6 +1,6 @@
 import type { GameMode } from "../globals";
 import { Color } from "../libraries/rapid-render";
-import { getSerializeFieldEntries, isSerializedInMode, nextDeclarationOrder, prototypeChain, SERIALIZE_METADATA_KEY, SerializeFieldEntry } from "./serializeFields";
+import { getOwnSerializeFieldEntries, getSerializeFieldEntries, getSerializeFields, isSerializedInMode, nextDeclarationOrder, prototypeChain, SerializeFieldEntry } from "./serializeFields";
 
 const BUTTON_METADATA_KEY = "__editorButtons__";
 const FIELD_METADATA_KEY = "__editorFields__";
@@ -671,23 +671,19 @@ export function getInspectorFields(component: any, serializedInMode?: GameMode):
                 }
             }
         }
-        if (Object.prototype.hasOwnProperty.call(proto, SERIALIZE_METADATA_KEY))
+        // surfaced through the inspector metadata pipeline so @Int/@Limit/@Dropdown/etc. are respected
+        for (const { name } of getOwnSerializeFieldEntries(proto))
         {
-            // surfaced through the inspector metadata pipeline so @Int/@Limit/@Dropdown/etc. are respected
-            const source: string = proto.constructor?.name ?? "";
-            for (const { name } of (proto[SERIALIZE_METADATA_KEY] as SerializeFieldEntry[]))
-            {
-                const entry = serializeEntries.get(name)!;
-                if (indexByName.has(name) || hiddenFields.has(name))
-                    continue;
-                if (serializedInMode !== undefined && !isSerializedInMode(entry, serializedInMode))
-                    continue;
+            const entry = serializeEntries.get(name)!;
+            if (indexByName.has(name) || hiddenFields.has(name))
+                continue;
+            if (serializedInMode !== undefined && !isSerializedInMode(entry, serializedInMode))
+                continue;
 
-                indexByName.set(name, entries.length);
-                entries.push({ name, type: "input", order: entry.order });
-                sources[name] = source;
-                orders[name] = entry.order;
-            }
+            indexByName.set(name, entries.length);
+            entries.push({ name, type: "input" });
+            sources[name] = proto.constructor?.name ?? "";
+            orders[name] = entry.order;
         }
         if (Object.prototype.hasOwnProperty.call(proto, LOCKED_METADATA_KEY))
             lockedFields.push(...(proto[LOCKED_METADATA_KEY] as string[]));
@@ -776,14 +772,11 @@ export function getInspectorFieldNames(component: any): string[]
     const proto = typeof component === "function" ? component.prototype : component.constructor.prototype;
     const names = new Set<string>();
     for (const p of prototypeChain(proto))
-    {
         if (Object.prototype.hasOwnProperty.call(p, FIELD_METADATA_KEY))
             for (const e of (p[FIELD_METADATA_KEY] as FieldEntry[]))
                 names.add(e.name);
-        if (Object.prototype.hasOwnProperty.call(p, SERIALIZE_METADATA_KEY))
-            for (const e of (p[SERIALIZE_METADATA_KEY] as SerializeFieldEntry[]))
-                names.add(e.name);
-    }
+    for (const name of getSerializeFields(proto.constructor))
+        names.add(name);
     return [...names];
 }
 
@@ -800,9 +793,7 @@ function findInspectorFieldEntry(component: any, fieldName: string): FieldEntry 
         if (entry)
             return entry;
 
-        const serializeFields: SerializeFieldEntry[] = Object.prototype.hasOwnProperty.call(proto, SERIALIZE_METADATA_KEY)
-            ? proto[SERIALIZE_METADATA_KEY] : [];
-        const serializeEntry = serializeFields.find(e => e.name === fieldName || labels[e.name] === fieldName);
+        const serializeEntry = getOwnSerializeFieldEntries(proto).find(e => e.name === fieldName || labels[e.name] === fieldName);
         if (serializeEntry)
             return { name: serializeEntry.name, type: "input" };
     }

@@ -5,7 +5,7 @@ import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
 import { defaultSettingsData } from "../types/bareData";
 import { AnyEntity, Entity, entityVars, Rectangle2Vec, Scalar } from "../types/bareTypes";
-import { getSerializeFieldEntries, getSerializeFields, hasSerializeFields, isSerializedInMode } from "./serializeFields";
+import { getSerializeFieldEntries, getSerializeFields, isSerializedInMode, namesSavedInMode } from "./serializeFields";
 import { Helper } from "./helper";
 
 export class GameObjectSerializer
@@ -31,8 +31,6 @@ export class GameObjectSerializer
                 const classSaveVars = saveVars[constructorName] ?? [];
                 varsToSave = [...new Set([...gameObjectSaveVars, ...classSaveVars])];
             }
-
-            varsToSave = varsToSave.slice();
         }
         else if (bare.gameMode == GameMode.Edit || forceAllEntityVars)
         {
@@ -49,11 +47,6 @@ export class GameObjectSerializer
                 varsToSave = varsToSave.filter(varName => !notSavedInEditor.includes(varName));
             }
         }
-
-        // EDGE CASE, WANT TO ALWAYS SAVE (TOP LEVEL) OBJECT WITHOUT A PARENT, NO NEED TO SUPPLY THE SAVE PROPERTY
-        // CHILDREN DO NEED IT
-        if (!obj.parent && varsToSave.includes("save"))
-            varsToSave.splice(varsToSave.indexOf("save"), 1);
 
         if (includeSaveFields)
         {
@@ -380,8 +373,9 @@ export class GameObjectSerializer
     // without any, the props it was constructed with
     static GetComponentFieldNames(component: Component, mode?: GameMode): string[]
     {
-        if (hasSerializeFields(component))
-            return getSerializeFields(component, mode);
+        const entries = getSerializeFieldEntries(component);
+        if (entries.length > 0)
+            return namesSavedInMode(entries, mode);
 
         return (component as any).__paramNames || Helper.GetConstructorParamNames(component.constructor);
     }
@@ -404,8 +398,8 @@ export class GameObjectSerializer
         else
             serializedValue = objValue;
 
-        // Only emit serializable values - had problem with DiamondUI.text before - todo
-        // because text is in entityVars, from textObject - unwanted overlap. need to refactor to only include @inspectorField and @save from object
+        // only emit serializable values. entityVars holds the field names of every registered class, so a name can
+        // belong to something else on this object (eg DiamondUI.text, while text is a TextObject field)
         if (typeof serializedValue === "function")
             serializedValue = undefined;
         else

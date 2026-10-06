@@ -104,8 +104,6 @@ function getChangedFields(o: GameObject): { changedFields: any, origEntity: any 
     delete diffEntity.imagePath;
     delete diffEntity.texture;
 
-    delete diffEntity.save; // EDGE CASE FROM LEVEL
-
     return { changedFields: diffEntity, origEntity };
 }
 

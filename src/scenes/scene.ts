@@ -485,9 +485,6 @@ export class Scene implements SceneI
         return merged;
     }
 
-    // FINDS THE DIFFERENCE BETWEEN CURRENT SERIALIZED OBJECT AND STARTING SERIALIZED OBJECT
-    // DIFFERENCE GETS MERGED WITH unconstructedEntity
-    // USING unconstructedEntity, SINCE IT CAN CONTAIN VALUES LIKE PIVOT .5,.5, imagePath, entity, WHICH CAN'T BE SERIALIZED BACK FROM A GAMEOBJECT
     // a child built from its parent's entity has no unconstructed entity registered. rebuild one: the reference it
     // extends, plus what its parent's entity (eg a level override) changed on top of that reference. without it,
     // those changes are already in the child's entity, count as unchanged, and get dropped on the next save
@@ -508,6 +505,9 @@ export class Scene implements SceneI
         return entity.extends ? { extends: entity.extends, ...overrides } : overrides;
     }
 
+    // FINDS THE DIFFERENCE BETWEEN CURRENT SERIALIZED OBJECT AND STARTING SERIALIZED OBJECT
+    // DIFFERENCE GETS MERGED WITH unconstructedEntity
+    // USING unconstructedEntity, SINCE IT CAN CONTAIN VALUES LIKE PIVOT .5,.5, imagePath, entity, WHICH CAN'T BE SERIALIZED BACK FROM A GAMEOBJECT
     GetEntityFromObject(rootObject: GameObject, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false, includeSaveFields: false }): Entity
     {
         if (!rootObject.parent)
@@ -978,7 +978,7 @@ export class Scene implements SceneI
             if (customSerialize[varName] && objValue)
                 serializedValue = customSerialize[varName](objValue);
             else
-                serializedValue = this.GetSerializedValueFromObject(gameObject, key);
+                serializedValue = GameObjectSerializer.SerializeValue(gameObject, key);
 
             entityConstructed[varName] = serializedValue;
         }
@@ -989,11 +989,6 @@ export class Scene implements SceneI
         entityConstructed.extends ??= "ANY";
         
         return entityConstructed;
-    }
-
-    GetSerializedValueFromObject(gameObject: GameObject, field: string): any
-    {
-        return GameObjectSerializer.SerializeValue(gameObject, field);
     }
 
     // CONSTRUCT ENTITY FROM SETTINGSDATA AND CONSTRUCT IT INTO A GAMEOBJECT TO GET ALL ITS VALUES
@@ -1038,8 +1033,6 @@ export class Scene implements SceneI
         // ... BUT ADDING IT BACK TO THE ENITY HERE, SO IT'S NOT LOST
         if (entityConstructed.components)
             entity.components = entityConstructed.components;
-
-        delete entity.save;
 
         return entity;
     }

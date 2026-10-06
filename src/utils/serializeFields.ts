@@ -76,6 +76,14 @@ export function isSerializedInMode(entry: SerializeFieldEntry, mode: GameMode): 
     return entry.modes.length === 0 || entry.modes.includes(mode);
 }
 
+/** Names of the entries saved in `mode`, or of every entry when left out. */
+export function namesSavedInMode(entries: SerializeFieldEntry[], mode?: GameMode): string[]
+{
+    return entries
+        .filter(entry => mode === undefined || isSerializedInMode(entry, mode))
+        .map(entry => entry.name);
+}
+
 /** Returns the prototype chain (parent-first), stopping before Object.prototype. */
 export function prototypeChain(proto: any): any[]
 {
@@ -97,9 +105,7 @@ export function getOwnSerializeFieldEntries(classOrPrototype: any): SerializeFie
 /** @SerializeField fields declared on this class only (not inherited), optionally only those saved in `mode`. */
 export function getOwnSerializeFieldNames(classOrPrototype: any, mode?: GameMode): string[]
 {
-    return getOwnSerializeFieldEntries(classOrPrototype)
-        .filter(entry => mode === undefined || isSerializedInMode(entry, mode))
-        .map(entry => entry.name);
+    return namesSavedInMode(getOwnSerializeFieldEntries(classOrPrototype), mode);
 }
 
 /**
@@ -126,15 +132,5 @@ export function getSerializeFieldEntries(objOrClass: any): SerializeFieldEntry[]
 /** @SerializeField fields of the class and its ancestors (parent-first), optionally only those saved in `mode`. */
 export function getSerializeFields(objOrClass: any, mode?: GameMode): string[]
 {
-    return getSerializeFieldEntries(objOrClass)
-        .filter(entry => mode === undefined || isSerializedInMode(entry, mode))
-        .map(entry => entry.name);
+    return namesSavedInMode(getSerializeFieldEntries(objOrClass), mode);
 }
-
-/** True when the class or one of its ancestors has a @SerializeField, in any mode. */
-export function hasSerializeFields(objOrClass: any): boolean
-{
-    return getSerializeFieldEntries(objOrClass).length > 0;
-}
-
-export { SERIALIZE_METADATA_KEY };
