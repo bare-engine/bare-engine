@@ -218,7 +218,7 @@ export class PrefabScene extends EditorScene
         
         var entity = {
             name: this.objectName, // KEEP NAME ON TOP
-            ...this.GetEntityFromObject(rootObject, { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false, includeSaveFields: false, keepRuntimeUIDs: true })
+            ...this.GetEntityFromObject(rootObject, { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false, keepRuntimeUIDs: true })
         };
             
         // editor-only, set on the root in CreateLevelDataForPrefab(). stored in the live settings data it would make

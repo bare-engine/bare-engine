@@ -91,12 +91,12 @@ function getChangedFields(o: GameObject): { changedFields: any, origEntity: any 
                     gameObjectClass = parentClass;
                 }
             }
-            origEntity = GameObjectSerializer.SerializeObjectFully(o.scene, gameObject, true, true);
+            origEntity = GameObjectSerializer.SerializeObjectFully(o.scene, gameObject, true);
             bare.gameObjectDefaultValues[className] = origEntity;
         }
     }
 
-    var curEntity = GameObjectSerializer.SerializeObjectFully(o.scene, o, true, true);
+    var curEntity = GameObjectSerializer.SerializeObjectFully(o.scene, o, true);
     var diffEntity = GameObjectSerializer.GetEntitiesDiff(origEntity, curEntity) || {};
 
     // FIELDS TO IGNORE - NOT IN INSPECTOR
@@ -699,7 +699,7 @@ const gameDebugApi = {
         }
     }
 
-    var data = GameObjectSerializer.SerializeObjectFully(scene, o, true, false) as any;
+    var data = GameObjectSerializer.SerializeObjectFully(scene, o, true) as any;
     AddExtraPropsToData(data, o);
     
     // ROUND NUMBERS

@@ -166,7 +166,7 @@ export interface Entity
 // ENTITY OF AN UNKNOWN CLASS (ENGINE INTERNALS, SERIALIZING, EDITORS) - ALLOWS EVERY CLASS-SPECIFIC FIELD
 export type AnyEntity = Entity & ArcadeObjectEntity & CircleEntity & PolygonEntity & ButtonEntity & TextObjectEntity;
 
-export type ConstructEntityOptions = { propsToIgnoreInEntity?: string[], fillPresets?: boolean, forceAllEntityVars?: boolean, includeSaveFields?: boolean, keepRuntimeUIDs?: boolean };
+export type ConstructEntityOptions = { propsToIgnoreInEntity?: string[], fillPresets?: boolean, forceAllEntityVars?: boolean, keepRuntimeUIDs?: boolean };
 export type EntityVarsNestedGroup = Record<string, string[]>;
 export type EntityVarsNestedEntry = string | EntityVarsNestedGroup;
 

@@ -420,7 +420,7 @@ to package.json to keep the generated assets (can become large for big projects)
     }
 
     // SERIALIZE OBJECT DIFF
-    SerializeObject(obj: GameObject, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false, includeSaveFields: true }): Entity
+    SerializeObject(obj: GameObject, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false }): Entity
     {
         var entity = this.scene.GetEntityFromObject(obj, options);
 

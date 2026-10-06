@@ -10,7 +10,7 @@ import { Helper } from "./helper";
 
 export class GameObjectSerializer
 {
-    static SerializeObjectFully(scene: Scene, obj: GameObject, forceAllEntityVars: boolean = false, includeSaveFields: boolean = true): Entity
+    static SerializeObjectFully(scene: Scene, obj: GameObject, forceAllEntityVars: boolean = false): Entity
     {
         var entity: Entity = {};
 
@@ -48,13 +48,12 @@ export class GameObjectSerializer
             }
         }
 
-        if (includeSaveFields)
+        // the object's own @SerializeField fields saved in this mode. in the editor most are in entityVars already,
+        // this adds the ones of classes that aren't registered
+        for (const saveField of getSerializeFields(obj, forceAllEntityVars ? undefined : bare.gameMode))
         {
-            for (const saveField of getSerializeFields(obj, forceAllEntityVars ? undefined : bare.gameMode))
-            {
-                if (!varsToSave.includes(saveField))
-                    varsToSave.push(saveField);
-            }
+            if (!varsToSave.includes(saveField))
+                varsToSave.push(saveField);
         }
 
         var customSerialize: Record<string, (currentValue: any) => any> = {};
@@ -71,7 +70,7 @@ export class GameObjectSerializer
             for (var child of currentValue)
             {
                 if ((!child.persistent && child.save) || forceAllEntityVars)
-                    children.push(GameObjectSerializer.SerializeObjectFully(scene, child, forceAllEntityVars, includeSaveFields));
+                    children.push(GameObjectSerializer.SerializeObjectFully(scene, child, forceAllEntityVars));
             }
             return children.length > 0 ? children : null;
         };
@@ -114,7 +113,7 @@ export class GameObjectSerializer
     // CREATE A SELF-CONTAINED ENTITY FOR CLONING/COPY-PASTE
     static SerializeObjectSnapshot(scene: Scene, obj: GameObject): Entity
     {
-        const snapshot = GameObjectSerializer.SerializeObjectFully(scene, obj, false, true);
+        const snapshot = GameObjectSerializer.SerializeObjectFully(scene, obj);
 
         const makeSelfContained = (gameObject: GameObject, entity: Entity): void => {
             entity.name = gameObject.name;

@@ -508,7 +508,7 @@ export class Scene implements SceneI
     // FINDS THE DIFFERENCE BETWEEN CURRENT SERIALIZED OBJECT AND STARTING SERIALIZED OBJECT
     // DIFFERENCE GETS MERGED WITH unconstructedEntity
     // USING unconstructedEntity, SINCE IT CAN CONTAIN VALUES LIKE PIVOT .5,.5, imagePath, entity, WHICH CAN'T BE SERIALIZED BACK FROM A GAMEOBJECT
-    GetEntityFromObject(rootObject: GameObject, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false, includeSaveFields: false }): Entity
+    GetEntityFromObject(rootObject: GameObject, options: ConstructEntityOptions = { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false }): Entity
     {
         if (!rootObject.parent)
         {
@@ -524,7 +524,7 @@ export class Scene implements SceneI
         const serializedRootObjectOrig = this.ConstructEntityWithDefaultValues(startingEntity, this.settingsData, options);
         
         // SERIALIZE CURRENT GAMEOBJECT
-        const serializedRootObject = GameObjectSerializer.SerializeObjectFully(this, rootObject, options.forceAllEntityVars, options.includeSaveFields);
+        const serializedRootObject = GameObjectSerializer.SerializeObjectFully(this, rootObject, options.forceAllEntityVars);
         
         // STORE THE DIFFERENCES IN AN OBJECT (SHOULD BE EMPTY IF NO CHANGES WERE MADE)
         const diff = GameObjectSerializer.GetEntitiesDiff(serializedRootObjectOrig, serializedRootObject) ?? {};
