@@ -9,9 +9,6 @@ hero:
       text: Get Started
       link: /guide/getting-started
     - theme: alt
-      text: The bare Object
-      link: /reference/bare
-    - theme: alt
       text: GitHub
       link: https://github.com/bare-engine/bare-engine
 
