@@ -7,13 +7,12 @@ Bare has two optional physics engines. Neither is included in your build unless 
 Simple rectangle and circle collisions, good for platformers and top-down games. Import from `bare-engine/arcade` and register it in your scene:
 
 ```ts
-import { ArcadeObject, ArcadePhysicsController } from 'bare-engine/arcade';
+import { ArcadePhysicsController } from 'bare-engine/arcade';
 
 export class Game extends Scene
 {
     OnAwake()
     {
-        bare.AddClass(ArcadeObject);
         bare.AddClass(ArcadePhysicsController);
     }
 }
