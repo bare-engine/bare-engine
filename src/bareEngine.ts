@@ -593,10 +593,17 @@ export class BareEngine
         const className = name ?? Helper.GetNameFromClass(_class);
         Object.defineProperty(_class, "name", { value: className, configurable: true });
 
-        if (bare.registeredClasses[className])
+        const existingClass = bare.registeredClasses[className];
+        if (existingClass)
         {
             //console.warn(`Module ${className} is already registered`);
-            return;
+            if (!__DEV__ || existingClass === _class)
+                return;
+
+            // HOT RELOAD: THE MODULE RE-RAN, SO SAME NAME BUT A NEW CLASS OBJECT
+            // DROP THE STALE REGISTRATION + POOL (IT HOLDS INSTANCES OF THE OLD CLASS) AND RE-REGISTER BELOW
+            delete bare.registeredClasses[className];
+            this.gameObjectPools.delete(className);
         }
 
         // CONTROLLERS

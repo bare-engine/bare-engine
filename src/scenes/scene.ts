@@ -1321,7 +1321,9 @@ to package.json to keep the generated assets (can become large for big projects)
             {
                 const className = this.GetContructorName(gameObject);
                 const pool = bare.gameObjectPools.get(className);
-                if (pool)
+                const registeredClass = bare.registeredClasses[className];
+                // AFTER A HOT RELOAD, AN OLD-CLASS INSTANCE MUST NOT END UP IN THE NEW CLASS'S POOL
+                if (pool && (!registeredClass || gameObject.constructor === registeredClass))
                     pool.Release(gameObject);
             }
         }

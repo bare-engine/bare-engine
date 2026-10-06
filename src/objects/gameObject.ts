@@ -206,13 +206,9 @@ export class GameObject
     static RegisterGameObject(cls: GameObjectClass, defaultPoolSize: number = 1): void
     {
         // bare.AddClass redefined cls.name to the true source name, so read it directly.
+        // ALWAYS OVERWRITE: ON HOT RELOAD THE SAME NAME COMES BACK AS A NEW CLASS OBJECT
         const className = cls.name;
-        const alreadyRegistered = !!GameObject.registeredGameObjects[className];
-
-        if (!alreadyRegistered)
-        {
-            GameObject.registeredGameObjects[className] = cls;
-        }
+        GameObject.registeredGameObjects[className] = cls;
 
         GameObject.RegisterEntityVars(cls);
     }
