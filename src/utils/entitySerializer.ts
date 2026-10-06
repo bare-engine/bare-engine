@@ -110,31 +110,6 @@ export class GameObjectSerializer
         return entity;
     }
 
-    // CREATE A SELF-CONTAINED ENTITY FOR CLONING/COPY-PASTE
-    static SerializeObjectSnapshot(scene: Scene, obj: GameObject): Entity
-    {
-        const snapshot = GameObjectSerializer.SerializeObjectFully(scene, obj);
-
-        const makeSelfContained = (gameObject: GameObject, entity: Entity): void => {
-            entity.name = gameObject.name;
-            entity.baseClass = scene.GetContructorName(gameObject);
-
-            // The snapshot already contains the applied values. Prevent ConstructEntity()
-            // from merging a same-named settings entity back into it when it is restored.
-            entity.constructed = true;
-
-            if (!entity.children)
-                return;
-
-            const savedChildren = gameObject.children.filter(child => !child.persistent && child.save);
-            for (var i = 0; i < Math.min(savedChildren.length, entity.children.length); i++)
-                makeSelfContained(savedChildren[i], entity.children[i]);
-        };
-
-        makeSelfContained(obj, snapshot);
-        return snapshot;
-    }
-
     // strips data that should not end up in saved entities: unused entityUIDs, bare UID references,
     // the given props, and any entities/children left empty afterwards.
     // all lists are considered together when counting UID references.
