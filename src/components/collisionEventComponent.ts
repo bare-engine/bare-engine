@@ -1,15 +1,16 @@
 import { Component } from "../controllers/componentController";
+import { GameMode } from "../globals";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
 import { InspectorButton } from "../utils/decorators";
-import { Save } from "../utils/saveFields";
+import { SerializeField } from "../utils/serializeFields";
 
 export class CollisionEventComponent extends Component
 {
-    @Save private object: string = ""; // LEAVE EMPTY TO TRIGGER ON COLLIDE WITH ANYTHING
-    @Save private event: string = ""; // THE EVENT THAT NEEDS TO FIRE ON TRIGGER
-    @Save private once: boolean = false; // IF TRUE, THE EVENT WILL ONLY FIRE ONCE (REMOVE ITSELF)
-    @Save private removeObject: boolean = false; // ONLY CHECKED WHEN once = TRUE
+    @SerializeField(GameMode.Edit) private object: string = ""; // LEAVE EMPTY TO TRIGGER ON COLLIDE WITH ANYTHING
+    @SerializeField(GameMode.Edit) private event: string = ""; // THE EVENT THAT NEEDS TO FIRE ON TRIGGER
+    @SerializeField(GameMode.Edit) private once: boolean = false; // IF TRUE, THE EVENT WILL ONLY FIRE ONCE (REMOVE ITSELF)
+    @SerializeField(GameMode.Edit) private removeObject: boolean = false; // ONLY CHECKED WHEN once = TRUE
 
     constructor(scene: Scene)
     {

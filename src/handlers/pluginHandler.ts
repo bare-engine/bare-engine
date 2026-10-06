@@ -9,7 +9,7 @@ import { Scene } from "../scenes/scene";
 import { OutlineShader } from "../shaders/outlineShader";
 import { defaultSettingsData } from "../types/bareData";
 import { AnyEntity, BareEvent, Entity, EntityVarsNestedEntry, entityVarsNested, LevelData, Position, Rectangle, SaveData, Scalar, SettingsData } from "../types/bareTypes";
-import { applyInspectorField, getButtons, getInspectorClasses, getInspectorFieldDescriptions, getInspectorFields, resolveInspectorClassName } from "../utils/decorators";
+import { applyInspectorField, getButtons, getHiddenFieldNames, getInspectorClasses, getInspectorFieldDescriptions, getInspectorFields, resolveInspectorClassName } from "../utils/decorators";
 import { GameObjectSerializer } from "../utils/entitySerializer";
 import { Helper } from "../utils/helper";
 import { RectSelection, RectSelectionCandidate } from "../utils/rectSelection";
@@ -39,7 +39,9 @@ function getEntityDefaultValuesCached(o: GameObject, entity: Entity): Entity
     if (cache && cache.settingsData === settingsData)
         return cache.defaults;
 
-    const defaults = o.scene.ConstructEntityWithDefaultValues(entity, settingsData);
+    // all fields, like getChangedFields serializes the live object. while playing, the default would only
+    // serialize saveVars and the @SerializeField fields saved in play mode, so the rest would all look changed
+    const defaults = o.scene.ConstructEntityWithDefaultValues(entity, settingsData, { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: true });
     entityDefaultValuesCache.set(o, { settingsData, defaults });
     return defaults;
 }
@@ -688,7 +690,7 @@ const gameDebugApi = {
         if (isChild)
             data.changed = !!o.entity && hasChangedFields(o, changedMemo);
 
-        plugin.AddInspectorDataToObject(data, o, false, false);
+        plugin.AddInspectorDataToObject(data, o);
 
         if (data.children)
         {
@@ -849,12 +851,12 @@ const gameDebugApi = {
             lockedVars.add(name);
     }
 
-    // subclass @inspectorfield/@save members grouped by declaring class. read off the live instance,
+    // subclass @serializefield members saved in the editor, grouped by declaring class. read off the live instance,
     // decorator metadata isn't reliably readable through a fake {constructor: cls} wrapper
     var groups: { source: string, fields: string[] }[] = [];
     if (liveObj)
     {
-        var classFields = getInspectorFields(liveObj, true).filter(f => !f.name.startsWith("_"));
+        var classFields = getInspectorFields(liveObj, GameMode.Edit).filter(f => !f.name.startsWith("_"));
         var classChain = [liveObj.constructor.name, ...Helper.GetParentClasses(liveObj.constructor)].filter(c => c !== "GameObject");
         for (var className of classChain)
             groups.push({ source: className, fields: classFields.filter(f => f.source === className).map(f => f.name) });
@@ -923,6 +925,13 @@ const gameDebugApi = {
 
             var groupEntries = Object.entries(entry)
                 .filter(([groupName]) => groupName !== "HideInPlugin")
+                .map(([groupName, keys]): [string, string[]] => {
+                    // a group is the class that declared its keys, leave out its @Hidden ones
+                    var groupClass = bare.registeredClasses[groupName];
+                    var hiddenKeys = groupClass ? getHiddenFieldNames(groupClass) : [];
+                    return [groupName, keys.filter(key => !hiddenKeys.includes(key))];
+                })
+                .filter(([, keys]) => keys.length > 0)
                 .map(([groupName, keys]) => {
                     var isGeneralGroup = groupName == "General" || groupName == "Misc";
                     var groupUnavailable = !isGeneralGroup && !parentClassNames.includes(groupName);
@@ -2816,7 +2825,7 @@ export class PluginHandler
 
         const obj = prefabScene.object.GetByName(name);
         if (obj)
-            this.AddInspectorDataToObject(entityWithLog, obj, true);
+            this.AddInspectorDataToObject(entityWithLog, obj, true, GameMode.Edit);
 
         settingsHandler.FillPresets(entityWithLog, raw, (parentRecord, keyWithPreset, presetName) => {
             parentRecord.__presets ??= {};
@@ -2909,14 +2918,28 @@ export class PluginHandler
 
     // onlyFieldsInData: only enrich @InspectorField info for fields that are actually present in `data`
     // (used by the entity/gotoPrefab path, whose data only carries the entity's own keys).
-    AddInspectorDataToObject(data: any, o: GameObject, onlyFieldsInData: boolean = false, includeSaveFields: boolean = true): void
+    // serializedInMode: only the @SerializeField fields saved in that mode (the prefab view passes GameMode.Edit),
+    // every @InspectorField and @SerializeField when left out (the in-game view)
+    AddInspectorDataToObject(data: any, o: GameObject, onlyFieldsInData: boolean = false, serializedInMode?: GameMode): void
     {
         // ADD DATA FOR @InspectorButton AND @InspectorField DECORATORS ON THE OBJECT ITSELF
         var objButtons = getButtons(o.constructor as any);
         if (objButtons.length > 0)
             data.__buttons = objButtons.map(b => ({ label: b.label, method: b.methodKey, order: b.order, source: b.source }));
 
-        var objFields = getInspectorFields(o, includeSaveFields);
+        // @Hidden fields are still saved, keep them out of the panel. the prefab panel skips the
+        // __defaultFieldsToIgnore__ ones, the in-game data is only for display so they can go
+        var hiddenFields = getHiddenFieldNames(o);
+        if (hiddenFields.length > 0)
+        {
+            if (serializedInMode === undefined)
+                for (const name of hiddenFields)
+                    delete data[name];
+            else
+                data.__defaultFieldsToIgnore__ = [...(data.__defaultFieldsToIgnore__ ?? []), ...hiddenFields];
+        }
+
+        var objFields = getInspectorFields(o, serializedInMode);
         if (onlyFieldsInData)
             objFields = objFields.filter(f => Object.prototype.hasOwnProperty.call(data, f.name));
         if (objFields.length > 0)
@@ -2944,7 +2967,7 @@ export class PluginHandler
                 var comp = o.scene.component.Get(o, compCls);
                 if (comp)
                 {
-                    var fields = getInspectorFields(comp, includeSaveFields);
+                    var fields = getInspectorFields(comp, serializedInMode);
                     if (fields.length > 0)
                     {
                         (compData as any).__fields = fields;
@@ -2967,7 +2990,7 @@ export class PluginHandler
             {
                 var child = o.children[i];
                 if (child)
-                    this.AddInspectorDataToObject(data.children[i], child, onlyFieldsInData, includeSaveFields);
+                    this.AddInspectorDataToObject(data.children[i], child, onlyFieldsInData, serializedInMode);
             }
         }
     }

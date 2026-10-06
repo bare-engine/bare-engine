@@ -1,9 +1,10 @@
 import type { ButtonHandlers } from "../controllers/hitboxController";
+import { GameMode } from "../globals";
 import { Color, ITextOptions, TextTexture, Vec2 } from "../libraries/rapid-render";
 import type { Scene } from "../scenes/scene";
 import type { Entity, Rectangle } from "../types/bareTypes";
-import { InspectorField, Int, Limit } from "../utils/decorators";
-import { Save } from "../utils/saveFields";
+import { Int, Limit } from "../utils/decorators";
+import { SerializeField } from "../utils/serializeFields";
 import { GameObject } from "./gameObject";
 
 interface TextOptions extends ITextOptions, ButtonHandlers<Button> {
@@ -31,32 +32,32 @@ export class Button extends GameObject
     textTexture: TextTexture;
     pivotPercentage: Vec2 = new Vec2(-1, -1); // SAME AS TextObject - SHOULD GAMEOBJECT HAVE THIS? - TODO
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     text = {
         get: () => this.textTexture.text,
         set: (text: string) => this.SetText(text),
     };
 
-    @InspectorField @Save @Int @Limit(0, Infinity)
+    @SerializeField(GameMode.Edit) @Int @Limit(0, Infinity)
     fontSize = {
         get: () => this.textTexture.style.fontSize,
         set: (fontSize: number) => {this.textTexture.style.fontSize = fontSize; this.UpdateText();},
     };
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     get textColor(): Color {return Color.fromHex(this.textTexture.style.fill as string ?? "#ffffff");}
     set textColor(value: Color | string) {this.textTexture.style.fill = typeof value === "string" ? value : value.toHex(); this.UpdateText();}
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     buttonColor: Color;
 
     private _margin = 10;
 
-    @InspectorField @Save @Limit(0, Infinity)
+    @SerializeField(GameMode.Edit) @Limit(0, Infinity)
     get margin(): number {return this._margin;}
     set margin(value: number) {this._margin = value; this.OnSizeChanged();}
 
-    @InspectorField @Save @Limit(0, Infinity)
+    @SerializeField(GameMode.Edit) @Limit(0, Infinity)
     cornerRadius: number;
 
     constructor(scene: Scene, textOptions: TextOptions | string)

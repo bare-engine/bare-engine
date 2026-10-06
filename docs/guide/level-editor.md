@@ -102,7 +102,7 @@ export class LabelComponent extends Component
 
 `bare.editor` returns the editor scene while it's open, and `bare.levelEditorOpen` tells you if it is. `BareEvent.editor_opened` and `BareEvent.editor_closed` fire when it opens and closes.
 
-Together with `@Run(GameMode.Edit)` components, you can build editors for your own data on top of the level editor. An editor component is a normal component: it can draw, react to the pointer, read other objects and `@Save` its results into the level.
+Together with `@Run(GameMode.Edit)` components, you can build editors for your own data on top of the level editor. An editor component is a normal component: it can draw, react to the pointer, read other objects and save its results into the level with `@SerializeField(GameMode.Edit)`.
 
 ### Example: the RPG's map editor
 
@@ -119,7 +119,7 @@ The [RPG](https://github.com/bare-engine/bare-rpg) has a second editor for its w
    });
    ```
 
-4. **An editor component.** Every level on the map has a [`LevelConnectorComponent`](https://github.com/bare-engine/bare-rpg/blob/main/src/components/levelConnectorComponent.ts) with `@Run(GameMode.Edit)`. When you drag levels next to each other, it finds its neighbours, draws a line to them, and saves them in `@Save` fields `top`, `right`, `bottom` and `left`. Hovering a level shows its name, and clicking it opens that level in the editor.
+4. **An editor component.** Every level on the map has a [`LevelConnectorComponent`](https://github.com/bare-engine/bare-rpg/blob/main/src/components/levelConnectorComponent.ts) with `@Run(GameMode.Edit)`. When you drag levels next to each other, it finds its neighbours, draws a line to them, and saves them in `@SerializeField(GameMode.Edit)` fields `top`, `right`, `bottom` and `left`. Hovering a level shows its name, and clicking it opens that level in the editor.
 5. **Using the result.** The game [reads the saved map](https://github.com/bare-engine/bare-rpg/blob/main/src/handlers/mapHandler.ts#L93-L113) to know where each exit leads, and [updates it](https://github.com/bare-engine/bare-rpg/blob/main/src/handlers/mapHandler.ts#L35-L42) on `BareEvent.level_savedToDisk` when you save the map.
 6. **Previews.** Whenever a level is saved, the RPG's [`SnapshotHandler`](https://github.com/bare-engine/bare-rpg/blob/main/src/handlers/snapshotHandler.ts) renders it to an image in `editorImages`, so the map always shows what the levels look like.
 

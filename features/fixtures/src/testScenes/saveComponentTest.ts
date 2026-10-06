@@ -1,4 +1,4 @@
-import { Component, ComponentController, Save, Scene } from "bare-engine";
+import { Component, ComponentController, Scene, SerializeField } from "bare-engine";
 
 export class SaveComponentTest extends Scene
 {
@@ -17,7 +17,7 @@ export class SaveComponentTest extends Scene
         var entity = this.level.SerializeObject(obj);
 
         assert(entity.components.testSave.valueNoSave === undefined, "test value should not be saved");
-        assert(entity.components.testSave.valueSave === undefined, "default @Save value should not be saved");
+        assert(entity.components.testSave.valueSave === undefined, "default @SerializeField value should not be saved");
         assert(entity.components.testSave.valueSaveChanged == "testChanged", "saveChanged value should be saved and changed");
         assert(entity.components.testNoSave === undefined, "testNoSave component should not be saved");
     }
@@ -27,10 +27,10 @@ export class TestSaveComponent extends Component
 {
     private valueNoSave:string = "test";
 
-    @Save
+    @SerializeField
     private valueSave:string = "test";
 
-    @Save
+    @SerializeField
     private valueSaveChanged:string = "test";
 
     constructor(scene: Scene, valueSaveChanged?:string)

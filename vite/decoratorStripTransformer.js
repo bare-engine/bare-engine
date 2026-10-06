@@ -5,7 +5,7 @@
 // ZERO importers and gets tree-shaken out of the production bundle.
 //
 // It is deliberately scoped to the editor/inspector metadata in decorators.ts. @Run (utils/runModes.ts)
-// and @Save / getSaveFields (utils/saveFields.ts) live elsewhere on purpose - they carry real runtime
+// and @SerializeField / getSerializeFields (utils/serializeFields.ts) live elsewhere on purpose - they carry real runtime
 // semantics (component run-mode gating, level/SaveData serialization) - so they are never touched
 // here and keep working in prod.
 //
@@ -27,14 +27,15 @@
 
 const ts = require("./projectRequire")("typescript");
 
-// The editor-only decorators exported by src/utils/decorators.ts. @Run and @Save are intentionally
-// absent (they live in utils/runModes.ts / utils/saveFields.ts and must survive the prod build).
+// The editor-only decorators exported by src/utils/decorators.ts. @Run and @SerializeField are intentionally
+// absent (they live in utils/runModes.ts / utils/serializeFields.ts and must survive the prod build).
 const DECORATOR_NAMES = new Set([
     "InspectorButton",
     "InspectorField",
     "InspectorBaseClass",
     "InspectorClass",
     "Locked",
+    "Hidden",
     "Limit",
     "Range",
     "Percentage",
@@ -53,6 +54,7 @@ const INSPECTOR_DECORATOR_PROPERTIES = new Set([
     "BaseClass",
     "Class",
     "Locked",
+    "Hidden",
     "Limit",
     "Range",
     "Percentage",
@@ -74,6 +76,7 @@ const READER_REPLACEMENTS = {
     getInspectorFields: "array",
     getInspectorFieldNames: "array",
     getInspectorFieldDescriptions: "object",
+    getHiddenFieldNames: "array",
     applyInspectorField: "false",
 };
 

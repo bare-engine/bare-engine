@@ -2,8 +2,8 @@ import { keyboardController } from "../../../controllers/keyboardController";
 import { GameMode, Scene } from "../../../globals";
 import { GameObject } from "../../../objects/gameObject";
 import { BareEvent } from "../../../types/bareTypes";
-import { Enum, InspectorField } from "../../../utils/decorators";
-import { Save } from "../../../utils/saveFields";
+import { Enum } from "../../../utils/decorators";
+import { SerializeField } from "../../../utils/serializeFields";
 import { Color, Vec2 } from "../../rapid-render";
 import { testPointInside } from "../detection";
 import { DistanceJoint } from "../distance";
@@ -24,13 +24,13 @@ export enum DistanceMode
 
 export class DistanceJointObject extends JointObject
 {
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     lineColor: Color = Color.Black;
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     lineWidth: number = 6;
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     targetOffset: Vec2 = new Vec2();
 
     // -1 = derive from the anchor distance at creation time.
@@ -127,7 +127,7 @@ export class DistanceJointObject extends JointObject
         return joint;
     }
 
-    @InspectorField @Save @Enum(DistanceMode)
+    @SerializeField(GameMode.Edit) @Enum(DistanceMode)
     get mode(): DistanceMode
     {
         return this._mode;
@@ -141,7 +141,7 @@ export class DistanceJointObject extends JointObject
         this.RebuildJoint();
     }
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     get distance(): number
     {
         return this._distance;

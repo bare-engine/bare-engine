@@ -16,7 +16,7 @@ The [Bare Engine Chrome extension](https://chromewebstore.google.com/detail/bare
 - Trigger debug buttons, and add your own
 - See the properties of objects you [right-click](./debugging#selecting-objects-in-the-game) in the game
 
-Fields marked `@InspectorField` in your code appear in the extension. See [Components](./components#inspector-fields).
+Fields marked `@SerializeField` or `@InspectorField` in your code appear in the extension. See [Components](./components#inspector-fields).
 
 **Example:** the [Shmup](https://github.com/bare-engine/bare-shmup)'s [`ShootComponent`](https://github.com/bare-engine/bare-shmup/blob/main/src/components/shootComponent.ts#L8-L33) has editable fields and a **Shoot** button.
 

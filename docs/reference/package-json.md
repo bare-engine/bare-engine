@@ -108,7 +108,7 @@ Set to `false` if your game loops over one of these lists, for example to preloa
 
 ## stripDecorators
 
-Inspector decorators like `@InspectorField` are only needed by the editor and the Chrome extension, so production builds remove them. Set to `false` to keep them.
+Inspector decorators like `@InspectorField` are only needed by the editor and the Chrome extension, so production builds remove them. `@SerializeField` and `@Run` are kept, since saving and running need them. Set to `false` to keep them all.
 
 ```json
 "stripDecorators": false
@@ -134,7 +134,7 @@ Methods whose name appears as a string anywhere in your code are kept automatica
 
 ## autoRegisterClasses
 
-Components exported from files in `src/` are registered with the engine automatically, as are components named in `settingsData.json`. Set to `false` to register them yourself with `bare.AddClass(MyComponent)`.
+Components exported from files in `src/` are registered with the engine automatically, as are components named in `settingsData.json` and exported GameObject classes marked `@InspectorBaseClass`. Set to `false` to register them yourself with `bare.AddClass(MyComponent)`.
 
 ```json
 "autoRegisterClasses": false

@@ -68,7 +68,7 @@ Set `"firstLevelLoad": "level1"` under `bareEngine` in `package.json` to start f
 
 ## Saving levels
 
-A level can be saved while playing or from the editor, and only fields marked `@Save` or listed in `saveVars` are kept. See [Save Data](../reference/save-data#saving-destinations).
+A level can be saved while playing or from the editor, and only fields marked `@SerializeField` or listed in `saveVars` are kept. See [Save Data](../reference/save-data#saving-destinations).
 
 ## Layers
 

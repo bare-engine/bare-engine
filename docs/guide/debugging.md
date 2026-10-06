@@ -85,7 +85,7 @@ For buttons that belong to one object, use [`@InspectorButton`](../reference/ins
 
 ## Watching values
 
-Fields marked `@InspectorField` update live in the extension. To watch values that aren't on an object, like the number of enemies, put them in a [manager](./scenes#managers) with a getter. Getters update live too:
+Fields marked `@InspectorField` and `@SerializeField` update live in the extension. To watch values that aren't on an object, like the number of enemies, put them in a [manager](./scenes#managers) with a getter. Getters update live too:
 
 ```ts
 import { InspectorClass, InspectorField, Scene } from 'bare-engine';

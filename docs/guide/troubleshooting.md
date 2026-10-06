@@ -55,6 +55,10 @@ Production builds remove some things to save space. Try turning them off one at 
 
 Restart the dev server. It reads these files only when it starts.
 
+## A field keeps an old value after loading
+
+A value saved into a level keeps being loaded, even after the field is no longer saved, for example after changing `@SerializeField` to `@InspectorField`. Press **C** to restart with cleared save data.
+
 ## Save data from another game shows up
 
 Two games with the same `gameId` on the same domain share their saves. Give each game its own [`gameId`](../reference/package-json#gameid).

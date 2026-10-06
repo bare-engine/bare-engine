@@ -1,11 +1,11 @@
 import type { Component } from "../controllers/componentController";
 import { GameMode } from "../globals";
-import { Color, Texture } from "../libraries/rapid-render";
+import { Color, Texture, Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
 import { defaultSettingsData } from "../types/bareData";
 import { AnyEntity, Entity, entityVars, Rectangle2Vec, Scalar } from "../types/bareTypes";
-import { getSaveFields } from "./saveFields";
+import { getSerializeFields, hasSerializeFields } from "./serializeFields";
 import { Helper } from "./helper";
 
 export class GameObjectSerializer
@@ -47,7 +47,7 @@ export class GameObjectSerializer
 
         if (includeSaveFields)
         {
-            for (const saveField of getSaveFields(obj))
+            for (const saveField of getSerializeFields(obj, forceAllEntityVars ? undefined : bare.gameMode))
             {
                 if (!varsToSave.includes(saveField))
                     varsToSave.push(saveField);
@@ -79,7 +79,7 @@ export class GameObjectSerializer
             {
                 if (comp.save || forceAllEntityVars)
                 {
-                    var compData = GameObjectSerializer.SerializeComponent(scene, comp);
+                    var compData = GameObjectSerializer.SerializeComponent(scene, comp, forceAllEntityVars ? undefined : bare.gameMode);
                     var name = bare.GetComponentNameFromClassName(comp.constructor.name);
                     comps[name] = compData;
                 }
@@ -97,7 +97,7 @@ export class GameObjectSerializer
             var objValue = obj[key];
             var serializedValue = customSerialize[varName] && objValue
                 ? customSerialize[varName](objValue)
-                : scene.GetSerializedValueFromObject(obj, key);
+                : GameObjectSerializer.SerializeValue(obj, key);
 
             if (serializedValue != null) // PREVENTS ADDING EMPTY CHILDREN OF COMPONENTS
                 entity[varName] = serializedValue;
@@ -312,7 +312,8 @@ export class GameObjectSerializer
         return value === undefined || value === null;
     }
 
-    static SerializeComponents(scene: Scene, components: Component[], checkSave: boolean = true): Record<string, Record<string, Scalar>>
+    // mode: only the @SerializeField fields saved in that GameMode, every one when left out
+    static SerializeComponents(scene: Scene, components: Component[], checkSave: boolean = true, mode?: GameMode): Record<string, Record<string, Scalar>>
     {
         if (!components)
             return null;
@@ -325,7 +326,7 @@ export class GameObjectSerializer
             if (checkSave && component.save === false)
                 continue;
 
-            var componentData = GameObjectSerializer.SerializeComponent(scene, component);
+            var componentData = GameObjectSerializer.SerializeComponent(scene, component, mode);
             var compName = component.constructor.name.replace("Component", "");
             compName = Helper.DecapitalizeFirstLetter(compName);
             componentsRec[compName] = componentData;
@@ -334,37 +335,81 @@ export class GameObjectSerializer
         return componentsRec;
     }
 
-    static SerializeComponent(scene: Scene, component: Component): Record<string, Scalar>
+    // mode: only the @SerializeField fields saved in that GameMode, every one when left out
+    static SerializeComponent(scene: Scene, component: Component, mode?: GameMode): Record<string, Scalar>
     {
         var componentData: Record<string, Scalar> = {};
-        const saveFields = getSaveFields(component);
-        var constructorVarNames = saveFields;
-        const hasExplicitSaveFields = saveFields.length > 0;
-        if (!hasExplicitSaveFields)
-            constructorVarNames = (component as any).__paramNames || Helper.GetConstructorParamNames(component.constructor);
+        var fieldNames = GameObjectSerializer.GetComponentFieldNames(component, mode);
 
         // Component classes have .name normalized at registration (AddClass), so read it directly.
         var className = component.constructor.name;
         var defaultValues = bare.componentDefaulValues[className];
 
-        // GET VALUE FROM EACH KEY OF CONSTRUCTOR PARAMS
-        for (let i = 0; i < constructorVarNames.length; i++)
+        for (let i = 0; i < fieldNames.length; i++)
         {
-            const paramName = constructorVarNames[i];
-            const paramValue = component[paramName as keyof typeof component] as any; // SHOULD BE STRING, NUMBER OR BOOLEAN
+            const paramName = fieldNames[i];
 
             // SKIP SCENE
-            if (paramName == "scene" || paramValue === scene)
+            if (paramName == "scene" || (component as any)[paramName] === scene)
                 continue;
+
+            const paramValue = GameObjectSerializer.SerializeValue(component, paramName);
 
             // SKIP IF DEFAULT
             var defaultValue = defaultValues[paramName];
-            if (paramValue === defaultValue)
+            if (paramValue === defaultValue || (paramValue !== null && typeof paramValue === "object" && Helper.ObjectsAreEqual(paramValue, defaultValue)))
                 continue;
 
             componentData[paramName] = paramValue;
         }
 
         return componentData;
+    }
+
+    // the fields a component is serialized with: its @SerializeField fields (saved in `mode`, or every one), or
+    // without any, the props it was constructed with
+    static GetComponentFieldNames(component: Component, mode?: GameMode): string[]
+    {
+        if (hasSerializeFields(component))
+            return getSerializeFields(component, mode);
+
+        return (component as any).__paramNames || Helper.GetConstructorParamNames(component.constructor);
+    }
+
+    // a field's value as stored in an entity: descriptor fields ({ get, set }) by their getter, Vec2 as {x, y},
+    // Color as hex, and nothing that can't be cloned
+    static SerializeValue(owner: any, field: string): any
+    {
+        var objValue = owner[field];
+        var serializedValue;
+
+        if (objValue && typeof objValue === "object" && (typeof (objValue as any).get === "function")) //eg: hitboxType
+            serializedValue = (objValue as any).get();
+        else
+        if (objValue instanceof Vec2)
+            serializedValue = { x: objValue.x, y: objValue.y };
+        else
+        if (objValue instanceof Color)
+            serializedValue = objValue.toHex();
+        else
+            serializedValue = objValue;
+
+        // Only emit serializable values - had problem with DiamondUI.text before - todo
+        // because text is in entityVars, from textObject - unwanted overlap. need to refactor to only include @inspectorField and @save from object
+        if (typeof serializedValue === "function")
+            serializedValue = undefined;
+        else
+        if (serializedValue !== null && typeof serializedValue === "object")
+        {
+            var proto = Object.getPrototypeOf(serializedValue);
+            var isPlain = Array.isArray(serializedValue) || proto === Object.prototype || proto === null;
+            if (!isPlain)
+            {
+                try { structuredClone(serializedValue); } // throws on non-cloneable -> drop it
+                catch (_e) { serializedValue = undefined; }
+            }
+        }
+
+        return serializedValue;
     }
 }

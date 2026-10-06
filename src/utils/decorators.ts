@@ -1,5 +1,6 @@
+import type { GameMode } from "../globals";
 import { Color } from "../libraries/rapid-render";
-import { prototypeChain, SAVE_METADATA_KEY } from "./saveFields";
+import { getSerializeFieldEntries, isSerializedInMode, nextDeclarationOrder, prototypeChain, SERIALIZE_METADATA_KEY, SerializeFieldEntry } from "./serializeFields";
 
 const BUTTON_METADATA_KEY = "__editorButtons__";
 const FIELD_METADATA_KEY = "__editorFields__";
@@ -11,23 +12,10 @@ const ENUM_METADATA_KEY = "__fieldEnums__";
 const DECIMAL_METADATA_KEY = "__fieldDecimals__";
 const LABEL_METADATA_KEY = "__fieldLabels__";
 const DESCRIPTION_METADATA_KEY = "__fieldDescriptions__";
-const ORDER_COUNTER_KEY = "__inspectorOrderCounter__";
+const HIDDEN_METADATA_KEY = "__hiddenFields__";
 const INSPECTOR_CLASS_ORDER_KEY = "__inspectorClassOrders__";
 
-// Monotonic per-class declaration index. @InspectorField / @InspectorClass / @InspectorButton
-// decorators run in source order, so a shared counter on the prototype records the order each
-// member was declared - letting the inspector render a class's members in their source order
-// (e.g. field, then class, then button) instead of grouped by decorator type.
-function nextDeclarationOrder(proto: any): number
-{
-    const current = Object.prototype.hasOwnProperty.call(proto, ORDER_COUNTER_KEY)
-        ? (proto[ORDER_COUNTER_KEY] as number)
-        : 0;
-    proto[ORDER_COUNTER_KEY] = current + 1;
-    return current;
-}
-
-// NOTE: @Run / RUN_MODES_KEY live in ./runModes.ts and @Save / getSaveFields in ./saveFields.ts
+// NOTE: @Run / RUN_MODES_KEY live in ./runModes.ts and @SerializeField / getSerializeFields in ./serializeFields.ts
 // (not here) because they carry runtime semantics and must survive the production build that
 // strips these editor-only decorators and tree-shakes decorators.ts away.
 
@@ -175,7 +163,7 @@ function addField(proto: object, name: string): void
     (proto as any)[FIELD_METADATA_KEY] = fields;
 }
 
-// @InspectorField
+// @InspectorField — shown in the in-game inspector, never saved. use @SerializeField to edit and save a field
 export function InspectorField(target: any, propertyKey: string): void;
 export function InspectorField(targetOrType: any, propertyKey?: string): any
 {
@@ -391,6 +379,29 @@ export function Locked(target: any, propertyKey: string): void
     target[LOCKED_METADATA_KEY] = lockedFields;
 }
 
+// @Hidden — keeps a @SerializeField out of the inspector, it's still saved
+export function Hidden(target: any, propertyKey: string): void
+{
+    const hiddenFields: string[] = Object.prototype.hasOwnProperty.call(target, HIDDEN_METADATA_KEY)
+        ? target[HIDDEN_METADATA_KEY]
+        : [];
+    if (!hiddenFields.includes(propertyKey))
+        hiddenFields.push(propertyKey);
+    target[HIDDEN_METADATA_KEY] = hiddenFields;
+}
+
+/** @Hidden fields of the class and its ancestors. */
+export function getHiddenFieldNames(objOrClass: any): string[]
+{
+    const proto = typeof objOrClass === "function" ? objOrClass.prototype : objOrClass.constructor.prototype;
+    const names = new Set<string>();
+    for (const p of prototypeChain(proto))
+        if (Object.prototype.hasOwnProperty.call(p, HIDDEN_METADATA_KEY))
+            for (const name of (p[HIDDEN_METADATA_KEY] as string[]))
+                names.add(name);
+    return [...names];
+}
+
 export function Limit(min?: number, max?: number): (target: any, propertyKey: string) => void
 {
     return function (target: any, propertyKey: string): void
@@ -503,6 +514,7 @@ export const Inspector = Object.freeze({
     BaseClass: InspectorBaseClass,
     Class: InspectorClass,
     Locked,
+    Hidden,
     Limit,
     Percentage,
     Dropdown,
@@ -610,9 +622,17 @@ function resolveDropdownValues(component: any, values: InspectorDropdownValues |
     return values;
 }
 
-/** Returns all editor fields registered on a component instance and its ancestor classes. */
-export function getInspectorFields(component: any, includeSaveFields: boolean = true): InspectorFieldData[]
+/**
+ * Returns the inspector fields of a component/object instance and its ancestor classes, leaving out @Hidden ones.
+ * Without `serializedInMode`, every @InspectorField and @SerializeField (the in-game inspector).
+ * With it, only the @SerializeField fields saved in that mode (eg the editor's prefab view).
+ */
+export function getInspectorFields(component: any, serializedInMode?: GameMode): InspectorFieldData[]
 {
+    // a subclass can redeclare a @SerializeField with other modes, so resolve them over the whole chain first
+    const serializeEntries = new Map<string, SerializeFieldEntry>(getSerializeFieldEntries(component).map(entry => [entry.name, entry]));
+    const hiddenFields = new Set(getHiddenFieldNames(component));
+
     // AGGREGATE METADATA ACROSS THE WHOLE PROTOTYPE CHAIN (parent-first) SO INHERITED @InspectorField FIELDS ARE INCLUDED.
     // Each class declares its own metadata array/record (see addField etc.), which would otherwise shadow ancestors'.
     const entries: FieldEntry[] = [];
@@ -629,12 +649,15 @@ export function getInspectorFields(component: any, includeSaveFields: boolean = 
 
     for (const proto of prototypeChain(component.constructor.prototype))
     {
-        if (Object.prototype.hasOwnProperty.call(proto, FIELD_METADATA_KEY))
+        if (serializedInMode === undefined && Object.prototype.hasOwnProperty.call(proto, FIELD_METADATA_KEY))
         {
             // THE CLASS THAT OWNS THIS PROTOTYPE DECLARED THESE FIELDS
             const source: string = proto.constructor?.name ?? "";
             for (const entry of (proto[FIELD_METADATA_KEY] as FieldEntry[]))
             {
+                if (hiddenFields.has(entry.name))
+                    continue;
+
                 const existing = indexByName.get(entry.name);
                 if (existing !== undefined)
                     entries[existing] = entry; // CHILD OVERRIDES PARENT, KEEPING PARENT'S POSITION
@@ -648,19 +671,22 @@ export function getInspectorFields(component: any, includeSaveFields: boolean = 
                 }
             }
         }
-        if (includeSaveFields && Object.prototype.hasOwnProperty.call(proto, SAVE_METADATA_KEY))
+        if (Object.prototype.hasOwnProperty.call(proto, SERIALIZE_METADATA_KEY))
         {
-            // @Save fields are shown in the inspector through serialized component data. Also surface
-            // them through the inspector metadata pipeline so @Int/@Limit/@Dropdown/etc. are respected.
+            // surfaced through the inspector metadata pipeline so @Int/@Limit/@Dropdown/etc. are respected
             const source: string = proto.constructor?.name ?? "";
-            for (const name of (proto[SAVE_METADATA_KEY] as string[]))
+            for (const { name } of (proto[SERIALIZE_METADATA_KEY] as SerializeFieldEntry[]))
             {
-                if (indexByName.has(name))
+                const entry = serializeEntries.get(name)!;
+                if (indexByName.has(name) || hiddenFields.has(name))
+                    continue;
+                if (serializedInMode !== undefined && !isSerializedInMode(entry, serializedInMode))
                     continue;
 
                 indexByName.set(name, entries.length);
-                entries.push({ name, type: "input" });
+                entries.push({ name, type: "input", order: entry.order });
                 sources[name] = source;
+                orders[name] = entry.order;
             }
         }
         if (Object.prototype.hasOwnProperty.call(proto, LOCKED_METADATA_KEY))
@@ -744,7 +770,7 @@ export function getInspectorFields(component: any, includeSaveFields: boolean = 
     return fieldData.filter(field => field.current !== undefined);
 }
 
-/** Returns the names of every @InspectorField registered on the instance's class and its ancestors. */
+/** Returns the names of every @InspectorField and @SerializeField on the instance's class and its ancestors. */
 export function getInspectorFieldNames(component: any): string[]
 {
     const proto = typeof component === "function" ? component.prototype : component.constructor.prototype;
@@ -754,9 +780,9 @@ export function getInspectorFieldNames(component: any): string[]
         if (Object.prototype.hasOwnProperty.call(p, FIELD_METADATA_KEY))
             for (const e of (p[FIELD_METADATA_KEY] as FieldEntry[]))
                 names.add(e.name);
-        if (Object.prototype.hasOwnProperty.call(p, SAVE_METADATA_KEY))
-            for (const name of (p[SAVE_METADATA_KEY] as string[]))
-                names.add(name);
+        if (Object.prototype.hasOwnProperty.call(p, SERIALIZE_METADATA_KEY))
+            for (const e of (p[SERIALIZE_METADATA_KEY] as SerializeFieldEntry[]))
+                names.add(e.name);
     }
     return [...names];
 }
@@ -774,11 +800,11 @@ function findInspectorFieldEntry(component: any, fieldName: string): FieldEntry 
         if (entry)
             return entry;
 
-        const saveFields: string[] = Object.prototype.hasOwnProperty.call(proto, SAVE_METADATA_KEY)
-            ? proto[SAVE_METADATA_KEY] : [];
-        const saveName = saveFields.find(name => name === fieldName || labels[name] === fieldName);
-        if (saveName)
-            return { name: saveName, type: "input" };
+        const serializeFields: SerializeFieldEntry[] = Object.prototype.hasOwnProperty.call(proto, SERIALIZE_METADATA_KEY)
+            ? proto[SERIALIZE_METADATA_KEY] : [];
+        const serializeEntry = serializeFields.find(e => e.name === fieldName || labels[e.name] === fieldName);
+        if (serializeEntry)
+            return { name: serializeEntry.name, type: "input" };
     }
     return undefined;
 }

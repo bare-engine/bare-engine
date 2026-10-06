@@ -1,8 +1,8 @@
 import { Component } from "../controllers/componentController";
 import { GameMode, Scene } from "../globals";
 import { Color, ITextOptions, TextTexture, Vec2 } from "../libraries/rapid-render";
-import { Dropdown, InspectorField, Int, Limit } from "../utils/decorators";
-import { Save } from "../utils/saveFields";
+import { Dropdown, Int, Limit } from "../utils/decorators";
+import { SerializeField } from "../utils/serializeFields";
 import { Run } from "../utils/runModes";
 
 @Run(GameMode.Edit, GameMode.Play)
@@ -10,27 +10,27 @@ export class TextComponent extends Component
 {
     private textTexture: TextTexture;
 
-    @InspectorField
+    @SerializeField(GameMode.Edit)
     private _text = {
         get: () => this.textTexture.text,
         set: (text: string) => this.SetText(text),
     };
 
-    @InspectorField @Int @Limit(0, Infinity) @Save
+    @SerializeField(GameMode.Edit) @Int @Limit(0, Infinity)
     fontSize = {
         get: () => this.textTexture.style.fontSize,
         set: (fontSize: number) => {this.textTexture.style.fontSize = fontSize; this.UpdateText();},
     };
 
-    @InspectorField
+    @SerializeField(GameMode.Edit)
     offset:Vec2 = new Vec2();
 
-    @InspectorField
+    @SerializeField(GameMode.Edit)
     @Dropdown(["left", "center", "right"])
     get align():string {return this.textTexture.style.align;}
     set align(value:"left" | "center" | "right") {this.textTexture.style.align = value; this.UpdateText();}
     
-    @InspectorField
+    @SerializeField(GameMode.Edit)
     get _color():Color
     {
         const fill = this.textTexture.style.fill;

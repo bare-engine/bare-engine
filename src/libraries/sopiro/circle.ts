@@ -1,12 +1,12 @@
 
+import { GameMode } from "../../globals";
 import type { Scene } from "../../scenes/scene";
 import { GameObject } from "../../objects/gameObject";
 import { Entity } from "../../types/bareTypes";
 import { RigidBody, RigidBodyEntity, Type } from "./rigidbody";
 import { Settings } from "./settings";
 import * as Util from "./util";
-import { InspectorField } from "../../utils/decorators";
-import { Save } from "../../utils/saveFields";
+import { SerializeField } from "../../utils/serializeFields";
 
 export interface CircleEntity extends RigidBodyEntity
 {
@@ -78,7 +78,7 @@ export class Circle extends RigidBody
         return Math.PI * this.worldRadius * this.worldRadius;
     }
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     override get density(): number
     {
         return this._density;
@@ -96,7 +96,7 @@ export class Circle extends RigidBody
         this._invInertia = 1.0 / this._inertia;
     }
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     override get mass(): number
     {
         return this._mass;

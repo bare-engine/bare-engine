@@ -993,37 +993,7 @@ export class Scene implements SceneI
 
     GetSerializedValueFromObject(gameObject: GameObject, field: string): any
     {
-        var objValue = gameObject[field];
-        var serializedValue;
-
-        if (objValue && typeof objValue === "object" && (typeof (objValue as any).get === "function")) //eg: hitboxType
-            serializedValue = (objValue as any).get();
-        else
-        if (objValue instanceof Vec2)
-            serializedValue = { x: objValue.x, y: objValue.y };
-        else
-        if (objValue instanceof Color)
-            serializedValue = objValue.toHex();
-        else
-            serializedValue = objValue;
-
-        // Only emit serializable values - had problem with DiamondUI.text before - todo
-        // because text is in entityVars, from textObject - unwanted overlap. need to refactor to only include @inspectorField and @save from object
-        if (typeof serializedValue === "function")
-            serializedValue = undefined;
-        else
-        if (serializedValue !== null && typeof serializedValue === "object")
-        {
-            var proto = Object.getPrototypeOf(serializedValue);
-            var isPlain = Array.isArray(serializedValue) || proto === Object.prototype || proto === null;
-            if (!isPlain)
-            {
-                try { structuredClone(serializedValue); } // throws on non-cloneable -> drop it
-                catch (_e) { serializedValue = undefined; }
-            }
-        }
-
-        return serializedValue;
+        return GameObjectSerializer.SerializeValue(gameObject, field);
     }
 
     // CONSTRUCT ENTITY FROM SETTINGSDATA AND CONSTRUCT IT INTO A GAMEOBJECT TO GET ALL ITS VALUES
@@ -1062,7 +1032,8 @@ export class Scene implements SceneI
         this.ApplyEntityToGameObject(entityConstructed, gameObject, false);
         bare.sendEvents = true;
 
-        var entity = GameObjectSerializer.SerializeObjectFully(this, gameObject);
+        // forceAllEntityVars: every field, eg to compare against an object that is serialized the same way
+        var entity = GameObjectSerializer.SerializeObjectFully(this, gameObject, options.forceAllEntityVars ?? false);
 
         // ... BUT ADDING IT BACK TO THE ENITY HERE, SO IT'S NOT LOST
         if (entityConstructed.components)

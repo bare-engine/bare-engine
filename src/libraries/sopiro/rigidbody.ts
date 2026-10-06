@@ -8,8 +8,8 @@ import { Matrix3 } from "./math";
 import { GameMode, globalEvents } from "../../globals";
 import type { Scene } from "../../scenes/scene";
 import { BareEvent, Entity, Position } from '../../types/bareTypes';
-import { Enum, InspectorField, Limit, Locked, Percentage } from "../../utils/decorators";
-import { Save } from "../../utils/saveFields";
+import { Enum, Limit, Locked, Percentage } from "../../utils/decorators";
+import { SerializeField } from "../../utils/serializeFields";
 
 export enum Type
 {
@@ -58,7 +58,7 @@ export abstract class RigidBody extends GameObject
     private _restitution: number;
     private _surfaceSpeed: number;      // m/s (Tangential speed)
 
-    @InspectorField @Save @Enum(Type) @Locked 
+    @SerializeField(GameMode.Edit) @Enum(Type) @Locked 
     public /*readonly*/ type: Type;
 
     public id: number = -1;//
@@ -257,7 +257,7 @@ export abstract class RigidBody extends GameObject
         return this._invInertia;
     }
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     get linearVelocity(): Vec2
     {
         return this._linearVelocity;
@@ -267,7 +267,7 @@ export abstract class RigidBody extends GameObject
         this._linearVelocity = v.copy();
     }
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     get angularVelocity(): number
     {
         return this._angularVelocity;
@@ -277,7 +277,7 @@ export abstract class RigidBody extends GameObject
         this._angularVelocity = w;
     }
 
-    @InspectorField @Save @Percentage
+    @SerializeField(GameMode.Edit) @Percentage
     get restitution(): number
     {
         return this._restitution;
@@ -289,7 +289,7 @@ export abstract class RigidBody extends GameObject
         this._restitution = r;
     }
 
-    @InspectorField @Save @Limit(0, Infinity)
+    @SerializeField(GameMode.Edit) @Limit(0, Infinity)
     get friction(): number
     {
         return this._friction;
@@ -301,7 +301,7 @@ export abstract class RigidBody extends GameObject
         this._friction = f;
     }
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     get surfaceSpeed(): number
     {
         return this._surfaceSpeed;

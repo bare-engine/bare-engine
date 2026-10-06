@@ -1,6 +1,5 @@
 import { GameMode, Scene } from "../../../globals";
-import { InspectorField } from "../../../utils/decorators";
-import { Save } from "../../../utils/saveFields";
+import { SerializeField } from "../../../utils/serializeFields";
 import { Color, Vec2 } from "../../rapid-render";
 import { MotorJoint } from "../motor";
 import { RigidBody } from "../rigidbody";
@@ -18,7 +17,7 @@ export class MotorJointObject extends JointObject
     private _linearOffset: Vec2 = new Vec2();
     private _angularOffset: number = 0.0;
 
-    @InspectorField @Save private angularSpeed: number = 0;
+    @SerializeField(GameMode.Edit) private angularSpeed: number = 0;
 
     OnAwake(): void
     {
@@ -60,7 +59,7 @@ export class MotorJointObject extends JointObject
         return this.joint as MotorJoint | null;
     }
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     get maxForce(): number
     {
         return this._maxForce;
@@ -73,7 +72,7 @@ export class MotorJointObject extends JointObject
             this.motorJoint.maxForce = maxForce;
     }
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     get maxTorque(): number
     {
         return this._maxTorque;
@@ -86,7 +85,7 @@ export class MotorJointObject extends JointObject
             this.motorJoint.maxTorque = maxTorque;
     }
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     get linearOffset(): Vec2
     {
         return this._linearOffset;
@@ -106,7 +105,7 @@ export class MotorJointObject extends JointObject
             this.AwakeBodies();
     }
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     get angularOffset(): number
     {
         return this._angularOffset;

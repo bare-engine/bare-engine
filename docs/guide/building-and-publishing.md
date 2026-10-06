@@ -21,7 +21,7 @@ This builds and zips `dist/` into `dist.zip`.
 A production build makes your game as small as possible:
 
 - Code is minified, and engine modules you never use are left out.
-- Inspector decorators like `@InspectorField` are removed.
+- Inspector decorators like `@InspectorField` are removed. `@SerializeField` and `@Run` are kept.
 - Class methods that are never called are removed.
 - The asset lists in `assets.ts` (`Asset.Images`, `Data.Prefabs`, …) are emptied.
 - Debug keys and other development-only code are removed.

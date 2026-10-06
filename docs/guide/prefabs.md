@@ -130,7 +130,7 @@ Prefabs and entities can have these properties. Most can also be a [preset](#pre
 | --- | --- |
 | `name` | The name. Find the object with `bare.object.GetByName()`. |
 | `extends` | The prefab this one inherits from. Defaults to `ANY`. |
-| `baseClass` | GameObject class to create, for example `ArcadeObject`. Register it with `bare.AddClass()`. |
+| `baseClass` | GameObject class to create, for example `ArcadeObject`. Mark your own classes `@InspectorBaseClass`, or register them with `bare.AddClass()`. See [Custom GameObjects](./custom-game-objects). `ArcadeObject` is registered by `ArcadePhysicsController`. |
 | `tags` | A list of strings, to group and find objects. |
 | `customData` | Your own named values, for your game code. |
 
@@ -189,7 +189,7 @@ An extra transform for the visual content only, on top of the object's own trans
 
 A `baseClass` adds its own properties, such as `velocity`, `static` and `hitbox` for an `ArcadeObject`. See [Physics](../reference/physics#arcadeobject) and [Text & UI](./text-and-ui).
 
-Any field marked `@InspectorField` on a GameObject class can be set from a prefab.
+Any field marked `@SerializeField` on a GameObject class can be set from a prefab.
 
 ## Components in prefabs
 

@@ -1,11 +1,11 @@
-import { Component, Entity, GameObject, InspectorField, Scene, Vec2 } from "bare-engine";
+import { Component, Entity, GameObject, Scene, SerializeField, Vec2 } from "bare-engine";
 import { Checks } from "./checks";
 
 // covers docs/guide: scenes, lifecycle, game-objects, custom-game-objects, prefabs, components
 
 export class SpinDocComponent extends Component
 {
-    @InspectorField
+    @SerializeField
     speed = 90;
 
     OnUpdate(deltaTime: number)
@@ -53,7 +53,7 @@ export class DocEnemy extends GameObject
 {
     declare entity: DocEnemyEntity | null;
 
-    @InspectorField
+    @SerializeField
     health = 3;
 
     OnAwake()

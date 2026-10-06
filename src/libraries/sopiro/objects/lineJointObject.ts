@@ -2,8 +2,8 @@ import { keyboardController } from "../../../controllers/keyboardController";
 import { GameMode, Scene } from "../../../globals";
 import { GameObject } from "../../../objects/gameObject";
 import { BareEvent } from "../../../types/bareTypes";
-import { InspectorField } from "../../../utils/decorators";
-import { Save } from "../../../utils/saveFields";
+import { Hidden } from "../../../utils/decorators";
+import { SerializeField } from "../../../utils/serializeFields";
 import { Color, Vec2 } from "../../rapid-render";
 import { testPointInside } from "../detection";
 import { Joint } from "../joint";
@@ -16,10 +16,10 @@ import { JointObject } from "./jointObject";
 // CONSTRAINS A BODY TO SLIDE ALONG A DIRECTION
 export class LineJointObject extends JointObject
 {
-    @Save
+    @SerializeField(GameMode.Edit) @Hidden
     slideDirection: Vec2 = new Vec2(200, 0); // LENGTH DOES NOT MATTER
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     lockRotation: boolean = false;
 
     directionObject: DirectionTargetObject;

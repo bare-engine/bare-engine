@@ -3,16 +3,16 @@
 Decorators mark fields and methods for the [Chrome extension](../guide/chrome-extension) and for saving. Use them in [components](../guide/components) and [custom GameObjects](../guide/custom-game-objects).
 
 ```ts
-import { Component, Inspector, InspectorButton, InspectorField } from 'bare-engine';
+import { Component, Inspector, InspectorButton, SerializeField } from 'bare-engine';
 
 export class TurretComponent extends Component
 {
-    @InspectorField
+    @SerializeField
     @Inspector.Limit(0, 10)
     @Inspector.Description('Shots per second')
     fireRate = 2;
 
-    @InspectorField
+    @SerializeField
     @Inspector.Dropdown(['bullet', 'rocket', 'laser'])
     ammo = 'bullet';
 
@@ -21,13 +21,15 @@ export class TurretComponent extends Component
 }
 ```
 
-Every decorator is available through `Inspector`, which is handy for autocomplete: `@Inspector.Limit`, `@Inspector.Label`, and so on. Each can also be imported on its own, like `@Limit`. `@InspectorField`, `@InspectorButton`, `@InspectorClass` and `@InspectorBaseClass` are the same as `@Inspector.Field`, `@Inspector.Button`, `@Inspector.Class` and `@Inspector.BaseClass`.
+Every decorator is available through `Inspector`, which is handy for autocomplete: `@Inspector.Limit`, `@Inspector.Label`, and so on. Each can also be imported on its own, like `@Limit`. `@InspectorField`, `@InspectorButton`, `@InspectorClass` and `@InspectorBaseClass` are the same as `@Inspector.Field`, `@Inspector.Button`, `@Inspector.Class` and `@Inspector.BaseClass`. `@SerializeField` is only imported on its own.
 
 ## Fields
 
 | Decorator | Description |
 | --- | --- |
-| `@InspectorField` | Show the field in the inspector, and allow setting it from prefabs and levels. |
+| `@SerializeField` | Save the field into prefabs and levels, and show it in the inspector. See [Saving and showing fields](#saving-and-showing-fields). |
+| `@InspectorField` | Show the field in the extension while playing. It isn't saved. |
+| `@Inspector.Hidden` | Keep a `@SerializeField` out of the inspector. It's still saved. |
 | `@Inspector.Label('Name')` | Show a different name. |
 | `@Inspector.Description('…')` | Add a tooltip. |
 | `@Inspector.Locked` | Show the value, but don't allow editing. |
@@ -66,15 +68,48 @@ Handy for debugging: a `Fire()` or `Die()` button you can press while the game r
 
 **`@InspectorClass` example:** the [Shmup](https://github.com/bare-engine/bare-shmup)'s scene [shows a `Watcher`](https://github.com/bare-engine/bare-shmup/blob/main/src/game.ts#L17-L18), whose [getters](https://github.com/bare-engine/bare-shmup/blob/main/src/game.ts#L126-L136) count enemies and bullets.
 
-## Saving and run modes
+## Saving and showing fields
 
-These two aren't just for the inspector, so they're kept in production builds:
+`@SerializeField` saves a field and shows it in the inspector, both in the [level editor](../guide/level-editor) and while playing. Pass `GameMode`s to only do so in some of them:
+
+| Decorator | Editor | Extension while playing | Saved by the editor | Saved while playing |
+| --- | --- | --- | --- | --- |
+| `@SerializeField` | shown | shown | yes | yes |
+| `@SerializeField(GameMode.Edit)` | shown | shown | yes | no |
+| `@SerializeField(GameMode.Play)` | hidden | shown | no | yes |
+| `@InspectorField` | hidden | shown | no | no |
+
+While playing, the extension shows every field, so you can check any value while debugging. The editor only shows the fields you can set there.
+
+```ts
+import { Component, GameMode, SerializeField } from 'bare-engine';
+
+export class AliveComponent extends Component
+{
+    // set per prefab or level object
+    @SerializeField
+    maxHealth = 10;
+
+    // only changes while playing, kept when the level is saved
+    @SerializeField(GameMode.Play)
+    health = 10;
+}
+```
+
+"Saved while playing" means saved by `bare.level.Save()`, see [What gets saved](./save-data#what-gets-saved). The engine's own classes, like `ArcadeObject`, use `@SerializeField(GameMode.Edit)`. To keep one of their properties when saving while playing, add it to `saveVars`.
+
+Add `@Inspector.Hidden` to save a field without showing it, like a value set by dragging a handle in the editor.
+
+::: warning
+After changing these decorators on a GameObject class, like `@InspectorField` to `@SerializeField`, refresh the page. Hot reload keeps using the old version of the class, so the field is still saved and shown the old way. Components pick up the change without a refresh.
+:::
+
+## Run modes
 
 | Decorator | Description |
 | --- | --- |
-| `@Save` | Save the field into levels. Inspector fields aren't saved without it. See [What gets saved](./save-data#what-gets-saved). |
 | `@Run(...modes)` | Choose whether a component runs while playing (`GameMode.Play`), in the [level editor](../guide/level-editor#components-in-the-editor) (`GameMode.Edit`), or both. |
 
-All other decorators are removed from production builds, unless you turn off [`stripDecorators`](./package-json#stripdecorators).
+`@SerializeField` and `@Run` are kept in production builds, since saving and running need them. All other decorators are removed from production builds, unless you turn off [`stripDecorators`](./package-json#stripdecorators).
 
-**Examples:** the [RPG](https://github.com/bare-engine/bare-rpg)'s [`AliveComponent`](https://github.com/bare-engine/bare-rpg/blob/main/src/components/aliveComponent.ts#L5-L12) saves its health with `@Save`, and the [Showcase](https://github.com/bare-engine/bare-showcase)'s [level connector](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/editorComponents/src/editorComponents/levelConnectorComponent.ts#L7-L13) uses `@Run(GameMode.Edit)` and `@Save`.
+**Examples:** the [RPG](https://github.com/bare-engine/bare-rpg)'s [`AliveComponent`](https://github.com/bare-engine/bare-rpg/blob/main/src/components/aliveComponent.ts#L5-L12) saves its health with `@SerializeField(GameMode.Play)`, and the [Showcase](https://github.com/bare-engine/bare-showcase)'s [level connector](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/editorComponents/src/editorComponents/levelConnectorComponent.ts#L7-L13) uses `@Run(GameMode.Edit)` and `@SerializeField(GameMode.Edit)`.

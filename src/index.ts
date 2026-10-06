@@ -54,8 +54,8 @@ export { FlashShader } from "./shaders/flashShader";
 export { OutlineShader } from "./shaders/outlineShader";
 export { defaultSettingsData } from "./types/bareData";
 export { Hitbox } from "./types/hitbox";
-export { Decimal, Description, Dropdown, Enum, Inspector, InspectorButton, InspectorField, InspectorClass, InspectorBaseClass, Int, Label, Limit, Locked, Percentage, Range } from "./utils/decorators";
-export { Save } from "./utils/saveFields";
+export { Decimal, Description, Dropdown, Enum, Hidden, Inspector, InspectorButton, InspectorField, InspectorClass, InspectorBaseClass, Int, Label, Limit, Locked, Percentage, Range } from "./utils/decorators";
+export { SerializeField } from "./utils/serializeFields";
 export { Run } from "./utils/runModes";
 export { Helper } from "./utils/helper";
 

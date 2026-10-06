@@ -1,10 +1,10 @@
-import { MakePathForEntity } from "../globals";
+import { GameMode, MakePathForEntity } from "../globals";
 import { Texture, Vec2 } from "../libraries/rapid-render";
 import { Scene } from "../scenes/scene";
 import { BareEvent, BlockedState, ConstructEntityOptions, Entity, HitboxType, Position, Rectangle, Rectangle2Vec } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
-import { Dropdown, InspectorField, Int } from "../utils/decorators";
-import { Save } from "../utils/saveFields";
+import { Dropdown, Int } from "../utils/decorators";
+import { SerializeField } from "../utils/serializeFields";
 import { GameObject } from "./gameObject";
 
 // ENTITY PROPERTIES FOR this.AddGameObject<ArcadeObject>({ ... })
@@ -34,16 +34,16 @@ export class ArcadeObject extends GameObject
     
     physicsHitbox: Hitbox = new Hitbox(this, {x1 : 0, y1 : 0, x2 : 0, y2 : 0});
 
-    @InspectorField @Save static: boolean = false;
-    @InspectorField @Save collide: boolean = true;
-    @InspectorField @Save sensor:boolean = false; // IF TRUE, WILL NOT RESPECT stayInBounds
-    @InspectorField @Save velocity: Vec2 = new Vec2(0, 0);
-    @InspectorField @Save drag: number = 0//.15;
-    @InspectorField @Save restitution: number = 0//.8;
-    @InspectorField @Save stayInBounds: boolean = true;
-    @InspectorField @Save removeOnOutOfBounds: boolean = false;
+    @SerializeField(GameMode.Edit) static: boolean = false;
+    @SerializeField(GameMode.Edit) collide: boolean = true;
+    @SerializeField(GameMode.Edit) sensor:boolean = false; // IF TRUE, WILL NOT RESPECT stayInBounds
+    @SerializeField(GameMode.Edit) velocity: Vec2 = new Vec2(0, 0);
+    @SerializeField(GameMode.Edit) drag: number = 0//.15;
+    @SerializeField(GameMode.Edit) restitution: number = 0//.8;
+    @SerializeField(GameMode.Edit) stayInBounds: boolean = true;
+    @SerializeField(GameMode.Edit) removeOnOutOfBounds: boolean = false;
     
-    @InspectorField @Save hitboxInheritsInnerTransform: boolean = true;
+    @SerializeField(GameMode.Edit) hitboxInheritsInnerTransform: boolean = true;
     
     blocked:BlockedState = BlockedState.None;
     collidingObjects: ArcadeObject[] = [];
@@ -51,7 +51,7 @@ export class ArcadeObject extends GameObject
     static dummyPhysicsObjectBare: ArcadeObject = new ArcadeObject();
 
     // ENTITY VALUES ON OBJECT
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     @Dropdown(["Rectangle", "Circle"])
     private hitboxType = {
         // physicsHitbox.type is a numeric HitboxType; map it to/from its key name so the
@@ -60,7 +60,7 @@ export class ArcadeObject extends GameObject
         set: (type: string) => this.physicsHitbox.type = HitboxType[type as keyof typeof HitboxType],
     };
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     get hitbox(): Rectangle2Vec
     {
         const rect = this.physicsHitbox.rectangle;
@@ -81,7 +81,7 @@ export class ArcadeObject extends GameObject
         };
     }
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     @Int
     get hitboxRadius(): number
     {

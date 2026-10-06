@@ -3,11 +3,11 @@
 Components add behavior to GameObjects. They work much like in Unity: you write a class with lifecycle methods and attach it to any object or prefab.
 
 ```ts
-import { Component, InspectorField } from 'bare-engine';
+import { Component, SerializeField } from 'bare-engine';
 
 export class SpinComponent extends Component
 {
-    @InspectorField
+    @SerializeField
     speed = 90;
 
     OnUpdate(deltaTime: number)
@@ -103,24 +103,26 @@ declare module 'bare-engine'
 
 ## Inspector fields
 
-Fields marked `@InspectorField` show up in the [Chrome extension](./chrome-extension), where you can edit them live, and can be set from prefabs. More decorators control how they're shown:
+Fields marked `@SerializeField` can be set from prefabs and levels, are saved with them, and show up in the [Chrome extension](./chrome-extension), where you can edit them live. More decorators control how they're shown:
 
 ```ts
-import { Component, Inspector, InspectorField } from 'bare-engine';
+import { Component, Inspector, SerializeField } from 'bare-engine';
 
 export class PlayerComponent extends Component
 {
-    @InspectorField
+    @SerializeField
     @Inspector.Limit(0, Infinity)
     moveSpeed = 500;
 
-    @InspectorField
+    @SerializeField
     @Inspector.Label('Jump force')
     jump = -1600;
 }
 ```
 
-Inspector decorators are removed in production builds, so they don't add to your game's size. See [Inspector Decorators](../reference/inspector-decorators) for the full list.
+To only show a value in the extension while playing, without saving it, mark it `@InspectorField`. See [Saving and showing fields](../reference/inspector-decorators#saving-and-showing-fields).
+
+Inspector decorators like `@Inspector.Limit` are removed in production builds, so they don't add to your game's size. See [Inspector Decorators](../reference/inspector-decorators) for the full list.
 
 **Example:** the [Platformer](https://github.com/bare-engine/bare-platformer)'s [player fields](https://github.com/bare-engine/bare-platformer/blob/main/src/components/playerComponent.ts#L17-L30) use `Limit`, `Label` and `Locked`.
 

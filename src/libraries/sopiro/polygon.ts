@@ -1,7 +1,8 @@
+import { GameMode } from "../../globals";
 import type { Scene } from "../../scenes/scene";
 import { Entity, Size } from "../../types/bareTypes";
-import { InspectorField, Limit } from "../../utils/decorators";
-import { Save } from "../../utils/saveFields";
+import { Limit } from "../../utils/decorators";
+import { SerializeField } from "../../utils/serializeFields";
 import { Vec2 } from "../rapid-render";
 import { RigidBody, RigidBodyEntity, Type } from "./rigidbody";
 import { Settings } from "./settings";
@@ -151,7 +152,7 @@ export class Polygon extends RigidBody
         this.density = this._density;
     }
 
-    @InspectorField @Save @Limit(0.0001, Infinity)
+    @SerializeField(GameMode.Edit) @Limit(0.0001, Infinity)
     override get density(): number
     {
         return this._density;
@@ -169,7 +170,7 @@ export class Polygon extends RigidBody
         this._invInertia = 1.0 / this._inertia;
     }
 
-    @InspectorField @Save @Limit(0.0001, Infinity)
+    @SerializeField(GameMode.Edit) @Limit(0.0001, Infinity)
     override get mass(): number
     {
         return this._mass;

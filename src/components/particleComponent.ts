@@ -1,39 +1,41 @@
 import { Component } from "../controllers/componentController";
+import { GameMode } from "../globals";
 import { ParticleController } from "../controllers/particleController";
 import { ParticleEmitter } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
-import { InspectorButton, InspectorField } from "../utils/decorators";
+import { InspectorButton } from "../utils/decorators";
+import { SerializeField } from "../utils/serializeFields";
 
 export class ParticleComponent extends Component
 {
     public emitter: ParticleEmitter;
     
-    @InspectorField
+    @SerializeField(GameMode.Edit)
     private position: any = {x: 0, y: 0};
 
-    @InspectorField
+    @SerializeField(GameMode.Edit)
     private life: number = 1;
 
-    @InspectorField
+    @SerializeField(GameMode.Edit)
     private texture: string = "";
 
-    @InspectorField
+    @SerializeField(GameMode.Edit)
     private origin: any;
 
-    @InspectorField
+    @SerializeField(GameMode.Edit)
     private emitRate: number = 0;
 
-    @InspectorField
+    @SerializeField(GameMode.Edit)
     private localSpace: boolean = false;
 
-    @InspectorField
+    @SerializeField(GameMode.Edit)
     private emitShape: string = "POINT";
 
-    @InspectorField
+    @SerializeField(GameMode.Edit)
     private emitRadius: number = 0;
 
-    @InspectorField
+    @SerializeField(GameMode.Edit)
     private animation: Record<string, any> = {};
 
     constructor(scene: Scene)

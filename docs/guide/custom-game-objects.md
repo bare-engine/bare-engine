@@ -5,7 +5,7 @@ Most behavior belongs in [components](./components), because they can be mixed a
 ## Creating a class
 
 ```ts
-import { Entity, GameObject, InspectorBaseClass, InspectorField } from 'bare-engine';
+import { Entity, GameObject, InspectorBaseClass, SerializeField } from 'bare-engine';
 
 // the prefab fields this class adds, for autocomplete and type checks
 export interface EnemyEntity extends Entity
@@ -18,7 +18,7 @@ export class Enemy extends GameObject
 {
     declare entity: EnemyEntity | null;
 
-    @InspectorField
+    @SerializeField
     health = 3;
 
     OnUpdate(deltaTime: number)
@@ -64,7 +64,7 @@ In a prefab, with `baseClass`:
 
 `@InspectorBaseClass` registers the class with the engine automatically, so it can be used by name in prefabs and shows up in the [Chrome extension](./chrome-extension). Without it, register the class yourself with `bare.AddClass(Enemy)`.
 
-Fields marked `@InspectorField` can be set from prefabs and edited in the extension.
+Fields marked `@SerializeField` can be set from prefabs, are saved into levels, and can be edited in the extension.
 
 **Example:** the [Showcase](https://github.com/bare-engine/bare-showcase)'s [extend demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/extend/src/DemoExtend.ts#L67-L71) uses an `EmojiObject` class as a prefab's `baseClass`, and the [prefabs demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/prefabs/src/DemoPrefabs.ts#L85-L97) does the same with `Fruit`.
 

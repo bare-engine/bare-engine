@@ -1,8 +1,8 @@
 import { GameMode } from "../../../globals";
 import { GameObject } from "../../../objects/gameObject";
 import { BareEvent, Entity } from "../../../types/bareTypes";
-import { InspectorField, Percentage, Limit } from "../../../utils/decorators";
-import { Save } from "../../../utils/saveFields";
+import { Limit, Percentage } from "../../../utils/decorators";
+import { SerializeField } from "../../../utils/serializeFields";
 import { Circle } from "../circle";
 import { testPointInside } from "../detection";
 import { Joint } from "../joint";
@@ -11,10 +11,10 @@ import { World } from "../world";
 
 export abstract class JointObject extends GameObject
 {
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     baseName: string = "";
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     targetName: string = "";
     
     protected joint: Joint | null = null;
@@ -186,7 +186,7 @@ export abstract class JointObject extends GameObject
         this.joint?.bodyB?.awake();
     }
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     get frequency(): number
     {   
         return this._frequency;
@@ -199,7 +199,7 @@ export abstract class JointObject extends GameObject
             this.joint.frequency = frequency;
     }
 
-    @InspectorField @Save @Percentage
+    @SerializeField(GameMode.Edit) @Percentage
     get dampingRatio(): number
     {
         return this._dampingRatio;
@@ -212,7 +212,7 @@ export abstract class JointObject extends GameObject
             this.joint.dampingRatio = dampingRatio;
     }
 
-    @InspectorField @Save @Limit(1, Infinity)
+    @SerializeField(GameMode.Edit) @Limit(1, Infinity)
     get jointMass(): number
     {
         return this._jointMass;

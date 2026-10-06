@@ -1,20 +1,20 @@
-import { Component, ComponentController, GameObject, LevelData, Save, Scene } from "bare-engine";
+import { Component, ComponentController, GameObject, LevelData, Scene, SerializeField } from "bare-engine";
 import { Checks } from "./checks";
 
 // covers docs/reference/save-data "what gets saved" and docs/reference/level: Serialize, reloading serialized levels
 
 export class HealthSaveComponent extends Component
 {
-    @Save
+    @SerializeField
     health: number = 10;
 
-    // not marked @Save, so never saved
+    // not marked @SerializeField, so never saved
     regen: number = 1;
 }
 
 export class SaveCrate extends GameObject
 {
-    @Save
+    @SerializeField
     contents: string = "";
 }
 
@@ -124,11 +124,11 @@ export class LevelSaveTest extends Scene
         const h1Entity = this.Entity(level, "h1");
         c.check(h1Entity.position.x === 30 && h1Entity.position.y === 41, "positions should be saved, rounded: " + JSON.stringify(h1Entity.position));
         c.check(h1Entity.rotation === undefined, "rotation is not in the default saveVars: " + h1Entity.rotation);
-        c.check(h1Entity.components?.healthSave?.health === 3, "@Save component fields should be saved: " + JSON.stringify(h1Entity.components));
-        c.check(h1Entity.components?.healthSave?.regen === undefined, "component fields without @Save should not be saved");
+        c.check(h1Entity.components?.healthSave?.health === 3, "@SerializeField component fields should be saved: " + JSON.stringify(h1Entity.components));
+        c.check(h1Entity.components?.healthSave?.regen === undefined, "component fields without @SerializeField should not be saved");
         const crateEntity = this.Entity(level, "c1");
         c.check(crateEntity.rotation === 90, "saveVars should add properties for that class: " + JSON.stringify(crateEntity));
-        c.check(crateEntity.contents === "gold", "@Save fields on a GameObject class should be saved: " + crateEntity.contents);
+        c.check(crateEntity.contents === "gold", "@SerializeField fields on a GameObject class should be saved: " + crateEntity.contents);
         c.check(crateEntity.scale === undefined, "prefab values should not be repeated in the entity: " + JSON.stringify(crateEntity.scale));
         const untouchedEntity = this.Entity(level, "untouched");
         c.check(untouchedEntity.components === undefined && untouchedEntity.position.x === 70, "an unchanged object should only keep what it had: " + JSON.stringify(untouchedEntity));

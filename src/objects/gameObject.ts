@@ -1,4 +1,5 @@
 import type { Component } from "../controllers/componentController";
+import { GameMode } from "../globals";
 import { assetsHandler } from "../handlers/assetsHandler";
 import mitt from "../libraries/mitt";
 import { Color, drawSpriteWithMatrix, MaskType, MatrixStack, MatrixStore, Texture, Vec2 } from "../libraries/rapid-render";
@@ -7,9 +8,9 @@ import type { Scene } from "../scenes/scene";
 import type { ComponentCtor, Ctor, DropFirst, Events, Rectangle, Shader } from "../types/bareTypes";
 import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';
 import { Hitbox } from '../types/hitbox';
-import { getOwnInspectorFieldNames, InspectorField, isInspectorFieldDescriptor, Percentage } from "../utils/decorators";
+import { Percentage, isInspectorFieldDescriptor } from "../utils/decorators";
 import { Helper } from '../utils/helper';
-import { getOwnSaveFieldNames, Save } from "../utils/saveFields";
+import { getOwnSerializeFieldNames, SerializeField } from "../utils/serializeFields";
 
 // Lifecycle hook bits. GameObject's hooks are empty virtuals, so walking a whole scene to call them
 // costs real time and does nothing. Every object caches which hooks its own class implements (`hooks`)
@@ -97,7 +98,7 @@ export class GameObject
  
     scene: Scene;
 
-    @InspectorField
+    @SerializeField(GameMode.Edit)
     name:string;
     pluginName:string;
     uniqueID:string = "";
@@ -220,10 +221,11 @@ export class GameObject
     {
         const className = cls.name;
 
-        // add this class's @InspectorField and @Save members to entityVarsNested, so they show
-        // up in the plugin (grouped/locked per class) and get default values from the instance
+        // add this class's @SerializeField members saved in the editor to entityVarsNested, so the editor saves
+        // them and they show up in the plugin (grouped/locked per class) and get default values from the instance.
+        // @Hidden ones too, the plugin leaves those out itself
         // MAKE THIS ALSO WORK WITH INHERITANCE OF MULTIPLE CUSTOM CLASSES - TODOR
-        var vars = [...new Set([...getOwnInspectorFieldNames(cls), ...getOwnSaveFieldNames(cls)])];
+        var vars = getOwnSerializeFieldNames(cls, GameMode.Edit);
         if (vars.length > 0)
         {
             var existingEntityVars = entityVarsNested.find(entry =>
@@ -999,7 +1001,7 @@ export class GameObject
         this.mask = null;
     }
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     get position(): Vec2
     {
         return this.transform.position;
@@ -1009,7 +1011,7 @@ export class GameObject
         this.SetPosition(vec2.x, vec2.y);
     }
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     get scale(): Vec2
     {
         return this.transform.scale;
@@ -1024,7 +1026,7 @@ export class GameObject
     }
 
     // ROTATION IN DEGREES
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     get rotation(): number
     {
         return this.transform.rotation;
@@ -1036,7 +1038,7 @@ export class GameObject
 
     // OUTER pivot — anchors this object in its parent and offsets its children.
     // Lazily allocated so transform.pivot can stay null after Reset()/pooling.
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     get pivot(): Vec2
     {
         return this.transform.pivot ??= new Vec2();
@@ -1047,7 +1049,7 @@ export class GameObject
         this.innerTransform.pivot = v.clone();
     }
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     get innerPosition(): Vec2
     {
         return this.innerTransform.position;
@@ -1058,7 +1060,7 @@ export class GameObject
         this.innerTransform.position.y = vec2.y;
     }
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     get innerScale(): Vec2
     {
         return this.innerTransform.scale;
@@ -1072,7 +1074,7 @@ export class GameObject
         }
     }
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     get innerRotation(): number
     {
         return this.innerTransform.rotation;
@@ -1083,7 +1085,7 @@ export class GameObject
     }
 
     // INNER pivot — anchor for the sprite's inner transform. Inherits the outer pivot until set
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     get innerPivot(): Vec2
     {
         return this.innerTransform.pivot ??= new Vec2(this.pivot.x, this.pivot.y);
@@ -1093,7 +1095,7 @@ export class GameObject
         (this.innerTransform.pivot ??= new Vec2()).set(v.x, v.y);
     }
 
-    @InspectorField @Save @Percentage
+    @SerializeField(GameMode.Edit) @Percentage
     get alpha(): number
     {
         return this.color.a / 255;
@@ -1104,13 +1106,13 @@ export class GameObject
         this.color.a = value * 255;
     }
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     visible:boolean = true;
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     color:Color = new Color(255, 255, 255, 255);
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     get flipped(): boolean
     {
         return this.transform.flipped;
@@ -1120,7 +1122,7 @@ export class GameObject
         this.transform.flipped = value;
     }
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     get innerFlipped(): boolean
     {
         return this.innerTransform.flipped;
@@ -1130,18 +1132,18 @@ export class GameObject
         this.innerTransform.flipped = value;
     }
     
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     childrenInheritInnerTransform: boolean = true;
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     persistent: boolean = false;
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     save: boolean = false;
 
     private _tags: Array<string> | null = null;
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     get tags(): Array<string>
     {
         return this._tags ??= [];
@@ -1153,7 +1155,7 @@ export class GameObject
 
     private _customData: Record<string, any> | null = null;
 
-    @InspectorField @Save
+    @SerializeField(GameMode.Edit)
     get customData(): Record<string, any>
     {
         return this._customData ??= {};
