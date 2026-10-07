@@ -58,8 +58,8 @@ export class TextObjectTest extends Scene
         text.SetText(LONG_TEXT);
         c.check(text.GetText() === LONG_TEXT, "SetText should change GetText");
         c.check(text.texture.width > shortWidth, "a longer text should make the texture wider: " + shortWidth + " -> " + text.texture.width);
-        c.check(text.text.get() === LONG_TEXT, "the text field should read the current text");
-        text.text.set("Hi");
+        c.check(text.text === LONG_TEXT, "the text field should read the current text");
+        text.text = "Hi";
         c.check(text.GetText() === "Hi" && near(text.texture.width, shortWidth), "the text field should set the text: " + text.texture.width);
 
         // pivots
@@ -93,8 +93,8 @@ export class TextObjectTest extends Scene
         // style fields
         const styled = this.Text().CenterPivot() as TextObject;
         const smallHeight = styled.texture.height;
-        styled.fontSize.set(44);
-        c.check(styled.fontSize.get() === 44 && styled.texture.height > smallHeight, "a bigger fontSize should make the texture taller: " + smallHeight + " -> " + styled.texture.height);
+        styled.fontSize = 44;
+        c.check(styled.fontSize === 44 && styled.texture.height > smallHeight, "a bigger fontSize should make the texture taller: " + smallHeight + " -> " + styled.texture.height);
         c.check(near(styled.pivotX, styled.texture.width / 2), "a centered pivot should stay centered when the font size changes");
 
         styled.fill = "#ff0000";
@@ -148,7 +148,7 @@ export class TextObjectTest extends Scene
         centeredButton.SetText(LONG_TEXT);
         c.check(near(centeredButton.pivotX, centeredButton.width / 2) && near(centeredButton.pivotY, centeredButton.height / 2),
             "a centered button should stay centered when the text changes: " + centeredButton.pivotX + " of " + centeredButton.width);
-        centeredButton.fontSize.set(40);
+        centeredButton.fontSize = 40;
         c.check(near(centeredButton.pivotX, centeredButton.width / 2), "a centered button should stay centered when the font size changes");
 
         const pixelButton = this.Button().SetPivot(5, 6) as Button;

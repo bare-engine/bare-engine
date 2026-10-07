@@ -27,10 +27,8 @@ export class LevelHandler
     private get dimensions():Size | undefined { return this.currentLevel?.dimensions; }
     
     @InspectorField
-    private backgroundColor = {
-        get: () => this.currentLevel ? rapid.backgroundColor : undefined,
-        set: (color: Color) => bare.SetBackgroundColor(color)
-    };
+    get backgroundColor():Color | undefined {return this.currentLevel ? rapid.backgroundColor : undefined;}
+    set backgroundColor(value:Color) {bare.SetBackgroundColor(value);}
 
     constructor(scene: Scene)
     {

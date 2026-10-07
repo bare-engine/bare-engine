@@ -58,29 +58,29 @@ export class AnimationsAdvancedTest extends Scene
 
         // stepping frames and showing their texture
         await anim.Play("walk");
-        c.check(starts === 1 && anim.current.get() === "walk", "Play should start 'walk': " + anim.current.get());
+        c.check(starts === 1 && anim.current === "walk", "Play should start 'walk': " + anim.current);
         c.check(knight.width === 10, "the first frame should be shown right away: " + knight.width);
         anim.OnUpdate(0.05);
-        c.check(anim.frame.get() === 0, "half a frame's time should not advance the frame");
+        c.check(anim.frame === 0, "half a frame's time should not advance the frame");
         anim.OnUpdate(0.05);
-        c.check(anim.frame.get() === 1 && knight.width === 20, "framesPerSecond should decide when the next frame shows: " + knight.width);
+        c.check(anim.frame === 1 && knight.width === 20, "framesPerSecond should decide when the next frame shows: " + knight.width);
         step(anim, 1);
         c.check(knight.width === 30 && frames.join(",") === "1,2", "frameChanged should report every new frame: " + frames.join(","));
 
         // looping starts over and emits looped, never completed
         step(anim, 1);
         c.check(loops === 1 && completes === 0, "a looping animation should loop, not complete: " + loops + "/" + completes);
-        c.check(anim.frame.get() === 0 && knight.width === 10, "looping should show the first frame again: " + knight.width);
+        c.check(anim.frame === 0 && knight.width === 10, "looping should show the first frame again: " + knight.width);
         step(anim, 3);
         c.check(loops === 2, "every pass should emit looped: " + loops);
 
         // GotoFrame clamps, Pause and Resume toggle playing
         anim.GotoFrame(99);
-        c.check(anim.frame.get() === 2 && knight.width === 30, "GotoFrame should clamp to the last frame");
+        c.check(anim.frame === 2 && knight.width === 30, "GotoFrame should clamp to the last frame");
         anim.Pause();
-        c.check(!anim.playing.get(), "Pause should stop playing");
+        c.check(!anim.playing, "Pause should stop playing");
         anim.Resume();
-        c.check(anim.playing.get(), "Resume should continue playing");
+        c.check(anim.playing, "Resume should continue playing");
 
         // a non-looping animation completes once and pauses on its last frame
         frames.length = 0;
@@ -88,16 +88,16 @@ export class AnimationsAdvancedTest extends Scene
         await anim.Play("attack");
         step(anim, 2);
         c.check(completes === 1 && loops === 0, "a non-looping animation should complete once: " + completes);
-        c.check(!anim.playing.get(), "a completed animation should pause");
+        c.check(!anim.playing, "a completed animation should pause");
 
         // Play(name, nextName) plays the next one once the first ends
         await anim.Play("attack", "idle");
         step(anim, 2);
-        c.check(anim.current.get() === "idle", "Play(attack, idle) should go back to idle: " + anim.current.get());
-        c.check(anim.playing.get(), "the follow-up animation should be playing");
+        c.check(anim.current === "idle", "Play(attack, idle) should go back to idle: " + anim.current);
+        c.check(anim.playing, "the follow-up animation should be playing");
         await anim.Play("attack");
         step(anim, 2);
-        c.check(anim.current.get() === "attack", "the follow-up should only apply to that play: " + anim.current.get());
+        c.check(anim.current === "attack", "the follow-up should only apply to that play: " + anim.current);
 
         // Play(name, fn) calls fn once, a later play without it doesn't
         let died = 0;
@@ -118,7 +118,7 @@ export class AnimationsAdvancedTest extends Scene
 
         // Data.Animation style full names work too
         await anim.Play("knight_walk");
-        c.check(anim.current.get() === "walk", "a full 'knight_walk' name should play 'walk': " + anim.current.get());
+        c.check(anim.current === "walk", "a full 'knight_walk' name should play 'walk': " + anim.current);
 
         // imagePath is put in front of every frame name
         await anim.Play("folder");
@@ -136,7 +136,7 @@ export class AnimationsAdvancedTest extends Scene
         {
             console.error = error;
         }
-        c.check(errors.length === 1 && anim.current.get() === "folder", "playing a missing animation should log and keep the current one");
+        c.check(errors.length === 1 && anim.current === "folder", "playing a missing animation should log and keep the current one");
 
         // removeOnComplete removes the GameObject at the end
         const dusty = this.AddGameObject("knight");
@@ -153,14 +153,14 @@ export class AnimationsAdvancedTest extends Scene
         await a.Play("walk");
         await b.Play("walk");
         step(a, 2);
-        c.check(a.frame.get() === 2 && b.frame.get() === 0, "two objects playing the same animation should not share frames");
+        c.check(a.frame === 2 && b.frame === 0, "two objects playing the same animation should not share frames");
 
         // framesPerSecond can change at runtime, only for that object
-        a.framesPerSecond.set(20);
+        a.framesPerSecond = 20;
         a.GotoFrame(0);
         a.OnUpdate(0.05);
-        c.check(a.frame.get() === 1, "a higher framesPerSecond should advance faster");
-        c.check(b.framesPerSecond.get() === 10, "changing framesPerSecond should not affect other objects");
+        c.check(a.frame === 1, "a higher framesPerSecond should advance faster");
+        c.check(b.framesPerSecond === 10, "changing framesPerSecond should not affect other objects");
 
         c.flush();
     }

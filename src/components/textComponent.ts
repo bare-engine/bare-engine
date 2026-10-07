@@ -11,16 +11,12 @@ export class TextComponent extends Component
     private textTexture: TextTexture;
 
     @SerializeField(GameMode.Edit)
-    private _text = {
-        get: () => this.textTexture.text,
-        set: (text: string) => this.SetText(text),
-    };
+    get _text():string {return this.textTexture.text;}
+    set _text(value:string) {this.SetText(value);}
 
     @SerializeField(GameMode.Edit) @Int @Limit(0, Infinity)
-    fontSize = {
-        get: () => this.textTexture.style.fontSize,
-        set: (fontSize: number) => {this.textTexture.style.fontSize = fontSize; this.UpdateText();},
-    };
+    get fontSize():number | undefined {return this.textTexture.style.fontSize;}
+    set fontSize(value:number) {this.textTexture.style.fontSize = value; this.UpdateText();}
 
     @SerializeField(GameMode.Edit)
     offset:Vec2 = new Vec2();

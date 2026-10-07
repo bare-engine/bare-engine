@@ -421,6 +421,7 @@ export class GameObject
                     {
                         const value = componentValues[key];
 
+                        // OUT OF DATE
                         // @InspectorField DESCRIPTORS (EG TextComponent.fontSize, DECLARED AS
                         // { get, set }) HOLD A PLAIN {get,set} OBJECT ON THE INSTANCE - A DIRECT
                         // ASSIGNMENT WOULD JUST OVERWRITE THAT OBJECT INSTEAD OF INVOKING IT, SO

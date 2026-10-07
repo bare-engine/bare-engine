@@ -53,12 +53,10 @@ export class ArcadeObject extends GameObject
     // ENTITY VALUES ON OBJECT
     @SerializeField(GameMode.Edit)
     @Dropdown(["Rectangle", "Circle"])
-    private hitboxType = {
-        // physicsHitbox.type is a numeric HitboxType; map it to/from its key name so the
-        // dropdown value matches the options.
-        get: () => HitboxType[this.physicsHitbox.type] ?? "Rectangle",
-        set: (type: string) => this.physicsHitbox.type = HitboxType[type as keyof typeof HitboxType],
-    };
+    // physicsHitbox.type is a numeric HitboxType; map it to/from its key name so the
+    // dropdown value matches the options.
+    get hitboxType():string {return HitboxType[this.physicsHitbox.type] ?? "Rectangle";}
+    set hitboxType(value:string) {this.physicsHitbox.type = HitboxType[value as keyof typeof HitboxType];}
 
     @SerializeField(GameMode.Edit)
     get hitbox(): Rectangle2Vec

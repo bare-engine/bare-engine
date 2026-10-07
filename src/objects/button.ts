@@ -33,16 +33,12 @@ export class Button extends GameObject
     pivotPercentage: Vec2 = new Vec2(-1, -1); // SAME AS TextObject - SHOULD GAMEOBJECT HAVE THIS? - TODO
 
     @SerializeField(GameMode.Edit)
-    private text = {
-        get: () => this.textTexture.text,
-        set: (text: string) => this.SetText(text),
-    };
+    get text():string {return this.textTexture.text;}
+    set text(value:string) {this.SetText(value);}
 
     @SerializeField(GameMode.Edit) @Int @Limit(0, Infinity)
-    private fontSize = {
-        get: () => this.textTexture.style.fontSize,
-        set: (fontSize: number) => {this.textTexture.style.fontSize = fontSize; this.UpdateText();},
-    };
+    get fontSize():number | undefined {return this.textTexture.style.fontSize;}
+    set fontSize(value:number) {this.textTexture.style.fontSize = value; this.UpdateText();}
 
     @SerializeField(GameMode.Edit)
     get textColor(): Color {return Color.fromHex(this.textTexture.style.fill as string ?? "#ffffff");}

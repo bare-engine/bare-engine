@@ -79,33 +79,25 @@ export class AnimationComponent extends Component
     allAnimationNamesForObject: string[] = [];
 
     @InspectorField
-    private playing = {
-        get: () => this.enabled,
-        set: (playing:boolean) => playing ? this.Resume() : this.Pause()
-    };
+    get playing():boolean {return this.enabled;}
+    set playing(value:boolean) {value ? this.Resume() : this.Pause();}
 
     @InspectorField
     @Dropdown(function (this: AnimationComponent) { return this.allAnimationNamesForObject; })
-    private current = {
-        get: () => this.currentAnimation?.name.replace(`${this.go.name}_`, "") ?? "",
-        set: (name: string) => this.Play(name),
-    };
+    get current():string {return this.currentAnimation?.name.replace(`${this.go.name}_`, "") ?? "";}
+    set current(value:string) {this.Play(value);}
 
     @InspectorField
     @Limit(0, Infinity)
     @Int
-    private frame = {
-        get: () => this.currentAnimation?.currentFrame ?? 0,
-        set: (frame:int) => this.GotoFrame(frame % (this.currentAnimation?.frames.length ?? 0))
-    };
+    get frame():int {return this.currentAnimation?.currentFrame ?? 0;}
+    set frame(value:int) {this.GotoFrame(value % (this.currentAnimation?.frames.length ?? 0));}
 
     @InspectorField
     @Limit(0, Infinity)
     @Int
-    private framesPerSecond = {
-        get: () => this.currentAnimation?.framesPerSecond ?? 0,
-        set: (fps:int) => {if (this.currentAnimation) this.currentAnimation.framesPerSecond = fps}
-    };
+    get framesPerSecond():int {return this.currentAnimation?.framesPerSecond ?? 0;}
+    set framesPerSecond(value:int) {if (this.currentAnimation) this.currentAnimation.framesPerSecond = value;}
     
     OnAdded(): void
     {
