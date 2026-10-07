@@ -485,8 +485,9 @@ export class Shader
     {
         var name = this.constructor.name;
 
-        // IF THIS CustomGlShader IS NOT CACHED YET, CREATE IT
-        if (!bare.shaders[name])
+        // IF THIS CustomGlShader IS NOT CACHED YET (OR ITS SOURCE CHANGED, EG HOT RELOAD), CREATE IT
+        var cached = bare.shaders[name];
+        if (!cached || cached.vs !== vs || cached.fs !== fs)
         {
             bare.shaders[name] = new CustomGlShader(rapid, vs, fs);
         }
