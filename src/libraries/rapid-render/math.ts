@@ -2,12 +2,15 @@ export class Vec2 {
     x: number;
     y: number;
 
-    static ZERO = new Vec2(0, 0);
-    static ONE = new Vec2(1, 1);
-    static UP = new Vec2(0, 1);
-    static DOWN = new Vec2(0, -1);
-    static LEFT = new Vec2(-1, 0);
-    static RIGHT = new Vec2(1, 0);
+    // FROZEN, SINCE THEY'RE SHARED: AN IN-PLACE METHOD (normalize, perpendicular, invert, set...)
+    // ON ONE WOULD OTHERWISE CHANGE IT FOR EVERYONE. CLONE FIRST TO MODIFY.
+    static readonly ZERO: Readonly<Vec2> = Object.freeze(new Vec2(0, 0));
+    static readonly ONE: Readonly<Vec2> = Object.freeze(new Vec2(1, 1));
+    // Y POINTS DOWN THE SCREEN, SO UP IS -Y
+    static readonly UP: Readonly<Vec2> = Object.freeze(new Vec2(0, -1));
+    static readonly DOWN: Readonly<Vec2> = Object.freeze(new Vec2(0, 1));
+    static readonly LEFT: Readonly<Vec2> = Object.freeze(new Vec2(-1, 0));
+    static readonly RIGHT: Readonly<Vec2> = Object.freeze(new Vec2(1, 0));
 
     constructor(x?: number, y?: number) {
         this.x = x !== undefined ? x : 0;

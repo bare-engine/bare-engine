@@ -320,15 +320,18 @@ export class Rapid {
      * @param drawMode The WebGL drawing mode (e.g., gl.TRIANGLES, gl.TRIANGLE_FAN).
      * @param texture  An optional texture applied to the graphic vertices.
      * @param customShader An optional custom shader overriding the region's default shader.
+     * @param customMatrix An optional matrix index to use instead of the current world matrix.
+     * @param repeatTexture Wrap uvs outside 0..1 inside the texture's frame (works for atlas sub-textures).
      */
     startGraphic(
         drawMode: number = this.gl.TRIANGLES,
         texture?: Texture,
         customShader?: GLShader | CustomGlShader,
-        customMatrix?: number
+        customMatrix?: number,
+        repeatTexture: boolean = false,
     ): void {
         this.enterRegion(this.graphicRegion, customShader);
-        this.graphicRegion.startGraphic(customMatrix ?? this.matrixStack.curWorldM, drawMode, texture);
+        this.graphicRegion.startGraphic(customMatrix ?? this.matrixStack.curWorldM, drawMode, texture, repeatTexture);
     }
 
     /**

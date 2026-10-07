@@ -4,10 +4,13 @@ precision mediump float;
 in vec4 vColor;
 in vec2 vRegion;
 in vec4 vUVRect;
+// highp: repeated lines can reach large u values, mediump would make fract() jitter
+in highp vec2 vLocalUV;
 
 uniform sampler2D uTexture;
 uniform sampler2D uTextures[%TEXTURE_NUM%];
 uniform int uUseTexture;
+uniform int uRepeat;
 
 out vec4 fragColor;
 
@@ -39,9 +42,25 @@ vec4 sampleTextureLocal(vec2 uv) {
     return sampleTexture(gUV);
 }
 
+// Wrap the local uv into the texture's frame, so repeating works for atlas sub-textures too
+// (the GL wrap mode only repeats the whole atlas page).
+vec4 sampleRepeatTexture() {
+    if (uUseTexture == 0) {
+        return vec4(1,1,1,1);
+    }
+    vec2 uv = mix(vUVRect.xy, vUVRect.zw, fract(vLocalUV));
+
+    // Half a texel in from the frame edge, so linear filtering doesn't bleed in neighbouring frames
+    vec2 halfTexel = 0.5 / vec2(textureSize(uTexture, 0));
+    uv = clamp(uv, min(vUVRect.xy, vUVRect.zw) + halfTexel, max(vUVRect.xy, vUVRect.zw) - halfTexel);
+
+    // Gradients from the unwrapped uv, the wrapped one jumps at the seam and would pick a tiny mip there
+    return textureGrad(uTexture, uv, dFdx(vRegion), dFdy(vRegion));
+}
+
 // CUSTOM_CODE
 
 void main(void) {
-    fragColor = sampleTexture(vRegion) * vColor;
+    fragColor = (uRepeat > 0 ? sampleRepeatTexture() : sampleTexture(vRegion)) * vColor;
     // CUSTOM_CODE_CALL
 }

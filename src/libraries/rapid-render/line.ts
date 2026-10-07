@@ -40,10 +40,10 @@ const addSemicircle = (center: Vec2, normal: Vec2, width: number, isStart: boole
         uv.push(new Vec2(u, 0.5));
 
         vertices.push(center.add(offset1));
-        uv.push(new Vec2(u + offset1.dot(dir) * uvScaleU, 0.5 - 0.5 * offset1.dot(normal) / width));
+        uv.push(new Vec2(u + offset1.dot(dir) * uvScaleU, 0.5 + 0.5 * offset1.dot(normal) / width));
 
         vertices.push(center.add(offset2));
-        uv.push(new Vec2(u + offset2.dot(dir) * uvScaleU, 0.5 - 0.5 * offset2.dot(normal) / width));
+        uv.push(new Vec2(u + offset2.dot(dir) * uvScaleU, 0.5 + 0.5 * offset2.dot(normal) / width));
     }
 
     return { vertices, uv };
@@ -119,9 +119,27 @@ export const getLineNormal = (points: Vec2[], closed: boolean = false): { normal
 };
 
 
+/** Drop points that repeat the previous one (and a closing point repeating the first), they have no direction to build a normal from. */
+const removeDuplicatePoints = (points: Vec2[], closed: boolean): Vec2[] => {
+    const epsilon = 1e-6;
+    const out: Vec2[] = [];
+    for (const p of points) {
+        const prev = out[out.length - 1];
+        if (!prev || Math.abs(p.x - prev.x) > epsilon || Math.abs(p.y - prev.y) > epsilon)
+            out.push(p);
+    }
+    if (closed && out.length > 1) {
+        const first = out[0];
+        const last = out[out.length - 1];
+        if (Math.abs(first.x - last.x) <= epsilon && Math.abs(first.y - last.y) <= epsilon)
+            out.pop();
+    }
+    return out;
+};
+
 export const getLineGeometry = (options: ILineRenderOptions) => {
-    const points = options.points;
-    if (points.length < 2) return { vertices: [], uv: [] };
+    const points = removeDuplicatePoints(options.points, options.closed ?? false);
+    if (points.length < 2 || (options.closed && points.length < 3)) return { vertices: [], uv: [] };
 
     const { normals, length } = getLineNormal(points, options.closed);
     const lineWidth = (options.width || 1.0) / 2; // 半宽
@@ -167,10 +185,12 @@ export const getLineGeometry = (options: ILineRenderOptions) => {
 
         // 确保逆时针缠绕（假设正面为逆时针）
 
-        const topUv = new Vec2(u1, 0);
-        const bottomUv = new Vec2(u1, 1);
-        const nextTopUv = new Vec2(u2, 0);
-        const nextBottomUv = new Vec2(u2, 1);
+        // `top` IS THE +normal SIDE, WHICH IS SCREEN-DOWN FOR A LEFT -> RIGHT LINE (Y IS DOWN),
+        // SO IT GETS v=1: THE TEXTURE THEN SHOWS UPRIGHT, LIKE A SPRITE
+        const topUv = new Vec2(u1, 1);
+        const bottomUv = new Vec2(u1, 0);
+        const nextTopUv = new Vec2(u2, 1);
+        const nextBottomUv = new Vec2(u2, 0);
 
         vertices.push(top);
         uv.push(topUv);

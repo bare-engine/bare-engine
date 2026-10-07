@@ -13,6 +13,7 @@ uniform vec4 uUVRect;
 out vec4 vColor;
 out vec2 vRegion;
 out vec4 vUVRect;
+out vec2 vLocalUV;
 
 // CUSTOM_CODE
 
@@ -20,6 +21,7 @@ void main(void) {
     vColor = aColor;
     vUVRect = uUVRect;
     vRegion = mix(uUVRect.xy, uUVRect.zw, aUV);
+    vLocalUV = aUV;
     vec4 position = vec4(
         dot(uMatrixRow0.xyz, vec3(aPosition.xy, 1.0)), 
         dot(uMatrixRow1.xyz, vec3(aPosition.xy, 1.0)), 

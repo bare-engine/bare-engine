@@ -25,6 +25,8 @@ export class GraphicRegion extends Region {
     drawMode: number = this.gl.TRIANGLES
 
     texture?: Texture
+    /** Wrap uvs outside 0..1 inside the texture's frame (works for atlas sub-textures). */
+    repeatTexture: boolean = false
 
     private _maskShader?: GLShader
     KEY = "Graphic"
@@ -90,11 +92,13 @@ export class GraphicRegion extends Region {
      * @param matrixIndex The index targeting a specific transform matrix in the MatrixStore.
      * @param drawMode The WebGL drawing primitive mode (e.g., gl.TRIANGLES).
      * @param texture Optional texture to apply over the polygon.
+     * @param repeatTexture Wrap uvs outside 0..1 inside the texture's frame.
      */
     startGraphic(
         matrixIndex: number,
         drawMode: number = this.gl.TRIANGLES,
         texture?: Texture,
+        repeatTexture: boolean = false,
     ): void {
         this.vertexBuffer.clear();
         this.vertexCount = 0;
@@ -102,6 +106,7 @@ export class GraphicRegion extends Region {
         this.matrixIndex = matrixIndex;
         this.drawMode = drawMode;
         this.texture = texture;
+        this.repeatTexture = repeatTexture;
 
         if (this.texture?.glTexture) {
             // It does not rely on the region to set the texture;
@@ -174,6 +179,7 @@ export class GraphicRegion extends Region {
         } else {
             shader.setUniform("uUseTexture", 0);
         }
+        shader.setUniform("uRepeat", this.repeatTexture ? 1 : 0);
 
         this.vertexBuffer.bindBuffer();
         this.vertexBuffer.bufferData();
@@ -183,6 +189,7 @@ export class GraphicRegion extends Region {
         gl.drawArrays(this.drawMode, 0, this.vertexCount);
         this.rapid.drawcallCount++;
         this.texture = undefined;
+        this.repeatTexture = false;
     }
 
     override hasPendingContent(): boolean {

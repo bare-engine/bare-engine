@@ -3,7 +3,7 @@ import type { ITransformOptions } from "./matrix-engine";
 import { Vec2 } from "./math";
 import { Texture } from "./texture";
 import GLShader, { CustomGlShader } from "./webgl/glshader";
-import { getLineGeometry } from "./line";
+import { getLineGeometry, LineTextureMode } from "./line";
 import type { ILineRenderOptions } from "./line";
 import type { Rapid } from "./render";
 
@@ -53,6 +53,8 @@ export interface IGraphicOptions extends IDrawOptions {
     drawMode?: number;
     uv?: DrawPoint[];
     texture?: Texture;
+    /** Wrap uvs outside 0..1 inside the texture's frame, so the texture tiles (works for atlas sub-textures). */
+    repeatTexture?: boolean;
 }
 
 export interface IMaskImageOptions extends IDrawOptions {
@@ -227,6 +229,7 @@ export const drawGraphic = (rapid: Rapid, options: IGraphicOptions): void => {
         options.texture,
         options.shader,
         matrix ?? options.customMatrix,
+        options.repeatTexture ?? false,
     );
 
     for (let i = 0; i < options.points.length; i++) {
@@ -257,6 +260,7 @@ export const drawLine = (rapid: Rapid, options: ILineOptions): void => {
         points: vertices,
         uv,
         drawMode: rapid.gl.TRIANGLES,
+        repeatTexture: options.textureMode === LineTextureMode.REPEAT,
     });
 };
 
