@@ -1039,13 +1039,11 @@ export class Scene implements SceneI
 
     // INPUT CAN BE: ENTITY / ENTITY NAME / GAMEOBJECT / CLASS TO INSTANTIATE / TEXTURE
     // THE ENTITY IS TYPED BY T's entity FIELD, EG: AddGameObject<Button>({ text: "Ok" }) CHECKS AGAINST ButtonEntity
+    // A GAMEOBJECT INSTANCE IS RETURNED AS ITS OWN TYPE, EG: AddGameObject(new TextObject(this)) IS A TextObject
+    AddGameObject<T extends GameObject>(gameObject: T, parent?: int | string | GameObject): T;
+    AddGameObject<T extends GameObject = GameObject>(input?: NonNullable<T["entity"]> | string | GameObject | (new (...args: any[]) => T) | Texture, parent?: int | string | GameObject): T;
     AddGameObject<T extends GameObject = GameObject>(input?: NonNullable<T["entity"]> | string | GameObject | (new (...args: any[]) => T) | Texture, parent: int | string | GameObject = "objects"): T
     {
-        if (!this.settingsHandler)
-        {
-            throw new Error("Cannot add a GameObject yet, the scene has not awoken yet.\nCall AddGameObject() in OnAwake() or OnStart().");
-        }
-
         // CREATE
         {
             var gameObject: GameObject;
@@ -1652,7 +1650,7 @@ to package.json to keep the generated assets (can become large for big projects)
         return bare.scene.Add(sceneClass, payload);
     }
 
-    async AddScene<T extends Scene>(scene: Scene | SceneClass<T>, payload?: AwakePayload<T>): Promise<T>
+    async AddScene<T extends Scene>(scene: T | SceneClass<T>, payload?: AwakePayload<T>): Promise<T>
     {
         return bare.scene.Add(scene, payload);
     }

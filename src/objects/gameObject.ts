@@ -1801,6 +1801,9 @@ export class GameObject
         }
     }
 
+    // A GAMEOBJECT INSTANCE IS RETURNED AS ITS OWN TYPE, SAME AS Scene.AddGameObject()
+    AddChild<T extends GameObject>(gameObject: T): T;
+    AddChild<T extends GameObject = GameObject>(input?: NonNullable<T["entity"]> | string | GameObject | (new (...args: any[]) => T) | Texture): T;
     AddChild<T extends GameObject = GameObject>(input?: NonNullable<T["entity"]> | string | GameObject | (new (...args: any[]) => T) | Texture): T
     {
         // RESET CACHED VALUES SO THEY GET RECALCULATED
