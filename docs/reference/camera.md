@@ -15,7 +15,7 @@ bare.camera.StartShake(8, 0.3);
 `SetPosition` jumps straight to a point. For a smooth follow, move part of the way every frame:
 
 ```ts
-OnUpdate(deltaTime: number)
+override OnUpdate(deltaTime: number)
 {
     const camera = bare.camera.GetPosition();
     const t = 1 - Math.exp(-5 * deltaTime);   // higher than 5 follows tighter
@@ -36,7 +36,7 @@ To show a whole level on any screen size:
 ```ts
 import { CameraScaleMode } from 'bare-engine';
 
-OnPostLoadLevel()
+override OnPostLoadLevel()
 {
     bare.camera.SetScaleMode(CameraScaleMode.Contain);
     bare.camera.SetDimensionsToLevel();

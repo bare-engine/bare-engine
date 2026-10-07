@@ -19,7 +19,7 @@ export class MotorJointObject extends JointObject
 
     @SerializeField(GameMode.Edit) private angularSpeed: number = 0;
 
-    OnAwake(): void
+    override OnAwake(): void
     {
         this.resizeable = false;
         this.SetColor(Color.Orange);

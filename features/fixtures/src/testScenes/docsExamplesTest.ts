@@ -7,7 +7,7 @@ import { PaintScene } from '../docExamples/paintScene';
 
 export class DocsExamplesTest extends Scene
 {
-    async OnStart()
+    override async OnStart()
     {
         const first = await bare.scene.Add(FirstGame);
         const startX = first.player.x;

@@ -4,13 +4,13 @@ export class PaintScene extends Scene
 {
     canvas?: RenderTexture;
 
-    OnStart()
+    override OnStart()
     {
         this.canvas = new RenderTexture(rapid, { width: 256, height: 256 });
         this.AddGameObject(this.canvas);
     }
 
-    OnClear()
+    override OnClear()
     {
         this.canvas?.destroy();
         this.canvas = undefined;

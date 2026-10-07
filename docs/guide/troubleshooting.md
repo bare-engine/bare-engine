@@ -51,6 +51,17 @@ Production builds remove some things to save space. Try turning them off one at 
 | A method is suddenly undefined | `"stripUnusedMethods": false`, or keep the method with `keep` |
 | Images missing from the atlas | check `texturePackImages.alwaysInclude` |
 
+## "This member must have an 'override' modifier"
+
+A member of your class has the same name as one in the engine class it extends. Both are the same property, so the engine would read and change yours, and you would replace its behavior. For example, a scene with its own `paused` flag would pause the whole scene.
+
+- For a hook like `OnStart` or `OnUpdate`, add `override`: `override OnStart()`. VS Code's quick fix **Add all missing 'override' modifiers** does a whole file at once, but it also adds `override` to accidental clashes like `paused`, which hides them again. Check what it marked.
+- For your own member, rename it: `isPaused` instead of `paused`.
+- To only narrow an engine field's type, use `declare`: `declare go: Player;`.
+- To give an engine field a starting value, assign it in the constructor or `OnAwake` instead of declaring it again.
+
+This check comes from [`noImplicitOverride`](https://www.typescriptlang.org/tsconfig/#noImplicitOverride), which is on in the engine's base tsconfig that your `tsconfig.json` extends. The dev server doesn't type-check, so the error shows in your editor, or with `npx tsc --noEmit`.
+
 ## Changes in package.json or vite.config.cjs don't apply
 
 Restart the dev server. It reads these files only when it starts.

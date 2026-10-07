@@ -47,14 +47,14 @@ export class Game extends Scene
         super(settingsDataJson);
     }
 
-    OnStart()
+    override OnStart()
     {
         this.obj = this.AddGameObject('⚙')
             .SetPosition(bare.width * .5, bare.height * .5)
             .CenterPivot();
     }
 
-    OnFixedUpdate()
+    override OnFixedUpdate()
     {
         this.obj.rotation++;
     }

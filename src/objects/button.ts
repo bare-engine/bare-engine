@@ -193,12 +193,12 @@ export class Button extends GameObject
         return { x: 0, y: 0, width: this.width, height: this.height };
     }
 
-    get width(): number
+    override get width(): number
     {
         return this.textTexture.width + this.margin * 2
     }
 
-    get height(): number
+    override get height(): number
     {
         return this.textTexture.height + this.margin * 2
     }

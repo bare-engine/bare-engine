@@ -2,7 +2,7 @@ import { CameraScaleMode, Scene } from "bare-engine";
 
 export class CameraTest extends Scene
 {
-    OnStart(): void
+    override OnStart(): void
     {
         this.camera.SetBounds({ x: -4500, y: -1500, width: 9000, height: 3000 });
         this.camera.SetDimensions(9000, 3000);

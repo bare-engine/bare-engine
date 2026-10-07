@@ -17,7 +17,7 @@ export class CollisionEventComponent extends Component
         super(scene);
     }
 
-    OnCollisionStart(other: GameObject): void
+    override OnCollisionStart(other: GameObject): void
     {
         if (this.object == "" || other.name == this.object)
             this.Fire(other);

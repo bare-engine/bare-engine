@@ -28,7 +28,7 @@ export class SpriteRegion extends Region {
     protected instanceCount: number = 0;
     protected localSpriteMatrix = new Float32Array(6);
     protected worldSpriteMatrix = new Float32Array(6);
-    KEY = "Sprite"
+    override KEY = "Sprite"
 
     constructor(rapid: Rapid) {
         super(rapid);
@@ -36,7 +36,7 @@ export class SpriteRegion extends Region {
         this.createBuffer()
     }
 
-    createBuffer() {
+    override createBuffer() {
         const gl = this.gl;
 
         // Static quad geometry buffer
@@ -51,14 +51,14 @@ export class SpriteRegion extends Region {
         this.instanceBuffer = new WebglBufferArray(gl, ArrayType.Uint32, gl.ARRAY_BUFFER, gl.DYNAMIC_DRAW);
     }
 
-    createDefaultShader() {
+    override createDefaultShader() {
         this.vs = VsShaderSource;
         this.fs = FsShaderSource;
         this.defaultShader = this.createShader(VsShaderSource, FsShaderSource)
         return this.defaultShader;
     }
 
-    createShader(vs: string, fs: string) {
+    override createShader(vs: string, fs: string) {
         const shader = super.createShader(vs, fs);
 
         // attribute locations are only known once the program has linked; binding them here

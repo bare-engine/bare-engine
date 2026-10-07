@@ -21,7 +21,7 @@ export class TweensAdvancedTest extends Scene
         });
     }
 
-    OnUpdate(): void
+    override OnUpdate(): void
     {
         if (!this.running)
         {

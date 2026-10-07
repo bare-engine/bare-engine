@@ -95,7 +95,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             this.objects.splice(index, 1);
     }
 
-    setDimensions(x: number = 0, y: number = 0, width: number = 0, height: number = 0) {
+    override setDimensions(x: number = 0, y: number = 0, width: number = 0, height: number = 0) {
         this.x = x;
         this.y = y;
         this.width = width;
@@ -128,7 +128,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         return {x: this.x, y: this.y, width: this.width, height: this.height};
     }
 
-    setCollisionsEnabled(enabled: boolean): void {
+    override setCollisionsEnabled(enabled: boolean): void {
         if (this.collisionsEnabled === enabled)
             return;
 
@@ -141,7 +141,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         }
     }
 
-    Render(): void
+    override Render(): void
     {
         if (__DEV__ && bare.debug)
         {

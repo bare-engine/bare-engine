@@ -65,7 +65,7 @@ export class TextComponent extends Component
         this.textTexture.update();
     }
 
-    OnPostRender(): void
+    override OnPostRender(): void
     {
         rapid.matrixStack.save();
         this.go.ApplyTransformToMatrixStack(this.go.transform);

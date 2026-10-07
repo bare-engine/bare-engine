@@ -39,12 +39,12 @@ You build levels with the in-game [level editor](./level-editor) rather than by 
 ### Loading levels
 
 ```ts
-async OnStart()
+override async OnStart()
 {
     await this.LoadLevel('level1');
 }
 
-OnPostLoadLevel(level: LevelData)
+override OnPostLoadLevel(level: LevelData)
 {
     bare.camera.SetDimensionsToLevel();
 }

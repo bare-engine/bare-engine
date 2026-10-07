@@ -36,7 +36,7 @@ export class FlashShader extends Shader
         });
     }
 
-    public Update(): boolean
+    public override Update(): boolean
     {
         const currentTime = Date.now();
         const elapsed = Math.max(0, currentTime - this.fadeStartTime);

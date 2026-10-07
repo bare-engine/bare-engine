@@ -94,7 +94,7 @@ export class HUD extends Scene
         super({ UI: true, resize: true });
     }
 
-    OnStart()
+    override OnStart()
     {
         // ...add text and buttons
     }

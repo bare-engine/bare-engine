@@ -5,7 +5,7 @@ import { JointObject } from "./jointObject";
 
 export class RevoluteJointObject extends JointObject
 {
-    OnAwake(): void
+    override OnAwake(): void
     {
         this.resizeable = false;
     }

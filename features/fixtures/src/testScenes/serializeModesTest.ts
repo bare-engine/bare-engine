@@ -32,27 +32,27 @@ export class SavedText extends TextObject {}
 export class EditRunComponent extends Component
 {
     awoken = false;
-    OnAwake(): void { this.awoken = true; }
+    override OnAwake(): void { this.awoken = true; }
 }
 
 @Run(GameMode.Play)
 export class PlayRunComponent extends Component
 {
     awoken = false;
-    OnAwake(): void { this.awoken = true; }
+    override OnAwake(): void { this.awoken = true; }
 }
 
 @Run(GameMode.Edit, GameMode.Play)
 export class BothRunComponent extends Component
 {
     awoken = false;
-    OnAwake(): void { this.awoken = true; }
+    override OnAwake(): void { this.awoken = true; }
 }
 
 export class PlainRunComponent extends Component
 {
     awoken = false;
-    OnAwake(): void { this.awoken = true; }
+    override OnAwake(): void { this.awoken = true; }
 }
 
 export class SerializeModesTest extends Scene
@@ -68,7 +68,7 @@ export class SerializeModesTest extends Scene
         } as any);
     }
 
-    OnAwake(): void
+    override OnAwake(): void
     {
         bare.AddClass(ComponentController);
         bare.AddClass(ModesComponent);
@@ -92,7 +92,7 @@ export class SerializeModesTest extends Scene
         return this.InMode(mode, () => this.level.SerializeObject(obj));
     }
 
-    OnStart(): void
+    override OnStart(): void
     {
         const c = this.checks;
         const json = (value: any) => JSON.stringify(value);

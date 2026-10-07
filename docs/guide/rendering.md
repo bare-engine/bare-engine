@@ -47,7 +47,7 @@ export class WobbleShader extends Shader
     }
 
     // called every frame, return true to remove the shader
-    Update()
+    override Update()
     {
         this.time += bare.deltaTime;
         this.SetUniforms({ uTime: this.time });
@@ -78,7 +78,7 @@ Draw shapes in a scene's `OnRender` (or a component's). They're drawn fresh ever
 ```ts
 import { Color, Vec2 } from 'bare-engine';
 
-OnRender()
+override OnRender()
 {
     bare.drawCircle({
         position: new Vec2(100, 200),

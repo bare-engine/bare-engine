@@ -45,7 +45,7 @@ declare module "../types/bareTypes" {
 export class SopiroPhysicsController extends PhysicsControllerBase
 {
     public world: World;
-    public collisionsEnabled: boolean = true;
+    public override collisionsEnabled: boolean = true;
     public grabJoint: GrabJoint | null = null;
 
     private activeCollisions: Map<number, { bodyA: RigidBody; bodyB: RigidBody }> = new Map();
@@ -79,7 +79,7 @@ export class SopiroPhysicsController extends PhysicsControllerBase
             this.world.unregister(object.id);
     }
 
-    RefreshBody(body: RigidBody): void
+    override RefreshBody(body: RigidBody): void
     {
         if (!body || !body.node)
             return;
@@ -88,7 +88,7 @@ export class SopiroPhysicsController extends PhysicsControllerBase
         this.world.tree.add(body);
     }
 
-    setDimensions(x: number = 0, y: number = 0, width: number = 0, height: number = 0)
+    override setDimensions(x: number = 0, y: number = 0, width: number = 0, height: number = 0)
     {
     }
 
@@ -173,7 +173,7 @@ export class SopiroPhysicsController extends PhysicsControllerBase
         this.grabJoint = null;
     }
 
-    setCollisionsEnabled(enabled: boolean): void
+    override setCollisionsEnabled(enabled: boolean): void
     {
         if (this.collisionsEnabled === enabled)
             return;

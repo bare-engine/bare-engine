@@ -4,7 +4,7 @@ export class FirstGame extends Scene
 {
     player!: GameObject;
 
-    OnStart()
+    override OnStart()
     {
         this.player = this.AddGameObject('PIXEL')
             .SetScale(32)
@@ -13,7 +13,7 @@ export class FirstGame extends Scene
             .CenterPivot();
     }
 
-    OnUpdate(deltaTime: number)
+    override OnUpdate(deltaTime: number)
     {
         const direction = Number(bare.keyboard.IsRightDown())
             - Number(bare.keyboard.IsLeftDown());

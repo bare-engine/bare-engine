@@ -41,7 +41,7 @@ void main() {
 }`;
 
 export class TransformSpriteRegion extends SpriteRegion {
-    KEY = "TransformSprite";
+    override KEY = "TransformSprite";
     private parent0 = new Float32Array(3);
     private parent1 = new Float32Array(3);
 

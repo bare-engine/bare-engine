@@ -25,7 +25,7 @@ Registered GameObject classes are [pooled](./custom-game-objects#object-pools): 
 - **Reset your own fields in `OnAwake`.** It runs every time the object is reused, so a field set there starts fresh each time:
 
   ```ts
-  OnAwake()
+  override OnAwake()
   {
       this.health = 3;
   }

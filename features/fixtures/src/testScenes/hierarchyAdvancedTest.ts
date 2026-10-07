@@ -7,7 +7,7 @@ export class RemovalProbeComponent extends Component
 {
     static removed: string[] = [];
 
-    OnRemoved() { RemovalProbeComponent.removed.push(this.go.name); }
+    override OnRemoved() { RemovalProbeComponent.removed.push(this.go.name); }
 }
 
 export class PoolProbe extends GameObject {}
@@ -29,13 +29,13 @@ export class HierarchyAdvancedTest extends Scene
         });
     }
 
-    OnAwake(): void
+    override OnAwake(): void
     {
         bare.AddClass(RemovalProbeComponent);
         bare.AddClass(PoolProbe);
     }
 
-    OnStart(): void
+    override OnStart(): void
     {
         const c = this.checks;
 

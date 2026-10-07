@@ -26,7 +26,7 @@ export class InputAdvancedTest extends Scene
     step = "";
     startTime = 0;
 
-    OnUpdate(): void
+    override OnUpdate(): void
     {
         if (this.running && !this.done && performance.now() - this.startTime > 4000 && this.step != "stuck")
         {

@@ -19,7 +19,7 @@ const VERTEX_STRIDE = 20;
 export class GraphicRegion extends Region {
     private vertexBuffer!: WebglBufferArray;
     private vertexCount: number = 0;
-    protected extraTextureUnit: number = 1;
+    protected override extraTextureUnit: number = 1;
     
     matrixIndex: number = -1
     drawMode: number = this.gl.TRIANGLES
@@ -29,7 +29,7 @@ export class GraphicRegion extends Region {
     repeatTexture: boolean = false
 
     private _maskShader?: GLShader
-    KEY = "Graphic"
+    override KEY = "Graphic"
 
     constructor(rapid: Rapid) {
         super(rapid);
@@ -37,7 +37,7 @@ export class GraphicRegion extends Region {
         this.createBuffer()
     }
 
-    createBuffer(){
+    override createBuffer(){
         const gl = this.gl;
 
         this.vertexBuffer = new WebglBufferArray(gl, ArrayType.Float32, gl.ARRAY_BUFFER, gl.DYNAMIC_DRAW);
@@ -48,7 +48,7 @@ export class GraphicRegion extends Region {
         return this._maskShader ??= this.createMaskShader(MaskVsShaderSource, MaskFsShaderSource);
     }
 
-    createDefaultShader() {
+    override createDefaultShader() {
         this.vs = VsShaderSource;
         this.fs = FsShaderSource;
         this.defaultShader = this.createShader(this.vs, this.fs)
@@ -70,7 +70,7 @@ export class GraphicRegion extends Region {
         return shader;
     }
 
-    createShader(vs: string, fs: string) {
+    override createShader(vs: string, fs: string) {
         const gl = this.gl;
         const shader = super.createShader(vs, fs);
 
@@ -147,7 +147,7 @@ export class GraphicRegion extends Region {
         this.flush();
     }
 
-    render() {
+    override render() {
         if (this.vertexCount === 0) return;
         this.prepareRender();
 

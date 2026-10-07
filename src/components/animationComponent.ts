@@ -99,7 +99,7 @@ export class AnimationComponent extends Component
     get framesPerSecond():int {return this.currentAnimation?.framesPerSecond ?? 0;}
     set framesPerSecond(value:int) {if (this.currentAnimation) this.currentAnimation.framesPerSecond = value;}
     
-    OnAdded(): void
+    override OnAdded(): void
     {
         this.events = mitt<AnimationEventPayload>();
 
@@ -110,7 +110,7 @@ export class AnimationComponent extends Component
             .map(name => name.slice(prefix.length));
     }
     
-    OnStart(): void
+    override OnStart(): void
     {
         // THIS HAPPENS AT START OF FIRST UPDATE, SO IF Play() HAS NOT BEEN CALLED YET, NO currentAnimation IS THERE
         // SO WE JUST PLAY THE DEFAULT ANIMATION - ONE THAT SHARES THE NAME WITH OBJECT
@@ -211,7 +211,7 @@ export class AnimationComponent extends Component
         }
     }
 
-    OnUpdate(deltaTime: number): void 
+    override OnUpdate(deltaTime: number): void 
     {
         if (!this.currentAnimation)
             return;
@@ -283,7 +283,7 @@ export class AnimationComponent extends Component
         this.go.SetTexture(texture);
     }
     
-    OnRemoved(): void
+    override OnRemoved(): void
     {
         this.events?.clearAll(); // NOT REALLY NEEDED?
     }

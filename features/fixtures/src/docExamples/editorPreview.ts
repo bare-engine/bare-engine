@@ -18,7 +18,7 @@ export class EditorPreview extends Scene
         });
     }
 
-    async OnStart()
+    override async OnStart()
     {
         bare.SetBackgroundColor(Color.fromHex('#172338'));
         const level = await this.level.Load({

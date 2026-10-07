@@ -8,7 +8,7 @@ export class CoinDocComponent extends Component<ArcadeObject>
 {
     collected = 0;
 
-    OnCollisionStart(other: GameObject)
+    override OnCollisionStart(other: GameObject)
     {
         if (other.name == "player")
             this.collected++;
@@ -42,7 +42,7 @@ export class DocsPhysicsTest extends Scene
         } as any);
     }
 
-    OnAwake(): void
+    override OnAwake(): void
     {
         bare.AddClass(ArcadeObject);
         bare.AddClass(ArcadePhysicsController);
@@ -50,7 +50,7 @@ export class DocsPhysicsTest extends Scene
         bare.AddClass(CollisionEventComponent);
     }
 
-    OnUpdate(): void
+    override OnUpdate(): void
     {
         if (!this.running)
         {

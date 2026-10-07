@@ -652,7 +652,7 @@ class RenderTexture extends Texture {
     /**
      * Destroys the framebuffer, renderbuffer, and base texture.
      */
-    destroy(): void {
+    override destroy(): void {
         super.destroy(); // Dec ref
         if (this.framebuffer) this.gl.deleteFramebuffer(this.framebuffer);
         if (this.renderbuffer) this.gl.deleteRenderbuffer(this.renderbuffer);
@@ -759,7 +759,7 @@ class TextTexture extends Texture {
         }
     }
 
-    public updateResolution(){
+    public override updateResolution(){
         let requiredResolution = 1
         requiredResolution *= this.render.viewport.resolution
 

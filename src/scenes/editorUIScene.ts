@@ -14,7 +14,7 @@ export class EditorUIScene extends Scene
         super({UI: true, resize: true, persistent: true});
     }
 
-    OnStart(payload?: EditorUIScenePayload): void | Promise<void>
+    override OnStart(payload?: EditorUIScenePayload): void | Promise<void>
     {
         var position = payload?.openEditorButtonPosition ?? { x: 0, y: 0 };
 

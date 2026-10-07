@@ -71,7 +71,7 @@ export class DocsGuideSystemsTest extends Scene
         } as any);
     }
 
-    OnAwake(): void
+    override OnAwake(): void
     {
         // the text guide doesn't mention it, but a TextObject baseClass needs registering like any other
         bare.AddClass(TextObject);
@@ -79,10 +79,10 @@ export class DocsGuideSystemsTest extends Scene
         bare.AddClass(ParticleComponent);
     }
 
-    async OnPreLoadLevel(level: LevelData) { this.preLoaded = level?.name; }
-    async OnPostLoadLevel(level: LevelData) { this.postLoaded = level?.name; }
+    override async OnPreLoadLevel(level: LevelData) { this.preLoaded = level?.name; }
+    override async OnPostLoadLevel(level: LevelData) { this.postLoaded = level?.name; }
 
-    async OnStart()
+    override async OnStart()
     {
         const c = this.checks;
 
@@ -262,7 +262,7 @@ export class DocsGuideSystemsTest extends Scene
     ordinaryHits = 0;
     restartChecks?: Checks;
 
-    OnUpdate(): void
+    override OnUpdate(): void
     {
         if (!this.restartChecks || !this.restarted)
             return;

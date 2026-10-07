@@ -16,7 +16,7 @@ declare module "bare-engine"
 class HelperScene extends Scene
 {
     startCount = 0;
-    OnStart() { this.startCount++; }
+    override OnStart() { this.startCount++; }
 }
 
 class OtherScene extends Scene {}
@@ -96,19 +96,31 @@ export class DocsReferenceTest extends Scene
         c.check(bgLayer[bgLayer.length - 1] === second, "bare.object.BringToFront should move to the end");
 
         // --- input: keyboard
-        window.dispatchEvent(new KeyboardEvent("keydown", { key: "d" }));
-        document.dispatchEvent(new KeyboardEvent("keydown", { key: "d" }));
+        window.dispatchEvent(new KeyboardEvent("keydown", { key: "d", code: "KeyD" }));
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "d", code: "KeyD" }));
         c.check(bare.keyboard.IsKeyDown("d"), "IsKeyDown should be true while held");
         c.check(bare.keyboard.IsRightDown(), "IsRightDown should include WASD");
+        c.check(bare.keyboard.IsCodeDown("KeyD"), "IsCodeDown should be true while held");
         c.check(bare.keyboard.IsAnyKeyDown(), "IsAnyKeyDown should be true");
         c.check(bare.keyboard.GetKeysDown().includes("d"), "GetKeysDown should list held keys");
-        window.dispatchEvent(new KeyboardEvent("keyup", { key: "d" }));
-        document.dispatchEvent(new KeyboardEvent("keyup", { key: "d" }));
+        window.dispatchEvent(new KeyboardEvent("keyup", { key: "d", code: "KeyD" }));
+        document.dispatchEvent(new KeyboardEvent("keyup", { key: "d", code: "KeyD" }));
         c.check(bare.keyboard.IsKeyUp("d"), "IsKeyUp should be true after release");
-        window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowUp" }));
-        document.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowUp" }));
+        c.check(!bare.keyboard.IsCodeDown("KeyD"), "IsCodeDown should be false after release");
+        window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowUp", code: "ArrowUp" }));
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowUp", code: "ArrowUp" }));
         c.check(bare.keyboard.IsKeyDown("arrowUp"), "key names should have a lowercase first letter");
         c.check(bare.keyboard.IsUpDown(), "IsUpDown should include arrow keys");
+        bare.keyboard.ClearAll();
+
+        // directions go by key position: Z on AZERTY sits where W is (KeyW), Z on QWERTY (KeyZ) is not up
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "z", code: "KeyW" }));
+        c.check(bare.keyboard.IsUpDown(), "IsUpDown should include the W position, labeled Z on AZERTY");
+        document.dispatchEvent(new KeyboardEvent("keyup", { key: "z", code: "KeyW" }));
+        bare.keyboard.ClearAll(); // switching layout, as if the window lost focus
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "z", code: "KeyZ" }));
+        c.check(!bare.keyboard.IsUpDown(), "IsUpDown should not include Z on QWERTY");
+        document.dispatchEvent(new KeyboardEvent("keyup", { key: "z", code: "KeyZ" }));
         bare.keyboard.ClearAll();
         c.check(!bare.keyboard.IsAnyKeyDown(), "ClearAll should reset key state");
 
@@ -315,7 +327,7 @@ export class DocsReferenceTest extends Scene
         this.done = true;
     }
 
-    OnUpdate(): void
+    override OnUpdate(): void
     {
         if (!this.running)
         {

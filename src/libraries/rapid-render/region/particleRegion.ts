@@ -21,17 +21,17 @@ const INSTANCE_STRIDE = 48;
 const INSTANCE_ELEMS = INSTANCE_STRIDE / 4;
 
 export class ParticleRegion extends SpriteRegion {
-    KEY = "ParticleSprite"
+    override KEY = "ParticleSprite"
     texture?: Texture
     customMatrix?: number
     particleLoopCache = new Map<string, Function>();
-    protected extraTextureUnit: number = 1;
+    protected override extraTextureUnit: number = 1;
 
     constructor(rapid: Rapid) {
         super(rapid)
     }
 
-    createDefaultShader() {
+    override createDefaultShader() {
         const fs = FsShaderSource;
         const vs = VsShaderSource;
         this.vs = vs;
@@ -40,12 +40,12 @@ export class ParticleRegion extends SpriteRegion {
         return this.defaultShader;
     }
 
-    enter(customShader?: GLShader | CustomGlShader): void {
+    override enter(customShader?: GLShader | CustomGlShader): void {
         super.enter(customShader)
         this.currentShader.setUniform("u_matrix", this.rapid.projection);
     }
 
-    createShader(vs: string, fs: string) {
+    override createShader(vs: string, fs: string) {
         // skip SpriteRegion.createShader: its VAO layout is the sprite one, not the particle one
         const shader = Region.prototype.createShader.call(this, vs, fs) as GLShader;
 

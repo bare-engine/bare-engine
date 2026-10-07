@@ -328,12 +328,12 @@ export class Query<E> extends Bucket<E> implements IQueryableBucket<E> {
    * An array containing all entities that match this query. For iteration, it
    * is recommended to use the `for (const entity of query) {}` syntax instead.
    */
-  get entities() {
+  override get entities() {
     if (!this._isConnected) this.connect()
     return super.entities
   }
 
-  [Symbol.iterator]() {
+  override [Symbol.iterator]() {
     if (!this._isConnected) this.connect()
     return super[Symbol.iterator]()
   }

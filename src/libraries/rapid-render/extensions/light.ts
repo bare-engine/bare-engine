@@ -25,11 +25,11 @@ export class LightShader extends CustomGlShader {
         )
     }
 
-    beforePreCompile(){
+    override beforePreCompile(){
         this.prefix.push("light_")
     }
 
-    getGLShader(region: Region, key: string, baseVS: string, baseFS: string) {
+    override getGLShader(region: Region, key: string, baseVS: string, baseFS: string) {
         const fs = generateShader(FsShaderSource, region.getMaxTexutreUnit(this), "layer", "lightUV", "lightTex = ")
         baseFS = this.replaceCustomCode(baseFS, fs)
         baseVS = this.replaceCustomCode(baseVS, VsShaderSource)

@@ -6,6 +6,7 @@
         "moduleResolution": "bundler",
         "resolveJsonModule": true,
         "lib": ["ES2020", "DOM"],
-        "experimentalDecorators": true
+        "experimentalDecorators": true,
+        "noImplicitOverride": true
     }
 }

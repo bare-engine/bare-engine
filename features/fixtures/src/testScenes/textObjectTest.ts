@@ -19,7 +19,7 @@ export class TextObjectTest extends Scene
         } as any);
     }
 
-    OnAwake(): void
+    override OnAwake(): void
     {
         bare.AddClass(TextObject);
     }
@@ -47,7 +47,7 @@ export class TextObjectTest extends Scene
         (obj.tapHitbox as any)[handler]();
     }
 
-    OnStart(): void
+    override OnStart(): void
     {
         const c = this.checks;
         const near = (a: number, b: number) => Math.abs(a - b) < 0.01;

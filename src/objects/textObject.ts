@@ -75,7 +75,7 @@ export class TextObject extends GameObject
         this.SetNameBasedOnText(options.text || "");
     }
 
-    OnStart(): void
+    override OnStart(): void
     {
         if (this.HasOwnName())
             this.pluginName = this.name;

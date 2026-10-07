@@ -63,7 +63,7 @@ export class EditorScene extends Scene
         return super.Awake(payload);
     }
 
-    async OnStart(payload?: EditorSceneAwakePayload): Promise<void>
+    override async OnStart(payload?: EditorSceneAwakePayload): Promise<void>
     {
         bare.camera.SetScaleMode(CameraScaleMode.Contain);
 
@@ -192,7 +192,7 @@ export class EditorScene extends Scene
         bare.SendEvent(BareEvent.editor_opened, {settingsDataName: this.settingsData.name || 'levelEditor', levelName: level!.isData ? "data" : SaveData.currentLevelStr});
     }
 
-    OnClear(): void
+    override OnClear(): void
     {
         if (this.opened) // CHECKING, SINCE THIS ALSO RUNS ON INIT WHEN CALLING LoadLevel()
         {
@@ -243,7 +243,7 @@ export class EditorScene extends Scene
     }
 
     //OnUpdate(deltaTime: number): void
-    OnPreUpdate(deltaTime: number): void
+    override OnPreUpdate(deltaTime: number): void
     {
         this.editorControlsHandler?.Update(deltaTime);
     }
@@ -312,7 +312,7 @@ export class EditorScene extends Scene
         return candidates;
     }
 
-    OnPreRender()
+    override OnPreRender()
     {
         if (!this.opened)
             return;
@@ -328,7 +328,7 @@ export class EditorScene extends Scene
         });
     }
 
-    OnPostRender()
+    override OnPostRender()
     {
         if (!this.opened)
             return;

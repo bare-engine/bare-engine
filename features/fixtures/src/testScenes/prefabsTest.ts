@@ -2,7 +2,7 @@ import { GameObject, Scene } from "bare-engine";
 
 class FruitObject extends GameObject
 {
-    OnAwake(): void
+    override OnAwake(): void
     {
         this.AddChild();
     }
@@ -66,12 +66,12 @@ export class PrefabsTest extends Scene
         });
     }
 
-    OnAwake(): void
+    override OnAwake(): void
     {
         bare.AddClass(FruitObject);
     }
 
-    OnStart(): void
+    override OnStart(): void
     {
         const pear = this.AddGameObject("pear");
         const banana = this.AddGameObject("banana");

@@ -13,7 +13,7 @@ export class Game extends Scene
         super(settingsData);
     }
 
-    OnStart()
+    override OnStart()
     {
         this.AddGameObject('player');
     }
@@ -26,7 +26,9 @@ Passing [`settingsData`](./settings-data) gives the scene your prefabs and other
 
 ## Lifecycle
 
-Override these methods on your scene. All are optional.
+Override these methods on your scene. All are optional. Mark each one `override`, as in `override OnStart()`.
+
+`override` is required for every member that replaces one of the engine's: [`noImplicitOverride`](https://www.typescriptlang.org/tsconfig/#noImplicitOverride) is on in the engine's base tsconfig, which your `tsconfig.json` extends. This catches accidental name clashes. A scene with its own `paused` flag would really be setting the engine's `Scene.paused`, which stops the scene's updates, so TypeScript reports it unless you mark it `override`. Rename such members instead: `isPaused`. See [Troubleshooting](./troubleshooting#this-member-must-have-an-override-modifier).
 
 | Method | When it runs |
 | --- | --- |

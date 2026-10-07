@@ -5,7 +5,7 @@ export class BasicsTest extends Scene
     cog!: GameObject;
     checkedRotation = false;
 
-    OnStart(): void
+    override OnStart(): void
     {
         this.cog = this.AddGameObject({ name: "cog", texture: "NONE" })
             .SetPosition(bare.width * 0.5, bare.height * 0.5)
@@ -46,7 +46,7 @@ export class BasicsTest extends Scene
         );
     }
 
-    OnUpdate(): void
+    override OnUpdate(): void
     {
         this.cog.rotation++;
         // only the first update: later ones would fail it, racing the runner's check

@@ -6,12 +6,12 @@ export class FocusComponent extends Component
         this.go.alpha = focused ? 1 : 0.5;
     };
 
-    OnAdded()
+    override OnAdded()
     {
         bare.globalEvents.on(BareEvent.game_focusChange, this.onFocus);
     }
 
-    OnRemoved()
+    override OnRemoved()
     {
         bare.globalEvents.off(BareEvent.game_focusChange, this.onFocus);
     }

@@ -62,7 +62,7 @@ export class OutlineShader extends Shader
         });
     }
 
-    public Update(gameObject: GameObject): boolean
+    public override Update(gameObject: GameObject): boolean
     {
         if (!gameObject?.texture)
             return false;

@@ -13,6 +13,7 @@
     "types": ["node"],
     "skipLibCheck": true,
     "experimentalDecorators": true,
+    "noImplicitOverride": true,
     "allowImportingTsExtensions": true,
     "noEmit": true
   },

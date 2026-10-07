@@ -32,7 +32,7 @@ export class SettingsEditingTest extends Scene
         super(settingsData());
     }
 
-    async OnStart()
+    override async OnStart()
     {
         const c = this.checks;
         const json = (value: any) => JSON.stringify(value);

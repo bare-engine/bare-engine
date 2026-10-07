@@ -27,20 +27,20 @@ export class AnimationsAdvancedTest extends Scene
         } as any);
     }
 
-    OnAwake(): void
+    override OnAwake(): void
     {
         for (const [name, size] of [["animF1", 10], ["animF2", 20], ["animF3", 30], ["animDir/frame", 40]] as const)
             bare.asset.AddTexture(name, new RenderTexture(rapid, { width: size, height: size }) as any);
     }
 
-    OnClear(): void
+    override OnClear(): void
     {
         for (const name of ["animF1", "animF2", "animF3", "animDir/frame"])
             bare.asset.RemoveTexture(name);
     }
 
     // everything is stepped by hand with OnUpdate(seconds), inside OnStart where the engine doesn't update objects yet
-    async OnStart()
+    override async OnStart()
     {
         const c = this.checks;
         const step = (anim: AnimationComponent, times: number) => { for (let i = 0; i < times; i++) anim.OnUpdate(0.1); };

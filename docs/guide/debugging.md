@@ -13,7 +13,7 @@ In code, check `bare.debug`, for example to draw your own helpers:
 ```ts
 import { Color } from 'bare-engine';
 
-OnRender()
+override OnRender()
 {
     if (bare.debug)
         bare.drawCircle({

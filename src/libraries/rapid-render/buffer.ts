@@ -285,7 +285,7 @@ export class WebglBufferArray extends DynamicArrayBuffer {
     /**
      * Clears CPU side data usage and marks buffer as synced to stop needless updates.
      */
-    clear(): void {
+    override clear(): void {
         super.clear()
         this.dirty = false
     }

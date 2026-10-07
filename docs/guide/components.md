@@ -10,7 +10,7 @@ export class SpinComponent extends Component
     @SerializeField
     speed = 90;
 
-    OnUpdate(deltaTime: number)
+    override OnUpdate(deltaTime: number)
     {
         this.go.rotation += this.speed * deltaTime;
     }

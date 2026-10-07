@@ -60,7 +60,7 @@ export class ParticleComponent extends Component
         });
     }
 
-    OnAdded(go: GameObject): void
+    override OnAdded(go: GameObject): void
     {
         this.initEmitter();
         this.followGameObject(go);
@@ -77,13 +77,13 @@ export class ParticleComponent extends Component
         ParticleController.Emit(this.emitter);
     }
 
-    OnUpdate(deltaTime: number): void
+    override OnUpdate(deltaTime: number): void
     {
         this.followGameObject(this.go);
         ParticleController.UpdateEmitter(this.emitter, deltaTime);
     }
 
-    OnPostRender(): void
+    override OnPostRender(): void
     {
         // NOTHING TO DRAW WHILE THE TEXTURE IS STILL LOADING
         if (!ParticleController.IsReady(this.emitter))
@@ -92,7 +92,7 @@ export class ParticleComponent extends Component
         ParticleController.RenderEmitter(this.emitter);
     }
 
-    OnRemoved()
+    override OnRemoved()
     {
         this.emitter.stop();
         bare.particle.Remove(this.emitter);

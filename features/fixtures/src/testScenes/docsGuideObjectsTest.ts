@@ -8,7 +8,7 @@ export class SpinDocComponent extends Component
     @SerializeField
     speed = 90;
 
-    OnUpdate(deltaTime: number)
+    override OnUpdate(deltaTime: number)
     {
         this.go.rotation += this.speed * deltaTime;
     }
@@ -18,7 +18,7 @@ export class HitDocComponent extends Component
 {
     hits: number[] = [];
 
-    OnHit(damage: number)
+    override OnHit(damage: number)
     {
         this.hits.push(damage);
     }
@@ -36,12 +36,12 @@ export class LifecycleDocComponent extends Component
 {
     calls: string[] = [];
 
-    OnAwake() { this.calls.push("awake"); }
-    OnAdded() { this.calls.push("added"); }
-    OnStart() { this.calls.push("start"); }
-    OnDisable() { this.calls.push("disable"); }
-    OnEnable() { this.calls.push("enable"); }
-    OnRemoved() { this.calls.push("removed"); }
+    override OnAwake() { this.calls.push("awake"); }
+    override OnAdded() { this.calls.push("added"); }
+    override OnStart() { this.calls.push("start"); }
+    override OnDisable() { this.calls.push("disable"); }
+    override OnEnable() { this.calls.push("enable"); }
+    override OnRemoved() { this.calls.push("removed"); }
 }
 
 export interface DocEnemyEntity extends Entity
@@ -56,7 +56,7 @@ export class DocEnemy extends GameObject
     @SerializeField
     health = 3;
 
-    OnAwake()
+    override OnAwake()
     {
         this.health = 3;
     }
@@ -73,8 +73,8 @@ class PayloadScene extends Scene
     awakePayload: any;
     startPayload: any;
 
-    OnAwake(payload?: any) { this.awakePayload = payload; }
-    OnStart(payload?: any) { this.startPayload = payload; }
+    override OnAwake(payload?: any) { this.awakePayload = payload; }
+    override OnStart(payload?: any) { this.startPayload = payload; }
 }
 
 class OrderScene extends Scene
@@ -82,9 +82,9 @@ class OrderScene extends Scene
     order: string[] = [];
     restarts = 0;
 
-    OnAwake() { this.order.push("awake"); }
-    OnStart() { this.order.push("start"); }
-    async OnRestart() { this.restarts++; }
+    override OnAwake() { this.order.push("awake"); }
+    override OnStart() { this.order.push("start"); }
+    override async OnRestart() { this.restarts++; }
 }
 
 export class DocsGuideObjectsTest extends Scene
@@ -121,7 +121,7 @@ export class DocsGuideObjectsTest extends Scene
         });
     }
 
-    OnAwake(): void
+    override OnAwake(): void
     {
         bare.AddClass(DocEnemy);
         bare.AddClass(SpinDocComponent);
@@ -129,7 +129,7 @@ export class DocsGuideObjectsTest extends Scene
         bare.AddClass(LifecycleDocComponent);
     }
 
-    async OnStart()
+    override async OnStart()
     {
         const c = this.checks;
 
@@ -284,7 +284,7 @@ export class DocsGuideObjectsTest extends Scene
         this.startProbe = this.AddGameObject().AddComponent(LifecycleDocComponent);
     }
 
-    OnUpdate(): void
+    override OnUpdate(): void
     {
         if (!this.startProbe)
             return;

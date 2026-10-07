@@ -58,7 +58,7 @@ export class LevelSaveTest extends Scene
         } as any);
     }
 
-    OnAwake(): void
+    override OnAwake(): void
     {
         bare.AddClass(ComponentController);
         bare.AddClass(HealthSaveComponent);
@@ -71,7 +71,7 @@ export class LevelSaveTest extends Scene
         return Object.values(level.entitiesByLayer).flat().find((entity: any) => entity.name === name) ?? {};
     }
 
-    async OnStart()
+    override async OnStart()
     {
         const c = this.checks;
 

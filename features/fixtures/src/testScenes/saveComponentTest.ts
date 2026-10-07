@@ -2,12 +2,12 @@ import { Component, ComponentController, Scene, SerializeField } from "bare-engi
 
 export class SaveComponentTest extends Scene
 {
-    OnAwake(): void
+    override OnAwake(): void
     {
         bare.AddClass(ComponentController);
     }
 
-    OnStart(): void
+    override OnStart(): void
     {
         var obj = this.AddGameObject();
 

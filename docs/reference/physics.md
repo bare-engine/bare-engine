@@ -11,7 +11,7 @@ import { ArcadePhysicsController } from 'bare-engine/arcade';
 
 export class Game extends Scene
 {
-    OnAwake()
+    override OnAwake()
     {
         bare.AddClass(ArcadePhysicsController);
     }
@@ -77,7 +77,7 @@ Handle collisions in a [component](../guide/components):
 ```ts
 export class CoinComponent extends Component<ArcadeObject>
 {
-    OnCollisionStart(other: GameObject)
+    override OnCollisionStart(other: GameObject)
     {
         if (other.name == 'player')
             this.go.Remove();
@@ -133,7 +133,7 @@ import { SopiroPhysicsController } from 'bare-engine/sopiro';
 
 export class Game extends Scene
 {
-    OnAwake()
+    override OnAwake()
     {
         bare.AddClass(SopiroPhysicsController);
     }

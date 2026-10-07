@@ -71,7 +71,7 @@ class MainGame extends Scene
         super({ persistent: true });
     }
 
-    OnAwake(): void
+    override OnAwake(): void
     {
         bare.AddClass(Box);
         bare.AddClass(Circle);
@@ -87,7 +87,7 @@ class MainGame extends Scene
         };
     }
 
-    async OnStart(): Promise<void>
+    override async OnStart(): Promise<void>
     {
         await this.startTest(sceneName(this.tests[0]));
     }
