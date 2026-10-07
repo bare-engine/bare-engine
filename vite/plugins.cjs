@@ -1293,9 +1293,15 @@ const debugBareModuleFields = new Set([
 ]);
 
 function buildLinePreservingDebugSource(filePath, code, program) {
-    const sourceFile = ts.createSourceFile(filePath, code, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+    // the checker only knows the program's own nodes (a freshly parsed tree has no symbols,
+    // TS 6 throws on those), so use the program's source file when it holds this same code
+    const programSourceFile = program?.getSourceFile(filePath);
+    const useProgram = !!programSourceFile && programSourceFile.text === code;
+    const sourceFile = useProgram
+        ? programSourceFile
+        : ts.createSourceFile(filePath, code, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
     const ms = new MagicString(code);
-    const checker = program ? program.getTypeChecker() : null;
+    const checker = useProgram ? program.getTypeChecker() : null;
     let changed = false;
 
     function visit(node, classContext = null) {
