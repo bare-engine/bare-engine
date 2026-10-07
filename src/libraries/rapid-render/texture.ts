@@ -320,10 +320,10 @@ class Texture {
     protected _px: number = 0;
     protected _py: number = 0;
 
-    texturePath: string
-    sourceSize: { w: number, h: number }
-    spriteSourceSize: { x: number, y: number, w: number, h: number }
-    frame: { x: number, y: number, w: number, h: number }
+    texturePath!: string
+    sourceSize!: { w: number, h: number }
+    spriteSourceSize!: { x: number, y: number, w: number, h: number }
+    frame!: { x: number, y: number, w: number, h: number }
 
     constructor(base?: BaseTexture) {
         if (base) this.setBase(base);
