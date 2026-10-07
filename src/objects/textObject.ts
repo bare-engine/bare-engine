@@ -53,11 +53,11 @@ export class TextObject extends GameObject
     get strokeThickness(): number {return this.textTexture.style.strokeThickness ?? 0;}
     set strokeThickness(value: number) {this.textTexture.style.strokeThickness = value; this.UpdateText();}
     
-    override get specialMap(): Record<string, (obj: TextObject, value: any) => void>
+    override get specialMap(): Record<string, (obj: GameObject, value: any) => void>
     {
         return {
             ...super.specialMap,
-            color: (o, v) => { o.textTexture.style.fill = v; o.UpdateText();}
+            color: (o, v) => { const text = o as TextObject; text.textTexture.style.fill = v; text.UpdateText();}
         };
     }
 

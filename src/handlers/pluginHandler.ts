@@ -315,7 +315,7 @@ const gameDebugApi = {
     window.postMessage({ __fromGame: true, type: "selectObject", id: primaryId, openObjectsTab, parentIds, selectedIds: uids }, "*");
   },
 
-  selectPrefabObjectInPlugin(data) {
+  selectPrefabObjectInPlugin(data: any) {
     window.postMessage({ __fromGame: true, type: "selectPrefabObject", data }, "*");
   },
 
@@ -563,7 +563,7 @@ const gameDebugApi = {
     var entity = plugin.ResolveEntityChildPath(SettingsHandler.FindPrefab(raw, name)!, childPath);
 
     for (var key of extraKeys)
-        delete entity[key];
+        delete (entity as any)[key];
 
     await plugin.SaveSettingsData(raw);
   },
@@ -725,7 +725,7 @@ const gameDebugApi = {
         var { changedFields, origEntity } = getChangedFields(o);
         data.__changedFields = changedFields;
 
-        var defaultValues = {};
+        var defaultValues: Record<string, any> = {};
         for (var field in changedFields)
         {
             defaultValues[field] = origEntity[field];
@@ -735,7 +735,7 @@ const gameDebugApi = {
 
     return data;
 
-    var serializeChildren = (children: GameObject[]) => {
+    var serializeChildren = (children: GameObject[]): Record<string, any>[] => {
         return children.map(c => serializeGameObject(c));
     }
 
@@ -745,9 +745,9 @@ const gameDebugApi = {
     texture?: string;
     hitbox?: any; //Rectangle2Vec | String;*/
 
-    var serializeGameObject = (o: GameObject) => {
+    var serializeGameObject = (o: GameObject): Record<string, any> => {
         // VALUES
-        var data = {
+        var data: Record<string, any> = {
             id: o.uniqueID,
             name: o.name || "noName",
             customName: o.name,
@@ -831,7 +831,7 @@ const gameDebugApi = {
     for (var index of childPath)
     {
         entity = entity?.children?.[index];
-        liveObj = liveObj?.children?.filter(child => child.save)[index];
+        liveObj = liveObj?.children?.filter((child: GameObject) => child.save)[index];
     }
     if (!entity)
         return [];
@@ -964,7 +964,7 @@ const gameDebugApi = {
             childPath
         );
 
-        delete entity[field];
+        delete (entity as any)[field];
 
         await prefabScene.settingsHandler.Process();
 
@@ -1147,7 +1147,7 @@ const gameDebugApi = {
                 if (await applyInspectorField(obj, prop, value))
                     continue;
 
-                obj[prop] = value;
+                (obj as any)[prop] = value;
             }
 
             return;
@@ -1192,7 +1192,7 @@ const gameDebugApi = {
         {
             for (var key in props)
             {
-                delete entityCopy[key];
+                delete (entityCopy as any)[key];
             }
 
             // DELETE ANY PROPS FROM ENTITY THAT HAVE SAME VALUE AS DEFAULT, THEY'RE NOT NEEDED
@@ -1207,7 +1207,7 @@ const gameDebugApi = {
                     var val = props[key];
                     var defaultVal = entityWithDefaultValues[key];
                     if (Helper.ObjectsAreEqual(val, defaultVal))
-                        delete entity[key];
+                        delete (entity as any)[key];
                 }
             }
         }
@@ -1305,12 +1305,12 @@ const gameDebugApi = {
             const isXY = value && typeof value === "object" && ("x" in value || "y" in value);
             if (isXY)
             {
-                if ("x" in value) o[prop].x = value.x;
-                if ("y" in value) o[prop].y = value.y;
+                if ("x" in value) (o as any)[prop].x = value.x;
+                if ("y" in value) (o as any)[prop].y = value.y;
                 continue;
             }
 
-            o[prop] = value;
+            (o as any)[prop] = value;
         }
 
         // PIVOT / HITBOX - LIKE A specialMap ENTRY, BUT ALSO RE-APPLY WHEN GIVEN AS A PERCENTAGE
@@ -1589,7 +1589,7 @@ const gameDebugApi = {
             skipReload: true
         })
         });
-        const json = await res.json().catch(() => null);
+        const json = await res.json().catch((): null => null);
     
         // TELL THE PLUGIN
         //window.__GAME_DEBUG_API__.notifyPrefabChanged(newRawData)
@@ -1633,7 +1633,7 @@ const gameDebugApi = {
     window.postMessage({ __fromGame: true, type: "prefabData", data: { ...data, prefab } }, "*");
   },
 
-  notifyPrefabTransformPreview(data) {
+  notifyPrefabTransformPreview(data: any) {
     window.postMessage({ __fromGame: true, type: "prefabTransformPreview", data }, "*");
   },
 
@@ -1678,7 +1678,7 @@ const gameDebugApi = {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, attach })
         });
-        const json = await res.json().catch(() => null);
+        const json = await res.json().catch((): null => null);
 
         // THE VITE DEV SERVER WRITES THE COMPONENT FILE TO src/components/ AND THE
         // bare:auto-register-classes PLUGIN PICKS IT UP, INJECTS bare.AddClass(...)
@@ -1703,7 +1703,7 @@ const gameDebugApi = {
               skipReload: true
           })
         });
-        const json = await res.json().catch(() => null);
+        const json = await res.json().catch((): null => null);
 
         // GO TO THE LEVEL EDITOR
         // by name once the file exists, opening with the data object leaves the editor without a
@@ -1727,7 +1727,7 @@ const gameDebugApi = {
               skipReload: true
           })
         });
-        const json = await res.json().catch(() => null);
+        const json = await res.json().catch((): null => null);
 
         if (SaveData.currentLevelStr == levelName)
         {
@@ -2502,7 +2502,7 @@ export class PluginHandler
                         sourceChild.entityUID ??= SettingsHandler.GenerateRuntimeUID();
                         settingsHandler.rawEntitiesMappedByUID[sourceChild.entityUID] = sourceChild;
 
-                        var existingRef = entity.children.find(child => child.extends === sourceChild.entityUID);
+                        var existingRef = entity.children.find((child: Entity) => child.extends === sourceChild.entityUID);
                         if (existingRef)
                         {
                             levelRefs.push(existingRef);
@@ -2524,7 +2524,7 @@ export class PluginHandler
                 }
 
                 // raw child order has to match the runtime order, childPath indexes both
-                const ownChildren = entity.children.filter(child => !orderedSourceRefs.includes(child));
+                const ownChildren = entity.children.filter((child: Entity) => !orderedSourceRefs.includes(child));
                 entity.children = [...orderedSourceRefs, ...ownChildren];
 
                 // STORE UNCONSTRUCTED ENTITIES IN rawEntitiesMappedByUID, SO GetEntityFromObject() CAN USE THEM FOR SERIALIZATION
@@ -2603,7 +2603,7 @@ export class PluginHandler
             {
                 var baseEnt = getRawPrefab(extendOrder[b]);
                 if (baseEnt && Object.prototype.hasOwnProperty.call(baseEnt, prop))
-                    return { found: true, value: baseEnt[prop] };
+                    return { found: true, value: (baseEnt as any)[prop] };
             }
             return { found: false };
         };
@@ -2632,7 +2632,7 @@ export class PluginHandler
                     // value it's redundant, so skip it entirely (neither own nor overridden) - the base
                     // that declares it will claim it below and it renders as a normal inherited field
                     // (no blue label / revert button).
-                    if (valuesEqual(entity[ownProp], inherited.value))
+                    if (valuesEqual((entity as any)[ownProp], inherited.value))
                         continue;
 
                     overriddenFields.push(ownProp);
@@ -2678,7 +2678,7 @@ export class PluginHandler
                 var sourceEntity = sourceName == entityName
                     ? entity
                     : getRawPrefab(sourceName);
-                var sourceComponents = sourceEntity?.[componentType];
+                var sourceComponents = (sourceEntity as any)?.[componentType];
                 if (!sourceComponents) continue;
 
                 for (var componentName in sourceComponents)
@@ -2695,7 +2695,7 @@ export class PluginHandler
         // this entity alive: { maxHealth: 15 }). plugin shows these blue with a revert (R) button
         // that deletes the prop off this entity's component - see removeComponentPropFromPrefab
         var overriddenComponentProps: Record<string, string[]> = {};
-        for (var [ownCompName, ownComp] of Object.entries(entity.components ?? {}))
+        for (var [ownCompName, ownComp] of Object.entries<any>(entity.components ?? {}))
         {
             // a string component is a preset reference, not authored props
             if (!ownComp || typeof ownComp !== "object")
@@ -2735,7 +2735,7 @@ export class PluginHandler
                 if (propRawBase && Object.prototype.hasOwnProperty.call(propRawBase, removedProp))
                 {
                     propSource = propSrc;
-                    propValue = getProcessedPrefab(propSrc)?.[removedProp] ?? propRawBase[removedProp];
+                    propValue = (getProcessedPrefab(propSrc) as any)?.[removedProp] ?? (propRawBase as any)[removedProp];
                     break;
                 }
             }
@@ -2743,12 +2743,12 @@ export class PluginHandler
             if (!propSource && extendOrder.length > 1)
             {
                 propSource = extendOrder[1];
-                propValue = getProcessedPrefab(propSource)?.[removedProp];
+                propValue = (getProcessedPrefab(propSource) as any)?.[removedProp];
             }
             if (!propSource)
                 continue;
 
-            newEntity[removedProp] = propValue ?? null;
+            (newEntity as any)[removedProp] = propValue ?? null;
             newEntity.extendsLog[propSource] ??= [];
             if (!newEntity.extendsLog[propSource].includes(removedProp))
                 newEntity.extendsLog[propSource].push(removedProp);

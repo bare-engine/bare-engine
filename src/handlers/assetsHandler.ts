@@ -108,11 +108,10 @@ class AssetsHandler
 
     async LoadAtlas(atlasPath: string): Promise<void>
     {
-        var promises = [];
-        promises.push(Helper.loadJSON<Atlas>(`${bare.imagePath}/${atlasPath}.json`));
-        promises.push(bare.texture.load(`${bare.imagePath}/${atlasPath}.webp`)); // DON'T HARDCODE WEBP, TODO
-
-        const [json, img] = await Promise.all(promises);
+        const [json, img] = await Promise.all([
+            Helper.loadJSON<Atlas>(`${bare.imagePath}/${atlasPath}.json`),
+            bare.texture.load(`${bare.imagePath}/${atlasPath}.webp`) // DON'T HARDCODE WEBP, TODO
+        ]);
 
         assetsHandler.ProcessAtlas(json, img);
     }

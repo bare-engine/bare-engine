@@ -1,4 +1,4 @@
-import { Helper, LevelData, Scene, SettingsData, SettingsHandler } from "bare-engine";
+import { Entity, Helper, LevelData, Scene, SettingsData, SettingsHandler } from "bare-engine";
 import { Checks } from "./checks";
 
 // covers the prefab editing the editor and plugin do on settingsData: find, set, remove and rename prefabs,
@@ -90,7 +90,7 @@ export class SettingsEditingTest extends Scene
         c.check(this.AddGameObject("kingSlime").rotation === 20, "a prefab change should reach prefabs extending it after reprocessing");
 
         // a settings child gets a runtime uid, so level objects can reference it; it's only kept when referenced
-        const twig = this.settingsHandler.GetRawPrefab("nest").children!.find(child => child.name === "twig")!;
+        const twig = this.settingsHandler.GetRawPrefab("nest").children!.find((child: Entity) => child.name === "twig")!;
         const twigUID = twig.entityUID!;
         c.check(!!twigUID && this.settingsHandler.IsRuntimeGeneratedUID(twigUID), "a settings child should get a runtime uid: " + twigUID);
         c.check(this.settingsHandler.GetRawEntitiesMappedByUID()[twigUID] === twig, "a settings child should be findable by its uid");
@@ -124,7 +124,7 @@ export class SettingsEditingTest extends Scene
             SettingsHandler.RemovePrefab(raw, "bigPebble");
             SettingsHandler.RemovePrefab(raw, "pebble");
         });
-        const nestChildren = this.settingsHandler.GetRawPrefab("nest").children?.map(child => child.name) ?? [];
+        const nestChildren = this.settingsHandler.GetRawPrefab("nest").children?.map((child: Entity) => child.name) ?? [];
         c.check(json(nestChildren) === json(["egg", "twig"]), "a child extending a removed prefab should be removed: " + json(nestChildren));
         const dangling = this.settingsHandler.RemoveDanglingReferences([
             { name: "keep", extends: "nest" },
@@ -133,7 +133,7 @@ export class SettingsEditingTest extends Scene
             { name: "drop", extends: "pebble" },
             { name: "parent", children: [{ name: "dropChild", extends: "pebble" }, { name: "keepChild" }] },
         ] as any);
-        c.check(json(dangling.map(entity => entity.name)) === json(["keep", "keepUID", "keepCategoryEntry", "parent"]) && json(dangling[3].children!.map(child => child.name)) === json(["keepChild"]),
+        c.check(json(dangling.map(entity => entity.name)) === json(["keep", "keepUID", "keepCategoryEntry", "parent"]) && json(dangling[3].children!.map((child: Entity) => child.name)) === json(["keepChild"]),
             "RemoveDanglingReferences should drop entities, and children, extending a missing prefab: " + json(dangling));
 
         // what's filtered out before saving the settings data

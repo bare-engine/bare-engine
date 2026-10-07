@@ -1,5 +1,6 @@
 import mitt, { type Emitter } from './libraries/mitt';
 import type { BareEngine } from './bareEngine';
+import type { PluginHandler } from './handlers/pluginHandler';
 import type { Rapid } from './libraries/rapid-render';
 import type { Scene } from './scenes/scene';
 import type { Entity, Events } from './types/bareTypes';
@@ -27,13 +28,15 @@ declare global
 
     var bScene: Scene; // bare.scene... -> this.scene
 
+    var plugin: PluginHandler | undefined; // dev only, set by pluginHandler
+
     var initialAssetsReady:Function;
     var initialAssets:Record<string, any>;
     
     var destroyTextFunc:Function | null;
 
     function trace(message: any, ...optionalParams: any[]): void;
-    function assert(condition: boolean, message?: string): void;
+    function assert(condition: unknown, message?: string): void;
 
     function wait(seconds: number, persistent?: boolean): Promise<void>;
     function waitFrame(frames?: number, persistent?: boolean): Promise<void>;
@@ -47,7 +50,7 @@ window.trace = (message: any, ...optionalParams: any[]): void => {
     console.log(message, ...optionalParams);
 };
 
-window.assert = (condition: boolean, message?: string): void => {
+window.assert = (condition: unknown, message?: string): void => {
     if (!condition)
         throw new Error(message);
 };

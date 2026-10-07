@@ -213,7 +213,7 @@ export class BareEngine
         if (debugKeyActions.size == 0)
             return;
 
-        var debugKeysHandler = ({ key, allKeys }) => {
+        var debugKeysHandler = ({ key, allKeys }: { key: string; allKeys: string[] }) => {
             if (allKeys.length > 1)
                 return; // MORE THAN ONE KEY PRESSED, EG: CTRL-C
 
@@ -608,7 +608,7 @@ export class BareEngine
 
         // CONTROLLERS
         var classNameFirstLowercase = className.charAt(0).toLowerCase() + className.slice(1);
-        if (globalThis[classNameFirstLowercase])
+        if ((globalThis as any)[classNameFirstLowercase])
         {
             return;
         }

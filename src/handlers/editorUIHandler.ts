@@ -645,8 +645,8 @@ export class EditorUIHandler {
 
         if (layerIndex !== -1)
         {
-            const layerInfo = this.scene.settingsData.layersInfo[layerName];
-           layerInfo[layerIndex] = { ...layerInfo[layerIndex], showInEditor: show };
+            const layersInfo = this.scene.settingsData.layersInfo;
+            layersInfo[layerName] = { ...layersInfo[layerName], showInEditor: show };
         }
     }
 

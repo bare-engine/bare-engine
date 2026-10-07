@@ -182,8 +182,8 @@ export class Scene implements SceneI
                 continue;
 
             Object.defineProperty(Scene.prototype, name, {
-                get(this: Scene) { return this["_" + name] ?? this.CreateController(name); },
-                set(this: Scene, value: any) { this["_" + name] = value; },
+                get(this: Scene) { return (this as any)["_" + name] ?? this.CreateController(name); },
+                set(this: Scene, value: any) { (this as any)["_" + name] = value; },
                 configurable: true,
             });
         }
@@ -200,7 +200,7 @@ export class Scene implements SceneI
             return undefined;
 
         const instance = new Ctor(this);
-        this["_" + propertyName] = instance; // SET BEFORE Awake/Start SO RE-ENTRANT ACCESS DOESN'T DOUBLE-CREATE
+        (this as any)["_" + propertyName] = instance; // SET BEFORE Awake/Start SO RE-ENTRANT ACCESS DOESN'T DOUBLE-CREATE
 
         if (this.controllersAwoken)
             instance.Awake?.();
@@ -222,7 +222,7 @@ export class Scene implements SceneI
             if (name == exclude)
                 continue;
 
-            var instance = this["_" + name];
+            var instance = (this as any)["_" + name];
             if (instance)
                 instances.push(instance);
         }
@@ -592,11 +592,11 @@ export class Scene implements SceneI
         // REMOVE ANY FIELDS THAT HAVE A DEFAULT VALUE
         for (var field in finalEntity)
         {
-            var defaultValueField = this.defaultGameObject[field];
-            var currentValueField = finalEntity[field];
+            var defaultValueField = (this.defaultGameObject as any)[field];
+            var currentValueField = (finalEntity as any)[field];
 
             if (Helper.ObjectsAreEqual(defaultValueField, currentValueField))
-                delete finalEntity[field];
+                delete (finalEntity as any)[field];
         }
 
         // ROUND POSITION
@@ -849,7 +849,7 @@ export class Scene implements SceneI
             if (key == "components" && !addComponents)
                 continue;
 
-            const value = entity[key];
+            const value = (entity as any)[key];
             if (value === undefined) continue;
 
             // if special mapping exists — use it (takes priority; the field need not exist on obj, eg hitbox)
@@ -869,7 +869,7 @@ export class Scene implements SceneI
             // SO THAT METADATA IS EMPTY THERE AND EG TextObject.text WOULD NEVER CALL SetText.
             // accessor-based @InspectorFields (e.g. `set alpha()`) fall through to the normal
             // assignment below, which invokes that accessor.
-            const descriptor = obj[key];
+            const descriptor = (obj as any)[key];
             if (isInspectorDescriptor(descriptor)
                 && (typeof descriptor.set === "function" || typeof descriptor.onChange === "function"))
             {
@@ -883,16 +883,16 @@ export class Scene implements SceneI
             if (isXY)
             {
                 if ("x" in value)
-                    obj[key].x = value.x;
+                    (obj as any)[key].x = value.x;
 
                 if ("y" in value)
-                    obj[key].y = value.y;
+                    (obj as any)[key].y = value.y;
 
                 continue;
             }
 
             // generic direct assignment
-            obj[key] = value;
+            (obj as any)[key] = value;
         }
     }
 
@@ -934,7 +934,7 @@ export class Scene implements SceneI
         }
 
         // 
-        var customSerialize:Record<string, (currentValue) => any> = {};
+        var customSerialize:Record<string, (currentValue: any) => any> = {};
     
         customSerialize["texture"] = (currentValue:Texture) => { return currentValue.texturePath; };
 
@@ -980,7 +980,7 @@ export class Scene implements SceneI
             else
                 serializedValue = GameObjectSerializer.SerializeValue(gameObject, key);
 
-            entityConstructed[varName] = serializedValue;
+            (entityConstructed as any)[varName] = serializedValue;
         }
 
         if (!entityConstructed.hitbox)
@@ -1596,12 +1596,12 @@ to package.json to keep the generated assets (can become large for big projects)
 
     Get(instanceName: string):any
     {
-        return this[instanceName];
+        return (this as any)[instanceName];
     }
 
     Has(instanceName: string): boolean
     {
-        return !!this["_" + instanceName];
+        return !!(this as any)["_" + instanceName];
     }
 
     async Restart(full:boolean = false)

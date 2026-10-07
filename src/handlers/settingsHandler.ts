@@ -818,7 +818,7 @@ export class SettingsHandler
                 // IGNORE componentsRemoved, childrenRemoved AND propertiesRemoved? TODO
 
                 if (!(key in entity))
-                    entity[key] = extendedPrefab[key];
+                    (entity as any)[key] = (extendedPrefab as any)[key];
             }
 
             var components = this.scene.MergeComponents(extendedPrefab.components, entity.components);
@@ -900,7 +900,7 @@ export class SettingsHandler
         {
             for (const propertyName of entity.propertiesRemoved)
             {
-                delete entity[propertyName];
+                delete (entity as any)[propertyName];
             }
         }
 
@@ -964,7 +964,7 @@ export class SettingsHandler
                 const preset = presets[value];
                 if (preset !== undefined)
                 {
-                    var fillFieldWithPreset = (presetValue) =>
+                    var fillFieldWithPreset = (presetValue: any) =>
                     {
                         record[propName] = presetValue;
                         presetProcessCallback?.(record, propName, value);

@@ -7,7 +7,7 @@ import { Helper } from "../utils/helper";
 import { RegisterController } from "../globals";
 import { InspectorField } from "../utils/decorators";
 
-type AnyPress = (go: any, ...args: any[]) => any;
+export type AnyPress = (go: any, ...args: any[]) => any;
 
 type Handler<Arg extends GameObject = GameObject> = (go?: Arg | null, ...args: any[]) => any;
 

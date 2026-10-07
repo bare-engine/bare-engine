@@ -1,4 +1,5 @@
 import type { Component } from "../controllers/componentController";
+import type { AnyPress } from "../controllers/hitboxController";
 import { GameMode } from "../globals";
 import { assetsHandler } from "../handlers/assetsHandler";
 import mitt from "../libraries/mitt";
@@ -252,7 +253,7 @@ export class GameObject
         }
     }
 
-    OnPointerDown(callback = null): Hitbox
+    OnPointerDown(callback: AnyPress = null): Hitbox
     {
         if (this.scene)
         {
@@ -262,7 +263,7 @@ export class GameObject
         return null;
     }
 
-    OnPointerUp(callback = null)
+    OnPointerUp(callback: AnyPress = null)
     {
         if (this.scene)
         {
@@ -270,7 +271,7 @@ export class GameObject
         }
     }
 
-    OnPointerEnter(callback = null)
+    OnPointerEnter(callback: AnyPress = null)
     {
         if (this.scene)
         {
@@ -278,7 +279,7 @@ export class GameObject
         }
     }
 
-    OnPointerLeave(callback = null)
+    OnPointerLeave(callback: AnyPress = null)
     {
         if (this.scene)
         {

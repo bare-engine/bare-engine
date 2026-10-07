@@ -102,7 +102,7 @@ export class GameObjectSerializer
                 : GameObjectSerializer.SerializeValue(obj, key);
 
             if (serializedValue != null) // PREVENTS ADDING EMPTY CHILDREN OF COMPONENTS
-                entity[varName] = serializedValue;
+                (entity as any)[varName] = serializedValue;
         }
 
         delete entity.save;

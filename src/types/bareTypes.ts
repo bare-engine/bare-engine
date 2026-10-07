@@ -5,6 +5,7 @@ import type { ButtonEntity } from "../objects/button";
 import type { TextObjectEntity } from "../objects/textObject";
 import type { CircleEntity } from "../libraries/sopiro/circle";
 import type { PolygonEntity } from "../libraries/sopiro/polygon";
+import type { RigidBody } from "../libraries/sopiro/rigidbody";
 import type { Component } from "../controllers/componentController";
 import { CanvasScaleMode, Color, CustomGlShader, TextureFilterMode, UniformValue } from "../libraries/rapid-render";
 
@@ -159,6 +160,8 @@ export interface Entity
 
     extendsLog?: Record<string, any>;
     __extendsOptions?: Array<{ value: string, label: string, source?: string }>;
+    __lockedFields__?: string[];
+    __defaultFieldsToIgnore__?: string[];
     constructed ?: boolean;
     entityUID?: string;
 }
@@ -345,18 +348,18 @@ const ev = <T>() => undefined as T | undefined;
 
 const eventDefs = {
     // GLOBAL
-    game_awake: undefined,
-    game_started: undefined,
+    game_awake: ev<undefined>(),
+    game_started: ev<undefined>(),
     game_restart: ev<{ full: boolean }>(),
     game_preUpdate: ev<{ deltaTime: number }>(),
     game_update: ev<{ deltaTime: number }>(),
-    game_preRender: undefined,
-    game_postRender: undefined,
+    game_preRender: ev<undefined>(),
+    game_postRender: ev<undefined>(),
     game_objectAdded: ev<{ gameObject: GameObject; layer: int | string | GameObject }>(),
     game_objectRemoved: ev<GameObject>(),
     game_focusChange: ev<boolean>(),
     game_pauseToggled: ev<boolean>(),
-    game_completeClear: undefined,
+    game_completeClear: ev<undefined>(),
     game_resize: ev<{ prevWidth: number; prevHeight: number; newWidth: number; newHeight: number }>(),
 
     scene_awake: ev<{ scene: Scene; }>(),
@@ -369,7 +372,7 @@ const eventDefs = {
     level_loaded: ev<{ levelStr: string; level: LevelData }>(),
     level_preSave: ev<{ levelStr: string }>(),
     level_postSave: ev<{ levelStr: string; level: LevelData }>(),
-    level_restart: undefined,
+    level_restart: ev<undefined>(),
 
     pointer_down: ev<{ mouseX: number; mouseY: number; event: PointerEvent }>(),
     pointer_down_any: ev<{ mouseX: number; mouseY: number; event: PointerEvent; isLeftButton: boolean }>(),
@@ -382,7 +385,7 @@ const eventDefs = {
     key_down: ev<{ key: string; allKeys: Array<string> }>(),
     key_released: ev<{ key: string; allKeys: Array<string> }>(),
 
-    physics_refreshBody: ev<GameObject>(),
+    physics_refreshBody: ev<RigidBody>(),
 
     // MOVE TO EDITOR, PROBABLY MAKE EVENTS STRINGS - TODO?
     editor_layerSelected: ev<{ layerName: string }>(),

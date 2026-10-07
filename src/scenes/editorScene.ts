@@ -566,7 +566,7 @@ export class EditorScene extends Scene
                 onlyIfExists: true
             })
           });
-          const json = await res.json().catch(() => null);
+          const json = await res.json().catch((): null => null);
 
           return { ok: res.ok, saved: res.ok && json?.saved !== false, response: json };
         } catch (error: any) {
