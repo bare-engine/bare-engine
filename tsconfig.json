@@ -1,17 +1,17 @@
 {
   "compilerOptions": {
+    "strict": false,
     "strictPropertyInitialization": false,
      "strictNullChecks": false,
      
     "target": "ES2020",
     "module": "ESNext",
     "outDir": "./dist/",
-    "moduleResolution": "Node",
-    "baseUrl": ".",
+    "moduleResolution": "bundler",
     "paths": {
-      "bare-engine": ["src/index.ts"],
-      "bare-engine/arcade": ["src/arcade.ts"],
-      "bare-engine/sopiro": ["src/sopiro.ts"]
+      "bare-engine": ["./src/index.ts"],
+      "bare-engine/arcade": ["./src/arcade.ts"],
+      "bare-engine/sopiro": ["./src/sopiro.ts"]
     },
     "lib": ["ES2020", "DOM"],
     "types": ["node"],
