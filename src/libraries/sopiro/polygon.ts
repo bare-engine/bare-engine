@@ -19,8 +19,8 @@ export class Polygon extends RigidBody
 {
     declare entity: PolygonEntity | null;
 
-    public vertices: Vec2[];
-    public area: number;
+    public vertices!: Vec2[];
+    public area!: number;
 
     constructor(scene: Scene, vertices: Vec2[], type: Type = Type.Dynamic, resetPosition: boolean = true, density: number = Settings.defaultDensity)
     {

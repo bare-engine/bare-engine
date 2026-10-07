@@ -16,7 +16,7 @@ import { Color, RenderTexture, Texture, Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { Bare } from "../types/bare";
 import { defaultSettingsData } from "../types/bareData";
-import { AnyEntity, AwakePayload, BareEvent, CollisionHandlingType, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LayerInfo, LevelData, SaveData, SceneClass, SceneI, SceneOptions, sceneOptionKeys, SettingsData } from "../types/bareTypes";
+import { AnyEntity, AwakePayload, BareEvent, CollisionHandlingType, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LayerInfo, LevelData, ProcessedSettingsData, SaveData, SceneClass, SceneI, SceneOptions, sceneOptionKeys, SettingsData } from "../types/bareTypes";
 import { InspectorClass, InspectorField, Label } from "../utils/decorators";
 import { GameObjectSerializer } from "../utils/entitySerializer";
 import { Helper } from "../utils/helper";
@@ -34,7 +34,7 @@ export class Scene implements SceneI
     @InspectorField public resize: boolean = false;
 
     public solo: boolean = false;
-    defaultGameObject: GameObject;
+    defaultGameObject!: GameObject;
    
     @InspectorField
     get _solo(): boolean { return this.solo; }
@@ -60,52 +60,52 @@ export class Scene implements SceneI
     // GETS THE CONTROLLERS IT ACTUALLY TOUCHES - AND UNUSED CONTROLLER MODULES STAY TREE-SHAKEN.
     // ENGINE PLUMBING (Update/Render/LIFECYCLE LOOPS) READS THE _ BACKING FIELDS SO IT NEVER
     // TRIGGERS CREATION; USER-FACING ACCESS GOES THROUGH THE GETTERS AND CREATES ON DEMAND
-    public _object: ObjectController;
+    public _object?: ObjectController;
     @InspectorClass
     get object(): ObjectController { return this._object ?? this.CreateController("object"); }
     set object(value: ObjectController) { this._object = value; }
 
-    private _mouse: MouseController;
+    private _mouse?: MouseController;
     @InspectorClass
     get mouse(): MouseController { return this._mouse ?? this.CreateController("mouse"); }
     set mouse(value: MouseController) { this._mouse = value; }
 
-    private _hitbox: HitboxController;
+    private _hitbox?: HitboxController;
     @InspectorClass
     get hitbox(): HitboxController { return this._hitbox ?? this.CreateController("hitbox"); }
     set hitbox(value: HitboxController) { this._hitbox = value; }
 
-    private _tween: TweenController;
+    private _tween?: TweenController;
     @InspectorClass
     get tween(): TweenController { return this._tween ?? this.CreateController("tween"); }
     set tween(value: TweenController) { this._tween = value; }
 
-    private _component: ComponentController;
+    private _component?: ComponentController;
     @InspectorClass
     get component(): ComponentController { return this._component ?? this.CreateController("component"); }
     set component(value: ComponentController) { this._component = value; }
 
-    private _arcade: ArcadePhysicsController;
+    private _arcade?: ArcadePhysicsController;
     @InspectorClass
     get arcade(): ArcadePhysicsController { return this._arcade ?? this.CreateController("arcade"); }
     set arcade(value: ArcadePhysicsController) { this._arcade = value; }
 
-    private _sopiro: SopiroPhysicsController;
+    private _sopiro?: SopiroPhysicsController;
     @InspectorClass
     get sopiro(): SopiroPhysicsController { return this._sopiro ?? this.CreateController("sopiro"); }
     set sopiro(value: SopiroPhysicsController) { this._sopiro = value; }
 
-    private _particle: ParticleController;
+    private _particle?: ParticleController;
     @InspectorClass
     get particle(): ParticleController { return this._particle ?? this.CreateController("particle"); }
     set particle(value: ParticleController) { this._particle = value; }
 
-    private _level: LevelHandler;
+    private _level?: LevelHandler;
     @InspectorClass
     get level(): LevelHandler { return this._level ?? this.CreateController("level"); }
     set level(value: LevelHandler) { this._level = value; }
 
-    private _camera: CameraHandler;
+    private _camera?: CameraHandler;
     @InspectorClass
     get camera(): CameraHandler { return this._camera ?? this.CreateController("camera"); }
     set camera(value: CameraHandler) { this._camera = value; }
@@ -119,7 +119,7 @@ export class Scene implements SceneI
     @Label("settings")
     public settingsHandler: SettingsHandler = new SettingsHandler(this);
     
-    get settingsData(): SettingsData { return this.settingsHandler.Get(); } // PROCESSED SETTINGSDATA
+    get settingsData(): ProcessedSettingsData { return this.settingsHandler.Get(); } // PROCESSED SETTINGSDATA
     get settings() { return this.settingsData.settings; } // CONSISTENT WITH OTHER BARE MODULE NAMINGS
 
     sceneOptionsSettingsData: SettingsData;
@@ -409,7 +409,7 @@ export class Scene implements SceneI
 
     // MERGES sourceChildren + currentChildren
     // A currentChild THAT LINKS .extends TO A sourceChild .entityUID REPLACES IT IN PLACE
-    MergeChildren(sourceChildren?: Entity[], currentChildren?: Entity[]): Entity[]
+    MergeChildren(sourceChildren: Entity[] = [], currentChildren?: Entity[]): Entity[]
     {
         var possibleEntityChildren = [];
         var toStripEntityUID = [];
@@ -628,7 +628,7 @@ export class Scene implements SceneI
         if (options.propsToIgnoreInEntity === undefined)
             options.propsToIgnoreInEntity = [];
 
-        var entity:Entity;
+        var entity!: Entity; // every branch below assigns it or throws
         
         // PROCESS THE ARGUMENT TO GET THE ENTITY TO WORK ON
         {
@@ -649,7 +649,7 @@ export class Scene implements SceneI
                     if (bare.gameMode == GameMode.Play)
                     {
                         var sopiroPhysicsClasses = ["Circle", "Box", "Polygon"];
-                        if (sopiroPhysicsClasses.includes(entityArg.baseClass))
+                        if (entityArg.baseClass && sopiroPhysicsClasses.includes(entityArg.baseClass))
                             entityArg.pivot = { x: .5, y: .5 };
                     }
                 }
@@ -673,7 +673,7 @@ export class Scene implements SceneI
                     // .extends HAS BEEN SET, NOW GET IT FROM SETTINGSDATA AND MERGE IT FOR NEW ENTITY
                     if (entityArg.extends)
                     {
-                        var possiblePrefab = this.settingsHandler.GetProcessedPrefab(entityArg.extends, settingsData);
+                        var possiblePrefab: Entity | undefined = this.settingsHandler.GetProcessedPrefab(entityArg.extends, settingsData);
                         if (possiblePrefab)
                         {
                             // ENTITY WAS FOUND IN ENTITIES ARRAY IN DATA, DELETE SPECIFIED IGNORED PROPS FROM IT
@@ -747,7 +747,7 @@ export class Scene implements SceneI
         if (entity.texture == "NAME")
         {
             // REPLACE 'NAME' VALUE OF texture WITH entity.name
-            var isBase = SettingsHandler.IsBasePrefab(settingsData, entity.name);
+            var isBase = SettingsHandler.IsBasePrefab(settingsData, entity.name!);
             if (!isBase && entity.name)
                 entity.texture = entity.name;
             else
@@ -922,11 +922,11 @@ export class Scene implements SceneI
             }
             else
             {
-                const pool = bare.gameObjectPools.get(entityConstructed.baseClass);
+                const pool = bare.gameObjectPools.get(entityConstructed.baseClass!);
                 if (pool)
                     gameObject = pool.Grab();
                 else
-                    console.error("noo");
+                    throw new Error(`No object pool for baseClass '${entityConstructed.baseClass}'`);
             }
 
             gameObject.scene = this;
@@ -1004,11 +1004,11 @@ export class Scene implements SceneI
         }
         else
         {
-            const pool = bare.gameObjectPools.get(entityConstructed.baseClass);
+            const pool = bare.gameObjectPools.get(entityConstructed.baseClass!);
             if (pool)
                 gameObject = pool.Grab();
             else
-                console.error("noo");
+                throw new Error(`No object pool for baseClass '${entityConstructed.baseClass}'`);
         }
 
         gameObject.scene = this;
@@ -1180,7 +1180,7 @@ to package.json to keep the generated assets (can become large for big projects)
                 gameObject = bare.GetObjectFromPool(entity.baseClass!, this);
                 gameObject.Awake(entity);
 
-                gameObject.Init(entity.name);
+                gameObject.Init(entity.name!);
 
                 if (entity.texture)
                     gameObject.InitTexture(MakePathForEntity(entity));
@@ -1279,7 +1279,7 @@ to package.json to keep the generated assets (can become large for big projects)
         {
             // REMOVING FROM PARENT
             var child = gameObject;
-            var parent = child.parent;
+            var parent = gameObject.parent;
             var childIndex = parent.children.indexOf(child);
 
             if (childIndex != -1)
@@ -1569,7 +1569,7 @@ to package.json to keep the generated assets (can become large for big projects)
 
     GetAllComponentsFrom(obj:GameObject):any[]
     {
-        return this._component?.GetAllFrom(obj);
+        return this._component?.GetAllFrom(obj) ?? [];
     }
 
     Resize(prevWidth: number, prevHeight: number, newWidth: number, newHeight: number)
@@ -1689,13 +1689,13 @@ to package.json to keep the generated assets (can become large for big projects)
         this.paused = false;
     }
 
-    get currentLevel(): LevelData
+    get currentLevel(): LevelData | null | undefined
     {
         /* @ AddClass(levelHandler) */
         return this._level?.currentLevel;
     }
 
-    async LoadLevel(levelInput: string | LevelData = ""): Promise<LevelData>
+    async LoadLevel(levelInput: string | LevelData = ""): Promise<LevelData | undefined>
     {
         /* @ AddClass(levelHandler) */
 

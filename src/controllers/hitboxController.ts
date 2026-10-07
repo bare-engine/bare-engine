@@ -728,7 +728,7 @@ export class HitboxController
         gameobject.tapHitbox.showPointer = show;
     }
 
-    AssignCallback(gameobject: GameObject, type: "OnPress" | "OnRelease" | "OnEnter" | "OnLeave", callback: AnyPress): Hitbox
+    AssignCallback(gameobject: GameObject, type: "OnPress" | "OnRelease" | "OnEnter" | "OnLeave", callback: AnyPress | null): Hitbox
     {
         var rect = this.GetLocalRect(gameobject);
 

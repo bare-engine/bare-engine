@@ -148,7 +148,7 @@ export function RegisterController(controllerClass: new (...args: any[]) => any)
 }
 
 
-export function MakePath(...args: string[]): string
+export function MakePath(...args: (string | undefined)[]): string
 {
     for (let i = args.length - 1; i >= 0; i--)
     {

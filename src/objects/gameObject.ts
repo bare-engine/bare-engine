@@ -100,12 +100,12 @@ export class GameObject
     scene: Scene;
 
     @SerializeField(GameMode.Edit)
-    name:string;
-    pluginName:string;
+    name!: string;
+    pluginName!: string;
     uniqueID:string = "";
 
     active:boolean = true;
-    texture: Texture | null;
+    texture: Texture | null = null;
     
     private _shaders: Shader[] | null = null;
 
@@ -253,7 +253,7 @@ export class GameObject
         }
     }
 
-    OnPointerDown(callback: AnyPress = null): Hitbox
+    OnPointerDown(callback: AnyPress | null = null): Hitbox | null
     {
         if (this.scene)
         {
@@ -263,7 +263,7 @@ export class GameObject
         return null;
     }
 
-    OnPointerUp(callback: AnyPress = null)
+    OnPointerUp(callback: AnyPress | null = null)
     {
         if (this.scene)
         {
@@ -271,7 +271,7 @@ export class GameObject
         }
     }
 
-    OnPointerEnter(callback: AnyPress = null)
+    OnPointerEnter(callback: AnyPress | null = null)
     {
         if (this.scene)
         {
@@ -279,7 +279,7 @@ export class GameObject
         }
     }
 
-    OnPointerLeave(callback: AnyPress = null)
+    OnPointerLeave(callback: AnyPress | null = null)
     {
         if (this.scene)
         {
@@ -460,7 +460,7 @@ export class GameObject
         this.SetStartPosition(this.x, this.y);
     }
 
-    async InitTexture(texturePath: string):Promise<Texture>
+    async InitTexture(texturePath: string):Promise<Texture | undefined>
     {
         if (texturePath.endsWith("NONE"))
             return;
@@ -969,10 +969,10 @@ export class GameObject
         if (this._shaders && this._shaders.length > 0)
         {
             const glShaders = this._shaders.map(shader => shader.shader);
-            texture = rapid.applyFilters(this.texture, glShaders);
+            texture = rapid.applyFilters(this.texture!, glShaders);
         }
 
-        drawSpriteWithMatrix(rapid, texture, matrixIndex, renderColor);
+        drawSpriteWithMatrix(rapid, texture!, matrixIndex, renderColor);
 
         if (this.mask)
         {

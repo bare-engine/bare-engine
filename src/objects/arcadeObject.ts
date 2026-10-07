@@ -94,7 +94,7 @@ export class ArcadeObject extends GameObject
     
     constructor(scene: Scene | null = null, texturePath: string = "", x: number = 0, y: number = 0)
     {
-        super(scene, texturePath, x, y);
+        super(scene!, texturePath, x, y);
 
         if (this.texture)
             this.physicsHitbox.rectangle = {x: 0, y: 0, width: this.texture!.width, height: this.texture!.height};
@@ -248,17 +248,17 @@ export class ArcadeObject extends GameObject
     
     OnCollisionStart(collidingObject: ArcadeObject)
     {
-        this.events.emit(BareEvent.collision_start, collidingObject, null);
+        this.events.emit(BareEvent.collision_start, collidingObject, this);
     }
 
     OnCollisionUpdate(collidingObject: ArcadeObject)
     {
-        this.events.emit(BareEvent.collision_update, collidingObject, null);
+        this.events.emit(BareEvent.collision_update, collidingObject, this);
     }
 
     OnCollisionEnd(collidingObject: ArcadeObject)
     {
-        this.events.emit(BareEvent.collision_end, collidingObject, null);
+        this.events.emit(BareEvent.collision_end, collidingObject, this);
     }
 
     IsMoving(): boolean

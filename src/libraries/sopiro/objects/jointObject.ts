@@ -24,7 +24,7 @@ export abstract class JointObject extends GameObject
     private _dampingRatio: number = 1.0;
     private _jointMass: number = 1;
 
-    staticAnchor: Circle;
+    staticAnchor!: Circle;
 
     override OnAwake(entity?: Entity): void
     {

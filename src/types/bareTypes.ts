@@ -292,6 +292,16 @@ export interface SettingsData
     processed?: boolean
 }
 
+// settings data after SettingsHandler processing: every section defaultSettingsData provides is filled in
+// (nested objects deep merged), and every layer gets its full LayerInfo
+export type ProcessedSettingsData = SettingsData & Required<Pick<SettingsData,
+    "basePrefabs" | "prefabs" | "layers" | "categories" | "presets" | "saveVars" |
+    "defaultAnimationFramesPerSecond" | "gravity" | "editorObjectSnapToPivot">> &
+{
+    layersInfo: Record<string, LayerInfo>;
+    settings: Required<NonNullable<SettingsData["settings"]>>;
+};
+
 
 
 

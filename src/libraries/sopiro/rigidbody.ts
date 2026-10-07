@@ -112,7 +112,7 @@ export abstract class RigidBody extends GameObject
 
     // CENTER PIVOT FOR RIGIDBODIES CREATED DYNAMICALLY BY CODE (NO ENTITY)
     // LEVEL ENTITIES ARE HANDLED IN OnApplyEntityToGameObject INSTEAD
-    override async InitTexture(texturePath: string): Promise<Texture>
+    override async InitTexture(texturePath: string): Promise<Texture | undefined>
     {
         var tex = await super.InitTexture(texturePath);
 

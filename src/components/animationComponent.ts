@@ -69,12 +69,12 @@ export type AnimationEventPayload = {
 
 export class AnimationComponent extends Component
 {
-    currentAnimation: AnimationData;
+    currentAnimation!: AnimationData;
 
     callbacks: Map<string, (anim: AnimationComponent) => void> = new Map();
     singleCallbacks: Map<string, (anim: AnimationComponent) => void> = new Map();
 
-    events: Emitter<AnimationEventPayload>
+    events!: Emitter<AnimationEventPayload>
 
     allAnimationNamesForObject: string[] = [];
 
@@ -156,7 +156,7 @@ export class AnimationComponent extends Component
 
         this.enabled = true;
 
-        var animation = assetsHandler.GetAnimation(fullAnimationName);
+        var animation = assetsHandler.GetAnimation(fullAnimationName)!;
         
         // LOAD TEXTURES
         if  (!animation.texturesLoaded)

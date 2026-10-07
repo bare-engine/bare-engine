@@ -27,7 +27,7 @@ export class TextComponent extends Component
 
     @SerializeField(GameMode.Edit)
     @Dropdown(["left", "center", "right"])
-    get align():string {return this.textTexture.style.align;}
+    get align():string | undefined {return this.textTexture.style.align;}
     set align(value:"left" | "center" | "right") {this.textTexture.style.align = value; this.UpdateText();}
     
     @SerializeField(GameMode.Edit)

@@ -7,7 +7,7 @@ export type EditorUIScenePayload = { openEditorButtonPosition: Position }
 
 export class EditorUIScene extends Scene
 {
-    editorButton: Button;
+    editorButton!: Button;
     
     constructor()
     {

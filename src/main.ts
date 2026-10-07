@@ -8,7 +8,7 @@ import { globalEvents, Scene } from './globals';
 import { Helper } from './utils/helper';
 export { MakePath, MakePathForEntity } from "./globals";
 
-var canvas = document.querySelector<HTMLCanvasElement>("canvas.canvas");
+var canvas = document.querySelector<HTMLCanvasElement>("canvas.canvas")!;
 if (!canvas) {
     canvas = document.createElement("canvas");
     canvas.className = "canvas";
@@ -36,7 +36,7 @@ function GetBareOptions(options?: BareOptions): BareOptions
     }, ...options };
 }
 
-export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise<Scene>
+export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise<Scene | undefined>
 {
     // DEFAULTS + OVERRIDE OPTIONS
     options = GetBareOptions(options);

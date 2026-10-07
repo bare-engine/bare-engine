@@ -9,7 +9,7 @@ import { SerializeField } from "../utils/serializeFields";
 
 export class ParticleComponent extends Component
 {
-    public emitter: ParticleEmitter;
+    public emitter!: ParticleEmitter;
     
     @SerializeField(GameMode.Edit)
     private position: any = {x: 0, y: 0};

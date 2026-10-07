@@ -1,4 +1,4 @@
-import { Entity, LayerInfo, SettingsData, BareEvent, SaveData, Category } from '../types/bareTypes';
+import { Entity, LayerInfo, ProcessedSettingsData, SettingsData, BareEvent, SaveData, Category } from '../types/bareTypes';
 import { assetsHandler } from "./assetsHandler";
 import { FlashShader } from "../shaders/flashShader";
 import { TweenTo } from "../controllers/tweenController";
@@ -30,7 +30,7 @@ export class EditorUIHandler {
     public scene: EditorScene;
     public editorUIHintHandler: EditorUIHintHandler;
 
-    private data: SettingsData;
+    private data!: ProcessedSettingsData;
     private imagesCategoryElement: HTMLElement | null = null;
     private imagesCategoryCacheKey: string = '';
     private imagesCategorySettingsData: SettingsData | null = null;
@@ -201,7 +201,7 @@ export class EditorUIHandler {
         }
     }
 
-    PopulateWithData(data: SettingsData): void
+    PopulateWithData(data: ProcessedSettingsData): void
     {
         this.data = data;
         
@@ -219,7 +219,7 @@ export class EditorUIHandler {
     // the categories shown in the sidebar: the user's categories, the prefabs not in any of them
     // ("prefabs", or "uncategorized prefabs" once categories are set up) and the loaded images.
     // also used by the plugin's add child menu, so both stay in sync
-    static GetSidebarCategories(data: SettingsData): Record<string, Category>
+    static GetSidebarCategories(data: ProcessedSettingsData): Record<string, Category>
     {
         var categoriesFinal: Record<string, Category>  = {};
         var allPrefabNames = data.prefabs.map(entity => entity.name!);
@@ -266,7 +266,7 @@ export class EditorUIHandler {
         return categoriesFinal;
     }
 
-    PopulateSidebar(data: SettingsData): void {
+    PopulateSidebar(data: ProcessedSettingsData): void {
         const sidebarContent = document.querySelector('.sidebar-content') as HTMLElement;
         if (!sidebarContent) {
             console.error('Sidebar content not found');
@@ -531,7 +531,7 @@ export class EditorUIHandler {
             (sidebarContent.children[0] as HTMLElement).classList.add('expanded');
     }
 
-    public PopulateLayers(data: SettingsData): void {
+    public PopulateLayers(data: ProcessedSettingsData): void {
         const layersContent = document.querySelector('#layers-sidebar .sidebar-content') as HTMLElement;
         const layerTemplate = document.querySelector('#layer-template') as HTMLElement;
 
@@ -641,7 +641,7 @@ export class EditorUIHandler {
         const existingInfo = this.data.layersInfo[layerName] as LayerInfo | undefined;
         const layerIndex = this.scene.layerNames.indexOf(layerName);
 
-        this.data.layersInfo[layerName] = { ...existingInfo, showInEditor: show };
+        this.data.layersInfo[layerName] = { ...existingInfo, showInEditor: show } as LayerInfo;
 
         if (layerIndex !== -1)
         {
@@ -677,7 +677,7 @@ export class EditorUIHandler {
         const idInput = document.querySelector('.setting-input[placeholder*="ID"]') as HTMLInputElement;
         const pathInput = document.querySelector('.setting-input[placeholder*="path"]') as HTMLInputElement;
         
-        if (idInput) idInput.value = entity.name;
+        if (idInput) idInput.value = entity.name!;
         if (pathInput) pathInput.value = entity.imagePath!;
 
         (window as any).renderComponents?.(entity);
@@ -688,7 +688,7 @@ export class EditorUIHandler {
             selectedEntity.classList.remove('selected-entity');
 
         if (!element)
-            element = document.getElementById(entity.name);
+            element = document.getElementById(entity.name!);
 
         if (element && selectedEntity != element)
         {
@@ -754,7 +754,7 @@ export class EditorUIHandler {
         return assetsHandler.GetFullImagePath(imagePath);
     }
 
-    SetupEditorControls(): Promise<void> {
+    SetupEditorControls(): void {
         this.abortController = new AbortController();
         const signal = this.abortController.signal;
 
@@ -886,7 +886,7 @@ export class EditorUIHandler {
             sidebar.classList.add('minimized');
             minimizeBtn.innerHTML = '🔺';
         } else {
-            document.getElementById('layers-sidebar').style.display = 'block';
+            document.getElementById('layers-sidebar')!.style.display = 'block';
 
             sidebar.classList.remove('minimized');
             minimizeBtn.innerHTML = '🔻';

@@ -24,7 +24,7 @@ export class CollisionEventComponent extends Component
     }
 
     @InspectorButton
-    Fire(collidingObject: GameObject = null): void
+    Fire(collidingObject: GameObject | null = null): void
     {
         bare.SendEvent(this.event, { collidingObject: collidingObject, trigger: this });
 

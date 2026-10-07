@@ -36,12 +36,12 @@ export interface BareRestartOptions
 
 export class BareEngine
 {
-    private initialSceneClass: SceneClass;
+    private initialSceneClass!: SceneClass;
     private restartTimeout: ReturnType<typeof setTimeout> | null = null;
     
-    public lastUpdateTimeRef:number;
-    public deltaTime: number;
-    public gameSpeed: number;
+    public lastUpdateTimeRef!: number;
+    public deltaTime!: number;
+    public gameSpeed!: number;
 
     public time: number = 0;
     public count: int = 0;
@@ -61,9 +61,9 @@ export class BareEngine
     
     public sendEvents: boolean = true;
     
-    private RunMainLoopBound: () => void;
+    private RunMainLoopBound!: () => void;
 
-    public dummyGameObject: GameObject; // JUST USED FOR DEFAULT VALUES AND DUMMY CONSTRUCTION
+    public dummyGameObject!: GameObject; // JUST USED FOR DEFAULT VALUES AND DUMMY CONSTRUCTION
     
     get levelEditorOpen(): boolean { return bare.gameMode == GameMode.Edit; }
     
@@ -73,7 +73,7 @@ export class BareEngine
 
     private mouseDownOnLeave: boolean = false;
     
-    public preloadedLevels: Map<string, LevelData>;
+    public preloadedLevels: Map<string, LevelData> | null = null;
     
     public registeredClasses: Record<string, any> = {};
     public shaders: Record<string, CustomGlShader> = {};
@@ -87,11 +87,11 @@ export class BareEngine
     public defaultEngineFont:string = "monospace";
 
     // GLOBAL MODULES
-    keyboard:KeyboardController;
-    sound:SoundHandler;
+    keyboard!:KeyboardController;
+    sound!:SoundHandler;
     scene:SceneController;
     asset:typeof assetsHandler = assetsHandler;
-    storage:typeof SaveDataHandler;
+    storage!:typeof SaveDataHandler;
     pool:Map<string, PoolHandler<GameObject>> = this.gameObjectPools;
     uiScene:UIScene = uiScene; // PROXY - LAZILY CREATES THE UI SCENE ON FIRST USE
 
@@ -104,17 +104,17 @@ export class BareEngine
     // INTO EG: this.scene.object. GETTING THE INSTANCE IN SCENE
 
     // SCENE MODULES
-    events:Emitter<Events>;
-    object:ObjectController;
-    component:ComponentController;
-    mouse:MouseController;
-    tween:TweenController;
-    particle:ParticleController;
-    hitbox:HitboxController;
-    arcade:ArcadePhysicsController;
-    sopiro:SopiroPhysicsController;
-    level:LevelHandler;
-    camera:CameraHandler;
+    events!:Emitter<Events>;
+    object!:ObjectController;
+    component!:ComponentController;
+    mouse!:MouseController;
+    tween!:TweenController;
+    particle!:ParticleController;
+    hitbox!:HitboxController;
+    arcade!:ArcadePhysicsController;
+    sopiro!:SopiroPhysicsController;
+    level!:LevelHandler;
+    camera!:CameraHandler;
 
     get texture(): TextureManager { return rapid.texture }
     
@@ -164,7 +164,7 @@ export class BareEngine
         return rootDir ? `${rootDir}/${dir}` : dir;
     }
 
-    private ApplyOptions(options?: BareOptions): void
+    private ApplyOptions(options: BareOptions = {}): void
     {
         this.fixedTimestep = options.fixedTimestep ?? 1 / 60;
         this.freezeOnUnfocus = options.freezeOnUnfocus ?? true;
@@ -232,7 +232,7 @@ export class BareEngine
     }
 
     // SEPARATE METHOD TO MAKE ASYNC
-    public async Init(sceneClass: SceneClass, options?: BareOptions): Promise<Scene>
+    public async Init(sceneClass: SceneClass, options: BareOptions = {}): Promise<Scene>
     {
         this.ApplyOptions(options);
 

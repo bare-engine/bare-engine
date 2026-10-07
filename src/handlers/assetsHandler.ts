@@ -96,7 +96,7 @@ class AssetsHandler
             return;
 
         var texture = this.textures.get(texturePath);
-        rapid.texture.destroy(texture);
+        rapid.texture.destroy(texture!);
 
         this.textures.delete(texturePath);
     }

@@ -2,7 +2,7 @@ import { Color, GameObject, Scene } from 'bare-engine';
 
 export class FirstGame extends Scene
 {
-    player: GameObject;
+    player!: GameObject;
 
     OnStart()
     {

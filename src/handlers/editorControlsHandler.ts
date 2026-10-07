@@ -307,9 +307,9 @@ export class EditorControlsHandler {
     {
         const selectedLayer = document.querySelector('.selected-layer');
         const layerName = selectedLayer?.id;
-        const layerInfo = this.scene.settingsData.layersInfo[layerName];
+        const layerInfo = layerName ? this.scene.settingsData.layersInfo[layerName] : undefined;
 
-        return layerInfo?.layerI;
+        return layerInfo?.layerI!;
     }
 
     private SelectGameObjectsInRect(rect: Rectangle): void
@@ -544,7 +544,7 @@ export class EditorControlsHandler {
 
     private PlaceCurrentPreviewObject(layer: int): GameObject
     {
-        const entityCopy = this.CopyEntityForPlacement(this.previewEntityData);
+        const entityCopy = this.CopyEntityForPlacement(this.previewEntityData!);
         // the preview sits in world space, a parent needs its local position
         const parent = this.GetPlacementParent(this.previewParent);
         const { x, y } = parent instanceof GameObject

@@ -58,7 +58,7 @@ export class PrefabScene extends EditorScene
     }
     
     lastPayload: PrefabSceneAwakePayload;
-    debugAtStart: boolean;
+    debugAtStart!: boolean;
 
     imagePathBeforePlaceHolder: string = "";
     textureBeforePlaceHolder: string = "";
@@ -156,8 +156,8 @@ export class PrefabScene extends EditorScene
 
         if (isBase)
         {
-            this.imagePathBeforePlaceHolder = prefab.imagePath;
-            this.textureBeforePlaceHolder = prefab.texture;
+            this.imagePathBeforePlaceHolder = prefab.imagePath ?? "";
+            this.textureBeforePlaceHolder = prefab.texture ?? "";
 
             prefab.texture = "placeHolder";
             prefab.imagePath = "";
@@ -191,7 +191,7 @@ export class PrefabScene extends EditorScene
     {
         var ret = await super.Open(levelPathOrData, saveLevelCallback, settingsHandler);
 
-        var obj = this.object.GetByName(this.objectName);
+        var obj = this.object.GetByName(this.objectName)!;
 
         // THE ROOT ENTITY OBJECT REPRESENTS THE ENTITY BEING EDITED ITSELF - IT HAS NO MEANINGFUL
         // POSITION/SCALE/ROTATION OF ITS OWN TO SAVE, SO IT SHOULDN'T BE DRAGGABLE VIA THE
@@ -218,7 +218,7 @@ export class PrefabScene extends EditorScene
         
         var entity = {
             name: this.objectName, // KEEP NAME ON TOP
-            ...this.GetEntityFromObject(rootObject, { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false, keepRuntimeUIDs: true })
+            ...this.GetEntityFromObject(rootObject!, { propsToIgnoreInEntity: [], fillPresets: true, forceAllEntityVars: false, keepRuntimeUIDs: true })
         };
             
         // editor-only, set on the root in CreateLevelDataForPrefab(). stored in the live settings data it would make
@@ -255,7 +255,7 @@ export class PrefabScene extends EditorScene
             name: this.objectName,
         });
         
-        return this.currentLevel; // NOT USED IN THIS CASE, BUT EXPECTED FOR METHOD, BIT HACKY
+        return this.currentLevel!; // NOT USED IN THIS CASE, BUT EXPECTED FOR METHOD, BIT HACKY
     }
 
     override NotifyTransformToolPreview(operation: "move" | "resize" | "rotate"): void
@@ -328,7 +328,7 @@ export class PrefabScene extends EditorScene
         // every selected object's path, so the panel highlights the whole multi-selection
         const childPaths = objs
             .map(obj => this.GetChildPath(rootObject, obj))
-            .filter(path => path);
+            .filter((path): path is number[] => !!path);
 
         window.__GAME_DEBUG_API__?.selectPrefabObjectInPlugin({
             name: this.objectName,
@@ -390,7 +390,7 @@ export class PrefabScene extends EditorScene
 
         return this.editorControlsHandler.selectedObjects
             .map(obj => this.GetChildPath(rootObject, obj))
-            .filter(path => path);
+            .filter((path): path is number[] => !!path);
     }
 
     private GetChildPath(root: GameObject, target: GameObject): number[] | null

@@ -8,17 +8,18 @@ export class Hitbox
     shouldReleaseOnTop:boolean;
     showPointer:boolean;
     affectedByVisibility:boolean;
-    parent:GameObject;
+    parent!: GameObject; // set through SetParent() in the constructor
 
     type:HitboxType;
-    radius:number;
-    rectangle:Rectangle;
+    radius!: number; // set for circle hitboxes
+    rectangle!: Rectangle; // set for rectangle hitboxes
     circleOffset: Vec2 = new Vec2(0, 0);
 
-    OnEnter:(parent: GameObject) => void;
-    OnLeave:(parent: GameObject) => void;
-    OnPress:(parent: GameObject, event: PointerEvent) => void;
-    OnRelease:(parent: GameObject, event: PointerEvent) => void;
+    // null after an Off...() call
+    OnEnter?: ((parent: GameObject) => void) | null;
+    OnLeave?: ((parent: GameObject) => void) | null;
+    OnPress?: ((parent: GameObject, event: PointerEvent) => void) | null;
+    OnRelease?: ((parent: GameObject, event: PointerEvent) => void) | null;
 
 	constructor(parent:GameObject, data:number | Rectangle2Vec)
 	{

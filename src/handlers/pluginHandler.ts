@@ -643,7 +643,7 @@ const gameDebugApi = {
     if (restoredPaths)
     {
         const root = prefabScene.object.GetByName(prefabScene.objectName);
-        const objs = restoredPaths.map(path => plugin.ResolveRuntimeEntityPath(root, path)).filter(obj => obj);
+        const objs = restoredPaths.map(path => plugin.ResolveRuntimeEntityPath(root, path)).filter((obj): obj is GameObject => !!obj);
         // SelectGameObjects adds its list back to front, reverse so the primary stays last
         const controls = prefabScene.editorControlsHandler;
         controls.SelectGameObjects([...objs].reverse(), true, false);
@@ -783,7 +783,7 @@ const gameDebugApi = {
         // COMPONENTS
         {
             let comps = o.scene.component.GetAllFrom(o);
-            let components = GameObjectSerializer.SerializeComponents(scene, comps, false);
+            let components = GameObjectSerializer.SerializeComponents(scene, comps, false)!;
 
             for (var c of comps)
             {
@@ -809,7 +809,7 @@ const gameDebugApi = {
         return data;
     }
 
-    var s = serializeGameObject(o);
+    var s = serializeGameObject(o!);
     return s;
   },
 
@@ -957,7 +957,7 @@ const gameDebugApi = {
 
         rawSettingsData.basePrefabs ??= [];
         if (!SettingsHandler.FindPrefab(rawSettingsData, "ANY"))
-            rawSettingsData.basePrefabs.push({ name: "ANY" });
+            rawSettingsData.basePrefabs!.push({ name: "ANY" });
 
         var entity = plugin.ResolveEntityChildPath(
             SettingsHandler.FindPrefab(rawSettingsData, prefabScene.objectName)!,
@@ -1170,7 +1170,7 @@ const gameDebugApi = {
         if (extendsChanged)
         {
             entity.children = entity.children?.filter((child: Entity) =>
-                !prefabScene.settingsHandler.rawEntitiesMappedByUID[child.extends]
+                !prefabScene.settingsHandler.rawEntitiesMappedByUID[child.extends!]
             );
 
             if (entity.children?.length === 0)
@@ -1242,7 +1242,7 @@ const gameDebugApi = {
 
         // ADD DEFAULTS TO RAW SETTINGS AGAIN, SO PROPS CAN BE ADDED TO IT
         if (!SettingsHandler.FindPrefab(rawSettingsData, "ANY"))
-            rawSettingsData.basePrefabs.push({ ...SettingsHandler.FindPrefab(defaultSettingsData, "ANY")! });
+            rawSettingsData.basePrefabs!.push({ ...SettingsHandler.FindPrefab(defaultSettingsData, "ANY")! });
 
         return prefabData;
     },
@@ -1251,7 +1251,7 @@ const gameDebugApi = {
     {
         var scene = plugin.GetCurrentScene();
 
-        var o:GameObject;
+        var o: GameObject | null;
         
         var idIsInt = !isNaN(parseInt(id));
         if (idIsInt)
@@ -1480,14 +1480,14 @@ const gameDebugApi = {
             siblings = scene.object.GetLayer(layerIndex);
             index = 0;
         } else if (position === "inside") {
-            newParent = target;
-            siblings = target.children;
+            newParent = target!;
+            siblings = target!.children;
             index = siblings.length;
         } else {
-            newParent = target.parent;
-            if (!newParent) layerIndex = scene.object.GetLayerOf(target);
+            newParent = target!.parent;
+            if (!newParent) layerIndex = scene.object.GetLayerOf(target!);
             siblings = newParent ? newParent.children : scene.object.GetLayer(layerIndex);
-            index = siblings.indexOf(target) + (position === "after" ? 1 : 0);
+            index = siblings.indexOf(target!) + (position === "after" ? 1 : 0);
         }
 
         siblings.splice(index, 0, ...moving);
@@ -1743,8 +1743,8 @@ const gameDebugApi = {
   },
         
     async updateLevelData(changes: { name?: string, width?: number, height?: number, backgroundColor?: string }) {
-        var levelHandler = bare.scene.GetLevelScene().level;
-        var data = levelHandler.currentLevel;
+        var levelHandler = bare.scene.GetLevelScene()!.level;
+        var data = levelHandler.currentLevel!;
         levelHandler.Serialize(data);
 
         if (changes.width !== undefined || changes.height !== undefined) {
@@ -1761,8 +1761,8 @@ const gameDebugApi = {
 
     async saveLevelData(levelName: string, changes: { name?: string, width?: number, height?: number, backgroundColor?: string }) {
         try {
-            var levelHandler = bare.scene.GetLevelScene().level;
-            var data = levelHandler.currentLevel;
+            var levelHandler = bare.scene.GetLevelScene()!.level;
+            var data = levelHandler.currentLevel!;
             levelHandler.Serialize(data);
 
             if (changes.width !== undefined || changes.height !== undefined) {
@@ -1835,16 +1835,16 @@ const gameDebugApi = {
 
 export class PluginHandler
 {
-    pluginProcessedSettingsData: SettingsData;
+    pluginProcessedSettingsData!: SettingsData;
 
     currentSettingsDataName: string = "";
     private settingsDataHandlers = new Map<string, SettingsHandler>();
 
-    lastRightClickedObject: GameObject;
+    lastRightClickedObject: GameObject | null = null;
     // in-game right drag from empty space, in canvas screen space (scenes have their own cameras)
     private readonly rectSelection = new RectSelection();
 
-    public openEditorButtonPosition: Position;
+    public openEditorButtonPosition?: Position;
     
     public isPluginConnected: boolean = false;
 
@@ -1868,7 +1868,7 @@ export class PluginHandler
         return bare.paused;
     }
 
-    static Init(showEditorButton: boolean, editorButtonPosition: Position)
+    static Init(showEditorButton?: boolean, editorButtonPosition?: Position)
     {
         // Install the API before constructing the handler. The constructor can
         // synchronously add/remove scenes, which notifies persistent listeners
@@ -1878,7 +1878,7 @@ export class PluginHandler
         globalThis.plugin = plugin;
     }
 
-    constructor(showEditorButton: boolean, editorButtonPosition: Position)
+    constructor(showEditorButton?: boolean, editorButtonPosition?: Position)
     {
         this.openEditorButtonPosition = editorButtonPosition;
 
@@ -1996,7 +1996,7 @@ export class PluginHandler
         this.AddDebugBreak();
     }
 
-    HandleClickObject(obj: GameObject)
+    HandleClickObject(obj: GameObject | null)
     {
         var prefabScene = bare.scene.Get(PrefabScene);
         if (prefabScene && obj?.scene === prefabScene)
@@ -2010,7 +2010,8 @@ export class PluginHandler
         var editorScene = bare.scene.Get(EditorScene);
         if (editorScene)
         {
-            editorScene.editorControlsHandler.SelectGameObjects([obj]);
+            // clicking empty space clears the selection, a null entry would break NotifySelectionToPlugin
+            editorScene.editorControlsHandler.SelectGameObjects(obj ? [obj] : []);
             return;
         }
 
@@ -2080,7 +2081,7 @@ export class PluginHandler
           var selection = isAddDown && obj ?this.GetSelectionWithAdded(obj) : null;
 
           // ctrl/shift on an already selected object toggles it off, like in the editors
-          if (selection && !selection.includes(obj))
+          if (selection && !selection.includes(obj!))
           {
               if (selection.length == 0)
               {
@@ -2099,7 +2100,7 @@ export class PluginHandler
 
           if (selection)
           {
-              plugin.TraceObject(obj);
+              plugin.TraceObject(obj!);
               TransformToolHandler.Get().SetTargets(selection);
               this.lastRightClickedObject = obj;
           }
@@ -2163,7 +2164,7 @@ export class PluginHandler
     private AddToSelection(targets: GameObject[], objs: GameObject[]): GameObject[]
     {
         var isAncestorOrSelf = (ancestor: GameObject, o: GameObject) => {
-            for (var current = o; current; current = current.parent)
+            for (var current: GameObject | null = o; current; current = current.parent)
                 if (current === ancestor)
                     return true;
             return false;
@@ -2537,7 +2538,7 @@ export class PluginHandler
                 extendEntityChildren(entity.children);
             }
         }
-        extendEntityChildren([entity]);
+        extendEntityChildren([entity!]);
     }
 
     CleanSettingsData(settingsDataRaw: SettingsData, settingsHandler: SettingsHandler): void
@@ -2813,7 +2814,7 @@ export class PluginHandler
             entity,
             extendedEntity,
             name,
-            processedEntity,
+            processedEntity!,
             raw,
             processed
         );
@@ -3202,7 +3203,7 @@ export class PluginHandler
         var rawSettingsData = prefabScene.settingsHandler.GetRaw();
 
         if (!SettingsHandler.FindPrefab(rawSettingsData, "ANY"))
-            rawSettingsData.basePrefabs.push({ name: "ANY" });
+            rawSettingsData.basePrefabs!.push({ name: "ANY" });
 
         var entity = plugin.ResolveEntityChildPath(
             SettingsHandler.FindPrefab(rawSettingsData, prefabScene.objectName)!,

@@ -31,7 +31,7 @@ export class TestSaveComponent extends Component
     private valueSave:string = "test";
 
     @SerializeField
-    private valueSaveChanged:string = "test";
+    private valueSaveChanged:string | undefined = "test";
 
     constructor(scene: Scene, valueSaveChanged?:string)
     {

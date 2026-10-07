@@ -19,7 +19,7 @@ import { Color, Vec2 } from "../rapid-render";
 
 export class Renderer
 {
-    private gfx: CanvasRenderingContext2D;
+    private gfx!: CanvasRenderingContext2D;
 
     private cameraTransform!: Matrix3;
     private modelTransform!: Matrix3;

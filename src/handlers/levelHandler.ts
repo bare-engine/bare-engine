@@ -16,15 +16,15 @@ export class LevelHandler
 {
     static levelCache: Map<string, LevelData> = new Map();
     
-    currentLevel: LevelData;
+    currentLevel: LevelData | null = null;
     
     scene: Scene;
 
     @InspectorField
-    private get name():string { return this.currentLevel?.name; }
+    private get name():string | undefined { return this.currentLevel?.name; }
 
     @InspectorField
-    private get dimensions():Size { return this.currentLevel?.dimensions; }
+    private get dimensions():Size | undefined { return this.currentLevel?.dimensions; }
     
     @InspectorField
     private backgroundColor = {
@@ -42,7 +42,7 @@ export class LevelHandler
             bare.preloadedLevels = null;
         }
 
-        defaultSettingsData.saveVars.GameObject.push("save");
+        defaultSettingsData.saveVars!.GameObject.push("save");
 
         bare.events.on(BareEvent.game_objectAdded, this.OnGameObjectAdded.bind(this));
     }
@@ -109,7 +109,7 @@ export class LevelHandler
         return levelData;
     }
 
-    async LoadCurrent(): Promise<LevelData>
+    async LoadCurrent(): Promise<LevelData | undefined>
     {
         if (SaveData.currentLevelStr == '')
             return; // NO CURRENT LEVEL
@@ -117,12 +117,12 @@ export class LevelHandler
         return this.Load(SaveData.currentLevelStr);
     }
 
-    async Restart(): Promise<LevelData>
+    async Restart(): Promise<LevelData | undefined>
     {
         return this.LoadCurrent();
     }
 
-    async Load(levelInput: string | LevelData = ""):Promise<LevelData>
+    async Load(levelInput: string | LevelData = ""):Promise<LevelData | undefined>
     {
         // WHEN IN PRODUCTION, WE DON'T LOAD LEVELS FROM CACHE
         // BUT ONCE PLAYER EDITS IT IN LEVEL EDITOR, IT'S LOADED FROM CACHE (SINCE IN PROD WE CAN'T SAVE EDITS TO DISK)
@@ -182,8 +182,8 @@ export class LevelHandler
         
         //bare.SendEvent(BareEvent.level_loaded, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
         // NOT USING bare.SendEvent, SINCE THAT SENDS IT TO ALL SCENES, TRIGGERING ENGINE CODE LIKE CAMERA HANDLER EVENT LISTENER THAT RESETS THE BOUNDS TO THE LEVEL
-        bare.events.emit(BareEvent.level_loaded, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
-        bare.globalEvents.emit(BareEvent.level_loaded, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
+        bare.events.emit(BareEvent.level_loaded, {levelStr: SaveData.currentLevelStr, level: this.currentLevel!});
+        bare.globalEvents.emit(BareEvent.level_loaded, {levelStr: SaveData.currentLevelStr, level: this.currentLevel!});
 
         return level;
     }
@@ -282,7 +282,7 @@ export class LevelHandler
 
     }
 
-    LoadTextures(level: LevelData = this.currentLevel): Promise<Texture>[]
+    LoadTextures(level: LevelData = this.currentLevel!): Promise<Texture>[]
     {
         var promisesAr: Array<Promise<Texture>> = [];
         var texturesFound = new Set<string>();
@@ -356,7 +356,7 @@ to package.json to keep the generated assets (can become large for big projects)
     //    HOWEVER, WHEN YOU REACH A SAVE POINT, YOU CAN CALL Save() TO SAVE THEM ALL
     async Save(): Promise<LevelData>
     {
-        const level = this.currentLevel;
+        const level = this.currentLevel!;
 
         //events.emit(BareEvent.level_preSave, {levelStr: SaveData.currentLevelStr});
         bare.SendEvent(BareEvent.level_preSave, {levelStr: SaveData.currentLevelStr});
@@ -370,7 +370,7 @@ to package.json to keep the generated assets (can become large for big projects)
     }
 
     // THIS JUST REPOPULATES THE entitiesByLayer OF THE LEVEL
-    Serialize(level: LevelData = this.currentLevel): LevelData
+    Serialize(level: LevelData = this.currentLevel!): LevelData
     {
         var gameLayers = bare.object.GetLayers();
         var layersSettings = this.scene.settingsData.layers;
@@ -384,7 +384,7 @@ to package.json to keep the generated assets (can become large for big projects)
                 continue;
 
             var gameObjs = gameLayers[i];
-            var layerName = layerInfo.name;
+            layerName = layerInfo.name!;
 
             level.entitiesByLayer[layerName] = gameObjs
                 .filter(obj => !obj.persistent && obj.save) // ONLY LOOK AT NON-PERSISTENT AND SAVEABLE OBJECTS

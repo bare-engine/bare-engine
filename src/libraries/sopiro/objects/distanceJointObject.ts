@@ -37,7 +37,7 @@ export class DistanceJointObject extends JointObject
     private _distance: number = -1;
     private _mode: DistanceMode = DistanceMode.PushPull;
 
-    targetObject: TargetObject;
+    targetObject!: TargetObject;
 
     override OnAwake(): void
     {
@@ -238,7 +238,7 @@ export class DistanceJointObject extends JointObject
 
 class TargetObject extends GameObject
 {
-    owner: DistanceJointObject;
+    owner!: DistanceJointObject;
 
     override get width(): number { return 30; }
     override get height(): number { return this.width; }

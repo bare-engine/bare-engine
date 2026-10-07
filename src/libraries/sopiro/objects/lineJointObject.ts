@@ -22,7 +22,7 @@ export class LineJointObject extends JointObject
     @SerializeField(GameMode.Edit)
     lockRotation: boolean = false;
 
-    directionObject: DirectionTargetObject;
+    directionObject!: DirectionTargetObject;
 
     override OnAwake(): void
     {
@@ -127,7 +127,7 @@ export class LineJointObject extends JointObject
 
 class DirectionTargetObject extends GameObject
 {
-    owner: LineJointObject;
+    owner!: LineJointObject;
 
     override get width(): number { return 30; }
     override get height(): number { return this.width; }

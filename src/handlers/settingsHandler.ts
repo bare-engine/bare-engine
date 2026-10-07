@@ -1,7 +1,7 @@
 import { Scene } from "../scenes/scene";
 import { Bare } from "../types/bare";
 import { defaultSettingsData } from "../types/bareData";
-import { CollisionHandlingType, Entity, LayerInfo, LevelData, SettingsData } from "../types/bareTypes";
+import { CollisionHandlingType, Entity, LayerInfo, LevelData, ProcessedSettingsData, SettingsData } from "../types/bareTypes";
 import { InspectorField, Int } from "../utils/decorators";
 import { Helper } from "../utils/helper";
 import { assetsHandler } from "./assetsHandler";
@@ -120,8 +120,8 @@ export class SettingsHandler
         return renamed;
     }
 
-    private raw: SettingsData;
-    private processed: SettingsData;
+    private raw!: SettingsData;
+    private processed!: ProcessedSettingsData;
     private categoryEntryNames = new Set<string>(); // PREFAB NAMES GENERATED FROM CATEGORY ENTRIES, SEE GetCategoryEntryNames
 
     public scene: Scene;
@@ -153,7 +153,7 @@ export class SettingsHandler
         this.scene = scene;
     }
 
-    Process(raw: SettingsData = this.raw, options:ConstructEntityOptions = {}): SettingsData | Promise<SettingsData>
+    Process(raw: SettingsData = this.raw, options:ConstructEntityOptions = {}): ProcessedSettingsData | Promise<ProcessedSettingsData>
     {
         const folderPaths = this.GetCategoryFolderPaths(raw);
         if (folderPaths.length === 0)
@@ -233,7 +233,7 @@ export class SettingsHandler
         return names;
     }
 
-    private ProcessSync(raw: SettingsData, options:ConstructEntityOptions, folderFiles = new Map<string, string[]>()): SettingsData
+    private ProcessSync(raw: SettingsData, options:ConstructEntityOptions, folderFiles = new Map<string, string[]>()): ProcessedSettingsData
     {
         if (raw?.processed)
             throw new Error('Process() received already-processed data — caller passed Get()/settingsData instead of GetRaw()');
@@ -308,7 +308,7 @@ export class SettingsHandler
             this.rawEntitiesMappedByUID[entityUID] ??= previousRawEntitiesMappedByUID[entityUID] ?? entity;
         }
 
-        var settings = this.clone(raw);
+        var settings = this.clone(raw) as ProcessedSettingsData; // the defaults below fill in the required sections
 
         var layerObjectsIsSetByUser = settings.layers?.includes("objects");
 
@@ -498,8 +498,8 @@ export class SettingsHandler
 
                 var prefabsInCategory: Entity[] = [];
 
-                let entryNames: string[];
-                let generatedEntryPrefabName: string;
+                let entryNames: string[] | undefined;
+                let generatedEntryPrefabName: string | undefined;
 
                 // PARSE STRING ENTRIES...
                 if (typeof categoryData.entries === 'string') 
@@ -636,7 +636,7 @@ export class SettingsHandler
                         if (anims.includes(entityName))
                         {
                             var animationData = assetsHandler.GetAnimation(entityName);
-                            entity.texture = animationData.frames[0];
+                            entity.texture = animationData!.frames[0];
                         }
                         else
                         {
@@ -644,7 +644,7 @@ export class SettingsHandler
                             if (firstMatchingAnimName)
                             {
                                 var animationData = assetsHandler.GetAnimation(firstMatchingAnimName);
-                                entity.texture = animationData.frames[0];
+                                entity.texture = animationData!.frames[0];
                             }
                         }
                     }
@@ -660,7 +660,7 @@ export class SettingsHandler
             for (var j = 0; j < settings.layers.length; j++)
             {
                 const layerName = settings.layers[j];
-                const currentLayerInfo = settings.layersInfo[layerName] ?? {};
+                const currentLayerInfo: Partial<LayerInfo> = settings.layersInfo[layerName] ?? {};
 
                 const newLayerInfo:LayerInfo = {
                     name: layerName,
@@ -795,7 +795,7 @@ export class SettingsHandler
 
         var i = 0;
         
-        var entityName = entity.extends || "ANY";
+        var entityName: string | undefined = entity.extends || "ANY";
         while (entityName)
         {
             var extendedPrefab = this.GetRawPrefab(entityName, rawSettingsData);
@@ -833,7 +833,7 @@ export class SettingsHandler
             }
 
             // a base without an explicit extends still extends ANY (same default Process() applies),
-            var isChainEnd = entityName == "ANY" || entityName == "NONE";
+            var isChainEnd: boolean = entityName == "ANY" || entityName == "NONE";
             entityName = extendedPrefab.extends ?? (isChainEnd ? undefined : "ANY");
 
             i++
@@ -992,7 +992,7 @@ export class SettingsHandler
         }
     }
 
-    Get(): SettingsData
+    Get(): ProcessedSettingsData
     {
         return this.processed;
     }

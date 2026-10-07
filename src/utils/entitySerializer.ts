@@ -65,7 +65,7 @@ export class GameObjectSerializer
         customSerialize["texture"] = (currentValue: Texture) => currentValue.texturePath;
         customSerialize["color"] = (currentValue: Color) => currentValue.toHex();
 
-        customSerialize["children"] = (currentValue: GameObject[]): Entity[] => {
+        customSerialize["children"] = (currentValue: GameObject[]): Entity[] | null => {
             var children: Entity[] = [];
             for (var child of currentValue)
             {
@@ -75,7 +75,7 @@ export class GameObjectSerializer
             return children.length > 0 ? children : null;
         };
 
-        customSerialize["components"] = (currentValue: Component[]): Record<string, any> => {
+        customSerialize["components"] = (currentValue: Component[]): Record<string, any> | null => {
             var comps: Record<string, any> = {};
             for (var comp of currentValue)
             {
@@ -290,7 +290,7 @@ export class GameObjectSerializer
     }
 
     // mode: only the @SerializeField fields saved in that GameMode, every one when left out
-    static SerializeComponents(scene: Scene, components: Component[], checkSave: boolean = true, mode?: GameMode): Record<string, Record<string, Scalar>>
+    static SerializeComponents(scene: Scene, components: Component[], checkSave: boolean = true, mode?: GameMode): Record<string, Record<string, Scalar>> | null
     {
         if (!components)
             return null;

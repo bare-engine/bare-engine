@@ -42,15 +42,15 @@ export class EditorScene extends Scene
     public opened: boolean = false; // DOUBLES TRUTH WITH this.levelEditorOpen
 
     // Component classes
-    public editorControlsHandler: EditorControlsHandler;
-    public editorUIHandler: EditorUIHandler;
+    public editorControlsHandler!: EditorControlsHandler;
+    public editorUIHandler!: EditorUIHandler;
     
     // State management
-    private backgroundColorOrig: Color;
+    private backgroundColorOrig!: Color;
     private gameResolution: BareOptions['resolution'] = undefined;
     public currentLevelPath: string = '';
     
-    saveLevelCallback: () => Promise<LevelData>;
+    saveLevelCallback!: () => Promise<LevelData | undefined>;
 
     constructor(sceneOptions: SceneOptions | SettingsData = {solo: true, persistent: true, settingsData: bare.scene.GetLevelScene()?.settingsHandler.GetRaw()})
     {  
@@ -74,7 +74,7 @@ export class EditorScene extends Scene
         const { levelPathOrData, saveLevelCallback, settingsHandler } = payload ?? {};
 
         if (__DEV__)
-            globalThis.plugin?.AddDebugAction("Toggle Level Editor", () => this.Toggle(settingsHandler));
+            globalThis.plugin?.AddDebugAction("Toggle Level Editor", () => this.Toggle(settingsHandler!));
 
         return await this.Open(
             levelPathOrData ?? '',
@@ -83,7 +83,7 @@ export class EditorScene extends Scene
         );
     }
 
-    async Open(levelPathOrData: string | LevelData = '', saveLevelCallback: () => Promise<LevelData> = this.SaveLevel,
+    async Open(levelPathOrData: string | LevelData = '', saveLevelCallback: () => Promise<LevelData | undefined> = this.SaveLevel,
                    settingsHandler: SettingsHandler = this.settingsHandler)
     {
         if (typeof levelPathOrData != 'string')
@@ -137,7 +137,7 @@ export class EditorScene extends Scene
 
         this.saveLevelCallback = saveLevelCallback.bind(this);
 
-        const el = document.getElementById("editor-content");
+        const el = document.getElementById("editor-content")!;
         const hasEditorContent = (el.children.length > 0);
         if (!hasEditorContent)
         {
@@ -166,7 +166,7 @@ export class EditorScene extends Scene
         TransformToolHandler.Get().editor = this;
 
         // HANDLE CAMERA POSITION
-        var dims:Size = this.currentLevel.dimensions;
+        var dims:Size = this.currentLevel!.dimensions;
         var s = Math.max(dims.width / rapid.width, dims.height / rapid.height);
         var shouldFrameNextToSidebar = this.showUI && SaveData.minimized !== true;
 
@@ -187,7 +187,7 @@ export class EditorScene extends Scene
 
         rapid.backgroundColor = Color.fromHex('#3b3b3f');
 
-        bare.SendEvent(BareEvent.editor_opened, {settingsDataName: this.settingsData.name || 'levelEditor', levelName: level.isData ? "data" : SaveData.currentLevelStr});
+        bare.SendEvent(BareEvent.editor_opened, {settingsDataName: this.settingsData.name || 'levelEditor', levelName: level!.isData ? "data" : SaveData.currentLevelStr});
     }
 
     OnClear(): void
@@ -229,7 +229,7 @@ export class EditorScene extends Scene
             bare.scene.Restart(); // CAN GET HERE WHEN LOADED LEVEL FROM PLUGIN, BUT LAST GAME SCENE DOESN'T LOAD LEVEL
     }
 
-    async Toggle(settingsHandler: SettingsHandler, levelPathOrData: string | LevelData = '', saveLevelCallback: () => Promise<LevelData> = this.SaveLevel)
+    async Toggle(settingsHandler: SettingsHandler, levelPathOrData: string | LevelData = '', saveLevelCallback: () => Promise<LevelData | undefined> = this.SaveLevel)
     {
         if (this.settingsHandler == settingsHandler && bare.gameMode == GameMode.Edit)
         {
@@ -371,11 +371,11 @@ export class EditorScene extends Scene
 
     // HERE WE ACTUALLY SAVE THE LEVEL TO DISK
     // DIFFERENT FROM LEVELCONTROLLER WHERE WE SAVE TO LOCALSTORAGE
-    async SaveLevel(): Promise<LevelData>
+    async SaveLevel(): Promise<LevelData | undefined>
     {
         bare.SendEvent(BareEvent.level_preSavedToDisk, {levelStr: SaveData.currentLevelStr});
         
-        var level = this.currentLevel;
+        var level = this.currentLevel!;
         var levelPath = this.currentLevelPath;
     
         bare.level.Serialize(level);
@@ -417,7 +417,7 @@ export class EditorScene extends Scene
         }
 
         // ONLY SENDING TO globalEvents NOT TO ALL WITH bareEngine.SendEvent, SINCE IT WON'T REACH OTHER SCENES ANYWAY, THEY'RE DISABLED
-        globalEvents.emit(BareEvent.level_savedToDisk, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
+        globalEvents.emit(BareEvent.level_savedToDisk, {levelStr: SaveData.currentLevelStr, level: this.currentLevel!});
         
         return level;
     }
