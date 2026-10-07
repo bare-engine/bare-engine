@@ -261,7 +261,6 @@ function isSettingsDataPublicImportWarning(message) {
 }
 
 function bareIndexOutputPlugin() {
-    let outDir = "";
     // Same purpose as the initial-assets version stamp: entryFileNames is a fixed
     // "bundle.min.js" (not content-hashed), so without this a redeploy can leave
     // browsers serving a stale cached bundle against fresh index.html/assets
@@ -269,32 +268,24 @@ function bareIndexOutputPlugin() {
 
     return {
         name: "bare:index-output",
-        configResolved(config) {
-            outDir = config.build.outDir;
-        },
+        // "post" so vite:build-html has already emitted the page into the bundle;
+        // moving it here (before it's written) also makes Vite log dist/index.html
+        enforce: "post",
         generateBundle(_options, bundle) {
             for (const [fileName, item] of Object.entries(bundle)) {
-                if (fileName.replace(/\\/g, "/").endsWith("node_modules/.bare-engine/index.html")) {
-                    delete bundle[fileName];
-                    item.fileName = "index.html";
-                    bundle["index.html"] = item;
-                    return;
+                if (item.type !== "asset" || !fileName.replace(/\\/g, "/").endsWith("node_modules/.bare-engine/index.html")) {
+                    continue;
                 }
-            }
-        },
-        closeBundle() {
-            const nestedPath = path.join(outDir, "node_modules/.bare-engine/index.html");
-            const outputPath = path.join(outDir, "index.html");
 
-            if (!fs.existsSync(nestedPath)) {
+                // The page was built at node_modules/.bare-engine/, so its bundle path climbs two folders
+                item.source = String(item.source)
+                    .replace(/src="\.\.\/\.\.\/bundle\.min\.js"/g, `src="./bundle.min.js?v=${version}"`);
+
+                delete bundle[fileName];
+                item.fileName = "index.html";
+                bundle["index.html"] = item;
                 return;
             }
-
-            const html = fs.readFileSync(nestedPath, "utf8")
-                .replace(/src="\.\.\/\.\.\/bundle\.min\.js"/g, `src="./bundle.min.js?v=${version}"`);
-
-            fs.writeFileSync(outputPath, html);
-            fs.rmSync(path.join(outDir, "node_modules"), { recursive: true, force: true });
         }
     };
 }
