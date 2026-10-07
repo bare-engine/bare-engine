@@ -101,6 +101,15 @@ override OnRender()
 }
 ```
 
+Which hook you draw in decides whether shapes end up below or above the scene's objects:
+
+| Hook | Drawn |
+| --- | --- |
+| Scene `OnPreRender` | Below everything, eg a background or a game board under text |
+| Component `OnPreRender`, `OnRender` | Below the objects |
+| Scene `OnRender`, component `OnPostRender` | Above the objects, eg health bars or outlines |
+| Scene `OnPostRender` | Above everything, including what objects draw in their own `OnPostRender` |
+
 There's also `bare.drawRoundedRect`, `bare.drawSprite` (a texture) and `bare.drawGraphic` (any polygon, with per-point colors or a texture). The [Showcase](https://github.com/bare-engine/bare-showcase)'s [graphics demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/graphics/src/DemoGraphics.ts#L27-L127) shows all of them.
 
 ## Render textures
