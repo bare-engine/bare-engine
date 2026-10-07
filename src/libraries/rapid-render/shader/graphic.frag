@@ -42,6 +42,20 @@ vec4 sampleTextureLocal(vec2 uv) {
     return sampleTexture(gUV);
 }
 
+// Half a texel in from the frame edge, so linear filtering doesn't bleed in neighbouring frames
+vec2 clampToFrame(vec2 uv) {
+    vec2 halfTexel = 0.5 / vec2(textureSize(uTexture, 0));
+    return clamp(uv, min(vUVRect.xy, vUVRect.zw) + halfTexel, max(vUVRect.xy, vUVRect.zw) - halfTexel);
+}
+
+// Stretched textures (eg: STRETCH lines) sample right up to the frame edge too, so keep them inside it as well
+vec4 sampleFrameTexture() {
+    if (uUseTexture == 0) {
+        return vec4(1,1,1,1);
+    }
+    return texture(uTexture, clampToFrame(vRegion));
+}
+
 // Wrap the local uv into the texture's frame, so repeating works for atlas sub-textures too
 // (the GL wrap mode only repeats the whole atlas page).
 vec4 sampleRepeatTexture() {
@@ -50,9 +64,7 @@ vec4 sampleRepeatTexture() {
     }
     vec2 uv = mix(vUVRect.xy, vUVRect.zw, fract(vLocalUV));
 
-    // Half a texel in from the frame edge, so linear filtering doesn't bleed in neighbouring frames
-    vec2 halfTexel = 0.5 / vec2(textureSize(uTexture, 0));
-    uv = clamp(uv, min(vUVRect.xy, vUVRect.zw) + halfTexel, max(vUVRect.xy, vUVRect.zw) - halfTexel);
+    uv = clampToFrame(uv);
 
     // Gradients from the unwrapped uv, the wrapped one jumps at the seam and would pick a tiny mip there
     return textureGrad(uTexture, uv, dFdx(vRegion), dFdy(vRegion));
@@ -61,6 +73,6 @@ vec4 sampleRepeatTexture() {
 // CUSTOM_CODE
 
 void main(void) {
-    fragColor = (uRepeat > 0 ? sampleRepeatTexture() : sampleTexture(vRegion)) * vColor;
+    fragColor = (uRepeat > 0 ? sampleRepeatTexture() : sampleFrameTexture()) * vColor;
     // CUSTOM_CODE_CALL
 }
