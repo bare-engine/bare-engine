@@ -187,7 +187,9 @@ export class SopiroPhysicsController extends PhysicsControllerBase
             {
                 for (const [, pair] of this.activeCollisions)
                 {
-                    bare.events.emit(BareEvent.collision_end, pair.bodyA, pair.bodyB);
+                    // emitted untyped: the collision payload is the union of the physics modules the project
+                    // imports (bare-engine/arcade, bare-engine/sopiro), so it may not include RigidBody pairs
+                    bare.events.emit(BareEvent.collision_end as string, pair.bodyA, pair.bodyB);
                 }
 
                 this.activeCollisions.clear();
@@ -231,12 +233,12 @@ export class SopiroPhysicsController extends PhysicsControllerBase
                 this.activeCollisions.set(key, { bodyA, bodyB });
                 bodyA.OnCollisionStart(bodyB);
                 bodyB.OnCollisionStart(bodyA);
-                bare.events.emit(BareEvent.collision_start, bodyA, bodyB);
+                bare.events.emit(BareEvent.collision_start as string, bodyA, bodyB);
             }
 
             bodyA.OnCollisionUpdate(bodyB);
             bodyB.OnCollisionUpdate(bodyA);
-            bare.events.emit(BareEvent.collision_update, bodyA, bodyB); // NOT SENDING TO globalEvents, PROBABLY NEVER NEEDED? AND COULD COST MORE
+            bare.events.emit(BareEvent.collision_update as string, bodyA, bodyB); // NOT SENDING TO globalEvents, PROBABLY NEVER NEEDED? AND COULD COST MORE
         }
 
         for (const [key, pair] of this.activeCollisions)
@@ -246,7 +248,7 @@ export class SopiroPhysicsController extends PhysicsControllerBase
 
             pair.bodyA.OnCollisionEnd(pair.bodyB);
             pair.bodyB.OnCollisionEnd(pair.bodyA);
-            bare.events.emit(BareEvent.collision_end, pair.bodyA, pair.bodyB);
+            bare.events.emit(BareEvent.collision_end as string, pair.bodyA, pair.bodyB);
             this.activeCollisions.delete(key);
         }
     }

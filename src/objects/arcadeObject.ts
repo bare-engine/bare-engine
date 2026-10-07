@@ -246,19 +246,20 @@ export class ArcadeObject extends GameObject
         );
     }
     
+    // emitted untyped, see ArcadePhysicsController.HandleCollision
     OnCollisionStart(collidingObject: ArcadeObject)
     {
-        this.events.emit(BareEvent.collision_start, collidingObject, this);
+        this.events.emit(BareEvent.collision_start as string, collidingObject, this);
     }
 
     OnCollisionUpdate(collidingObject: ArcadeObject)
     {
-        this.events.emit(BareEvent.collision_update, collidingObject, this);
+        this.events.emit(BareEvent.collision_update as string, collidingObject, this);
     }
 
     OnCollisionEnd(collidingObject: ArcadeObject)
     {
-        this.events.emit(BareEvent.collision_end, collidingObject, this);
+        this.events.emit(BareEvent.collision_end as string, collidingObject, this);
     }
 
     IsMoving(): boolean
