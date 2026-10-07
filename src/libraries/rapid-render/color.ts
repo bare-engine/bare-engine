@@ -336,19 +336,24 @@ export class Color {
         this.updateUint();
     }
 
-    static Red = new Color(255, 0, 0, 255);
-    static Green = new Color(0, 255, 0, 255);
-    static Blue = new Color(0, 0, 255, 255);
-    static Yellow = new Color(255, 255, 0, 255);
-    static Purple = new Color(128, 0, 128, 255);
-    static Orange = new Color(255, 165, 0, 255);
-    static Pink = new Color(255, 192, 203, 255);
-    static Gray = new Color(128, 128, 128, 255);
-    static Brown = new Color(139, 69, 19, 255);
-    static Cyan = new Color(0, 255, 255, 255);
-    static Magenta = new Color(255, 0, 255, 255);
-    static Lime = new Color(192, 255, 0, 255);
-    static White = new Color(255, 255, 255, 255);
-    static Black = new Color(0, 0, 0, 255);
-    static Transparent = new Color(0, 0, 0, 0);
+    // shared constants are frozen so accidental in-place edits (e.g. Color.Red.a = 0) throw instead of recoloring everything
+    private static frozen(r: number, g: number, b: number, a: number): Color {
+        return Object.freeze(new Color(r, g, b, a)) as Color;
+    }
+
+    static readonly Red = Color.frozen(255, 0, 0, 255);
+    static readonly Green = Color.frozen(0, 255, 0, 255);
+    static readonly Blue = Color.frozen(0, 0, 255, 255);
+    static readonly Yellow = Color.frozen(255, 255, 0, 255);
+    static readonly Purple = Color.frozen(128, 0, 128, 255);
+    static readonly Orange = Color.frozen(255, 165, 0, 255);
+    static readonly Pink = Color.frozen(255, 192, 203, 255);
+    static readonly Gray = Color.frozen(128, 128, 128, 255);
+    static readonly Brown = Color.frozen(139, 69, 19, 255);
+    static readonly Cyan = Color.frozen(0, 255, 255, 255);
+    static readonly Magenta = Color.frozen(255, 0, 255, 255);
+    static readonly Lime = Color.frozen(192, 255, 0, 255);
+    static readonly White = Color.frozen(255, 255, 255, 255);
+    static readonly Black = Color.frozen(0, 0, 0, 255);
+    static readonly Transparent = Color.frozen(0, 0, 0, 0);
 }
