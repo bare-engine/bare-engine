@@ -88,7 +88,7 @@ export class ObjectController
             {
                 const object = this.layers[i][j];
                 object.Render();
-                object.OnRenderWorld();
+                object.RenderWorld();
             }
         }
     }

@@ -1039,7 +1039,7 @@ export class Scene implements SceneI
 
     // INPUT CAN BE: ENTITY / ENTITY NAME / GAMEOBJECT / CLASS TO INSTANTIATE / TEXTURE
     // THE ENTITY IS TYPED BY T's entity FIELD, EG: AddGameObject<Button>({ text: "Ok" }) CHECKS AGAINST ButtonEntity
-    AddGameObject<T extends GameObject = GameObject>(input?: NonNullable<T["entity"]> | string | GameObject | GameObjectClass | Texture, parent: int | string | GameObject = "objects"): T
+    AddGameObject<T extends GameObject = GameObject>(input?: NonNullable<T["entity"]> | string | GameObject | (new (...args: any[]) => T) | Texture, parent: int | string | GameObject = "objects"): T
     {
         if (!this.settingsHandler)
         {

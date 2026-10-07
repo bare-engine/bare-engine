@@ -1801,7 +1801,7 @@ export class GameObject
         }
     }
 
-    AddChild<T extends GameObject = GameObject>(input?: NonNullable<T["entity"]> | string | GameObject | GameObjectClass | Texture): T
+    AddChild<T extends GameObject = GameObject>(input?: NonNullable<T["entity"]> | string | GameObject | (new (...args: any[]) => T) | Texture): T
     {
         // RESET CACHED VALUES SO THEY GET RECALCULATED
         //this.cachedChildrenWidth = -1;

@@ -42,6 +42,9 @@ export class MouseController
     private middleMouseIsDown:boolean = false;
     private rightMouseIsDown:boolean = false;
 
+    /** False until the pointer has been over the canvas, while world.position still holds the (-1000, -1000) placeholder. */
+    hasPosition: boolean = false;
+
     mouseFramesDown: number = 0;
 
     mouseSpeed: number = 0;
@@ -210,11 +213,12 @@ export class MouseController
         const worldPos = this.scene.ScreenToWorld(x, y);
         this.world.position.x = worldPos.x;
         this.world.position.y = worldPos.y;
+        this.hasPosition = true;
     }
 
     Update(_deltaTime?: number)
     {
-        if (this.world.position.x == -1000 && this.world.position.y == -1000)
+        if (!this.hasPosition)
             return;
 
         if (bare.mobile && !this.mouseIsDown)
@@ -242,6 +246,7 @@ export class MouseController
     {
         this.world.position.x = -1000;
         this.world.position.y = -1000;
+        this.hasPosition = false;
 
         this.mouseSpeed = 0;
         this.mouseSpeedDelayed = 0;

@@ -39,6 +39,10 @@ You can change this with the `showEditorButton` and `editorButtonPosition` optio
 
 Pick prefabs to place from the extension, and choose the layer you're editing there as well.
 
+::: warning No undo
+The level editor has no undo yet: **Ctrl+Z** does nothing. Keep your levels in source control such as Git, so you can revert a level file when an edit goes wrong.
+:::
+
 ## Grid
 
 Turn on the grid and set its size with the ⚙️ settings button in the level editor. The settings are saved to `settingsData.json`.
