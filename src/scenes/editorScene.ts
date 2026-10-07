@@ -127,6 +127,8 @@ export class EditorScene extends Scene
         SaveDataHandler.Save();
         
         var level = await this.LoadLevel(levelNameOrData);
+        if (!level)
+            return; // load failed (LevelHandler.Load logged why), everything below needs a current level
 
         bare.gameMode = GameMode.Edit; // JUST SET TO GAME IN OnClear()
         if (!this.opened)

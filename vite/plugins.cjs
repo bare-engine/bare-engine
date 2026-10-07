@@ -901,6 +901,34 @@ function bareEditorAndApiPlugin(options = {}) {
 
                 next();
             });
+
+            // post middleware: only reached when vite's own middlewares didn't serve the request.
+            // vite serves a public file only once its watcher has reported it (after async plugin
+            // watchChange hooks), so a level fetched right after /api/create-level wrote it 404s
+            // with an empty body - nearly always when that write also created data/levels.
+            // serve such json files straight from disk until vite catches up
+            return () => {
+                server.middlewares.use((req, res, next) => {
+                    if (req.method !== "GET") {
+                        next();
+                        return;
+                    }
+
+                    // vite's spa fallback has already rewritten req.url to /index.html by now
+                    const requestUrl = new URL(req.originalUrl || req.url || "/", "http://127.0.0.1");
+                    const pathname = decodeURIComponent(requestUrl.pathname);
+                    const rootPath = path.resolve(publicDir);
+                    const fullPath = path.resolve(rootPath, `.${pathname}`);
+                    if (!pathname.endsWith(".json") || !fullPath.startsWith(rootPath + path.sep)
+                        || !fs.existsSync(fullPath) || !fs.statSync(fullPath).isFile()) {
+                        next();
+                        return;
+                    }
+
+                    res.setHeader("Cache-Control", "no-cache");
+                    sendFile(res, fullPath, "application/json; charset=utf-8");
+                });
+            };
         },
         handleHotUpdate(ctx) {
             if (Date.now() > skipReloadUntil) {
