@@ -79,14 +79,14 @@ export class AnimationComponent extends Component
     allAnimationNamesForObject: string[] = [];
 
     @InspectorField
-    playing = {
+    private playing = {
         get: () => this.enabled,
         set: (playing:boolean) => playing ? this.Resume() : this.Pause()
     };
 
     @InspectorField
     @Dropdown(function (this: AnimationComponent) { return this.allAnimationNamesForObject; })
-    current = {
+    private current = {
         get: () => this.currentAnimation?.name.replace(`${this.go.name}_`, "") ?? "",
         set: (name: string) => this.Play(name),
     };
@@ -94,7 +94,7 @@ export class AnimationComponent extends Component
     @InspectorField
     @Limit(0, Infinity)
     @Int
-    frame = {
+    private frame = {
         get: () => this.currentAnimation?.currentFrame ?? 0,
         set: (frame:int) => this.GotoFrame(frame % (this.currentAnimation?.frames.length ?? 0))
     };
@@ -102,7 +102,7 @@ export class AnimationComponent extends Component
     @InspectorField
     @Limit(0, Infinity)
     @Int
-    framesPerSecond = {
+    private framesPerSecond = {
         get: () => this.currentAnimation?.framesPerSecond ?? 0,
         set: (fps:int) => {if (this.currentAnimation) this.currentAnimation.framesPerSecond = fps}
     };

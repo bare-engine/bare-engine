@@ -25,13 +25,13 @@ export class TextObject extends GameObject
     pivotPercentage: Vec2 = new Vec2(); // SHOULD GAMEOBJECT HAVE THIS? - SOME MORE COMPLEXITY WITH SERIALIZE - TODO
 
     @SerializeField(GameMode.Edit)
-    text = {
+    private text = {
         get: () => this.textTexture.text,
         set: (text: string) => this.SetText(text),
     };
 
     @SerializeField(GameMode.Edit) @Int @Limit(0, Infinity)
-    fontSize = {
+    private fontSize = {
         get: () => this.textTexture.style.fontSize,
         set: (fontSize: number) => {this.textTexture.style.fontSize = fontSize; this.UpdateText();},
     };
