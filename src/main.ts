@@ -60,7 +60,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise
             let rapid = new Rapid({
                 canvas: canvas,
                 textureFilter: options.textureFilter,
-                backgroundColor: new Color(159/255, 202/255, 74/255, 255/255),
+                backgroundColor: Color.White,
                 antialias: options.antiAlias,
                 premultipliedAlpha: options.premultipliedAlpha,
                 roundPixels: options.roundPixels,

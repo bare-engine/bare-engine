@@ -7,6 +7,18 @@ export class KeyboardController
     private keysPressedPrevFrame: Set<string> = new Set<string>();
     private keysJustPressed: Set<string> = new Set<string>();
 
+    // KEY NAME EACH PHYSICAL KEY POSITION (event.code, EG "KeyW") LAST PRODUCED: "w" ON QWERTY, "z" ON AZERTY.
+    // KEPT AFTER KEYUP, SO keyup RELEASES THE NAME keydown ADDED (EG "!" DOWN, "1" UP AFTER SHIFT WAS RELEASED)
+    // AND IsCodeReleased CAN STILL LOOK IT UP
+    private keyAtCode = new Map<string, string>();
+
+    // DIRECTION HELPERS USE KEY POSITIONS, SO WASD ON QWERTY IS ZQSD ON AZERTY WITHOUT A SETTING,
+    // AND Z/Q ON QWERTY (OFTEN ACTION KEYS) DON'T COUNT AS UP/LEFT
+    private static readonly UP_CODES = ["KeyW", "ArrowUp"];
+    private static readonly DOWN_CODES = ["KeyS", "ArrowDown"];
+    private static readonly LEFT_CODES = ["KeyA", "ArrowLeft"];
+    private static readonly RIGHT_CODES = ["KeyD", "ArrowRight"];
+
     constructor()
     {
         globalEvents.once(BareEvent.game_awake, this.setupEventListeners.bind(this));
@@ -38,10 +50,6 @@ export class KeyboardController
             return processedkey;
         };
 
-        // keyup removes the same name keydown added, even if event.key changed in between
-        // (eg: "!" on keydown, "1" on keyup after shift was released)
-        const codeToKey = new Map<string, string>();
-
         const release = (key: string) => {
             if (!this.keysPressed.delete(key))
                 return;
@@ -64,7 +72,7 @@ export class KeyboardController
             syncModifiers(event);
 
             var key = processKey(event.key);
-            codeToKey.set(event.code, key);
+            this.keyAtCode.set(event.code, key);
 
             if (!this.keysPressed.has(key))
             {
@@ -80,8 +88,7 @@ export class KeyboardController
 
         // KEY UP
         document.addEventListener('keyup', (event: KeyboardEvent) => {
-            release(codeToKey.get(event.code) ?? processKey(event.key));
-            codeToKey.delete(event.code);
+            release(this.keyAtCode.get(event.code) ?? processKey(event.key));
             syncModifiers(event);
         });
 
@@ -146,70 +153,95 @@ export class KeyboardController
         this.keysPressed.clear();
         this.keysPressedPrevFrame.clear();
         this.keysJustPressed.clear();
+        this.keyAtCode.clear(); // ALSO RUNS ON BLUR/FOCUS, EG AFTER SWITCHING KEYBOARD LAYOUT
     }
 
+    // BY PHYSICAL KEY POSITION (event.code), EG "KeyW", "Space", "ArrowUp" - THE SAME KEY ON EVERY KEYBOARD LAYOUT
+    // https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_code_values
+    // LOOKS UP THE KEY NAME THAT POSITION PRODUCED AND CHECKS THAT
+    public IsCodeDown(code: string): boolean
+    {
+        const key = this.keyAtCode.get(code);
+        return key !== undefined && this.IsKeyDown(key);
+    }
 
-    
+    public IsCodePressed(code: string): boolean
+    {
+        const key = this.keyAtCode.get(code);
+        return key !== undefined && this.IsKeyPressed(key);
+    }
+
+    public IsCodeReleased(code: string): boolean
+    {
+        const key = this.keyAtCode.get(code);
+        return key !== undefined && this.IsKeyReleased(key);
+    }
+
+    private AnyCodeDown(codes: string[]): boolean { return codes.some(code => this.IsCodeDown(code)); }
+    private AnyCodePressed(codes: string[]): boolean { return codes.some(code => this.IsCodePressed(code)); }
+    private AnyCodeReleased(codes: string[]): boolean { return codes.some(code => this.IsCodeReleased(code)); }
+
+
     // EXTRAS FOR DIRECTIONAL MOVEMENT
 
     public IsUpDown(): boolean
     {
-        return this.IsKeyDown("w") || this.IsKeyDown("z") || this.IsKeyDown("arrowUp");
+        return this.AnyCodeDown(KeyboardController.UP_CODES);
     }
 
     public IsUpPressed(): boolean
     {
-        return this.IsKeyPressed("w") || this.IsKeyPressed("z") || this.IsKeyPressed("arrowUp");
+        return this.AnyCodePressed(KeyboardController.UP_CODES);
     }
 
     public IsDownDown(): boolean
     {
-        return this.IsKeyDown("s") || this.IsKeyDown("arrowDown");
+        return this.AnyCodeDown(KeyboardController.DOWN_CODES);
     }
 
     public IsDownPressed(): boolean
     {
-        return this.IsKeyPressed("s") || this.IsKeyPressed("arrowDown");
+        return this.AnyCodePressed(KeyboardController.DOWN_CODES);
     }
 
     public IsLeftDown(): boolean
     {
-        return this.IsKeyDown("a") || this.IsKeyDown("q") || this.IsKeyDown("arrowLeft");
+        return this.AnyCodeDown(KeyboardController.LEFT_CODES);
     }
 
     public IsLeftPressed(): boolean
     {
-        return this.IsKeyPressed("a") || this.IsKeyPressed("q") || this.IsKeyPressed("arrowLeft");
+        return this.AnyCodePressed(KeyboardController.LEFT_CODES);
     }
 
     public IsRightDown(): boolean
     {
-        return this.IsKeyDown("d") || this.IsKeyDown("arrowRight");
+        return this.AnyCodeDown(KeyboardController.RIGHT_CODES);
     }
 
     public IsRightPressed(): boolean
     {
-        return this.IsKeyPressed("d") || this.IsKeyPressed("arrowRight");
+        return this.AnyCodePressed(KeyboardController.RIGHT_CODES);
     }
 
     public IsUpReleased(): boolean
     {
-        return this.IsKeyReleased("w") || this.IsKeyReleased("z") || this.IsKeyReleased("arrowUp");
+        return this.AnyCodeReleased(KeyboardController.UP_CODES);
     }
 
     public IsDownReleased(): boolean
     {
-        return this.IsKeyReleased("s") || this.IsKeyReleased("arrowDown");
+        return this.AnyCodeReleased(KeyboardController.DOWN_CODES);
     }
 
     public IsLeftReleased(): boolean
     {
-        return this.IsKeyReleased("a") || this.IsKeyReleased("q") || this.IsKeyReleased("arrowLeft");
+        return this.AnyCodeReleased(KeyboardController.LEFT_CODES);
     }
 
     public IsRightReleased(): boolean
     {
-        return this.IsKeyReleased("d") || this.IsKeyReleased("arrowRight");
+        return this.AnyCodeReleased(KeyboardController.RIGHT_CODES);
     }
 
     public IsAnyDirectionKeyDown(): boolean

@@ -24,7 +24,7 @@ export type BareOptions =
     multiTouch?: boolean;
     editorButtonPosition?: Position;
     showEditorButton?: boolean;
-    debugKeys?: Record<string, () => void>[];
+    debugKeys?: Record<string, () => void>[] | null; // null OR [] FOR NONE
     roundPixels? :boolean;
     scaleMode?: CanvasScaleMode;
 };

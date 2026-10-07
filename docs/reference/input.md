@@ -20,6 +20,31 @@ if (bare.keyboard.IsKeyReleased('space')) { /* released this frame */ }
 | `GetKeysDown()` / `GetKeysPressed()` | Lists of keys. |
 | `ClearAll()` | Reset all key state. |
 
+::: warning Read input in OnUpdate, not OnFixedUpdate
+`IsKeyPressed`, `IsKeyReleased` and `bare.mouse.IsPressed` are per frame, and a frame runs zero, one or more fixed steps. In `OnFixedUpdate` they can miss a press or report it twice. Check them in `OnUpdate`, remember the result, and use it in the next `OnFixedUpdate`:
+
+```ts
+private jumpQueued = false;
+
+OnUpdate()
+{
+    if (bare.keyboard.IsKeyPressed('space'))
+        this.jumpQueued = true;
+}
+
+OnFixedUpdate()
+{
+    if (this.jumpQueued)
+    {
+        this.jumpQueued = false;
+        this.Jump();
+    }
+}
+```
+
+Held state (`IsKeyDown`, `IsKeyUp`) is fine to read in `OnFixedUpdate`.
+:::
+
 **Example:** the [Platformer](https://github.com/bare-engine/bare-platformer) [jumps on up or space](https://github.com/bare-engine/bare-platformer/blob/main/src/components/playerComponent.ts#L65-L69).
 
 ### Directions

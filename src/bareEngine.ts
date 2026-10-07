@@ -56,6 +56,8 @@ export class BareEngine
     public fixedTimestep: number = 1 / 60;
     public maxDeltaTime: number = 1 / 15; // CAPS FRAME DELTA, USEFUL AFTER LAG OR TAB REFOCUS
     private accumulator: number = 0;
+
+    private debugKeyActions = new Map<string, () => void>();
     public resolutionScale: number = 1;
     public resolution: BareOptions['resolution'];
     
@@ -192,32 +194,46 @@ export class BareEngine
         this.SetDebugKeys(options.debugKeys);
     }
 
-    private SetDebugKeys(debugKeys?: BareOptions['debugKeys']): void
+    // REPLACES ALL DEBUG KEYS. null OR [] TURNS THEM ALL OFF. DEV ONLY, A NO-OP IN PRODUCTION
+    public SetDebugKeys(debugKeys?: BareOptions['debugKeys']): void
     {
-        globalEvents.persistent.offAlias('debugKeys');
+        this.debugKeyActions.clear();
 
-        if (!__DEV__ || !debugKeys || debugKeys.length == 0)
-            return;
-
-        const debugKeyActions = new Map<string, () => void>();
-
-        for (const debugKeyGroup of debugKeys)
+        for (const debugKeyGroup of debugKeys ?? [])
         {
             for (const [key, action] of Object.entries(debugKeyGroup))
             {
                 if (action)
-                    debugKeyActions.set(key.toLocaleLowerCase(), action);
+                    this.debugKeyActions.set(key.toLocaleLowerCase(), action);
             }
         }
 
-        if (debugKeyActions.size == 0)
+        this.RefreshDebugKeysListener();
+    }
+
+    // ADDS OR CHANGES ONE DEBUG KEY, OR REMOVES IT WITH null. EG: bare.SetDebugKey("c", null)
+    public SetDebugKey(key: string, action: (() => void) | null): void
+    {
+        if (action)
+            this.debugKeyActions.set(key.toLocaleLowerCase(), action);
+        else
+            this.debugKeyActions.delete(key.toLocaleLowerCase());
+
+        this.RefreshDebugKeysListener();
+    }
+
+    private RefreshDebugKeysListener(): void
+    {
+        globalEvents.persistent.offAlias('debugKeys');
+
+        if (!__DEV__ || this.debugKeyActions.size == 0)
             return;
 
         var debugKeysHandler = ({ key, allKeys }: { key: string; allKeys: string[] }) => {
             if (allKeys.length > 1)
                 return; // MORE THAN ONE KEY PRESSED, EG: CTRL-C
 
-            const action = debugKeyActions.get(key.toLocaleLowerCase());
+            const action = this.debugKeyActions.get(key.toLocaleLowerCase());
             if (action)
                 action();
         };
@@ -499,6 +515,13 @@ export class BareEngine
     SetBackgroundColor(backgroundColor: Color)
     {
         rapid.backgroundColor = backgroundColor;
+    }
+    
+    SetBackgroundColorHTML(backgroundColor: Color)
+    {
+        const pageColor = backgroundColor.a == 255 ? `rgb(${backgroundColor.r}, ${backgroundColor.g}, ${backgroundColor.b})` : "";
+        document.documentElement.style.backgroundColor = pageColor;
+        document.body.style.backgroundColor = pageColor;
     }
 
     RunMainLoop()

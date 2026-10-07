@@ -17,7 +17,7 @@ StartBare(Game, {
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `backgroundColor` | renderer startup color | Canvas background color, as a `Color`. Set it explicitly for a predictable appearance. |
+| `backgroundColor` | renderer startup color | Canvas background color, as a `Color`. Set it explicitly for a predictable appearance. An opaque color also colors the page around the canvas, so the bars of a fitted `resolution` match. |
 | `resolution` | full window | Render size, see below. |
 | `antiAlias` | `true` | Smooth edges. |
 | `textureFilter` | `LINEAR` | Use `NEAREST` for pixel art. |
