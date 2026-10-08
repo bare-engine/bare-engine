@@ -124,7 +124,8 @@ const ENGINE_COMPONENT_BASES = new Set([
     "PositionPivotComponent",
     "ResizableComponent",
     "ResizableRemoveComponent",
-    "TiledComponent"
+    "TiledComponent",
+    "NineSliceComponent"
 ]);
 
 function bareAutoRegisterClassesPlugin(options = {}) {

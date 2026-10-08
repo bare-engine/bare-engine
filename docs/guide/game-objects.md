@@ -97,6 +97,15 @@ ship.GetChildByName('gun');
 gun.RemoveFromParent();
 ```
 
+A child's position is measured from the top-left corner of its parent's image, in the parent's image pixels, and it moves, turns and scales along with the parent. So `SetPosition(0, 0)` puts it on that corner, not on the parent's position. To put a child on its parent's position, use the parent's pivot:
+
+```ts
+const face = ball.AddChild('face').CenterPivot();
+face.SetPosition(ball.pivotX, ball.pivotY);
+```
+
+A child of a scaled parent is scaled too. If the parent is scaled differently in width and height, a turned child is skewed, so keep things like that as separate objects that follow the parent instead.
+
 Use `ToGlobal(point)` and `ToLocal(point)` to convert between a child's space and world space.
 
 ## Components

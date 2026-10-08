@@ -167,9 +167,11 @@ Set one of these as a prefab's `baseClass`:
 
 | Class | Shape |
 | --- | --- |
-| `Box` | A rectangle, the size of the object. |
-| `Circle` | A circle. |
+| `Box` | A rectangle, the size of its image times its scale. `rigidbodyRect: { width, height }` sets another size, in image pixels. |
+| `Circle` | A circle with a radius of half the image's smaller side, times its scale. `hitboxRadius` sets another radius. |
 | `Polygon` | Any convex shape, from `polygonVertices`: a flat list of points, `[x1, y1, x2, y2, …]`. |
+
+A body turns around its center, so while the game runs its pivot is always the center of its image, whatever the prefab says. Children and `SetPosition` work from that center too.
 
 ```json
 {
@@ -189,9 +191,9 @@ Set one of these as a prefab's `baseClass`:
 | Property | Description |
 | --- | --- |
 | `static` | Doesn't move; other bodies collide with it. |
-| `mass` / `density` | How heavy the body is. Set one, the other follows from its size. |
-| `restitution` | Bounciness, from 0 to 1. |
-| `friction` | How much it grips other bodies. |
+| `mass` / `density` | How heavy the body is. Set one, the other follows from its size: mass is density times the area in game units, divided by 10,000. Density is 1 by default. |
+| `restitution` | Bounciness, from 0 to 1. Default `0.7`. |
+| `friction` | How much it grips other bodies. Default `0.7`. |
 | `surfaceSpeed` | Moves whatever touches it along its surface, like a conveyor belt. |
 | `linearVelocity` / `angularVelocity` | Current movement and spin. |
 | `gravity` | The body's own gravity, in units per second², in any direction, like `{ x: 0, y: -500 }` to fall up. `null`, the default, uses `gravity` from `settingsData.json`. |
@@ -208,6 +210,54 @@ ball.SetPosition(x, y);
 ```
 
 Collisions fire the `collision_start`, `collision_update` and `collision_end` events.
+
+### Friction and bounce between two bodies
+
+When two bodies touch, their frictions are multiplied, and so are their restitutions. Two bodies with the default `0.7` touch with a friction and a bounce of 0.49, and a ball with a restitution of 1 doesn't bounce at all on a floor with 0. Give both bodies a value. Other engines often combine them differently, Box2D for example takes the square root of the two frictions multiplied and the highest restitution, so values copied from there come out lower here. To get the same result, use the square root of the value on both bodies: `0.7071` on both gives a friction of 0.5.
+
+### Placing bodies
+
+Place bodies so they touch, not overlap. Overlapping bodies are pushed apart by giving them speed, so a stack placed with an overlap of a pixel or two can start out moving and fall over.
+
+### Sleeping
+
+Bodies that touch each other fall asleep together, once all of them have been still for half a second. Sleeping bodies stop moving and cost almost nothing. They wake up when something they touch is removed or hits them, when you call `SetPosition`, or when you call `body.awake()`. Read `body.sleeping` to see if a body is asleep. Setting `linearVelocity` or `angularVelocity` doesn't wake a body, so call `awake()` after.
+
+### Finding the body at a point
+
+The physics world can tell which body is at a point, for example under the pointer:
+
+```ts
+import { Vec2 } from 'bare-engine';
+
+const mouse = bare.mouse.world.position;
+const body = this.sopiro.world.queryPoint(new Vec2(mouse.x, mouse.y))[0];
+```
+
+`queryPoint` returns a list with at most one body. It finds the exact shape, so clicking the empty corner next to a circle finds nothing.
+
+### Tuning
+
+Solver settings live in `Settings`, exported from `bare-engine/sopiro`. Change them once at startup, for example in [`OnInit`](./configuration#oninit). They're shared by every scene. Units are game units and seconds.
+
+```ts
+import { Settings } from 'bare-engine/sopiro';
+
+Settings.numIterations = 15;
+```
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| `numIterations` | `10` | Solver passes per step. More makes stacks steadier and costs more. |
+| `penetrationSlop` | `0.005` | How far bodies may overlap before they're pushed apart. |
+| `positionCorrectionBeta` | `0.2` | How much of an overlap is pushed apart per step. |
+| `restitutionSlop` | `50` | Speed taken off every bounce, in units per second, so slow hits don't bounce. |
+| `sleepEnabled` | `true` | Whether bodies fall asleep. |
+| `sleepingWait` | `0.5` | Seconds a body must be still before it sleeps. |
+| `restLinearTolerance` | `0.000025` | Speed below which a body counts as still, squared: `0.005 * 0.005`. |
+| `restAngularTolerance` | about `0.000076` | Turning speed below which a body counts as still, in radians per second, squared. |
+
+`penetrationSlop` and `restLinearTolerance` are tiny for a game measured in pixels. If stacks jitter or never fall asleep, try `Settings.penetrationSlop = 0.5` and `Settings.restLinearTolerance = 1`.
 
 ### Joints
 

@@ -134,6 +134,7 @@ Inspector decorators like `@Inspector.Limit` are removed in production builds, s
 | `ParticleComponent` | Attaches a particle emitter to the object. See [Particles](./particles). |
 | `TextComponent` | Renders text. See [Text & UI](./text-and-ui). |
 | `TiledComponent` | Repeats the object's texture instead of stretching it. See [Rendering](./rendering#tiled-textures). |
+| `NineSliceComponent` | Stretches the object's texture but keeps its borders and corners the same size. See [Rendering](./rendering#nine-slice). |
 | `CollisionEventComponent` | Sends an event when the object collides with a named object. See [below](#collisioneventcomponent). |
 
 ### CollisionEventComponent

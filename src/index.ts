@@ -43,6 +43,7 @@ export { CollisionEventComponent } from "./components/collisionEventComponent";
 export { ParticleComponent } from "./components/particleComponent";
 export { TextComponent } from "./components/textComponent";
 export { TiledComponent } from "./components/tiledComponent";
+export { NineSliceComponent } from "./components/nineSliceComponent";
 
 // Editor
 export { EditorScene } from "./scenes/editorScene";

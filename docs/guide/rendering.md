@@ -141,6 +141,30 @@ To move the texture, like a conveyor belt or flowing water, set `scroll` in tile
 
 To draw the tiles differently, extend `TiledComponent` and override `RenderTiles(color, matrixIndex)`. It draws in the texture's own space, so the object covers 0 to the texture's width and height.
 
+## Nine-slice
+
+Stretching a panel, a button or an outlined block also stretches its border. A `NineSliceComponent` keeps the border the same: scale the object to the size you want, and the corners keep their size, the edges stretch in one direction and the middle in both.
+
+```json
+{
+  "name": "panel",
+  "texture": "panel",
+  "scale": { "x": 6, "y": 3 },
+  "components": {
+    "nineSlice": { "left": 12, "top": 12, "right": 12, "bottom": 12 }
+  }
+}
+```
+
+| Field | Default | Description |
+| --- | --- | --- |
+| `left`, `top`, `right`, `bottom` | `8` | Width of each border, in pixels of the texture. |
+| `borderScale` | `1` | Size of the borders in game units per texture pixel. Use `0.5` for art drawn at twice the size. |
+
+When the object is smaller than its two borders together, the borders shrink so they fit. The object's own size is still the texture size times its scale, so hitboxes and physics bodies match what you see. Children are scaled along with it, so put things that shouldn't stretch, like a label, next to the object rather than inside it.
+
+To draw the slices differently, extend `NineSliceComponent` and override `RenderSlices(color, matrixIndex)`. Like `RenderTiles`, it draws in the texture's own space.
+
 ## Render textures
 
 A render texture is an image you draw into. Use it to bake many objects into one, for trails, paint, or a minimap:
