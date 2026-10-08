@@ -1,6 +1,7 @@
 import { GameMode } from "../../../globals";
 import { GameObject } from "../../../objects/gameObject";
-import { BareEvent, Entity } from "../../../types/bareTypes";
+import { BareEvent } from "../../../types/bareTypes";
+import { Color } from "../../rapid-render";
 import { Limit, Percentage } from "../../../utils/decorators";
 import { SerializeField } from "../../../utils/serializeFields";
 import { Circle } from "../circle";
@@ -26,9 +27,11 @@ export abstract class JointObject extends GameObject
 
     staticAnchor!: Circle;
 
-    override OnAwake(entity?: Entity): void
+    // Only draw the texture in the editor, to select the joint. Not via visible = false, that would also skip OnRender/OnRenderWorld
+    override RenderSprite(color?: Color, matrixIndex?: number): void
     {
-        this.visible = false;
+        if (bare.gameMode == GameMode.Edit)
+            super.RenderSprite(color, matrixIndex);
     }
 
     override OnAdded(): void
