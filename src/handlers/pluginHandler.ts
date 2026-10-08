@@ -1,6 +1,6 @@
 import { keyboardController } from "../controllers/keyboardController";
 import { GameMode, globalEvents } from "../globals";
-import { Vec2 } from "../libraries/rapid-render";
+import { Color, Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { EditorScene } from "../scenes/editorScene";
 import { EditorUIScene } from "../scenes/editorUIScene";
@@ -9,11 +9,12 @@ import { Scene } from "../scenes/scene";
 import { OutlineShader } from "../shaders/outlineShader";
 import { defaultSettingsData } from "../types/bareData";
 import { AnyEntity, BareEvent, Entity, EntityVarsNestedEntry, entityVarsNested, LevelData, Position, Rectangle, SaveData, Scalar, SettingsData } from "../types/bareTypes";
-import { applyInspectorField, getButtons, getHiddenFieldNames, getInspectorClasses, getInspectorFieldDescriptions, getInspectorFields, resolveInspectorClassName } from "../utils/decorators";
+import { applyInspectorField, Decimal, getButtons, getHiddenFieldNames, getInspectorClasses, getInspectorFieldDescriptions, getInspectorFields, InspectorField, Limit, resolveInspectorClassName } from "../utils/decorators";
 import { GameObjectSerializer } from "../utils/entitySerializer";
 import { Helper } from "../utils/helper";
 import { RectSelection, RectSelectionCandidate } from "../utils/rectSelection";
 import { SaveDataHandler } from "./SaveDataHandler";
+import { LevelHandler } from "./levelHandler";
 import { EditorUIHandler } from "./editorUIHandler";
 import { TransformToolHandler } from "./transformToolHandler";
 import { SettingsHandler } from "./settingsHandler";
@@ -152,6 +153,58 @@ function getObjectByIdFromAllScenes(uid: string): GameObject | null
     }
 
     return null;
+}
+
+// A LEVEL'S OWN PROPERTIES AS INSPECTOR FIELDS. THE PLUGIN'S LEVELS TAB SHOWS WHATEVER IS EXPOSED HERE,
+// THE SAME WAY IT SHOWS AN OBJECT'S FIELDS. RENAMING IS HANDLED BY THE PLUGIN, SINCE IT MOVES THE FILE
+class LevelProperties
+{
+    constructor(private level: LevelData) {}
+
+    @InspectorField
+    get name(): string { return this.level.name; }
+    set name(value: string) { this.level.name = value; }
+
+    // WHOLE UNITS. SET IN PLACE ON dimensions, THE EDITOR KEEPS A REFERENCE TO IT
+    @InspectorField @Decimal(0) @Limit(1, Infinity)
+    get width(): number { return this.level.dimensions.width; }
+    set width(value: number) { this.level.dimensions.width = value; }
+
+    @InspectorField @Decimal(0) @Limit(1, Infinity)
+    get height(): number { return this.level.dimensions.height; }
+    set height(value: number) { this.level.dimensions.height = value; }
+
+    @InspectorField
+    get backgroundColor(): Color { return Color.fromHex(this.level.backgroundColor ?? "#000000"); }
+    set backgroundColor(value: Color) { this.level.backgroundColor = value.toHex().slice(0, 7); }
+
+    // {} WHEN THERE'S NONE, SO IT STILL SHOWS UP TO ADD VALUES TO
+    @InspectorField
+    get customData(): Record<string, any> { return this.level.customData ?? {}; }
+    set customData(value: Record<string, any>)
+    {
+        if (value && Object.keys(value).length > 0)
+            this.level.customData = value;
+        else
+            delete this.level.customData;
+    }
+}
+
+// THE LOADED LEVEL WHEN IT'S THE ONE ASKED FOR, SO EDITS SHOW RIGHT AWAY. OTHERWISE ITS FILE
+async function GetEditableLevel(levelName: string): Promise<{ level: LevelData, isCurrent: boolean }>
+{
+    const current = GetLoadedLevel(levelName);
+    if (current)
+        return { level: current, isCurrent: true };
+
+    return { level: await Helper.loadJSON<LevelData>(`${bare.levelPath}/${levelName}.json`), isCurrent: false };
+}
+
+function GetLoadedLevel(levelName: string): LevelData | null
+{
+    const current = bare.scene.GetLevelScene()?.level.currentLevel;
+
+    return current && (SaveData.currentLevelStr === levelName || current.name === levelName) ? current : null;
 }
 
 const gameDebugApi = {
@@ -1805,6 +1858,46 @@ const gameDebugApi = {
             return { ok: true };
         } catch (error: any) {
             console.error('Failed to save level data', error);
+            return { ok: false, error: error?.message ?? String(error) };
+        }
+    },
+
+    async getLevelFields(levelName: string) {
+        const { level } = await GetEditableLevel(levelName);
+        return getInspectorFields(new LevelProperties(level));
+    },
+
+    // WITHOUT save, ONLY SHOWS THE CHANGE ON THE LOADED LEVEL, EG WHILE DRAGGING A NUMBER
+    async setLevelField(levelName: string, fieldName: string, value: any, save: boolean = true) {
+        try {
+            if (fieldName === "name")
+                return await this.saveLevelData(levelName, { name: value });
+
+            if (!save)
+            {
+                const loaded = GetLoadedLevel(levelName);
+                if (loaded)
+                    await applyInspectorField(new LevelProperties(loaded), fieldName, value);
+                return { ok: true };
+            }
+
+            const { level, isCurrent } = await GetEditableLevel(levelName);
+            await applyInspectorField(new LevelProperties(level), fieldName, value);
+
+            if (isCurrent)
+                bare.scene.GetLevelScene()!.level.Serialize(level);
+            else if (LevelHandler.levelCache.has(levelName))
+                LevelHandler.levelCache.set(levelName, level);
+
+            await fetch('/api/save-level', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ levelPath: `${bare.levelPath}/${levelName}.json`, levelData: level, skipReload: true })
+            });
+
+            return { ok: true };
+        } catch (error: any) {
+            console.error('Failed to set level field', error);
             return { ok: false, error: error?.message ?? String(error) };
         }
     },
