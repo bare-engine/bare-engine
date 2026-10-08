@@ -233,22 +233,20 @@ export class ComponentController
         return components ? components.slice() : [];
     }
 
+    // A COPY, SO COMPONENTS CAN BE REMOVED WHILE LOOPING OVER THE RESULT
     GetAllFrom(object: GameObject): Component<any>[]
     {
-        var comps = this.componentsByGameObject.get(object.uniqueID);
-        if (!comps)
-            return new Array<Component<any>>();
-        
-        return this.componentsByGameObject.get(object.uniqueID)!;
+        return this.GetAllFromUID(object.uniqueID);
     }
 
+    // A COPY, SO COMPONENTS CAN BE REMOVED WHILE LOOPING OVER THE RESULT
     GetAllFromUID(uniqueID: string): Component<any>[]
     {
         var components = this.componentsByGameObject.get(uniqueID);
         if (!components)
             return new Array<Component<any>>();
 
-        return components;
+        return components.slice();
     }
 
     Move<T extends Component>(from: GameObject, to: GameObject, componentType: Ctor<T>): T | null
