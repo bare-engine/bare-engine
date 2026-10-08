@@ -132,8 +132,13 @@ export class TextObjectTest extends Scene
         // Button
         const button = this.Button();
         const shortButtonWidth = button.width;
-        c.check(near(button.width, button.textTexture.width + 20) && near(button.height, button.textTexture.height + 20),
+        c.check(near(button.width, button.textTexture.width + 20) && near(button.height, button.textTexture.lineBoxHeight + 20),
             "a button should be its text plus the margin on each side: " + button.width + "x" + button.height);
+        // height comes from the font, not the glyphs, so a descender doesn't make a button taller
+        const menuButton = this.Button("Menu");
+        const retryButton = this.Button("Retry");
+        c.check(near(menuButton.height, retryButton.height),
+            "buttons with the same style should be the same height: " + menuButton.height + " vs " + retryButton.height);
         button.margin = 4;
         c.check(near(button.width, button.textTexture.width + 8), "changing the margin should resize the button");
         button.margin = 10;
