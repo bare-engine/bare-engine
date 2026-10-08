@@ -77,6 +77,8 @@ bare.component.Disable(obj, SpinComponent);
 bare.component.Enable(obj, SpinComponent);
 ```
 
+`GetAllByType` returns a copy, so you can remove objects while looping over it.
+
 **Example:** the [Platformer](https://github.com/bare-engine/bare-platformer) [counts its coins](https://github.com/bare-engine/bare-platformer/blob/main/src/game.ts#L59) with `bare.component.GetAllByType(CollectableComponent)`.
 
 ### Calling a method on all components

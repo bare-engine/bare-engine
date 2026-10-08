@@ -228,7 +228,9 @@ export class ComponentController
 
     GetAllByType<ComponentType extends Component<any>>(componentType: Ctor<ComponentType>): ComponentType[]
     {
-        return this.componentsByType.get(componentType) as unknown as ComponentType[] || [];
+        // A COPY, SO REMOVING OBJECTS/COMPONENTS WHILE LOOPING OVER THE RESULT DOESN'T SKIP ANY
+        const components = this.componentsByType.get(componentType) as unknown as ComponentType[] | undefined;
+        return components ? components.slice() : [];
     }
 
     GetAllFrom(object: GameObject): Component<any>[]
