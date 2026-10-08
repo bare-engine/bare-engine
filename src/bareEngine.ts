@@ -37,7 +37,8 @@ export interface BareRestartOptions
 export class BareEngine
 {
     private initialSceneClass!: SceneClass;
-    private restartTimeout: ReturnType<typeof setTimeout> | null = null;
+    private restartPromise: Promise<Scene> | null = null;
+    private restartOptions: BareRestartOptions = {};
     
     public lastUpdateTimeRef!: number;
     public deltaTime!: number;
@@ -219,6 +220,18 @@ export class BareEngine
         else
             this.debugKeyActions.delete(key.toLocaleLowerCase());
 
+        this.RefreshDebugKeysListener();
+    }
+
+    public DisableAllDebugKeys(): void
+    {
+        this.debugKeyActions.clear();
+        this.RefreshDebugKeysListener();
+    }
+
+    public DisableDebugKey(key: string): void
+    {
+        this.debugKeyActions.delete(key.toLocaleLowerCase());
         this.RefreshDebugKeysListener();
     }
 
@@ -811,38 +824,38 @@ export class BareEngine
     }
 
 
-    Restart(options: BareRestartOptions = {}): void
+    /** Debounced - calls in the same tick collapse into one restart (last call's options win), all resolving with the new scene */
+    Restart(options: BareRestartOptions = {}): Promise<Scene>
     {
-        const {
-            sceneClass,
-            bareOptions,
-            clearSaveData = false
-        } = options;
+        if (options.sceneClass)
+            this.initialSceneClass = options.sceneClass;
 
-        if (sceneClass)
-            this.initialSceneClass = sceneClass;
+        this.restartOptions = options;
+        return this.restartPromise ??= this.RunRestart();
+    }
 
-        if (this.restartTimeout)
-            clearTimeout(this.restartTimeout);
+    private async RunRestart(): Promise<Scene>
+    {
+        await new Promise(resolve => setTimeout(resolve, 0));
+        this.restartPromise = null;
 
-        this.restartTimeout = setTimeout(async () => {
-            this.restartTimeout = null;
-            bare.paused = false;
-            
-            bare.scene.Clear(true);
+        const { bareOptions, clearSaveData = false } = this.restartOptions;
+        bare.paused = false;
 
-            if (clearSaveData)
-                globalEvents.emit(BareEvent.game_completeClear);
-            
-            if (bareOptions)
-                this.ApplyOptions(bareOptions);
+        bare.scene.Clear(true);
 
-            this.ResizeCanvas(this.resolution);
-            await bare.scene.Goto(this.initialSceneClass);
-            this.lastUpdateTimeRef = performance.now();
+        if (clearSaveData)
+            globalEvents.emit(BareEvent.game_completeClear);
 
-            this.SendEvent(BareEvent.game_started);
-        }, 0);
+        if (bareOptions)
+            this.ApplyOptions(bareOptions);
+
+        this.ResizeCanvas(this.resolution);
+        const scene = await bare.scene.Goto(this.initialSceneClass);
+        this.lastUpdateTimeRef = performance.now();
+
+        this.SendEvent(BareEvent.game_started);
+        return scene;
     }
 
     SendEvent<K extends keyof Events>(type: K, ...event: EventArgs<Events[K]>): void

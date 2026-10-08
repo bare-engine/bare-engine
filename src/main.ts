@@ -36,14 +36,13 @@ function GetBareOptions(options?: BareOptions): BareOptions
     }, ...options };
 }
 
-export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise<Scene | undefined>
+export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise<Scene>
 {
     // DEFAULTS + OVERRIDE OPTIONS
     options = GetBareOptions(options);
 
     if (__DEV__ && window.bare) {
-        bare.Restart({sceneClass: gameClass, bareOptions: options});
-        return Promise.resolve(undefined); // Restart is debounced (setTimeout), new scene isn't ready yet
+        return bare.Restart({sceneClass: gameClass, bareOptions: options});
     }
 
     let resolveReady: (scene: Scene) => void;

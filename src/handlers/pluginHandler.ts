@@ -215,7 +215,7 @@ const gameDebugApi = {
         return plugin.TogglePause();
     },
     restart() {
-        return bare.Restart();
+        bare.Restart(); // don't return the promise - the scene isn't serializable across the devtools bridge
     },
     setPluginConnected(connected: boolean) {
         if (connected)
