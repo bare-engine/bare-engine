@@ -52,10 +52,36 @@ export class World
     // settingsData gravity when set, same as arcade physics. else sopiro's own default
     get gravity(): number
     {
-        return this.scene.settingsHandler.GetRaw()?.gravity ?? Settings.gravity * Settings.gravityScale;
+        return this.scene.settingsHandler.GetRaw()?.gravity ?? Settings.gravity;
     }
 
+    // THE SCENE'S "sopiro" SETTINGS FROM settingsData OVERRIDE THE GLOBAL Settings, BUT ONLY WHILE THIS WORLD STEPS.
+    // THE SOLVER READS THE GLOBAL Settings EVERYWHERE, SO THEY'RE SWAPPED IN AND PUT BACK, KEEPING SCENES APART
     update(delta: number): void
+    {
+        const overrides = this.scene.settingsHandler.GetRaw()?.sopiro;
+        if (!overrides)
+        {
+            this.step(delta);
+            return;
+        }
+
+        const defaults: Record<string, unknown> = {};
+        for (const key in overrides)
+            defaults[key] = (Settings as Record<string, unknown>)[key];
+
+        Object.assign(Settings, overrides);
+        try
+        {
+            this.step(delta);
+        }
+        finally
+        {
+            Object.assign(Settings, defaults);
+        }
+    }
+
+    private step(delta: number): void
     {
         let newManifolds: ContactManifold[] = [];
         let newManifoldMap: Map<number, ContactManifold> = new Map();

@@ -133,6 +133,14 @@ export class Island
                 this.joints[i].solve();
         }
 
+        // SPLIT IMPULSE: PUSH OVERLAPS APART ON PSEUDO VELOCITIES, SO THE REAL VELOCITIES DON'T GAIN SPEED FROM IT
+        if (Settings.positionCorrection && Settings.splitImpulse)
+        {
+            for (let i = 0; i < Settings.numIterations; i++)
+                for (let j = 0; j < this.manifolds.length; j++)
+                    this.manifolds[j].solvePositions();
+        }
+
         // Update positions using corrected velocities (Semi-implicit euler integration)
         for (let i = 0; i < this.bodies.length; i++)
         {
@@ -143,9 +151,12 @@ export class Island
             b.force.clear();
             b.torque = 0;
 
-            b.position.x += b.linearVelocity.x * Settings.dt;
-            b.position.y += b.linearVelocity.y * Settings.dt;
-            b.rotationRad += b.angularVelocity * Settings.dt;
+            b.position.x += (b.linearVelocity.x + b.pseudoLinearVelocity.x) * Settings.dt;
+            b.position.y += (b.linearVelocity.y + b.pseudoLinearVelocity.y) * Settings.dt;
+            b.rotationRad += (b.angularVelocity + b.pseudoAngularVelocity) * Settings.dt;
+
+            b.pseudoLinearVelocity.clear();
+            b.pseudoAngularVelocity = 0;
 
             if (b.position.y < Settings.deadBottom)
                 this.world.unregister(b.id);

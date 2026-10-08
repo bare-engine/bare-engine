@@ -42,6 +42,10 @@ class ContactSolver
 
     public impulseSum: number = 0.0; // For accumulated impulse
 
+    // SPLIT IMPULSE: THE SEPARATION SPEED THAT FIXES THE OVERLAP, SOLVED ON PSEUDO VELOCITIES THAT ONLY MOVE POSITIONS
+    private positionBias: number = 0.0;
+    private pseudoImpulseSum: number = 0.0;
+
     constructor(manifold: ContactManifold, contactPoint: Vec2)
     {
         this.manifold = manifold;
@@ -50,8 +54,9 @@ class ContactSolver
         this.contactPoint = contactPoint;
 
         this.beta = Settings.positionCorrectionBeta;
-        this.restitution = this.bodyA.restitution * this.bodyB.restitution;
-        this.friction = this.bodyA.friction * this.bodyB.friction;
+        // MIXED LIKE Box2D, SO A BOUNCY BALL BOUNCES ON ANY FLOOR
+        this.restitution = Math.max(this.bodyA.restitution, this.bodyB.restitution);
+        this.friction = Math.sqrt(this.bodyA.friction * this.bodyB.friction);
     }
 
     prepare(dir: Vec2, contactType: ContactType, featureFlipped: boolean)
@@ -74,6 +79,8 @@ class ContactSolver
         }
 
         this.bias = 0.0;
+        this.positionBias = 0.0;
+        this.pseudoImpulseSum = 0.0;
         if (this.contactType == ContactType.Normal)
         {
             // Relative velocity at contact point
@@ -82,10 +89,19 @@ class ContactSolver
             let normalVelocity = this.manifold.contactNormal.dot(relativeVelocity);
 
             if (Settings.positionCorrection)
-                this.bias = -(this.beta * Settings.inv_dt) * Math.max(this.manifold.penetrationDepth! - Settings.penetrationSlop, 0.0);
+            {
+                const correction = (this.beta * Settings.inv_dt) * Math.max(this.manifold.penetrationDepth! - Settings.penetrationSlop, 0.0);
 
-            this.bias += this.restitution * Math.min(normalVelocity + Settings.restitutionSlop, 0.0);
-            // if (approachingVelocity + Settings.restitutionSlop < 0) this.bias += this.restitution * approachingVelocity;
+                if (Settings.splitImpulse)
+                    this.positionBias = correction;
+                else
+                    this.bias = -correction;
+            }
+
+            // BOUNCE BACK AT restitution TIMES THE APPROACH SPEED. ONLY FOR CONTACTS THAT ARE NEW THIS STEP: ONE THAT WAS ALREADY
+            // TOUCHING IS RESTING OR ROCKING, AND BOUNCING THERE FEEDS THE ROCKING. AND ABOVE A THRESHOLD, SO SLOW HITS DON'T JITTER
+            if (!this.manifold.persistent && normalVelocity < -Settings.restitutionThreshold)
+                this.bias += this.restitution * normalVelocity;
         } else
         {
             // Bias for surface speed that enables the conveyor belt-like behavior
@@ -150,6 +166,33 @@ class ContactSolver
 
         // Apply impulse
         this.applyImpulse(lambda);
+    }
+
+    // PUSHES OVERLAPPING BODIES APART THROUGH THEIR PSEUDO VELOCITIES, WHICH MOVE THEM THIS STEP AND ARE THEN DROPPED
+    solvePosition()
+    {
+        if (this.positionBias <= 0.0 && this.pseudoImpulseSum <= 0.0)
+            return;
+
+        let jv: number =
+            + this.jacobian.va.dot(this.bodyA.pseudoLinearVelocity)
+            + this.jacobian.wa * this.bodyA.pseudoAngularVelocity
+            + this.jacobian.vb.dot(this.bodyB.pseudoLinearVelocity)
+            + this.jacobian.wb * this.bodyB.pseudoAngularVelocity;
+
+        let lambda = this.effectiveMass * (this.positionBias - jv);
+
+        const oldImpulseSum = this.pseudoImpulseSum;
+        this.pseudoImpulseSum = Math.max(0.0, this.pseudoImpulseSum + lambda);
+        lambda = this.pseudoImpulseSum - oldImpulseSum;
+
+        const a = this.bodyA, b = this.bodyB;
+        a.pseudoLinearVelocity.x += this.jacobian.va.x * a.inverseMass * lambda;
+        a.pseudoLinearVelocity.y += this.jacobian.va.y * a.inverseMass * lambda;
+        a.pseudoAngularVelocity += a.inverseInertia * this.jacobian.wa * lambda;
+        b.pseudoLinearVelocity.x += this.jacobian.vb.x * b.inverseMass * lambda;
+        b.pseudoLinearVelocity.y += this.jacobian.vb.y * b.inverseMass * lambda;
+        b.pseudoAngularVelocity += b.inverseInertia * this.jacobian.wb * lambda;
     }
 
     private applyImpulse(lambda: number)
@@ -448,6 +491,13 @@ export class ContactManifold extends Constraint
         {
             this.blockSolver.solve();
         }
+    }
+
+    // SPLIT IMPULSE PASS, RUN AFTER THE VELOCITY PASSES (SEE Island.solve)
+    solvePositions(): void
+    {
+        for (let i = 0; i < this.numContacts; i++)
+            this.normalContacts[i].solvePosition();
     }
 
     protected override applyImpulse(): void { }

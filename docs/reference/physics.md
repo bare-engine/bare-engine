@@ -192,7 +192,7 @@ A body turns around its center, so while the game runs its pivot is always the c
 | --- | --- |
 | `static` | Doesn't move; other bodies collide with it. |
 | `mass` / `density` | How heavy the body is. Set one, the other follows from its size: mass is density times the area in game units, divided by 10,000. Density is 1 by default. |
-| `restitution` | Bounciness, from 0 to 1. Default `0.7`. |
+| `restitution` | Bounciness, from 0 to 1. Default `0`. |
 | `friction` | How much it grips other bodies. Default `0.7`. |
 | `surfaceSpeed` | Moves whatever touches it along its surface, like a conveyor belt. |
 | `linearVelocity` / `angularVelocity` | Current movement and spin. |
@@ -213,11 +213,11 @@ Collisions fire the `collision_start`, `collision_update` and `collision_end` ev
 
 ### Friction and bounce between two bodies
 
-When two bodies touch, their frictions are multiplied, and so are their restitutions. Two bodies with the default `0.7` touch with a friction and a bounce of 0.49, and a ball with a restitution of 1 doesn't bounce at all on a floor with 0. Give both bodies a value. Other engines often combine them differently, Box2D for example takes the square root of the two frictions multiplied and the highest restitution, so values copied from there come out lower here. To get the same result, use the square root of the value on both bodies: `0.7071` on both gives a friction of 0.5.
+When two bodies touch, their friction is the square root of the two frictions multiplied, and their bounce is the higher of the two restitutions, like in Box2D. So a ball with a restitution of 1 bounces on any floor, and a slippery body slides on everything.
 
 ### Placing bodies
 
-Place bodies so they touch, not overlap. Overlapping bodies are pushed apart by giving them speed, so a stack placed with an overlap of a pixel or two can start out moving and fall over.
+Bodies that start out overlapping are pushed apart over a few steps, without gaining speed, so a careful stack stays standing. Overlaps of up to `penetrationSlop` (half a unit) are left alone, which keeps resting bodies touching.
 
 ### Sleeping
 
@@ -238,26 +238,33 @@ const body = this.sopiro.world.queryPoint(new Vec2(mouse.x, mouse.y))[0];
 
 ### Tuning
 
-Solver settings live in `Settings`, exported from `bare-engine/sopiro`. Change them once at startup, for example in [`OnInit`](./configuration#oninit). They're shared by every scene. Units are game units and seconds.
+Set solver settings for a scene with `sopiro` in its `settingsData.json`. Units are game units and seconds:
 
-```ts
-import { Settings } from 'bare-engine/sopiro';
-
-Settings.numIterations = 15;
+```json
+{
+  "gravity": 1200,
+  "sopiro": {
+    "numIterations": 15,
+    "sleepingWait": 1
+  }
+}
 ```
+
+Each scene can have its own, and settings it leaves out keep their default. To change a default for every scene, change `Settings`, exported from `bare-engine/sopiro`, once at startup, for example in [`OnInit`](./configuration#oninit).
 
 | Setting | Default | Description |
 | --- | --- | --- |
 | `numIterations` | `10` | Solver passes per step. More makes stacks steadier and costs more. |
-| `penetrationSlop` | `0.005` | How far bodies may overlap before they're pushed apart. |
-| `positionCorrectionBeta` | `0.2` | How much of an overlap is pushed apart per step. |
-| `restitutionSlop` | `50` | Speed taken off every bounce, in units per second, so slow hits don't bounce. |
+| `splitImpulse` | `true` | Push overlapping bodies apart without giving them speed. With `false`, the push is added to their velocity, which is cheaper but can make stacks bounce and fall. |
+| `positionCorrectionBeta` | `0.2` | How much of an overlap is corrected per step. |
+| `penetrationSlop` | `0.5` | Overlap that's left alone, so resting bodies stay touching. |
+| `restitutionThreshold` | `50` | Bodies hitting each other slower than this, in units per second, don't bounce. Keep it above gravity times the fixed timestep, 20 by default, or resting bodies jitter. |
 | `sleepEnabled` | `true` | Whether bodies fall asleep. |
-| `sleepingWait` | `0.5` | Seconds a body must be still before it sleeps. |
-| `restLinearTolerance` | `0.000025` | Speed below which a body counts as still, squared: `0.005 * 0.005`. |
-| `restAngularTolerance` | about `0.000076` | Turning speed below which a body counts as still, in radians per second, squared. |
-
-`penetrationSlop` and `restLinearTolerance` are tiny for a game measured in pixels. If stacks jitter or never fall asleep, try `Settings.penetrationSlop = 0.5` and `Settings.restLinearTolerance = 1`.
+| `sleepingWait` | `0.5` | Seconds bodies must be still before they sleep. |
+| `restLinearTolerance` | `1` | Speed below which a body counts as still, squared: 1 unit per second. |
+| `restAngularTolerance` | about `0.0012` | Turning speed below which a body counts as still, in radians per second, squared: 2 degrees per second. |
+| `warmStartingThreshold` | `1` | A contact reuses last step's result when it moved less than this, squared. Reusing it keeps stacks steady. |
+| `defaultFriction` / `defaultRestitution` / `defaultDensity` | `0.7` / `0` / `1` | Values for bodies that don't set their own. |
 
 ### Joints
 

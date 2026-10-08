@@ -1,6 +1,7 @@
 /// <reference path="./types/globals.d.ts" />
 
 import type { RigidBody } from "./libraries/sopiro/rigidbody";
+import type { SopiroSettings } from "./libraries/sopiro/settings";
 
 // Controller
 export { SopiroPhysicsController } from "./controllers/sopiroPhysicsController";
@@ -43,5 +44,10 @@ export * from "./libraries/sopiro/world";
 declare module "./types/bareTypes" {
   interface BareCollisionEventPairs {
     sopiro: [RigidBody, RigidBody];
+  }
+
+  // settingsData "sopiro": THIS SCENE'S OVERRIDES OF Settings, SEE World.update
+  interface SettingsData {
+    sopiro?: Partial<SopiroSettings>;
   }
 }

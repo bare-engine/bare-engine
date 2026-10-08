@@ -49,6 +49,10 @@ export abstract class RigidBody extends GameObject
     private _linearVelocity: Vec2;   // m/s
     private _angularVelocity: number;   // rad/s
 
+    // SPLIT IMPULSE: MOVES THE BODY OUT OF OVERLAPS FOR ONE STEP WITHOUT BECOMING PART OF ITS VELOCITY
+    public pseudoLinearVelocity: Vec2 = new Vec2(0, 0);
+    public pseudoAngularVelocity: number = 0;
+
     protected _density!: number;          // kg/m²
     protected _mass!: number;             // kg
     protected _invMass!: number;
@@ -87,6 +91,8 @@ export abstract class RigidBody extends GameObject
         this._torque = 0.0;
         this._linearVelocity = new Vec2(0, 0);
         this._angularVelocity = 0;
+        this.pseudoLinearVelocity = new Vec2(0, 0);
+        this.pseudoAngularVelocity = 0;
         this._friction = Settings.defaultFriction;
         this._restitution = Settings.defaultRestitution;
         this._surfaceSpeed = 0.0;
@@ -171,6 +177,8 @@ export abstract class RigidBody extends GameObject
         this._torque = 0.0;
         this._linearVelocity = new Vec2(0, 0);
         this._angularVelocity = 0;
+        this.pseudoLinearVelocity = new Vec2(0, 0);
+        this.pseudoAngularVelocity = 0;
         this._friction = Settings.defaultFriction;
         this._restitution = Settings.defaultRestitution;
         this._surfaceSpeed = 0.0;

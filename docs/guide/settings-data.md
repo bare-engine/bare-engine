@@ -60,6 +60,7 @@ Every key is optional. A small file using most of them:
 | `layers` | `["objects"]` | Layer names, in draw order. See [Layers](#layers). |
 | `layersInfo` | | Settings per layer. See [Layers](#layers). |
 | `gravity` | `0` | Downward gravity for [physics](../reference/physics). |
+| `sopiro` | | Solver settings for [realistic physics](../reference/physics#tuning) in this scene. |
 | `saveVars` | `position`, `children`, `components` | Properties saved per GameObject class when a level is saved while playing. See [What gets saved](../reference/save-data#what-gets-saved). |
 | `categories` | | How prefabs are grouped in the [level editor](./level-editor#categories)'s sidebar. |
 | `settings` | grid off, size `64` | Level editor grid: `gridEnabled` and `gridSize`. See [Grid](./level-editor#grid). |
