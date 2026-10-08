@@ -172,6 +172,14 @@ export class DocsReferenceTest extends Scene
         c.check(bare.camera.GetPosition().x === 130 && bare.camera.GetPosition().y === 75, "AddPosition should move the camera: " + JSON.stringify(bare.camera.GetPosition()));
         bare.camera.SetZoom(2);
         c.check(bare.camera.GetZoom() === 2, "SetZoom/GetZoom should round-trip");
+        bare.camera.SetScaleMode(CameraScaleMode.Contain);
+        bare.camera.SetDimensions(bare.width / 2, bare.height / 2);
+        c.check(bare.camera.GetZoom() === 2, "GetZoom should return the set zoom, without the fit to the screen: " + bare.camera.GetZoom());
+        c.check(Math.abs(bare.camera.GetScale() - 4) < 0.001, "GetScale should combine the zoom with the fit to the screen: " + bare.camera.GetScale());
+        const fitZoom = bare.camera.GetZoomToFit(bare.width * 2, bare.height * 2);
+        c.check(Math.abs(fitZoom - 0.25) < 0.001, "GetZoomToFit should give the zoom that shows that area: " + fitZoom);
+        bare.camera.SetDimensions(bare.width, bare.height);
+        bare.camera.SetZoom(2);
         const world = bare.camera.ScreenToWorld(50, 60);
         const screen = bare.camera.WorldToScreen(world.x, world.y);
         c.check(Math.abs(screen.x - 50) < 0.001 && Math.abs(screen.y - 60) < 0.001, "ScreenToWorld and WorldToScreen should be inverses");

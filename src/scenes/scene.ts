@@ -1513,7 +1513,7 @@ to package.json to keep the generated assets (can become large for big projects)
         if (this._camera)
         {
             // THE CAMERA IS SET TO THIS SCENE EXCLUSIVELY
-            return this._camera.GetZoom();
+            return this._camera.GetScale();
         }
         else
         {

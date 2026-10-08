@@ -57,6 +57,7 @@ bare.scene.Get(Game).level.Load('level1');
 | --- | --- |
 | `bare.deltaTime` | Seconds since the last frame, capped by `maxDeltaTime`. |
 | `bare.count` | Frames rendered so far. |
+| `bare.time` | Milliseconds at the start of the current frame, from `performance.now()`. |
 | `bare.width` / `bare.height` | The game's render size in game units. |
 | `bare.paused` | Whether the game is paused. |
 | `bare.hasFocus` | Whether the game has focus. Changes are sent as the `game_focusChange` event. |

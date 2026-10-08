@@ -13,6 +13,7 @@ import
     Scene,
     TextComponent,
     TextObject,
+    TiledComponent,
 } from "bare-engine";
 import { Checks } from "./checks";
 
@@ -52,6 +53,8 @@ export class DocsGuideSystemsTest extends Scene
                 { name: "explosion", texture: "NONE", components: { animation: {} } },
                 { name: "coin", components: { particle: "SPARKLE" } },
                 { name: "label", baseClass: "TextObject", text: "Hi", fontSize: 12 } as any,
+                { name: "floor", scale: { x: 64, y: 32 }, components: { tiled: { tileScale: 2 } } } as any,
+                { name: "conveyor", scale: { x: 64, y: 8 }, components: { tiled: { scroll: { x: 2, y: 0 } } } } as any,
             ],
             presets: {
                 SPARKLE: { particle: { texture: "PIXEL", life: 1, emitRate: 5 } },
@@ -77,6 +80,7 @@ export class DocsGuideSystemsTest extends Scene
         bare.AddClass(TextObject);
         // projects get components from settingsData.json registered by the vite plugin; these settings are inline
         bare.AddClass(ParticleComponent);
+        bare.AddClass(TiledComponent);
     }
 
     override async OnPreLoadLevel(level: LevelData) { this.preLoaded = level?.name; }
@@ -98,11 +102,15 @@ export class DocsGuideSystemsTest extends Scene
         const level: LevelData = {
             name: "docLevel",
             dimensions: { width: 1536, height: 1152 },
+            customData: { par: 3 },
             entitiesByLayer: {
                 objects: [{ extends: "hero", name: "levelHero", position: { x: 100, y: 800 } }],
             },
-        } as any;
+        };
         await this.LoadLevel(level as any);
+        c.check(bare.level.currentLevel?.customData?.par === 3, "a level's customData should be readable once it's loaded");
+        bare.level.customData = { par: 4 };
+        c.check(bare.level.customData?.par === 4 && bare.level.currentLevel?.customData?.par === 4, "bare.level.customData should edit the loaded level's customData");
         c.check(this.preLoaded === "docLevel" && this.postLoaded === "docLevel", "OnPreLoadLevel and OnPostLoadLevel should run around loading");
         const levelHero = bare.object.GetByName("levelHero");
         c.check(levelHero?.x === 100 && levelHero?.y === 800, "level entities should become GameObjects with their position");
@@ -204,6 +212,23 @@ export class DocsGuideSystemsTest extends Scene
         label.offset.set(0, -40);
         label.SetText("Angry goblin");
         c.check(label.GetText() === "Angry goblin", "TextComponent SetText should change the text");
+
+        // TiledComponent repeats the texture by taking over the object's RenderSprite, and gives it back when removed
+        const floor = this.AddGameObject("floor");
+        c.check(floor.GetComponent(TiledComponent)?.tileScale === 2, "a tiled prefab should get a TiledComponent with its tileScale");
+        c.check(Object.prototype.hasOwnProperty.call(floor, "RenderSprite"), "TiledComponent should take over RenderSprite");
+        floor.RemoveComponent(TiledComponent);
+        c.check(!Object.prototype.hasOwnProperty.call(floor, "RenderSprite"), "removing TiledComponent should restore RenderSprite");
+        floor.Remove();
+
+        // components only update once OnStart is done, so step it by hand: 2 tiles per second
+        const conveyor = this.AddGameObject("conveyor");
+        const scrolling = conveyor.GetComponent(TiledComponent) as any;
+        scrolling.OnUpdate(0.25);
+        c.check(scrolling.scrollX === 0.5, "a TiledComponent with scroll should move its texture: " + scrolling.scrollX);
+        scrolling.OnUpdate(0.375);
+        c.check(scrolling.scrollX === 0.25, "scrolling should wrap within one tile: " + scrolling.scrollX);
+        conveyor.Remove();
 
         let pressed = 0;
         const play = new Button(this, { text: "Play", fontSize: 28, buttonColor: Color.fromHex("#3060c0"), OnPress: () => pressed++ } as any);

@@ -58,7 +58,9 @@ override OnPostLoadLevel()
 | `SetPosition(x, y)` | Center the camera on a point, kept inside the bounds if there are any. |
 | `SetPositionTopLeft(x, y)` | Place the camera by its top-left corner. |
 | `AddPosition(dx, dy)` / `GetPosition()` | Move or read the position. `GetPosition` returns the center within the bounds, without shake, and reflects `SetPosition` right away. |
-| `SetZoom(zoom)` / `GetZoom()` | Zoom level. |
+| `SetZoom(zoom)` / `GetZoom()` | Zoom level, on top of the scale mode's fit. |
+| `GetZoomToFit(width, height)` | The zoom that shows an area of that size, like `GetZoomToFit(level.width, level.height)` for the whole level. |
+| `GetScale()` | World units to screen pixels: the zoom combined with the fit, as drawn. Divide by it for sizes that should look the same at any zoom. |
 | `SetDimensions(width, height)` | The area the camera shows. |
 | `SetScaleMode(mode)` | How that area is fitted to the screen. |
 | `SetBounds(rect)` | Keep the camera inside a rectangle. A camera has no bounds until you set them, but loading a level sets them to the level's size. |

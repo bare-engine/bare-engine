@@ -42,6 +42,7 @@ export type { AnimationEventPayload as AnimationEvents } from "./components/anim
 export { CollisionEventComponent } from "./components/collisionEventComponent";
 export { ParticleComponent } from "./components/particleComponent";
 export { TextComponent } from "./components/textComponent";
+export { TiledComponent } from "./components/tiledComponent";
 
 // Editor
 export { EditorScene } from "./scenes/editorScene";

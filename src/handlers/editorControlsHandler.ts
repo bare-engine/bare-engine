@@ -210,7 +210,7 @@ export class EditorControlsHandler {
         if (bare.mouse.IsMiddleDown())
         {
             const delta = bare.mouse.screen.position.subtract(bare.mouse.screen.positionPrev);
-            const zoom = bare.camera.GetZoom();
+            const zoom = bare.camera.GetScale();
             bare.camera.AddPosition(-delta.x / zoom, -delta.y / zoom);
         }
 

@@ -13,6 +13,8 @@ export class InputAdvancedTest extends Scene
     probeKey: string | null = null;
     pressedFrames = 0;
     releasedFrames = 0;
+    probeMouse = false;
+    mouseReleasedFrames = 0;
 
     constructor()
     {
@@ -39,6 +41,8 @@ export class InputAdvancedTest extends Scene
             if (bare.keyboard.IsKeyPressed(this.probeKey)) this.pressedFrames++;
             if (bare.keyboard.IsKeyReleased(this.probeKey)) this.releasedFrames++;
         }
+        if (this.probeMouse && bare.mouse.IsReleased())
+            this.mouseReleasedFrames++;
 
         if (!this.running)
         {
@@ -261,8 +265,19 @@ export class InputAdvancedTest extends Scene
         await this.MoveTo(1100, 850);
         const onDown = bare.mouse.world.positionOnDown;
         c.check(Math.abs(onDown.x - 1000) < 1 && Math.abs(onDown.y - 800) < 1, "world.positionOnDown should keep where the pointer went down: " + JSON.stringify(onDown));
+        this.probeMouse = true;
         this.Pointer("pointerup", 1100, 850);
         c.check(!bare.mouse.IsDown(), "IsDown should be false after release");
+        await waitFrame(3);
+        c.check(this.mouseReleasedFrames === 1, "IsReleased should be seen in exactly one update: " + this.mouseReleasedFrames);
+        this.probeMouse = false;
+
+        // the world position stays under the pointer when only the camera moves
+        bare.camera.AddPosition(40, 30);
+        await waitFrame(2);
+        const moved = bare.mouse.world.position;
+        c.check(Math.abs(moved.x - 1140) < 1 && Math.abs(moved.y - 880) < 1, "mouse.world.position should follow a moving camera: " + JSON.stringify(moved));
+        c.check(!bare.mouse.IsMoving(), "a moving camera shouldn't count as pointer movement");
         bare.camera.SetPosition(bare.width / 2, bare.height / 2);
 
         // keys: pressed and released are true for exactly one frame, key_pressed ignores key repeat

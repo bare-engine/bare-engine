@@ -46,6 +46,8 @@ export class MouseController
     hasPosition: boolean = false;
 
     mouseFramesDown: number = 0;
+    // frames since the last pointer went up, starts past 1 so nothing counts as released at startup
+    mouseFramesUp: number = 2;
 
     mouseSpeed: number = 0;
     mouseSpeedDelayed: number = 0;
@@ -167,6 +169,9 @@ export class MouseController
         this.pointersDown.delete(event.pointerId);
         this.mouseIsDown = this.pointersDown.size > 0;
 
+        if (!this.mouseIsDown)
+            this.mouseFramesUp = 0;
+
         this.screen.positionPrev.x = this.screen.position.x;
         this.screen.positionPrev.y = this.screen.position.y;
 
@@ -208,6 +213,11 @@ export class MouseController
         return this.mouseIsDown && this.mouseFramesDown == 1;
     }
 
+    IsReleased(): boolean
+    {
+        return !this.mouseIsDown && this.mouseFramesUp == 1;
+    }
+
     SetPosition(x:number, y:number)
     {
         const worldPos = this.scene.ScreenToWorld(x, y);
@@ -223,6 +233,14 @@ export class MouseController
 
         if (bare.mobile && !this.mouseIsDown)
             return;
+
+        // keep the world position under the pointer when the camera moved without the pointer moving.
+        // positionPrev shifts along, so camera movement doesn't count as pointer movement
+        const worldX = this.world.position.x;
+        const worldY = this.world.position.y;
+        this.SetPosition(this.screen.position.x, this.screen.position.y);
+        this.world.positionPrev.x += this.world.position.x - worldX;
+        this.world.positionPrev.y += this.world.position.y - worldY;
 
         const moveVector = new Vec2(
             this.world.position.x - this.world.positionPrev.x,
@@ -240,6 +258,8 @@ export class MouseController
 
         if (this.mouseIsDown)
             this.mouseFramesDown++;
+        else
+            this.mouseFramesUp++;
     }
 
     Reset()
@@ -257,6 +277,7 @@ export class MouseController
         this.mouseDirectionVec2Delayed.y = 0;
 
         this.mouseFramesDown = 0;
+        this.mouseFramesUp = 2;
         this.pointersDown.clear();
         this.mouseIsDown = false;
         this.middleMouseIsDown = false;

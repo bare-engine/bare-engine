@@ -174,7 +174,7 @@ export class ArcadeObject extends GameObject
                 if (entity.hitboxType == "Circle")
                 {
                     this.physicsHitbox.type = HitboxType.Circle;
-                    this.physicsHitbox.radius = (entity.hitboxRadius || Math.max(this.physicsHitbox.rectangle.width, this.physicsHitbox.rectangle.height) / 2);
+                    this.physicsHitbox.radius = (entity.hitboxRadius || Math.min(this.physicsHitbox.rectangle.width, this.physicsHitbox.rectangle.height) / 2);
                 }
 
                 // pivotBasedOnHitbox
@@ -220,7 +220,7 @@ export class ArcadeObject extends GameObject
         {
             this.WhenTextureLoaded(() => {
                 this.physicsHitbox.type = HitboxType.Circle;
-                this.physicsHitbox.radius = (entity.hitboxRadius || Math.max(this.physicsHitbox.rectangle.width, this.physicsHitbox.rectangle.height) / 2);
+                this.physicsHitbox.radius = (entity.hitboxRadius || Math.min(this.physicsHitbox.rectangle.width, this.physicsHitbox.rectangle.height) / 2);
             });
         }
     }

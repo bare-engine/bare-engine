@@ -173,5 +173,28 @@ export class DocsPhysicsTest extends Scene
         c.check(gateHits === 1, "a continuous object should report a sensor it passed within one step: " + gateHits);
         runner.Remove();
         gate.Remove();
+
+        // two objects bounce with the higher restitution, so a bouncy object bounces off a wall left at 0
+        wall = thinWall(50);
+        const bouncy = fast(100, { continuous: true, restitution: 1 });
+        await waitFrame(2);
+        c.check(wall.restitution === 0 && bouncy.velocity.x < -5000, "a bouncy object should bounce off a wall without restitution: " + bouncy.velocity.x);
+        bouncy.Remove();
+        wall.Remove();
+
+        // drag alone never reaches 0, so slow objects with drag stop completely. without gravity, like a top-down game
+        this.settingsData.gravity = 0;
+        const drifting = this.AddGameObject<ArcadeObject>({ extends: "enemy", drag: 0.1 } as any).SetPosition(450, 100);
+        drifting.SetVelocityXY(200, 0);
+        await waitFrame(60);
+        c.check(drifting.velocity.x === 0 && !drifting.IsMoving(), "an object with drag should come to a full stop: " + drifting.velocity.x);
+        drifting.Remove();
+        this.settingsData.gravity = 5000;
+
+        // a circle hitbox defaults to half the image's smaller side
+        const oval = this.AddGameObject<ArcadeObject>({ baseClass: "ArcadeObject", texture: "PIXEL", hitboxType: "Circle", hitbox: { x1: 0, y1: 0, x2: 32, y2: 16 }, static: true } as any).SetPosition(450, 300);
+        await waitFrame(1);
+        c.check(oval.hitboxRadius === 8, "a circle hitbox should default to half the smaller side: " + oval.hitboxRadius);
+        oval.Remove();
     }
 }

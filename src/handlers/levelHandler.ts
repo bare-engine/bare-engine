@@ -30,6 +30,20 @@ export class LevelHandler
     get backgroundColor():Color | undefined {return this.currentLevel ? rapid.backgroundColor : undefined;}
     set backgroundColor(value:Color) {bare.SetBackgroundColor(value);}
 
+    // YOUR OWN VALUES FOR THE LEVEL. SAVED WITH IT WHEN THE LEVEL EDITOR SAVES
+    @InspectorField
+    get customData():Record<string, any> | undefined {return this.currentLevel?.customData;}
+    set customData(value:Record<string, any> | undefined)
+    {
+        if (!this.currentLevel)
+            return;
+
+        if (value && Object.keys(value).length > 0)
+            this.currentLevel.customData = value;
+        else
+            delete this.currentLevel.customData;
+    }
+
     constructor(scene: Scene)
     {
         this.scene = scene;

@@ -247,6 +247,8 @@ export interface LevelData
     isData?: boolean;
     dimensions: Size;
     backgroundColor?: string;
+    // your own values for the whole level, like a par or a time limit
+    customData?: Record<string, any>;
     entitiesByLayer: Record<string, Entity[]>;
 }
 

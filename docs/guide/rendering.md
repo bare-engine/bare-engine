@@ -112,6 +112,35 @@ Which hook you draw in decides whether shapes end up below or above the scene's 
 
 There's also `bare.drawRoundedRect`, `bare.drawSprite` (a texture) and `bare.drawGraphic` (any polygon, with per-point colors or a texture). The [Showcase](https://github.com/bare-engine/bare-showcase)'s [graphics demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/graphics/src/DemoGraphics.ts#L27-L127) shows all of them.
 
+## Tiled textures
+
+A GameObject stretches its texture to its scale. To repeat it instead, like a floor or a long wall, give it a `TiledComponent`. Scale the object to cover the area; every repeat is the texture's own size times `tileScale`:
+
+```json
+{
+  "name": "wall",
+  "baseClass": "ArcadeObject",
+  "texture": "brick",
+  "static": true,
+  "scale": { "x": 40, "y": 4 },
+  "components": {
+    "tiled": { "tileScale": 4 }
+  }
+}
+```
+
+With a 6 pixel `brick`, this wall is 240 by 24 units: ten bricks of 24 by 24. It shows in the level editor too, so scaling it there adds bricks. Shaders and masks don't apply to a tiled object.
+
+To move the texture, like a conveyor belt or flowing water, set `scroll` in tiles per second. It scrolls along the object's own axes, so a rotated object scrolls in its new direction:
+
+```json
+"components": {
+  "tiled": { "tileScale": 4, "scroll": { "x": 1.5, "y": 0 } }
+}
+```
+
+To draw the tiles differently, extend `TiledComponent` and override `RenderTiles(color, matrixIndex)`. It draws in the texture's own space, so the object covers 0 to the texture's width and height.
+
 ## Render textures
 
 A render texture is an image you draw into. Use it to bake many objects into one, for trails, paint, or a minimap:

@@ -52,13 +52,13 @@ Set gravity at the top level of `settingsData.json`:
 | `static` | `false` | Doesn't move; other objects collide with it. |
 | `collide` | `true` | Takes part in collisions. |
 | `sensor` | `false` | Reports collisions but doesn't block, and ignores `stayInBounds`. Use it for triggers, like coins or checkpoints. |
-| `drag` | `0` | Fraction of the velocity lost every 1/60 second, from 0 to 1. |
-| `restitution` | `0` | Bounciness, from 0 to 1. Two objects bounce with the lower value of the two. |
+| `drag` | `0` | Fraction of the velocity lost every 1/60 second, from 0 to 1. Below 5 units per second the object stops completely; change that with `ArcadePhysicsController.DRAG_STOP_SPEED`. |
+| `restitution` | `0` | Bounciness, from 0 to 1. Two objects bounce with the higher value of the two, so a bouncy ball also bounces off walls left at 0. |
 | `stayInBounds` | `true` | Keep the object inside the level. |
 | `removeOnOutOfBounds` | `false` | Remove the object when it's fully outside the level. |
 | `continuous` | `false` | Stop a fast object from passing through walls. See [Fast objects](#fast-objects). |
 | `hitbox` | the image | Rectangle as `{ x1, y1, x2, y2 }`. Values between 0 and 1 are a fraction of the image size, larger ones are pixels. `"FULL"` covers the whole image. |
-| `hitboxType` / `hitboxRadius` | `"Rectangle"` | `"Rectangle"` or `"Circle"`, and the circle's radius. The circle is centered on the object's [pivot](../guide/game-objects#pivot), so use a `CENTER` pivot to center it on the image. |
+| `hitboxType` / `hitboxRadius` | `"Rectangle"` | `"Rectangle"` or `"Circle"`, and the circle's radius, by default half the hitbox's smaller side. The circle is centered on the object's [pivot](../guide/game-objects#pivot), so use a `CENTER` pivot to center it on the image. |
 
 A child ArcadeObject always acts as a sensor, so it reports collisions without pushing anything.
 

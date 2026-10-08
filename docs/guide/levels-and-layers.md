@@ -36,6 +36,18 @@ You build levels with the in-game [level editor](./level-editor) rather than by 
 
 **Example:** the [Platformer](https://github.com/bare-engine/bare-platformer)'s [`level.json`](https://github.com/bare-engine/bare-platformer/blob/main/public/data/levels/level.json).
 
+Give a level your own values with `customData` at the top of its file, like a par or a time limit, and read them once it's loaded:
+
+```json
+"customData": { "par": 3 }
+```
+
+```ts
+const par = bare.level.currentLevel?.customData?.par;
+```
+
+You can also edit it in the [Chrome extension](./chrome-extension): it's listed under the scene's level, next to its name and dimensions, and saved with the level.
+
 ### Loading levels
 
 ```ts

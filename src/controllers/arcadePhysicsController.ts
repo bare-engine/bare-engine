@@ -37,6 +37,8 @@ export class ArcadePhysicsController extends PhysicsControllerBase
     static QUAD_TREE_MAX_LEVELS: int = 6;
     // UPPER LIMIT OF SUB STEPS A continuous OBJECT IS MOVED IN PER FIXED UPDATE
     static MAX_CONTINUOUS_STEPS: int = 64;
+    // AN OBJECT WITH drag STOPS COMPLETELY BELOW THIS SPEED, IN UNITS PER SECOND. DRAG ALONE NEVER REACHES 0
+    static DRAG_STOP_SPEED: number = 5;
 
     public objects: ArcadeObject[] = [];
     private collisionObjects: ArcadeObject[] = [];
@@ -218,6 +220,12 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
             if (this.collisionsEnabled) {
                 this.handleBoundaryCollisions(obj); // Clean up objects that started the frame outside bounds.
+            }
+
+            if (obj.drag > 0 && obj.velocity.x * obj.velocity.x + obj.velocity.y * obj.velocity.y < ArcadePhysicsController.DRAG_STOP_SPEED * ArcadePhysicsController.DRAG_STOP_SPEED)
+            {
+                obj.velocity.x = 0;
+                obj.velocity.y = 0;
             }
 
             if (!obj.static)
@@ -1528,7 +1536,8 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             const velAlongNormal = rvx * nx + rvy * ny;
 
             if (velAlongNormal < 0) {
-                const restitution = Math.min(obj1.restitution ?? 0, obj2.restitution ?? 0);
+                // the bouncier of the two, so a bouncy object also bounces off walls left at 0, like off the level bounds
+                const restitution = Math.max(obj1.restitution ?? 0, obj2.restitution ?? 0);
                 const j = -(1 + restitution) * velAlongNormal / invMassSum;
 
                 const impX = j * nx;

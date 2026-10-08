@@ -22,7 +22,7 @@ if (bare.keyboard.IsKeyReleased('space')) { /* released this frame */ }
 | `IsCodeDown(code)` / `IsCodePressed(code)` / `IsCodeReleased(code)` | The same, by key position instead of letter: [`event.code`](https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_code_values) names like `'KeyW'` or `'Space'`. `'KeyW'` is the key labeled W on QWERTY and Z on AZERTY. |
 
 ::: warning Read input in OnUpdate, not OnFixedUpdate
-`IsKeyPressed`, `IsKeyReleased` and `bare.mouse.IsPressed` are per frame, and a frame runs zero, one or more fixed steps. In `OnFixedUpdate` they can miss a press or report it twice. Check them in `OnUpdate`, remember the result, and use it in the next `OnFixedUpdate`:
+`IsKeyPressed`, `IsKeyReleased`, `bare.mouse.IsPressed` and `bare.mouse.IsReleased` are per frame, and a frame runs zero, one or more fixed steps. In `OnFixedUpdate` they can miss a press or report it twice. Check them in `OnUpdate`, remember the result, and use it in the next `OnFixedUpdate`:
 
 ```ts
 private jumpQueued = false;
@@ -71,15 +71,17 @@ const p = bare.mouse.world.position;   // in world space, follows the camera
 const s = bare.mouse.screen.position;  // in screen space
 
 if (bare.mouse.IsPressed()) { /* pressed this frame */ }
+if (bare.mouse.IsReleased()) { /* released this frame */ }
 if (bare.mouse.IsDown()) { /* held */ }
 ```
 
 | Member | Description |
 | --- | --- |
-| `world.position` / `screen.position` | Current pointer position. |
-| `world.positionOnDown` | Where the pointer went down. |
+| `world.position` / `screen.position` | Current pointer position. The world position stays under the pointer when the camera moves. |
+| `world.positionOnDown` / `screen.positionOnDown` | Where the pointer went down. For a drag while the camera zooms or moves, like aiming a slingshot, use the screen positions. |
 | `IsDown()` / `IsRightDown()` / `IsMiddleDown()` | Button is held. |
 | `IsPressed()` | Left button went down this frame. |
+| `IsReleased()` | The last pointer went up this frame. |
 | `IsMoving()` | The pointer moved this frame. |
 
 **Example:** the [RPG](https://github.com/bare-engine/bare-rpg)'s [touch joystick](https://github.com/bare-engine/bare-rpg/blob/main/src/ui/joystick.ts) follows the pointer.

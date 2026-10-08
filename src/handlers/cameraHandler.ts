@@ -162,7 +162,7 @@ export class CameraHandler {
     {
         this.target.x = x;
         this.target.y = y;
-        this.ClampTargetToBounds(this.GetZoom());
+        this.ClampTargetToBounds(this.GetScale());
 
         // move the drawn position along, keeping the current shake, so ScreenToWorld and
         // WorldToScreen match the new position right away instead of from the next frame
@@ -252,7 +252,23 @@ export class CameraHandler {
         return { width: Math.max(1, rapid.width), height: Math.max(1, rapid.height) };
     }
 
+    // the zoom set with SetZoom
     GetZoom(): number
+    {
+        return this.zoom;
+    }
+
+    // the zoom that shows an area of this many world units, like the whole level. With the
+    // Contain and Cover scale modes, the camera never zooms out past its bounds anyway
+    GetZoomToFit(width: number, height: number): number
+    {
+        const { width: screenW, height: screenH } = this.GetViewport();
+
+        return Math.min(screenW / width, screenH / height) / this.zoomFit;
+    }
+
+    // world to screen scale: the zoom combined with the fit to the screen, kept within the bounds
+    GetScale(): number
     {
         let finalScale = this.zoomFit * this.zoom;
 
@@ -318,7 +334,7 @@ export class CameraHandler {
         //if (this.position.x == 0 && this.position.y == 0 && this.zoom == 1)
         //  return;
 
-        const scale = this.GetZoom();
+        const scale = this.GetScale();
 
         const { width: screenW, height: screenH } = this.GetViewport();
 
@@ -373,7 +389,7 @@ export class CameraHandler {
     ScreenToWorld(x: number, y: number)
     {
         const p = new Vec2();
-        const scale = this.GetZoom();
+        const scale = this.GetScale();
 
         const { width: screenW, height: screenH } = this.GetViewport();
 
@@ -386,7 +402,7 @@ export class CameraHandler {
     WorldToScreen(x: number, y: number)
     {
         const p = new Vec2();
-        const scale = this.GetZoom();
+        const scale = this.GetScale();
 
         const { width: screenW, height: screenH } = this.GetViewport();
 
