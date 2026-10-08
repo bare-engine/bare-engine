@@ -21,7 +21,7 @@ async function main() {
 
     const configPath = getConfigPath(args) || path.resolve(__dirname, "../config/assetpack.config.mjs");
     const watch = args.includes("--watch") || args.includes("-w");
-    const { AssetPack } = await importProjectPackage("@assetpack/core");
+    const { AssetPack } = await importProjectPackage("bare-tools/assetpack");
     const configModule = await import(pathToFileURL(configPath).href);
     const config = configModule.default || configModule;
     const assetpack = new AssetPack(config);
@@ -56,7 +56,7 @@ async function importProjectPackage(specifier) {
         return await import(specifier);
     } catch (error) {
         throw new Error(
-            `Could not load ${specifier}. Install @assetpack/core in this project before running bare-engine-assets.`,
+            `Could not load ${specifier}. bare-tools should be installed with bare-engine; try running npm install again.`,
             { cause: error }
         );
     }

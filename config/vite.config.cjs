@@ -1,7 +1,7 @@
 const path = require("node:path");
 const fs = require("node:fs");
 const { randomUUID } = require("node:crypto");
-const entryShaking = require("vite-plugin-entry-shaking");
+const entryShaking = require("bare-tools/entry-shaking");
 const {
     bareAutoRegisterClassesPlugin,
     bareEditorAndApiPlugin,

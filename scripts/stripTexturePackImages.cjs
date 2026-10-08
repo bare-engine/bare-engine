@@ -372,7 +372,7 @@ function normalizeTextureKey(value) {
 async function buildTexturePack(projectRoot, entryDir, outputDir) {
     const configFactoryPath = path.join(__dirname, "../config/assetpackConfigFactory.mjs");
     const { createAssetPackConfig, importAssetPack } = await import(pathToFileURL(configFactoryPath).href);
-    const { AssetPack } = await importAssetPack(projectRoot, "@assetpack/core");
+    const { AssetPack } = await importAssetPack(projectRoot, "bare-tools/assetpack");
     const config = await createAssetPackConfig({
         projectRoot,
         entry: entryDir,

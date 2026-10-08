@@ -27,6 +27,7 @@
     "scripts/buildAssets.cjs",
     "scripts/stripTexturePackImages.cjs",
     "scripts/texturePackImagesConfig.cjs",
+    "scripts/zip.cjs",
     "src",
     "vite",
     "LICENSE",
@@ -36,7 +37,8 @@
   "types": "src/index.ts",
   "bin": {
     "bare-engine-analyze": "./scripts/analyze.cjs",
-    "bare-engine-assets": "./scripts/buildAssets.cjs"
+    "bare-engine-assets": "./scripts/buildAssets.cjs",
+    "bare-engine-zip": "./scripts/zip.cjs"
   },
   "sideEffects": [
     "./src/main.ts",
@@ -78,9 +80,9 @@
   },
   "dependencies": {
     "acorn": "^8.15.0",
+    "bare-tools": "github:bare-engine/bare-tools#v1.0.0",
     "magic-string": "^0.30.21",
     "selenium-webdriver": "^4.43.0",
-    "vite-bundle-visualizer": "^1.2.1",
-    "vite-plugin-entry-shaking": "^0.5.2"
+    "vite-bundle-visualizer": "^1.2.1"
   }
 }

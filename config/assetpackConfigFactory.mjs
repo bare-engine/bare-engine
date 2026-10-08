@@ -13,9 +13,9 @@ export async function createAssetPackConfig(options = {}) {
     const projectPackage = readProjectPackage(projectRoot);
     const texturePackImages = resolveTexturePackImagesConfig(projectPackage);
 
-    const { compress } = await importAssetPack(projectRoot, "@assetpack/core/image");
-    const { checkExt, createNewAssetAt, swapExt } = await importAssetPack(projectRoot, "@assetpack/core");
-    const { texturePacker } = await importAssetPack(projectRoot, "@assetpack/core/texture-packer");
+    const { compress } = await importAssetPack(projectRoot, "bare-tools/assetpack/image");
+    const { checkExt, createNewAssetAt, swapExt } = await importAssetPack(projectRoot, "bare-tools/assetpack");
+    const { texturePacker } = await importAssetPack(projectRoot, "bare-tools/assetpack/texture-packer");
 
     const textureJsonToWebp = () => ({
         name: "texture-json-webp",
@@ -122,7 +122,7 @@ export async function importAssetPack(projectRoot, specifier) {
         return await import(specifier);
     } catch (error) {
         throw new Error(
-            `Could not load ${specifier}. Install @assetpack/core in the project or as a bare-engine dependency.`,
+            `Could not load ${specifier}. bare-tools should be installed with bare-engine; try running npm install again.`,
             { cause: error }
         );
     }
