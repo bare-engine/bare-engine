@@ -2,7 +2,7 @@
   "name": "bare-engine",
   "version": "0.5.0",
   "scripts": {
-    "build": "node scripts/cleanDist.cjs && vite build",
+    "build:lib": "node scripts/cleanDist.cjs && vite build",
     "analyze": "node scripts/analyze.cjs",
     "dev:fixture": "node scripts/devFixture.cjs",
     "test": "node scripts/runTests.cjs",
