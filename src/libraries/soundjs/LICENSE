@@ -1,0 +1,24 @@
+sound.js - https://github.com/kittykatattack/sound.js
+by kittykatattack
+
+Released as MIT in its package.json. Its README says: "All this code is
+completely unlicensed and free for you to use however you like."
+
+---
+
+sound.js includes the AudioContext Monkey Patch by Chris Wilson
+https://github.com/cwilso/AudioContext-MonkeyPatch
+
+Copyright 2013 Chris Wilson
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
