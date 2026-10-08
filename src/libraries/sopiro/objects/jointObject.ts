@@ -170,12 +170,14 @@ export abstract class JointObject extends GameObject
         return staticAnchor;
     }
 
-    override OnRender(): void
+    // World space, so the prefab's scale doesn't scale the circle
+    override OnRenderWorld(): void
     {
         if (bare.gameMode != GameMode.Edit)
             return;
 
         rapid.drawCircle({
+            position: this.position,
             radius: 13,
             color: this.color
         });

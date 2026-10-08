@@ -179,6 +179,8 @@ export class DistanceJointObject extends JointObject
 
     override OnRenderWorld(): void
     {
+        super.OnRenderWorld();
+
         if (bare.gameMode == GameMode.Edit || !this.distanceJoint)
             return;
 
