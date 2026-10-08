@@ -31,6 +31,7 @@ StartBare(Game, {
 | `showEditorButton` | automatic | `true`: keep the button visible when a level is loaded, including with the extension connected. `false`: hide it. Omitted: hide it when the extension connects. Development only. |
 | `editorButtonPosition` | `{ x: 0, y: 0 }` | Normalized position and pivot, as `{ x: number, y: number }`. `{ x: 1, y: 0 }` anchors it at the top right. Development only; see [Level editor in production](../guide/level-editor#level-editor-in-production). |
 | `debugKeys` | **E**, **P**, **R**, **L**, **C** | Keyboard shortcuts during development. See [Debug keys](#debug-keys). |
+| `OnInit` | | Game-wide setup, like save data or sounds. See [OnInit](#oninit). |
 
 ### Resolution
 
@@ -43,6 +44,22 @@ See [Resolution & Pixel Art](../guide/resolution) for common setups.
 | `position` | `CanvasPosition.Center` or `CanvasPosition.TopLeft`. |
 | `integerScale` | Only scale by whole numbers, for crisp pixel art. |
 | `pixelScale` | Fill the window, but render at a lower resolution so everything appears `pixelScale` times bigger. Overrides `width`, `height` and `scale`. |
+
+### OnInit
+
+Runs once `bare` exists, before the first scene is created, so it's the place for setup the whole game needs. If it returns a promise, Bare waits for it:
+
+```ts
+StartBare(Menu, {
+    OnInit: async () => {
+        bare.storage.SetDefaults({ highScore: 0 });
+        bare.storage.Load();
+        await bare.LoadFont('pixel');
+    },
+});
+```
+
+The promise `StartBare` returns resolves only after the first scene's `OnStart`, so code in `.then()` is too late for anything that scene reads. `OnInit` runs again on every `bare.Restart()`, including the debug key **R** and clearing save data, so keep it safe to repeat.
 
 ### Debug keys
 

@@ -27,6 +27,9 @@ export type BareOptions =
     debugKeys?: Record<string, () => void>[] | null; // null OR [] FOR NONE
     roundPixels? :boolean;
     scaleMode?: CanvasScaleMode;
+    // GAME-WIDE SETUP (SAVE DATA, SOUNDS, FONTS). RUNS ONCE bare EXISTS, BEFORE THE FIRST SCENE IS CREATED,
+    // AND AGAIN ON EVERY bare.Restart(). AWAITED WHEN IT RETURNS A PROMISE
+    OnInit?: () => void | Promise<void>;
 };
 
 export type ResolutionOptions =

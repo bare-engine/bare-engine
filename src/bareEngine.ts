@@ -55,6 +55,7 @@ export class BareEngine
     public multiTouch: boolean = false;
     
     public fixedTimestep: number = 1 / 60;
+    private onInit?: () => void | Promise<void>;
     public maxDeltaTime: number = 1 / 15; // CAPS FRAME DELTA, USEFUL AFTER LAG OR TAB REFOCUS
     private accumulator: number = 0;
 
@@ -173,6 +174,7 @@ export class BareEngine
         this.freezeOnUnfocus = options.freezeOnUnfocus ?? true;
         this.multiTouch = options.multiTouch ?? false;
         this.resolution = options.resolution;
+        this.onInit = options.OnInit;
 
         if (options.textureFilter !== undefined)
         {
@@ -314,6 +316,8 @@ export class BareEngine
         bare.RegisterGameObjectPool(GameObject, options.gameObjectPoolSize);
 
         globalEvents.emit(BareEvent.game_awake);
+
+        await this.onInit?.();
 
         var scene = await bare.scene.Goto(sceneClass);
 
@@ -851,6 +855,9 @@ export class BareEngine
             this.ApplyOptions(bareOptions);
 
         this.ResizeCanvas(this.resolution);
+
+        await this.onInit?.();
+
         const scene = await bare.scene.Goto(this.initialSceneClass);
         this.lastUpdateTimeRef = performance.now();
 

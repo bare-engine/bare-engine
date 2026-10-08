@@ -11,7 +11,13 @@ SaveData.soundEnabled = false;
 bare.storage.Save();                 // write all values
 ```
 
-Loading is not automatic, so call `bare.storage.Load()` once when your game starts, for example in `OnAwake`.
+Loading is not automatic, so call `bare.storage.Load()` once when your game starts. Do it in [`OnInit`](./configuration#oninit), which runs before your first scene, so every scene can read `SaveData`:
+
+```ts
+StartBare(Game, {
+    OnInit: () => bare.storage.Load(),
+});
+```
 
 **Example:** the [RPG](https://github.com/bare-engine/bare-rpg) [loads its save](https://github.com/bare-engine/bare-rpg/blob/main/src/game.ts#L71) at startup and [saves after every level](https://github.com/bare-engine/bare-rpg/blob/main/src/game.ts#L104).
 
@@ -31,12 +37,14 @@ declare module 'bare-engine'
     }
 }
 
+// IN OnInit
 bare.storage.SetDefaults({
     highScore: 0,
     unlockedLevels: new Set<string>(),
 });
 bare.storage.Load();
 
+// LATER
 SaveData.highScore = 1200;
 bare.storage.Save();
 ```

@@ -6,6 +6,7 @@ A scene owns its GameObjects and controllers. Your code still owns external reso
 
 | Stage | What to do |
 | --- | --- |
+| `StartBare` [`OnInit`](../reference/configuration#oninit) | Game-wide setup: save data, sounds, fonts. Runs before the first scene exists, and again on `bare.Restart()`. |
 | Scene constructor | Set scene options and initialize plain fields. Do not call `AddGameObject` yet. |
 | Scene `OnAwake(payload)` | Register classes and initialize scene-wide resources. Bare awaits an async override. |
 | Scene `OnStart(payload)` | Add objects or await a level load. Bare awaits this before starting the scene's objects and components. Runs again on restart. Don't await a tween here: tweens only run once the scene has started. See [Tweens](../reference/tweens). |
