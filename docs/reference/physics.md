@@ -56,6 +56,7 @@ Set gravity at the top level of `settingsData.json`:
 | `restitution` | `0` | Bounciness, from 0 to 1. Two objects bounce with the lower value of the two. |
 | `stayInBounds` | `true` | Keep the object inside the level. |
 | `removeOnOutOfBounds` | `false` | Remove the object when it's fully outside the level. |
+| `continuous` | `false` | Stop a fast object from passing through walls. See [Fast objects](#fast-objects). |
 | `hitbox` | the image | Rectangle as `{ x1, y1, x2, y2 }`. Values between 0 and 1 are a fraction of the image size, larger ones are pixels. `"FULL"` covers the whole image. |
 | `hitboxType` / `hitboxRadius` | `"Rectangle"` | `"Rectangle"` or `"Circle"`, and the circle's radius. The circle is centered on the object's [pivot](../guide/game-objects#pivot), so use a `CENTER` pivot to center it on the image. |
 
@@ -67,6 +68,23 @@ A child ArcadeObject always acts as a sensor, so it reports collisions without p
 | `IsGrounded()` | Standing on something. Same as `IsBlocked(BlockedState.Down)`. |
 | `IsBlocked(direction)` | Blocked in a direction: `BlockedState.Up`, `Down`, `Left` or `Right`. |
 | `IsMoving()` | Has velocity. |
+
+### Fast objects
+
+Objects move a full step at a time, 1/60 second by default. An object that moves further than its own size in one step can jump over a thin wall without touching it. Set `continuous` on fast objects like bullets or a golf ball:
+
+```json
+{
+  "name": "ball",
+  "baseClass": "ArcadeObject",
+  "hitboxType": "Circle",
+  "pivot": "CENTER",
+  "restitution": 0.8,
+  "continuous": true
+}
+```
+
+When a `continuous` object would move more than half its size in one step, it moves in smaller steps instead, and collides after each one. It stops at walls and bounces off them, then uses the rest of the step to move in its new direction. Sensors it passes still report a collision. A slow `continuous` object costs no extra work. `ArcadePhysicsController.MAX_CONTINUOUS_STEPS` limits the number of smaller steps, 64 by default.
 
 **Examples:** the [Platformer](https://github.com/bare-engine/bare-platformer)'s player [moves with `velocity` and checks `IsGrounded`](https://github.com/bare-engine/bare-platformer/blob/main/src/components/playerComponent.ts#L40-L72), and [RPG](https://github.com/bare-engine/bare-rpg) enemies [roam with `SetVelocity`](https://github.com/bare-engine/bare-rpg/blob/main/src/components/enemyAIComponent.ts#L84). The [Showcase](https://github.com/bare-engine/bare-showcase) has an [arcade physics demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/arcadePhysics/src/DemoArcadePhysics.ts).
 

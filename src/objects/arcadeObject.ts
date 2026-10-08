@@ -19,6 +19,7 @@ export interface ArcadeObjectEntity extends Entity
     restitution?: number;
     stayInBounds?: boolean;
     removeOnOutOfBounds?: boolean;
+    continuous?: boolean;
     hitboxInheritsInnerTransform?: boolean;
     hitboxType?: "Rectangle" | "Circle";
     hitbox?: Rectangle2Vec | string;
@@ -42,6 +43,8 @@ export class ArcadeObject extends GameObject
     @SerializeField(GameMode.Edit) restitution: number = 0//.8;
     @SerializeField(GameMode.Edit) stayInBounds: boolean = true;
     @SerializeField(GameMode.Edit) removeOnOutOfBounds: boolean = false;
+    // IF TRUE, A FAST OBJECT IS MOVED IN SMALL STEPS SO IT CAN'T PASS THROUGH OTHER OBJECTS (CONTINUOUS COLLISION DETECTION)
+    @SerializeField(GameMode.Edit) continuous: boolean = false;
     
     @SerializeField(GameMode.Edit) hitboxInheritsInnerTransform: boolean = true;
     
@@ -313,6 +316,7 @@ export class ArcadeObject extends GameObject
         this.blocked = BlockedState.None;
         this.stayInBounds = true;
         this.removeOnOutOfBounds = false;
+        this.continuous = false;
 
         if (this.collidingObjects)
             this.collidingObjects.length = 0;

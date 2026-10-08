@@ -126,5 +126,52 @@ export class DocsPhysicsTest extends Scene
         c.check(bulletHitsEnemy >= 1, "layers listed in collidesWith should collide");
         c.check(bulletHitsBullet === 0, "a layer without itself in collidesWith should not collide with itself");
 
+        // continuous: a fast object moves 100 units per fixed step, so without it, it skips over a 4 wide wall
+        const thinWall = (y: number) => this.AddGameObject<ArcadeObject>({ extends: "block", scale: { x: 4, y: 100 } } as any).SetPosition(300, y);
+        const fast = (y: number, entity: object = {}) => this.AddGameObject<ArcadeObject>({ extends: "enemy", ...entity } as any)
+            .SetPosition(150, y)
+            .SetVelocityXY(6000, 0) as ArcadeObject;
+
+        let wall = thinWall(50);
+        const tunneling = fast(100);
+        await waitFrame(2);
+        c.check(tunneling.x > 304, "without continuous, a fast object should pass through a thin wall: " + tunneling.x);
+        tunneling.Remove();
+
+        let wallHits = 0;
+        const stopped = fast(100, { continuous: true });
+        stopped.events.on(BareEvent.collision_start, ((other: GameObject) => { if (other === wall) wallHits++; }) as any);
+        await waitFrame(2);
+        c.check(stopped.x + 8 <= 300.5, "a continuous object should stop at a thin wall: " + stopped.x);
+        c.check(Math.abs(stopped.velocity.x) < 1, "a continuous object without restitution should lose its speed on the wall: " + stopped.velocity.x);
+        c.check(wallHits === 1, "a continuous object should get collision_start from the wall it stopped at: " + wallHits);
+        stopped.Remove();
+
+        wall.restitution = 1;
+        const bouncing = fast(100, { continuous: true, restitution: 1 });
+        // the 2nd step moves 42 units to the wall, then the remaining 58 back
+        await waitFrame(2);
+        c.check(bouncing.velocity.x < -5000, "a continuous object should bounce off a thin wall: " + bouncing.velocity.x);
+        c.check(bouncing.x < 250, "after bouncing, a continuous object should spend the rest of the step moving back: " + bouncing.x);
+        bouncing.Remove();
+        wall.Remove();
+
+        wall = thinWall(50);
+        const ball = fast(100, { continuous: true, hitboxType: "Circle", pivot: "CENTER" });
+        await waitFrame(2);
+        c.check(ball.x + 4 <= 300.5, "a continuous circle should stop at a thin wall: " + ball.x);
+        ball.Remove();
+        wall.Remove();
+
+        // continuous objects still pass through sensors, and report them
+        const gate = this.AddGameObject<ArcadeObject>({ extends: "coin", scale: { x: 4, y: 100 } } as any).SetPosition(300, 200);
+        let gateHits = 0;
+        const runner = fast(250, { continuous: true });
+        runner.events.on(BareEvent.collision_start, ((other: GameObject) => { if (other === gate) gateHits++; }) as any);
+        await waitFrame(2);
+        c.check(runner.x > 304, "a continuous object should pass through a sensor: " + runner.x);
+        c.check(gateHits === 1, "a continuous object should report a sensor it passed within one step: " + gateHits);
+        runner.Remove();
+        gate.Remove();
     }
 }
