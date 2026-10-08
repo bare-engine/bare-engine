@@ -30,6 +30,18 @@ Ctrl-click the localhost URL shown in the terminal to open your game.
 
 You should see a rotating gear. Keep the terminal running while you edit; saving `src/game.ts` restarts the game through Vite's hot reload.
 
+## Engine versions
+
+The first `npm install` picks the newest engine release allowed by `package.json`, and writes `package-lock.json` to keep your game on it. Commit that file, so every install of your game, on any machine, gets the same engine.
+
+To move to a newer release, run:
+
+```sh
+npm run update-engine
+```
+
+Read the [release notes](https://github.com/bare-engine/bare-engine/releases) first: before 1.0, a new minor version (0.6 to 0.7) can change how things work. To allow one, raise the version in `"bare-engine"` in `package.json`, for example `#semver:^0.7.0`, and in the `update-engine` script.
+
 ## Your first scene
 
 The template's `src/game.ts` looks like this:
