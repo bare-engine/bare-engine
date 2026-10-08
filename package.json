@@ -84,5 +84,8 @@
     "bare-tools": "github:bare-engine/bare-tools#v1.0.0",
     "magic-string": "^0.30.21",
     "vite-bundle-visualizer": "^1.2.1"
+  },
+  "allowScripts": {
+    "esbuild": true
   }
 }
