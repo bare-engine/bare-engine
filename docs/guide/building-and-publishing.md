@@ -33,6 +33,7 @@ To also leave unused images out of the texture atlas, turn on [`texturePackImage
 ## Checking the size
 
 ```sh
+npm install --save-dev vite-bundle-visualizer@^1.2.1
 npm run analyze
 ```
 

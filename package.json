@@ -69,7 +69,8 @@
   },
   "peerDependencies": {
     "typescript": "^5.9.3 || ^6.0.3",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vite-bundle-visualizer": "^1.2.1"
   },
   "devDependencies": {
     "@cucumber/cucumber": "^12.8.2",
@@ -82,10 +83,14 @@
   "dependencies": {
     "acorn": "^8.15.0",
     "bare-tools": "github:bare-engine/bare-tools#v1.0.0",
-    "magic-string": "^0.30.21",
-    "vite-bundle-visualizer": "^1.2.1"
+    "magic-string": "^0.30.21"
   },
   "allowScripts": {
     "esbuild": true
+  },
+  "peerDependenciesMeta": {
+    "vite-bundle-visualizer": {
+      "optional": true
+    }
   }
 }

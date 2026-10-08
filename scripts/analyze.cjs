@@ -3,6 +3,8 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
+const { createRequire } = require("node:module");
+const { pathToFileURL } = require("node:url");
 
 const projectRoot = process.cwd();
 const args = parseArgs(process.argv.slice(2));
@@ -14,12 +16,20 @@ const open = parseBoolean(args.open, true);
 const sourcemap = parseBoolean(args.sourcemap, false);
 
 run().catch(error => {
-    console.error(error);
+    console.error(error.message || error);
     process.exit(1);
 });
 
 async function run() {
-    const start = (await import("vite-bundle-visualizer")).default;
+    const projectRequire = createRequire(path.join(projectRoot, "package.json"));
+    let visualizerPath;
+    try {
+        visualizerPath = projectRequire.resolve("vite-bundle-visualizer");
+    } catch (error) {
+        if (error.code !== "MODULE_NOT_FOUND") throw error;
+        throw new Error("Bundle analysis requires an optional package. Install it with npm install --save-dev vite-bundle-visualizer@^1.2.1, then run npm run analyze again.");
+    }
+    const start = (await import(pathToFileURL(visualizerPath).href)).default;
 
     // Generate without opening so we can restyle the HTML first, then open it.
     await start({
