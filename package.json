@@ -20,6 +20,9 @@
   "license": "MIT",
   "files": [
     "config",
+    "docs/guide",
+    "docs/reference",
+    "features/fixtures/src/docExamples",
     "scripts/analyze.cjs",
     "scripts/buildAssets.cjs",
     "scripts/stripTexturePackImages.cjs",
