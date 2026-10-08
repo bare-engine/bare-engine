@@ -9,7 +9,7 @@ Build settings for your game go in a `bareEngine` object in your project's `pack
     "gameId": "myGame",
     "name": "My Game",
     "firstLevelLoad": "level1",
-    "stripGeneratedAssets": false,
+    "stripGeneratedAssets": true,
     "index": {
       "backgroundColor": "rgb(20, 20, 30)",
       "textColor": "rgb(255, 255, 255)"
@@ -35,7 +35,7 @@ Restart the dev server after changing these.
 | [`index`](#index) | | Loading page title and colors. |
 | [`firstLevelLoad`](#firstlevelload) | | Level to fetch while the page loads. |
 | [`preloadCurrentLevel`](#preloadcurrentlevel) | `true` | Fetch the player's saved level while the page loads. |
-| [`stripGeneratedAssets`](#stripgeneratedassets) | `true` | Empty the asset lists in production. |
+| [`stripGeneratedAssets`](#stripgeneratedassets) | `false` | Inline asset names and leave `assets.ts` out of production builds. |
 | [`stripDecorators`](#stripdecorators) | `true` | Remove inspector decorators in production. |
 | [`stripUnusedMethods`](#stripunusedmethods) | on | Remove methods that are never called in production. |
 | [`autoRegisterClasses`](#autoregisterclasses) | `true` | Register your components automatically. |
@@ -98,13 +98,13 @@ When `true` (the default), the page also fetches the level the player was last o
 
 ## stripGeneratedAssets
 
-In production builds, the lists in `src/generated/assets.ts` are emptied to save space: `Asset.Images`, `Asset.Sounds`, `Asset.Fonts`, `Asset.Levels`, `Data.Prefabs`, `Data.BasePrefabs`, `Data.Animations` and `Data.Layers`. Single values like `Asset.Image.PLAYER` always work.
-
-Set to `false` if your game loops over one of these lists, for example to preload every sound:
+Makes production builds smaller. Every full path like `Asset.Image.PLAYER` is replaced with its value (`"player"`), and `src/generated/assets.ts` is left out of the build, so the lists `Asset.Images`, `Asset.Sounds`, `Asset.Fonts`, `Asset.Levels`, `Data.Prefabs`, `Data.BasePrefabs`, `Data.Animations` and `Data.Layers` are empty.
 
 ```json
-"stripGeneratedAssets": false
+"stripGeneratedAssets": true
 ```
+
+Only full paths can be replaced. Any other use of `Asset` or `Data`, like `Object.values(Asset.Sound)` or passing `Asset` to a function, stops the build with an error that lists each one. Write them out as full paths, or leave this option off.
 
 ## stripDecorators
 

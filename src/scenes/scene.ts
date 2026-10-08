@@ -1148,14 +1148,14 @@ export class Scene implements SceneI
                 // CONSTRUCT
                 entity = this.ConstructEntity(unconstructedEntity);
 
-                // CHECK IF IMAGE THAT THIS ENTITY WILL USE IS AVAILABLE
-                // IF NOT, SET IT TO NONE - TO PREVENT A FAILED IMAGE REQUEST
-                // THIS IS ONLY CHECKED FOR DEV, FOR PRODUCTION Bare.assets.images.length = 0 ALWAYS SINCE assets.ts IS NOT INCLUDED
+                // CHECK IF THE IMAGE THIS ENTITY WILL USE EXISTS, AND WARN WHEN IT DOESN'T (THE TEXTURE ISN'T CHANGED).
+                // Bare.assets.images IS FILLED FROM assets.ts, IN DEV AND IN PRODUCTION. ONLY WITH stripGeneratedAssets IS IT
+                // EMPTY IN PRODUCTION, SO THEN THIS IS ONLY CHECKED IN DEV
                 if (Bare.assets.images.length > 0 && entity.texture && entity.texture != "NONE" && entity.texture != "placeHolder" /*&& entity.texture*/)
                 {
                     var texturePath = MakePathForEntity(entity);
                     var hasEntityImage = Bare.assets.images.includes(texturePath) || assetsHandler.HasTexture(texturePath);
-                    
+
                     if (!hasEntityImage)
                     {
                         //entity.texture = "NONE";
@@ -1163,14 +1163,10 @@ export class Scene implements SceneI
                         if (entity.baseClass != "TextObject") // GETS TEXTURE FROM TEXT
                         if (__STRIP_GENERATED_ASSETS__)
                         {
-                            console.warn(`Could not find image for entity: ${entity.name}\n
-This is fine for dev, but for production you need to provide an exsiting image name for this entity. Or you get a failed image request.\n
-Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("-${entity.name}")\n
-Or, add:
-  "bareEngine": {
-    "stripGeneratedAssets": false
-  }
-to package.json to keep the generated assets (can become large for big projects).`);
+                            console.warn(`Could not find an image for entity: ${entity.name}\n
+"stripGeneratedAssets" is on, so the production build can't check which images exist, and will request this one and fail.\n
+Give the entity an existing image, or prepend its name with - to skip the image request, eg: AddGameObject("-${entity.name}").\n
+Or remove "stripGeneratedAssets": true from "bareEngine" in package.json.`);
                         }
                     }
                 }

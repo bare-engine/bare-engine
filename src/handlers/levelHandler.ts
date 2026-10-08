@@ -314,16 +314,14 @@ export class LevelHandler
                 if (!hasEntityImage)
                 {
                     if (entity.baseClass != "TextObject")
+                    // WITH stripGeneratedAssets THE IMAGE LIST IS EMPTY IN PRODUCTION, SO THIS CHECK ONLY RUNS
+                    // IN DEV THERE, AND THE BUILD WILL REQUEST THE MISSING IMAGE. WARN ABOUT THAT
                     if (__STRIP_GENERATED_ASSETS__)
                     {
-                        console.warn(`Could not find image for entity: ${entity.name}\n
-This is fine for dev, but for production you need to provide an exsiting image name for this entity. Or you get a failed image request.\n
-Alternatively, to skip the image request, prepend it with -, eg: AddGameObject("-${entity.name}")\n
-Or, add:
-"bareEngine": {
-"stripGeneratedAssets": false
-}
-to package.json to keep the generated assets (can become large for big projects).`);
+                        console.warn(`Could not find an image for entity: ${entity.name}\n
+"stripGeneratedAssets" is on, so the production build can't check which images exist, and will request this one and fail.\n
+Give the entity an existing image, or prepend its name with - to skip the image request, eg: AddGameObject("-${entity.name}").\n
+Or remove "stripGeneratedAssets": true from "bareEngine" in package.json.`);
                     }
 
                     return;

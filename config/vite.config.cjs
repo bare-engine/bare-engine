@@ -29,7 +29,9 @@ module.exports = ({ mode }) => {
     const projectPackage = readProjectPackage(projectRoot);
     const gameId = ensureGameId(projectRoot, projectPackage);
     const stripOptions = projectPackage.bareEngine?.stripUnusedMethods;
-    const stripGeneratedAssets = projectPackage.bareEngine?.stripGeneratedAssets;
+    // Opt in: inlines Asset.X.Y to literals and leaves src/generated/assets.ts out of the build,
+    // which only works when the code uses full paths. See bareInlineGeneratedAssetsPlugin.
+    const stripGeneratedAssets = projectPackage.bareEngine?.stripGeneratedAssets === true;
     // Strip the editor-only inspector decorators in prod so decorators.ts tree-shakes away.
     // On by default for prod builds; opt out with "bareEngine.stripDecorators": false.
     const stripDecorators = !isDev && projectPackage.bareEngine?.stripDecorators !== false;
@@ -43,7 +45,7 @@ module.exports = ({ mode }) => {
         define: {
             __DEV__: JSON.stringify(isDev),
             __BARE_GAME_ID__: JSON.stringify(gameId),
-            __STRIP_GENERATED_ASSETS__: JSON.stringify(stripGeneratedAssets !== false)
+            __STRIP_GENERATED_ASSETS__: JSON.stringify(stripGeneratedAssets)
         },
         resolve: {
             extensions: [".ts", ".js", ".json"]
@@ -76,7 +78,7 @@ module.exports = ({ mode }) => {
             bareIndexOutputPlugin(),
             bareInitialAssetsPlugin({ projectRoot }),
             bareGeneratedAssetsPlugin({ projectRoot, imageGlobs: projectPackage.bareEngine?.imageGlobs }),
-            ...(!isDev && stripGeneratedAssets !== false ? [bareInlineGeneratedAssetsPlugin({ projectRoot })] : []),
+            ...(!isDev && stripGeneratedAssets ? [bareInlineGeneratedAssetsPlugin({ projectRoot })] : []),
             bareEditorAndApiPlugin({
                 projectRoot,
                 editorHtmlPath: path.resolve(__dirname, "editor.html")

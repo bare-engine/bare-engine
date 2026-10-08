@@ -48,7 +48,7 @@ Production builds remove some things to save space. Try turning them off one at 
 
 | Symptom | Option |
 | --- | --- |
-| `Asset.Images`, `Data.Prefabs` or another list is empty | `"stripGeneratedAssets": false` |
+| `Asset.Images`, `Data.Prefabs` or another list is empty | remove `"stripGeneratedAssets": true` |
 | A method is suddenly undefined | `"stripUnusedMethods": false`, or keep the method with `keep` |
 | Images missing from the atlas | check `texturePackImages.alwaysInclude` |
 

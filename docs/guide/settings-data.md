@@ -127,7 +127,7 @@ anim.Play(Data.Animation.PLAYER_WALK);
 | `Data.Animation` | `animations` |
 | `Data.Layer` | `layers`, as layer indices, including `objects` |
 
-Each also has a list, like `Data.Prefabs`, which is emptied in production builds. See [`stripGeneratedAssets`](../reference/package-json#stripgeneratedassets).
+Each also has a list, like `Data.Prefabs`. It's empty in production builds with [`stripGeneratedAssets`](../reference/package-json#stripgeneratedassets) on.
 
 ## More than one settings file
 

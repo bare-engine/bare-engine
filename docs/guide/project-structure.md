@@ -41,8 +41,8 @@ this.AddGameObject(Asset.Image.EMOJI_GEAR);
 
 `Asset` holds images, sounds, fonts and levels. `Data` holds prefabs, base prefabs, animations and layers from [`settingsData.json`](./settings-data#generated-names).
 
-::: warning
-The lists (`Asset.Images`, `Data.Prefabs`, …) are cleared in production builds to save space. To keep them, add `"stripGeneratedAssets": false` under `bareEngine` in `package.json`. See [package.json Options](../reference/package-json#stripgeneratedassets). The single-value maps like `Asset.Image.X` are not affected.
+::: tip
+To make production builds smaller, turn on [`stripGeneratedAssets`](../reference/package-json#stripgeneratedassets). It replaces full paths like `Asset.Image.X` with their values and empties the lists (`Asset.Images`, `Data.Prefabs`, …), and the build tells you about any other use of `Asset` or `Data` it can't replace.
 :::
 
 ## `public/data/settingsData.json`
