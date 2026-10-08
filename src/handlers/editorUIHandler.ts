@@ -671,7 +671,7 @@ export class EditorUIHandler {
     }
 
     public SelectUIEntity(entity: Entity, element: HTMLElement | null = null): void {
-        console.log('Selected entity:', entity);
+        trace('Selected entity:', entity);
         
         // Update settings panel with selected entity
         const idInput = document.querySelector('.setting-input[placeholder*="ID"]') as HTMLInputElement;

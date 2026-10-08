@@ -202,7 +202,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise
             if (!testGetElementById)
             {
                 // NEED TO WAIT FOR DOM CONTENT TO LOAD, SINCE BUNDLE JS LOADS ASYNC AND COULD GET HERE BEFORE DOM
-                console.log("WAITING ON DOM LOAD");
+                trace("WAITING ON DOM LOAD");
                 document.addEventListener('DOMContentLoaded', start);
             }
             else
