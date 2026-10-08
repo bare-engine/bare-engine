@@ -882,6 +882,13 @@ export class Scene implements SceneI
 
             if (isXY)
             {
+                // A NULL FIELD (EG gravity) GETS A NEW Vec2, THERE'S NOTHING TO WRITE INTO
+                if ((obj as any)[key] == null)
+                {
+                    (obj as any)[key] = new Vec2(value.x ?? 0, value.y ?? 0);
+                    continue;
+                }
+
                 if ("x" in value)
                     (obj as any)[key].x = value.x;
 

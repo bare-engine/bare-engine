@@ -15,6 +15,7 @@ export interface ArcadeObjectEntity extends Entity
     collide?: boolean;
     sensor?: boolean;
     velocity?: Position | string;
+    gravity?: Position | string | null;
     drag?: number;
     restitution?: number;
     stayInBounds?: boolean;
@@ -39,6 +40,7 @@ export class ArcadeObject extends GameObject
     @SerializeField(GameMode.Edit) collide: boolean = true;
     @SerializeField(GameMode.Edit) sensor:boolean = false; // IF TRUE, WILL NOT RESPECT stayInBounds
     @SerializeField(GameMode.Edit) velocity: Vec2 = new Vec2(0, 0);
+    @SerializeField(GameMode.Edit) gravity: Vec2 | null = null; // null USES gravity FROM settingsData
     @SerializeField(GameMode.Edit) drag: number = 0//.15;
     @SerializeField(GameMode.Edit) restitution: number = 0//.8;
     @SerializeField(GameMode.Edit) stayInBounds: boolean = true;
@@ -317,6 +319,7 @@ export class ArcadeObject extends GameObject
         this.stayInBounds = true;
         this.removeOnOutOfBounds = false;
         this.continuous = false;
+        this.gravity = null;
 
         if (this.collidingObjects)
             this.collidingObjects.length = 0;

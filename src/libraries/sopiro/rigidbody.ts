@@ -31,6 +31,7 @@ export interface RigidBodyEntity extends Entity
     surfaceSpeed?: number;
     density?: number;
     mass?: number;
+    gravity?: Position | string | null;
 }
 
 // Children: Circle, Polygon
@@ -60,6 +61,9 @@ export abstract class RigidBody extends GameObject
 
     @SerializeField(GameMode.Edit) @Enum(Type) @Locked 
     public /*readonly*/ type: Type;
+
+    @SerializeField(GameMode.Edit)
+    public gravity: Vec2 | null = null; // null USES gravity FROM settingsData
 
     public id: number = -1;//
     public islandID: number = 0;
@@ -179,6 +183,7 @@ export abstract class RigidBody extends GameObject
         this.islandID = 0;
         this.id = -1;
         this.collide = true;
+        this.gravity = null;
         
         this._density = 0.0;
         this._mass = 0.0;

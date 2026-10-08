@@ -49,6 +49,7 @@ Set gravity at the top level of `settingsData.json`:
 | Property | Default | Description |
 | --- | --- | --- |
 | `velocity` | `{ x: 0, y: 0 }` | Speed in units per second (`Vec2`). |
+| `gravity` | `null` | The object's own gravity, in units per second², in any direction, like `{ x: -500, y: 0 }`. `null` uses `gravity` from `settingsData.json`. |
 | `static` | `false` | Doesn't move; other objects collide with it. |
 | `collide` | `true` | Takes part in collisions. |
 | `sensor` | `false` | Reports collisions but doesn't block, and ignores `stayInBounds`. Use it for triggers, like coins or checkpoints. |
@@ -158,7 +159,7 @@ export class Game extends Scene
 }
 ```
 
-Gravity is read from `gravity` in `settingsData.json`, like arcade physics. Without it, realistic physics uses a gravity of 1200.
+Gravity is read from `gravity` in `settingsData.json`, like arcade physics. Without it, realistic physics uses a gravity of 1200. A body can have its own `gravity` instead, see below.
 
 ### Bodies
 
@@ -193,6 +194,7 @@ Set one of these as a prefab's `baseClass`:
 | `friction` | How much it grips other bodies. |
 | `surfaceSpeed` | Moves whatever touches it along its surface, like a conveyor belt. |
 | `linearVelocity` / `angularVelocity` | Current movement and spin. |
+| `gravity` | The body's own gravity, in units per second², in any direction, like `{ x: 0, y: -500 }` to fall up. `null`, the default, uses `gravity` from `settingsData.json`. |
 
 You can also create bodies in code. They're GameObjects, so add them like any other:
 

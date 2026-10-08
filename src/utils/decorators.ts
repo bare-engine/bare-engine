@@ -1,5 +1,5 @@
 import type { GameMode } from "../globals";
-import { Color } from "../libraries/rapid-render";
+import { Color, Vec2 } from "../libraries/rapid-render";
 import { getOwnSerializeFieldEntries, getSerializeFieldEntries, getSerializeFields, isSerializedInMode, nextDeclarationOrder, prototypeChain, SerializeFieldEntry } from "./serializeFields";
 
 const BUTTON_METADATA_KEY = "__editorButtons__";
@@ -882,6 +882,8 @@ export async function applyInspectorField(component: any, fieldName: string, val
             if (nativeSetter)
                 nativeSetter.call(component, current);
         }
+        else if (isXY && current == null)
+            component[entry.name] = new Vec2(resolvedValue.x, resolvedValue.y); // A NULL FIELD (EG gravity) GETS A NEW Vec2
         else
             component[entry.name] = resolvedValue;
     }

@@ -1358,6 +1358,13 @@ const gameDebugApi = {
             const isXY = value && typeof value === "object" && ("x" in value || "y" in value);
             if (isXY)
             {
+                // A NULL FIELD (EG gravity) GETS A NEW Vec2, THERE'S NOTHING TO WRITE INTO
+                if ((o as any)[prop] == null)
+                {
+                    (o as any)[prop] = new Vec2(value.x ?? 0, value.y ?? 0);
+                    continue;
+                }
+
                 if ("x" in value) (o as any)[prop].x = value.x;
                 if ("y" in value) (o as any)[prop].y = value.y;
                 continue;

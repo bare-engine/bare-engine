@@ -230,7 +230,15 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
             if (!obj.static)
             {
-                obj.velocity.y += gravity * fixedDeltaTime;
+                if (obj.gravity)
+                {
+                    obj.velocity.x += obj.gravity.x * fixedDeltaTime;
+                    obj.velocity.y += obj.gravity.y * fixedDeltaTime;
+                }
+                else
+                {
+                    obj.velocity.y += gravity * fixedDeltaTime;
+                }
             }
 
             if (obj.drag > 0)

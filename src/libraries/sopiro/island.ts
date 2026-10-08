@@ -51,7 +51,7 @@ export class Island
                 b.angularVelocity += angular_a;
 
                 if (this.sleeping &&
-                    (linear_a.squaredLength() >= Settings.restLinearTolerance) || (angular_a * angular_a >= Settings.restAngularTolerance))
+                    ((linear_a.squaredLength() >= Settings.restLinearTolerance) || (angular_a * angular_a >= Settings.restAngularTolerance)))
                 {
                     this.sleeping = false;
                     awakeIsland = true;
@@ -73,7 +73,15 @@ export class Island
             // Apply gravity 
             if (Settings.applyGravity && !this.sleeping)
             {
-                b.linearVelocity.y += gravityStep;
+                if (b.gravity)
+                {
+                    b.linearVelocity.x += b.gravity.x * Settings.dt;
+                    b.linearVelocity.y += b.gravity.y * Settings.dt;
+                }
+                else
+                {
+                    b.linearVelocity.y += gravityStep;
+                }
             }
         }
 
