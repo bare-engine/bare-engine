@@ -11,7 +11,7 @@ this.AddGameObject('player');                     // a prefab name or image name
 this.AddGameObject('/player');                    // force the image, skip the prefab
 this.AddGameObject('enemies/saw');                // an image path
 this.AddGameObject({ extends: 'player', x: 50 }); // an entity
-this.AddGameObject(Asset.Image.EMOJI_GEAR);       // from generated assets
+this.AddGameObject(Asset.Image.PLAYER);           // from generated assets
 this.AddGameObject(MyGameObjectClass);            // a class
 this.AddGameObject();                             // an empty GameObject
 ```

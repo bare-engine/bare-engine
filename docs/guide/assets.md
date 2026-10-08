@@ -11,7 +11,7 @@ Bare has three ways to get images into your game. Pick per image, and switch bet
 In code you always refer to an image by name. The engine looks for it in the initial assets first, then streams it from `public/images/`:
 
 ```ts
-this.AddGameObject('gear');
+this.AddGameObject('playerImage');
 ```
 
 ## Texture atlas
@@ -47,7 +47,7 @@ The dev server writes `src/generated/assets.ts` with a typed list of your assets
 ```ts
 import { Asset } from './generated/assets';
 
-this.AddGameObject(Asset.Image.EMOJI_GEAR);
+this.AddGameObject(Asset.Image.PLAYER);
 bare.sound.Play(Asset.Sound.JUMP);
 bare.level.Load(Asset.Level.LEVEL_1);
 ```
