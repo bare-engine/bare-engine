@@ -38,6 +38,16 @@ this.AddGameObject('ball')
     .CenterPivot();
 ```
 
+| Setter | Description |
+| --- | --- |
+| `SetPosition(x, y)` | Position. |
+| `SetScale(scale)` | The same scale on both axes. |
+| `SetScaleXY(x, y)` | A different scale per axis, eg `SetScaleXY(bare.width, bare.height)` to stretch the 1×1 `PIXEL` over the screen. |
+| `SetScaleToReachDimensions(width, height, keepRatio?)` | Scale the image to a size in game units. With `keepRatio`, it fits inside that size without stretching. |
+| `SetRotation(degrees)` | Rotation. |
+| `SetPivot(x, y)` / `CenterPivot()` | Pivot, see [Pivot](#pivot). |
+| `SetColor(color)` / `SetAlpha(alpha)` | Tint, as a `Color` or hex string, and opacity from 0 to 1. |
+
 | Property | Description |
 | --- | --- |
 | `x`, `y`, `position` | Position (`position` is a `Vec2`). |

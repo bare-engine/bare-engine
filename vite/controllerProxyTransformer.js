@@ -328,6 +328,26 @@ function createControllerProxyTransformer(program) {
                         : false);
                 let needsScene = false;
 
+                // WHY `this` ISN'T THE OBJECT AT THE NODE BEING VISITED: "static" IN A STATIC MEMBER, "function" INSIDE A
+                // function () {} (NOT AN ARROW FUNCTION). A REWRITE TO this.x / this.scene.x THERE FAILS AT RUNTIME
+                let thisLost = null;
+                // function () {}.bind(this) / .call(this) / .apply(this) KEEP `this`
+                const functionsBoundToThis = new Set();
+                const thisErrors = [];
+
+                // CALLED WHERE bare.x / bScene / TweenTo IS REWRITTEN TO SOMETHING ON `this`
+                function checkThis(n, original, rewritten) {
+                    if (!thisLost) {
+                        return;
+                    }
+                    const fileName = normalizeSlashes(path.relative(process.cwd(), sourceFile.fileName));
+                    const line = n.pos >= 0 ? sourceFile.getLineAndCharacterOfPosition(n.getStart(sourceFile)).line + 1 : "?";
+                    const fix = thisLost === "static"
+                        ? "`this` is the class in a static member. Use an instance method, or pass the scene in and use scene.x."
+                        : "`this` isn't the object inside a function () {}. Use an arrow function instead.";
+                    thisErrors.push(`  ${fileName}:${line}  ${original} becomes ${rewritten}. ${fix}`);
+                }
+
                 function maybeTransformTweenToCall(callNode) {
                     if (!ts.isIdentifier(callNode.expression)) {
                         return callNode;
@@ -370,12 +390,14 @@ function createControllerProxyTransformer(program) {
                         );
                     } else if (extendsSceneDeep) {
                         // this.tween
+                        checkThis(callNode, "TweenTo(...)", "this.tween.To(...)");
                         tweenControllerAccess = factory.createPropertyAccessExpression(
                             factory.createThis(),
                             "tween"
                         );
                     } else {
                         // this.scene.tween
+                        checkThis(callNode, "TweenTo(...)", "this.scene.tween.To(...)");
                         needsScene = true;
                         tweenControllerAccess = factory.createPropertyAccessExpression(
                             createThisScene(),
@@ -397,7 +419,28 @@ function createControllerProxyTransformer(program) {
                 }
 
                 function visitInClass(n) {
+                    if (ts.isFunctionExpression(n) || ts.isFunctionDeclaration(n)) {
+                        const outer = thisLost;
+                        if (!functionsBoundToThis.has(n)) {
+                            thisLost = "function";
+                        }
+                        const visited = ts.visitEachChild(n, visitInClass, context);
+                        thisLost = outer;
+                        return visited;
+                    }
                     if (ts.isCallExpression(n)) {
+                        const callee = n.expression;
+                        if (ts.isPropertyAccessExpression(callee)
+                            && ["bind", "call", "apply"].includes(callee.name.text)
+                            && n.arguments[0] && n.arguments[0].kind === ts.SyntaxKind.ThisKeyword) {
+                            let target = callee.expression;
+                            while (ts.isParenthesizedExpression(target)) {
+                                target = target.expression;
+                            }
+                            if (ts.isFunctionExpression(target)) {
+                                functionsBoundToThis.add(target);
+                            }
+                        }
                         maybeCollectFromDirectiveMap(n.expression);
                         const updated = maybeTransformTweenToCall(n);
                         if (updated !== n) {
@@ -430,9 +473,11 @@ function createControllerProxyTransformer(program) {
                         ) {
                             if (n.name.text === "events") {
                                 if (extendsSceneDeep) {
+                                    checkThis(n, "bare.events", "this.events");
                                     return createThisProperty("events");
                                 }
                                 if (hasScene || extendsSceneCarrier) {
+                                    checkThis(n, "bare.events", "this.scene.events");
                                     needsScene = true;
                                     return createThisSceneProperty("events");
                                 }
@@ -447,8 +492,10 @@ function createControllerProxyTransformer(program) {
                                     }
                                     // the bare.<module> name doubles as the Scene field name
                                     if (extendsSceneDeep) {
+                                        checkThis(n, `bare.${n.name.text}`, `this.${n.name.text}`);
                                         return createThisProperty(n.name.text);
                                     }
+                                    checkThis(n, `bare.${n.name.text}`, `this.scene.${n.name.text}`);
                                     needsScene = true;
                                     return createThisSceneProperty(n.name.text);
                                 }
@@ -469,9 +516,11 @@ function createControllerProxyTransformer(program) {
 
                         if (name === "bScene") {
                         if (extendsSceneDeep) {
+                            checkThis(n, "bScene", "this");
                             return factory.createThis();
                         }
                         if (canRewriteScene) {
+                            checkThis(n, "bScene", "this.scene");
                             needsScene = true;
                             return createThisScene();
                         }
@@ -528,6 +577,8 @@ function createControllerProxyTransformer(program) {
                 }
 
                 const updatedMembers = node.members.map((member) => {
+                    thisLost = (ts.getCombinedModifierFlags(member) & ts.ModifierFlags.Static) ? "static" : null;
+
                     if (ts.isConstructorDeclaration(member)) {
                         if (!member.body) {
                             return member;
@@ -612,6 +663,13 @@ function createControllerProxyTransformer(program) {
                         node.heritageClauses,
                         updatedMembers
                     );
+
+                thisLost = null;
+                if (thisErrors.length > 0) {
+                    throw new Error(
+                        `[controller-proxy] bare.x is rewritten to this.scene.x (or this.x), but here \`this\` isn't the object, so it would fail at runtime:\n${thisErrors.join("\n")}`
+                    );
+                }
 
                 if (needsScene && !hasScene && !extendsSceneCarrier) {
                     const className = node.name ? node.name.text : "<anonymous>";

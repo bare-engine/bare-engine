@@ -32,6 +32,13 @@ function Explode(scene: Scene, x: number, y: number)
 }
 ```
 
+## "bare.x is rewritten to this.scene.x, but here `this` isn't the object"
+
+Inside a component, GameObject or scene, `bare.mouse` becomes `this.scene.mouse` (and `bare.tween`, `bare.events`, `bScene` and `TweenTo` work the same way). That needs `this` to be the object, which it isn't in a `static` member, where `this` is the class, or inside a `function () {}`. The dev server and the build stop with this error and list each line.
+
+- In callbacks, use an arrow function: `items.some(() => bare.mouse.IsPressed())`. A `function () {}.bind(this)` works too.
+- Make the method an instance method, or pass the scene in: `static IsTapped(scene: Scene) { return scene.mouse.IsPressed(); }`.
+
 ## "Cannot add a GameObject yet"
 
 `AddGameObject` was called in a scene's constructor. Move it to `OnAwake` or `OnStart`.

@@ -47,7 +47,9 @@ override OnPostLoadLevel()
 | --- | --- |
 | `CameraScaleMode.None` | No automatic scaling. |
 | `CameraScaleMode.Contain` | Fit all content on screen, with space around it if needed. |
-| `CameraScaleMode.Cover` | Fill the screen with content. Some content may be cut off, but you never see past its edges. |
+| `CameraScaleMode.Cover` | Fill the screen with content. Some content may be cut off, but you never see past its edges. The default. |
+
+Since `Cover` is the default and loading a level sets the bounds to the level's size, a level that's smaller than the screen in either direction is zoomed in until it fills the screen, even with `SetZoom(1)`. `GetZoom()` still returns `1` then; `GetScale()` gives the scale actually drawn. Use `CameraScaleMode.None` to turn this off.
 
 **Examples:** the [Platformer](https://github.com/bare-engine/bare-platformer/blob/main/src/game.ts#L49-L53), and the [Showcase](https://github.com/bare-engine/bare-showcase)'s [camera demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/camera/src/DemoCamera.ts#L33-L48), which switches between `Cover` and `Contain`.
 

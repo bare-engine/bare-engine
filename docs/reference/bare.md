@@ -42,6 +42,8 @@ A scene module only exists once your code uses it. If you never reference `bare.
 ::: warning Which scene?
 `bare.level.Load('level1')` becomes `this.scene.level.Load('level1')`. So the call needs to be inside a scene, or inside a class with a `scene` property (GameObjects and components have one). If Bare can't work out the scene, you get a warning.
 
+It also needs `this` to be that object, so it doesn't work in a `static` method or inside a `function () {}` callback; use an arrow function there. The build stops with an error when it finds one. See [Troubleshooting](../guide/troubleshooting#bare-x-is-rewritten-to-this-scene-x-but-here-this-isn-t-the-object).
+
 To reach another scene's module, get the scene first:
 
 ```ts
