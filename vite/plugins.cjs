@@ -2025,7 +2025,7 @@ function buildLineShiftMap(original, next, id) {
 
 const ASSET_IMAGE_EXTENSIONS = new Set([".webp", ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".svg"]);
 const ASSET_GENERATED_IMAGE_EXTENSIONS = new Set([".webp"]);
-const ASSET_SOUND_EXTENSIONS = new Set([".mp3", ".wav", ".ogg", ".m4a", ".flac", ".aac"]);
+const ASSET_SOUND_EXTENSIONS = new Set([".mp3"]);
 const ASSET_FONT_EXTENSIONS = new Set([".ttf", ".otf", ".woff", ".woff2"]);
 const ASSET_LEVEL_EXTENSIONS = new Set([".json"]);
 
