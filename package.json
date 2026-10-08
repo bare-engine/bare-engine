@@ -74,6 +74,7 @@
   "devDependencies": {
     "@cucumber/cucumber": "^12.8.2",
     "@types/node": "^25.1.0",
+    "selenium-webdriver": "^4.43.0",
     "typescript": "^6.0.3",
     "vite": "^6.4.2",
     "vitepress": "^1.6.4"
@@ -82,7 +83,6 @@
     "acorn": "^8.15.0",
     "bare-tools": "github:bare-engine/bare-tools#v1.0.0",
     "magic-string": "^0.30.21",
-    "selenium-webdriver": "^4.43.0",
     "vite-bundle-visualizer": "^1.2.1"
   }
 }
