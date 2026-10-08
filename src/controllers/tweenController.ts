@@ -185,11 +185,19 @@ export class TweenController
         });
 
         // tweens only advance once the scene has started, which waits for the scene's OnStart:
-        // awaiting this promise inside OnStart would never resolve
+        // awaiting this promise inside OnStart would never resolve. reading it there is fine as long as
+        // OnStart doesn't wait on it (e.g. a 'void' async call), so only warn if the scene stays stuck
+        let startCheckQueued = false;
         Object.defineProperty(tween, "promise", {
             get: () => {
-                if (__DEV__ && !this.scene.started)
-                    console.error("A tween's promise was read before its scene started. Tweens don't run until the scene's OnStart has finished, so awaiting it in OnStart never resolves. Start the tween without awaiting it, or await it after OnStart, for example in OnUpdate or an event.");
+                if (__DEV__ && !this.scene.started && !startCheckQueued)
+                {
+                    startCheckQueued = true;
+                    setTimeout(() => {
+                        if (!this.scene.started)
+                            console.error("A tween's promise was read before its scene started, and the scene still hasn't started. Tweens don't run until the scene's OnStart has finished, so awaiting it in OnStart never resolves. Start the tween without awaiting it, or await it after OnStart, for example in OnUpdate or an event.");
+                    }, 3000);
+                }
                 return promise;
             },
             configurable: true,
