@@ -147,6 +147,11 @@ function bareAutoRegisterClassesPlugin(options = {}) {
     const fileClasses = new Map();
     let serverRef = null;
     let startBareFile = null;
+    // The scene class passed to StartBare, and the file that declares it. Registrations are
+    // injected into that class's OnAwake, and it can live in another file than the StartBare
+    // call: `import { Menu } from "./menu"; StartBare(Menu);`
+    let startSceneFile = null;
+    let startSceneClass = null;
     // Signature of the component class names referenced by settingsData.json, so a
     // save that doesn't change which components are referenced skips the reload.
     let settingsComponentSignature = null;
@@ -331,6 +336,52 @@ function bareAutoRegisterClassesPlugin(options = {}) {
                 serverRef.moduleGraph.invalidateModule(mod);
             }
         }
+        invalidateStartSceneModule();
+    }
+
+    // When the start scene is declared in another file, that file gets the registrations, so its
+    // cached transform has to go too. Marked as HMR so the StartBare file, which imports it,
+    // re-imports it with a fresh ?t= when it re-runs instead of reusing the old module.
+    function invalidateStartSceneModule() {
+        if (!serverRef || !startSceneFile || startSceneFile === startBareFile) return;
+
+        const mods = serverRef.moduleGraph.getModulesByFile(startSceneFile);
+        if (mods) {
+            for (const mod of mods) {
+                serverRef.moduleGraph.invalidateModule(mod, new Set(), Date.now(), true);
+            }
+        }
+    }
+
+    // Inject the registrations into the OnAwake of `className`, which is declared in `code`
+    function injectRegistrations(code, filePath, className) {
+        const registrations = getRegisteredClasses().filter(c =>
+            (!c.filePath || normalize(c.filePath) !== normalize(filePath))
+            && !new RegExp(`\\bbare\\.(?:AddClass|RegisterComponent)\\s*\\(\\s*${c.name}\\s*\\)`).test(code)
+        );
+        if (registrations.length === 0) {
+            return null;
+        }
+
+        // Components register via RegisterComponent; everything else via the AddClass catch-all.
+        const statements = registrations.map(c =>
+            c.kind === "component"
+                ? `bare.RegisterComponent(${c.name}, ${JSON.stringify(c.name)});`
+                : `bare.AddClass(${c.name}, ${JSON.stringify(c.name)});`
+        );
+        const result = addStatementsToOnAwake(code, className, statements, filePath);
+        if (result === code) {
+            return null;
+        }
+
+        const imports = registrations
+            .filter(c => !hasImportBinding(code, c.name))
+            .map(c => `import { ${c.name} } from "${c.pkg || toImportPath(filePath, c.filePath)}";`);
+
+        return {
+            code: `${imports.join("\n")}${imports.length ? "\n" : ""}${result}`,
+            map: null
+        };
     }
 
     function onWatcherEvent(filePath, kind) {
@@ -421,48 +472,109 @@ function bareAutoRegisterClassesPlugin(options = {}) {
                 return null;
             }
 
+            const normalizedPath = normalize(path.resolve(filePath));
             const target = code.match(/\b(?:[A-Za-z_$][\w$]*\.)?StartBare\s*\(\s*([A-Za-z_$][\w$]*)/);
-            if (!target) {
+
+            if (target) {
+                startBareFile = normalizedPath;
+
+                const scene = findStartSceneClass(code, filePath, target[1]);
+                if (!scene) {
+                    startSceneFile = null;
+                    startSceneClass = null;
+                    this.warn(`Can't find where ${target[1]}, the scene passed to StartBare, is declared, so components and GameObject classes aren't registered automatically. Declare it in this file or import it from a relative path, or register classes yourself with bare.RegisterComponent / bare.AddClass.`);
+                    return null;
+                }
+
+                const targetChanged = scene.file !== startSceneFile || scene.className !== startSceneClass;
+                startSceneFile = scene.file;
+                startSceneClass = scene.className;
+
+                // Declared in another file: the registrations go there, when that file is
+                // transformed. This file imports it, so it's transformed after this one, unless
+                // the dev server cached it before it became the start scene.
+                if (startSceneFile !== normalizedPath) {
+                    if (targetChanged) {
+                        invalidateStartSceneModule();
+                    }
+                    return null;
+                }
+            } else if (normalizedPath !== startSceneFile) {
                 return null;
             }
-
-            startBareFile = normalize(path.resolve(filePath));
 
             // Rescan the src tree so the class map matches what's on disk right now -
             // makes registration independent of watcher event ordering. Also catches
-            // edits to the StartBare file itself.
+            // edits to the start scene's file itself.
             scanAll();
-            scanFile(startBareFile);
+            scanFile(normalizedPath);
 
-            const registrations = getRegisteredClasses().filter(c =>
-                (!c.filePath || normalize(c.filePath) !== normalize(filePath))
-                && !new RegExp(`\\bbare\\.(?:AddClass|RegisterComponent)\\s*\\(\\s*${c.name}\\s*\\)`).test(code)
-            );
-            if (registrations.length === 0) {
-                return null;
-            }
-
-            // Components register via RegisterComponent; everything else via the AddClass catch-all.
-            const statements = registrations.map(c =>
-                c.kind === "component"
-                    ? `bare.RegisterComponent(${c.name}, ${JSON.stringify(c.name)});`
-                    : `bare.AddClass(${c.name}, ${JSON.stringify(c.name)});`
-            );
-            const result = addStatementsToOnAwake(code, target[1], statements, filePath);
-            if (result === code) {
-                return null;
-            }
-
-            const imports = registrations
-                .filter(c => !hasImportBinding(code, c.name))
-                .map(c => `import { ${c.name} } from "${c.pkg || toImportPath(filePath, c.filePath)}";`);
-
-            return {
-                code: `${imports.join("\n")}${imports.length ? "\n" : ""}${result}`,
-                map: null
-            };
+            return injectRegistrations(code, filePath, startSceneClass);
         }
     };
+}
+
+// The file and class name of the scene passed to StartBare: declared in `code` itself, or
+// imported from a relative path (a named or default import). Null when it can't be found.
+function findStartSceneClass(code, filePath, localName) {
+    const declares = (source, name) => new RegExp(`\\bclass\\s+${name}\\b`).test(source);
+    if (declares(code, localName)) {
+        return { file: normalize(path.resolve(filePath)), className: localName };
+    }
+
+    const sourceFile = ts.createSourceFile(filePath, code, ts.ScriptTarget.Latest, true);
+    for (const statement of sourceFile.statements) {
+        if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) {
+            continue;
+        }
+        const clause = statement.importClause;
+        if (!clause || clause.isTypeOnly) {
+            continue;
+        }
+
+        let importedName = null;
+        if (clause.name && clause.name.text === localName) {
+            importedName = "default";
+        } else if (clause.namedBindings && ts.isNamedImports(clause.namedBindings)) {
+            const element = clause.namedBindings.elements.find(e => e.name.text === localName);
+            if (element) {
+                importedName = (element.propertyName || element.name).text;
+            }
+        }
+        if (!importedName) {
+            continue;
+        }
+
+        const specifier = statement.moduleSpecifier.text;
+        const file = specifier.startsWith(".") ? resolveSourceFile(path.dirname(filePath), specifier) : null;
+        if (!file) {
+            return null;
+        }
+
+        const source = fs.readFileSync(file, "utf8");
+        let className = importedName;
+        if (importedName === "default") {
+            const match = source.match(/\bexport\s+default\s+(?:abstract\s+)?class\s+([A-Za-z_$][\w$]*)/)
+                || source.match(/\bexport\s+default\s+([A-Za-z_$][\w$]*)\s*;?/);
+            className = match ? match[1] : null;
+        }
+        return className && declares(source, className) ? { file: normalize(file), className } : null;
+    }
+    return null;
+}
+
+// Resolve a relative import to a source file: "./menu", "./menu.js" (TypeScript style) or "./menu" as a folder with an index
+function resolveSourceFile(dir, specifier) {
+    const base = path.resolve(dir, specifier);
+    const withoutJs = base.replace(/\.[cm]?jsx?$/, "");
+    const extensions = [".ts", ".tsx", ".mts", ".js", ".jsx", ".mjs"];
+    const candidates = [
+        base,
+        ...extensions.map(ext => base + ext),
+        ...extensions.map(ext => withoutJs + ext),
+        ...extensions.map(ext => path.join(base, "index" + ext)),
+    ];
+    return candidates.find(file => /\.[cm]?[jt]sx?$/.test(file) && fs.existsSync(file) && fs.statSync(file).isFile()) || null;
 }
 
 function addStatementsToOnAwake(code, className, statements, filePath) {

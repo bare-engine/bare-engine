@@ -16,6 +16,7 @@ The engine couldn't find a component named in a prefab.
 
 - Check the class name ends in `Component`, and the prefab uses the name without it, starting lowercase: `PlayerComponent` → `"player"`.
 - Make sure the class is **exported** and lives in `src/`. Only exported classes are registered automatically.
+- Classes are registered in the `OnAwake` of the scene you pass to `StartBare`. That scene must be declared in the same file, or imported from a relative path (`import { Menu } from './menu'`). If the dev server can't find it, it prints a warning saying so.
 - Otherwise, register it yourself: `bare.AddClass(PlayerComponent)`.
 
 ## A warning about not knowing which scene
