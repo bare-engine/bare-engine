@@ -187,6 +187,11 @@ export class DocsReferenceTest extends Scene
         bare.camera.SetPosition(-500, -500);
         const clamped = bare.camera.GetPosition();
         c.check(clamped.x > 0 && clamped.y > 0, "SetPosition should keep the camera inside its bounds right away: " + JSON.stringify(clamped));
+        bare.camera.SetZoom(0.001);
+        const minZoom = bare.camera.GetZoomToFit(4000, 4000);
+        c.check(Math.abs(bare.camera.GetZoom() - minZoom) < 0.0001, "SetZoom should keep the zoom at or above the bounds fit: " + bare.camera.GetZoom() + " vs " + minZoom);
+        bare.camera.SetZoom(bare.camera.GetZoom() + 0.01);
+        c.check(bare.camera.GetZoom() > minZoom, "a zoom step from the bounds fit should show right away: " + bare.camera.GetZoom());
         bare.camera.DisableBounds();
         bare.camera.SetScaleMode(CameraScaleMode.None);
         bare.camera.SetZoom(1);

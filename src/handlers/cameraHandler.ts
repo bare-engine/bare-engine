@@ -152,9 +152,11 @@ export class CameraHandler {
         this.StopShake();
     }
 
+    // kept at or above the zoom where the bounds stop the camera zooming out, so changes
+    // to it always show
     SetZoom(zoom: number)
     {
-        this.zoom = zoom;
+        this.zoom = Math.max(zoom, this.GetMinZoom());
     }
 
     // center position
@@ -270,31 +272,23 @@ export class CameraHandler {
     // world to screen scale: the zoom combined with the fit to the screen, kept within the bounds
     GetScale(): number
     {
-        let finalScale = this.zoomFit * this.zoom;
+        return this.zoomFit * Math.max(this.zoom, this.GetMinZoom());
+    }
 
+    // the lowest zoom the bounds allow: Cover never shows past them, Contain never zooms out
+    // past the "fit" view. 0 without bounds or with CameraScaleMode.None
+    private GetMinZoom(): number
+    {
         const hasBounds = this.bounds.width > 0 && this.bounds.height > 0;
-        if (hasBounds && this.scaleMode !== CameraScaleMode.None) {
-            const { width: screenW, height: screenH } = this.GetViewport();
+        if (!hasBounds || this.scaleMode === CameraScaleMode.None)
+            return 0;
 
-            const coverFit = Math.max(
-                screenW / this.bounds.width,
-                screenH / this.bounds.height
-            );
+        const { width: screenW, height: screenH } = this.GetViewport();
+        const sx = screenW / this.bounds.width;
+        const sy = screenH / this.bounds.height;
+        const fit = this.scaleMode === CameraScaleMode.Cover ? Math.max(sx, sy) : Math.min(sx, sy);
 
-            const containFit = Math.min(
-                screenW / this.bounds.width,
-                screenH / this.bounds.height
-            );
-
-            if (this.scaleMode === CameraScaleMode.Cover) {
-                if (finalScale < coverFit) finalScale = coverFit;
-            } else {
-                // Contain: don't allow zooming out past the "fit" view
-                if (finalScale < containFit) finalScale = containFit;
-            }
-        }
-
-        return finalScale;
+        return fit / this.zoomFit;
     }
 
     // zoomFit so that `dimensions` contain/cover the *screen*
@@ -333,6 +327,9 @@ export class CameraHandler {
 
         //if (this.position.x == 0 && this.position.y == 0 && this.zoom == 1)
         //  return;
+
+        // bounds, scale mode or screen size may have changed since SetZoom
+        this.zoom = Math.max(this.zoom, this.GetMinZoom());
 
         const scale = this.GetScale();
 

@@ -49,7 +49,7 @@ override OnPostLoadLevel()
 | `CameraScaleMode.Contain` | Fit all content on screen, with space around it if needed. |
 | `CameraScaleMode.Cover` | Fill the screen with content. Some content may be cut off, but you never see past its edges. The default. |
 
-Since `Cover` is the default and loading a level sets the bounds to the level's size, a level that's smaller than the screen in either direction is zoomed in until it fills the screen, even with `SetZoom(1)`. `GetZoom()` still returns `1` then; `GetScale()` gives the scale actually drawn. Use `CameraScaleMode.None` to turn this off.
+Since `Cover` is the default and loading a level sets the bounds to the level's size, a level that's smaller than the screen in either direction is zoomed in until it fills the screen, even with `SetZoom(1)`. `GetZoom()` then returns the raised zoom, not `1`. Use `CameraScaleMode.None` to turn this off.
 
 **Examples:** the [Platformer](https://github.com/bare-engine/bare-platformer/blob/main/src/game.ts#L49-L53), and the [Showcase](https://github.com/bare-engine/bare-showcase)'s [camera demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/camera/src/DemoCamera.ts#L33-L48), which switches between `Cover` and `Contain`.
 
@@ -60,7 +60,7 @@ Since `Cover` is the default and loading a level sets the bounds to the level's 
 | `SetPosition(x, y)` | Center the camera on a point, kept inside the bounds if there are any. |
 | `SetPositionTopLeft(x, y)` | Place the camera by its top-left corner. |
 | `AddPosition(dx, dy)` / `GetPosition()` | Move or read the position. `GetPosition` returns the center within the bounds, without shake, and reflects `SetPosition` right away. |
-| `SetZoom(zoom)` / `GetZoom()` | Zoom level, on top of the scale mode's fit. |
+| `SetZoom(zoom)` / `GetZoom()` | Zoom level, on top of the scale mode's fit. With bounds and `Cover` or `Contain`, it's kept at or above the zoom that shows the whole bounds, so `SetZoom(GetZoom() + step)` always shows a change. |
 | `GetZoomToFit(width, height)` | The zoom that shows an area of that size, like `GetZoomToFit(level.width, level.height)` for the whole level. |
 | `GetScale()` | World units to screen pixels: the zoom combined with the fit, as drawn. Divide by it for sizes that should look the same at any zoom. |
 | `SetDimensions(width, height)` | The area the camera shows. |
