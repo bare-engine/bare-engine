@@ -698,6 +698,16 @@ class TextTexture extends Texture {
     private options: ITextOptions
     resolution: number = 1
 
+    // FONT METRICS - DON'T DEPEND ON WHICH GLYPHS ARE IN THE TEXT, SO LAYOUT STAYS THE SAME FOR "Menu" AND "Retry"
+    /** Font ascent above the alphabetic baseline, in logical pixels. */
+    fontAscent: number = 0
+    /** Font descent below the alphabetic baseline, in logical pixels. */
+    fontDescent: number = 0
+    /** Y of the first line's alphabetic baseline, relative to where the texture is drawn. */
+    baselineY: number = 0
+    /** Height of all lines using font metrics instead of the glyph bounds of `height`. */
+    lineBoxHeight: number = 0
+
     constructor(render: Rapid, options?: ITextOptions) {
         super();
         this.render = render;
@@ -822,8 +832,9 @@ class TextTexture extends Texture {
         // 测量用户基线相对于 alphabetic 的偏移量
         ctx.textBaseline = "alphabetic";
 
-        const alphabeticDescent =
-            ctx.measureText(reference).fontBoundingBoxDescent * fontScale;
+        const alphabeticMetrics = ctx.measureText(reference);
+        const alphabeticDescent = alphabeticMetrics.fontBoundingBoxDescent * fontScale;
+        const fontAscent = alphabeticMetrics.fontBoundingBoxAscent * fontScale;
 
         ctx.textBaseline = baseline;
 
@@ -897,6 +908,11 @@ class TextTexture extends Texture {
         // (upstream: this.offsetX = -startX, which makes the anchor the origin)
         this.offsetX = 0
         this.offsetY = (-padding - topAscent + alphabeticBaselineOffset);
+
+        this.fontAscent = fontAscent;
+        this.fontDescent = alphabeticDescent;
+        this.baselineY = alphabeticBaselineOffset;
+        this.lineBoxHeight = fontAscent + alphabeticDescent + (lines.length - 1) * lineStep;
 
         this.base?.updateSource(this.render.gl, this.canvas, this.options);
         this.setRegion(0, 0, pixelWidth, pixelHeight);

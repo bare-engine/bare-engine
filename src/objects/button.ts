@@ -167,11 +167,12 @@ export class Button extends GameObject
             position: new Vec2(),
         });
 
+        // PLACED BY BASELINE, NOT CENTERED ON THE GLYPHS - A DESCENDER ("Retry") WOULD OTHERWISE SHIFT THE TEXT UP
+        const lineTop = this.textTexture.baselineY - this.textTexture.fontAscent;
         bare.drawSprite({
             texture: this.textTexture,
             color: inheritedColor,
-            position: new Vec2(this.margin, this.height / 2),
-            origin: new Vec2(0, 0.5)
+            position: new Vec2(this.margin, this.margin - lineTop),
         });
     }
 
@@ -200,6 +201,7 @@ export class Button extends GameObject
 
     override get height(): number
     {
-        return this.textTexture.height + this.margin * 2
+        // FONT LINE HEIGHT, NOT THE GLYPH BOUNDS - SO "Retry" AND "Menu" BUTTONS ARE THE SAME HEIGHT
+        return this.textTexture.lineBoxHeight + this.margin * 2
     }
 }
