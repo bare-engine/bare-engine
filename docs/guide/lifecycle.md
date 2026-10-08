@@ -52,7 +52,27 @@ Clearing any scene cancels **all** nonpersistent global `wait` and `waitFrame` c
 
 An object's global listener can outlive the object unless you unsubscribe. Keep a stable callback reference and pair registration with removal:
 
-<<< ../../features/fixtures/src/docExamples/focusComponent.ts
+<!-- example: ../../features/fixtures/src/docExamples/focusComponent.ts -->
+```ts
+import { BareEvent, Component } from 'bare-engine';
+
+export class FocusComponent extends Component
+{
+    private onFocus = (focused: boolean) => {
+        this.go.alpha = focused ? 1 : 0.5;
+    };
+
+    override OnAdded()
+    {
+        bare.globalEvents.on(BareEvent.game_focusChange, this.onFocus);
+    }
+
+    override OnRemoved()
+    {
+        bare.globalEvents.off(BareEvent.game_focusChange, this.onFocus);
+    }
+}
+```
 
 Ordinary scene listeners are cleared on restart; register those in `OnStart` if they must be recreated. Persistent scene listeners can be registered once in `OnAwake`. Avoid adding the same persistent listener on every `OnStart`. See [Events](./events).
 
@@ -60,6 +80,26 @@ Ordinary scene listeners are cleared on restart; register those in `OnStart` if 
 
 Destroy textures that your scene creates when their contents are no longer needed. Allocate and release them in matching hooks:
 
-<<< ../../features/fixtures/src/docExamples/paintScene.ts
+<!-- example: ../../features/fixtures/src/docExamples/paintScene.ts -->
+```ts
+import { RenderTexture, Scene } from 'bare-engine';
+
+export class PaintScene extends Scene
+{
+    canvas?: RenderTexture;
+
+    override OnStart()
+    {
+        this.canvas = new RenderTexture(rapid, { width: 256, height: 256 });
+        this.AddGameObject(this.canvas);
+    }
+
+    override OnClear()
+    {
+        this.canvas?.destroy();
+        this.canvas = undefined;
+    }
+}
+```
 
 This scene recreates its texture on restart. If you also load levels, recreate level-owned resources after each load, since loading calls `OnClear` too. Do not destroy a shared atlas texture merely because one sprite is removed.

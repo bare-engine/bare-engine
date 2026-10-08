@@ -81,6 +81,8 @@ import { TweenTo } from 'bare-engine';
 TweenTo(player, 0.1, { innerScaleY: 0.8 });
 ```
 
+`innerPosition` is in the object's own units, before its `scale`: on an object with `scale` 4, `innerX = 10` moves the texture 40 game units. To move it a fixed distance on screen, divide by the scale, for example `innerX = 10 / obj.scaleX`. This matters most for the 1×1 `PIXEL` texture, which is usually scaled up a lot.
+
 Children follow the inner transform by default. Set `childrenInheritInnerTransform = false` to change that.
 
 **Examples:** [Platformer](https://github.com/bare-engine/bare-platformer) coins [bob up and down with `innerY`](https://github.com/bare-engine/bare-platformer/blob/main/src/components/collectableComponent.ts#L10), and [RPG](https://github.com/bare-engine/bare-rpg) enemies [wiggle with `innerRotation`](https://github.com/bare-engine/bare-rpg/blob/main/src/components/enemyAIComponent.ts#L180) while they walk.

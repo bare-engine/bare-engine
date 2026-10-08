@@ -42,7 +42,22 @@ Every decorator is available through `Inspector`, which is handy for autocomplet
 
 A field can also be a getter and setter pair, to show a computed value or react to edits:
 
-<<< ../../features/fixtures/src/docExamples/inspectorState.ts
+<!-- example: ../../features/fixtures/src/docExamples/inspectorState.ts -->
+```ts
+import { Component, Inspector, InspectorField } from 'bare-engine';
+
+export enum State { Idle, Walking }
+
+export class StateComponent extends Component
+{
+    private currentState = State.Idle;
+
+    @InspectorField
+    @Inspector.Enum(State)
+    get state(): State { return this.currentState; }
+    set state(value: State) { this.currentState = value; }
+}
+```
 
 **Examples:** the [Platformer](https://github.com/bare-engine/bare-platformer)'s [player fields](https://github.com/bare-engine/bare-platformer/blob/main/src/components/playerComponent.ts#L17-L30) (`Limit`, `Label`, `Locked` and a getter/setter), and the [Shmup](https://github.com/bare-engine/bare-shmup)'s [shoot settings](https://github.com/bare-engine/bare-shmup/blob/main/src/components/shootComponent.ts#L8-L18) (`Limit`, `Decimal`).
 

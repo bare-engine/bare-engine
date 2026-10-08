@@ -45,25 +45,44 @@ export class TweenController
         }
     }
 
+    // SWINGS property UP TO amount AWAY FROM 0, THEN WOBBLES IT BACK TO 0. WITH THE DEFAULTS IT STARTS AT amount
     // COULD PUT ALL SPRING VALUES IN AN OPTIONS OBJECT - TODO
-    Shake(object: any, property: string, duration: number, initialMove:number = -1, decay: number = 6, frequency: number = 4, phase: number = 0.075, amplitude: number = 40, overwrite: boolean = true): TweenWithPromise
+    Shake(object: any, property: string, duration: number, amount: number = -32, decay: number = 6, frequency: number = 4, phase: number = 0.075, overwrite: boolean = true): TweenWithPromise
     {
-        var elasticOut = (amount: number) => { 
-            if (amount === 0) {
+        const spring = (t: number) => Math.pow(2, -decay * t) * Math.sin((t - phase) * frequency * Math.PI);
+
+        // SCALE THE SPRING SO ITS BIGGEST SWING IS 1, AND ITS FIRST SWING IS POSITIVE (IN THE DIRECTION OF amount)
+        let peak = 0;
+        let firstSign = 0;
+        for (let i = 0; i <= 200; i++)
+        {
+            const value = spring(i / 200);
+            peak = Math.max(peak, Math.abs(value));
+            if (firstSign === 0 && Math.abs(value) > 1e-6)
+                firstSign = Math.sign(value);
+        }
+        const scale = peak * (firstSign || 1);
+        const wobble = (t: number) => spring(t) / scale;
+
+        // THE TWEEN GOES FROM amount TO 0, SO value = amount * (1 - ease) = amount * wobble
+        var elasticOut = (t: number) => {
+            if (t === 0) {
                 return 0;
             }
-            if (amount === 1) {
+            if (t === 1) {
                 return 1;
             }
-            return amplitude * Math.pow(2, -decay * amount) * Math.sin((amount - phase) * frequency * Math.PI) + 1
+            return 1 - wobble(t);
         };
 
-        object[property] = initialMove;
+        object[property] = amount; // THE TWEEN READS ITS START VALUE WHEN IT'S CREATED
 
         var props:any = {ease: elasticOut }
         props[property] = 0;
-        
-        return this.To(object, duration, props, overwrite);
+
+        const tween = this.To(object, duration, props, overwrite);
+        object[property] = amount * wobble(0); // UNTIL THE FIRST UPDATE. amount WITH THE DEFAULTS
+        return tween;
     }
 
     To(object: any, seconds: number, props: any, overwrite: boolean = true): TweenWithPromise

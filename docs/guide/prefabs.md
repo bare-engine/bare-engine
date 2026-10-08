@@ -150,7 +150,7 @@ An extra transform for the visual content only, on top of the object's own trans
 
 | Property | Description |
 | --- | --- |
-| `innerPosition` | Offset. |
+| `innerPosition` | Offset, in the object's units before its `scale`. |
 | `innerScale` | Scale. |
 | `innerRotation` | Rotation in degrees. |
 | `innerPivot` | Pivot for the inner transform. Defaults to `pivot`. |

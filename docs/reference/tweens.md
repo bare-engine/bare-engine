@@ -64,21 +64,22 @@ By default, a new tween on the same object and property replaces the old one. Pa
 
 ## Shake
 
-`Shake` sets a property to a starting value, then springs it back to 0 with a wobble. It suits properties that rest at 0, like `innerRotation` or an `innerPosition` axis:
+`Shake` swings a property up to `amount` away from 0, then springs it back to 0 with a wobble. It suits properties that rest at 0, like `innerRotation` or an `innerPosition` axis. An `innerPosition` is multiplied by the object's `scale`, see [Inner transform](../guide/game-objects#inner-transform):
 
 ```ts
-bare.tween.Shake(enemy, 'innerRotation', 0.5, 20);   // a quick wiggle
+bare.tween.Shake(enemy, 'innerRotation', 0.5, 15);   // a quick wiggle, starting at 15°
 ```
+
+The property never goes further from 0 than `amount`, whatever the other settings. With the defaults, the first swing is the biggest, so the property starts at `amount`.
 
 | Parameter | Default | Description |
 | --- | --- | --- |
 | `object`, `property` | | What to shake. |
 | `duration` | | Seconds until it's back at 0. |
-| `initialMove` | `-1` | The value it starts from. |
+| `amount` | `-32` | How far it swings. The sign picks the direction of the first swing. |
 | `decay` | `6` | How fast the wobble dies down. |
 | `frequency` | `4` | How many times it wobbles. |
 | `phase` | `0.075` | Shifts the wobble in time. |
-| `amplitude` | `40` | How far it overshoots. |
 | `overwrite` | `true` | Replace other tweens on the same property. |
 
-**Example:** the [Showcase](https://github.com/bare-engine/bare-showcase) [shakes a heart](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/tweens/src/DemoTweens.ts#L30) with `Shake(heart.innerPosition, "y", 1.2, -0.5, 3, 4, 0.075, 30)`.
+**Example:** the [Showcase](https://github.com/bare-engine/bare-showcase) [shakes a heart](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/tweens/src/DemoTweens.ts#L30) with `Shake(heart.innerPosition, "y", 1.2, -12, 3)`.

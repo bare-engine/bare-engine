@@ -52,7 +52,7 @@ During development, these keys are available:
 | **L** | Restart the level. |
 | **C** | Restart with cleared save data. |
 
-If a game control uses one of these keys, turn that debug key off; see below.
+If a game control uses one of these keys, turn that debug key off with [`bare.DisableDebugKey`](#changing-keys-while-the-game-runs).
 
 They only work on the dev server, not in production builds, and only when the key is pressed on its own, so shortcuts like **Ctrl+C** still work normally.
 
@@ -71,15 +71,30 @@ StartBare(Game, {
 
 Pass `debugKeys: null` (or `[]`) to turn them all off.
 
-To change single keys while the game runs, for example because a default key is also one of your controls, use `bare.SetDebugKey`:
+### Changing keys while the game runs
+
+When a default key is also one of your controls, turn just that one off. For example, in a puzzle game where **R** restarts the level:
 
 ```ts
-bare.SetDebugKey('c', null);                     // C is the hold key, don't wipe the save
-bare.SetDebugKey('f', () => bare.TogglePause()); // pause on F instead of P
-bare.SetDebugKey('p', null);
+override OnAwake()
+{
+    bare.DisableDebugKey('r');   // R restarts the level, not the whole game
+}
 ```
 
-`bare.SetDebugKeys(keys)` replaces all of them, in the same format as the option. Both do nothing in production builds. Restarting the game with new `bareOptions` resets the keys to its `debugKeys`, so set them in `OnAwake`, which runs again after a restart.
+| Method | Description |
+| --- | --- |
+| `bare.DisableDebugKey(key)` | Turn off one debug key. |
+| `bare.DisableAllDebugKeys()` | Turn off every debug key. |
+| `bare.SetDebugKey(key, action)` | Add or change one debug key. Passing `null` turns it off, like `DisableDebugKey`. |
+| `bare.SetDebugKeys(keys)` | Replace all of them, in the same format as the `debugKeys` option. |
+
+```ts
+bare.SetDebugKey('f', () => bare.TogglePause()); // pause on F instead of P
+bare.DisableDebugKey('p');
+```
+
+Keys are not case sensitive. All of these do nothing in production builds. Restarting the game with new `bareOptions` resets the keys to its `debugKeys`, so change them in `OnAwake`, which runs again after a restart.
 
 ## Debug buttons in the extension
 

@@ -10,7 +10,7 @@
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
-    "docs:check": "node scripts/checkDocsLinks.cjs",
+    "docs:check": "node scripts/checkDocsLinks.cjs && node scripts/checkDocsExamples.cjs",
     "docs:check-examples": "tsc --noEmit --pretty false",
     "docs:check-site": "node --test scripts/checkDocsSite.test.cjs && node scripts/checkDocsSite.cjs",
     "docs:test": "node scripts/runTests.cjs docsExamplesTest",

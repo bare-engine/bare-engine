@@ -176,11 +176,13 @@ export class TweensAdvancedTest extends Scene
         await wait(0.2);
         c.check(timerOrder.join(",") === "1,2", "timers should fire in order of their delay: " + timerOrder.join(","));
 
-        // Shake starts at initialMove and settles back to 0
+        // Shake starts at amount, never swings further than amount, and settles back to 0
         const shaken = this.AddGameObject();
-        bare.tween.Shake(shaken, "innerRotation", 0.1, 15);
-        c.check(shaken.innerRotation === 15, "Shake should start at initialMove: " + shaken.innerRotation);
-        await wait(0.25);
+        let biggestSwing = 0;
+        bare.tween.Shake(shaken, "innerRotation", 0.3, 15).onUpdate(() => biggestSwing = Math.max(biggestSwing, Math.abs(shaken.innerRotation)));
+        c.check(shaken.innerRotation === 15, "Shake should start at amount: " + shaken.innerRotation);
+        await wait(0.45);
+        c.check(biggestSwing <= 15.001, "Shake should not swing further than amount: " + biggestSwing);
         c.check(near(shaken.innerRotation, 0), "Shake should settle at 0: " + shaken.innerRotation);
 
         // FinishAll jumps every tween to its end

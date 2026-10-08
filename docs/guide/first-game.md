@@ -11,7 +11,7 @@ import { StartBare, Scene, GameObject, Color } from 'bare-engine';
 
 export class FirstGame extends Scene
 {
-    player: GameObject;
+    player!: GameObject;
 
     override OnStart()
     {
