@@ -27,6 +27,11 @@ export class GraphicRegion extends Region {
     texture?: Texture
     /** Wrap uvs outside 0..1 inside the texture's frame (works for atlas sub-textures). */
     repeatTexture: boolean = false
+    // uv bounds of the current graphic, so repeating can clamp to them (see sampleRepeatTexture)
+    private uvMinX = 0
+    private uvMinY = 0
+    private uvMaxX = 0
+    private uvMaxY = 0
 
     private _maskShader?: GLShader
     override KEY = "Graphic"
@@ -102,6 +107,8 @@ export class GraphicRegion extends Region {
     ): void {
         this.vertexBuffer.clear();
         this.vertexCount = 0;
+        this.uvMinX = this.uvMinY = Infinity;
+        this.uvMaxX = this.uvMaxY = -Infinity;
 
         this.matrixIndex = matrixIndex;
         this.drawMode = drawMode;
@@ -136,6 +143,10 @@ export class GraphicRegion extends Region {
         }
         buf.pushFloat32(u);
         buf.pushFloat32(v);
+        if (u < this.uvMinX) this.uvMinX = u;
+        if (u > this.uvMaxX) this.uvMaxX = u;
+        if (v < this.uvMinY) this.uvMinY = v;
+        if (v > this.uvMaxY) this.uvMaxY = v;
         this.vertexCount++;
         this.vertexBuffer.makeDirty();
     }
@@ -180,6 +191,8 @@ export class GraphicRegion extends Region {
             shader.setUniform("uUseTexture", 0);
         }
         shader.setUniform("uRepeat", this.repeatTexture ? 1 : 0);
+        if (this.repeatTexture)
+            shader.setUniform("uLocalUVRange", [this.uvMinX, this.uvMinY, this.uvMaxX, this.uvMaxY]);
 
         this.vertexBuffer.bindBuffer();
         this.vertexBuffer.bufferData();

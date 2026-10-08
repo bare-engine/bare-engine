@@ -11,6 +11,8 @@ uniform sampler2D uTexture;
 uniform sampler2D uTextures[%TEXTURE_NUM%];
 uniform int uUseTexture;
 uniform int uRepeat;
+// the uv bounds of the shape being drawn, when repeating
+uniform highp vec4 uLocalUVRange;
 
 out vec4 fragColor;
 
@@ -62,7 +64,11 @@ vec4 sampleRepeatTexture() {
     if (uUseTexture == 0) {
         return vec4(1,1,1,1);
     }
-    vec2 uv = mix(vUVRect.xy, vUVRect.zw, fract(vLocalUV));
+    // With antialiasing, edge pixels are shaded at their center even when it lies just outside the shape.
+    // The uv there is past the shape's edge, and wrapping it would show a line from the far side of the
+    // texture. So clamp to the shape's own uvs, stopping just short of the far edge, where fract() would wrap to 0.
+    highp vec2 local = clamp(vLocalUV, uLocalUVRange.xy, uLocalUVRange.zw - 1e-5 * (1.0 + abs(uLocalUVRange.zw)));
+    vec2 uv = mix(vUVRect.xy, vUVRect.zw, fract(local));
 
     uv = clampToFrame(uv);
 
