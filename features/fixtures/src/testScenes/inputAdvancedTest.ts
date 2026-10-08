@@ -15,6 +15,7 @@ export class InputAdvancedTest extends Scene
     releasedFrames = 0;
     probeMouse = false;
     mouseReleasedFrames = 0;
+    mousePressedFrames = 0;
 
     constructor()
     {
@@ -43,6 +44,8 @@ export class InputAdvancedTest extends Scene
         }
         if (this.probeMouse && bare.mouse.IsReleased())
             this.mouseReleasedFrames++;
+        if (this.probeMouse && bare.mouse.IsPressed())
+            this.mousePressedFrames++;
 
         if (!this.running)
         {
@@ -270,6 +273,15 @@ export class InputAdvancedTest extends Scene
         c.check(!bare.mouse.IsDown(), "IsDown should be false after release");
         await waitFrame(3);
         c.check(this.mouseReleasedFrames === 1, "IsReleased should be seen in exactly one update: " + this.mouseReleasedFrames);
+
+        // a quick tap, down and up between two frames, is still pressed and released for one frame
+        this.mousePressedFrames = 0;
+        this.mouseReleasedFrames = 0;
+        this.Pointer("pointerdown", 1100, 850);
+        this.Pointer("pointerup", 1100, 850);
+        await waitFrame(3);
+        c.check(this.mousePressedFrames === 1 && this.mouseReleasedFrames === 1, "a tap should be pressed and released in exactly one update: " + this.mousePressedFrames + "/" + this.mouseReleasedFrames);
+        c.check(!bare.mouse.IsDown() && !bare.mouse.IsPressed() && !bare.mouse.IsReleased(), "after a tap nothing should be down, pressed or released");
         this.probeMouse = false;
 
         // the world position stays under the pointer when only the camera moves
@@ -295,6 +307,15 @@ export class InputAdvancedTest extends Scene
         document.dispatchEvent(new KeyboardEvent("keyup", { key: "k", code: "KeyK" }));
         await waitFrame(3);
         c.check(this.releasedFrames === 1, "IsKeyReleased should be seen in exactly one update: " + this.releasedFrames);
+
+        // a quick tap, down and up between two frames, is still pressed and released for one frame
+        this.pressedFrames = 0;
+        this.releasedFrames = 0;
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", code: "KeyK" }));
+        document.dispatchEvent(new KeyboardEvent("keyup", { key: "k", code: "KeyK" }));
+        c.check(bare.keyboard.IsKeyPressed("k") && bare.keyboard.IsKeyReleased("k") && !bare.keyboard.IsKeyDown("k"), "a tap should be pressed and released, but not down");
+        await waitFrame(3);
+        c.check(this.pressedFrames === 1 && this.releasedFrames === 1, "a tap should be pressed and released in exactly one update: " + this.pressedFrames + "/" + this.releasedFrames);
         this.probeKey = null;
 
         // keyup releases the key keydown added, even if event.key changed (shift released first)

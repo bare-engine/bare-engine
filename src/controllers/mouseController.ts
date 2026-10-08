@@ -45,8 +45,9 @@ export class MouseController
     /** False until the pointer has been over the canvas, while world.position still holds the (-1000, -1000) placeholder. */
     hasPosition: boolean = false;
 
-    mouseFramesDown: number = 0;
-    // frames since the last pointer went up, starts past 1 so nothing counts as released at startup
+    // UPDATES SINCE THE LAST POINTER WENT DOWN / UP: 1 MEANS PRESSED / RELEASED THIS FRAME. A TAP DOWN AND UP
+    // BETWEEN TWO FRAMES IS BOTH. START PAST 1 SO NOTHING COUNTS AS PRESSED OR RELEASED AT STARTUP
+    mouseFramesDown: number = 2;
     mouseFramesUp: number = 2;
 
     mouseSpeed: number = 0;
@@ -210,12 +211,12 @@ export class MouseController
 
     IsPressed(): boolean
     {
-        return this.mouseIsDown && this.mouseFramesDown == 1;
+        return this.mouseFramesDown == 1;
     }
 
     IsReleased(): boolean
     {
-        return !this.mouseIsDown && this.mouseFramesUp == 1;
+        return this.mouseFramesUp == 1;
     }
 
     SetPosition(x:number, y:number)
@@ -228,6 +229,10 @@ export class MouseController
 
     Update(_deltaTime?: number)
     {
+        // BEFORE THE EARLY RETURNS, SO A RELEASE ALSO COUNTS ON MOBILE, WHERE THE REST IS SKIPPED WHILE NOTHING IS DOWN
+        this.mouseFramesDown++;
+        this.mouseFramesUp++;
+
         if (!this.hasPosition)
             return;
 
@@ -255,11 +260,6 @@ export class MouseController
 
         this.world.positionPrev.x = this.world.position.x;
         this.world.positionPrev.y = this.world.position.y;
-
-        if (this.mouseIsDown)
-            this.mouseFramesDown++;
-        else
-            this.mouseFramesUp++;
     }
 
     Reset()
@@ -276,7 +276,7 @@ export class MouseController
         this.mouseDirectionVec2Delayed.x = 0;
         this.mouseDirectionVec2Delayed.y = 0;
 
-        this.mouseFramesDown = 0;
+        this.mouseFramesDown = 2;
         this.mouseFramesUp = 2;
         this.pointersDown.clear();
         this.mouseIsDown = false;

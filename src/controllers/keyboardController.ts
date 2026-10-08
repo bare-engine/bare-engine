@@ -4,8 +4,10 @@ import { globalEvents } from "../globals";
 export class KeyboardController
 {
     private keysPressed: Set<string> = new Set<string>();
-    private keysPressedPrevFrame: Set<string> = new Set<string>();
+    // WENT DOWN / UP SINCE THE LAST FRAME. ONLY CLEARED IN Update(), SO A KEY TAPPED DOWN AND UP
+    // BETWEEN TWO FRAMES IS STILL PRESSED (AND RELEASED) FOR ONE FRAME
     private keysJustPressed: Set<string> = new Set<string>();
+    private keysJustReleased: Set<string> = new Set<string>();
 
     // KEY NAME EACH PHYSICAL KEY POSITION (event.code, EG "KeyW") LAST PRODUCED: "w" ON QWERTY, "z" ON AZERTY.
     // KEPT AFTER KEYUP, SO keyup RELEASES THE NAME keydown ADDED (EG "!" DOWN, "1" UP AFTER SHIFT WAS RELEASED)
@@ -54,7 +56,7 @@ export class KeyboardController
             if (!this.keysPressed.delete(key))
                 return;
 
-            this.keysJustPressed.delete(key);
+            this.keysJustReleased.add(key);
             bare.SendEvent(BareEvent.key_released, { key: key, allKeys: Array.from(this.keysPressed) });
         };
 
@@ -106,11 +108,9 @@ export class KeyboardController
     {
         //trace(this.keysPressed)
 
-        // Copy current state to previous frame
-        this.keysPressedPrevFrame = new Set(this.keysPressed);
-
-        // Clear the just pressed keys for next frame
+        // RUNS AFTER THE SCENES' UPDATES (game_update), SO EVERY OnUpdate SAW THIS FRAME'S PRESSES
         this.keysJustPressed.clear();
+        this.keysJustReleased.clear();
     }
 
     public IsKeyDown(key: string): boolean
@@ -130,7 +130,7 @@ export class KeyboardController
 
     public IsKeyReleased(key: string): boolean
     {
-        return !this.keysPressed.has(key) && this.keysPressedPrevFrame.has(key);
+        return this.keysJustReleased.has(key);
     }
 
     public IsAnyKeyDown(): boolean
@@ -151,8 +151,8 @@ export class KeyboardController
     public ClearAll(): void
     {
         this.keysPressed.clear();
-        this.keysPressedPrevFrame.clear();
         this.keysJustPressed.clear();
+        this.keysJustReleased.clear();
         this.keyAtCode.clear(); // ALSO RUNS ON BLUR/FOCUS, EG AFTER SWITCHING KEYBOARD LAYOUT
     }
 
