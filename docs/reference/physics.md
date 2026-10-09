@@ -4,7 +4,11 @@ Bare has two optional physics engines. Neither is included in your build unless 
 
 ## Arcade physics
 
-Simple rectangle and circle collisions, good for platformers and top-down games. Import from `bare-engine/arcade` and register it in your scene:
+Simple rectangle and circle collisions, good for platformers and top-down games.
+
+Hitboxes are axis-aligned boxes (AABB) and circles. Rotating an `ArcadeObject` doesn't rotate its hitbox; the box grows to fit around the rotated object. For bodies that rotate, use [realistic physics](#realistic-physics).
+
+Import from `bare-engine/arcade` and register it in your scene:
 
 ```ts
 import { ArcadePhysicsController } from 'bare-engine/arcade';
