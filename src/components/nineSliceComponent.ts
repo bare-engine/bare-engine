@@ -2,7 +2,6 @@ import { Component } from "../controllers/componentController";
 import { GameMode } from "../globals";
 import { Color } from "../libraries/rapid-render";
 import type { GameObject } from "../objects/gameObject";
-import { PrefabScene } from "../scenes/prefabScene";
 import { SerializeField } from "../utils/serializeFields";
 import { Run } from "../utils/runModes";
 
@@ -94,7 +93,7 @@ export class NineSliceComponent extends Component
 
         rapid.drawGraphic({ points, uv, texture, color, customMatrix: matrixIndex });
 
-        if (this.go.scene instanceof PrefabScene)
+        if (this.go.scene?.constructor.name == "PrefabScene") // UGLY - TODO
             this.RenderGuides(xs, ys, matrixIndex);
     }
 
