@@ -1122,7 +1122,6 @@ function bareTexturePackImagesPlugin(options = {}) {
 
         const [command, ...args] = buildCommand;
         const resolvedCommand = process.platform === "win32" && command === "npm" ? "npm.cmd" : command;
-        console.log(`[assets] Running ${buildCommand.join(" ")} (${reason})`);
         const useShell = process.platform === "win32" && /\.cmd$/i.test(resolvedCommand);
 
         // Suppress the generated-assets watcher's reload until the atlas is rewritten.
@@ -1147,6 +1146,16 @@ function bareTexturePackImagesPlugin(options = {}) {
             }
         };
 
+        // the folder was deleted: AssetPack can't run without its entry, so drop the
+        // stale atlas ourselves instead of leaving the old images packed
+        if (!fs.existsSync(watchDir)) {
+            console.log(`[assets] texturePackImages folder removed; cleared ${outputDir} (${reason})`);
+            clearDirContents(outputDir);
+            finish(true);
+            return;
+        }
+
+        console.log(`[assets] Running ${buildCommand.join(" ")} (${reason})`);
         child = spawn(resolvedCommand, args, {
             cwd: projectRoot,
             stdio: "inherit",
@@ -1170,6 +1179,7 @@ function bareTexturePackImagesPlugin(options = {}) {
     function runForBuild() {
         if (!fs.existsSync(watchDir)) {
             console.warn(`[assets] texturePackImages folder not found: ${watchDir}`);
+            clearDirContents(outputDir);
             return Promise.resolve();
         }
 
@@ -1226,22 +1236,34 @@ function bareTexturePackImagesPlugin(options = {}) {
                     }
                 }, 500);
             });
-            if (!fs.existsSync(watchDir)) {
-                console.warn(`[assets] texturePackImages folder not found: ${watchDir}`);
-                return;
-            }
+            // still watched when missing, so creating the folder later packs it
             server.watcher.add(watchDir);
             server.watcher.on("all", (eventName, filePath) => {
                 if (normalize(filePath).startsWith(normalize(watchDir))) {
                     schedule(`${eventName}:${path.relative(watchDir, filePath)}`);
                 }
             });
+            if (!fs.existsSync(watchDir)) {
+                // runs before bare:generated-assets' buildStart, so assets.ts won't list the stale atlas
+                console.warn(`[assets] texturePackImages folder not found: ${watchDir}`);
+                clearDirContents(outputDir);
+                return;
+            }
             console.log(`[assets] Watching texturePackImages for changes: ${watchDir}`);
             if (runOnStart) {
                 schedule("dev server start");
             }
         }
     };
+}
+
+function clearDirContents(dir) {
+    if (!fs.existsSync(dir)) {
+        return;
+    }
+    for (const entry of fs.readdirSync(dir)) {
+        fs.rmSync(path.join(dir, entry), { recursive: true, force: true });
+    }
 }
 
 // name -> contents of every file directly in dir (missing dir -> empty map)
