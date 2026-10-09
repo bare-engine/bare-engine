@@ -62,6 +62,7 @@ export default defineConfig({
                     { text: "Particles", link: "/guide/particles" },
                     { text: "Resolution & Pixel Art", link: "/guide/resolution" },
                     { text: "Mobile & Touch", link: "/guide/mobile" },
+                    { text: "Entity Component System", link: "/guide/ecs" },
                 ],
             },
             {
@@ -107,7 +108,6 @@ export default defineConfig({
                         items: [
                             { text: "Globals", link: "/reference/globals" },
                             { text: "Inspector Decorators", link: "/reference/inspector-decorators" },
-                            { text: "Entity Component System", link: "/reference/ecs" },
                         ],
                     },
                     {
