@@ -12,8 +12,6 @@ bare.events.on('coinCollected', ({ value }) => {
 });
 ```
 
-**Example:** a [Platformer](https://github.com/bare-engine/bare-platformer) coin [emits `collectableCollected`](https://github.com/bare-engine/bare-platformer/blob/main/src/components/collectableComponent.ts#L25), and the scene [listens to it](https://github.com/bare-engine/bare-platformer/blob/main/src/game.ts#L62-L72) to count coins and win.
-
 ## Three event buses
 
 | Bus | Scope |
@@ -90,7 +88,17 @@ In a component, the `OnCollisionStart` method is usually simpler. See [Component
 
 ## Your own events
 
-Any string works as an event name. To get autocomplete and type checking for your events, describe them once:
+Any string works as an event name. Emit it on the bus that should hear it:
+
+```ts
+bare.events.emit('coinCollected', { value: 10 });        // the current scene
+bare.globalEvents.emit('settingsChanged');               // the whole game
+bare.SendEvent('languageChanged', { language: 'nl' });   // global and every active scene
+```
+
+**Example:** a [Platformer](https://github.com/bare-engine/bare-platformer) coin [emits `collectableCollected`](https://github.com/bare-engine/bare-platformer/blob/main/src/components/collectableComponent.ts#L25), and the scene [listens to it](https://github.com/bare-engine/bare-platformer/blob/main/src/game.ts#L62-L72) to count coins and win.
+
+To get autocomplete and type checking for your events, describe them once:
 
 ```ts
 declare module 'bare-engine'

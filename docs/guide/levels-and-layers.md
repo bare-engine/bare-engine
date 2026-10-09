@@ -73,7 +73,7 @@ await bare.level.Save();
 `OnPreLoadLevel` and `OnPostLoadLevel` on your scene run before and after a level loads. See [Level](../reference/level) for all methods.
 
 ::: tip
-Set `"firstLevelLoad": "level1"` under `bareEngine` in `package.json` to start fetching that level while the page loads. See [package.json Options](../reference/package-json#firstlevelload).
+Set `"firstLevelLoad": "level1"` under `bareEngine` in `package.json` to start fetching that level in parallel with the page load, instead of waiting until the page has finished loading. See [package.json Options](../reference/package-json#firstlevelload).
 :::
 
 **Examples:** the [Platformer](https://github.com/bare-engine/bare-platformer) [loads its level and fits the camera](https://github.com/bare-engine/bare-platformer/blob/main/src/game.ts#L43-L53), and the [RPG](https://github.com/bare-engine/bare-rpg) [starts from the player's saved level](https://github.com/bare-engine/bare-rpg/blob/main/src/game.ts#L74-L77).
