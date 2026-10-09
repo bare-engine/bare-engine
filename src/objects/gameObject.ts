@@ -402,7 +402,11 @@ export class GameObject
             children: (o, v) => {
                 for (const childEntity of v)
                 {
-                    o.scene.AddGameObject(childEntity, o);
+                    const child = o.scene.AddGameObject(childEntity, o);
+
+                    // children from data (prefab, level, save) are always saved, like top-level objects. only save: false opts out
+                    if (childEntity.save === undefined)
+                        child.save = true;
                 }
             },
             components: (o, v) => {

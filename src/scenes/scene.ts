@@ -545,12 +545,6 @@ export class Scene implements SceneI
                     continue;
 
                 const childEntity = this.GetEntityFromObject(child, options);
-
-                // children are only saved when marked save. a child marked in code, not by its entity, needs the mark saved
-                // too, or it's no longer saved after loading
-                if (child.save && !child.entity?.save)
-                    childEntity.save = true;
-
                 if (Object.keys(childEntity).length > 0)
                     savedChildren.push(childEntity);
             }
@@ -583,6 +577,10 @@ export class Scene implements SceneI
         // NO CHILDREN LEFT TO SAVE (EG THE LAST ONE WAS REMOVED): DROP THE ONES KEPT FROM THE UNCONSTRUCTED ENTITY
         if (redoChildren && savedChildren.length == 0)
             delete finalEntity.children;
+
+        // objects from data are always saved, so the mark is never needed. only save: false is kept
+        if (finalEntity.save === true)
+            delete finalEntity.save;
 
         // a uid generated at runtime only links the object to its source, don't let it end up in level data
         // the prefab editor writes into the live settings data, where objects keep pointing at it (stripped from the saved copy instead)

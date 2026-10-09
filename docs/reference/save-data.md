@@ -100,7 +100,7 @@ Which fields of objects and components are saved, in the editor and while playin
 
 Layers with `save: false`, persistent objects, and objects with `save: false` are omitted.
 
-Top-level objects are always saved, but a child is only saved when it's marked `save: true`: in its prefab or entity, like `{ "name": "flag", "save": true }`, or with `child.save = true` in code. Other children aren't stored: when the level loads, the prefab's children come back as the prefab defines them, and children added while playing are gone.
+Objects that come from data are always saved: top-level objects, and children from a prefab, level or save. Mark a child `"save": false` in its prefab or entity to leave it out; it then comes back as the prefab defines it. A child added in code is only saved when you set `child.save = true`; once saved, it's data, so it stays saved after loading. Other children added while playing are gone when the level loads.
 
 ### saveVars
 

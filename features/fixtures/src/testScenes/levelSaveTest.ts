@@ -45,8 +45,8 @@ export class LevelSaveTest extends Scene
             prefabs: [
                 { name: "hero", components: { healthSave: {} } },
                 { name: "crate", baseClass: "SaveCrate", scale: { x: 4, y: 4 } },
-                // children are only saved when their entity says save: true, top-level objects always are
-                { name: "tower", children: [{ name: "flag", position: { x: 5, y: 0 }, save: true }, { name: "rope", position: { x: 1, y: 0 } }] },
+                // children from data are always saved, like top-level objects. save: false opts out
+                { name: "tower", children: [{ name: "flag", position: { x: 5, y: 0 } }, { name: "rope", position: { x: 1, y: 0 }, save: false }] },
             ],
             saveVars: {
                 SaveCrate: ["rotation"],
@@ -136,7 +136,8 @@ export class LevelSaveTest extends Scene
         // a prefab child is saved as a reference to its source child, so it has no name of its own
         const towerChildren: any[] = towerEntity.children ?? [];
         c.check(towerChildren.length === 3 && towerChildren.some((child) => child.position?.x === 15) && towerChildren.some((child) => child.name === "banner"),
-            "children with save: true should be saved, including added ones: " + JSON.stringify(towerChildren));
+            "data children and added children marked save should be saved: " + JSON.stringify(towerChildren));
+        c.check(!towerChildren.some((child) => child.save === true), "the save mark should not be written: " + JSON.stringify(towerChildren));
         c.check(!towerChildren.some((child) => child.name === "loose"), "an added child without save: true should not be saved");
 
         // reloading the serialized level, through JSON like a save file
@@ -154,10 +155,10 @@ export class LevelSaveTest extends Scene
         c.check(bare.object.GetByName("doomed") === null, "a removed object should stay removed");
         const towerAgain = bare.object.GetByName("tower1")!;
         c.check(towerAgain.GetChildByName("flag")?.x === 15 && towerAgain.GetChildByName("banner") !== null, "saved children should come back with their changes");
-        c.check(towerAgain.GetChildByName("rope")?.x === 1, "an unsaved prefab child should come back as the prefab has it: " + towerAgain.GetChildByName("rope")?.x);
+        c.check(towerAgain.GetChildByName("rope")?.x === 1, "a prefab child with save: false should come back as the prefab has it: " + towerAgain.GetChildByName("rope")?.x);
         c.check(towerAgain.GetChildByName("loose") === null, "an unsaved added child should not come back");
         const towerNames = towerAgain.children.map((child) => child.name).join(",");
-        c.check(towerAgain.GetChildByName("marked")?.save === true, "a child marked save in code should still be saved after loading");
+        c.check(towerAgain.GetChildByName("marked")?.save === true && towerAgain.GetChildByName("flag")?.save === true, "loaded children should be saved again");
         c.check(towerNames === "flag,rope,banner,marked", "children should not be duplicated or reordered: " + towerNames);
 
         // saving twice in a row gives the same level

@@ -411,7 +411,7 @@ Or remove "stripGeneratedAssets": true from "bareEngine" in package.json.`);
                     
                     var entity = this.SerializeObject(obj);
 
-                    // top-level objects are always saved, so they don't need the mark. children keep theirs (see GetEntityFromObject)
+                    // top-level objects are always saved, so they don't need the mark
                     delete entity.save;
 
                     // POSITION HAS BEEN STORED, CAN APPLY PIVOT AGAIN
