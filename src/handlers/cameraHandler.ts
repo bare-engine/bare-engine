@@ -154,13 +154,15 @@ export class CameraHandler {
 
     // kept at or above the zoom where the bounds stop the camera zooming out, so changes
     // to it always show
-    SetZoom(zoom: number)
+    SetZoom(zoom: number): this
     {
         this.zoom = Math.max(zoom, this.GetMinZoom());
+
+        return this;
     }
 
     // center position
-    SetPosition(x: number, y: number)
+    SetPosition(x: number, y: number): this
     {
         this.target.x = x;
         this.target.y = y;
@@ -170,12 +172,16 @@ export class CameraHandler {
         // WorldToScreen match the new position right away instead of from the next frame
         this.position.x = this.target.x + this.shakeOffset.x;
         this.position.y = this.target.y + this.shakeOffset.y;
+
+        return this;
     }
 
     // top-left position
-    SetPositionTopLeft(x: number, y: number)
+    SetPositionTopLeft(x: number, y: number): this
     {
         this.SetPosition(x + this.dimensions.width / 2, y + this.dimensions.height / 2);
+
+        return this;
     }
 
     AddPosition(dx: number, dy: number): Vec2
@@ -191,11 +197,13 @@ export class CameraHandler {
         return this.target;
     }
 
-    SetDimensions(width: number, height: number)
+    SetDimensions(width: number, height: number): this
     {
         this.dimensions.width = width;
         this.dimensions.height = height;
         this.CalculateZoomFit();
+
+        return this;
     }
 
     DisableBounds()
@@ -203,46 +211,58 @@ export class CameraHandler {
         this.bounds = { x: 0, y: 0, width: 0, height: 0 };
     }
 
-    SetScaleMode(mode: CameraScaleMode)
+    SetScaleMode(mode: CameraScaleMode): this
     {
         this.scaleMode = mode;
         this.CalculateZoomFit();
+
+        return this;
     }
 
-    SetBounds(bounds: Rectangle)
+    SetBounds(bounds: Rectangle): this
     {
         this.bounds = bounds;
+
+        return this;
     }
 
-    SetBoundsToScreen()
+    SetBoundsToScreen(): this
     {
         this.SetBounds({ x: 0, y: 0, width: bare.width, height: bare.height });
+
+        return this;
     }
 
-    SetBoundsToLevel()
+    SetBoundsToLevel(): this
     {
         var levelHandler = this.scene.Get("level");
         if (!levelHandler)
-            return;
+            return this;
 
         const dims = levelHandler.currentLevel.dimensions;
         this.SetBounds({ x: 0, y: 0, width: dims.width, height: dims.height });
+
+        return this;
     }
 
-    SetDimensionsToLevel()
+    SetDimensionsToLevel(): this
     {
         var levelHandler = this.scene.Get("level");
         if (!levelHandler)
-            return;
+            return this;
 
         const dims = levelHandler.currentLevel.dimensions;
         this.SetDimensions(dims.width, dims.height);
+
+        return this;
     }
 
-    SetBoundsAndDimensionsToLevel()
+    SetBoundsAndDimensionsToLevel(): this
     {
         this.SetBoundsToLevel();
         this.SetDimensionsToLevel();
+
+        return this;
     }
 
     // screen-space size to fit/center content into; falls back to the actual render target size

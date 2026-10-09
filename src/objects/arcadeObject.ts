@@ -3,7 +3,7 @@ import { Texture, Vec2 } from "../libraries/rapid-render";
 import { Scene } from "../scenes/scene";
 import { BareEvent, BlockedState, ConstructEntityOptions, Entity, HitboxType, Position, Rectangle, Rectangle2Vec } from "../types/bareTypes";
 import { Hitbox } from "../types/hitbox";
-import { Dropdown, Int } from "../utils/decorators";
+import { Dropdown, Inspector, Int } from "../utils/decorators";
 import { SerializeField } from "../utils/serializeFields";
 import { GameObject } from "./gameObject";
 
@@ -41,8 +41,8 @@ export class ArcadeObject extends GameObject
     @SerializeField(GameMode.Edit) sensor:boolean = false; // IF TRUE, WILL NOT RESPECT stayInBounds
     @SerializeField(GameMode.Edit) velocity: Vec2 = new Vec2(0, 0);
     @SerializeField(GameMode.Edit) gravity: Vec2 | null = null; // null USES gravity FROM settingsData
-    @SerializeField(GameMode.Edit) drag: number = 0//.15;
-    @SerializeField(GameMode.Edit) restitution: number = 0//.8;
+    @SerializeField(GameMode.Edit) @Inspector.Limit(0, Infinity) drag: number = 0//.15;
+    @SerializeField(GameMode.Edit) @Inspector.Limit(0, Infinity) restitution: number = 0//.8;
     @SerializeField(GameMode.Edit) stayInBounds: boolean = true;
     @SerializeField(GameMode.Edit) removeOnOutOfBounds: boolean = false;
     // IF TRUE, A FAST OBJECT IS MOVED IN SMALL STEPS SO IT CAN'T PASS THROUGH OTHER OBJECTS (CONTINUOUS COLLISION DETECTION)
@@ -270,7 +270,7 @@ export class ArcadeObject extends GameObject
         return (this.velocity.x != 0 || this.velocity.y != 0);
     }
     
-    SetVelocity(velocity: Vec2): ArcadeObject
+    SetVelocity(velocity: Vec2): this
     {
         /* @ AddClass(ArcadePhysicsController) */
         
@@ -280,7 +280,7 @@ export class ArcadeObject extends GameObject
         return this;
     }
 
-    SetVelocityXY(x: number, y: number): ArcadeObject
+    SetVelocityXY(x: number, y: number): this
     {
         /* @ AddClass(ArcadePhysicsController) */
         

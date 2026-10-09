@@ -80,10 +80,10 @@ export class Button extends GameObject
         scene?.hitbox.AssignButton(this, options);
     }
 
-    SetText(text: string)
+    SetText(text: string): this
     {
         if (this.textTexture.text === text)
-            return;
+            return this;
 
         this.textTexture.text = text;
 
@@ -92,6 +92,8 @@ export class Button extends GameObject
         // ONLY THE DISPLAY NAME - name IS USED TO LOOK THE OBJECT UP (EG BY THE ENTITY SCENE)
         if (!this.name)
             this.pluginName = text.length > 20 ? text.substring(0, 17) + "..." : text;
+
+        return this;
     }
 
     GetText(): string

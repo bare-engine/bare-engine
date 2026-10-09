@@ -343,7 +343,7 @@ export abstract class RigidBody extends GameObject
         this._torque = t;
     }
 
-    SetVelocity(velocity: Vec2): RigidBody
+    SetVelocity(velocity: Vec2): this
     {
         this._linearVelocity.x = velocity.x;
         this._linearVelocity.y = velocity.y;
@@ -351,7 +351,7 @@ export abstract class RigidBody extends GameObject
         return this;
     }
 
-    SetVelocityXY(x: number, y: number): RigidBody
+    SetVelocityXY(x: number, y: number): this
     {
         this._linearVelocity.x = x;
         this._linearVelocity.y = y;

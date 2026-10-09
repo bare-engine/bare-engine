@@ -87,17 +87,19 @@ export class TextObject extends GameObject
         return !!this.name && this.name !== "gameObject";
     }
 
-    SetNameBasedOnText(text: string)
+    SetNameBasedOnText(text: string): this
     {
         // LIMIT TEXT BY 20 CHARS, ELSE ADD ...
         if (!this.HasOwnName())
             this.pluginName = text.length > 20 ? text.substring(0, 17) + "..." : text;
+
+        return this;
     }
 
-    SetText(text: string)
+    SetText(text: string):this
     {
         if (this.textTexture.text === text)
-            return;
+            return this;
 
         const previousBounds = this.textTexture.localBounds;
         this.textTexture.text = text;
@@ -106,6 +108,8 @@ export class TextObject extends GameObject
         this.OnSizeChanged(previousBounds);
 
         this.SetNameBasedOnText(text);
+
+        return this;
     }
 
     GetText(): string

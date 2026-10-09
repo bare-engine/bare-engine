@@ -449,10 +449,12 @@ export class GameObject
         return (GameObject.gameObjectCounter++).toString();
     }
 
-    SetStartPosition(x: number, y: number)
+    SetStartPosition(x: number, y: number): this
     {
         this.startPosition.x = x;
         this.startPosition.y = y;
+
+        return this;
     }
 
     Init(name: string): void
@@ -982,12 +984,14 @@ export class GameObject
         }
     }
 
-    SetMask(mask: GameObject, type: MaskType = MaskType.EQUAL)
+    SetMask(mask: GameObject, type: MaskType = MaskType.EQUAL): this
     {
         this.mask = mask;
         this.maskType = type;
 
         this.mask.visible = false;
+
+        return this;
     }
 
     RemoveMask()
