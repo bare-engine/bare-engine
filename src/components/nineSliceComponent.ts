@@ -6,7 +6,7 @@ import { SerializeField } from "../utils/serializeFields";
 import { Run } from "../utils/runModes";
 
 // STRETCHES THE OBJECT'S TEXTURE WITHOUT STRETCHING ITS BORDERS: SCALE THE OBJECT TO SET THE SIZE, THE CORNERS KEEP
-// THEIR SIZE, THE EDGES STRETCH ALONG ONE AXIS AND THE MIDDLE ALONG BOTH. FOR PANELS, BUTTONS AND OUTLINED BLOCKS.
+// THEIR SIZE, THE EDGES STRETCH (OR TILE) ALONG ONE AXIS AND THE MIDDLE ALONG BOTH. FOR PANELS, BUTTONS AND OUTLINED BLOCKS.
 // IT TAKES OVER THE OBJECT'S RenderSprite, LIKE TiledComponent, SO NOTHING OF THIS ENDS UP IN GAMES THAT DON'T USE IT
 @Run(GameMode.Edit, GameMode.Play)
 export class NineSliceComponent extends Component
@@ -27,6 +27,14 @@ export class NineSliceComponent extends Component
     // SIZE OF THE BORDERS IN GAME UNITS PER TEXTURE PIXEL. 0.5 FOR ART DRAWN AT 2X
     @SerializeField(GameMode.Edit)
     borderScale: number = 1;
+
+    // REPEAT THE MIDDLE (AND THE EDGES ALONG IT) INSTEAD OF STRETCHING IT. A WHOLE NUMBER OF TILES IS FITTED,
+    // EACH STRETCHED SLIGHTLY, SO NONE IS CUT OFF. LIKE PHASER'S tileX / tileY AND CSS border-image-repeat: round
+    @SerializeField(GameMode.Edit)
+    tileX: boolean = false;
+
+    @SerializeField(GameMode.Edit)
+    tileY: boolean = false;
 
     override OnAdded(go: GameObject): void
     {
@@ -68,29 +76,43 @@ export class NineSliceComponent extends Component
         if (!texture)
             return;
 
-        const w = texture.width;
-        const h = texture.height;
-        const xs = this.Cuts(w, Math.abs(this.go.scale.x), this.left, this.right);
-        const ys = this.Cuts(h, Math.abs(this.go.scale.y), this.top, this.bottom);
-        const us = [0, this.left / w, 1 - this.right / w, 1];
-        const vs = [0, this.top / h, 1 - this.bottom / h, 1];
+        const xs = this.Segments(texture.width, Math.abs(this.go.scale.x), this.left, this.right, this.tileX);
+        const ys = this.Segments(texture.height, Math.abs(this.go.scale.y), this.top, this.bottom, this.tileY);
 
         const points: { x: number, y: number }[] = [];
         const uv: { x: number, y: number }[] = [];
 
-        for (let row = 0; row < 3; row++)
+        for (const [y0, y1, v0, v1] of ys)
         {
-            for (let col = 0; col < 3; col++)
+            for (const [x0, x1, u0, u1] of xs)
             {
-                const x0 = xs[col], x1 = xs[col + 1], y0 = ys[row], y1 = ys[row + 1];
-                const u0 = us[col], u1 = us[col + 1], v0 = vs[row], v1 = vs[row + 1];
-
                 points.push({ x: x0, y: y0 }, { x: x1, y: y0 }, { x: x1, y: y1 }, { x: x0, y: y0 }, { x: x1, y: y1 }, { x: x0, y: y1 });
                 uv.push({ x: u0, y: v0 }, { x: u1, y: v0 }, { x: u1, y: v1 }, { x: u0, y: v0 }, { x: u1, y: v1 }, { x: u0, y: v1 });
             }
         }
 
         rapid.drawGraphic({ points, uv, texture, color, customMatrix: matrixIndex });
+    }
+
+    // THE SLICES ALONG ONE AXIS AS [START, END, UV START, UV END]: THE START BORDER, THE MIDDLE (ONE STRETCHED PIECE,
+    // OR REPEATED TILES WHEN tile IS SET) AND THE END BORDER
+    private Segments(size: number, scale: number, start: number, end: number, tile: boolean): number[][]
+    {
+        const [c0, c1, c2, c3] = this.Cuts(size, scale, start, end);
+        const t1 = start / size;
+        const t2 = 1 - end / size;
+
+        // NATURAL SIZE OF ONE MIDDLE TILE IN TEXTURE SPACE, THE SAME WAY THE BORDERS ARE SIZED
+        const tileSize = (size - start - end) * this.borderScale / scale;
+        const count = tile && tileSize > 0 ? Math.max(1, Math.round((c2 - c1) / tileSize)) : 1;
+        const step = (c2 - c1) / count;
+
+        const segments = [[c0, c1, 0, t1]];
+        for (let i = 0; i < count; i++)
+            segments.push([c1 + step * i, c1 + step * (i + 1), t1, t2]);
+        segments.push([c2, c3, t2, 1]);
+
+        return segments;
     }
 
     // THE FOUR EDGES OF THE SLICES ALONG ONE AXIS, IN TEXTURE SPACE. WHEN THE OBJECT IS SMALLER THAN ITS TWO BORDERS,
