@@ -783,6 +783,22 @@ const gameDebugApi = {
         {
             defaultValues[field] = origEntity[field];
         }
+
+        // the serializer leaves out component props still at their class default (eg a prefab's "player": {}),
+        // so a changed prop can be missing from the original entity. fill it from the class defaults so
+        // the plugin's revert has a value to write back
+        if (changedFields.components && typeof changedFields.components === "object")
+        {
+            var origComponents = origEntity?.components ?? {};
+            var defaultComponents: Record<string, any> = { ...origComponents };
+            for (var compName in changedFields.components)
+            {
+                var classDefaults = bare.componentDefaulValues[Helper.CapitalizeFirstLetter(compName) + "Component"] ?? {};
+                var origComp = origComponents[compName];
+                defaultComponents[compName] = { ...classDefaults, ...(origComp && typeof origComp === "object" ? origComp : {}) };
+            }
+            defaultValues.components = defaultComponents;
+        }
         data.__defaultValues = defaultValues;
     }
 
