@@ -130,7 +130,7 @@ button.OnPointerLeave(...);
 button.OffPointers();
 ```
 
-See [Input](../reference/input).
+See [Hitbox](../reference/hitbox).
 
 ## Ordering
 

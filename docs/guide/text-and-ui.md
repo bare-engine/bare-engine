@@ -83,7 +83,7 @@ this.AddGameObject(play).SetPosition(bare.width / 2, bare.height / 2).CenterPivo
 
 The height comes from the font size and `margin`, not the letters, so buttons with the same style line up.
 
-Besides `OnPress` there are `OnRelease`, `OnEnter` and `OnLeave`. Any other GameObject can act as a button as well, see [pointer events](../reference/input#pointer-events).
+Besides `OnPress` there are `OnRelease`, `OnEnter` and `OnLeave`. Any other GameObject can act as a button as well, see [pointer events](../reference/hitbox).
 
 ## UI scenes
 

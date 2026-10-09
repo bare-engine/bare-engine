@@ -8,9 +8,9 @@ Shared across the whole game.
 
 | Module | Description |
 | --- | --- |
-| `bare.keyboard` | Keyboard input. See [Input](./input). |
-| `bare.sound` | Sound effects and music. See [Sound](./sound). |
 | `bare.scene` | Add, remove, order and find scenes. See [Scene Manager](./scene-manager). |
+| `bare.keyboard` | Keyboard input. See [Keyboard](./keyboard). |
+| `bare.sound` | Sound effects and music. See [Sound](./sound). |
 | `bare.asset` | Loads and holds textures, atlases and animations. See [Assets](./assets). |
 | `bare.storage` | Persistent save data. See [Save Data](./save-data). |
 | `bare.pool` | Object pools by class name, to recycle GameObjects. |
@@ -27,13 +27,13 @@ These belong to a scene. When you write `bare.tween`, `bare.object` and so on, t
 | --- | --- |
 | `bare.object` | Find and order GameObjects. See [Objects](./objects). |
 | `bare.component` | Find, enable and disable [components](../guide/components). |
-| `bare.events` | The scene's event bus. See [Events](../guide/events). |
-| `bare.mouse` | Mouse and touch input. See [Input](./input). |
-| `bare.hitbox` | Pointer hit detection on GameObjects. See [Input](./input#pointer-events). |
-| `bare.tween` | Tweens and timers. See [Tweens](./tweens). |
-| `bare.particle` | Particle emitters. See [Particles](../guide/particles). |
-| `bare.camera` | The scene camera. See [Camera](./camera). |
 | `bare.level` | Load and save levels. See [Level](./level). |
+| `bare.camera` | The scene camera. See [Camera](./camera). |
+| `bare.mouse` | Mouse and touch input. See [Mouse & Touch](./mouse). |
+| `bare.tween` | Tweens and timers. See [Tweens](./tweens). |
+| `bare.events` | The scene's event bus. See [Events](../guide/events). |
+| `bare.hitbox` | Pointer hit detection on GameObjects. See [Hitbox](./hitbox). |
+| `bare.particle` | Particle emitters. See [Particles](../guide/particles). |
 | `bare.arcade` | Simple physics, imported from `bare-engine/arcade`. See [Physics](./physics). |
 | `bare.sopiro` | Realistic physics (experimental), imported from `bare-engine/sopiro`. See [Physics](./physics). |
 

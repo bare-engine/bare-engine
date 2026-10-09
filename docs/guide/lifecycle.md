@@ -13,7 +13,7 @@ A scene owns its GameObjects and controllers. Your code still owns external reso
 | Object `OnAwake(entity)` | Reset custom fields for this use of the object. See [pooled objects](#pooled-objects). |
 | Object/component `OnAdded` | React to attachment. Components receive their GameObject as an argument. |
 | Object/component `OnStart` | Initialize behavior for this attachment. A component added to an already started object may start immediately, before `AddComponent` returns. |
-| `OnFixedUpdate(dt)` / `OnUpdate(dt)` | Fixed simulation steps / frame updates. Both receive seconds. Read key/mouse presses in `OnUpdate`, see [Input](../reference/input#keyboard). |
+| `OnFixedUpdate(dt)` / `OnUpdate(dt)` | Fixed simulation steps / frame updates. Both receive seconds. Read key/mouse presses in `OnUpdate`, see [Keyboard](../reference/keyboard). |
 | Object/component `OnRemoved` | Release resources and subscriptions owned by this attachment. |
 | Scene `OnClear(includingPersistent)` | Release scene-owned resources after its controllers have been cleared. Also runs during level loads, not just final scene removal. |
 
