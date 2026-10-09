@@ -11,22 +11,20 @@ hero:
     - theme: alt
       text: GitHub
       link: https://github.com/bare-engine/bare-engine
-
-features:
-  - title: Tiny
-    details: Modules you don't use are left out of the production build. Measure the result for your own game.
-  - title: Fast loading
-    details: Pack small images into an atlas and stream the rest in when they're needed.
-  - title: Built-in editor
-    details: Build levels in the game, and inspect and edit objects with the Chrome extension.
-  - title: Prefabs & components
-    details: Describe objects as data, attach behavior with components, and reuse it everywhere.
-  - title: Fast rendering
-    details: WebGL rendering with Rapid, plus tweens, particles, shaders and physics.
-  - title: Instant reload
-    details: Vite hot reload keeps your edit-and-test loop short.
 ---
 
-::: warning
-The engine is still in active development, some features may be unstable.
-:::
+<style>
+:root { --vp-home-hero-name-color: var(--vp-c-text-1); }
+.dark { --vp-home-hero-name-color: #fff; }
+</style>
+
+- Small minimum size: 38kb gzip
+- Fast loading time ([Benchmark](https://github.com/bare-engine/bare-benchmarks))
+- Easy asset streaming
+- In-game level editor
+- Live object inspection/editing ([Chrome Extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb))
+- Prefabs
+- Components
+- Save/load levels
+- Fast rendering ([Rapid](https://github.com/Nightre/Rapid.js))
+- Arcade and rigidbody physics
