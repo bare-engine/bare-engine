@@ -11,7 +11,7 @@ await bare.level.Restart();
 | --- | --- |
 | `Load(nameOrData = "")` | Clears the scene, preserving persistent objects, then loads the level. |
 | `LoadOnly(nameOrData)` | Load a level without clearing the scene first. |
-| `LoadData(name: string)` | Reads cached level data without loading it. |
+| `LoadData(name: string)` | Returns cached level data, or fetches and caches it, without creating scene objects. |
 | `LoadCurrent()` / `Restart()` | Reloads the current level. |
 | `Save()` | Save the current level. |
 | `Serialize(level: LevelData)` | Turn the scene's objects into level data. |

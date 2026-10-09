@@ -10,7 +10,7 @@ Use Node 24.19.0 to reproduce the documented checks, run `npm install` in the en
 
 | Command | Coverage |
 | --- | --- |
-| `npm run docs:check` | Sample GitHub links against local checkouts: files and line ranges. Add `-- --verbose` to review the linked content. |
+| `npm run docs:check` | Check sample GitHub links against local checkouts (files and line ranges), then verify marked example blocks match their source files. Add `-- --verbose` to review the linked content. |
 | `npm run docs:check-examples` | Type-check engine, fixtures, and the shared documentation examples. |
 | `npm run docs:build` | Build VitePress to `docs/.vitepress/dist`. |
 | `npm run docs:check-site` | Check local links, heading fragments, and images in the **built** site. Build first to avoid checking stale output. |
@@ -37,6 +37,8 @@ The folder name `BareDemos` intentionally maps to the Showcase repo. This checke
 
 Create a Markdown file in `guide/` or `reference/`, then add it to `.vitepress/config.mts`. Guides explain a task; references specify parameters, return values, defaults, units, and lifecycle effects. Label incomplete fragments clearly and include imports in complete examples.
 
-Complete checked examples live in `features/fixtures/src/docExamples/`. Include them with VitePress's `<<< ../../features/fixtures/src/docExamples/file.ts` syntax so the published code and tested code remain identical. Add behavior assertions to `docsExamplesTest.ts`; do not copy examples into a second implementation. Other inline fragments are not automatically type-checked.
+Complete checked examples live in `features/fixtures/src/docExamples/`. Copy the source file's full contents into a fenced `ts` code block, with an `<!-- example: ../../features/fixtures/src/docExamples/file.ts -->` comment immediately above the opening fence. The source path is relative to the Markdown file. This keeps examples readable both on the site and as plain Markdown in the npm package; the checker rejects VitePress includes.
+
+After editing an example source file, run `node scripts/checkDocsExamples.cjs --fix` from the engine root to update its marked blocks. `npm run docs:check` verifies that the blocks and source files match. Add behavior assertions to `docsExamplesTest.ts`; do not copy examples into a second implementation. Other inline fragments are not automatically type-checked.
 
 Use relative page links and explicit heading fragments. Link to Discord as `[Discord](discord:)`; the invite URL lives only in `.vitepress/config.mts`. Public images live in `docs/public/images/` and are linked as `/images/name.svg` or `/images/name.png`; VitePress applies the site's base path. Give every image useful alt text. Keep screenshots free of private data and record their provenance in this file.
