@@ -282,7 +282,7 @@ export class EditorUIHandler {
         var categoriesEntries = Object.entries(categoriesFinal)
         for (const [categoryName, categoryData] of categoriesEntries)
         {
-            if (!categoryData || !categoryData.entries || categoryData.entries.length === 0) return;
+            if (!categoryData || !categoryData.entries || categoryData.entries.length === 0) continue;
 
             if (categoryName == "images" && Array.isArray(categoryData.entries))
             {
