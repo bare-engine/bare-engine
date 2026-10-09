@@ -11,8 +11,9 @@ this.AddGameObject('player');                     // a prefab name or image name
 this.AddGameObject('/player');                    // force the image, skip the prefab
 this.AddGameObject('enemies/saw');                // an image path
 this.AddGameObject({ extends: 'player', x: 50 }); // an entity
-this.AddGameObject(Asset.Image.PLAYER);           // from generated assets
+this.AddGameObject(Asset.Image.PLAYER);           // image from generated assets
 this.AddGameObject(MyGameObjectClass);            // a class
+this.AddGameObject(new MyGameObjectClass(this));  // an instance
 this.AddGameObject();                             // an empty GameObject
 ```
 
@@ -28,7 +29,7 @@ The second argument is the parent: a layer name, a layer index or another GameOb
 
 ## Transform
 
-Most setters return the object, so you can chain them:
+Setters return the object, so you can chain them:
 
 ```ts
 this.AddGameObject('ball')

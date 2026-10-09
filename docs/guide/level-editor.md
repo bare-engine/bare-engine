@@ -118,7 +118,7 @@ The [RPG](https://github.com/bare-engine/bare-rpg) has a second editor for its w
 
    ```ts
    await bare.scene.Add(EditorScene, {
-       levelPathOrData: "data/levels/map.json",
+       levelPathOrData: 'data/levels/map.json',
        settingsHandler: this.mapSettingsHandler,
    });
    ```
@@ -132,7 +132,7 @@ The [RPG](https://github.com/bare-engine/bare-rpg) has a second editor for its w
 Production builds don't add the **Level Editor** button, and `showEditorButton` and `editorButtonPosition` have no effect there. To show it, add `EditorUIScene` yourself once the game has started:
 
 ```ts
-import { EditorUIScene } from "bare-engine";
+import { EditorUIScene } from 'bare-engine';
 
 await bare.scene.Add(EditorUIScene, { openEditorButtonPosition: { x: 1, y: 0 } });
 ```
@@ -142,7 +142,7 @@ await bare.scene.Add(EditorUIScene, { openEditorButtonPosition: { x: 1, y: 0 } }
 The button only opens the editor, so you can also open it from your own button or key while a level is loaded:
 
 ```ts
-import { EditorScene } from "bare-engine";
+import { EditorScene } from 'bare-engine';
 
 bare.scene.Add(EditorScene);
 ```

@@ -6,7 +6,6 @@ Bare is in active development. These are the features that are planned.
 
 - Tilemap support
 - An `npm create` command to start a new project in one step
-- The [level editor](./level-editor) for players, so you can let them build and share levels in your released game
 
 ## Chrome extension
 

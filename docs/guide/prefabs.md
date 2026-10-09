@@ -61,6 +61,11 @@ A prefab or entity can **extend** another prefab with `extends`. It inherits all
   "scale": {
     "x": 3,
     "y": 3
+  },
+  "components": {
+    "health": {
+      "max": 10
+    }
   }
 }
 ```

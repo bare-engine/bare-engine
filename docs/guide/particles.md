@@ -83,6 +83,7 @@ bare.particle.OneShot(explosion, { position: enemy.position });
 For a continuous emitter, add it with `autoStart`:
 
 ```ts
+const smoke = bare.particle.CreateEmitter({ texture: 'particles/smoke', life: 2, emitRate: 10 });
 bare.particle.Add(smoke, { autoStart: true });
 smoke.position.set(x, y);   // move it around
 ```
@@ -116,7 +117,7 @@ Each value in `animation` changes over a particle's life:
 | `velocity` | Extra movement as `{ x, y }`. A `delta` of `{ x: 0, y: 300 }` works like gravity. |
 | `color` | Tint as a hex string, including alpha (`"#ffffff00"` is transparent). |
 
-Each one takes `start` and `end`. Any value can be a `[min, max]` range for randomness, and `damping` slows a value down over time:
+Each one takes `start` and `end`, or `start` and `delta`, the change per second. Any value can be a `[min, max]` range for randomness, and `damping` slows a value down over time:
 
 ```json
 "speed": {

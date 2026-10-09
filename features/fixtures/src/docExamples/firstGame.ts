@@ -1,4 +1,4 @@
-import { Color, GameObject, Scene } from 'bare-engine';
+import { Color, GameObject, Scene, StartBare } from 'bare-engine';
 
 export class FirstGame extends Scene
 {

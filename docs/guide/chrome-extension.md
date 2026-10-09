@@ -21,5 +21,5 @@ Fields marked `@SerializeField` or `@InspectorField` in your code appear in the 
 **Example:** the [Shmup](https://github.com/bare-engine/bare-shmup)'s [`ShootComponent`](https://github.com/bare-engine/bare-shmup/blob/main/src/components/shootComponent.ts#L8-L33) has editable fields and a **Shoot** button.
 
 ::: info
-The extension is still being worked on. The dated [Roadmap](./roadmap#chrome-extension) describes planned features and the intention to make it paid; this page does not promise a release date or pricing.
+The extension is still being worked on. See the [Roadmap](./roadmap#chrome-extension) for planned features.
 :::

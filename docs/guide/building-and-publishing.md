@@ -27,7 +27,7 @@ A production build makes your game as small as possible:
 
 Each of these can be turned off in [package.json Options](../reference/package-json). If something works in development but not in the build, that's the first place to look. See also [Troubleshooting](./troubleshooting).
 
-To also replace `Asset.Image.X` and the like with their values and leave `assets.ts` out, turn on [`stripGeneratedAssets`](../reference/package-json#stripgeneratedassets).
+To also leave `src/generated/assets.ts` out, turn on [`stripGeneratedAssets`](../reference/package-json#stripgeneratedassets).
 
 To also leave unused images out of the texture atlas, turn on [`texturePackImages.stripUnused`](../reference/package-json#texturepackimages).
 

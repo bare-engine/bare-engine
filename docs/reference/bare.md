@@ -80,10 +80,7 @@ bare.scene.Get(Game).level.Load('level1');
 | `bare.AddClass(SomeClass)` | Register a class. A controller (like `ArcadePhysicsController`) is switched on for all scenes; a GameObject class gets an object pool so it can be created by name. |
 | `bare.RegisterGameObjectPool(cls, size?)` | Create an object pool for a GameObject class yourself. |
 | `bare.SetBackgroundColor(color)` | Set the canvas background color. An opaque color also colors the page around the canvas, eg the bars of a fitted resolution. |
-| `bare.SetDebugKey(key, action \| null)` | Add, change or (with `null`) remove a [debug key](../guide/debugging#debug-keys). Development only. |
-| `bare.DisableDebugKey(key)` | Turn off one [debug key](../guide/debugging#changing-keys-while-the-game-runs), eg when it's also a game control. Development only. |
-| `bare.DisableAllDebugKeys()` | Turn off every debug key. Development only. |
-| `bare.SetDebugKeys(keys \| null)` | Replace all debug keys, in the format of the `debugKeys` option. `null` removes them all. Development only. |
+| `bare.SetDebugKey`, `bare.DisableDebugKey`, … | Change the [debug keys](../guide/debugging#changing-keys-while-the-game-runs) while the game runs. Development only. |
 | `bare.LoadFont(name, url?)` | Load a font from `public/fonts/`. |
 | `bare.SetCursor(css)` | Set the mouse cursor. |
 | `bare.drawRect`, `bare.drawCircle`, `bare.drawLine`, … | Immediate drawing, for use in `OnRender`. |

@@ -84,9 +84,9 @@ A level can be saved while playing or from the editor, and only fields marked `@
 
 ## Layers
 
-Within a scene, GameObjects live on layers. Layers decide draw order: later layers draw on top. `objects` is the default layer and always exists: if your `layers` list leaves it out, it's added at the start, below your own layers.
+Within a scene, GameObjects live on layers. Layers decide draw order: later layers draw on top. `objects` is the default layer and always exists.
 
-Add more in `settingsData.json`:
+Add more in `settingsData.json`, see [Layers](./settings-data#layers):
 
 ```json
 "layers": ["background", "objects"]
@@ -109,19 +109,6 @@ bare.object.GetLayerOf(obj);
 bare.object.MoveToLayer(obj, layerIndex);
 ```
 
-### Layer settings
-
-Settings per layer go in `layersInfo`:
-
-```json
-"layersInfo": {
-  "background": {
-    "save": false,
-    "showInEditor": false
-  }
-}
-```
-
-See [all layer settings](./settings-data#layers): which layers collide, whether a layer is saved and shown in the editor, and how the pointer picks objects on it.
+Settings per layer, like which layers collide or whether a layer is saved, go in [`layersInfo`](./settings-data#layers).
 
 **Example:** the [Shmup](https://github.com/bare-engine/bare-shmup) [defines a layer per kind of object](https://github.com/bare-engine/bare-shmup/blob/main/public/data/settingsData.json#L83) (enemies, their bullets, your bullets, the player), and [counts objects per layer](https://github.com/bare-engine/bare-shmup/blob/main/src/game.ts#L126-L136).

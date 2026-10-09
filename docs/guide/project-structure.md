@@ -41,9 +41,7 @@ this.AddGameObject(Asset.Image.PLAYER);
 
 `Asset` holds images, sounds, fonts and levels. `Data` holds prefabs, base prefabs, animations and layers from [`settingsData.json`](./settings-data#generated-names).
 
-::: tip
-To make production builds smaller, turn on [`stripGeneratedAssets`](../reference/package-json#stripgeneratedassets). It replaces full paths like `Asset.Image.X` with their values and empties the lists (`Asset.Images`, `Data.Prefabs`, …), and the build tells you about any other use of `Asset` or `Data` it can't replace.
-:::
+To leave this file out of production builds, see [`stripGeneratedAssets`](../reference/package-json#stripgeneratedassets).
 
 ## `public/data/settingsData.json`
 

@@ -61,7 +61,7 @@ Every key is optional. A small file using most of them:
 | `layersInfo` | | Settings per layer. See [Layers](#layers). |
 | `gravity` | `0` | Downward gravity for [physics](../reference/physics). |
 | `sopiro` | | Solver settings for [realistic physics](../reference/physics#tuning) in this scene. |
-| `saveVars` | `position`, `children`, `components` | Properties saved per GameObject class when a level is saved while playing. See [What gets saved](../reference/save-data#what-gets-saved). |
+| `saveVars` | `position`, `children`, `components` | Properties saved per GameObject class when a level is saved while playing. See [saveVars](../reference/save-data#savevars). |
 | `categories` | | How prefabs are grouped in the [level editor](./level-editor#categories)'s sidebar. |
 | `settings` | grid off, size `64` | Level editor grid: `gridEnabled` and `gridSize`. See [Grid](./level-editor#grid). |
 | `editorObjectSnapToPivot` | `true` | `false` makes objects fill the [level editor grid](./level-editor#grid) cell instead of snapping their pivot to the lines. |
@@ -69,7 +69,7 @@ Every key is optional. A small file using most of them:
 
 ## Layers
 
-`layers` lists your layer names. Later layers draw on top. `objects` always exists: if you leave it out, it's added at the start, below your own layers. See [Levels & Layers](./levels-and-layers#layers) for using them.
+`layers` lists your layer names. Later layers draw on top. `objects` always exists: if you leave it out, it's added at the start, below your own layers. See [Levels & Layers](./levels-and-layers#layers) for using layers in code.
 
 ```json
 "layers": ["background", "objects"]
@@ -128,7 +128,7 @@ anim.Play(Data.Animation.PLAYER_WALK);
 | `Data.Animation` | `animations` |
 | `Data.Layer` | `layers`, as layer indices, including `objects` |
 
-Each also has a list, like `Data.Prefabs`. It's empty in production builds with [`stripGeneratedAssets`](../reference/package-json#stripgeneratedassets) on.
+Each also has a list, like `Data.Prefabs`.
 
 ## More than one settings file
 

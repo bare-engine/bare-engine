@@ -1,5 +1,6 @@
 import { Shader } from "../types/bareTypes";
 
+// both in seconds
 export type FlashShaderPayload = { duration: number, fadePreDuration: number };
 
 export class FlashShader extends Shader
@@ -7,7 +8,7 @@ export class FlashShader extends Shader
     fadeStartTime: number;
     fadeDuration: number;
 
-    constructor(args: FlashShaderPayload = { duration: 300, fadePreDuration: 100 })
+    constructor(args: FlashShaderPayload = { duration: 0.3, fadePreDuration: 0.1 })
     {
         const flashVertexShaderSource = `
             void vertex(inout vec4 position, inout vec2 region) {
@@ -28,8 +29,8 @@ export class FlashShader extends Shader
 
         super(flashVertexShaderSource, flashFragmentShaderSource)
         
-        this.fadeStartTime =  Date.now() + args.fadePreDuration,
-        this.fadeDuration = args.duration;
+        this.fadeStartTime = Date.now() + args.fadePreDuration * 1000;
+        this.fadeDuration = args.duration * 1000;
         
         this.SetUniforms({
             uFlashTime: 0.0

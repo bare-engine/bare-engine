@@ -81,4 +81,4 @@ bare.camera.SetDimensionsToLevel();
 
 **Example:** the [Platformer](https://github.com/bare-engine/bare-platformer/blob/main/src/game.ts#L49-L53) does this after loading its level.
 
-The [ResolutionDemo](https://github.com/bare-engine/bare-resolution-demo) lets you try the options side by side.
+The [Resolution Demo](https://github.com/bare-engine/bare-resolution-demo) lets you try the options side by side.

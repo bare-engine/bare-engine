@@ -2,9 +2,7 @@
 
 ## StartBare options
 
-Pass options as the second argument to `StartBare`:
-
-`StartBare(sceneClass, options?): Promise<Scene>` starts the engine and resolves with the initial scene after startup.
+`StartBare(sceneClass, options?)` starts the engine, and resolves with the first scene once it has started. Options go in the second argument:
 
 ```ts
 import { Color, StartBare } from 'bare-engine';
@@ -23,7 +21,7 @@ StartBare(Game, {
 | `textureFilter` | `LINEAR` | Use `NEAREST` for pixel art. |
 | `roundPixels` | `false` | Snap rendering to whole pixels. |
 | `premultipliedAlpha` | `true` | WebGL context alpha representation, passed to the renderer on startup. |
-| `scaleMode` | `CanvasScaleMode.CanvasItem` | How canvas scaling affects the render buffer; see below. |
+| `scaleMode` | `CanvasScaleMode.CanvasItem` | How a scaled canvas is rendered. `CanvasItem` renders at the final screen resolution, so lines and rotated sprites look smoother. `Viewport` renders at the game size and lets the browser stretch the result. |
 | `fixedTimestep` | `1/60` | Seconds per fixed update. |
 | `freezeOnUnfocus` | `true` | Pause when the tab loses focus. |
 | `multiTouch` | `false` | Accept more than one touch at once. |

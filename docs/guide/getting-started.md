@@ -32,7 +32,7 @@ You should see a rotating gear. Keep the terminal running while you edit; saving
 
 ## Engine versions
 
-The first `npm install` picks the newest engine release allowed by `package.json`, and writes `package-lock.json` to keep your game on it. Commit that file, so every install of your game, on any machine, gets the same engine.
+The first `npm install` picks the newest engine release allowed by `package.json`, and writes `package-lock.json` to keep your game on it.
 
 To move to a newer release, run:
 
@@ -40,7 +40,7 @@ To move to a newer release, run:
 npm run update-engine
 ```
 
-Read the [release notes](https://github.com/bare-engine/bare-engine/releases) first: before 1.0, a new minor version (0.6 to 0.7) can change how things work. To allow one, raise the version in `"bare-engine"` in `package.json`, for example `#semver:^0.7.0`, and in the `update-engine` script.
+Read the [release notes](https://github.com/bare-engine/bare-engine/releases) first: before 1.0, a new minor version (0.6 to 0.7) can change how things work. To allow one, raise the version in `"bare-engine"` in `package.json`.
 
 ## Your first scene
 
@@ -52,11 +52,11 @@ import settingsDataJson from '../public/data/settingsData.json';
 
 export class Game extends Scene
 {
-    obj: GameObject;
+    obj!: GameObject;
 
     constructor()
     {
-        super(settingsDataJson);
+        super({settingsData: settingsDataJson});
     }
 
     override OnStart()
@@ -66,9 +66,9 @@ export class Game extends Scene
             .CenterPivot();
     }
 
-    override OnFixedUpdate()
+    override OnUpdate(deltaTime: number): void
     {
-        this.obj.rotation++;
+        this.obj.rotation += 60 * deltaTime;
     }
 }
 
@@ -76,10 +76,10 @@ StartBare(Game);
 ```
 
 - `StartBare(Game)` boots the engine with `Game` as the first scene. It takes options as a second argument, like a background color or a fixed resolution. See [Configuration](../reference/configuration).
-- Passing `settingsData.json` to `super` gives the scene your [prefabs](./prefabs) and [other game data](./settings-data).
+- Passing `settingsData.json` as `settingsData` to `super` gives the scene (and extension) your [prefabs](./prefabs) and [other game data](./settings-data).
 - `AddGameObject('⚙')` resolves `'⚙'` to a prefab or image and adds a [GameObject](./game-objects) to the scene.
-- Rotation is in degrees, so the gear turns one degree per fixed update.
-- `bare` is a global supplied by the engine. It's a shorthand for `this.scene` here. See [The bare Object](../reference/bare).
+- Rotation is in degrees, and `deltaTime` is the frame time in seconds, so the gear turns 60 degrees per second at any frame rate.
+- `bare` is the engine's global, available everywhere without an import. See [The bare Object](../reference/bare).
 
 **Example:** this is [`src/game.ts`](https://github.com/bare-engine/bare-template/blob/main/src/game.ts) in the [template](https://github.com/bare-engine/bare-template).
 

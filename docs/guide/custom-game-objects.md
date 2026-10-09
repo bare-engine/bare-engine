@@ -36,7 +36,7 @@ export class Enemy extends GameObject
 
 GameObject lifecycle hooks include `OnAwake`, `OnStart`, `OnAdded`, `OnUpdate`, `OnFixedUpdate`, `OnPreRender`, `OnRender`, `OnPostRender`, `OnRemoved` and `OnResize`. Their ownership and timing differ from scene hooks; see [Lifecycle & Cleanup](./lifecycle).
 
-Mark hooks `override`, like `override OnUpdate`. Your other members need names the GameObject doesn't already use: a field named `layer` or `name` would replace the engine's, and TypeScript reports it. The same goes for scenes and components; see [Troubleshooting](./troubleshooting#this-member-must-have-an-override-modifier).
+Mark hooks `override`, like `override OnUpdate`, and give your own members names the engine doesn't use, not `layer` or `name`; see [Troubleshooting](./troubleshooting#this-member-must-have-an-override-modifier).
 
 **Examples:** the [RPG](https://github.com/bare-engine/bare-rpg)'s [`Weapon`](https://github.com/bare-engine/bare-rpg/blob/main/src/objects/weapon.ts) extends `ArcadeObject` with a `strength` field and a `Slash` button, and its [`Joystick`](https://github.com/bare-engine/bare-rpg/blob/main/src/ui/joystick.ts) is a GameObject with its own update.
 

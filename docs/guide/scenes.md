@@ -1,6 +1,6 @@
 # Scenes
 
-Scenes organize the parts of your game: gameplay, UI, menus. Your game starts from one scene, passed to `StartBare`, and you can run several scenes on top of each other.
+Scenes organize the parts of your game: gameplay, UI, menus. Your game starts from one scene, passed to `StartBare`, and you can [run several scenes](#multiple-scenes) on top of each other.
 
 ```ts
 import { Scene, StartBare } from 'bare-engine';
@@ -22,13 +22,11 @@ export class Game extends Scene
 StartBare(Game);
 ```
 
-Passing [`settingsData`](./settings-data) gives the scene your prefabs and other game data. Other options, like `UI` and `persistent`, are listed under [Scene options](../reference/configuration#scene-options).
+Passing [`settingsData`](./settings-data) gives the scene (and extension) your prefabs and other game data. Other options, like `UI` and `persistent`, are listed under [Scene options](../reference/configuration#scene-options).
 
 ## Lifecycle
 
-Override these methods on your scene. All are optional. Mark each one `override`, as in `override OnStart()`.
-
-`override` is required for every member that replaces one of the engine's: [`noImplicitOverride`](https://www.typescriptlang.org/tsconfig/#noImplicitOverride) is on in the engine's base tsconfig, which your `tsconfig.json` extends. This catches accidental name clashes. A scene with its own `paused` flag would really be setting the engine's `Scene.paused`, which stops the scene's updates, so TypeScript reports it unless you mark it `override`. Rename such members instead: `isPaused`. See [Troubleshooting](./troubleshooting#this-member-must-have-an-override-modifier).
+Override these methods on your scene. All are optional. Mark each one `override`, as in `override OnStart()`, and give your own members names the engine doesn't use; see [Troubleshooting](./troubleshooting#this-member-must-have-an-override-modifier).
 
 | Method | When it runs |
 | --- | --- |

@@ -26,7 +26,7 @@ StartBare(Game, {
 Describe your fields once, so TypeScript knows them, and register their default values with `SetDefaults`:
 
 ```ts
-import { SaveData } from 'bare-engine';
+import { SaveData, Scene, StartBare } from 'bare-engine';
 
 declare module 'bare-engine'
 {
@@ -37,14 +37,24 @@ declare module 'bare-engine'
     }
 }
 
-// IN OnInit
-bare.storage.SetDefaults({
-    highScore: 0,
-    unlockedLevels: new Set<string>(),
-});
-bare.storage.Load();
+export class Game extends Scene
+{
+}
 
-// LATER
+StartBare(Game, {
+    OnInit: () => {
+        bare.storage.SetDefaults({
+            highScore: 0,
+            unlockedLevels: new Set<string>(),
+        });
+        bare.storage.Load();
+    },
+});
+```
+
+Then read and change the fields anywhere, and save:
+
+```ts
 SaveData.highScore = 1200;
 bare.storage.Save();
 ```
@@ -84,18 +94,17 @@ Saves are stored under your game's `gameId` from `package.json`, so games on the
 
 ## What gets saved
 
-When a level is saved, each object is stored as an entity. Leaving out as much data as possible, such as default or prefab values.
+When a level is saved, each object is stored as an entity, leaving out values it would get anyway, such as defaults and prefab values.
 
-Which properties are saved depends on where you save from:
+Which fields of objects and components are saved, in the editor and while playing, is set by `@SerializeField`; see [Saving and showing fields](./inspector-decorators#saving-and-showing-fields). While playing, built-in properties like `color` are only saved when listed in [`saveVars`](#savevars).
 
-- **In the [level editor](../guide/level-editor)**, the serializer considers built-in entity properties and fields marked `@SerializeField`, except `@SerializeField(GameMode.Play)` ones. This includes properties of components.
-- **While playing**, with `bare.level.Save()`, it considers GameObject properties selected by `saveVars`, plus fields marked `@SerializeField`, except `@SerializeField(GameMode.Edit)` ones. This includes properties of components. The engine's own classes, like `ArcadeObject`, mark their fields `GameMode.Edit`, so add a property to `saveVars` to keep it.
-
-Layers with `save: false`, persistent objects, and objects with `save: false` are omitted. A field marked only `@InspectorField` is never saved. See [Saving and showing fields](./inspector-decorators#saving-and-showing-fields).
+Layers with `save: false`, persistent objects, and objects with `save: false` are omitted.
 
 Top-level objects are always saved, but a child is only saved when it's marked `save: true`: in its prefab or entity, like `{ "name": "flag", "save": true }`, or with `child.save = true` in code. Other children aren't stored: when the level loads, the prefab's children come back as the prefab defines them, and children added while playing are gone.
 
-By default, `saveVars` saves `position`, `children` and `components` for every GameObject. Add more per class in `settingsData.json`:
+### saveVars
+
+By default, `saveVars` saves `position`, `children` and `components` for every GameObject while playing. Add more per class in `settingsData.json`:
 
 ```json
 "saveVars": {

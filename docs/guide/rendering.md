@@ -16,9 +16,9 @@ player.RemoveShader(OutlineShader);
 player.HasShader(OutlineShader);
 ```
 
-`FlashShader` removes itself when the flash is done. Both accept settings, for example `enemy.AddShader(FlashShader, { duration: 500, fadePreDuration: 100 })`.
+`FlashShader` removes itself when the flash is done. Both accept settings, for example `enemy.AddShader(FlashShader, { duration: 0.5, fadePreDuration: 0.1 })`, in seconds.
 
-**Examples:** [Shmup](https://github.com/bare-engine/bare-shmup) ships [flash when hit](https://github.com/bare-engine/bare-shmup/blob/main/src/components/aliveComponent.ts#L52), and the [RPG](https://github.com/bare-engine/bare-rpg)'s [weapon flashes](https://github.com/bare-engine/bare-rpg/blob/main/src/objects/weapon.ts#L22) when it slashes.
+**Examples:** the [Shmup](https://github.com/bare-engine/bare-shmup)'s ships [flash when hit](https://github.com/bare-engine/bare-shmup/blob/main/src/components/aliveComponent.ts#L52), and the [RPG](https://github.com/bare-engine/bare-rpg)'s [weapon flashes](https://github.com/bare-engine/bare-rpg/blob/main/src/objects/weapon.ts#L22) when it slashes.
 
 ### Writing a shader
 

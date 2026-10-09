@@ -732,7 +732,7 @@ export class EditorUIHandler {
         var objs = bare.object.GetLayerByName(layerName);
         for (var obj of objs)
         {
-            obj.AddShader(FlashShader, { duration: 600, fadePreDuration: 0 });
+            obj.AddShader(FlashShader, { duration: 0.6, fadePreDuration: 0 });
         }
     }
 

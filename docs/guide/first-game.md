@@ -6,8 +6,9 @@ Start with the [template setup](./getting-started#create-a-project). This walkth
 
 Replace `src/game.ts` with the class below. It uses the built-in `PIXEL` texture, so no downloaded art or settings file is needed.
 
+<!-- example: ../../features/fixtures/src/docExamples/firstGame.ts -->
 ```ts
-import { StartBare, Scene, GameObject, Color } from 'bare-engine';
+import { Color, GameObject, Scene, StartBare } from 'bare-engine';
 
 export class FirstGame extends Scene
 {
@@ -24,11 +25,16 @@ export class FirstGame extends Scene
 
     override OnUpdate(deltaTime: number)
     {
-        const direction = Number(bare.keyboard.IsRightDown()) - Number(bare.keyboard.IsLeftDown());
+        const direction = Number(bare.keyboard.IsRightDown())
+            - Number(bare.keyboard.IsLeftDown());
         this.player.x += direction * 200 * deltaTime;
     }
 }
+```
 
+End the file by starting the scene:
+
+```ts
 StartBare(FirstGame);
 ```
 
