@@ -2,6 +2,7 @@ import { Component } from "../controllers/componentController";
 import { GameMode } from "../globals";
 import { Color } from "../libraries/rapid-render";
 import type { GameObject } from "../objects/gameObject";
+import { PrefabScene } from "../scenes/prefabScene";
 import { SerializeField } from "../utils/serializeFields";
 import { Run } from "../utils/runModes";
 
@@ -93,11 +94,11 @@ export class NineSliceComponent extends Component
 
         rapid.drawGraphic({ points, uv, texture, color, customMatrix: matrixIndex });
 
-        if (bare.gameMode == GameMode.Edit)
+        if (this.go.scene instanceof PrefabScene)
             this.RenderGuides(xs, ys, matrixIndex);
     }
 
-    // editor only: a line on each of the four cuts (left, right, top, bottom), so you can see where the borders end.
+    // prefab editor only: a line on each of the four cuts (left, right, top, bottom), so you can see where the borders end.
     // drawn in texture space like the slices, so the line widths are divided by the scale to stay the same on screen
     private RenderGuides(xs: number[][], ys: number[][], matrixIndex: number): void
     {
