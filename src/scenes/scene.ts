@@ -1351,6 +1351,8 @@ Or remove "stripGeneratedAssets": true from "bareEngine" in package.json.`);
 
         this._arcade?.Update(deltaTime);
         this._sopiro?.Update(deltaTime);
+
+        this._camera?.Update(deltaTime);
     }
 
     FixedUpdate(fixedDeltaTime: number): void

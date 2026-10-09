@@ -12,22 +12,25 @@ bare.camera.StartShake(8, 0.3);
 
 ## Following a player
 
-`SetPosition` jumps straight to a point. For a smooth follow, move part of the way every frame:
+`SetPosition` jumps straight to a point. `Follow` moves the camera toward an object every frame:
 
 ```ts
-override OnUpdate(deltaTime: number)
+override OnPostLoadLevel()
 {
-    const camera = bare.camera.GetPosition();
-    const t = 1 - Math.exp(-5 * deltaTime);   // higher than 5 follows tighter
-
-    bare.camera.SetPosition(
-        bare.util.Lerp(camera.x, player.x, t),
-        bare.util.Lerp(camera.y, player.y, t),
-    );
+    bare.camera.SetPosition(player.x, player.y);   // start on the player
+    bare.camera.Follow(player, 5);                 // higher than 5 follows tighter
 }
 ```
 
-Using `deltaTime` in `t` keeps the follow speed the same at any frame rate. Combine it with `SetBoundsToLevel()` so the camera stops at the level's edges.
+Leave out the speed to stay locked on. The speed is per second, so the follow feels the same at any frame rate. Loading a level sets the camera's bounds to the level, so it stops at the level's edges. `StopFollow()` lets go again.
+
+For a follow with your own rules, like staying ahead of a runner, move part of the way in `OnUpdate`:
+
+```ts
+const camera = bare.camera.GetPosition();
+const t = 1 - Math.exp(-5 * deltaTime);
+bare.camera.SetPosition(bare.util.Lerp(camera.x, player.x + 200, t), camera.y);
+```
 
 ## Fitting the level
 
@@ -58,17 +61,16 @@ Since `Cover` is the default and loading a level sets the bounds to the level's 
 | Method | Description |
 | --- | --- |
 | `SetPosition(x, y)` | Center the camera on a point, kept inside the bounds if there are any. |
-| `SetPositionTopLeft(x, y)` | Place the camera by its top-left corner. |
 | `AddPosition(dx, dy)` / `GetPosition()` | Move or read the position. `GetPosition` returns the center within the bounds, without shake, and reflects `SetPosition` right away. |
+| `Follow(target, speed?)` / `StopFollow()` | Move toward an object (anything with `x` and `y`) every frame. Without a speed it stays locked on. |
 | `SetZoom(zoom)` / `GetZoom()` | Zoom level, on top of the scale mode's fit. With bounds and `Cover` or `Contain`, it's kept at or above the zoom that shows the whole bounds, so `SetZoom(GetZoom() + step)` always shows a change. |
 | `GetZoomToFit(width, height)` | The zoom that shows an area of that size, like `GetZoomToFit(level.width, level.height)` for the whole level. |
 | `GetScale()` | World units to screen pixels: the zoom combined with the fit, as drawn. Divide by it for sizes that should look the same at any zoom. |
 | `SetDimensions(width, height)` | The area the camera shows. |
 | `SetScaleMode(mode)` | How that area is fitted to the screen. |
 | `SetBounds(rect)` | Keep the camera inside a rectangle. A camera has no bounds until you set them, but loading a level sets them to the level's size. |
-| `SetBoundsToLevel()` / `SetBoundsToScreen()` / `DisableBounds()` | Common bounds. |
-| `SetDimensionsToLevel()` / `SetBoundsAndDimensionsToLevel()` | Match the loaded level. |
+| `DisableBounds()` | Remove the bounds. |
+| `SetDimensionsToLevel()` | Set the dimensions to the loaded level's size. |
 | `ScreenToWorld(x, y)` / `WorldToScreen(x, y)` | Convert positions. |
-| `StartShake(amount?, seconds?, decay?)` | Shake the camera. |
-| `StartShakeXY(x, y, seconds?, decay?)` | Shake with separate x and y amounts. |
+| `StartShake(amount?, seconds?, decay?)` | Shake the camera by `amount` screen pixels. Pass `{ x, y }` for separate amounts, like `StartShake({ x: 0, y: 4 })`. |
 | `StopShake()` | Stop shaking. |

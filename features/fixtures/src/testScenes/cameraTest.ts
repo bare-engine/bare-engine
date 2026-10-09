@@ -20,6 +20,6 @@ export class CameraTest extends Scene
 
         assert(coverZoom >= containZoom, "cover mode should fit at least as tightly as contain mode");
         assert(noneZoom === 1, "none mode should not apply automatic fit scaling");
-        assert(this.camera.target.x === 120 && this.camera.target.y === 80, "camera target position should update");
+        assert(this.camera.position.x === 120 && this.camera.position.y === 80, "camera position should update");
     }
 }

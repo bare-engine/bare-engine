@@ -197,6 +197,18 @@ export class DocsReferenceTest extends Scene
         bare.camera.SetZoom(1);
         bare.camera.StartShake(8, 0.1);
         bare.camera.StopShake();
+        bare.camera.StartShake({ x: 0, y: 4 }, 0.1);
+        bare.camera.StopShake();
+        const followed = { x: 300, y: 200 };
+        bare.camera.Follow(followed);
+        await wait(0.05);
+        c.check(Math.abs(bare.camera.GetPosition().x - 300) < 0.001 && Math.abs(bare.camera.GetPosition().y - 200) < 0.001, "Follow without a speed should stay on the target: " + JSON.stringify(bare.camera.GetPosition()));
+        bare.camera.Follow(followed, 5);
+        followed.x = 400;
+        await wait(0.1);
+        const followX = bare.camera.GetPosition().x;
+        c.check(followX > 300 && followX < 400, "Follow with a speed should catch up over time: " + followX);
+        bare.camera.StopFollow();
 
         // --- scene manager
         const helper = await bare.scene.Add(HelperScene) as HelperScene;

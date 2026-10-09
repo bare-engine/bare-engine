@@ -648,7 +648,7 @@ const gameDebugApi = {
     // it across that rebuild.
     const previousPrefabScene = bare.scene.Get(PrefabScene);
     var previousCameraTransform = previousPrefabScene?.objectName == name
-        ? { x: previousPrefabScene.camera.target.x, y: previousPrefabScene.camera.target.y, zoom: previousPrefabScene.camera.zoom }
+        ? { x: previousPrefabScene.camera.position.x, y: previousPrefabScene.camera.position.y, zoom: previousPrefabScene.camera.zoom }
         : undefined;
     
     // a reload of the same prefab (eg after a field edit) keeps a multi-selection, see below
