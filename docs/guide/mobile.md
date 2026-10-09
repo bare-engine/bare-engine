@@ -62,6 +62,17 @@ Put touch controls in a [UI scene](./text-and-ui#ui-scenes), or on `bare.uiScene
 
 Phones come in many shapes, and turn between portrait and landscape. Lay things out relative to `bare.width` and `bare.height`, or pick a [resolution setup](./resolution) that scales for you. A UI scene with `resize: true` keeps its objects in place when the screen turns.
 
+For a world camera, set the camera's **dimensions** to the area you want it to show, then choose how that area fits the screen. `Contain` keeps the whole area visible, which can leave empty space when the screen has a different shape. `Cover` fills the screen, cropping some of the area as needed. The camera keeps its dimensions when the phone rotates, so the visible world area changes with the screen shape:
+
+```ts
+import { CameraScaleMode } from 'bare-engine';
+
+bare.camera.SetDimensions(1700, 2000); // logical world area to frame
+bare.camera.SetScaleMode(CameraScaleMode.Contain);
+```
+
+To show a whole loaded level instead, use `SetDimensionsToLevel()` with `Contain` (see [fitting a level](./resolution#fitting-a-level)). If you want the camera framing itself to change on rotation, update its dimensions in your scene's `OnResize` using the new screen width and height.
+
 ## Device checks
 
 | Check | Description |

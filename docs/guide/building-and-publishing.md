@@ -60,5 +60,5 @@ Upload the contents of `dist/`, or `dist.zip`, to any static host:
 | Game portals | Most accept a zip of an HTML5 game; upload `dist.zip`. |
 
 ::: tip
-Give each game its own [`gameId`](../reference/package-json#gameid). Games on the same domain, like everything on itch.io, would otherwise share save data.
+It's recommended to set a unique [`gameId`](../reference/package-json#gameid) for each game. Games on the same domain, like everything on itch.io, would otherwise share save data.
 :::

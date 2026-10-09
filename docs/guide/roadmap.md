@@ -5,10 +5,12 @@ Bare is in active development. These are the features that are planned.
 ## Engine
 
 - Tilemap support
+- Spine support
 - An `npm create` command to start a new project in one step
 
 ## Chrome extension
 
+- Edit entity data on level objects
 - Animation setup
 - Particle editor
 - Layer setup
