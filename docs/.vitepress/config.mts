@@ -6,7 +6,7 @@ const discord = "https://discord.gg/zq3Qh45JE";
 export default defineConfig({
     title: "Bare Engine",
     // published on GitHub Pages at https://bare-engine.github.io/bare-engine/
-    base: "/",
+    base: "/bare-engine/",
     description: "A small, fast game engine for the web.",
     lastUpdated: true,
     srcExclude: ["README.md"],
