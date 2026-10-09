@@ -2,7 +2,7 @@ import { RigidBody, Type } from "./rigidbody";
 import { testPointInside, detectCollision } from "./detection";
 import { ContactManifold } from "./contact";
 import * as Util from "./util";
-import { Settings } from "./settings";
+import { Settings, type SopiroSettings } from "./settings";
 import { Joint } from "./joint";
 import { Island } from "./island";
 import { GrabJoint } from "./grab";
@@ -14,6 +14,15 @@ import { Color } from "../rapid-render";
 import type { Scene } from "../../scenes/scene";
 
 type Registrable = RigidBody | Joint;
+
+// declared here, next to its reader in World.update, rather than in src/sopiro.ts: this file is type-checked
+// in every project (through scene.ts's import type of the controller), also ones that never import bare-engine/sopiro
+declare module "../../types/bareTypes" {
+    // settingsData "sopiro": THIS SCENE'S OVERRIDES OF Settings, SEE World.update
+    interface SettingsData {
+        sopiro?: Partial<SopiroSettings>;
+    }
+}
 
 export class World
 {
