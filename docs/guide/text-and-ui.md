@@ -53,12 +53,13 @@ Unlike most components, it also shows in the level editor.
 
 ### Fonts
 
-Put a `.ttf` file in `public/fonts/`, load it, and set it as the default:
+Put a `.ttf` file in `public/fonts/` and load it. The first font you load becomes the default for all text:
 
 ```ts
 await bare.LoadFont('pixel');
-bare.defaultFont = 'pixel';
 ```
+
+To switch the default to another loaded font, set `bare.defaultFont`.
 
 **Example:** the [Platformer](https://github.com/bare-engine/bare-platformer) [loads its font](https://github.com/bare-engine/bare-platformer/blob/main/src/ui.ts#L17-L20) in the UI scene's `OnAwake`.
 

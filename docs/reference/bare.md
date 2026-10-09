@@ -81,6 +81,6 @@ bare.scene.Get(Game).level.Load('level1');
 | `bare.RegisterGameObjectPool(cls, size?)` | Create an object pool for a GameObject class yourself. |
 | `bare.SetBackgroundColor(color)` | Set the canvas background color. An opaque color also colors the page around the canvas, eg the bars of a fitted resolution. |
 | `bare.SetDebugKey`, `bare.DisableDebugKey`, … | Change the [debug keys](../guide/debugging#changing-keys-while-the-game-runs) while the game runs. Development only. |
-| `bare.LoadFont(name, url?)` | Load a font from `public/fonts/`. |
+| `bare.LoadFont(name, url?)` | Load a font from `public/fonts/`. The first font loaded becomes `bare.defaultFont`. |
 | `bare.SetCursor(css)` | Set the mouse cursor. |
 | `bare.drawRect`, `bare.drawCircle`, `bare.drawLine`, … | Immediate drawing, for use in `OnRender`. |
