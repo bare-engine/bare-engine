@@ -92,6 +92,31 @@ export class NineSliceComponent extends Component
         }
 
         rapid.drawGraphic({ points, uv, texture, color, customMatrix: matrixIndex });
+
+        if (bare.gameMode == GameMode.Edit)
+            this.RenderGuides(xs, ys, matrixIndex);
+    }
+
+    // editor only: a line on each of the four cuts (left, right, top, bottom), so you can see where the borders end.
+    // drawn in texture space like the slices, so the line widths are divided by the scale to stay the same on screen
+    private RenderGuides(xs: number[][], ys: number[][], matrixIndex: number): void
+    {
+        const w = this.go.texture!.width;
+        const h = this.go.texture!.height;
+        const px = this.go.scene?.ScreenPxToWorldScale() ?? 1;
+        const hw = px / Math.abs(this.go.scale.x || 1) * 0.5;
+        const hh = px / Math.abs(this.go.scale.y || 1) * 0.5;
+
+        const points: { x: number, y: number }[] = [];
+        const quad = (x0: number, y0: number, x1: number, y1: number) =>
+            points.push({ x: x0, y: y0 }, { x: x1, y: y0 }, { x: x1, y: y1 }, { x: x0, y: y0 }, { x: x1, y: y1 }, { x: x0, y: y1 });
+
+        for (const x of [xs[0][1], xs[xs.length - 1][0]])
+            quad(x - hw, 0, x + hw, h);
+        for (const y of [ys[0][1], ys[ys.length - 1][0]])
+            quad(0, y - hh, w, y + hh);
+
+        rapid.drawGraphic({ points, color: new Color(255, 0, 255, 200), customMatrix: matrixIndex });
     }
 
     // THE SLICES ALONG ONE AXIS AS [START, END, UV START, UV END]: THE START BORDER, THE MIDDLE (ONE STRETCHED PIECE,
