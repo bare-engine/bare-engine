@@ -776,7 +776,7 @@ export class Scene implements SceneI
 
     OnApplyEntityToGameObject(entity: Entity, obj: GameObject, addComponents: boolean)
     {
-        // OVERRIDE
+        // FOR OVERRIDE
     }
 
     ApplyEntityVarsToGameObject(entity: AnyEntity, obj: GameObject, addComponents: boolean = true)

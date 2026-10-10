@@ -212,19 +212,38 @@ export abstract class RigidBody extends GameObject
         return this;
     }
 
+    // emitted untyped, see SopiroPhysicsController
+    CollisionStart(collidingObject: RigidBody)
+    {
+        this.events.emit(BareEvent.collision_start as string, collidingObject, this);
+        this.OnCollisionStart(collidingObject);
+    }
+
     OnCollisionStart(collidingObject: GameObject)
     {
-        
+        // FOR OVERRIDE
+    }
+
+    CollisionUpdate(collidingObject: RigidBody)
+    {
+        this.events.emit(BareEvent.collision_update as string, collidingObject, this);
+        this.OnCollisionUpdate(collidingObject);
     }
 
     OnCollisionUpdate(collidingObject: GameObject)
     {
-        
+        // FOR OVERRIDE
+    }
+
+    CollisionEnd(collidingObject: RigidBody)
+    {
+        this.events.emit(BareEvent.collision_end as string, collidingObject, this);
+        this.OnCollisionEnd(collidingObject);
     }
 
     OnCollisionEnd(collidingObject: GameObject)
     {
-        
+        // FOR OVERRIDE
     }
 
     abstract get density(): number;

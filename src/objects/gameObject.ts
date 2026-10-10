@@ -387,7 +387,7 @@ export class GameObject
 
     OnApplyEntityToGameObject(entity: Entity, addComponents: boolean)
     {
-        // OVERRIDE
+        // FOR OVERRIDE
     }
 
     // MAPS ENTITY PROPS THAT NEED CUSTOM HANDLING WHEN APPLIED TO THIS OBJECT.
@@ -678,7 +678,7 @@ export class GameObject
     /** @virtual */
     OnPreRender()
     {
-
+        // FOR OVERRIDE
     }
 
     /** @virtual */

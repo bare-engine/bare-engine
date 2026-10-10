@@ -231,13 +231,13 @@ export class SopiroPhysicsController extends PhysicsControllerBase
             if (!this.activeCollisions.has(key))
             {
                 this.activeCollisions.set(key, { bodyA, bodyB });
-                bodyA.OnCollisionStart(bodyB);
-                bodyB.OnCollisionStart(bodyA);
+                bodyA.CollisionStart(bodyB);
+                bodyB.CollisionStart(bodyA);
                 bare.events.emit(BareEvent.collision_start as string, bodyA, bodyB);
             }
 
-            bodyA.OnCollisionUpdate(bodyB);
-            bodyB.OnCollisionUpdate(bodyA);
+            bodyA.CollisionUpdate(bodyB);
+            bodyB.CollisionUpdate(bodyA);
             bare.events.emit(BareEvent.collision_update as string, bodyA, bodyB); // NOT SENDING TO globalEvents, PROBABLY NEVER NEEDED? AND COULD COST MORE
         }
 
@@ -246,8 +246,8 @@ export class SopiroPhysicsController extends PhysicsControllerBase
             if (currentCollisions.has(key))
                 continue;
 
-            pair.bodyA.OnCollisionEnd(pair.bodyB);
-            pair.bodyB.OnCollisionEnd(pair.bodyA);
+            pair.bodyA.CollisionEnd(pair.bodyB);
+            pair.bodyB.CollisionEnd(pair.bodyA);
             bare.events.emit(BareEvent.collision_end as string, pair.bodyA, pair.bodyB);
             this.activeCollisions.delete(key);
         }
