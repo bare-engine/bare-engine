@@ -52,7 +52,7 @@ export class GameSpeedTest extends Scene
         const startGame = bare.gameTime;
         const startSteps = this.fixedSteps;
         const startReal = performance.now();
-        await wait(0.3);
+        await waitRealTime(0.3);
         const realMs = performance.now() - startReal;
         const gameMs = bare.gameTime - startGame;
         const steps = this.fixedSteps - startSteps;
@@ -63,16 +63,29 @@ export class GameSpeedTest extends Scene
         // tweens follow the time scale: a 0.4s tween is done after 0.2s of real time
         const fast = { x: 0 };
         TweenTo(fast, 0.4, { x: 100, ease: Easing.Linear.None });
-        await wait(0.25);
+        await waitRealTime(0.25);
         c.check(fast.x > 90, "a tween should run twice as fast at timeScale 2: " + fast.x);
+
+        // a tween updates once per frame, not once per update source
+        bare.timeScale = 1;
+        let tweenUpdates = 0;
+        const counted = { x: 0 };
+        TweenTo(counted, 10, { x: 100, onUpdate: () => tweenUpdates++ });
+        await waitFrame();
+        const startFrame = bare.count;
+        const startUpdates = tweenUpdates;
+        await wait(0.25);
+        const frames = bare.count - startFrame;
+        c.check(Math.abs((tweenUpdates - startUpdates) - frames) <= 1, `a tween should update once per frame: ${tweenUpdates - startUpdates} updates in ${frames} frames`);
+        bare.tween.RemoveAllFrom(counted);
 
         // timeScale 0 stops game time and tweens
         bare.timeScale = 0;
-        await wait(0.05);
+        await waitRealTime(0.05);
         const frozenAt = bare.gameTime;
         const frozen = { x: 0 };
         TweenTo(frozen, 0.1, { x: 100 });
-        await wait(0.15);
+        await waitRealTime(0.15);
         c.check(bare.gameTime === frozenAt, "game time should stand still at timeScale 0");
         c.check(frozen.x === 0, "a tween should not move at timeScale 0: " + frozen.x);
         bare.tween.RemoveAllFrom(frozen);
@@ -109,11 +122,37 @@ export class GameSpeedTest extends Scene
         // FlashShader runs on game time, so it waits at timeScale 0
         obj.AddShader(FlashShader, { duration: 0.05, fadePreDuration: 0 });
         bare.timeScale = 0;
-        await wait(0.15);
+        await waitRealTime(0.15);
         c.check(obj.HasShader(FlashShader), "a FlashShader should not finish at timeScale 0");
         bare.timeScale = 1;
         await wait(0.2);
         c.check(!obj.HasShader(FlashShader), "a FlashShader should finish once game time runs again");
+
+        // wait() runs on game time: faster at timeScale 2, not at all at timeScale 0
+        bare.timeScale = 2;
+        const waitStartGame = bare.gameTime;
+        const waitStartReal = performance.now();
+        await wait(0.3);
+        const waitGameMs = bare.gameTime - waitStartGame;
+        const waitRealMs = performance.now() - waitStartReal;
+        c.check(waitGameMs >= 300, "wait should last its seconds in game time: " + waitGameMs.toFixed(0));
+        c.check(waitRealMs < waitGameMs * 0.75, `wait should take less real time at timeScale 2: ${waitRealMs.toFixed(0)}ms real for ${waitGameMs.toFixed(0)}ms game`);
+
+        bare.timeScale = 0;
+        let waitDone = false;
+        void wait(0.05).then(() => waitDone = true);
+        await waitRealTime(0.15);
+        c.check(!waitDone, "wait should not finish at timeScale 0");
+        bare.timeScale = 1;
+        await waitRealTime(0.15);
+        c.check(waitDone, "wait should finish once game time runs again");
+
+        // a cancelled wait never finishes, and is dropped right away
+        let cancelledDone = false;
+        void wait(0.05).then(() => cancelledDone = true);
+        cancelWaits();
+        await waitRealTime(0.15);
+        c.check(!cancelledDone, "a cancelled wait should never finish");
 
         // DisableRightClick turns off the development right click select
         const before = bare.rightClickSelect;

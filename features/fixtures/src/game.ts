@@ -27,6 +27,8 @@ import { SettingsEditingTest } from "./testScenes/settingsEditingTest";
 import { GameSpeedTest } from "./testScenes/gameSpeedTest";
 import { ParticleComponentTest } from "./testScenes/particleComponentTest";
 import { ShapeOutlineTest } from "./testScenes/shapeOutlineTest";
+import { HitboxInnerTransformTest } from "./testScenes/hitboxInnerTransformTest";
+import { ShaderUniformsTest } from "./testScenes/shaderUniformsTest";
 import { EditorPreview } from "./docExamples/editorPreview";
 
 function sceneName(scene: SceneClass): string {
@@ -70,6 +72,8 @@ class MainGame extends Scene
         GameSpeedTest,
         ParticleComponentTest,
         ShapeOutlineTest,
+        HitboxInnerTransformTest,
+        ShaderUniformsTest,
     ];
 
     constructor() 
