@@ -35,6 +35,22 @@ export class ParticleComponent extends Component
     @SerializeField(GameMode.Edit)
     private emitRadius: number = 0;
 
+    // { width, height } OF THE AREA, FOR emitShape "RECT"
+    @SerializeField(GameMode.Edit)
+    private emitRect: any;
+
+    // ABOVE 0: EMIT IN BURSTS OF emitRate PARTICLES EVERY emitTime SECONDS, INSTEAD OF emitRate PER SECOND
+    @SerializeField(GameMode.Edit)
+    private emitTime: number = 0;
+
+    // 0 FOR NO LIMIT
+    @SerializeField(GameMode.Edit)
+    private maxParticles: number = 0;
+
+    // SCALES THE WHOLE EFFECT
+    @SerializeField(GameMode.Edit)
+    private scale: number = 1;
+
     @SerializeField(GameMode.Edit)
     private animation: Record<string, any> = {};
 
@@ -45,17 +61,22 @@ export class ParticleComponent extends Component
 
     private initEmitter(): void
     {
-        // THE @InspectorField VALUES ARE PLAIN DATA (TEXTURE NAME, HEX COLORS, { x, y }
-        // OBJECTS) - THE CONTROLLER TURNS THEM INTO IParticleOptions AND LOADS THE TEXTURE
+        // THE @SerializeField VALUES ARE PLAIN DATA (TEXTURE NAME, HEX COLORS, { x, y }
+        // OBJECTS) - THE CONTROLLER TURNS THEM INTO IParticleOptions AND LOADS THE TEXTURE.
+        // EVERY SETTING CreateEmitter READS IS PASSED ON - ADD NEW ONES HERE AND TO particleComponentTest
         this.emitter = bare.particle.CreateEmitter({
             position: this.position,
             life: this.life,
             texture: this.texture,
             origin: this.origin,
             emitRate: this.emitRate,
+            emitTime: this.emitTime,
             localSpace: this.localSpace,
             emitShape: this.emitShape,
             emitRadius: this.emitRadius,
+            emitRect: this.emitRect,
+            maxParticles: this.maxParticles || undefined,
+            scale: this.scale,
             animation: this.animation,
         });
     }
