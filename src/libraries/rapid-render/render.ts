@@ -527,6 +527,8 @@ export class Rapid {
      *
      * @param source   The input texture to start the filter chain from.
      * @param shaders  An ordered array of CustomGlShader to apply in sequence.
+     * @param tint     Optional color the source is multiplied by before the first shader, so the
+     *                 shaders see the tinted color.
      * @returns The RenderTexture containing the final filtered result.
      *          Draw it with `rapid.drawSprite({ texture: result })` to display it on screen.
      *
@@ -534,7 +536,7 @@ export class Rapid {
      * const result = rapid.applyFilters(tex, [blurShader, outlineShader]);
      * rapid.drawSprite({ texture: result });
      */
-    applyFilters(source: Texture, shaders: CustomGlShader[]): RenderTexture {
+    applyFilters(source: Texture, shaders: CustomGlShader[], tint?: Color): RenderTexture {
         if (shaders.length === 0) {
             throw new Error("applyFilters: shaders array must not be empty.");
         }
@@ -580,6 +582,7 @@ export class Rapid {
             this.drawSprite({
                 texture: inputTex,
                 shader: shaders[i],
+                color: i == 0 ? tint : undefined, // THE SPRITE SHADER MULTIPLIES THIS IN BEFORE THE CUSTOM fragment()
                 offsetX: i == 0 ? paddingOffset : 0, // padding back
                 offsetY: i == 0 ? paddingOffset : 0,
                 padding: maxPadding,

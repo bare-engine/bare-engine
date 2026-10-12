@@ -1,4 +1,4 @@
-import { FlashShader, GameObject, Scene } from "bare-engine";
+import { Color, FlashShader, GameObject, Scene } from "bare-engine";
 import { Checks } from "./checks";
 
 // covers shader uniforms per object: every Shader class shares one compiled GL shader, so two objects
@@ -12,6 +12,9 @@ export class ShaderUniformsTest extends Scene
     white!: GameObject;
     red!: GameObject;
     whiteAfter!: GameObject;
+    tinted!: GameObject;
+    faded!: GameObject;
+    previousBackground!: Color;
 
     constructor()
     {
@@ -42,6 +45,17 @@ export class ShaderUniformsTest extends Scene
         // white again after the red one, in case the last uniform set wins
         this.whiteAfter = square(300);
         this.whiteAfter.AddShader(FlashShader, { fadePreDuration: 1000, duration: 1 });
+
+        // a white texture tinted red: the shaders see the tinted color, so the flash still makes it white
+        this.tinted = this.AddGameObject("PIXEL").SetPosition(400, 100).SetScale(40).SetColor(Color.Red);
+        this.tinted.AddShader(FlashShader, { fadePreDuration: 1000, duration: 1 });
+
+        // the same at half alpha: the alpha comes after the shaders, so the white flash is half see-through.
+        // on black, so half white can be told apart from the background
+        this.previousBackground = rapid.backgroundColor.clone();
+        bare.SetBackgroundColor(Color.Black);
+        this.faded = this.AddGameObject("PIXEL").SetPosition(500, 100).SetScale(40).SetColor(Color.Red).SetAlpha(0.5);
+        this.faded.AddShader(FlashShader, { fadePreDuration: 1000, duration: 1 });
     }
 
     // the color drawn at the center of an object, read back from the canvas
@@ -75,6 +89,14 @@ export class ShaderUniformsTest extends Scene
         c.check(isWhite(white), "an object early in its flash should be white: " + white.join(","));
         c.check(isRed(red), "an object at the end of its flash should be its own color: " + red.join(","));
         c.check(isWhite(whiteAfter), "an object drawn after another flash should keep its own uniform: " + whiteAfter.join(","));
+
+        const tinted = this.ReadCenter(this.tinted);
+        c.check(isWhite(tinted), "a flash should make a tinted object white: " + tinted.join(","));
+
+        // half white over black
+        const faded = this.ReadCenter(this.faded);
+        c.check(faded.slice(0, 3).every(channel => Math.abs(channel - 128) < 20), "a half faded tinted object should flash half white: " + faded.join(","));
+        bare.SetBackgroundColor(this.previousBackground);
 
         c.flush();
     }

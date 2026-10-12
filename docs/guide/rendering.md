@@ -57,7 +57,7 @@ export class WobbleShader extends Shader
 }
 ```
 
-In the fragment function, `color` starts as the texture's color at that pixel, and `vRegion` holds the texture coordinate. If your effect draws outside the image, like an outline, make room with `this.SetPadding(pixels)`.
+In the fragment function, `color` starts as the texture's color at that pixel, times the object's tint, and `vRegion` holds the texture coordinate. The object's alpha is applied after your shader, so whatever it draws fades along with the object. If your effect draws outside the image, like an outline, make room with `this.SetPadding(pixels)`.
 
 **Example:** the [Showcase](https://github.com/bare-engine/bare-showcase)'s [ghost shader](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/shaders/src/ghostShader.ts) wobbles and pulses, and the [shaders demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/shaders/src/DemoShaders.ts) adds it to a GameObject.
 

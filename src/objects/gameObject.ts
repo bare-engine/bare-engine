@@ -93,6 +93,9 @@ export class GameObject
     // matrix slot for sprites that compose their world matrix without pushing a stack frame.
     // allocated once and never put on the stack's per-frame list, so rapid never recycles it
     private static scratchMatrix = -1;
+    // REUSED BY RenderSprite FOR OBJECTS WITH SHADERS: THE TINT'S COLOR, AND ITS ALPHA
+    private static shaderTint = new Color(255, 255, 255, 255);
+    private static shaderAlpha = new Color(255, 255, 255, 255);
     private static scratchStack: MatrixStack | null = null;
 
     static gameObjectCounter = -1; // ONE BACK TO NOT COUNT THE DUMMY GAMEOBJECT INSTANCED IN BAREGAME
@@ -980,14 +983,21 @@ export class GameObject
         }
         
         var texture = this.texture;
+        var drawColor = renderColor;
 
         if (this._shaders && this._shaders.length > 0)
         {
+            // THE SHADERS GET THE TINTED COLOR, SO EG A FLASH TURNS A TINTED SPRITE WHITE INSTEAD OF BACK INTO ITS TINT.
+            // THE ALPHA COMES AFTER THEM, SO A FADING OBJECT ALSO FADES WHAT THE SHADERS ADDED, LIKE AN OUTLINE
+            GameObject.shaderTint.setRGBA(renderColor.r, renderColor.g, renderColor.b, 255);
+            GameObject.shaderAlpha.setRGBA(255, 255, 255, renderColor.a);
+
             const glShaders = this._shaders.map(shader => shader.shader);
-            texture = rapid.applyFilters(this.texture!, glShaders);
+            texture = rapid.applyFilters(this.texture!, glShaders, GameObject.shaderTint);
+            drawColor = GameObject.shaderAlpha;
         }
 
-        drawSpriteWithMatrix(rapid, texture!, matrixIndex, renderColor);
+        drawSpriteWithMatrix(rapid, texture!, matrixIndex, drawColor);
 
         if (this.mask)
         {
