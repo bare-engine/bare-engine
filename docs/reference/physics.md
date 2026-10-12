@@ -285,7 +285,7 @@ Joints connect two bodies. Place a joint object in the [level editor](../guide/l
 | `LineJointObject` | Lets a body slide along a line, like a piston. `lockRotation` stops it from rotating. |
 | `MotorJointObject` | Drives a body: set `angularSpeed` to spin it, or `linearOffset` and `angularOffset` to move it, with `maxForce` and `maxTorque` as limits. |
 
-Every joint also has `frequency` and `dampingRatio`, to make it stiff or springy, and `jointMass`. They're inspector fields, so you can tweak them in the browser extension ([Chrome](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) / [Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)) while the game runs.
+Every joint also has `frequency` and `dampingRatio`, to make it stiff or springy, and `jointMass`. They're inspector fields, so you can tweak them in the [browser extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) ([Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)) while the game runs.
 
 To use a joint, make a prefab for it:
 

@@ -14,7 +14,7 @@ Learn more here: https://youtu.be/8Kv4FF7yNAs
 - Fast loading time ([Benchmark](https://github.com/bare-engine/bare-benchmarks))
 - Easy asset streaming
 - In-game level editor
-- Live object inspection/editing with the Browser Extension ([Chrome](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) / [Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/))
+- Live object inspection/editing with the [Browser Extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) ([Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/))
 - Prefabs
 - Components
 - Save/load levels
@@ -24,7 +24,7 @@ Learn more here: https://youtu.be/8Kv4FF7yNAs
 ## Get started
 
 1. [Bare Template](https://github.com/bare-engine/bare-template): start your project
-2. Browser Extension ([Chrome](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) / [Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)): inspect and edit your game while it runs
+2. [Browser Extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) ([Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)): inspect and edit your game while it runs
 3. [Bare Showcase](https://github.com/bare-engine/bare-showcase): a small demo for each feature
 4. [Examples](https://bare-engine.github.io/bare-engine/guide/examples): complete example games
 5. [Documentation](https://bare-engine.github.io/bare-engine/): guides and reference

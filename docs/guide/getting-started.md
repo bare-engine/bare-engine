@@ -95,6 +95,6 @@ StartBare(Game);
 ## Next steps
 
 - Follow [Build Your First Game](./first-game) to move a character, swap its image, and test a production build.
-- Install the browser extension ([Chrome](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) / [Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)) to inspect and edit your game while it runs.
+- Install the [browser extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) ([Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)) to inspect and edit your game while it runs.
 - Read [Project Structure](./project-structure) to learn where things go.
 - Explore the [Showcase](https://github.com/bare-engine/bare-showcase) and the example games: [Platformer](https://github.com/bare-engine/bare-platformer), [Shmup](https://github.com/bare-engine/bare-shmup).
