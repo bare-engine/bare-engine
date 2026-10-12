@@ -2164,13 +2164,16 @@ export class PluginHandler
         var isDeepDown = keyboardController.IsKeyDown("alt");
         var isAddDown = keyboardController.IsKeyDown("shift") || keyboardController.IsKeyDown("control");
 
+          const obj = isDeepDown ? this.CheckClickDeepChild(ev) : this.CheckClickGameObject(ev);
+
           // like left click in the level editor: clicking inside the current selection keeps it
-          // (eg a deep child picked with alt) and moves it, instead of reselecting the root
+          // (eg a deep child picked with alt, or a multi-selection) and moves it, instead of
+          // reselecting the root. unless another object is on top of it
           if (!isDeepDown && !isAddDown)
           {
               var p = bare.GetCanvasScreenPosition(ev.clientX, ev.clientY);
               var selected = TransformToolHandler.Get().GetCurrentTargetAt(p.x, p.y);
-              if (selected)
+              if (selected && (!obj || PluginHandler.IsAncestorOrSelf(obj, selected)))
               {
                   this.SyncSceneMouseToPointerDown(selected.scene, ev);
                   TransformToolHandler.Get().StartMoveFromPointer(selected.scene, selected.scene.ScreenToWorldPos(p), selected);
@@ -2178,8 +2181,6 @@ export class PluginHandler
                   return false;
               }
           }
-
-          const obj = isDeepDown ? this.CheckClickDeepChild(ev) : this.CheckClickGameObject(ev);
 
           // like left click in the level editor: a drag from empty space selects with a rect,
           // a click without dragging deselects (on pointer up, see SelectObjectsInRect)
@@ -2279,14 +2280,16 @@ export class PluginHandler
     // of the added objects are dropped so a drag doesn't move them twice
     private AddToSelection(targets: GameObject[], objs: GameObject[]): GameObject[]
     {
-        var isAncestorOrSelf = (ancestor: GameObject, o: GameObject) => {
-            for (var current: GameObject | null = o; current; current = current.parent)
-                if (current === ancestor)
-                    return true;
-            return false;
-        };
-
+        var isAncestorOrSelf = PluginHandler.IsAncestorOrSelf;
         return [...targets.filter(t => !objs.some(obj => isAncestorOrSelf(t, obj) || isAncestorOrSelf(obj, t))), ...objs];
+    }
+
+    private static IsAncestorOrSelf(ancestor: GameObject, o: GameObject): boolean
+    {
+        for (var current: GameObject | null = o; current; current = current.parent)
+            if (current === ancestor)
+                return true;
+        return false;
     }
 
     // the editor scenes select on the canvas themselves (left click)
