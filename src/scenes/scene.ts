@@ -1325,6 +1325,11 @@ Or remove "stripGeneratedAssets": true from "bareEngine" in package.json.`);
                 if (pool && (!registeredClass || gameObject.constructor === registeredClass))
                     pool.Release(gameObject);
             }
+            else
+            {
+                // NOT GOING BACK TO A POOL: FREE WHAT IT HOLDS ON THE GPU, LIKE A TEXT TEXTURE
+                gameObject.ReleaseResources();
+            }
         }
         else
         {

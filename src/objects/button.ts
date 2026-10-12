@@ -80,6 +80,10 @@ export class Button extends GameObject
         scene?.hitbox.AssignButton(this, options);
     }
 
+    override ReleaseResources(): void
+    {
+        this.textTexture.release();
+    }
     SetText(text: string): this
     {
         if (this.textTexture.text === text)

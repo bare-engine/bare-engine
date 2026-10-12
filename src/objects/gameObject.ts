@@ -621,6 +621,12 @@ export class GameObject
         // FOR OVERRIDE
     }
 
+    // CALLED WHEN A REMOVED OBJECT DOESN'T GO BACK TO A POOL: FREE GPU RESOURCES IT OWNS, LIKE A TEXT TEXTURE.
+    // IT CAN STILL BE ADDED AGAIN, SO RECREATE THEM IN Added()
+    ReleaseResources()
+    {
+    }
+
     OnResize()
     {
         // FOR OVERRIDE

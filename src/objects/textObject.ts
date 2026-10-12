@@ -75,6 +75,23 @@ export class TextObject extends GameObject
         this.SetNameBasedOnText(options.text || "");
     }
 
+    override Added(): void
+    {
+        // ADDED AGAIN AFTER ReleaseResources - BRING THE TEXT TEXTURE BACK
+        if (this.textTexture.released)
+        {
+            this.UpdateText();
+            this.SetTexture(this.textTexture);
+        }
+
+        super.Added();
+    }
+
+    override ReleaseResources(): void
+    {
+        this.textTexture.release();
+    }
+
     override OnStart(): void
     {
         if (this.HasOwnName())
