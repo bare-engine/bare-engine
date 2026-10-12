@@ -1004,10 +1004,10 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         // don't move or resize the hitbox. This matches hitboxController.GetRect exactly,
         // so collisions align with the debug rect, and stays a true AABB even when the
         // object is rotated (rotation-expanded box).
-        const topLeft     = obj.ContentToGlobal(new Vec2(rect.x, rect.y));
-        const topRight    = obj.ContentToGlobal(new Vec2(rect.x + rect.width, rect.y));
-        const bottomRight = obj.ContentToGlobal(new Vec2(rect.x + rect.width, rect.y + rect.height));
-        const bottomLeft  = obj.ContentToGlobal(new Vec2(rect.x, rect.y + rect.height));
+        const topLeft     = obj.ContentToGlobal(new Vec2(rect.x, rect.y), false);
+        const topRight    = obj.ContentToGlobal(new Vec2(rect.x + rect.width, rect.y), false);
+        const bottomRight = obj.ContentToGlobal(new Vec2(rect.x + rect.width, rect.y + rect.height), false);
+        const bottomLeft  = obj.ContentToGlobal(new Vec2(rect.x, rect.y + rect.height), false);
 
         const minX = Math.min(topLeft.x, topRight.x, bottomRight.x, bottomLeft.x);
         const minY = Math.min(topLeft.y, topRight.y, bottomRight.y, bottomLeft.y);
@@ -1069,8 +1069,8 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         );
         const localEdge = new Vec2(localCenter.x + radius, localCenter.y);
 
-        const center = obj.ContentToGlobal(localCenter);
-        const edge = obj.ContentToGlobal(localEdge);
+        const center = obj.ContentToGlobal(localCenter, false);
+        const edge = obj.ContentToGlobal(localEdge, false);
 
         return {
             x: center.x,
