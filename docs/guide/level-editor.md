@@ -8,7 +8,7 @@ Saving from the editor differs from calling `bare.level.Save()` during gameplay;
 
 ## Opening the editor
 
-When a scene has a level loaded, a **Level Editor** button appears at the top of the screen. If the [browser extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) ([Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)) is connected, the button is hidden and you open the editor from the extension instead.
+When a scene has a level loaded, a **Level Editor** button appears at the top of the screen. If the [Chrome extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) ([Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)) is connected, the button is hidden and you open the editor from the extension instead.
 
 You can change this with the `showEditorButton` and `editorButtonPosition` options of [`StartBare`](../reference/configuration).
 

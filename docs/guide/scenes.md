@@ -47,7 +47,7 @@ Override these methods on your scene. All are optional. Mark each one `override`
 
 ## Managers
 
-In Unity you'd often make an empty GameObject with a single manager script on it. In Bare, a manager is just a class that your scene holds. Mark it with `@InspectorClass` and its inspector fields and buttons show up in the [browser extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) ([Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)), grouped under the scene:
+In Unity you'd often make an empty GameObject with a single manager script on it. In Bare, a manager is just a class that your scene holds. Mark it with `@InspectorClass` and its inspector fields and buttons show up in the [Chrome extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) ([Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)), grouped under the scene:
 
 ```ts
 import { InspectorButton, InspectorClass, InspectorField, Scene } from 'bare-engine';

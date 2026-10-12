@@ -1,6 +1,6 @@
 # Browser Extension
 
-The Bare Engine [browser extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) ([Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)) lets you inspect and edit your game while it runs, and edits `settingsData.json` for you.
+The Bare Engine [Chrome extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) ([Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)) lets you inspect and edit your game while it runs, and edits `settingsData.json` for you.
 
 ## Setup
 

@@ -22,7 +22,7 @@ hero:
 - Fast loading time ([Benchmark](https://github.com/bare-engine/bare-benchmarks))
 - Easy asset streaming
 - In-game level editor
-- Live object inspection/editing with the [Browser Extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) ([Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/))
+- Live object inspection/editing with the [Chrome Extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) ([Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/))
 - Prefabs
 - Components
 - Save/load levels
