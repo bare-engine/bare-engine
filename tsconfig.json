@@ -18,5 +18,5 @@
     "noEmit": true
   },
   "include": ["src", "features/fixtures/src"],
-  "exclude": ["node_modules", "**/*.spec.ts", "src/libraries/rapid-render"]
+  "exclude": ["node_modules", "**/*.spec.ts"]
 }
