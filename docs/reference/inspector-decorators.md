@@ -1,6 +1,6 @@
 # Inspector Decorators
 
-Decorators mark fields and methods for the [Chrome extension](../guide/chrome-extension) and for saving. Use them in [components](../guide/components) and [custom GameObjects](../guide/custom-game-objects).
+Decorators mark fields and methods for the browser extension ([Chrome](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) / [Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)) and for saving. Use them in [components](../guide/components) and [custom GameObjects](../guide/custom-game-objects).
 
 ```ts
 import { Component, Inspector, InspectorButton, SerializeField } from 'bare-engine';

@@ -32,7 +32,7 @@ A level is a JSON file in `public/data/levels/`. It holds layers of [entities](.
 }
 ```
 
-You build levels with the in-game [level editor](./level-editor) rather than by hand. To create a new level, click the **+** button under the **Levels** tab of the [Chrome extension](./chrome-extension).
+You build levels with the in-game [level editor](./level-editor) rather than by hand. To create a new level, click the **+** button under the **Levels** tab of the browser extension ([Chrome](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) / [Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)).
 
 **Example:** the [Platformer](https://github.com/bare-engine/bare-platformer)'s [`level.json`](https://github.com/bare-engine/bare-platformer/blob/main/public/data/levels/level.json).
 
@@ -46,7 +46,7 @@ Give a level your own values with `customData` at the top of its file, like a pa
 const par = bare.level.currentLevel?.customData?.par;
 ```
 
-You can also edit it in the [Chrome extension](./chrome-extension): it's listed under the scene's level, next to its name and dimensions, and saved with the level.
+You can also edit it in the browser extension ([Chrome](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) / [Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)): it's listed under the scene's level, next to its name and dimensions, and saved with the level.
 
 ### Loading levels
 

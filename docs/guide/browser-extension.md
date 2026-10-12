@@ -1,11 +1,11 @@
-# Chrome Extension
+# Browser Extension
 
-The [Bare Engine Chrome extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) lets you inspect and edit your game while it runs, and edits `settingsData.json` for you.
+The Bare Engine browser extension ([Chrome](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) / [Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)) lets you inspect and edit your game while it runs, and edits `settingsData.json` for you.
 
 ## Setup
 
-1. Install the extension from the Chrome Web Store.
-2. Run your game with `npm run dev` and open it in Chrome.
+1. Install the extension for [Chrome](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) or [Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/).
+2. Run your game with `npm run dev` and open it in that browser.
 3. Press **F12** to open the developer tools and open the **Bare Engine** tab.
 
 ## What you can do

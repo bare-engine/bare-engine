@@ -108,7 +108,7 @@ Only full paths can be replaced. Any other use of `Asset` or `Data`, like `Objec
 
 ## stripDecorators
 
-Inspector decorators like `@InspectorField` are only needed by the editor and the Chrome extension, so production builds remove them. `@SerializeField` and `@Run` are kept, since saving and running need them. Set to `false` to keep them all.
+Inspector decorators like `@InspectorField` are only needed by the editor and the browser extension, so production builds remove them. `@SerializeField` and `@Run` are kept, since saving and running need them. Set to `false` to keep them all.
 
 ```json
 "stripDecorators": false

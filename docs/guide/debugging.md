@@ -2,7 +2,7 @@
 
 ## Debug drawing
 
-Press **E** while the game runs, or use **Toggle Debug Visuals** in the [Chrome extension](./chrome-extension), to turn debug drawing on and off. It shows:
+Press **E** while the game runs, or use **Toggle Debug Visuals** in the browser extension ([Chrome](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) / [Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)), to turn debug drawing on and off. It shows:
 
 - each GameObject's pivot
 - physics hitboxes
@@ -26,7 +26,7 @@ override OnRender()
 
 ## Selecting objects in the game
 
-During development, **right-click** works like left-click in the [level editor](./level-editor#editing), so you can move objects around to try things out. This works without the [Chrome extension](./chrome-extension); with it, the selected objects also open in the extension, where you can see and edit their properties.
+During development, **right-click** works like left-click in the [level editor](./level-editor#editing), so you can move objects around to try things out. This works without the browser extension ([Chrome](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) / [Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)); with it, the selected objects also open in the extension, where you can see and edit their properties.
 
 | Action | Controls |
 | --- | --- |

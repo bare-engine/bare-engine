@@ -34,7 +34,7 @@ export default defineConfig({
                     { text: "Build Your First Game", link: "/guide/first-game" },
                     { text: "Project Structure", link: "/guide/project-structure" },
                     { text: "Examples", link: "/guide/examples" },
-                    { text: "Chrome Extension", link: "/guide/chrome-extension" },
+                    { text: "Browser Extension", link: "/guide/browser-extension" },
                 ],
             },
             {

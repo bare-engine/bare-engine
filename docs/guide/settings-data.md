@@ -1,6 +1,6 @@
 # settingsData.json
 
-`public/data/settingsData.json` holds your game's data: prefabs, base prefabs, presets, animations, layers, and settings for physics, saving and the level editor. You can edit it by hand, but the [Chrome extension](./chrome-extension) is made for it.
+`public/data/settingsData.json` holds your game's data: prefabs, base prefabs, presets, animations, layers, and settings for physics, saving and the level editor. You can edit it by hand, but the browser extension ([Chrome](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) / [Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)) is made for it.
 
 Pass it to your scene to use it:
 
@@ -107,7 +107,7 @@ When a scene loads its settings, the built-in defaults are merged into a copy of
 
 ## Editing
 
-The [Chrome extension](./chrome-extension) edits prefabs and the level editor's settings while your game runs, and the dev server writes them back to `settingsData.json`.
+The browser extension ([Chrome](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) / [Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)) edits prefabs and the level editor's settings while your game runs, and the dev server writes them back to `settingsData.json`.
 
 ## Generated names
 

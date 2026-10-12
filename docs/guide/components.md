@@ -105,7 +105,7 @@ declare module 'bare-engine'
 
 ## Inspector fields
 
-Fields marked `@SerializeField` can be set from prefabs and levels, are saved with them, and show up in the [Chrome extension](./chrome-extension), where you can edit them live. More decorators control how they're shown:
+Fields marked `@SerializeField` can be set from prefabs and levels, are saved with them, and show up in the browser extension ([Chrome](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) / [Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)), where you can edit them live. More decorators control how they're shown:
 
 ```ts
 import { Component, Inspector, SerializeField } from 'bare-engine';
@@ -171,4 +171,4 @@ Then listen for it anywhere:
 bare.events.on('levelExit', () => bare.level.Load('level2'));
 ```
 
-It needs [physics](../reference/physics). The **Fire** button in the [Chrome extension](./chrome-extension) sends the event by hand.
+It needs [physics](../reference/physics). The **Fire** button in the browser extension ([Chrome](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) / [Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)) sends the event by hand.

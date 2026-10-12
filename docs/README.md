@@ -4,7 +4,7 @@ Source for the Bare Engine documentation site, built with [VitePress](https://vi
 
 ## Local setup
 
-Use Node 24.19.0 to reproduce the documented checks, run `npm install` in the engine root, then `npm run docs:dev`. Open the URL printed by VitePress (normally `http://localhost:5173/bare-engine/`). On PowerShell installations that block `npm.ps1`, use `npm.cmd`.
+Use Node 24.19.0 to reproduce the documented checks, run `npm install` in the engine root, then `npm run docs:dev`. Open the URL printed by VitePress (normally `http://localhost:5173/bare-engine/`). On PowerShell installations that block `npm.ps1`, use `npm.cmd`. To view the production build, run `npm run docs:build`, then `npm run docs:preview`.
 
 ## Checks
 

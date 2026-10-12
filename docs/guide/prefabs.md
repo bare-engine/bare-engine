@@ -21,7 +21,7 @@ A **prefab** is a named data object that describes a GameObject. You define pref
 this.AddGameObject('ball');
 ```
 
-The [Chrome extension](./chrome-extension) lets you view and edit prefabs, so you rarely need to edit the JSON by hand.
+The browser extension ([Chrome](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) / [Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)) lets you view and edit prefabs, so you rarely need to edit the JSON by hand.
 
 **Example:** the [Platformer](https://github.com/bare-engine/bare-platformer)'s [`settingsData.json`](https://github.com/bare-engine/bare-platformer/blob/main/public/data/settingsData.json) defines the player, blocks, coins and flag as prefabs.
 
