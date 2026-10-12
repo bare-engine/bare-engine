@@ -1340,7 +1340,7 @@ Or remove "stripGeneratedAssets": true from "bareEngine" in package.json.`);
         this._hitbox?.Update();
         this.OnPreUpdate(deltaTime); // NOT QUITE PRE-UPDATE HUH, BUT HERE JUST FOR EditorControlsHandler ATM, SO IT DRAGS OBJECTS AT POSITION AND AFTER THEY CAN BE SNAPPED TO OTHER POSITION
         this.object.Update(deltaTime);
-        this._tween?.Update(bare.time);
+        this._tween?.Update(bare.gameTime);
         this._component?.Update(deltaTime);
         this._particle?.Update(deltaTime);
 

@@ -41,7 +41,10 @@ export class BareEngine
     private restartOptions: BareRestartOptions = {};
     
     public lastUpdateTimeRef!: number;
-    public deltaTime!: number;
+    public deltaTime!: number; // SCALED BY timeScale
+    public unscaledDeltaTime: number = 0;
+    public timeScale: number = 1;
+    public gameTime: number = 0;
     public gameSpeed!: number;
 
     public time: number = 0;
@@ -171,6 +174,7 @@ export class BareEngine
     private ApplyOptions(options: BareOptions = {}): void
     {
         this.fixedTimestep = options.fixedTimestep ?? 1 / 60;
+        this.timeScale = 1;
         this.freezeOnUnfocus = options.freezeOnUnfocus ?? true;
         this.multiTouch = options.multiTouch ?? false;
         this.resolution = options.resolution;
@@ -546,10 +550,11 @@ export class BareEngine
         if (!this.freezeOnUnfocus || this.hasFocus)
         {
             const currentTime = performance.now();
-            this.deltaTime = Math.min((currentTime - this.lastUpdateTimeRef) / 1000, this.maxDeltaTime);
+            this.unscaledDeltaTime = Math.min((currentTime - this.lastUpdateTimeRef) / 1000, this.maxDeltaTime);
+            this.deltaTime = this.unscaledDeltaTime * this.timeScale;
             this.lastUpdateTimeRef = currentTime;
             this.time = currentTime;
-            this.gameSpeed = 1 / (this.deltaTime / .0166666);
+            this.gameSpeed = 1 / (this.unscaledDeltaTime / .0166666);
             this.count++;
             //trace("gameSpeed", this.gameSpeed);
 
@@ -558,8 +563,11 @@ export class BareEngine
             // CAPPING ACCUMULATOR - TO PREVENT TOO MANY FIXED UPDATES AFTER LAG
             if (!this.paused)
             {
-                if (this.accumulator > this.fixedTimestep * 5)
-                    this.accumulator = this.fixedTimestep * 5;
+                this.gameTime += this.deltaTime * 1000;
+
+                const maxSteps = 5 * Math.max(1, this.timeScale);
+                if (this.accumulator > this.fixedTimestep * maxSteps)
+                    this.accumulator = this.fixedTimestep * maxSteps;
 
                 while (this.accumulator >= this.fixedTimestep)
                 {

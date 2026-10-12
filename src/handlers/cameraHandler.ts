@@ -320,7 +320,7 @@ export class CameraHandler {
         this.shake = {
             x: Math.max(0, x),
             y: Math.max(0, y),
-            startMs: bare.time,
+            startMs: bare.gameTime,
             durationMs: Math.max(0, seconds * 1000),
             decay,
         };
@@ -340,7 +340,7 @@ export class CameraHandler {
     private UpdateShake(scale: number): void
     {
         const shake = this.shake;
-        const elapsed = shake ? Math.max(0, bare.time - shake.startMs) : 0;
+        const elapsed = shake ? Math.max(0, bare.gameTime - shake.startMs) : 0;
         if (!shake || elapsed >= shake.durationMs)
         {
             this.StopShake();

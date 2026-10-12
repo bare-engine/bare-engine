@@ -1,10 +1,14 @@
 import { BareEvent } from '../types/bareTypes';
 import Easing from "../libraries/tweenJS/Easing";
 import Tween, { TweenWithPromise } from "../libraries/tweenJS/Tween";
+import { setNow } from "../libraries/tweenJS/Now";
 import type { Scene } from "../scenes/scene";
 import { GameObject } from "../objects/gameObject";
 import { RegisterController } from '../globals';
 import { InspectorField } from '../utils/decorators';
+
+// TWEENS RUN ON GAME TIME, SO THEY FOLLOW bare.timeScale AND STAND STILL WHILE THE GAME IS PAUSED
+setNow(() => bare.gameTime);
 
 export class TweenController
 {
@@ -25,7 +29,7 @@ export class TweenController
     {
         bare.events.on(BareEvent.game_objectRemoved, this.GameObjectRemoved.bind(this));
         //bare.events.on(BareEvent.game_focusChange, this.OnFocusChange.bind(this));
-        bare.events.on(BareEvent.game_update, () => this.Update(bare.time));
+        bare.events.on(BareEvent.game_update, () => this.Update(bare.gameTime));
         //bare.events.on(BareEvent.game_clear, () => this.Deactivate());
     }
 
@@ -45,7 +49,10 @@ export class TweenController
         }
     }
 
-    // SWINGS property UP TO amount AWAY FROM 0, THEN WOBBLES IT BACK TO 0. WITH THE DEFAULTS IT STARTS AT amount
+    // THE VALUE EACH PROPERTY RESTS AT WHILE IT'S SHAKING, SO A NEW SHAKE MID-WOBBLE SETTLES WHERE THE FIRST ONE STARTED
+    private shakeRests = new WeakMap<object, Record<string, { value: number }>>();
+
+    // SWINGS property UP TO amount AWAY FROM ITS CURRENT VALUE, THEN WOBBLES IT BACK. WITH THE DEFAULTS IT STARTS AT amount
     // COULD PUT ALL SPRING VALUES IN AN OPTIONS OBJECT - TODO
     Shake(object: any, property: string, duration: number, amount: number = -32, decay: number = 6, frequency: number = 4, phase: number = 0.075, overwrite: boolean = true): TweenWithPromise
     {
@@ -64,7 +71,7 @@ export class TweenController
         const scale = peak * (firstSign || 1);
         const wobble = (t: number) => spring(t) / scale;
 
-        // THE TWEEN GOES FROM amount TO 0, SO value = amount * (1 - ease) = amount * wobble
+        // THE TWEEN GOES FROM rest + amount TO rest, SO value = rest + amount * (1 - ease) = rest + amount * wobble
         var elasticOut = (t: number) => {
             if (t === 0) {
                 return 0;
@@ -75,13 +82,24 @@ export class TweenController
             return 1 - wobble(t);
         };
 
-        object[property] = amount; // THE TWEEN READS ITS START VALUE WHEN IT'S CREATED
+        // REST AT THE CURRENT VALUE (0 FOR innerRotation, 1 FOR A SCALE), OR WHERE A RUNNING SHAKE ON IT RESTS
+        const rests = this.shakeRests.get(object) ?? {};
+        this.shakeRests.set(object, rests);
+        const rest = { value: rests[property]?.value ?? object[property] ?? 0 };
+        rests[property] = rest;
 
-        var props:any = {ease: elasticOut }
-        props[property] = 0;
+        const forget = () => {
+            if (rests[property] === rest)
+                delete rests[property];
+        };
+
+        object[property] = rest.value + amount; // THE TWEEN READS ITS START VALUE WHEN IT'S CREATED
+
+        var props:any = { ease: elasticOut, onComplete: forget, onStop: forget };
+        props[property] = rest.value;
 
         const tween = this.To(object, duration, props, overwrite);
-        object[property] = amount * wobble(0); // UNTIL THE FIRST UPDATE. amount WITH THE DEFAULTS
+        object[property] = rest.value + amount * wobble(0); // UNTIL THE FIRST UPDATE. amount WITH THE DEFAULTS
         return tween;
     }
 
