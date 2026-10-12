@@ -63,7 +63,21 @@ export interface IMaskImageOptions extends IDrawOptions {
 
 export interface ILineOptions extends ILineRenderOptions, IDrawOptions { }
 
-export interface IRectOptions extends IDrawOptions {
+/** A line along the edge of a shape, half inside and half outside it. */
+export interface IOutlineOptions {
+    width: number;
+    /** Default black. */
+    color?: Color;
+}
+
+export interface IShapeOptions {
+    /** Draw a line along the edge. */
+    outline?: IOutlineOptions;
+    /** Fill the shape. Default true; false draws only the outline. */
+    fill?: boolean;
+}
+
+export interface IRectOptions extends IDrawOptions, IShapeOptions {
     width: number;
     height: number;
     color?: Color;
@@ -81,7 +95,7 @@ export interface IRoundedRectOptions extends IRectOptions {
     segments?: number;
 }
 
-export interface ICircleOptions extends IDrawOptions {
+export interface ICircleOptions extends IDrawOptions, IShapeOptions {
     radius: number;
     color?: Color;
     segments?: number;
@@ -124,6 +138,46 @@ const withOptionsTransform = (
         );
         return temporary
     }
+};
+
+// A closed line along points, in the same space as the shape's fill (matrix), so it follows the
+// shape's position, rotation, scale and origin
+const drawOutline = (rapid: Rapid, points: DrawPoint[], outline: IOutlineOptions, shader: DrawShader | undefined, matrix: number | undefined): void => {
+    if (rapid.inCreateMask || outline.width <= 0) {
+        return;
+    }
+
+    const { vertices } = getLineGeometry({ points: points.map(p => new Vec2(p.x, p.y)), closed: true, width: outline.width });
+    const color = rapid.getColorUint32(outline.color ?? Color.Black);
+
+    rapid.startGraphic(rapid.gl.TRIANGLES, undefined, shader, matrix);
+    for (const vertex of vertices) {
+        rapid.addGraphicVertex(vertex.x, vertex.y, 0, 0, color);
+    }
+    rapid.endGraphic();
+};
+
+// The edge of a rounded rectangle, clockwise from the top left like addRoundedRectVertex
+const getRoundedRectPoints = (w: number, h: number, radius: number | [number, number, number, number], segments: number = 8): Vec2[] => {
+    const max = Math.min(w, h) / 2;
+    const radii = (typeof radius == "number" ? [radius, radius, radius, radius] : radius)
+        .map((r) => Math.max(0, Math.min(r, max)));
+    const corners = [
+        { cx: radii[0], cy: radii[0], r: radii[0], start: Math.PI },
+        { cx: w - radii[1], cy: radii[1], r: radii[1], start: Math.PI * 1.5 },
+        { cx: w - radii[2], cy: h - radii[2], r: radii[2], start: 0 },
+        { cx: radii[3], cy: h - radii[3], r: radii[3], start: Math.PI * 0.5 },
+    ];
+    const cornerSegments = Math.max(1, Math.floor(segments));
+    const points: Vec2[] = [];
+    for (const corner of corners) {
+        const steps = corner.r > 0 ? cornerSegments : 0;
+        for (let i = 0; i <= steps; i++) {
+            const angle = corner.start + (Math.PI / 2) * (steps ? i / steps : 0);
+            points.push(new Vec2(corner.cx + Math.cos(angle) * corner.r, corner.cy + Math.sin(angle) * corner.r));
+        }
+    }
+    return points;
 };
 
 export const getColorUint32 = (premultipliedAlpha: boolean, color?: Color): number => {
@@ -283,43 +337,68 @@ export const drawMaskImage = (rapid: Rapid, options: IMaskImageOptions): void =>
 export const drawRect = (rapid: Rapid, options: IRectOptions): void => {
     const matrix = withOptionsTransform(rapid, options, options.width, options.height)
 
-    rapid.startGraphic(
-        rapid.gl.TRIANGLE_FAN,
-        options.texture,
-        options.shader,
-        matrix ?? options.customMatrix,
-    );
-    rapid.addRectVertex(options.width, options.height, options.color);
-    rapid.endGraphic();
+    if (options.fill !== false) {
+        rapid.startGraphic(
+            rapid.gl.TRIANGLE_FAN,
+            options.texture,
+            options.shader,
+            matrix ?? options.customMatrix,
+        );
+        rapid.addRectVertex(options.width, options.height, options.color);
+        rapid.endGraphic();
+    }
+
+    if (options.outline) {
+        const { width: w, height: h } = options;
+        drawOutline(rapid, [{ x: 0, y: 0 }, { x: w, y: 0 }, { x: w, y: h }, { x: 0, y: h }], options.outline, options.shader, matrix ?? options.customMatrix);
+    }
 };
 
 export const drawCircle = (rapid: Rapid, options: ICircleOptions): void => {
     const segments = options.segments ?? 32;
     const matrix = withOptionsTransform(rapid, options, 0, 0);
 
-    rapid.startGraphic(
-        rapid.gl.TRIANGLE_FAN,
-        undefined,
-        options.shader,
-        matrix ?? options.customMatrix,
-    );
+    if (options.fill !== false) {
+        rapid.startGraphic(
+            rapid.gl.TRIANGLE_FAN,
+            undefined,
+            options.shader,
+            matrix ?? options.customMatrix,
+        );
 
-    const unitColor = rapid.getColorUint32(options.color);
-    rapid.addGraphicVertex(0, 0, 0.5, 0.5, unitColor);
-    rapid.addCircleVertex(options.radius, options.color, segments);
-    rapid.addGraphicVertex(options.radius, 0, 1, 0.5, unitColor);
-    rapid.endGraphic();
+        const unitColor = rapid.getColorUint32(options.color);
+        rapid.addGraphicVertex(0, 0, 0.5, 0.5, unitColor);
+        rapid.addCircleVertex(options.radius, options.color, segments);
+        rapid.addGraphicVertex(options.radius, 0, 1, 0.5, unitColor);
+        rapid.endGraphic();
+    }
+
+    if (options.outline) {
+        const points: Vec2[] = [];
+        for (let i = 0; i < segments; i++) {
+            const angle = (i / segments) * Math.PI * 2;
+            points.push(new Vec2(Math.cos(angle) * options.radius, Math.sin(angle) * options.radius));
+        }
+        drawOutline(rapid, points, options.outline, options.shader, matrix ?? options.customMatrix);
+    }
 };
 
 export const drawRoundedRect = (rapid: Rapid, options: IRoundedRectOptions): void => {
     const matrix = withOptionsTransform(rapid, options, options.width, options.height)
 
-    rapid.startGraphic(
-        rapid.gl.TRIANGLE_FAN,
-        options.texture,
-        options.shader,
-        matrix ?? options.customMatrix,
-    );
-    rapid.addRoundedRectVertex(options.width, options.height, options.radius, options.color, options.segments);
-    rapid.endGraphic();
+    if (options.fill !== false) {
+        rapid.startGraphic(
+            rapid.gl.TRIANGLE_FAN,
+            options.texture,
+            options.shader,
+            matrix ?? options.customMatrix,
+        );
+        rapid.addRoundedRectVertex(options.width, options.height, options.radius, options.color, options.segments);
+        rapid.endGraphic();
+    }
+
+    if (options.outline) {
+        drawOutline(rapid, getRoundedRectPoints(options.width, options.height, options.radius, options.segments),
+            options.outline, options.shader, matrix ?? options.customMatrix);
+    }
 };
