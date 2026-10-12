@@ -1,7 +1,7 @@
 # Bare Engine
 
 <p align="left">
-  <img height="113" src="https://github.com/user-attachments/assets/d9aacea3-b461-4ed4-abb5-8cfc0f322823">&nbsp;<img height="113" src="https://github.com/user-attachments/assets/b4b4f2d4-749c-40e8-8f5d-ed0d87bc3531">&nbsp;<img height="113" src="https://github.com/user-attachments/assets/010c9a7d-5720-46be-9dc0-f5808b8b9d7b">&nbsp;<img height="113" src="https://github.com/user-attachments/assets/a9159947-43d4-43ed-ba05-2a341bd1b112">
+  <img width="27.83%" src="https://github.com/user-attachments/assets/d9aacea3-b461-4ed4-abb5-8cfc0f322823">&nbsp;<img width="27.97%" src="https://github.com/user-attachments/assets/b4b4f2d4-749c-40e8-8f5d-ed0d87bc3531">&nbsp;<img width="27.83%" src="https://github.com/user-attachments/assets/010c9a7d-5720-46be-9dc0-f5808b8b9d7b">&nbsp;<img width="13.37%" src="https://github.com/user-attachments/assets/a9159947-43d4-43ed-ba05-2a341bd1b112">
 </p>
 
 Bare is a small, fast game engine for the web, written in TypeScript. Create GameObjects, attach behavior with components, build levels in the in-game editor, and inspect everything live with the browser extension. Production builds leave out every module you don't use, images stream in when they're needed, and Vite hot reload keeps your iteration speed fast.
