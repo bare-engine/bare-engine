@@ -29,7 +29,6 @@ export class TweenController
     {
         bare.events.on(BareEvent.game_objectRemoved, this.GameObjectRemoved.bind(this));
         //bare.events.on(BareEvent.game_focusChange, this.OnFocusChange.bind(this));
-        bare.events.on(BareEvent.game_update, () => this.Update(bare.gameTime));
         //bare.events.on(BareEvent.game_clear, () => this.Deactivate());
     }
 
