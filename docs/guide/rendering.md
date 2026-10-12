@@ -162,6 +162,8 @@ Stretching a panel, a button or an outlined block also stretches its border. A `
 | `borderScale` | `1` | Size of the borders in game units per texture pixel. Use `0.5` for art drawn at twice the size. |
 | `tileX`, `tileY` | `false` | Repeat the middle along that axis instead of stretching it, along with the edges beside it. A whole number of tiles is fitted and each one is stretched slightly, so no tile is cut off. Use it for patterns like bricks or grass. |
 
+In the prefab editor, a magenta line marks each of the four cuts, so you can see where the borders end.
+
 When the object is smaller than its two borders together, the borders shrink so they fit. The object's own size is still the texture size times its scale, so hitboxes and physics bodies match what you see. Children are scaled along with it, so put things that shouldn't stretch, like a label, next to the object rather than inside it.
 
 **Example:** the [Platformer](https://github.com/bare-engine/bare-platformer)'s [grass block](https://github.com/bare-engine/bare-platformer/blob/main/public/data/settingsData.json#L75-L88) tiles its grass and dirt, and the level [stretches it 3 wide](https://github.com/bare-engine/bare-platformer/blob/main/public/data/levels/level.json#L97-L106) for the ground.

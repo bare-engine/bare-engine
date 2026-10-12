@@ -74,3 +74,11 @@ Since `Cover` is the default and loading a level sets the bounds to the level's 
 | `ScreenToWorld(x, y)` / `WorldToScreen(x, y)` | Convert positions. |
 | `StartShake(amount?, seconds?, decay?)` | Shake the camera by `amount` screen pixels. Pass `{ x, y }` for separate amounts, like `StartShake({ x: 0, y: 4 })`. |
 | `StopShake()` | Stop shaking. |
+
+Setters return the camera, so you can chain them:
+
+```ts
+bare.camera
+    .SetZoom(2)
+    .Follow(player, 8);
+```

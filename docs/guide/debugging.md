@@ -112,28 +112,6 @@ plugin?.AddDebugAction('Give 100 coins', () => this.AddCoins(100));
 
 For buttons that belong to one object, use [`@InspectorButton`](../reference/inspector-decorators#buttons) instead. They show up when you select the object.
 
-## Watching values
-
-Fields marked `@InspectorField` and `@SerializeField` update live in the extension. To watch values that aren't on an object, like the number of enemies, put them in a [manager](./scenes#managers) with a getter. Getters update live too:
-
-```ts
-import { InspectorClass, InspectorField, Scene } from 'bare-engine';
-
-class Stats
-{
-    constructor(private scene: Scene) {}
-
-    @InspectorField
-    get enemies(): number { return this.scene.object.GetLayerByName('enemies').length; }
-}
-
-export class Game extends Scene
-{
-    @InspectorClass
-    stats = new Stats(this);
-}
-```
-
 ## Logging
 
 `trace(...)` works like `console.log`, but only logs on the dev server, so you can leave it in. See [Globals](../reference/globals#logging-and-checks).

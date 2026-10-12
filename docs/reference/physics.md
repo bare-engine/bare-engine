@@ -110,6 +110,8 @@ export class CoinComponent extends Component<ArcadeObject>
 
 `OnCollisionUpdate` runs every frame during contact, and `OnCollisionEnd` when it ends.
 
+A [custom](../guide/custom-game-objects) `ArcadeObject` can override the same three methods itself.
+
 **Examples:** [Platformer](https://github.com/bare-engine/bare-platformer) coins [are collected on collision](https://github.com/bare-engine/bare-platformer/blob/main/src/components/collectableComponent.ts#L13-L20), and [Shmup](https://github.com/bare-engine/bare-shmup) ships [take damage from bullets](https://github.com/bare-engine/bare-shmup/blob/main/src/components/aliveComponent.ts#L25-L28).
 
 ### Collision layers
@@ -213,7 +215,7 @@ this.AddGameObject(ball);
 ball.SetPosition(x, y);
 ```
 
-Collisions fire the `collision_start`, `collision_update` and `collision_end` events.
+Collisions fire the `collision_start`, `collision_update` and `collision_end` events. A custom `RigidBody` class can also override `OnCollisionStart`, `OnCollisionUpdate` and `OnCollisionEnd`, like an `ArcadeObject`.
 
 ### Friction and bounce between two bodies
 
