@@ -92,6 +92,8 @@ smoke.position.set(x, y);   // move it around
 
 ## Settings
 
+These work the same in a prefab's `particle` component and in `bare.particle.CreateEmitter`.
+
 | Setting | Description |
 | --- | --- |
 | `texture` | Image name. |

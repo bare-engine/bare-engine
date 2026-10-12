@@ -8,7 +8,7 @@ Simple rectangle and circle collisions, good for platformers and top-down games.
 
 Hitboxes are axis-aligned boxes (AABB) and circles. Rotating an `ArcadeObject` doesn't rotate its hitbox; the box grows to fit around the rotated object. For bodies that rotate, use [realistic physics](#realistic-physics).
 
-Import from `bare-engine/arcade` and register it in your scene:
+Import from `bare-engine/arcade` and register it in your scene. When a prefab or entity has `"baseClass": "ArcadeObject"`, or a class extending it, this happens automatically:
 
 ```ts
 import { ArcadePhysicsController } from 'bare-engine/arcade';
@@ -151,7 +151,7 @@ Now your bullets hit enemies, enemy bullets and enemies hit you, and nothing els
 
 Rigid-body physics with rotation, friction, mass and joints, based on [Sopiro/Physics](https://github.com/Sopiro/Physics). Use it when objects should tumble, stack, swing or roll. It works, but it isn't as well supported as arcade physics yet.
 
-Import it from `bare-engine/sopiro` and register the controller. That also registers all its body and joint classes:
+Import it from `bare-engine/sopiro` and register the controller. That also registers all its body and joint classes. When a prefab or entity has a Sopiro `baseClass`, like `"Box"` or `"Circle"`, this happens automatically:
 
 ```ts
 import { SopiroPhysicsController } from 'bare-engine/sopiro';

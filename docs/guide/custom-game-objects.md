@@ -64,7 +64,7 @@ In a prefab, with `baseClass`:
 }
 ```
 
-`@InspectorBaseClass` registers the class with the engine automatically, so it can be used by name in prefabs and shows up in the [Chrome extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) ([Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)). Without it, register the class yourself with `bare.AddClass(Enemy)`.
+`@InspectorBaseClass` registers the class with the engine automatically, so it can be used by name in prefabs and shows up in the [Chrome extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) ([Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)). A class that's named as a `baseClass` in `settingsData.json`, or in an entity in your code, is registered automatically too, decorator or not. Otherwise, register it yourself with `bare.AddClass(Enemy)`.
 
 Fields marked `@SerializeField` can be set from prefabs, are saved into levels, and can be edited in the extension.
 

@@ -57,7 +57,10 @@ bare.scene.Get(Game).level.Load('level1');
 
 | Property | Description |
 | --- | --- |
-| `bare.deltaTime` | Seconds since the last frame, capped by `maxDeltaTime`. |
+| `bare.deltaTime` | Seconds since the last frame, capped by `maxDeltaTime`, times `bare.timeScale`. |
+| `bare.unscaledDeltaTime` | The same, without `timeScale`. |
+| `bare.timeScale` | Game speed, default `1`. `2` runs the game twice as fast, `0.5` at half speed, `0` freezes it while it keeps rendering. See [Game speed](#game-speed). |
+| `bare.gameTime` | Milliseconds of game time. Follows `timeScale` and stands still while the game is paused. |
 | `bare.count` | Frames rendered so far. |
 | `bare.time` | Milliseconds at the start of the current frame, from `performance.now()`. |
 | `bare.width` / `bare.height` | The game's render size in game units. |
@@ -81,6 +84,21 @@ bare.scene.Get(Game).level.Load('level1');
 | `bare.RegisterGameObjectPool(cls, size?)` | Create an object pool for a GameObject class yourself. |
 | `bare.SetBackgroundColor(color)` | Set the canvas background color. An opaque color also colors the page around the canvas, eg the bars of a fitted resolution. |
 | `bare.SetDebugKey`, `bare.DisableDebugKey`, … | Change the [debug keys](../guide/debugging#changing-keys-while-the-game-runs) while the game runs. Development only. |
+| `bare.DisableRightClick()` | Stop right-click from [selecting objects](../guide/debugging#selecting-objects-in-the-game), for games that use the right mouse button. Development only. |
 | `bare.LoadFont(name, url?)` | Load a font from `public/fonts/`. The first font loaded becomes `bare.defaultFont`. |
 | `bare.SetCursor(css)` | Set the mouse cursor. |
 | `bare.drawRect`, `bare.drawCircle`, `bare.drawLine`, … | Immediate drawing, for use in `OnRender`. |
+
+## Game speed
+
+`bare.timeScale` speeds the whole game up or slows it down, for a fast-forward button or a slow-motion effect:
+
+```ts
+bare.timeScale = 2;     // fast forward
+bare.timeScale = 0.25;  // slow motion
+bare.timeScale = 1;     // normal
+```
+
+It scales `deltaTime` in `OnUpdate`, and runs more or fewer fixed updates per second, so `OnFixedUpdate` and physics keep their step size and stay stable. [Tweens](./tweens), particles, camera shake and `FlashShader` follow it too. `wait()` uses real time and doesn't, see [Globals](./globals#waiting).
+
+`timeScale = 0` also stops tweens, so animate a pause menu with `bare.unscaledDeltaTime`, or pause with `bare.TogglePause()` instead. `bare.Restart()` sets it back to `1`.

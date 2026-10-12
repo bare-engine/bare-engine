@@ -14,6 +14,8 @@ TweenTo(player, 0.5, { x: 300, rotation: 90 });
 await TweenTo(door, 1, { y: 0 }).promise;
 ```
 
+Tweens run on game time, so they follow [`bare.timeScale`](./bare#game-speed) and wait while the game is paused.
+
 ::: warning
 Tweens only run once the scene has started, and a scene starts after its `OnStart` has finished. So don't await a tween inside a scene's `OnStart`: it would wait forever. Start the tween there without awaiting it, or await it later, for example from `OnUpdate` or an event. During development, reading `.promise` before the scene has started logs an error.
 :::
@@ -52,7 +54,7 @@ By default, a new tween on the same object and property replaces the old one. Pa
 | Method | Description |
 | --- | --- |
 | `To(object, seconds, props, overwrite?)` | Start a tween. |
-| `Shake(object, property, duration, …)` | Shake a property and settle back to 0. See [Shake](#shake). |
+| `Shake(object, property, duration, …)` | Shake a property and settle back where it was. See [Shake](#shake). |
 | `SetTimer(seconds, onComplete)` | Call a function after a delay. |
 | `AddChain(...tweens)` | Play tweens one after another. |
 | `GetAllFrom(object)` | All tweens running on an object. |
@@ -64,10 +66,11 @@ By default, a new tween on the same object and property replaces the old one. Pa
 
 ## Shake
 
-`Shake` swings a property up to `amount` away from 0, then springs it back to 0 with a wobble. It suits properties that rest at 0, like `innerRotation` or an `innerPosition` axis. An `innerPosition` is multiplied by the object's `scale`, see [Inner transform](../guide/game-objects#inner-transform):
+`Shake` swings a property up to `amount` away from its current value, then springs it back to that value with a wobble. That works for properties that rest at 0, like `innerRotation` or an `innerPosition` axis, and for ones that don't, like `innerScaleY` at 1. Shaking a property again while it still wobbles settles it where the first shake started, not where it happened to be. An `innerPosition` is multiplied by the object's `scale`, see [Inner transform](../guide/game-objects#inner-transform):
 
 ```ts
 bare.tween.Shake(enemy, 'innerRotation', 0.5, 15);   // a quick wiggle, starting at 15°
+bare.tween.Shake(tower, 'innerScaleY', 0.4, 0.25);   // a squash, from 1.25 back to 1
 ```
 
 The property never goes further from 0 than `amount`, whatever the other settings. With the defaults, the first swing is the biggest, so the property starts at `amount`.

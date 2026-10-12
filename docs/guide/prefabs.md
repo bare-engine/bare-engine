@@ -135,7 +135,7 @@ Prefabs and entities can have these properties. Most can also be a [preset](#pre
 | --- | --- |
 | `name` | The name. Find the object with `bare.object.GetByName()`. |
 | `extends` | The prefab this one inherits from. Defaults to `ANY`. |
-| `baseClass` | GameObject class to create, for example `ArcadeObject`. Mark your own classes `@InspectorBaseClass`, or register them with `bare.AddClass()`. See [Custom GameObjects](./custom-game-objects). `ArcadeObject` is registered by `ArcadePhysicsController`. |
+| `baseClass` | GameObject class to create, for example `ArcadeObject`. Registered automatically when it's named here: your own exported class, `TextObject`, `Button`, and for physics classes like `ArcadeObject` their physics controller. See [Custom GameObjects](./custom-game-objects). |
 | `tags` | A list of strings, to group and find objects. |
 | `customData` | Your own named values, for your game code. |
 
@@ -143,7 +143,7 @@ Prefabs and entities can have these properties. Most can also be a [preset](#pre
 
 | Property | Description |
 | --- | --- |
-| `position`, or `x` and `y` | Position. For children, relative to the parent. Usually set per object, in a level or in code, not in a prefab. |
+| `position`, or `x` and `y` | Position. For children, relative to the parent's pivot. Usually set per object, in a level or in code, not in a prefab. |
 | `scale` | Scale as `{ x, y }`. |
 | `rotation` | Rotation in degrees. |
 | `flipped` | Flip horizontally. |
@@ -273,3 +273,14 @@ this.AddGameObject(Data.Prefab.PLAYER);
 ```
 
 See [Generated names](./settings-data#generated-names) for the rest of `Data`.
+
+## Reading prefab data in code
+
+`scene.settings` holds your scene's processed settings: every prefab with what it inherits through `extends` and presets filled in. Use it to read a prefab's values without creating the object, for example a tower's cost and range for a shop menu:
+
+```ts
+const tower = this.settings.prefabs.find(prefab => prefab.name == Data.Prefab.TOWER_ARROW);
+const { cost, range } = tower.components.tower;
+```
+
+Component values are the plain data from `settingsData.json`, not a component instance. Treat it all as read-only: to change a prefab while the game runs, use the [Chrome extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) ([Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)).

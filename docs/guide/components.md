@@ -139,6 +139,8 @@ Inspector decorators like `@Inspector.Limit` are removed in production builds, s
 | `NineSliceComponent` | Stretches the object's texture but keeps its borders and corners the same size, and can tile the middle. See [Rendering](./rendering#nine-slice). |
 | `CollisionEventComponent` | Sends an event when the object collides with a named object. See [below](#collisioneventcomponent). |
 
+Built-in components are registered automatically when a prefab in `settingsData.json` names them, or when your code names them in a `components` object, like `AddGameObject({ texture: 'grass', components: { tiled: {} } })`. `AddComponent(TiledComponent)` needs no registration, since it passes the class itself. A name the build can't see, like one built while the game runs, needs `bare.AddClass(TiledComponent)`.
+
 ### CollisionEventComponent
 
 Turns a collision into an event, set up entirely in data. Give a trigger prefab the component:

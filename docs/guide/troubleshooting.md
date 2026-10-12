@@ -82,6 +82,10 @@ A value saved into a level keeps being loaded, even after the field is no longer
 
 Two games with the same `gameId` on the same domain share their saves. Give each game its own [`gameId`](../reference/package-json#gameid).
 
+## The game is frozen in a headless browser or automated test
+
+The first frame shows, but nothing moves. The page has no focus, and [`freezeOnUnfocus`](../reference/configuration#startbare-options) pauses the game. See [Testing in a headless browser](./debugging#testing-in-a-headless-browser).
+
 ## Still stuck?
 
 Ask on [Discord](discord:).

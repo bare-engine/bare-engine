@@ -26,7 +26,7 @@ override OnRender()
 
 ## Selecting objects in the game
 
-During development, **right-click** works like left-click in the [level editor](./level-editor#editing), so you can move objects around to try things out. This works without the [Chrome extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) ([Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)); with it, the selected objects also open in the extension, where you can see and edit their properties.
+During development, **right-click** works like left-click in the [level editor](./level-editor#editing), so you can move objects around to try things out. If your game uses the right mouse button itself, turn this off with `bare.DisableRightClick()`, for example in your scene's `OnAwake`. This works without the [Chrome extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) ([Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)); with it, the selected objects also open in the extension, where you can see and edit their properties.
 
 | Action | Controls |
 | --- | --- |
@@ -115,6 +115,23 @@ For buttons that belong to one object, use [`@InspectorButton`](../reference/ins
 ## Logging
 
 `trace(...)` works like `console.log`, but only logs on the dev server, so you can leave it in. See [Globals](../reference/globals#logging-and-checks).
+
+## Testing in a headless browser
+
+Automated tests and screenshots often run the game in a headless browser, through Puppeteer, Playwright or the Chrome DevTools Protocol. A few things differ from a normal browser window:
+
+- **The game freezes without focus.** [`freezeOnUnfocus`](../reference/configuration#startbare-options) is on by default, and a headless page often doesn't count as focused, so the first frame renders and then nothing moves. Turn on focus emulation, for example with the DevTools Protocol command `Emulation.setFocusEmulationEnabled({ enabled: true })`, or start the game with `freezeOnUnfocus: false` while testing, for example behind a URL flag:
+
+  ```ts
+  StartBare(Game, {
+      freezeOnUnfocus: !location.search.includes('test'),
+  });
+  ```
+
+- **Wait in real time.** The game loop runs on `requestAnimationFrame`, which Chrome's `--virtual-time-budget` doesn't drive reliably, so `--screenshot` with a time budget can capture a game that hardly moved. Open the page, wait real seconds, then take the screenshot.
+- **WebGL needs a software renderer** on machines without a GPU. For Chrome and Edge, pass `--use-angle=swiftshader --enable-unsafe-swiftshader`.
+- **Read the game's state with `bare`.** It's a global, so a test can evaluate expressions like `bare.scene.GetAll().map(s => s.constructor.name)`. In a production build, [unused methods are removed](../reference/package-json#stripunusedmethods), so a method your game never calls may not exist there.
+- **Send real input.** Mouse and keyboard events from the testing tool reach the game like a player's. For keys like Escape, include the key code (`windowsVirtualKeyCode: 27` in the DevTools Protocol), or the browser may not fire a `keydown`.
 
 ## More help
 

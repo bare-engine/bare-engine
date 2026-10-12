@@ -16,7 +16,9 @@ player.RemoveShader(OutlineShader);
 player.HasShader(OutlineShader);
 ```
 
-`FlashShader` removes itself when the flash is done. Both accept settings, for example `enemy.AddShader(FlashShader, { duration: 0.5, fadePreDuration: 0.1 })`, in seconds.
+`FlashShader` removes itself when the flash is done. Both accept settings, for example `enemy.AddShader(FlashShader, { duration: 0.5, fadePreDuration: 0.1 })`, in seconds. Every setting is optional; the flash stays white for `fadePreDuration` (default `0.1`) and fades back over `duration` (default `0.3`), in game time, so it follows [`bare.timeScale`](../reference/bare#game-speed) and waits while the game is paused.
+
+An object has one shader of each class: adding a `FlashShader` while one is running replaces it, so flashing on every hit restarts the flash instead of stacking them.
 
 **Examples:** the [Shmup](https://github.com/bare-engine/bare-shmup)'s ships [flash when hit](https://github.com/bare-engine/bare-shmup/blob/main/src/components/aliveComponent.ts#L52), and the [RPG](https://github.com/bare-engine/bare-rpg)'s [weapon flashes](https://github.com/bare-engine/bare-rpg/blob/main/src/objects/weapon.ts#L22) when it slashes.
 
@@ -109,6 +111,13 @@ Which hook you draw in decides whether shapes end up below or above the scene's 
 | Component `OnPreRender`, `OnRender` | Below the objects |
 | Scene `OnRender`, component `OnPostRender` | Above the objects, eg health bars or outlines |
 | Scene `OnPostRender` | Above everything, including what objects draw in their own `OnPostRender` |
+
+`drawRect`, `drawCircle` and `drawRoundedRect` can also draw a line along their edge, half inside and half outside it. Add `fill: false` for only the line:
+
+```ts
+bare.drawCircle({ position: center, radius: range, fill: false, outline: { width: 2, color: Color.White } });
+bare.drawRect({ position, width: 60, height: 60, color: Color.Blue, outline: { width: 4, color: Color.Black } });
+```
 
 There's also `bare.drawRoundedRect`, `bare.drawSprite` (a texture) and `bare.drawGraphic` (any polygon, with per-point colors or a texture). The [Showcase](https://github.com/bare-engine/bare-showcase)'s [graphics demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/graphics/src/DemoGraphics.ts#L27-L127) shows all of them.
 

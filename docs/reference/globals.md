@@ -12,7 +12,7 @@ await waitFrame(3);     // wait three game frames
 
 | Function | Description |
 | --- | --- |
-| `wait(seconds, persistent?)` | Resolves after a number of seconds. |
+| `wait(seconds, persistent?)` | Resolves after a number of seconds of real time, so it ignores [`bare.timeScale`](./bare#game-speed) and keeps counting while the game is paused. |
 | `waitFrame(frames?, persistent?)` | Resolves after a number of game frames (fixed updates), so movement and collisions have run in between. Default 1. |
 | `cancelWaits()` | Cancels every pending wait that isn't persistent. |
 

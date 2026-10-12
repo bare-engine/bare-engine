@@ -31,11 +31,7 @@ score.SetText('Score: 10');
 | `align` | `"left"` | `"left"`, `"center"` or `"right"` for multiple lines. |
 | `lineHeight` | `1` | Line spacing. |
 
-Text objects can also be created from a prefab, with `"baseClass": "TextObject"` and the same fields. Like any `baseClass`, register the class first, for example in your scene's `OnAwake`:
-
-```ts
-bare.AddClass(TextObject);
-```
+Text objects can also be created from a prefab, with `"baseClass": "TextObject"` and the same fields. A `baseClass` named in `settingsData.json` or in your code is registered automatically. Only a name built while the game runs needs `bare.AddClass(TextObject)`.
 
 **Example:** the [Platformer](https://github.com/bare-engine/bare-platformer)'s [coin counter](https://github.com/bare-engine/bare-platformer/blob/main/src/ui.ts#L29-L41).
 
@@ -59,7 +55,9 @@ Put a `.ttf` file in `public/fonts/` and load it. The first font you load become
 await bare.LoadFont('pixel');
 ```
 
-To switch the default to another loaded font, set `bare.defaultFont`.
+To switch the default to another loaded font, set `bare.defaultFont`. `TextObject`, `TextComponent` and `Button` all use it, and fall back to Arial when it isn't set.
+
+A text object that's removed, and doesn't go back to an [object pool](./custom-game-objects#object-pools), frees its text texture on the GPU. Adding it again recreates the texture. To hide text for a moment, set `visible = false` instead.
 
 **Example:** the [Platformer](https://github.com/bare-engine/bare-platformer) [loads its font](https://github.com/bare-engine/bare-platformer/blob/main/src/ui.ts#L17-L20) in the UI scene's `OnAwake`.
 
@@ -84,6 +82,8 @@ this.AddGameObject(play).SetPosition(bare.width / 2, bare.height / 2).CenterPivo
 The height comes from the font size and `margin`, not the letters, so buttons with the same style line up.
 
 Besides `OnPress` there are `OnRelease`, `OnEnter` and `OnLeave`. Any other GameObject can act as a button as well, see [pointer events](../reference/hitbox).
+
+A button is as wide as its text plus `margin` on both sides. Give a row of buttons the same `minWidth`, like `minWidth: 220`, and they line up whatever their text, with the text centered. A text that doesn't fit still makes its button wider.
 
 ## UI scenes
 
