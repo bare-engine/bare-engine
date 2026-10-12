@@ -229,6 +229,13 @@ export class BareEngine
         this.RefreshDebugKeysListener();
     }
 
+    public rightClickSelect: boolean = true;
+
+    public DisableRightClick(): void
+    {
+        this.rightClickSelect = false;
+    }
+
     public DisableAllDebugKeys(): void
     {
         this.debugKeyActions.clear();
