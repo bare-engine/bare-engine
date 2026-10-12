@@ -416,8 +416,8 @@ export class GameObject
                     var ComponentClass = bare.componentClasses[className];
                     if (!ComponentClass)
                     {
-                        console.error('Component class not found: ' + className + '. Add it with bareEngine.AddClass(' + Helper.CapitalizeFirstLetter(component) + 'Component);');
-                        return;
+                        console.error('Component class not found: ' + className + '. Add it with bare.AddClass(' + Helper.CapitalizeFirstLetter(component) + 'Component);');
+                        continue; // STILL ADD THE OTHER COMPONENTS
                     }
                     var componentValues = v[component];
                     var componentInstance = new ComponentClass(o.scene);
@@ -1961,7 +1961,13 @@ export class GameObject
     AddShader<T extends Shader, TArgs extends any[]>(arg: (new (...args: TArgs) => T) | T, ...args: TArgs): T
     {
         var shaderInst = typeof arg === "function" ? new arg(...args) : arg;
-        this.shaders.push(shaderInst);
+
+        // ONE SHADER PER CLASS: A NEW ONE REPLACES THE OLD, SO EG A FLASH ON EVERY HIT RESTARTS INSTEAD OF STACKING
+        const i = this.shaders.findIndex(shader => shader.constructor === shaderInst.constructor);
+        if (i !== -1)
+            this.shaders[i] = shaderInst;
+        else
+            this.shaders.push(shaderInst);
 
         return shaderInst;
     }
