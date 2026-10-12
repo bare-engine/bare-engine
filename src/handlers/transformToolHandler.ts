@@ -276,7 +276,7 @@ export class TransformToolHandler
     // in-game the handles also respond to right click (the plugin's select button), like left click
     private OnRightPointerDown = ({ mouseX, mouseY, event }: BareEventPayload['pointer_down_any']): void =>
     {
-        if (event.button == 2 && !this.GetEditor() && this.PointerHitsCurrentHandle(mouseX, mouseY))
+        if (event.button == 2 && bare.rightClickSelect && !this.GetEditor() && this.PointerHitsCurrentHandle(mouseX, mouseY))
             this.OnPointerDown({ mouseX, mouseY, event });
     };
 
@@ -874,10 +874,10 @@ export class TransformToolHandler
                 // Enclose the inner-transformed sprite corners by projecting them onto the outer
                 // axes - so an inner rotation/scale/flip only widens the bounds, never tilts the box.
                 const corners = [
-                    o.ToGlobal(new Vec2(bounds.x,                bounds.y),                 true),
-                    o.ToGlobal(new Vec2(bounds.x + bounds.width, bounds.y),                 true),
-                    o.ToGlobal(new Vec2(bounds.x + bounds.width, bounds.y + bounds.height), true),
-                    o.ToGlobal(new Vec2(bounds.x,                bounds.y + bounds.height), true),
+                    o.ContentToGlobal(new Vec2(bounds.x,                bounds.y),                 true),
+                    o.ContentToGlobal(new Vec2(bounds.x + bounds.width, bounds.y),                 true),
+                    o.ContentToGlobal(new Vec2(bounds.x + bounds.width, bounds.y + bounds.height), true),
+                    o.ContentToGlobal(new Vec2(bounds.x,                bounds.y + bounds.height), true),
                 ];
 
                 return this.FrameFromWorldCorners(corners, this.GetOuterAxes(o));
@@ -919,9 +919,9 @@ export class TransformToolHandler
     // the outer transform (o.scale / o.rotation).
     private GetOuterAxes(o: GameObject): { ax: number, ay: number, bx: number, by: number }
     {
-        const origin = o.ToGlobal(new Vec2(0, 0), false);
-        const xPt    = o.ToGlobal(new Vec2(1, 0), false);
-        const yPt    = o.ToGlobal(new Vec2(0, 1), false);
+        const origin = o.ContentToGlobal(new Vec2(0, 0), false);
+        const xPt    = o.ContentToGlobal(new Vec2(1, 0), false);
+        const yPt    = o.ContentToGlobal(new Vec2(0, 1), false);
         let ax = xPt.x - origin.x;
         let ay = xPt.y - origin.y;
         const len = Math.hypot(ax, ay) || 1;
@@ -980,10 +980,10 @@ export class TransformToolHandler
             if (bounds && bounds.width > 0 && bounds.height > 0)
             {
                 corners.push(
-                    obj.ToGlobal(new Vec2(bounds.x,                bounds.y),                 true),
-                    obj.ToGlobal(new Vec2(bounds.x + bounds.width, bounds.y),                 true),
-                    obj.ToGlobal(new Vec2(bounds.x + bounds.width, bounds.y + bounds.height), true),
-                    obj.ToGlobal(new Vec2(bounds.x,                bounds.y + bounds.height), true),
+                    obj.ContentToGlobal(new Vec2(bounds.x,                bounds.y),                 true),
+                    obj.ContentToGlobal(new Vec2(bounds.x + bounds.width, bounds.y),                 true),
+                    obj.ContentToGlobal(new Vec2(bounds.x + bounds.width, bounds.y + bounds.height), true),
+                    obj.ContentToGlobal(new Vec2(bounds.x,                bounds.y + bounds.height), true),
                 );
             }
 

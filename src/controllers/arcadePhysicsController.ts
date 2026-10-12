@@ -1004,10 +1004,10 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         // don't move or resize the hitbox. This matches hitboxController.GetRect exactly,
         // so collisions align with the debug rect, and stays a true AABB even when the
         // object is rotated (rotation-expanded box).
-        const topLeft     = obj.ToGlobal(new Vec2(rect.x, rect.y));
-        const topRight    = obj.ToGlobal(new Vec2(rect.x + rect.width, rect.y));
-        const bottomRight = obj.ToGlobal(new Vec2(rect.x + rect.width, rect.y + rect.height));
-        const bottomLeft  = obj.ToGlobal(new Vec2(rect.x, rect.y + rect.height));
+        const topLeft     = obj.ContentToGlobal(new Vec2(rect.x, rect.y));
+        const topRight    = obj.ContentToGlobal(new Vec2(rect.x + rect.width, rect.y));
+        const bottomRight = obj.ContentToGlobal(new Vec2(rect.x + rect.width, rect.y + rect.height));
+        const bottomLeft  = obj.ContentToGlobal(new Vec2(rect.x, rect.y + rect.height));
 
         const minX = Math.min(topLeft.x, topRight.x, bottomRight.x, bottomLeft.x);
         const minY = Math.min(topLeft.y, topRight.y, bottomRight.y, bottomLeft.y);
@@ -1060,7 +1060,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
         // Match hitboxController.GetCircleCenter / GetRadius exactly so physics aligns
         // with the debug circle: the circle offset and pivot are added in texture space,
-        // then transformed to world via ToGlobal. The inner transform is excluded so juice
+        // then transformed to world via ContentToGlobal. The inner transform is excluded so juice
         // tweens don't move or resize the hitbox. The world radius is derived from the
         // transformed center-to-edge distance (handles scale/rotation).
         const localCenter = new Vec2(
@@ -1069,8 +1069,8 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         );
         const localEdge = new Vec2(localCenter.x + radius, localCenter.y);
 
-        const center = obj.ToGlobal(localCenter);
-        const edge = obj.ToGlobal(localEdge);
+        const center = obj.ContentToGlobal(localCenter);
+        const edge = obj.ContentToGlobal(localEdge);
 
         return {
             x: center.x,

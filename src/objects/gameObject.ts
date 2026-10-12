@@ -815,14 +815,8 @@ export class GameObject
     // parent transform. Children inherit the complete content transform by default.
     protected ApplyChildTransform()
     {
-        if (this.childrenInheritInnerTransform)
-        {
-            this.ApplyContentTransform();
-            return;
-        }
-
         const stack = rapid.matrixStack;
-        this.ComposeOuterMatrix(stack.matrix, stack.curWorldM, -1);
+        this.ComposeChildSpaceMatrix(stack.matrix, stack.curWorldM, -1);
     }
 
     protected ApplyContentTransform()
@@ -880,13 +874,21 @@ export class GameObject
         composeStage(store, out, parent, this.transform, this.pivot, null, this.transform.flipped);
     }
 
-    /** The space this object's children live in: content space, unless they ignore the inner transform. */
+    /**
+     * The space this object's children live in: content space, unless they ignore the inner transform,
+     * moved to the pivot. Like Pixi's anchor, a child at (0, 0) sits on its parent's pivot point,
+     * whatever the parent's pivot is.
+     */
     private ComposeChildSpaceMatrix(store: MatrixStore, out: number, parent: number): void
     {
         if (this.childrenInheritInnerTransform)
             this.ComposeContentMatrix(store, out, parent);
         else
             this.ComposeOuterMatrix(store, out, parent);
+
+        const pivot = this.transform.pivot;
+        if (pivot && (pivot.x !== 0 || pivot.y !== 0))
+            store.multiplyAffineInPlace(out, 1, 0, 0, 1, pivot.x, pivot.y);
     }
 
     OnRender(inheritedColor?: Color)
@@ -902,7 +904,7 @@ export class GameObject
         if (bare.debug)
         {
             // OUTER PIVOT / ORIGIN — BLACK CIRCLE (world space so nested children draw correctly)
-            var originWorld = this.ToGlobal(this.pivot);
+            var originWorld = this.ContentToGlobal(this.pivot);
             rapid.matrixStack.save();
             rapid.matrixStack.translate(originWorld.x, originWorld.y);
             rapid.drawCircle({
@@ -914,7 +916,7 @@ export class GameObject
             rapid.matrixStack.restore();
 
             // INNER PIVOT — SLIGHTLY SMALLER WHITE CIRCLE
-            var innerPivotWorld = this.ToGlobal(this.innerPivot, true);
+            var innerPivotWorld = this.ContentToGlobal(this.innerPivot, true);
             rapid.matrixStack.save();
             rapid.matrixStack.translate(innerPivotWorld.x, innerPivotWorld.y);
             rapid.drawCircle({
@@ -1589,9 +1591,9 @@ export class GameObject
         // so scale, rotation and flips are accounted for
         const toPositionSpace = (world: Vec2) => this.parent ? this.parent.ToLocal(world) : world;
 
-        const before = toPositionSpace(this.ToGlobal(new Vec2(), false));
+        const before = toPositionSpace(this.ContentToGlobal(new Vec2(), false));
         this.SetPivot(x, y);
-        const after = toPositionSpace(this.ToGlobal(new Vec2(), false));
+        const after = toPositionSpace(this.ContentToGlobal(new Vec2(), false));
 
         this.SetPosition(this.x + before.x - after.x, this.y + before.y - after.y);
 
@@ -1725,9 +1727,27 @@ export class GameObject
         return out;
     }*/
 
-    // Convert a point from this object's child space to world space by default.
-    // Pass true/false explicitly to include/exclude the inner transform.
-    ToGlobal(localPoint: Vec2 = new Vec2(), includeInnerTransform: boolean = this.childrenInheritInnerTransform): Vec2
+    // Convert a point from this object's child space (where child.SetPosition(x, y) operates,
+    // (0, 0) is the pivot) to world space. The inverse of ToLocal().
+    ToGlobal(localPoint: Vec2 = new Vec2()): Vec2
+    {
+        const m = rapid.matrixStack;
+        m.save();
+        m.identity();
+
+        this.buildAncestorMatrix(m);
+        this.ComposeChildSpaceMatrix(m.matrix, m.curWorldM, -1);
+
+        const {x, y} = m.localToWorld(localPoint.x, localPoint.y);
+
+        m.restore();
+
+        return new Vec2(x, y);
+    }
+
+    // Convert a point in this object's texture space ((0, 0) is the texture's top left, in texture
+    // pixels) to world space, eg a hitbox corner. Pass true/false to include/exclude the inner transform.
+    ContentToGlobal(localPoint: Vec2 = new Vec2(), includeInnerTransform: boolean = this.childrenInheritInnerTransform): Vec2
     {
         const m = rapid.matrixStack;
         m.save();

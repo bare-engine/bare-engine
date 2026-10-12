@@ -232,7 +232,7 @@ export class ArcadeObject extends GameObject
         if (this.physicsHitbox.type === HitboxType.Circle)
         {
             if (this.parent)
-                return this.ToGlobal(new Vec2(this.pivot.x, this.pivot.y));
+                return this.ContentToGlobal(new Vec2(this.pivot.x, this.pivot.y));
 
             return new Vec2(this.x, this.y);
         }
@@ -241,7 +241,7 @@ export class ArcadeObject extends GameObject
         const localCenter = new Vec2(rect.x + rect.width / 2, rect.y + rect.height / 2);
 
         if (this.parent)
-            return this.ToGlobal(localCenter);
+            return this.ContentToGlobal(localCenter);
 
         return new Vec2(
             this.x - this.pivot.x + rect.x + Math.abs(rect.width * this.totalScaleX) / 2,
