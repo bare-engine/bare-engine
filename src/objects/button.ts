@@ -10,6 +10,7 @@ import { GameObject } from "./gameObject";
 interface TextOptions extends ITextOptions, ButtonHandlers<Button> {
     buttonColor?: Color;
     margin?: number;
+    minWidth?: number;
     cornerRadius?: number;
     text: string;
 }
@@ -22,6 +23,7 @@ export interface ButtonEntity extends Entity
     textColor?: Color | string;
     buttonColor?: Color | string;
     margin?: number;
+    minWidth?: number;
     cornerRadius?: number;
 }
 
@@ -53,6 +55,13 @@ export class Button extends GameObject
     get margin(): number {return this._margin;}
     set margin(value: number) {this._margin = value; this.OnSizeChanged();}
 
+    // AT LEAST THIS WIDE, WITH THE TEXT CENTERED - SO A ROW OF BUTTONS LINES UP WHATEVER THEIR TEXT
+    private _minWidth = 0;
+
+    @SerializeField(GameMode.Edit) @Limit(0, Infinity)
+    get minWidth(): number {return this._minWidth;}
+    set minWidth(value: number) {this._minWidth = value; this.OnSizeChanged();}
+
     @SerializeField(GameMode.Edit) @Limit(0, Infinity)
     cornerRadius: number;
 
@@ -68,6 +77,7 @@ export class Button extends GameObject
 
         this.name = options.text;
         this.margin = options?.margin ?? 10;
+        this.minWidth = options?.minWidth ?? 0;
         this.cornerRadius = options?.cornerRadius ?? 0;
         this.buttonColor = options?.buttonColor || Color.fromHex('#000000');
 
@@ -80,10 +90,20 @@ export class Button extends GameObject
         scene?.hitbox.AssignButton(this, options);
     }
 
+    override Added(): void
+    {
+        // ADDED AGAIN AFTER ReleaseResources - BRING THE TEXT TEXTURE BACK
+        if (this.textTexture.released)
+            this.UpdateText();
+
+        super.Added();
+    }
+
     override ReleaseResources(): void
     {
         this.textTexture.release();
     }
+
     SetText(text: string): this
     {
         if (this.textTexture.text === text)
@@ -178,7 +198,8 @@ export class Button extends GameObject
         bare.drawSprite({
             texture: this.textTexture,
             color: inheritedColor,
-            position: new Vec2(this.margin, this.margin - lineTop),
+            // CENTERED: AT THE MARGIN, UNLESS minWidth MAKES THE BUTTON WIDER THAN ITS TEXT
+            position: new Vec2((this.width - this.textTexture.width) / 2, this.margin - lineTop),
         });
     }
 
@@ -202,7 +223,7 @@ export class Button extends GameObject
 
     override get width(): number
     {
-        return this.textTexture.width + this.margin * 2
+        return Math.max(this.minWidth, this.textTexture.width + this.margin * 2);
     }
 
     override get height(): number
