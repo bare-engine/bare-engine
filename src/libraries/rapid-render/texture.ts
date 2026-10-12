@@ -780,9 +780,39 @@ class TextTexture extends Texture {
     }
 
     /**
+     * Whether release() freed the WebGL texture. The next update(), or a text or style change, recreates it.
+     */
+    public get released(): boolean {
+        return !this.base;
+    }
+
+    /**
+     * Frees the WebGL texture and shrinks the canvas, for text that's no longer shown.
+     * The texture draws nothing until update(), or a text or style change, recreates it.
+     */
+    public release(): void {
+        if (!this.base) return;
+
+        this.base.refCount--;
+        this.base.destroy(this.render.gl);
+        this.base = undefined;
+        this.glTexture = null;
+
+        this.canvas.width = 1;
+        this.canvas.height = 1;
+        this.render.texture.removeTexture(this);
+    }
+
+    /**
      * Updates the internal canvas and uploads it to WebGL
      */
     public update(): void {
+        // RECREATE THE WEBGL TEXTURE AFTER release()
+        if (!this.base) {
+            this.setBase(new BaseTexture(createTexture(this.render, this.canvas, this.options), 1, 1));
+            this.render.texture.addTexture(this);
+        }
+
         const ctx = this.ctx;
         const style = this.style;
         const fontSize = style.fontSize!;
