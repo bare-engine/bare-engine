@@ -30,7 +30,25 @@ async function main() {
         await assetpack.watch();
     } else {
         await assetpack.run();
+
+        // THE DEV SERVER KEEPS src/generated/assets.ts UP TO DATE. WITHOUT IT, WRITE IT HERE,
+        // SO NEW IMAGES AND PREFABS TYPE-CHECK (npx tsc) RIGHT AFTER THIS SCRIPT
+        if (!args.includes("--no-generate"))
+            generateAssetsFile();
     }
+}
+
+function generateAssetsFile() {
+    const fs = require("node:fs");
+    const { generateAssets } = require("../vite/plugins.cjs");
+
+    let imageGlobs = [];
+    try {
+        const projectPackage = JSON.parse(fs.readFileSync(path.join(projectRoot, "package.json"), "utf8"));
+        imageGlobs = projectPackage.bareEngine?.imageGlobs ?? [];
+    } catch {}
+
+    generateAssets(projectRoot, path.join(projectRoot, "src/generated/assets.ts"), imageGlobs);
 }
 
 function printHelp() {
@@ -39,6 +57,7 @@ function printHelp() {
 Options:
   -c, --config <path>  Use a custom AssetPack config
   -w, --watch          Watch asset inputs for changes
+      --no-generate    Don't write src/generated/assets.ts afterwards
   -h, --help           Show this help
 `);
 }
