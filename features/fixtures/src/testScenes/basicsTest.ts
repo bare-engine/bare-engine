@@ -21,8 +21,8 @@ export class BasicsTest extends Scene
         parent.innerRotation = 268;
         parent.flipped = true;
 
-        const outerFlippedChildPosition = child.ToGlobal(new Vec2(), false);
-        const outerFlippedTexturePoint = parent.ToGlobal(new Vec2(100, 0), true);
+        const outerFlippedChildPosition = child.ContentToGlobal(new Vec2(), false);
+        const outerFlippedTexturePoint = parent.ContentToGlobal(new Vec2(100, 0), true);
         const epsilon = 0.0001;
 
         assert(
@@ -34,7 +34,7 @@ export class BasicsTest extends Scene
         parent.flipped = false;
         parent.innerFlipped = true;
 
-        const innerFlippedChildPosition = child.ToGlobal(new Vec2(), false);
+        const innerFlippedChildPosition = child.ContentToGlobal(new Vec2(), false);
 
         assert(
             Math.abs(outerFlippedChildPosition.x - innerFlippedChildPosition.x) < epsilon,

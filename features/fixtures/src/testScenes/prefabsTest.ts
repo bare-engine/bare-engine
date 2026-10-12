@@ -105,5 +105,10 @@ export class PrefabsTest extends Scene
             && mergedChildren[1].name === sourceChildren[1].name, "unmodified source children should keep their source order");
         assert(mergedChildren[2] === newChild, "new current children should be appended after source children");
 
+        // scene.settings holds the processed prefabs, with what they inherit through extends filled in
+        const processedApple = this.settings.prefabs.find(prefab => prefab.name == "apple")!;
+        assert(processedApple.scale?.x === 2 && processedApple.scale?.y === 2, "a processed prefab should have its inherited scale: " + JSON.stringify(processedApple.scale));
+        assert(processedApple.rotation === undefined, "a processed prefab should leave out propertiesRemoved: " + processedApple.rotation);
+
     }
 }

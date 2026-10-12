@@ -79,6 +79,20 @@ export class HierarchyAdvancedTest extends Scene
         c.check(nearVec(notInherited, before.x, before.y), "with childrenInheritInnerTransform off, the inner rotation should not move children: " + show(notInherited));
         c.check(holder.x === 200 && holder.y === 200, "an inner rotation should not move the object itself");
 
+        // like Pixi's anchor, children are placed relative to the parent's pivot, not its texture's top left
+        const anchored = this.AddGameObject("box").SetPosition(300, 300).CenterPivot();
+        anchored.scale.set(40, 20);
+        const onPivot = anchored.AddChild("box");
+        const offset = anchored.AddChild("box").SetPosition(0.25, 0);
+        c.check(nearVec(onPivot.ToGlobal(), 300, 300), "a child at (0, 0) should sit on its parent's pivot: " + show(onPivot.ToGlobal()));
+        c.check(nearVec(offset.ToGlobal(), 310, 300), "a child's position should be scaled from its parent's pivot: " + show(offset.ToGlobal()));
+        c.check(nearVec(anchored.ContentToGlobal(new Vec2(0, 0)), 280, 290), "ContentToGlobal should still use texture space: " + show(anchored.ContentToGlobal(new Vec2(0, 0))));
+        anchored.SetPivot(1, 1);
+        c.check(nearVec(onPivot.ToGlobal(), 300, 300), "changing the parent's pivot should not move a child at (0, 0): " + show(onPivot.ToGlobal()));
+        anchored.CenterPivot().SetRotation(90);
+        c.check(nearVec(offset.ToGlobal(), 300, 310), "a child should rotate around its parent's pivot: " + show(offset.ToGlobal()));
+        c.check(nearVec(anchored.ToLocal(offset.ToGlobal()), 0.25, 0), "ToLocal should give the child's position back: " + show(anchored.ToLocal(offset.ToGlobal())));
+
         // bounds of a rotated, scaled image
         const plank = this.AddGameObject("box").SetPosition(0, 0);
         plank.scale.set(10, 20);

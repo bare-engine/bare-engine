@@ -182,6 +182,44 @@ export class TextObjectTest extends Scene
         bare.tween.FinishAllFrom(interactive);
         c.check(near(interactive.scale.x, 1), "MakeInteractive should reset the scale on leave: " + interactive.scale.x);
 
+        // minWidth: buttons with different texts can be the same width, a longer text still grows past it
+        const narrow = this.AddGameObject(new Button(this, { text: "Go", fontSize: 22, minWidth: 200 })) as Button;
+        const wide = this.AddGameObject(new Button(this, { text: "Go somewhere far", fontSize: 22, minWidth: 200 })) as Button;
+        c.check(narrow.width === 200, "minWidth should make a short button that wide: " + narrow.width);
+        c.check(near(narrow.tapHitbox!.rectangle.width, 200), "a minWidth button should be clickable over its full width: " + narrow.tapHitbox!.rectangle.width);
+        c.check(wide.width === Math.max(200, wide.textTexture.width + 20), "a text longer than minWidth should still grow the button: " + wide.width);
+        narrow.minWidth = 0;
+        c.check(near(narrow.width, narrow.textTexture.width + 20), "setting minWidth to 0 should shrink the button to its text: " + narrow.width);
+
+        // a removed text object that doesn't go back to a pool frees its text texture, adding it again restores it
+        const released = this.Text("Bye");
+        const releasedTexture = released.textTexture;
+        released.Remove();
+        c.check(releasedTexture.released && !releasedTexture.glTexture, "a removed TextObject should free its text texture");
+        this.AddGameObject(released);
+        c.check(!released.textTexture.released && released.texture === released.textTexture && released.width > 0,
+            "a TextObject added again should get its text texture back: " + released.width);
+
+        const releasedButton = this.Button("Bye");
+        releasedButton.Remove();
+        c.check(releasedButton.textTexture.released, "a removed Button should free its text texture");
+        this.AddGameObject(releasedButton);
+        c.check(!releasedButton.textTexture.released && releasedButton.textTexture.width > 0, "a Button added again should get its text texture back");
+
+        // pooled text objects keep their texture, the pool reuses them
+        const pooled = this.AddGameObject(TextObject);
+        const pooledTexture = pooled.textTexture;
+        pooled.Remove();
+        c.check(!pooledTexture.released, "a pooled TextObject should keep its text texture for its next use");
+
+        // buttons use the same default font as text objects
+        const previousFont = bare.defaultFont;
+        bare.defaultFont = "";
+        c.check(new Button(this, "Arial?").textTexture.style.fontFamily === "Arial", "a Button should fall back to Arial without bare.defaultFont");
+        bare.defaultFont = "Georgia";
+        c.check(new Button(this, "Georgia?").textTexture.style.fontFamily === "Georgia", "a Button should use bare.defaultFont");
+        bare.defaultFont = previousFont;
+
         c.flush();
     }
 }
