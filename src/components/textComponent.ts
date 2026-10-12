@@ -1,6 +1,7 @@
 import { Component } from "../controllers/componentController";
 import { GameMode, Scene } from "../globals";
 import { Color, ITextOptions, TextTexture, Vec2 } from "../libraries/rapid-render";
+import type { GameObject } from "../objects/gameObject";
 import { Dropdown, Int, Limit } from "../utils/decorators";
 import { SerializeField } from "../utils/serializeFields";
 import { Run } from "../utils/runModes";
@@ -46,7 +47,28 @@ export class TextComponent extends Component
 
         options.text ??= "Text";
 
+        // SAME FONT AS TextObject: bare.defaultFont, ELSE THE TEXT TEXTURE'S DEFAULT (ARIAL)
+        if (!options.fontFamily && bare.defaultFont)
+            options.fontFamily = bare.defaultFont;
+
         this.textTexture = bare.texture.createTextTexture(options);
+    }
+
+    override Added(go: GameObject): void
+    {
+        // ADDED AGAIN AFTER BEING REMOVED - BRING THE TEXT TEXTURE BACK
+        if (this.textTexture.released)
+            this.UpdateText();
+
+        super.Added(go);
+    }
+
+    override Removed(): void
+    {
+        super.Removed();
+
+        // FREE THE TEXT TEXTURE, IT'S RECREATED IF THIS COMPONENT IS ADDED AGAIN
+        this.textTexture.release();
     }
 
     SetText(text: string): void

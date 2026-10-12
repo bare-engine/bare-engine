@@ -73,7 +73,7 @@ export class Button extends GameObject
 
         this.textTexture = bare.texture.createTextTexture({
             fontSize: 22,
-            fontFamily: bare.defaultFont || bare.defaultEngineFont,
+            ...(bare.defaultFont ? { fontFamily: bare.defaultFont } : {}),
             fill: "#fff",
             ...options,
         });
