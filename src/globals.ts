@@ -39,6 +39,7 @@ declare global
     function assert(condition: unknown, message?: string): void;
 
     function wait(seconds: number, persistent?: boolean): Promise<void>;
+    function waitRealTime(seconds: number, persistent?: boolean): Promise<void>;
     function waitFrame(frames?: number, persistent?: boolean): Promise<void>;
     function cancelWaits(): void;
 }
@@ -56,16 +57,66 @@ window.assert = (condition: unknown, message?: string): void => {
 };
 
 let _waitGen = 0;
-window.wait = (seconds: number, persistent = false): Promise<void> => {
+
+// A CANCELLED WAIT (cancelWaits, EG ON A SCENE CHANGE) NEVER RESOLVES, SO CODE AFTER ITS await DOESN'T
+// RUN ON A SCENE THAT'S GONE. NOTHING HOLDS ON TO IT AFTERWARDS, SO THE SUSPENDED FUNCTION IS GARBAGE COLLECTED
+window.waitRealTime = (seconds: number, persistent = false): Promise<void> => {
     const gen = _waitGen;
     return new Promise(resolve => {
         setTimeout(() => {
-            if (persistent ||_waitGen == gen)
-                resolve(); 
-            // ELSE... WE DON'T RESOLVE AND TIME OUT WILL STAY SUSPENDED UNTIL GC CLEANS IT UP (DOES IT?? TODO)
+            if (persistent || _waitGen == gen)
+                resolve();
         }, seconds * 1000);
     });
 };
+
+type TimeWait = {
+    until: number; // bare.gameTime TO RESOLVE AT
+    generation: number;
+    persistent: boolean;
+    resolve: () => void;
+};
+
+let _timeWaits: TimeWait[] = [];
+
+// GAME TIME: FOLLOWS bare.timeScale, WAITS WHILE THE GAME IS PAUSED OR FROZEN WITHOUT FOCUS
+window.wait = (seconds: number, persistent = false): Promise<void> => {
+    // BEFORE THE GAME LOOP RUNS (OnInit, THE FIRST SCENE'S OnAwake / OnStart) GAME TIME STANDS STILL,
+    // SO A GAME-TIME WAIT WOULD NEVER END - USE REAL TIME THEN
+    if (!window.bare?.loopStarted)
+        return window.waitRealTime(seconds, persistent);
+
+    return new Promise(resolve => {
+        _timeWaits.push({
+            until: bare.gameTime + seconds * 1000,
+            generation: _waitGen,
+            persistent,
+            resolve,
+        });
+    });
+};
+
+// CALLED BY THE GAME LOOP ONCE GAME TIME HAS MOVED ON
+export function AdvanceTimeWaits(gameTime: number): void
+{
+    if (_timeWaits.length == 0)
+        return;
+
+    const pending: TimeWait[] = [];
+
+    for (const timeWait of _timeWaits)
+    {
+        if (!timeWait.persistent && timeWait.generation !== _waitGen)
+            continue;
+
+        if (timeWait.until <= gameTime)
+            timeWait.resolve();
+        else
+            pending.push(timeWait);
+    }
+
+    _timeWaits = pending;
+}
 
 type FrameWait = {
     remaining: number;
@@ -111,6 +162,7 @@ export function AdvanceFrameWaits(): void
 window.cancelWaits = (): void => {
     _waitGen++;
     _frameWaits = _frameWaits.filter(frameWait => frameWait.persistent);
+    _timeWaits = _timeWaits.filter(timeWait => timeWait.persistent);
 };
 
 

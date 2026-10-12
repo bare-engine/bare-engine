@@ -8,7 +8,7 @@ import type { ParticleController } from "./controllers/particleController";
 import { SceneController } from "./controllers/sceneController";
 import type { SopiroPhysicsController } from "./controllers/sopiroPhysicsController";
 import type { TweenController } from "./controllers/tweenController";
-import { AdvanceFrameWaits, GameMode, globalEvents } from "./globals";
+import { AdvanceFrameWaits, AdvanceTimeWaits, GameMode, globalEvents } from "./globals";
 import { assetsHandler } from "./handlers/assetsHandler";
 import type { CameraHandler } from "./handlers/cameraHandler";
 import type { LevelHandler } from "./handlers/levelHandler";
@@ -45,6 +45,7 @@ export class BareEngine
     public unscaledDeltaTime: number = 0;
     public timeScale: number = 1;
     public gameTime: number = 0;
+    public loopStarted: boolean = false; // TRUE ONCE THE GAME LOOP RUNS, AFTER THE FIRST SCENE STARTED
     public gameSpeed!: number;
 
     public time: number = 0;
@@ -345,6 +346,7 @@ export class BareEngine
         document.addEventListener('pointermove', this.PointerMove.bind(this), { passive: false });
 
         this.RunMainLoopBound = this.RunMainLoop.bind(this);
+        this.loopStarted = true;
         requestAnimationFrame(this.RunMainLoopBound);
         this.lastUpdateTimeRef = performance.now();
         
@@ -571,6 +573,7 @@ export class BareEngine
             if (!this.paused)
             {
                 this.gameTime += this.deltaTime * 1000;
+                AdvanceTimeWaits(this.gameTime);
 
                 const maxSteps = 5 * Math.max(1, this.timeScale);
                 if (this.accumulator > this.fixedTimestep * maxSteps)
