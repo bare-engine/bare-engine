@@ -47,7 +47,7 @@ Registered GameObject classes are [pooled](./custom-game-objects#object-pools): 
 
 Persistence belongs to each API separately. A persistent scene does not make its timers, listeners, or GameObjects persistent automatically.
 
-Clearing any scene cancels **all** nonpersistent global `wait` and `waitFrame` calls, even those started by another scene. Cancelled waits stay pending. See [Globals](../reference/globals#waiting).
+Clearing any scene cancels **all** nonpersistent global `wait` and `waitFrame` calls, even those started by another scene. Cancelled waits never resolve. See [Globals](../reference/globals#waiting).
 
 ## Global listeners
 
