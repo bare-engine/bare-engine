@@ -7,6 +7,7 @@
     "dev:fixture": "node scripts/devFixture.cjs",
     "test": "node scripts/runTests.cjs",
     "test:e2e": "npm run test",
+    "test:plugins": "node --test scripts/autoRegisterPlugin.test.cjs",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
