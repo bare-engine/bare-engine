@@ -1,14 +1,13 @@
 import { Shader } from "../types/bareTypes";
 
-// both in seconds
-export type FlashShaderPayload = { duration: number, fadePreDuration: number };
+export type FlashShaderPayload = { duration?: number, fadePreDuration?: number };
 
 export class FlashShader extends Shader
 {
     fadeStartTime: number;
     fadeDuration: number;
 
-    constructor(args: FlashShaderPayload = { duration: 0.3, fadePreDuration: 0.1 })
+    constructor(args: FlashShaderPayload = {})
     {
         const flashVertexShaderSource = `
             void vertex(inout vec4 position, inout vec2 region) {
@@ -29,8 +28,8 @@ export class FlashShader extends Shader
 
         super(flashVertexShaderSource, flashFragmentShaderSource)
         
-        this.fadeStartTime = Date.now() + args.fadePreDuration * 1000;
-        this.fadeDuration = args.duration * 1000;
+        this.fadeStartTime = bare.gameTime + (args.fadePreDuration ?? 0.1) * 1000;
+        this.fadeDuration = (args.duration ?? 0.3) * 1000;
         
         this.SetUniforms({
             uFlashTime: 0.0
@@ -39,9 +38,9 @@ export class FlashShader extends Shader
 
     public override Update(): boolean
     {
-        const currentTime = Date.now();
+        const currentTime = bare.gameTime;
         const elapsed = Math.max(0, currentTime - this.fadeStartTime);
-        const progress = Math.min(elapsed / this.fadeDuration, 1.0);
+        const progress = this.fadeDuration > 0 ? Math.min(elapsed / this.fadeDuration, 1.0) : 1.0;
         
         const easeOut = 1 - Math.pow(1 - progress, 2);
         this.SetUniforms({ uFlashTime: easeOut });
