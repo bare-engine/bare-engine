@@ -107,26 +107,119 @@ function bareTypeScriptTransformPlugin(options = {}) {
     };
 }
 
-const ENGINE_GAMEOBJECT_BASES = new Set([
-    "GameObject",
-    "ArcadeObject",
-    "Button",
-    "TextObject"
-]);
+// The engine's own classes, read from its source so this never goes out of date:
+// - components and GameObject classes: what src/index.ts exports from ./components/ and ./objects/
+// - physics classes: each package entry point (eg "bare-engine/arcade", from package.json "exports")
+//   exports a physics controller, which registers its GameObject classes with bare.AddClass(X).
+//   Naming such a class as a baseClass registers that controller, which also turns physics on.
+const { ENGINE_GAMEOBJECT_BASES, ENGINE_COMPONENT_BASES, ENGINE_BASECLASS_REGISTRATIONS } = readEngineClasses();
 
-const ENGINE_COMPONENT_BASES = new Set([
-    "Component",
-    "AnimationComponent",
-    "CollisionEventComponent",
-    "ParticleComponent",
-    "PivotComponent",
-    "PivotRemoveComponent",
-    "PositionPivotComponent",
-    "ResizableComponent",
-    "ResizableRemoveComponent",
-    "TiledComponent",
-    "NineSliceComponent"
-]);
+function readEngineClasses() {
+    const engineRoot = path.resolve(__dirname, "..");
+    const read = (file) => {
+        try {
+            return fs.readFileSync(path.resolve(engineRoot, file), "utf8");
+        } catch {
+            return "";
+        }
+    };
+    // `export { A, type B, C as D } from "./dir/file"` -> [{ names: ["A", "D"], from: "./dir/file" }]
+    const exportsOf = (source) => [...source.matchAll(/export\s*\{([^}]*)\}\s*from\s*["']([^"']+)["']/g)].map(match => ({
+        names: match[1].split(",")
+            .map(part => part.trim())
+            .filter(part => part && !part.startsWith("type "))
+            .map(part => part.split(/\s+as\s+/).pop().trim()),
+        from: match[2],
+    }));
+
+    const gameObjectBases = new Set();
+    const componentBases = new Set(["Component"]);
+    const baseClassRegistrations = {};
+
+    for (const { names, from } of exportsOf(read("src/index.ts"))) {
+        for (const name of names) {
+            if (from.startsWith("./components/") && name.endsWith("Component")) {
+                componentBases.add(name);
+            }
+            if (from.startsWith("./objects/")) {
+                gameObjectBases.add(name);
+                if (name !== "GameObject") {
+                    baseClassRegistrations[name] = { name, pkg: "bare-engine" };
+                }
+            }
+        }
+    }
+
+    let packageExports = {};
+    try {
+        packageExports = JSON.parse(read("package.json")).exports || {};
+    } catch {}
+    for (const [subpath, target] of Object.entries(packageExports)) {
+        const entry = typeof target === "string" ? target : target && target.default;
+        if (subpath === "." || typeof entry !== "string" || !entry.endsWith(".ts")) continue;
+
+        const entryDir = path.posix.dirname(entry);
+        for (const { names, from } of exportsOf(read(entry))) {
+            const controller = names.find(name => name.endsWith("Controller"));
+            if (!controller) continue;
+
+            const controllerSource = read(path.posix.join(entryDir, from) + ".ts");
+            for (const match of controllerSource.matchAll(/\bbare\.AddClass\(\s*([A-Za-z_$][\w$]*)\s*\)/g)) {
+                gameObjectBases.add(match[1]);
+                baseClassRegistrations[match[1]] = { name: controller, pkg: "bare-engine" + subpath.slice(1) };
+            }
+        }
+    }
+
+    return {
+        ENGINE_GAMEOBJECT_BASES: gameObjectBases,
+        ENGINE_COMPONENT_BASES: componentBases,
+        ENGINE_BASECLASS_REGISTRATIONS: baseClassRegistrations,
+    };
+}
+
+// Class names named as `baseClass: "X"` in source code, eg AddGameObject({ baseClass: "TextObject", ... })
+function findBaseClassReferences(source) {
+    const names = new Set();
+    for (const match of source.matchAll(/\bbaseClass\s*:\s*["'`]([A-Za-z_$][\w$]*)["'`]/g)) {
+        names.add(match[1]);
+    }
+    return names;
+}
+
+// Engine component class names named as keys of a `components: { ... }` object in source code,
+// eg AddGameObject({ texture: "grass", components: { tiled: {} } }) -> TiledComponent. Only the
+// top-level keys of that object count; nested values (the component's fields) are skipped.
+function findEngineComponentReferences(source) {
+    const names = new Set();
+    const start = /\bcomponents\s*:\s*\{/g;
+    let match;
+    while ((match = start.exec(source)) !== null) {
+        let depth = 0;
+        let topLevel = "";
+        for (let i = match.index + match[0].length - 1; i < source.length; i++) {
+            const ch = source[i];
+            if (ch === "{" || ch === "[" || ch === "(") {
+                depth++;
+                if (depth > 1) topLevel += " ";
+                continue;
+            }
+            if (ch === "}" || ch === "]" || ch === ")") {
+                depth--;
+                if (depth === 0) break;
+                continue;
+            }
+            if (depth === 1) topLevel += ch;
+        }
+        for (const key of topLevel.matchAll(/["']?([A-Za-z_$][\w$]*)["']?\s*:/g)) {
+            const className = key[1].charAt(0).toUpperCase() + key[1].slice(1) + "Component";
+            if (className !== "Component" && ENGINE_COMPONENT_BASES.has(className)) {
+                names.add(className);
+            }
+        }
+    }
+    return names;
+}
 
 function bareAutoRegisterClassesPlugin(options = {}) {
     const projectRoot = options.projectRoot || process.cwd();
@@ -146,6 +239,10 @@ function bareAutoRegisterClassesPlugin(options = {}) {
     const classMap = new Map();
     // normalized filePath -> Set<className>
     const fileClasses = new Map();
+    // normalized filePath -> Set<engine component className> named in a `components: { ... }` object
+    const fileEngineComponents = new Map();
+    // normalized filePath -> Set<className> named as `baseClass: "X"`
+    const fileBaseClasses = new Map();
     let serverRef = null;
     let startBareFile = null;
     // The scene class passed to StartBare, and the file that declares it. Registrations are
@@ -192,6 +289,28 @@ function bareAutoRegisterClassesPlugin(options = {}) {
         const nextNames = new Set();
 
         let changed = false;
+
+        const prevComponents = fileEngineComponents.get(filePath) || new Set();
+        const nextComponents = findEngineComponentReferences(source);
+        if (nextComponents.size !== prevComponents.size || [...nextComponents].some(name => !prevComponents.has(name))) {
+            changed = true;
+        }
+        if (nextComponents.size === 0) {
+            fileEngineComponents.delete(filePath);
+        } else {
+            fileEngineComponents.set(filePath, nextComponents);
+        }
+
+        const prevBaseClasses = fileBaseClasses.get(filePath) || new Set();
+        const nextBaseClasses = findBaseClassReferences(source);
+        if (nextBaseClasses.size !== prevBaseClasses.size || [...nextBaseClasses].some(name => !prevBaseClasses.has(name))) {
+            changed = true;
+        }
+        if (nextBaseClasses.size === 0) {
+            fileBaseClasses.delete(filePath);
+        } else {
+            fileBaseClasses.set(filePath, nextBaseClasses);
+        }
         for (const cls of found) {
             nextNames.add(cls.name);
             const prev = classMap.get(cls.name);
@@ -221,8 +340,9 @@ function bareAutoRegisterClassesPlugin(options = {}) {
 
     function unscanFile(filePath) {
         filePath = normalize(filePath);
+        const hadReferences = fileEngineComponents.delete(filePath) | fileBaseClasses.delete(filePath);
         const names = fileClasses.get(filePath);
-        if (!names) return false;
+        if (!names) return !!hadReferences;
         for (const name of names) {
             const existing = classMap.get(name);
             if (existing && existing.filePath === filePath) {
@@ -257,40 +377,58 @@ function bareAutoRegisterClassesPlugin(options = {}) {
         return null;
     }
 
-    // Collect component class names referenced by the project's settingsData.json.
-    // Each entity may declare a `components` map whose keys are component names
-    // (e.g. "shoot"), which the engine resolves to `<Capitalized>Component`
-    // (e.g. "ShootComponent") at runtime.
-    function getSettingsComponentClassNames() {
-        const names = new Set();
-        let raw;
-        try {
-            raw = fs.readFileSync(settingsDataPath, "utf8");
-        } catch {
-            return names;
-        }
+    // Collect what the project's settingsData.json references: component class names and baseClasses.
+    // Each entity may declare a `components` map whose keys are component names (e.g. "shoot"),
+    // which the engine resolves to `<Capitalized>Component` (e.g. "ShootComponent") at runtime,
+    // and a `baseClass` (e.g. "TextObject"). Children are entities too, so they're walked as well.
+    function getSettingsReferences() {
+        const components = new Set();
+        const baseClasses = new Set();
         let data;
         try {
-            data = JSON.parse(raw);
+            data = JSON.parse(fs.readFileSync(settingsDataPath, "utf8"));
         } catch {
-            return names;
+            return { components, baseClasses };
         }
-        for (const group of [data.prefabs, data.basePrefabs]) {
-            if (!group || typeof group !== "object") continue;
-            const entities = Array.isArray(group) ? group : Object.values(group);
-            for (const entity of entities) {
-                const components = entity && entity.components;
-                if (!components || typeof components !== "object") continue;
-                for (const componentKey in components) {
-                    names.add(componentKey.charAt(0).toUpperCase() + componentKey.slice(1) + "Component");
+
+        const visit = (entity) => {
+            if (!entity || typeof entity !== "object") return;
+            if (typeof entity.baseClass === "string") {
+                baseClasses.add(entity.baseClass);
+            }
+            if (entity.components && typeof entity.components === "object") {
+                for (const componentKey in entity.components) {
+                    components.add(componentKey.charAt(0).toUpperCase() + componentKey.slice(1) + "Component");
                 }
             }
+            if (Array.isArray(entity.children)) {
+                entity.children.forEach(visit);
+            }
+        };
+
+        for (const group of [data.prefabs, data.basePrefabs]) {
+            if (!group || typeof group !== "object") continue;
+            (Array.isArray(group) ? group : Object.values(group)).forEach(visit);
         }
-        return names;
+        return { components, baseClasses };
     }
 
     function computeSettingsComponentSignature() {
-        return [...getSettingsComponentClassNames()].sort().join(",");
+        const { components, baseClasses } = getSettingsReferences();
+        return [...components].sort().join(",") + "|" + [...baseClasses].sort().join(",");
+    }
+
+    // The engine class a project class ends up extending, eg "ArcadeObject" for `class Player extends Hero`
+    function resolveEngineBase(name) {
+        const visited = new Set();
+        let current = name;
+        while (current && !visited.has(current)) {
+            visited.add(current);
+            const info = classMap.get(current);
+            if (!info) return current;
+            current = info.base;
+        }
+        return null;
     }
 
     function getRegisteredClasses() {
@@ -309,7 +447,8 @@ function bareAutoRegisterClassesPlugin(options = {}) {
         // didn't already pick up. A project component must exist and be exported so
         // we can import it by path; an engine component (e.g. ParticleComponent) is
         // imported from the "bare-engine" package instead.
-        for (const className of getSettingsComponentClassNames()) {
+        const settingsReferences = getSettingsReferences();
+        for (const className of settingsReferences.components) {
             if (seen.has(className)) continue;
             const info = classMap.get(className);
             if (info && info.exported) {
@@ -318,6 +457,33 @@ function bareAutoRegisterClassesPlugin(options = {}) {
             } else if (ENGINE_COMPONENT_BASES.has(className)) {
                 out.push({ name: className, pkg: "bare-engine", kind: "component" });
                 seen.add(className);
+            }
+        }
+        // Engine components that code names in an entity, eg AddGameObject({ components: { tiled: {} } })
+        for (const classNames of fileEngineComponents.values()) {
+            for (const className of classNames) {
+                if (seen.has(className)) continue;
+                out.push({ name: className, pkg: "bare-engine", kind: "component" });
+                seen.add(className);
+            }
+        }
+        // Classes named as a baseClass in settingsData.json or in code. A project GameObject class
+        // registers without @InspectorBaseClass then; an engine class registers what it needs,
+        // eg ArcadeObject its physics controller - also for a project class extending it.
+        const baseClasses = new Set(settingsReferences.baseClasses);
+        for (const names of fileBaseClasses.values()) {
+            for (const name of names) baseClasses.add(name);
+        }
+        for (const baseClass of baseClasses) {
+            const info = classMap.get(baseClass);
+            if (info && info.exported && resolveKind(baseClass) === "gameobject" && !seen.has(baseClass)) {
+                out.push({ name: baseClass, filePath: info.filePath, kind: "gameobject" });
+                seen.add(baseClass);
+            }
+            const engine = ENGINE_BASECLASS_REGISTRATIONS[resolveEngineBase(baseClass)];
+            if (engine && !seen.has(engine.name)) {
+                out.push({ name: engine.name, pkg: engine.pkg, kind: "class" });
+                seen.add(engine.name);
             }
         }
         out.sort((a, b) => a.name.localeCompare(b.name));
@@ -1088,7 +1254,8 @@ function bundleIncludesEditorScene(bundle) {
 function bareTexturePackImagesPlugin(options = {}) {
     const projectRoot = options.projectRoot || process.cwd();
     const watchDir = options.watchDir || path.join(projectRoot, "texturePackImages");
-    const buildCommand = options.buildCommand || [process.execPath, path.resolve(__dirname, "../scripts/buildAssets.cjs")];
+    // --no-generate: THE bare:generated-assets PLUGIN WRITES assets.ts ITSELF ONCE THE ATLAS IS DONE
+    const buildCommand = options.buildCommand || [process.execPath, path.resolve(__dirname, "../scripts/buildAssets.cjs"), "--no-generate"];
     const debounceMs = options.debounceMs ?? 200;
     const runOnStart = options.runOnStart ?? false;
     const outputDir = options.outputDir || path.join(projectRoot, "public/initial/generated");
@@ -2829,6 +2996,7 @@ Bare.data.layers = Object.values(Data.Layer);
 }
 
 module.exports = {
+    generateAssets,
     bareAutoRegisterClassesPlugin,
     bareEditorAndApiPlugin,
     bareGeneratedAssetsPlugin,
