@@ -612,7 +612,7 @@ export class BareEngine
                     if (steps > 0)
                         this.fixedStepsBehind = fixedTime / steps > this.fixedTimestep * 1000;
 
-                    const updateStart = performance.now();
+                    const updateStart = __DEV__ ? performance.now() : 0;
                     updating = true;
                     this.Update(this.deltaTime);
                     updating = false;
@@ -621,7 +621,7 @@ export class BareEngine
                         this.perfOverlay.EndUpdate(fixedTime, steps, performance.now() - updateStart);
                 }
 
-                const renderStart = performance.now();
+                const renderStart = __DEV__ ? performance.now() : 0;
                 this.Render();
 
                 if (__DEV__ && this.perfOverlay)
