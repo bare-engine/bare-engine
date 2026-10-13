@@ -1,12 +1,15 @@
 import type { Scene } from "../scenes/scene";
 import { GameObject } from "../objects/gameObject";
-import { BareEvent, BareEventPayload, Size, SaveData } from '../types/bareTypes';
+import { BareEvent, BareEventPayload, Rectangle, Size, SaveData } from '../types/bareTypes';
 
 export class PhysicsControllerBase
 {
     public collisionsEnabled: boolean = true;
 
     public scene: Scene;
+
+    // TRUE AFTER SetBounds: THE BOUNDS STAY WHEN THE SCREEN RESIZES, UNTIL A LEVEL LOADS
+    private boundsSetByGame: boolean = false;
 
     constructor(scene: Scene)
     {
@@ -24,7 +27,7 @@ export class PhysicsControllerBase
         // A LAZILY CREATED CONTROLLER MAY HAVE MISSED THE level_loaded EVENT - CATCH UP ON THE
         // CURRENT LEVEL'S DIMENSIONS (BACKING _level READ, DON'T CREATE A LEVEL HANDLER FOR THIS)
         var currentLevel = this.scene.Get("_level")?.currentLevel;
-        if (currentLevel?.dimensions)
+        if (currentLevel?.dimensions && !this.boundsSetByGame)
             this.setDimensions(0, 0, currentLevel.dimensions.width, currentLevel.dimensions.height);
     }
 
@@ -46,8 +49,17 @@ export class PhysicsControllerBase
 
     OnResize({ newWidth, newHeight }: BareEventPayload['game_resize']): void
     {
-        if (SaveData.currentLevelStr == '') /// ONLY SET BOUNDS TO SCREEN IF THERE IS NO LEVEL
+        // WITHOUT A LEVEL OR BOUNDS OF ITS OWN, THE WORLD IS THE SCREEN
+        if (SaveData.currentLevelStr == '' && !this.boundsSetByGame)
             this.setDimensions(0, 0, newWidth, newHeight);
+    }
+
+    // THE AREA OBJECTS WITH stayInBounds ARE KEPT IN. A LEVEL SETS IT TO ITS SIZE, WITHOUT ONE IT'S THE SCREEN.
+    // BOUNDS SET HERE STAY WHEN THE SCREEN RESIZES, UNTIL THE NEXT LEVEL LOADS
+    SetBounds(bounds: Rectangle): void
+    {
+        this.boundsSetByGame = true;
+        this.setDimensions(bounds.x, bounds.y, bounds.width, bounds.height);
     }
 
     OnGameObjectAdded({ gameObject, layer }: BareEventPayload['game_objectAdded']): void
@@ -70,6 +82,7 @@ export class PhysicsControllerBase
 
     OnLevelLoaded({ level }: BareEventPayload['level_loaded']): void
     {
+        this.boundsSetByGame = false;
         var dims:Size = level.dimensions;
         this.setDimensions(0, 0, dims.width, dims.height);
     }

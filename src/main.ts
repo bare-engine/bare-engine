@@ -32,6 +32,7 @@ function GetBareOptions(options?: BareOptions): BareOptions
             {r: () => bare.Restart()},
             {l: () => bare.scene.GetLevelScene()?.level.Restart()},
             {c: () => {bare.Restart({clearSaveData: true});}},
+            {f2: () => bare.TogglePerfOverlay()},
         ] : undefined,
     }, ...options };
 }

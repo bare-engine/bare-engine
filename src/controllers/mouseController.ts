@@ -58,6 +58,12 @@ export class MouseController
 
     delayFactor: number = .3;
 
+    // SCROLLED SINCE THE LAST FRAME, IN PIXELS. POSITIVE wheelDelta IS SCROLLING DOWN (AWAY FROM YOU)
+    wheelDelta: number = 0;
+    wheelDeltaX: number = 0;
+    private wheelSumY: number = 0;
+    private wheelSumX: number = 0;
+
     static lastMouseX: number = -10000;
     static lastMouseY: number = -10000;
 
@@ -77,6 +83,13 @@ export class MouseController
         bare.events.persistent.on(BareEvent.pointer_move, this.PointerMove.bind(this));
         bare.events.persistent.on(BareEvent.pointer_up, this.PointerUp.bind(this));
         bare.events.persistent.on(BareEvent.pointer_up_any, this.PointerUpAny.bind(this));
+        bare.events.persistent.on(BareEvent.pointer_wheel, ({ deltaX, deltaY }) => {
+            // a paused scene would get it all at once when it continues
+            if (this.scene.paused)
+                return;
+            this.wheelSumX += deltaX;
+            this.wheelSumY += deltaY;
+        });
     }
 
     Start()
@@ -232,6 +245,11 @@ export class MouseController
         // BEFORE THE EARLY RETURNS, SO A RELEASE ALSO COUNTS ON MOBILE, WHERE THE REST IS SKIPPED WHILE NOTHING IS DOWN
         this.mouseFramesDown++;
         this.mouseFramesUp++;
+
+        this.wheelDelta = this.wheelSumY;
+        this.wheelDeltaX = this.wheelSumX;
+        this.wheelSumY = 0;
+        this.wheelSumX = 0;
 
         if (!this.hasPosition)
             return;

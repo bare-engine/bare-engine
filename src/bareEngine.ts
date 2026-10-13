@@ -2,6 +2,7 @@ import type { ArcadePhysicsController } from "./controllers/arcadePhysicsControl
 import type { ComponentController } from "./controllers/componentController";
 import type { HitboxController } from "./controllers/hitboxController";
 import { KeyboardController } from "./controllers/keyboardController";
+import { PerfOverlay } from "./handlers/perfOverlay";
 import type { MouseController } from "./controllers/mouseController";
 import type { ObjectController } from "./controllers/objectController";
 import type { ParticleController } from "./controllers/particleController";
@@ -63,6 +64,7 @@ export class BareEngine
     public maxDeltaTime: number = 1 / 15; // CAPS FRAME DELTA, USEFUL AFTER LAG OR TAB REFOCUS
     private accumulator: number = 0;
     public fixedStepsBehind: boolean = false;
+    private perfOverlay: PerfOverlay | null = null;
 
     private debugKeyActions = new Map<string, () => void>();
     public resolutionScale: number = 1;
@@ -345,6 +347,7 @@ export class BareEngine
         document.addEventListener('pointerleave', this.PointerLeave.bind(this), { passive: false });
         document.addEventListener('dblclick', this.DoubleClick.bind(this), { passive: false });
         document.addEventListener('pointermove', this.PointerMove.bind(this), { passive: false });
+        document.addEventListener('wheel', this.Wheel.bind(this), { passive: true });
 
         this.RunMainLoopBound = this.RunMainLoop.bind(this);
         this.loopStarted = true;
@@ -605,15 +608,24 @@ export class BareEngine
                         steps++;
                     }
 
+                    const fixedTime = performance.now() - stepsStart;
                     if (steps > 0)
-                        this.fixedStepsBehind = (performance.now() - stepsStart) / steps > this.fixedTimestep * 1000;
+                        this.fixedStepsBehind = fixedTime / steps > this.fixedTimestep * 1000;
 
+                    const updateStart = performance.now();
                     updating = true;
                     this.Update(this.deltaTime);
                     updating = false;
+
+                    if (__DEV__ && this.perfOverlay)
+                        this.perfOverlay.EndUpdate(fixedTime, steps, performance.now() - updateStart);
                 }
 
+                const renderStart = performance.now();
                 this.Render();
+
+                if (__DEV__ && this.perfOverlay)
+                    this.perfOverlay.EndFrame(performance.now() - renderStart, rapid.drawcallCount);
             }   
         }
         finally
@@ -852,6 +864,31 @@ export class BareEngine
     }
 
     // NEEDS TO BE HERE? TODO
+    // SHOWS OR HIDES A PANEL WITH FRAME TIMINGS (FPS, FIXED / UPDATE / RENDER TIME, DRAW CALLS).
+    // THE F2 DEBUG KEY. DEVELOPMENT ONLY, A NO-OP IN PRODUCTION
+    TogglePerfOverlay(): void
+    {
+        if (!__DEV__)
+            return;
+
+        this.perfOverlay ??= new PerfOverlay();
+        this.perfOverlay.Toggle();
+    }
+
+    // THE LEVEL EDITOR USES THE WHEEL ITSELF, SO THE GAME DOESN'T GET IT WHILE THE EDITOR IS OPEN
+    private Wheel(event: WheelEvent)
+    {
+        if (this.paused || this.levelEditorOpen)
+            return;
+
+        // IN PIXELS: SOME BROWSERS REPORT LINES OR PAGES
+        const unit = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16
+            : event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? this.height
+            : 1;
+
+        bare.SendEvent(BareEvent.pointer_wheel, { deltaX: event.deltaX * unit, deltaY: event.deltaY * unit, event: event });
+    }
+
     MouseIsOnEditor(event: PointerEvent | WheelEvent): boolean
     {
         if (!this.levelEditorOpen)

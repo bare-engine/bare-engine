@@ -164,6 +164,11 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         return {x: this.x, y: this.y, width: this.width, height: this.height};
     }
 
+    // THE CURRENT BOUNDS, SEE SetBounds
+    GetBounds(): Rectangle {
+        return this.getDimensions();
+    }
+
     override setCollisionsEnabled(enabled: boolean): void {
         if (this.collisionsEnabled === enabled)
             return;
