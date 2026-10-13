@@ -190,7 +190,6 @@ export class Button extends GameObject
             height: this.height,
             radius: this.cornerRadius,
             color: buttonColor,
-            position: new Vec2(),
         });
 
         // PLACED BY BASELINE, NOT CENTERED ON THE GLYPHS - A DESCENDER ("Retry") WOULD OTHERWISE SHIFT THE TEXT UP
@@ -198,7 +197,6 @@ export class Button extends GameObject
         bare.drawSprite({
             texture: this.textTexture,
             color: inheritedColor,
-            // CENTERED: AT THE MARGIN, UNLESS minWidth MAKES THE BUTTON WIDER THAN ITS TEXT
             position: new Vec2((this.width - this.textTexture.width) / 2, this.margin - lineTop),
         });
     }

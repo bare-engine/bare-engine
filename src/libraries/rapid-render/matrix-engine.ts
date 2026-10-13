@@ -9,15 +9,15 @@ export interface ITransformOptions {
 
     x?: number;
     y?: number;
-    position?: Vec2;
+    position?: Vec2 | { x: number; y: number };
     /** In degrees. */
     rotation?: number;
-    scale?: Vec2 | number;
+    scale?: Vec2 | { x: number; y: number } | number;
     offsetX?: number;
     offsetY?: number;
-    offset?: Vec2;
+    offset?: Vec2 | { x: number; y: number };
     /** Normalized anchor point (0~1). Number applies uniformly; Vec2 applies per-axis. */
-    origin?: number | Vec2;
+    origin?: number | Vec2 | { x: number; y: number };
 }
 
 const NUM_ELEMENTS = 6;
