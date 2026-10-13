@@ -51,6 +51,7 @@ During development, these keys are available:
 | **R** | Restart the game. |
 | **L** | Restart the level. |
 | **C** | Restart with cleared save data. |
+| **F2** | Show or hide the [performance panel](#performance). |
 
 If a game control uses one of these keys, turn that debug key off with [`bare.DisableDebugKey`](#changing-keys-while-the-game-runs).
 
@@ -111,6 +112,24 @@ plugin?.AddDebugAction('Give 100 coins', () => this.AddCoins(100));
 **Example:** the [RPG](https://github.com/bare-engine/bare-rpg) [adds a **Toggle Map Editor** button](https://github.com/bare-engine/bare-rpg/blob/main/src/handlers/mapHandler.ts#L88-L89).
 
 For buttons that belong to one object, use [`@InspectorButton`](../reference/inspector-decorators#buttons) instead. They show up when you select the object.
+
+## Performance
+
+Press **F2**, or call `bare.TogglePerfOverlay()`, for a panel in the top right with the game's timings, averaged over half a second:
+
+| Line | Meaning |
+| --- | --- |
+| fps, ms (worst) | Frames per second, and the average and slowest time between frames. |
+| fixed | Time spent in fixed updates per frame, physics included, and how many ran. |
+| update | Time spent in `OnUpdate`, tweens and other per-frame updates. |
+| render | Time spent building and sending draw calls, and how many there were. The GPU's own time only shows in the frame time. |
+| objects | GameObjects on all scenes' layers, without children. |
+| slowed down | Fixed updates take longer than the time they simulate, so the game runs slower to keep responding. See `bare.fixedStepsBehind` in [The bare Object](../reference/bare#general-properties). |
+
+The panel is left out of production builds. In code:
+
+- `rapid.drawcallCount` counts the draw calls of the frame being drawn. Read in `OnUpdate`, it's the total of the previous frame.
+- `bare.fixedStepsBehind` is true while the game is slowed down.
 
 ## Logging
 

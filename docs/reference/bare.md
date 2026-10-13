@@ -72,6 +72,7 @@ bare.scene.Get(Game).level.Load('level1');
 | `bare.levelEditorOpen` | Whether the [level editor](../guide/level-editor) is open. |
 | `bare.defaultFont` | Font family used by text that doesn't set `fontFamily`. See [Fonts](../guide/text-and-ui#fonts). |
 | `bare.fixedTimestep` | Seconds per fixed update (default `1/60`). |
+| `bare.fixedStepsBehind` | Read-only. True while fixed updates cost more time than they simulate. The game then runs one fixed update per frame and slows down, instead of falling further behind. |
 
 ## Methods
 
@@ -79,6 +80,7 @@ bare.scene.Get(Game).level.Load('level1');
 | --- | --- |
 | `bare.Restart(options?)` | Clear all scenes and restart, optionally with `{ sceneClass, bareOptions, clearSaveData }`. |
 | `bare.TogglePause()` | Pause or unpause the game. Returns nothing; read `bare.paused`. |
+| `bare.TogglePerfOverlay()` | Show or hide the [performance panel](../guide/debugging#performance). Development only. |
 | `bare.SendEvent(type, ...args)` | Send an event to `bare.globalEvents` and to every active scene's `bare.events`. |
 | `bare.AddClass(SomeClass)` | Register a class. A controller (like `ArcadePhysicsController`) is switched on for all scenes; a GameObject class gets an object pool so it can be created by name. |
 | `bare.RegisterGameObjectPool(cls, size?)` | Create an object pool for a GameObject class, or fill its existing pool up to `size` objects. |

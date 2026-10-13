@@ -59,8 +59,8 @@ Set gravity at the top level of `settingsData.json`:
 | `sensor` | `false` | Reports collisions but doesn't block, and ignores `stayInBounds`. Use it for triggers, like coins or checkpoints. |
 | `drag` | `0` | Fraction of the velocity lost every 1/60 second, from 0 to 1. Below 5 units per second the object stops completely; change that with `ArcadePhysicsController.DRAG_STOP_SPEED`. |
 | `restitution` | `0` | Bounciness, from 0 to 1. Two objects bounce with the higher value of the two, so a bouncy ball also bounces off walls left at 0. |
-| `stayInBounds` | `true` | Keep the object inside the level. |
-| `removeOnOutOfBounds` | `false` | Remove the object when it's fully outside the level. |
+| `stayInBounds` | `true` | Keep the object inside the [bounds](#bounds). |
+| `removeOnOutOfBounds` | `false` | Remove the object when it's fully outside the [bounds](#bounds). |
 | `continuous` | `false` | Stop a fast object from passing through walls. See [Fast objects](#fast-objects). |
 | `hitbox` | the image | Rectangle as `{ x1, y1, x2, y2 }`. Values between 0 and 1 are a fraction of the image size, larger ones are pixels. `"FULL"` covers the whole image. |
 | `hitboxType` / `hitboxRadius` | `"Rectangle"` | `"Rectangle"` or `"Circle"`, and the circle's radius, by default half the hitbox's smaller side. The circle is centered on the object's [pivot](../guide/game-objects#pivot), so use a `CENTER` pivot to center it on the image. |
@@ -73,6 +73,18 @@ A child ArcadeObject always acts as a sensor, so it reports collisions without p
 | `IsGrounded()` | Standing on something. Same as `IsBlocked(BlockedState.Down)`. |
 | `IsBlocked(direction)` | Blocked in a direction: `BlockedState.Up`, `Down`, `Left` or `Right`. |
 | `IsMoving()` | Has velocity. |
+
+### Bounds
+
+Objects with `stayInBounds` are kept inside the bounds. Loading a level sets them to the level's size. Without a level, they're the screen, and they follow it when the window resizes.
+
+To use your own, for example a big arena without a level:
+
+```ts
+bare.arcade.SetBounds({ x: 0, y: 0, width: 6000, height: 6000 });
+```
+
+These stay when the window resizes, until the next level loads. `bare.arcade.GetBounds()` returns the current bounds.
 
 ### Fast objects
 

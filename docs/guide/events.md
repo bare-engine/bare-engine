@@ -67,6 +67,7 @@ import { BareEvent } from 'bare-engine';
 | `editor_opened`, `editor_closed` | `{ settingsDataName, levelName }` |
 | `pointer_down`, `pointer_up` | `{ mouseX, mouseY, event }` |
 | `pointer_move` | `{ mouseX, mouseY, movedX, movedY, event, isLeftButton }` |
+| `pointer_wheel` | `{ deltaX, deltaY, event }`, in pixels |
 | `pointer_doubleClick` | `{ mouseX, mouseY, event }` |
 | `key_pressed`, `key_down`, `key_released` | `{ key, allKeys }` |
 | `collision_start`, `collision_update`, `collision_end` | the two objects (with [physics](../reference/physics)) |

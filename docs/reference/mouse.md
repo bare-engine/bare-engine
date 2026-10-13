@@ -19,7 +19,18 @@ if (bare.mouse.IsDown()) { /* held */ }
 | `IsPressed()` | Left button went down this frame. |
 | `IsReleased()` | The last pointer went up this frame. |
 | `IsMoving()` | The pointer moved this frame. |
+| `wheelDelta` / `wheelDeltaX` | How far the wheel scrolled since the last frame, in pixels. Positive `wheelDelta` is scrolling down. 0 while the game is paused. |
 
 **Example:** the [RPG](https://github.com/bare-engine/bare-rpg)'s [touch joystick](https://github.com/bare-engine/bare-rpg/blob/main/src/ui/joystick.ts) follows the pointer.
 
-`IsPressed` and `IsReleased` are per frame, so read them in `OnUpdate`, not `OnFixedUpdate`. See the warning on [Keyboard](./keyboard).
+To zoom the camera with the wheel:
+
+```ts
+override OnUpdate()
+{
+    if (bare.mouse.wheelDelta !== 0)
+        bare.camera.SetZoom(bare.camera.GetZoom() * Math.pow(0.999, bare.mouse.wheelDelta));
+}
+```
+
+`IsPressed`, `IsReleased` and `wheelDelta` are per frame, so read them in `OnUpdate`, not `OnFixedUpdate`. See the warning on [Keyboard](./keyboard).
