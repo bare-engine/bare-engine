@@ -121,6 +121,8 @@ bare.drawRect({ position, width: 60, height: 60, color: Color.Blue, outline: { w
 
 There's also `bare.drawRoundedRect`, `bare.drawSprite` (a texture) and `bare.drawGraphic` (any polygon, with per-point colors or a texture). The [Showcase](https://github.com/bare-engine/bare-showcase)'s [graphics demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/graphics/src/DemoGraphics.ts#L27-L127) shows all of them.
 
+Like a GameObject's, a shape's `rotation` is in degrees: `bare.drawSprite({ texture, position, rotation: 45 })`.
+
 ## Tiled textures
 
 A GameObject stretches its texture to its scale. To repeat it instead, like a floor or a long wall, give it a `TiledComponent`. Scale the object to cover the area; every repeat is the texture's own size times `tileScale`:

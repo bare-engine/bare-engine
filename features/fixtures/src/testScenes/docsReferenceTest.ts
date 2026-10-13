@@ -288,7 +288,11 @@ export class DocsReferenceTest extends Scene
         c.check(new Vec2(3, 4).length() === 5 && new Vec2(3, 4).squaredLength() === 25, "length and squaredLength");
         c.check(new Vec2(0, 0).distanceTo(new Vec2(3, 4)) === 5, "distanceTo");
         c.check(Math.abs(new Vec2(3, 4).normalized().length() - 1) < 1e-9, "normalized should have length 1");
-        c.check(Math.abs(new Vec2(0, 1).angle() - Math.PI / 2) < 1e-9, "angle should be in radians");
+        c.check(Math.abs(new Vec2(0, 1).angle() - 90) < 1e-9, "angle should be in degrees");
+        const down = Vec2.fromAngle(90);
+        c.check(Math.abs(down.x) < 1e-9 && Math.abs(down.y - 1) < 1e-9, "fromAngle(90) should point down");
+        const turned = rapid.matrix.applyTransform({ rotation: 90 });
+        c.check(Math.abs(turned[0]) < 1e-6 && Math.abs(Math.abs(turned[1]) - 1) < 1e-6, "draw options should take rotation in degrees: " + Array.from(turned).join(","));
         const fromAngle = Vec2.fromAngle(0);
         c.check(Math.abs(fromAngle.x - 1) < 1e-9 && Math.abs(fromAngle.y) < 1e-9, "fromAngle(0) should point right");
         c.check(Vec2.fromArray([[1, 2], [3, 4]])[1].y === 4, "fromArray should build a list of vectors");

@@ -19,12 +19,12 @@ a.set(0, 0);                       // changes a
 | `length()`, `squaredLength()` | Length. |
 | `distanceTo(v)` | Distance to another point. |
 | `normalized()` | Same direction, length 1. |
-| `angle()` | Angle in **radians**. |
+| `angle()` | Angle in degrees, like a GameObject's `rotation`: 0 points right, 90 down. |
 | `clone()` | A copy. |
 | `equals(v)`, `isZero()` | Comparisons. |
 | `set(x, y)` | **Changes** the vector. |
 | `normalize()`, `invert()`, `perpendicular()` | **Change** the vector. |
-| `Vec2.fromAngle(radians)` | A vector pointing in a direction. |
+| `Vec2.fromAngle(degrees)` | A vector of length 1 pointing in a direction. |
 | `Vec2.fromArray([[x, y], …])` | A list of vectors. |
 
 ## Color

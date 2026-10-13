@@ -10,6 +10,7 @@ export interface ITransformOptions {
     x?: number;
     y?: number;
     position?: Vec2;
+    /** In degrees. */
     rotation?: number;
     scale?: Vec2 | number;
     offsetX?: number;
@@ -532,7 +533,7 @@ export class MatrixStore {
             }
         }
 
-        const rotation = transform.rotation ?? 0;
+        const rotation = (transform.rotation ?? 0) * (Math.PI / 180);
 
         let offsetX = transform.offsetX ?? 0;
         let offsetY = transform.offsetY ?? 0;

@@ -711,7 +711,7 @@ export class Rapid {
      * // With a transform applied
      * rapid.withTransform(() => {
      *     rapid.drawSprite({ texture: myTexture });
-     * }, { x: 100, y: 50, rotation: Math.PI / 4, origin: 0.5 }, myTexture.width, myTexture.height);
+     * }, { x: 100, y: 50, rotation: 45, origin: 0.5 }, myTexture.width, myTexture.height);
      */
     withTransform(cb: () => void, transform?: ITransformOptions, width: number = 0, height: number = 0): void {
         this.matrixStack.save();

@@ -124,7 +124,7 @@ export class ParticleRegion extends SpriteRegion {
 
         let rotationOffset = isRotated ? Math.PI / 2 : 0;
         if (uniRotation) {
-            rotationOffset += rotation
+            rotationOffset += rotation * (Math.PI / 180)
         }
         const staticColor = color ?? 0xFFFFFFFF
         const loopFunction = this.getParticleLoop(
@@ -201,7 +201,7 @@ return function( x, y, scaleX, scaleY, rotation, u0, v0, u1, v1, color, f32, u32
         ${uniUV ? `
         f32[idx + 2] = ${uniScaleX ? 'baseSx' : 'rawWidth * scaleX[src]'};
         f32[idx + 3] = ${uniScaleY ? 'baseSy' : 'rawHeight * scaleY[src]'};
-        f32[idx + 4] = ${uniRotation ? 'rotationOffset' : 'rotation[src] + rotationOffset'};
+        f32[idx + 4] = ${uniRotation ? 'rotationOffset' : 'rotation[src] * 0.017453292519943295 + rotationOffset'};
         f32[idx + 5] = u0;
         f32[idx + 6] = v0;
         f32[idx + 7] = u1;
@@ -210,7 +210,7 @@ return function( x, y, scaleX, scaleY, rotation, u0, v0, u1, v1, color, f32, u32
         const cu0 = u0[src], cv0 = v0[src], cu1 = u1[src], cv1 = v1[src];
         f32[idx + 2] = (rawWidth * (cu1 - cu0) * uv2texW) ${uniScaleX ? '' : '* scaleX[src]'};
         f32[idx + 3] = (rawHeight * (cv1 - cv0) * uv2texH) ${uniScaleY ? '' : '* scaleY[src]'};
-        f32[idx + 4] = ${uniRotation ? 'rotationOffset' : 'rotation[src] + rotationOffset'};
+        f32[idx + 4] = ${uniRotation ? 'rotationOffset' : 'rotation[src] * 0.017453292519943295 + rotationOffset'};
         f32[idx + 5] = cu0;
         f32[idx + 6] = cv0;
         f32[idx + 7] = cu1;

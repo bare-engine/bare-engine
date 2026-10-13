@@ -138,8 +138,9 @@ export class Vec2 {
         );
     }
 
+    /** In degrees: 0 points right, 90 down. */
     angle(): number {
-        return Math.atan2(this.y, this.x);
+        return Math.atan2(this.y, this.x) * (180 / Math.PI);
     }
 
     abs(): Vec2 {
@@ -175,9 +176,11 @@ export class Vec2 {
         return this.x !== 0 || this.y !== 0;
     }
 
+    /** `azimuth` in degrees. */
     setToPolar(azimuth: number, radius: number = 1): this {
-        this.x = Math.cos(azimuth) * radius;
-        this.y = Math.sin(azimuth) * radius;
+        const radians = azimuth * (Math.PI / 180);
+        this.x = Math.cos(radians) * radius;
+        this.y = Math.sin(radians) * radius;
         return this;
     }
 
@@ -185,8 +188,10 @@ export class Vec2 {
         return array.map(pair => new Vec2(pair[0], pair[1]));
     }
 
+    /** A vector of length 1 pointing at `angle` degrees. */
     static fromAngle(angle: number): Vec2 {
-        return new Vec2(Math.cos(angle), Math.sin(angle));
+        const radians = angle * (Math.PI / 180);
+        return new Vec2(Math.cos(radians), Math.sin(radians));
     }
 }
 

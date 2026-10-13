@@ -20,9 +20,9 @@ export class Random {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
-    /** Random angle in [0, 2π). */
+    /** Random angle in degrees, [0, 360). */
     static angle(): number {
-        return Math.random() * Math.PI * 2;
+        return Math.random() * 360;
     }
 
     /** Random Vec2 with components in the supplied per-axis ranges. */

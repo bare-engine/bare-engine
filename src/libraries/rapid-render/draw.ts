@@ -22,6 +22,7 @@ export interface IDrawParticleBatchOptions extends IDisplayOptions {
     texture: Texture;
     x: ArrayLike<number>;
     y: ArrayLike<number>;
+    /** In degrees. */
     rotation?: ArrayLike<number> | number;
     color?: ArrayLike<Color> | ArrayLike<number> | number;
     count?: number;

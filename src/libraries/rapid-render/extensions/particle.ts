@@ -43,7 +43,7 @@ export enum ParticleShape {
 export interface IParticleAnimation {
     /** Directional speed along the rotation axis (pixels/sec). */
     speed?: ParticleAttribute<number> | number;
-    /** Rotation angle in radians. Defaults to a random angle for POINT, the outward spawn angle for CIRCLE, and 0 for RECT. */
+    /** Rotation angle in degrees. Defaults to a random angle for POINT, the outward spawn angle for CIRCLE, and 0 for RECT. */
     rotation?: ParticleAttribute<number> | number;
     /** Uniform scale. */
     scale?: ParticleAttribute<number> | number;
@@ -330,7 +330,7 @@ export class ParticleEmitter {
                 const radius = (this.options.emitRadius ?? 0) * Math.sqrt(Math.random());
                 spawnX = Math.cos(angle) * radius
                 spawnY = Math.sin(angle) * radius
-                defaultRotation = angle
+                defaultRotation = angle * (180 / Math.PI)
                 break;
             }
             case ParticleShape.RECT: {
@@ -340,7 +340,7 @@ export class ParticleEmitter {
             }
             case ParticleShape.POINT:
             default:
-                defaultRotation = Math.random() * Math.PI * 2
+                defaultRotation = Math.random() * 360
                 break;
         }
         const ms = this.rapid.matrixStack
@@ -434,8 +434,9 @@ export class ParticleEmitter {
                 this.rapid.premultipliedAlpha,
             );
 
-            this.x.typedArray[index] += (speed * Math.cos(rotation) + ani.velocity.get(index, 0)) * deltaTime
-            this.y.typedArray[index] += (speed * Math.sin(rotation) + ani.velocity.get(index, 1)) * deltaTime
+            const radians = rotation * (Math.PI / 180);
+            this.x.typedArray[index] += (speed * Math.cos(radians) + ani.velocity.get(index, 0)) * deltaTime
+            this.y.typedArray[index] += (speed * Math.sin(radians) + ani.velocity.get(index, 1)) * deltaTime
         }
 
         return removeIndex
