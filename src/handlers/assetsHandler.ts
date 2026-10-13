@@ -12,6 +12,7 @@ class AssetsHandler
 
     private _whiteTexture?: Texture;
     private _missingTexture?: Texture;
+    private warnedMissing = new Set<string>();
 
     // 1x1 white pixel, handy for solid rects and debug shapes - registered as "PIXEL"
     get whiteTexture(): Texture
@@ -45,7 +46,7 @@ class AssetsHandler
 
     async LoadTexture(texturePath: string = ""): Promise<Texture>
     {
-        const cached = this.GetTexture(texturePath);
+        const cached = this.textures.get(texturePath);
         if (cached)
             return cached;
 
@@ -80,9 +81,19 @@ class AssetsHandler
         this.textures.set(texturePath, texture);
     }
 
+    /** A loaded texture. An unknown name returns the red placeholder pixel (and warns in development); check with HasTexture first. */
     GetTexture(texturePath: string): Texture
     {
-        return this.textures.get(texturePath)!;
+        const texture = this.textures.get(texturePath);
+        if (texture)
+            return texture;
+
+        if (__DEV__ && !this.warnedMissing.has(texturePath))
+        {
+            this.warnedMissing.add(texturePath);
+            console.warn(`GetTexture: no texture "${texturePath}". It isn't in the atlas or hasn't been loaded yet; drawing a red pixel instead.`);
+        }
+        return this.missingTexture;
     }
 
     HasTexture(texturePath: string): boolean

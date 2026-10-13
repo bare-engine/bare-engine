@@ -453,7 +453,7 @@ export class EditorControlsHandler {
             applyPreview();
         else
         {
-            const cached = assetsHandler.GetTexture(texturePath);
+            const cached = assetsHandler.textures.get(texturePath);
             if (cached)
                 applyPreview(cached);
             else

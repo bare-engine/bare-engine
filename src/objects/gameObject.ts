@@ -478,7 +478,7 @@ export class GameObject
         if (texturePath.endsWith("NAME"))
             return;
 
-        const cached = assetsHandler.GetTexture(texturePath);
+        const cached = assetsHandler.textures.get(texturePath);
         if (cached)
         {
             this.SetTexture(cached);

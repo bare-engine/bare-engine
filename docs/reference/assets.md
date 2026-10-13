@@ -15,7 +15,7 @@ Texture names are paths relative to `public/images/`, without the extension. Ima
 | --- | --- |
 | `LoadTexture(name)` | Load a `.webp` from `public/images/`. Resolves with the texture; already loaded or loading textures aren't fetched twice. A failed load resolves with a red placeholder pixel. |
 | `LoadTextureBatch(names)` | Load several textures in parallel. |
-| `GetTexture(name)` / `HasTexture(name)` | A loaded texture, or whether it's loaded. |
+| `GetTexture(name)` / `HasTexture(name)` | A loaded texture, or whether it's loaded. For a name that isn't loaded, `GetTexture` returns a red placeholder pixel and warns in development. |
 | `AddTexture(name, texture)` | Register a texture you made, for example a `RenderTexture`, so it can be used by name. |
 | `RemoveTexture(name)` | Forget a texture. |
 | `whiteTexture` | Property: a 1x1 white pixel, also registered as `PIXEL`. |
