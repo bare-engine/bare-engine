@@ -116,4 +116,4 @@ Now `bare.events.emit('coinCollected', { value: 10 })` is checked, and the liste
 
 **Example:** the [Showcase](https://github.com/bare-engine/bare-showcase)'s [extend demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/extend/src/DemoExtend.ts#L35-L60) adds an event, a prefab property, a component method and a save data field this way.
 
-The same trick works for other engine types: add fields to `interface Entity` for your own prefab properties, or to `interface Component` for methods you call on all components.
+The same trick works for other engine types: add fields to `interface CustomData` to type `customData` (see [Typed customData](./prefabs#typed-customdata)), to `interface Entity` for your own prefab properties, or to `interface Component` for methods you call on all components.

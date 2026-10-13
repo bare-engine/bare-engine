@@ -78,7 +78,7 @@ export
 export type {
   Atlas,
   AtlasFrame,
-  AnyEntity, BareScreen, Entity,
+  AnyEntity, BareScreen, BareUserEvents, CustomData, CustomDataValues, Entity,
   FrameRect,
   GameObjectClass, LayerInfo,
   LevelData,

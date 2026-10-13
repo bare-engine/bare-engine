@@ -33,6 +33,7 @@ export class PrefabsTest extends Scene
                     pivot: { x: 0, y: 0 },
                     rotation: 90,
                     texture: "NONE",
+                    customData: { cost: 5, kind: "big" },
                 },
                 {
                     name: "bigAndNoRotation",
@@ -65,6 +66,7 @@ export class PrefabsTest extends Scene
                     name: "apple",
                     extends: "bigAndNoRotation",
                     texture: "NONE",
+                    customData: { kind: "apple" },
                 },
                 {
                     name: "tile",
@@ -134,6 +136,15 @@ export class PrefabsTest extends Scene
         const processedApple = this.settings.prefabs.find(prefab => prefab.name == "apple")!;
         assert(processedApple.scale?.x === 2 && processedApple.scale?.y === 2, "a processed prefab should have its inherited scale: " + JSON.stringify(processedApple.scale));
         assert(processedApple.rotation === undefined, "a processed prefab should leave out propertiesRemoved: " + processedApple.rotation);
+
+        // GetPrefabCustomData: customData merges along the extends chain, the prefab's own fields winning
+        const inherited = this.GetPrefabCustomData("bigAndNoRotation");
+        assert(inherited.cost === 5 && inherited.kind === "big", "GetPrefabCustomData should give inherited customData: " + JSON.stringify(inherited));
+        const appleData = this.GetPrefabCustomData("apple");
+        assert(appleData.cost === 5 && appleData.kind === "apple", "customData should merge with the prefab it extends: " + JSON.stringify(appleData));
+        assert(this.GetPrefabCustomData("big").kind === "big", "merging shouldn't change the base prefab: " + JSON.stringify(this.GetPrefabCustomData("big")));
+        assert(JSON.stringify(appleData) === JSON.stringify(apple.customData), "an object's customData should match its prefab's: " + JSON.stringify(appleData) + " vs " + JSON.stringify(apple.customData));
+        assert(JSON.stringify(this.GetPrefabCustomData("noSuchPrefab")) === "{}", "GetPrefabCustomData should give {} for an unknown prefab");
 
     }
 }

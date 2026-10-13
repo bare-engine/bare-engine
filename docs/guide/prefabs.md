@@ -137,7 +137,7 @@ Prefabs and entities can have these properties. Most can also be a [preset](#pre
 | `extends` | The prefab this one inherits from. Defaults to `ANY`. |
 | `baseClass` | GameObject class to create, for example `ArcadeObject`. Registered automatically when it's named here: your own exported class, `TextObject`, `Button`, and for physics classes like `ArcadeObject` their physics controller. See [Custom GameObjects](./custom-game-objects). |
 | `tags` | A list of strings, to group and find objects. |
-| `customData` | Your own named values, for your game code. |
+| `customData` | Your own named values, for your game code. Merges with the `customData` of the prefab it extends: a prefab adds fields or changes some, and keeps the rest. Nested objects merge too; arrays are replaced. See [Typed customData](#typed-customdata). |
 
 ### Transform
 
@@ -284,4 +284,29 @@ const tower = this.settings.prefabs.find(prefab => prefab.name == Data.Prefab.TO
 const { cost, range } = tower.components.tower;
 ```
 
+For `customData` there's a shortcut, `this.GetPrefabCustomData(Data.Prefab.TOWER_ARROW)`, see below.
+
 Component values are the plain data from `settingsData.json`, not a component instance. Treat it all as read-only: to change a prefab while the game runs, use the [Chrome extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) ([Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)).
+
+### Typed customData
+
+`customData` holds anything, so a typo like `cots` for `cost` only shows up while the game runs. Declare your fields once, and TypeScript checks every `obj.customData` and `GetPrefabCustomData`:
+
+```ts
+declare module 'bare-engine'
+{
+    interface CustomData
+    {
+        kind: 'drill' | 'farm' | 'crate';
+        cost: Record<string, number>;
+        buildSeconds: number;
+    }
+}
+```
+
+```ts
+const drill = this.GetPrefabCustomData(Data.Prefab.DRILL);
+const seconds = drill.buildSeconds ?? 1;   // number | undefined
+```
+
+Each field is optional, since a prefab has only the ones it needs. Without the declaration, `customData` takes anything, as before. The declaration types your code, not `settingsData.json`, so a value in the file that doesn't match isn't reported.

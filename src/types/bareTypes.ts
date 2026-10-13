@@ -424,6 +424,13 @@ export const BareEvent = baseBareEvent as typeof baseBareEvent & BareEventExtens
 type EventPayloads<T> = { [K in keyof T]: T[K] extends undefined ? void : NonNullable<T[K]> };
 
 export interface BareUserEvents {}
+
+// YOUR OWN customData FIELDS, SO obj.customData AND scene.GetPrefabCustomData() ARE TYPED:
+// declare module 'bare-engine' { interface CustomData { cost: number } }
+export interface CustomData {}
+
+// YOUR CustomData FIELDS, EACH OPTIONAL SINCE A PREFAB HAS ONLY SOME OF THEM. ANYTHING WHEN YOU DECLARED NONE
+export type CustomDataValues = keyof CustomData extends never ? Record<string, any> : Partial<CustomData>;
 export interface BareCollisionEventPairs {}
 
 type BareCollisionEventPayload = BareCollisionEventPairs[keyof BareCollisionEventPairs];

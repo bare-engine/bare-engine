@@ -6,7 +6,7 @@ import mitt from "../libraries/mitt";
 import { Color, drawSpriteWithMatrix, MaskType, MatrixStack, MatrixStore, Texture, Vec2 } from "../libraries/rapid-render";
 import { drawSpriteTransform } from "../rendering/transformSpriteRegion";
 import type { Scene } from "../scenes/scene";
-import type { ComponentCtor, Ctor, DropFirst, Events, Rectangle, Shader } from "../types/bareTypes";
+import type { ComponentCtor, Ctor, CustomDataValues, DropFirst, Events, Rectangle, Shader } from "../types/bareTypes";
 import { Entity, entityVarsNested, GameObjectClass, RefreshEntityVars } from '../types/bareTypes';
 import { Hitbox } from '../types/hitbox';
 import { Percentage, isInspectorFieldDescriptor } from "../utils/decorators";
@@ -1189,14 +1189,14 @@ export class GameObject
         this._tags = value;
     }
 
-    private _customData: Record<string, any> | null = null;
+    private _customData: CustomDataValues | null = null;
 
     @SerializeField(GameMode.Edit)
-    get customData(): Record<string, any>
+    get customData(): CustomDataValues
     {
         return this._customData ??= {};
     }
-    set customData(value: Record<string, any>)
+    set customData(value: CustomDataValues)
     {
         this._customData = value;
     }

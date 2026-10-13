@@ -13,6 +13,11 @@ import { assetsHandler } from "./assetsHandler";
 
 type ConstructEntityOptions = { fillPresets?: boolean };
 
+function IsPlainObject(value: unknown): value is Record<string, any>
+{
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 export class SettingsHandler
 {
     static FindPrefab(settingsData: SettingsData, name: string): Entity | undefined
@@ -819,6 +824,9 @@ export class SettingsHandler
 
                 if (!(key in entity))
                     (entity as any)[key] = (extendedPrefab as any)[key];
+                // customData MERGES, LIKE IT DOES FOR AN ENTITY IN A LEVEL, SO A PREFAB ADDS FIELDS TO WHAT IT EXTENDS
+                else if (key == "customData" && IsPlainObject(entity.customData) && IsPlainObject(extendedPrefab.customData))
+                    entity.customData = Helper.DeepMergeCopy(extendedPrefab.customData, entity.customData);
             }
 
             var components = this.scene.MergeComponents(extendedPrefab.components, entity.components);

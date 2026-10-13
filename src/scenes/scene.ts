@@ -16,7 +16,7 @@ import { Color, RenderTexture, Texture, Vec2 } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import { Bare } from "../types/bare";
 import { defaultSettingsData } from "../types/bareData";
-import { AnyEntity, AwakePayload, BareEvent, CollisionHandlingType, ConstructEntityOptions, Entity, entityVars, Events, GameObjectClass, LayerInfo, LevelData, ProcessedSettingsData, SaveData, SceneClass, SceneI, SceneOptions, sceneOptionKeys, SettingsData } from "../types/bareTypes";
+import { AnyEntity, AwakePayload, BareEvent, CollisionHandlingType, ConstructEntityOptions, CustomDataValues, Entity, entityVars, Events, GameObjectClass, LayerInfo, LevelData, ProcessedSettingsData, SaveData, SceneClass, SceneI, SceneOptions, sceneOptionKeys, SettingsData } from "../types/bareTypes";
 import { InspectorClass, InspectorField, Label } from "../utils/decorators";
 import { GameObjectSerializer } from "../utils/entitySerializer";
 import { Helper } from "../utils/helper";
@@ -613,6 +613,16 @@ export class Scene implements SceneI
         return finalEntity;
     }
     
+    // A PREFAB'S customData, MERGED WITH THAT OF THE PREFABS IT EXTENDS. TYPED BY YOUR CustomData DECLARATION
+    GetPrefabCustomData(prefabName: string): CustomDataValues
+    {
+        const prefab: Entity | undefined = this.settingsHandler.GetProcessedPrefab(prefabName, this.settingsData);
+        if (!prefab && __DEV__)
+            console.warn(`GetPrefabCustomData: no prefab "${prefabName}"`);
+
+        return prefab?.customData ?? {};
+    }
+
     // CONSTRUCTS AN ENTITY OUT OF A ENITTY NAME OR ENTITY OBJECT
     // FOR AN ENTITY NAME: IT RETURNS THE ENTITY FOUND IN SETTINGSDATA, OR CREATES A NEW ONE IF NOT THERE
     // FOR AN ENTITY OBJECT: IT FINDS THE REFERENCED/DEFAULT ENTITY FROM SETTINGSDATA AND MERGES IT IN FOR A NEW ENTITY
