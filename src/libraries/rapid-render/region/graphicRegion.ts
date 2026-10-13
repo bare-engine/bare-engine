@@ -16,6 +16,12 @@ import MaskFsShaderSource from "../shader/mask.frag?raw";
 //   aUV        vec2   float32×2  offset  20
 const VERTEX_STRIDE = 20;
 
+// A BATCH IS DRAWN ONCE IT HAS THIS MANY VERTICES
+const MAX_BATCH_VERTICES = 65536;
+// BATCHED SHAPES ARE ALREADY IN WORLD SPACE, SO THEY'RE DRAWN WITH AN IDENTITY MATRIX
+const IDENTITY_ROW0 = [1, 0, 0];
+const IDENTITY_ROW1 = [0, 1, 0];
+
 export class GraphicRegion extends Region {
     private vertexBuffer!: WebglBufferArray;
     private vertexCount: number = 0;
@@ -35,6 +41,17 @@ export class GraphicRegion extends Region {
 
     private _maskShader?: GLShader
     override KEY = "Graphic"
+
+    // Shapes drawn with the default shader, as triangles or a triangle fan, without a repeating texture
+    // (drawRect, drawCircle, drawLine, ...) are collected and drawn together: one draw call for a run of
+    // them with the same texture, instead of one each. Their vertices are moved to world space on the CPU
+    // when the shape ends, since the matrix they use (often the shared temporary one) changes right after.
+    // Anything else, or anything that changes GL state, draws the batch first (see hasPendingContent)
+    private batchOpen = false
+    // the current shape goes into the batch: its vertices wait in shapeVertices until endGraphic
+    private batchingShape = false
+    private shapeVertices: number[] = []
+    private shapeVertexCount = 0
 
     constructor(rapid: Rapid) {
         super(rapid);
@@ -105,6 +122,35 @@ export class GraphicRegion extends Region {
         texture?: Texture,
         repeatTexture: boolean = false,
     ): void {
+        const gl = this.gl;
+        const batchable = this.isDefaultShader && !repeatTexture
+            && (drawMode === gl.TRIANGLES || drawMode === gl.TRIANGLE_FAN);
+
+        // a shape that can't join the batch so far: draw the batch first, keeping the order
+        if (this.batchOpen && (!batchable || texture !== this.texture))
+            this.flush();
+
+        if (batchable) {
+            if (!this.batchOpen) {
+                this.vertexBuffer.clear();
+                this.vertexCount = 0;
+                this.batchOpen = true;
+                this.drawMode = gl.TRIANGLES;
+                this.texture = texture;
+                this.repeatTexture = false;
+
+                if (texture?.glTexture)
+                    this.useTexture(texture.glTexture, 0, 0);
+            }
+
+            this.batchingShape = true;
+            this.matrixIndex = matrixIndex;
+            this.shapeDrawMode = drawMode;
+            this.shapeVertexCount = 0;
+            return;
+        }
+
+        this.batchingShape = false;
         this.vertexBuffer.clear();
         this.vertexCount = 0;
         this.uvMinX = this.uvMinY = Infinity;
@@ -135,6 +181,17 @@ export class GraphicRegion extends Region {
         u: number = 0, v: number = 0,
         color: number = 0xFFFFFFFF,
     ): void {
+        if (this.batchingShape) {
+            const i = this.shapeVertexCount++ * 5;
+            const vertices = this.shapeVertices;
+            vertices[i] = x;
+            vertices[i + 1] = y;
+            vertices[i + 2] = u;
+            vertices[i + 3] = v;
+            vertices[i + 4] = color;
+            return;
+        }
+
         const buf = this.vertexBuffer;
         buf.pushFloat32(x);
         buf.pushFloat32(y);
@@ -155,7 +212,69 @@ export class GraphicRegion extends Region {
      * Finishes the graphic construction and dispatches the rendering call immediately.
      */
     endGraphic(): void {
-        this.flush();
+        if (!this.batchingShape) {
+            this.flush();
+            return;
+        }
+
+        this.batchingShape = false;
+        this.addShapeToBatch();
+
+        if (this.vertexCount >= MAX_BATCH_VERTICES)
+            this.flush();
+    }
+
+    private shapeDrawMode: number = this.gl.TRIANGLES
+
+    // THE CURRENT SHAPE'S VERTICES, IN WORLD SPACE AND AS PLAIN TRIANGLES, AT THE END OF THE BATCH
+    private addShapeToBatch(): void {
+        const count = this.shapeVertexCount;
+        const fan = this.shapeDrawMode === this.gl.TRIANGLE_FAN;
+        if (count < 3)
+            return;
+
+        const md = this.matrixStore.data;
+        const o = this.matrixIndex * 6;
+        const a = md[o], b = md[o + 1], c = md[o + 2], d = md[o + 3];
+        let tx = md[o + 4];
+        let ty = md[o + 5];
+
+        if (this.rapid.roundPixels) {
+            tx = Math.round(tx);
+            ty = Math.round(ty);
+        }
+
+        // a fan of n vertices is n - 2 triangles around the first one; a triangle list only whole triangles,
+        // or the next shape's vertices would end up in the wrong triangles
+        const outCount = fan ? (count - 2) * 3 : count - count % 3;
+        const buf = this.vertexBuffer;
+        buf.resize(outCount * 5);
+
+        const vertices = this.shapeVertices;
+        const push = (index: number) => {
+            const i = index * 5;
+            const x = vertices[i];
+            const y = vertices[i + 1];
+            buf.pushFloat32(a * x + c * y + tx);
+            buf.pushFloat32(b * x + d * y + ty);
+            buf.pushUint32(vertices[i + 4]);
+            buf.pushFloat32(vertices[i + 2]);
+            buf.pushFloat32(vertices[i + 3]);
+        };
+
+        if (fan) {
+            for (let i = 1; i < count - 1; i++) {
+                push(0);
+                push(i);
+                push(i + 1);
+            }
+        } else {
+            for (let i = 0; i < outCount; i++)
+                push(i);
+        }
+
+        this.vertexCount += outCount;
+        buf.makeDirty();
     }
 
     override render() {
@@ -164,19 +283,25 @@ export class GraphicRegion extends Region {
 
         const gl = this.gl;
         const shader = this.currentShader;
-        const o = this.matrixIndex * 6;
-        const md = this.matrixStore.data;
 
-        let tx = md[o + 4]
-        let ty = md[o + 5]
+        if (this.batchOpen) {
+            shader.setUniform("uMatrixRow0", IDENTITY_ROW0);
+            shader.setUniform("uMatrixRow1", IDENTITY_ROW1);
+        } else {
+            const o = this.matrixIndex * 6;
+            const md = this.matrixStore.data;
 
-        if (this.rapid.roundPixels) {
-            tx = Math.round(tx);
-            ty = Math.round(ty);
+            let tx = md[o + 4]
+            let ty = md[o + 5]
+
+            if (this.rapid.roundPixels) {
+                tx = Math.round(tx);
+                ty = Math.round(ty);
+            }
+
+            shader.setUniform("uMatrixRow0", [md[o],     md[o + 2], tx]);
+            shader.setUniform("uMatrixRow1", [md[o + 1], md[o + 3], ty]);
         }
-
-        shader.setUniform("uMatrixRow0", [md[o],     md[o + 2], tx]);
-        shader.setUniform("uMatrixRow1", [md[o + 1], md[o + 3], ty]);
         shader.setUniform("uUVRect", this.texture
             ? [this.texture.uvX, this.texture.uvY, this.texture.uvW, this.texture.uvH]
             : [0, 0, 1, 1]
@@ -203,9 +328,16 @@ export class GraphicRegion extends Region {
         this.rapid.drawcallCount++;
         this.texture = undefined;
         this.repeatTexture = false;
+
+        if (this.batchOpen) {
+            this.batchOpen = false;
+            this.vertexBuffer.clear();
+            this.vertexCount = 0;
+        }
     }
 
+    // A BATCH WAITS FOR MORE SHAPES, SO IT'S DRAWN WHEN THE REGION IS LEFT (rapid.flush, ANY GL STATE CHANGE)
     override hasPendingContent(): boolean {
-        return false;
+        return this.batchOpen && this.vertexCount > 0;
     }
 }
