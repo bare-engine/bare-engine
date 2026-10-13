@@ -62,6 +62,7 @@ export class BareEngine
     private onInit?: () => void | Promise<void>;
     public maxDeltaTime: number = 1 / 15; // CAPS FRAME DELTA, USEFUL AFTER LAG OR TAB REFOCUS
     private accumulator: number = 0;
+    public fixedStepsBehind: boolean = false;
 
     private debugKeyActions = new Map<string, () => void>();
     public resolutionScale: number = 1;
@@ -561,6 +562,12 @@ export class BareEngine
             const currentTime = performance.now();
             this.unscaledDeltaTime = Math.min((currentTime - this.lastUpdateTimeRef) / 1000, this.maxDeltaTime);
             this.deltaTime = this.unscaledDeltaTime * this.timeScale;
+
+            // WHEN FIXED STEPS COST MORE REAL TIME THAN THEY SIMULATE, CATCHING UP MAKES THE NEXT FRAME LONGER
+            // STILL, AND THE FRAME RATE COLLAPSES. THEN SIMULATE ONE STEP PER FRAME: THE WHOLE GAME (PHYSICS,
+            // OnUpdate, TWEENS, WAITS) SLOWS DOWN TOGETHER, BUT KEEPS RESPONDING
+            if (this.fixedStepsBehind)
+                this.deltaTime = Math.min(this.deltaTime, this.fixedTimestep);
             this.lastUpdateTimeRef = currentTime;
             this.time = currentTime;
             this.gameSpeed = 1 / (this.unscaledDeltaTime / .0166666);
@@ -579,12 +586,19 @@ export class BareEngine
                 if (this.accumulator > this.fixedTimestep * maxSteps)
                     this.accumulator = this.fixedTimestep * maxSteps;
 
+                const stepsStart = performance.now();
+                let steps = 0;
+
                 while (this.accumulator >= this.fixedTimestep)
                 {
                     this.FixedUpdate(this.fixedTimestep);
                     AdvanceFrameWaits();
                     this.accumulator -= this.fixedTimestep;
+                    steps++;
                 }
+
+                if (steps > 0)
+                    this.fixedStepsBehind = (performance.now() - stepsStart) / steps > this.fixedTimestep * 1000;
 
                 this.Update(this.deltaTime);
             }
@@ -874,6 +888,7 @@ export class BareEngine
 
         const scene = await bare.scene.Goto(this.initialSceneClass);
         this.lastUpdateTimeRef = performance.now();
+        this.fixedStepsBehind = false;
 
         this.SendEvent(BareEvent.game_started);
         return scene;
