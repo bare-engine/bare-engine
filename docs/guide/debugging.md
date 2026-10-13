@@ -2,7 +2,7 @@
 
 ## Debug drawing
 
-Press **E** while the game runs, or use **Toggle Debug Visuals** in the [Chrome extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) ([Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)), to turn debug drawing on and off. It shows:
+Press **Alt+E** while the game runs, or use **Toggle Debug Visuals** in the [Chrome extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) ([Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)), to turn debug drawing on and off. It shows:
 
 - each GameObject's pivot
 - physics hitboxes
@@ -46,40 +46,42 @@ During development, these keys are available:
 
 | Key | Action |
 | --- | --- |
-| **E** | Toggle debug drawing. |
-| **P** | Pause. |
-| **R** | Restart the game. |
-| **L** | Restart the level. |
-| **C** | Restart with cleared save data. |
+| **Alt+E** | Toggle debug drawing. |
+| **Alt+P** | Pause. |
+| **Alt+R** | Restart the game. |
+| **Alt+L** | Restart the level. |
+| **Alt+C** | Restart with cleared save data. |
 | **F2** | Show or hide the [performance panel](#performance). |
 
-If a game control uses one of these keys, turn that debug key off with [`bare.DisableDebugKey`](#changing-keys-while-the-game-runs).
+The defaults are held with **Alt** (**Option** on a Mac), so they don't clash with game controls: **R** can rotate and **C** can craft. The game doesn't see a debug key press. **Ctrl**, **Shift** and **Ctrl+Alt** combinations are left alone, so shortcuts like **Ctrl+C** keep working.
 
-They only work on the dev server, not in production builds, and only when the key is pressed on its own, so shortcuts like **Ctrl+C** still work normally.
+They only work on the dev server, not in production builds.
 
-To add your own, pass `debugKeys` to `StartBare`. This **replaces** the defaults, so include the ones you want to keep:
+To add your own, pass `debugKeys` to `StartBare`. Name a key by its letter, like `n`, or with `alt_` in front, like `alt_n`, for Alt+N. This **replaces** the defaults, so include the ones you want to keep:
 
 ```ts
 StartBare(Game, {
     debugKeys: [
-        { e: () => bare.debug = !bare.debug },
-        { r: () => bare.Restart() },
-        { k: () => bare.object.GetByName('player')?.Remove() },  // kill the player
-        { n: () => bare.level.Load('level2') },                  // skip to the next level
+        { alt_e: () => bare.debug = !bare.debug },
+        { alt_r: () => bare.Restart() },
+        { k: () => bare.object.GetByName('player')?.Remove() },  // K kills the player
+        { alt_n: () => bare.level.Load('level2') },              // Alt+N skips to the next level
     ],
 });
 ```
+
+A key without `alt_` fires on its own, so pick one your game doesn't use.
 
 Pass `debugKeys: null` (or `[]`) to turn them all off.
 
 ### Changing keys while the game runs
 
-When a default key is also one of your controls, turn just that one off. For example, in a puzzle game where **R** restarts the level:
+To turn one off, for example when you use **Alt+R** yourself:
 
 ```ts
 override OnAwake()
 {
-    bare.DisableDebugKey('r');   // R restarts the level, not the whole game
+    bare.DisableDebugKey('alt_r');
 }
 ```
 
@@ -91,8 +93,8 @@ override OnAwake()
 | `bare.SetDebugKeys(keys)` | Replace all of them, in the same format as the `debugKeys` option. |
 
 ```ts
-bare.SetDebugKey('f', () => bare.TogglePause()); // pause on F instead of P
-bare.DisableDebugKey('p');
+bare.SetDebugKey('f', () => bare.TogglePause()); // pause on F instead of Alt+P
+bare.DisableDebugKey('alt_p');
 ```
 
 Keys are not case sensitive. All of these do nothing in production builds. Restarting the game with new `bareOptions` resets the keys to its `debugKeys`, so change them in `OnAwake`, which runs again after a restart.

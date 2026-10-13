@@ -27,11 +27,11 @@ function GetBareOptions(options?: BareOptions): BareOptions
         editorButtonPosition: {x: 0, y: 0},
         showEditorButton: undefined,
         debugKeys: __DEV__ ? [
-            {e: () => bare.debug = !bare.debug},
-            {p: () => { bare.TogglePause(); }},
-            {r: () => bare.Restart()},
-            {l: () => bare.scene.GetLevelScene()?.level.Restart()},
-            {c: () => {bare.Restart({clearSaveData: true});}},
+            {alt_e: () => bare.debug = !bare.debug},
+            {alt_p: () => { bare.TogglePause(); }},
+            {alt_r: () => bare.Restart()},
+            {alt_l: () => bare.scene.GetLevelScene()?.level.Restart()},
+            {alt_c: () => {bare.Restart({clearSaveData: true});}},
             {f2: () => bare.TogglePerfOverlay()},
         ] : undefined,
     }, ...options };

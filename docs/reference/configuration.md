@@ -28,7 +28,7 @@ StartBare(Game, {
 | `gameObjectPoolSize` | `50` | Default size of object pools. |
 | `showEditorButton` | automatic | `true`: keep the button visible when a level is loaded, including with the extension connected. `false`: hide it. Omitted: hide it when the extension connects. Development only. |
 | `editorButtonPosition` | `{ x: 0, y: 0 }` | Normalized position and pivot, as `{ x: number, y: number }`. `{ x: 1, y: 0 }` anchors it at the top right. Development only; see [Level editor in production](../guide/level-editor#level-editor-in-production). |
-| `debugKeys` | **E**, **P**, **R**, **L**, **C** | Keyboard shortcuts during development. See [Debug keys](#debug-keys). |
+| `debugKeys` | **Alt+E**, **Alt+P**, **Alt+R**, **Alt+L**, **Alt+C**, **F2** | Keyboard shortcuts during development. See [Debug keys](#debug-keys). |
 | `OnInit` | | Game-wide setup, like save data or sounds. See [OnInit](#oninit). |
 
 ### Resolution
@@ -57,7 +57,7 @@ StartBare(Menu, {
 });
 ```
 
-The promise `StartBare` returns resolves only after the first scene's `OnStart`, so code in `.then()` is too late for anything that scene reads. `OnInit` runs again on every `bare.Restart()`, including the debug key **R** and clearing save data, so keep it safe to repeat.
+The promise `StartBare` returns resolves only after the first scene's `OnStart`, so code in `.then()` is too late for anything that scene reads. `OnInit` runs again on every `bare.Restart()`, including the debug key **Alt+R** and clearing save data, so keep it safe to repeat.
 
 ### Debug keys
 

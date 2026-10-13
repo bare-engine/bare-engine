@@ -117,5 +117,5 @@ Lists add to the default `GameObject` list, and a class also gets the lists of t
 **Example:** the [RPG](https://github.com/bare-engine/bare-rpg) [saves the level](https://github.com/bare-engine/bare-rpg/blob/main/src/components/playerComponents.ts#L125) when the player walks to the next one, and its [`saveVars`](https://github.com/bare-engine/bare-rpg/blob/main/public/data/settingsData.json#L191-L193) also keep each object's color. So, for example, a killed rat stays gray.
 
 ::: tip
-While developing, press **C** to restart with cleared save data.
+While developing, press **Alt+C** to restart with cleared save data.
 :::

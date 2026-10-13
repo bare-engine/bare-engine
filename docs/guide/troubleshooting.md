@@ -76,7 +76,7 @@ Restart the dev server. It reads these files only when it starts.
 
 ## A field keeps an old value after loading
 
-A value saved into a level keeps being loaded, even after the field is no longer saved, for example after changing `@SerializeField` to `@InspectorField`. Press **C** to restart with cleared save data.
+A value saved into a level keeps being loaded, even after the field is no longer saved, for example after changing `@SerializeField` to `@InspectorField`. Press **Alt+C** to restart with cleared save data.
 
 ## Save data from another game shows up
 

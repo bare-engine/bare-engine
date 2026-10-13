@@ -35,6 +35,20 @@ export interface BareRestartOptions
     clearSaveData?: boolean;
 }
 
+// THE KEY A DEBUG KEY IS NAMED BY: event.key FOR A LETTER OR DIGIT, SO IT FOLLOWS THE KEYBOARD LAYOUT. ON A MAC, OPTION
+// TURNS THE KEY INTO ANOTHER CHARACTER (OPTION+R IS ®), SO THEN USE THE KEY'S POSITION: "KeyR" IS "r"
+function DebugKeyName(event: KeyboardEvent): string
+{
+    const key = event.key.toLowerCase();
+    if (/^[a-z0-9]$/.test(key))
+        return key;
+    if (/^Key[A-Z]$/.test(event.code))
+        return event.code.slice(3).toLowerCase();
+    if (/^Digit[0-9]$/.test(event.code))
+        return event.code.slice(5);
+    return key == " " ? "space" : key;
+}
+
 export class BareEngine
 {
     private initialSceneClass!: SceneClass;
@@ -252,23 +266,37 @@ export class BareEngine
         this.RefreshDebugKeysListener();
     }
 
+    private debugKeysListener: ((event: KeyboardEvent) => void) | null = null;
+
+    // A DEBUG KEY IS NAMED "r" FOR R ON ITS OWN, OR "alt_r" FOR ALT+R. THE DEFAULTS USE ALT, SO THEY NEVER CLASH WITH GAME
+    // CONTROLS (R TO ROTATE, C TO CRAFT). A CAPTURING LISTENER ON window RUNS BEFORE THE KEYBOARD CONTROLLER'S ON document,
+    // SO THE GAME DOESN'T ALSO SEE THE KEY
     private RefreshDebugKeysListener(): void
     {
-        globalEvents.persistent.offAlias('debugKeys');
+        if (this.debugKeysListener)
+        {
+            window.removeEventListener('keydown', this.debugKeysListener, true);
+            this.debugKeysListener = null;
+        }
 
         if (!__DEV__ || this.debugKeyActions.size == 0)
             return;
 
-        var debugKeysHandler = ({ key, allKeys }: { key: string; allKeys: string[] }) => {
-            if (allKeys.length > 1)
-                return; // MORE THAN ONE KEY PRESSED, EG: CTRL-C
+        this.debugKeysListener = (event: KeyboardEvent) => {
+            // ONLY ON ITS OWN OR WITH ALT, SO SHORTCUTS LIKE CTRL+C KEEP WORKING. CTRL+ALT IS ALTGR ON MANY KEYBOARDS, FOR TYPING
+            if (event.repeat || event.ctrlKey || event.metaKey || event.shiftKey)
+                return;
 
-            const action = this.debugKeyActions.get(key.toLocaleLowerCase());
-            if (action)
-                action();
+            const action = this.debugKeyActions.get((event.altKey ? "alt_" : "") + DebugKeyName(event));
+            if (!action)
+                return;
+
+            event.preventDefault();
+            event.stopPropagation();
+            action();
         };
 
-        globalEvents.persistent.on(BareEvent.key_pressed, debugKeysHandler, 'debugKeys');
+        window.addEventListener('keydown', this.debugKeysListener, true);
     }
 
     public SetResolution(resolution?: BareOptions['resolution']): void

@@ -331,6 +331,39 @@ export class InputAdvancedTest extends Scene
         document.dispatchEvent(new KeyboardEvent("keyup", { key: " ", code: "Space" }));
         bare.keyboard.ClearAll();
 
+        // alt_ debug keys need Alt, matched by letter or (Mac Option characters) by key position, and the game doesn't see them
+        let debugHits = 0;
+        bare.SetDebugKey("alt_j", () => debugHits++);
+        const press = (init: KeyboardEventInit) =>
+        {
+            document.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyJ", bubbles: true, ...init }));
+            document.dispatchEvent(new KeyboardEvent("keyup", { code: "KeyJ", bubbles: true, ...init }));
+        };
+        press({ key: "j" });
+        c.check(debugHits === 0, "a debug key without Alt should be a normal key: " + debugHits);
+        press({ key: "j", altKey: true });
+        c.check(debugHits === 1, "Alt+J should run the debug key: " + debugHits);
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "j", code: "KeyJ", altKey: true, bubbles: true }));
+        c.check(!bare.keyboard.IsKeyDown("j"), "the game shouldn't see a debug key press");
+        document.dispatchEvent(new KeyboardEvent("keyup", { key: "j", code: "KeyJ", altKey: true, bubbles: true }));
+        press({ key: "∆", altKey: true });
+        c.check(debugHits === 3, "Option+J on a Mac types another character, but should still run the debug key: " + debugHits);
+        press({ key: "j", altKey: true, ctrlKey: true });
+        c.check(debugHits === 3, "Ctrl+Alt (AltGr) shouldn't run a debug key: " + debugHits);
+        bare.SetDebugKey("alt_j", null);
+        press({ key: "j", altKey: true });
+        c.check(debugHits === 3, "a removed debug key shouldn't run: " + debugHits);
+
+        // a debug key without alt_ fires on its own, not with Alt or Ctrl
+        let plainHits = 0;
+        bare.SetDebugKey("j", () => plainHits++);
+        press({ key: "j" });
+        press({ key: "j", altKey: true });
+        press({ key: "j", ctrlKey: true });
+        c.check(plainHits === 1, "a plain debug key should only fire on its own: " + plainHits);
+        bare.SetDebugKey("j", null);
+        bare.keyboard.ClearAll();
+
         // the wheel: what scrolled since the last frame, seen in one frame, lines turned into pixels
         this.wheelSeen.length = 0;
         document.dispatchEvent(new WheelEvent("wheel", { deltaY: 120 }));
