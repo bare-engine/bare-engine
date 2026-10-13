@@ -1167,7 +1167,9 @@ export class GameObject
     // false: a child at (0, 0) sits on this object's texture top left (children move along when the
     // pivot changes). true: it sits on the pivot point, so on this object's position, like Pixi's anchor.
     @SerializeField(GameMode.Edit)
-    childrenAtPivot: boolean = false;
+    childrenAtPivot: boolean = GameObject.childrenAtPivotDefault;
+
+    static childrenAtPivotDefault: boolean = false;
 
     @SerializeField(GameMode.Edit)
     persistent: boolean = false;
@@ -1963,7 +1965,7 @@ export class GameObject
         this.transform.Reset();
         this.innerTransform.Reset();
         this.childrenInheritInnerTransform = true;
-        this.childrenAtPivot = false;
+        this.childrenAtPivot = GameObject.childrenAtPivotDefault;
         this.renderParentTransform = null;
 
         this._OnTextureLoadedCallbacks = null;

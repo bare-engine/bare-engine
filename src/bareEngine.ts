@@ -925,6 +925,7 @@ export class BareEngine
 
         var obj = pool.Grab();
         obj.scene = scene;
+        obj.childrenAtPivot = GameObject.childrenAtPivotDefault;
 
         return obj;
     }

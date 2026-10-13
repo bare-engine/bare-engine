@@ -1073,7 +1073,10 @@ export class Scene implements SceneI
                     gameObject = new input(this);
 
                 if (pool)
+                {
                     gameObject.pooled = true;
+                    gameObject.childrenAtPivot = GameObject.childrenAtPivotDefault;
+                }
 
                 gameObject.name = "gameObject"; //(pool ? "pooledGameObjectExtend" : "gameObjectExtend");
                 gameObject.scene = this;

@@ -108,6 +108,8 @@ ball.childrenAtPivot = true;
 const face = ball.AddChild('face').CenterPivot();   // on the ball's position
 ```
 
+To make that the default for a whole game, set `GameObject.childrenAtPivotDefault = true` before `StartBare`. Objects that already exist keep their setting. To do it only for objects made from prefabs, set `"childrenAtPivot": true` in the `ANY` prefab instead. A class that lays out its children from a corner of its image should set `childrenAtPivot` itself, so it works in any game.
+
 A child of a scaled parent is scaled too. If the parent is scaled differently in width and height, a turned child is skewed, so keep things like that as separate objects that follow the parent instead.
 
 Use `ToGlobal(point)` and `ToLocal(point)` to convert between a child's space and world space. For a point on the object's image, in its image pixels from the top left, like a corner of a hitbox, use `ContentToGlobal(point)`.

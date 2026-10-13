@@ -105,6 +105,25 @@ export class HierarchyAdvancedTest extends Scene
         c.check(nearVec(offset.ToGlobal(), 300, 310), "a child should rotate around its parent's pivot: " + show(offset.ToGlobal()));
         c.check(nearVec(anchored.ToLocal(offset.ToGlobal()), 0.25, 0), "ToLocal should give the child's position back: " + show(anchored.ToLocal(offset.ToGlobal())));
 
+        // childrenAtPivotDefault sets the flag for objects created afterwards, including pooled resets
+        GameObject.childrenAtPivotDefault = true;
+        try
+        {
+            const defaulted = this.AddGameObject("box").SetPosition(300, 300).CenterPivot();
+            defaulted.scale.set(40, 20);
+            const defaultedChild = defaulted.AddChild("box");
+            c.check(defaulted.childrenAtPivot && defaultedChild.childrenAtPivot, "childrenAtPivotDefault should apply to new objects");
+            c.check(nearVec(defaultedChild.ToGlobal(), 300, 300), "with childrenAtPivotDefault, a child at (0, 0) should sit on its parent's pivot: " + show(defaultedChild.ToGlobal()));
+            const reset = new GameObject(this).ResetValues();
+            c.check(reset.childrenAtPivot, "ResetValues should use childrenAtPivotDefault");
+            c.check(!topLeft.childrenAtPivot, "childrenAtPivotDefault should not change existing objects");
+        }
+        finally
+        {
+            GameObject.childrenAtPivotDefault = false;
+        }
+        c.check(!new GameObject(this).childrenAtPivot, "objects should place children from the top left by default");
+
         // bounds of a rotated, scaled image
         const plank = this.AddGameObject("box").SetPosition(0, 0);
         plank.scale.set(10, 20);
