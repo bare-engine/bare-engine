@@ -73,10 +73,17 @@ export class CameraHandler {
     {
         this.scene = scene;
 
-        bare.events.persistent.on(BareEvent.level_loaded, ({ level }) => {
-            if (!this.scene.UI && level.dimensions)
-                this.SetBounds({ x: 0, y: 0, width: level.dimensions.width, height: level.dimensions.height });
-        });
+        bare.events.persistent.on(BareEvent.level_loaded, ({ level }) => this.ApplyLevelBounds(level.dimensions));
+
+        // THE CAMERA IS CREATED ON FIRST USE, WHICH CAN BE AFTER A LEVEL LOADED: CATCH UP ON ITS BOUNDS.
+        // ONLY HERE, SO BOUNDS A GAME SETS ITSELF ARE LEFT ALONE UNTIL THE NEXT LEVEL LOADS
+        this.ApplyLevelBounds(scene.currentLevel?.dimensions);
+    }
+
+    private ApplyLevelBounds(dimensions: Size | undefined): void
+    {
+        if (!this.scene.UI && dimensions)
+            this.SetBounds({ x: 0, y: 0, width: dimensions.width, height: dimensions.height });
     }
 
     Awake()

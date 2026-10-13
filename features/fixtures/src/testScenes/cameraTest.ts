@@ -1,9 +1,15 @@
-import { CameraScaleMode, Scene } from "bare-engine";
+import { CameraScaleMode, LevelData, Scene } from "bare-engine";
 
 export class CameraTest extends Scene
 {
-    override OnStart(): void
+    override async OnStart(): Promise<void>
     {
+        // the camera is created on first use: loading a level before that must still give it the level's bounds
+        const level: LevelData = { name: "cameraBoundsLevel", dimensions: { width: 3000, height: 2000 }, entitiesByLayer: {} } as any;
+        await this.LoadLevel(level as any);
+        const levelBounds = this.camera.bounds;
+        assert(levelBounds.width === 3000 && levelBounds.height === 2000, "a camera first used after a level loaded should have the level's bounds: " + JSON.stringify(levelBounds));
+
         this.camera.SetBounds({ x: -4500, y: -1500, width: 9000, height: 3000 });
         this.camera.SetDimensions(9000, 3000);
 
