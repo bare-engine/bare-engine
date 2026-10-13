@@ -461,50 +461,32 @@ export class ComponentController
 
     private OnCollisionStart(initiatingObject: GameObject, collidingObject: GameObject)
     {
-        const entries = this.componentsByGameObject.entries()
-        for (const [, components] of entries)
-        {
-            components.forEach(component => {
-                if (!component.OnCollisionStart) return;
-
-                if (component.go == initiatingObject)
-                    component.OnCollisionStart(collidingObject);
-                else if (component.go == collidingObject)
-                    component.OnCollisionStart(initiatingObject);
-            })
-        }
+        this.CallCollisionMethod('OnCollisionStart', initiatingObject, collidingObject);
     }
 
     private OnCollisionUpdate(initiatingObject: GameObject, collidingObject: GameObject)
     {
-        const entries = this.componentsByGameObject.entries()
-        for (const [, components] of entries)
-        {
-            components.forEach(component => {
-                if (!component.OnCollisionUpdate) return;
-
-                if (component.go == initiatingObject)
-                    component.OnCollisionUpdate(collidingObject);
-                else if (component.go == collidingObject)
-                    component.OnCollisionUpdate(initiatingObject);
-            })
-        }
+        this.CallCollisionMethod('OnCollisionUpdate', initiatingObject, collidingObject);
     }
 
     private OnCollisionEnd(initiatingObject: GameObject, collidingObject: GameObject)
     {
-        const entries = this.componentsByGameObject.entries()
-        for (const [, components] of entries)
-        {
-            components.forEach(component => {
-                if (!component.OnCollisionEnd) return;
+        this.CallCollisionMethod('OnCollisionEnd', initiatingObject, collidingObject);
+    }
 
-                if (component.go == initiatingObject)
-                    component.OnCollisionEnd(collidingObject);
-                else if (component.go == collidingObject)
-                    component.OnCollisionEnd(initiatingObject);
-            })
-        }
+    // CALLS method ON THE COMPONENTS OF BOTH OBJECTS, PASSING THE OTHER ONE. LOOKS UP JUST THESE TWO
+    // OBJECTS: THIS RUNS FOR EVERY CONTACT, EVERY STEP
+    private CallCollisionMethod(method: 'OnCollisionStart' | 'OnCollisionUpdate' | 'OnCollisionEnd', initiatingObject: GameObject, collidingObject: GameObject)
+    {
+        const initiatingComponents = this.componentsByGameObject.get(initiatingObject.uniqueID);
+        if (initiatingComponents)
+            for (const component of initiatingComponents)
+                component[method]?.(collidingObject);
+
+        const collidingComponents = this.componentsByGameObject.get(collidingObject.uniqueID);
+        if (collidingComponents)
+            for (const component of collidingComponents)
+                component[method]?.(initiatingObject);
     }
 
     Update(deltaTime: number)

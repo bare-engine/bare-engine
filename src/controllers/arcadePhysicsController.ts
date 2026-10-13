@@ -1,9 +1,9 @@
 import { HitboxType, Rectangle } from "../types/bareTypes";
 import { Color, Vec2 } from "../libraries/rapid-render";
-import { QuadTree, QuadTreeItem, QuadTreePair } from "../libraries/quadTree";
+import { QuadTree, QuadTreeItem } from "../libraries/quadTree";
 import type { Scene } from "../scenes/scene";
 import { GameObject } from "../objects/gameObject";
-import { ArcadeObject } from "../objects/arcadeObject";
+import { ArcadeObject, ArcadeShape } from "../objects/arcadeObject";
 import { BareEvent, BlockedState } from "../types/bareTypes";
 import { globalEvents, RegisterController } from "../globals";
 import { PhysicsControllerBase } from "./physicsControllerBase";
@@ -29,9 +29,14 @@ declare module "../types/bareTypes" {
     // collision event payloads.
 }
 
+type CollisionPair = { p1: ArcadeObject; p2: ArcadeObject; collisionHandled?: boolean };
+
+// physicsId OF THE FIRST OBJECT TIMES THIS, PLUS THAT OF THE SECOND, IS A PAIR'S KEY. EXACT FOR IDS BELOW 2^26
+const PAIR_KEY_STRIDE = 67108864;
+
 export class ArcadePhysicsController extends PhysicsControllerBase
 {
-    static MAX_ITERATIONS: int = 8;
+    static MAX_ITERATIONS: int = 4; // SOLVER PASSES PER STEP, MAKE HIGHER TO PREVENT OVERLAP
     static USE_QUAD_TREE: boolean = true;
     static QUAD_TREE_MAX_ITEMS: int = 8;
     static QUAD_TREE_MAX_LEVELS: int = 6;
@@ -49,8 +54,28 @@ export class ArcadePhysicsController extends PhysicsControllerBase
     private width: number = 0;
     private height: number = 0;
 
-    public activeCollisions: Set<string> = new Set();
-    private currentFrameCollisions: Set<string> = new Set();
+    // CONTACTS THAT ARE GOING ON, BY PAIR KEY (SEE pairKey)
+    public activeCollisions: Map<number, [ArcadeObject, ArcadeObject]> = new Map();
+    private currentFrameCollisions: Set<number> = new Set();
+    private static nextPhysicsId = 1;
+
+    // DURING FixedUpdate: SHAPES ARE CACHED PER STEP, AND THE LAYER RULES ARE READ ONCE
+    private stepping = false;
+    private step = 0;
+    private stepHasLayerRules = false;
+    private stepLayerOf: Map<GameObject, string> | null = null;
+
+    // BROAD PHASE PAIRS, REUSED EVERY STEP: THE FIRST pairCount ARE THIS STEP'S
+    private pairs: CollisionPair[] = [];
+    private pairCount = 0;
+    private treeEntries: QuadTreeItem<ArcadeObject>[] = [];
+    private treeQuery: QuadTreeItem<ArcadeObject>[] = [];
+
+    // NARROW PHASE RESULT OF testPair, REUSED SO NO OBJECT IS CREATED PER PAIR. dx, dy AND distance
+    // MEAN WHAT THEY DO IN GetCollisionInfo
+    private hit = { collision: false, dx: 0, dy: 0, distance: 0, radiusSum: 0 };
+    private normalX = 0;
+    private normalY = 0;
     public OnPreCollisionResolve: ((obj1: ArcadeObject, obj2: ArcadeObject) => boolean) | null = null;
     
     @InspectorField
@@ -75,6 +100,9 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             this.collisionObjects.push(object);
         }
 
+        if (object.physicsId === 0)
+            object.physicsId = ArcadePhysicsController.nextPhysicsId++;
+
         if (!object.parent) // ONLY ROOT OBJECTS ARE INTEGRATED
             this.objects.push(object);
     }
@@ -84,6 +112,10 @@ export class ArcadePhysicsController extends PhysicsControllerBase
     {
         if (!(object instanceof ArcadeObject))
             return;
+
+        // ITS CONTACTS ARE DROPPED WITHOUT collision_end
+        for (const other of object.collidingObjects)
+            this.activeCollisions.delete(this.pairKey(object, other));
 
         this.removeAllCollidingObjectReferences(object);
 
@@ -191,6 +223,25 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         if (bare.levelEditorOpen)
             return;
 
+        // READ BEFORE stepping IS SET: WHILE STEPPING, hasLayerCollisionRules RETURNS THIS
+        this.stepHasLayerRules = this.hasLayerCollisionRules();
+        this.stepLayerOf = null;
+        this.step++;
+        this.stepping = true;
+
+        try
+        {
+            this.RunStep(fixedDeltaTime);
+        }
+        finally
+        {
+            this.stepping = false;
+            this.stepLayerOf = null;
+        }
+    }
+
+    private RunStep(fixedDeltaTime: number): void
+    {
         let objectsToRemove: ArcadeObject[] | null = null;
         let sweepObjects: ArcadeObject[] | null = null;
 
@@ -471,15 +522,16 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         // Positional solver passes operate on the same candidates. Rebuilding every
         // layer quadtree for each pass multiplied broad-phase cost by MAX_ITERATIONS.
         // Newly-created contacts are picked up on the next fixed update.
-        const broadPhasePairs = this.getBroadPhasePairs();
+        const pairCount = this.buildBroadPhasePairs();
+        const pairs = this.pairs;
 
         for (let iteration = 0; iteration < maxIterations; iteration++)
         {
             let resolvedAny = false;
 
-            for (const pair of broadPhasePairs)
+            for (let i = 0; i < pairCount; i++)
             {
-                if (this.collidePair(pair, emitEvents))
+                if (this.collidePair(pairs[i], emitEvents))
                     resolvedAny = true;
             }
 
@@ -498,7 +550,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
     // TESTS ONE PAIR, SENDS ITS COLLISION EVENTS ONCE (pair.collisionHandled), AND PUSHES THE OBJECTS APART
     // UNLESS A SENSOR IS INVOLVED. RETURNS TRUE WHEN IT MOVED AN OBJECT
-    private collidePair(pair: { p1: ArcadeObject; p2: ArcadeObject; collisionHandled?: boolean }, emitEvents: boolean): boolean
+    private collidePair(pair: CollisionPair, emitEvents: boolean): boolean
     {
         const obj1 = pair.p1;
         const obj2 = pair.p2;
@@ -509,126 +561,163 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         if (!obj1.collide || !obj2.collide) return false;
         if (!obj1.physicsHitbox.active || !obj2.physicsHitbox.active) return false;
 
-        let collision = false;
-        let resolved = false;
-        let collisionInfo: {dx: number, dy: number, distance: number, angle: number} | null = null;
+        if (!this.testPair(obj1, obj2))
+            return false;
 
-        // Rectangle-Rectangle collision
-        if (obj1.physicsHitbox.type === HitboxType.Rectangle && obj2.physicsHitbox.type === HitboxType.Rectangle) {
-            const result = this.checkRectRectCollision(obj1, obj2);
-            if (result.collision) {
-                collision = true;
-                collisionInfo = {
-                    dx: result.dx,
-                    dy: result.dy,
-                    distance: result.distance,
-                    angle: result.angle
-                };
+        // COPIED: COLLISION EVENTS RUN GAME CODE THAT MAY TEST OTHER PAIRS
+        let dx = this.hit.dx;
+        let dy = this.hit.dy;
+        const distance = this.hit.distance;
+        const radiusSum = this.hit.radiusSum;
+
+        if (!pair.collisionHandled)
+        {
+            this.HandleCollision(obj1, obj2, emitEvents);
+            pair.collisionHandled = true;
+
+            // collide COULD HAVE CHANGED SINCE HandleCollision() SENT OUT EVENTS
+            if (!obj1.collide || !obj2.collide) {
+                return false;
             }
         }
 
-        // Circle-Circle collision
-        if (obj1.physicsHitbox.type === HitboxType.Circle && obj2.physicsHitbox.type === HitboxType.Circle) {
-            const circle1 = this.getWorldCircle(obj1);
-            const circle2 = this.getWorldCircle(obj2);
+        // Skip physical response for sensors or non-solid objects
+        if (sensorCollision) {
+            return false;
+        }
 
-            if (!circle1 || !circle2) {
-                return false;
-            }
+        // Make dx/dy always point from obj1 -> obj2
+        if (obj1.physicsHitbox.type === HitboxType.Circle && obj2.physicsHitbox.type === HitboxType.Rectangle) {
+            // testPair returns rect->circle, but we need circle->rect here
+            dx = -dx;
+            dy = -dy;
+        }
 
-            const dx = circle2.x - circle1.x;
-            const dy = circle2.y - circle1.y;
+        if (this.OnPreCollisionResolve && !this.OnPreCollisionResolve(obj1, obj2)) return false;
+
+        // for two circles the penetration is what's left of the radii, otherwise the distance already is
+        const penetration = radiusSum > 0 ? radiusSum - distance : distance;
+
+        return this.ResolveSolidCollision(obj1, obj2, dx, dy, penetration);
+    }
+
+    // NARROW PHASE ON THE CACHED SHAPES, INTO this.hit. RETURNS hit.collision
+    private testPair(obj1: ArcadeObject, obj2: ArcadeObject): boolean
+    {
+        const hit = this.hit;
+        hit.collision = false;
+        hit.dx = 0;
+        hit.dy = 0;
+        hit.distance = 0;
+        hit.radiusSum = 0;
+
+        const shape1 = this.getShape(obj1);
+        const shape2 = this.getShape(obj2);
+
+        if (!shape1 || !shape2)
+            return false;
+
+        if (shape1.circle && shape2.circle)
+        {
+            const dx = shape2.cx - shape1.cx;
+            const dy = shape2.cy - shape1.cy;
             const distance = Math.sqrt(dx * dx + dy * dy);
 
-            if (distance < circle1.radius + circle2.radius) {
-                collision = true;
-                collisionInfo = {
-                    dx,
-                    dy,
-                    distance,
-                    angle: Math.atan2(dy, dx)
-                };
-            }
+            hit.radiusSum = shape1.radius + shape2.radius;
+            hit.collision = distance < hit.radiusSum;
+            hit.dx = dx;
+            hit.dy = dy;
+            hit.distance = distance;
         }
-        // Circle-Rectangle collision
-        else if (
-            (obj1.physicsHitbox.type === HitboxType.Circle && obj2.physicsHitbox.type === HitboxType.Rectangle) ||
-            (obj1.physicsHitbox.type === HitboxType.Rectangle && obj2.physicsHitbox.type === HitboxType.Circle)
-        ) {
-            const circle = obj1.physicsHitbox.type === HitboxType.Circle ? obj1 : obj2;
-            const rectObj = obj1.physicsHitbox.type === HitboxType.Rectangle ? obj1 : obj2;
+        else if (!shape1.circle && !shape2.circle)
+            this.testRectRect(shape1.bounds, shape2.bounds);
+        else
+            this.testCircleRect(shape1.circle ? shape1 : shape2, shape1.circle ? shape2.bounds : shape1.bounds);
 
-            const result = this.checkCircleRectCollision(circle, rectObj);
-            if (result.collision) {
-                collision = true;
-                collisionInfo = {
-                    dx: result.dx,
-                    dy: result.dy,
-                    distance: result.distance,
-                    angle: result.angle
-                };
-            }
-        }
+        return hit.collision;
+    }
 
-        if (collision && collisionInfo)
+    // dx/dy POINT FROM THE RECTANGLE TO THE CIRCLE, distance IS THE PENETRATION DEPTH
+    private testCircleRect(circle: ArcadeShape, rect: Rectangle): void
+    {
+        const hit = this.hit;
+        const cx = circle.cx;
+        const cy = circle.cy;
+        const radius = circle.radius;
+
+        const rectLeft = rect.x;
+        const rectRight = rectLeft + rect.width;
+        const rectTop = rect.y;
+        const rectBottom = rectTop + rect.height;
+
+        if (cx >= rectLeft && cx <= rectRight && cy >= rectTop && cy <= rectBottom)
         {
-            if (!pair.collisionHandled)
-            {
-                this.HandleCollision(obj1, obj2, emitEvents);
-                pair.collisionHandled = true;
+            // CENTER INSIDE: PUSH OUT THROUGH THE NEAREST SIDE
+            const distLeft = cx - rectLeft;
+            const distRight = rectRight - cx;
+            const distTop = cy - rectTop;
+            const distBottom = rectBottom - cy;
 
-                // collide COULD HAVE CHANGED SINCE HandleCollision() SENT OUT EVENTS
-                if (!obj1.collide || !obj2.collide) {
-                    return false;
-                }
-            }
+            const minDist = Math.min(distLeft, distRight, distTop, distBottom);
 
-            // Skip physical response for sensors or non-solid objects
-            if (sensorCollision) {
-                return false;
-            }
+            hit.collision = true;
 
-            // Separate objects to prevent sticking
-            /*let overlap = 0;
-             if (obj1.physicsHitbox.type === HitboxType.Circle && obj2.physicsHitbox.type === HitboxType.Circle) {
-             overlap = (obj1.physicsHitbox.radius + obj2.physicsHitbox.radius - collisionInfo.distance) / 2;
-             } else if (obj1.physicsHitbox.type === HitboxType.Rectangle && obj2.physicsHitbox.type === HitboxType.Rectangle) {
-             // For rectangle-rectangle, use the collision distance directly (it's already the overlap amount)
-             overlap = collisionInfo.distance / 2;
-             } else {
-             // For circle-rectangle, use penetration depth
-             overlap = collisionInfo.distance / 2;
-             }*/
-
-            // Make collisionInfo.dx/dy always point from obj1 -> obj2
-            if (obj1.physicsHitbox.type === HitboxType.Circle && obj2.physicsHitbox.type === HitboxType.Rectangle) {
-                // checkCircleRectCollision returns rect->circle, but we need circle->rect here
-                collisionInfo.dx = -collisionInfo.dx;
-                collisionInfo.dy = -collisionInfo.dy;
-            }
-
-            if (this.OnPreCollisionResolve && !this.OnPreCollisionResolve(obj1, obj2)) return false;
-            const corr = this.ResolveSolidCollision(obj1, obj2, collisionInfo);
-            if (!corr) return false;
-
-            this.applyBlockedStatesFromNormal(obj1, obj2, corr.nx, corr.ny);
-
-            const { xAddObj1, yAddObj1, xAddObj2, yAddObj2 } = corr;
-
-            if (xAddObj1 !== 0 || yAddObj1 !== 0) {
-                obj1.x += xAddObj1;
-                obj1.y += yAddObj1;
-                resolved = true;
-            }
-
-            if (xAddObj2 !== 0 || yAddObj2 !== 0) {
-                obj2.x += xAddObj2;
-                obj2.y += yAddObj2;
-                resolved = true;
-            }
+            if (minDist === distLeft) { hit.dx = -1; hit.dy = 0; hit.distance = radius + distLeft; }
+            else if (minDist === distRight) { hit.dx = 1; hit.dy = 0; hit.distance = radius + distRight; }
+            else if (minDist === distTop) { hit.dx = 0; hit.dy = -1; hit.distance = radius + distTop; }
+            else { hit.dx = 0; hit.dy = 1; hit.distance = radius + distBottom; }
+            return;
         }
 
-        return resolved;
+        // Closest point on the rectangle to the circle center
+        const dx = cx - Math.max(rectLeft, Math.min(cx, rectRight));
+        const dy = cy - Math.max(rectTop, Math.min(cy, rectBottom));
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < radius)
+        {
+            hit.collision = true;
+            hit.dx = dx;
+            hit.dy = dy;
+            hit.distance = radius - distance;
+        }
+    }
+
+    // dx/dy IS THE OVERLAP ON THE AXIS OF LEAST OVERLAP, POINTING FROM rect2 TO rect1. distance IS THAT OVERLAP
+    private testRectRect(rect1: Rectangle, rect2: Rectangle): void
+    {
+        const hit = this.hit;
+
+        const rect1Left = rect1.x;
+        const rect1Right = rect1Left + rect1.width;
+        const rect1Top = rect1.y;
+        const rect1Bottom = rect1Top + rect1.height;
+
+        const rect2Left = rect2.x;
+        const rect2Right = rect2Left + rect2.width;
+        const rect2Top = rect2.y;
+        const rect2Bottom = rect2Top + rect2.height;
+
+        if (!(rect1Left < rect2Right && rect1Right > rect2Left && rect1Top < rect2Bottom && rect1Bottom > rect2Top))
+            return;
+
+        const overlapX = Math.min(rect1Right - rect2Left, rect2Right - rect1Left);
+        const overlapY = Math.min(rect1Bottom - rect2Top, rect2Bottom - rect1Top);
+
+        hit.collision = true;
+
+        if (overlapX < overlapY)
+        {
+            hit.distance = overlapX;
+            hit.dx = (rect1Left + rect1Right > rect2Left + rect2Right) ? overlapX : -overlapX;
+            hit.dy = 0;
+        }
+        else
+        {
+            hit.distance = overlapY;
+            hit.dx = 0;
+            hit.dy = (rect1Top + rect1Bottom > rect2Top + rect2Bottom) ? overlapY : -overlapY;
+        }
     }
 
     private addCollidingObjects(object1: ArcadeObject, object2: ArcadeObject): void
@@ -674,14 +763,15 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         }
     }
 
-    private getBroadPhasePairs(): { p1: ArcadeObject; p2: ArcadeObject; collisionHandled?: boolean }[]
+    // FILLS this.pairs WITH THIS STEP'S CANDIDATE PAIRS AND RETURNS HOW MANY THERE ARE
+    private buildBroadPhasePairs(): number
     {
+        this.pairCount = 0;
         const collisionObjects = this.getCollisionObjects();
-        const pairs: { p1: ArcadeObject; p2: ArcadeObject; collisionHandled?: boolean }[] = [];
 
         if (!this.hasLayerCollisionRules()) {
-            this.addBroadPhasePairs(collisionObjects, pairs);
-            return pairs;
+            this.addPairsWithin(collisionObjects);
+            return this.pairCount;
         }
 
         const objectsByLayer = new Map<string, ArcadeObject[]>();
@@ -699,6 +789,14 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             layerObjects.push(object);
         }
 
+        // ONE TREE PER LAYER, SHARED BY ALL THE RULES THAT LAYER IS IN
+        const trees = new Map<string, QuadTree<ArcadeObject> | null>();
+        const treeOf = (layer: string) => {
+            if (!trees.has(layer))
+                trees.set(layer, this.buildTree(objectsByLayer.get(layer)!));
+            return trees.get(layer)!;
+        };
+
         const layerNames = Array.from(objectsByLayer.keys());
         for (let i = 0; i < layerNames.length; i++) {
             const layer1 = layerNames[i];
@@ -713,46 +811,75 @@ export class ArcadePhysicsController extends PhysicsControllerBase
                 const layer2Objects = objectsByLayer.get(layer2)!;
 
                 if (layer1 === layer2) {
-                    this.addBroadPhasePairs(layer1Objects, pairs);
+                    this.addPairsWithin(layer1Objects, ArcadePhysicsController.USE_QUAD_TREE ? treeOf(layer1) : null);
+                } else if (!ArcadePhysicsController.USE_QUAD_TREE) {
+                    for (const obj1 of layer1Objects)
+                        for (const obj2 of layer2Objects)
+                            this.addCollisionPair(obj1, obj2);
                 } else {
-                    this.addBroadPhasePairs(
-                        [...layer1Objects, ...layer2Objects],
-                        pairs,
-                        new Set(layer1Objects)
-                    );
+                    // THE SMALLER LAYER'S OBJECTS ARE LOOKED UP IN THE BIGGER LAYER'S TREE
+                    const bigIsLayer2 = layer2Objects.length >= layer1Objects.length;
+                    this.addPairsBetween(bigIsLayer2 ? layer1Objects : layer2Objects, treeOf(bigIsLayer2 ? layer2 : layer1));
                 }
             }
         }
 
-        return pairs;
+        return this.pairCount;
     }
 
-    private addBroadPhasePairs(
-        collisionObjects: ArcadeObject[],
-        pairs: { p1: ArcadeObject; p2: ArcadeObject; collisionHandled?: boolean }[],
-        firstLayerObjects?: Set<ArcadeObject>
-    ): void
+    // EVERY PAIR WITHIN objects. tree, WHEN GIVEN, IS ONE ALREADY BUILT FROM THEM
+    private addPairsWithin(objects: ArcadeObject[], tree?: QuadTree<ArcadeObject> | null): void
     {
         if (!ArcadePhysicsController.USE_QUAD_TREE) {
-            for (let i = 0; i < collisionObjects.length - 1; i++) {
-                for (let j = i + 1; j < collisionObjects.length; j++) {
-                    this.addCollisionPair(
-                        collisionObjects[i],
-                        collisionObjects[j],
-                        pairs,
-                        firstLayerObjects
-                    );
+            for (let i = 0; i < objects.length - 1; i++) {
+                for (let j = i + 1; j < objects.length; j++) {
+                    this.addCollisionPair(objects[i], objects[j]);
                 }
             }
 
             return;
         }
 
-        const entries: QuadTreeItem<ArcadeObject>[] = [];
-        const bounds = this.getBroadPhaseBounds(entries, collisionObjects);
+        if (tree === undefined)
+            tree = this.buildTree(objects);
 
-        if (entries.length < 2) {
+        tree?.visitPairs(this.visitPair);
+    }
+
+    private visitPair = (obj1: ArcadeObject, obj2: ArcadeObject) => this.addCollisionPair(obj1, obj2);
+
+    // EVERY PAIR OF AN OBJECT IN objects AND ONE IN tree, WHOSE BOUNDS OVERLAP
+    private addPairsBetween(objects: ArcadeObject[], tree: QuadTree<ArcadeObject> | null): void
+    {
+        if (!tree)
             return;
+
+        const found = this.treeQuery;
+
+        for (const obj of objects) {
+            if (!obj.physicsHitbox?.active) continue;
+
+            const shape = this.getShape(obj);
+            if (!shape) continue;
+
+            found.length = 0;
+            tree.queryInto(shape.bounds, found);
+
+            for (const item of found)
+                this.addCollisionPair(obj, item.value);
+        }
+
+        found.length = 0;
+    }
+
+    private buildTree(objects: ArcadeObject[]): QuadTree<ArcadeObject> | null
+    {
+        const entries = this.treeEntries;
+        entries.length = 0;
+        const bounds = this.getBroadPhaseBounds(entries, objects);
+
+        if (entries.length === 0) {
+            return null;
         }
 
         const tree = new QuadTree<ArcadeObject>(
@@ -765,27 +892,12 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             tree.insert(entry);
         }
 
-        const candidates: QuadTreePair<ArcadeObject>[] = [];
-        tree.getPairsInto(candidates);
-
-        for (const candidate of candidates) {
-            this.addCollisionPair(candidate.p1, candidate.p2, pairs, firstLayerObjects);
-        }
+        entries.length = 0;
+        return tree;
     }
 
-    private addCollisionPair(
-        obj1: ArcadeObject,
-        obj2: ArcadeObject,
-        pairs: { p1: ArcadeObject; p2: ArcadeObject; collisionHandled?: boolean }[],
-        firstLayerObjects?: Set<ArcadeObject>
-    ): void
+    private addCollisionPair(obj1: ArcadeObject, obj2: ArcadeObject): void
     {
-        // A candidate set made for two different layers must only emit cross-layer
-        // pairs. Same-layer pairs are handled by that layer's own rule/group.
-        if (firstLayerObjects && firstLayerObjects.has(obj1) === firstLayerObjects.has(obj2)) {
-            return;
-        }
-
         if (this.shouldSkipInternalCollision(obj1, obj2)) {
             return;
         }
@@ -795,11 +907,24 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         const firstObj = obj1SpeedSq > obj2SpeedSq ? obj1 : obj2;
         const secondObj = obj1SpeedSq > obj2SpeedSq ? obj2 : obj1;
 
-        pairs.push({ p1: firstObj, p2: secondObj });
+        // REUSE A PAIR OBJECT FROM AN EARLIER STEP
+        const pair = this.pairs[this.pairCount];
+        if (pair) {
+            pair.p1 = firstObj;
+            pair.p2 = secondObj;
+            pair.collisionHandled = false;
+        } else {
+            this.pairs[this.pairCount] = { p1: firstObj, p2: secondObj, collisionHandled: false };
+        }
+
+        this.pairCount++;
     }
 
     private hasLayerCollisionRules(): boolean
     {
+        if (this.stepping)
+            return this.stepHasLayerRules;
+
         const layersInfo = this.scene.settingsData.layersInfo;
         if (!layersInfo) {
             return false;
@@ -831,12 +956,36 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             root = root.parent;
         }
 
+        // DURING A STEP, EVERY OBJECT'S LAYER IS LOOKED UP ONCE, INSTEAD OF SEARCHING ALL LAYERS PER OBJECT
+        if (this.stepping) {
+            this.stepLayerOf ??= this.GetLayerNames();
+            return this.stepLayerOf.get(root) ?? null;
+        }
+
         const layerIndex = this.scene.object.GetLayerOf(root);
         if (layerIndex === -1) {
             return null;
         }
 
         return this.scene.settingsData.layers?.[layerIndex] ?? null;
+    }
+
+    // EVERY OBJECT ON A LAYER, WITH ITS LAYER'S NAME
+    private GetLayerNames(): Map<GameObject, string>
+    {
+        const layerOf = new Map<GameObject, string>();
+        const layers = this.scene.object.GetLayers();
+        const names = this.scene.settingsData.layers;
+
+        for (let i = 0; i < layers.length; i++) {
+            const name = names?.[i];
+            if (!name) continue;
+
+            for (const obj of layers[i])
+                layerOf.set(obj, name);
+        }
+
+        return layerOf;
     }
 
     private layerAllowsCollision(layerName: string, otherLayerName: string): boolean
@@ -900,11 +1049,15 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         return null;
     }
 
-    private getCollisionKey(obj1: ArcadeObject, obj2: ArcadeObject): string
+    // A NUMBER FOR THE PAIR, THE SAME IN BOTH ORDERS
+    private pairKey(obj1: ArcadeObject, obj2: ArcadeObject): number
     {
-        return obj1.uniqueID < obj2.uniqueID
-            ? `${obj1.uniqueID}##${obj2.uniqueID}`
-            : `${obj2.uniqueID}##${obj1.uniqueID}`;
+        if (obj1.physicsId === 0) obj1.physicsId = ArcadePhysicsController.nextPhysicsId++;
+        if (obj2.physicsId === 0) obj2.physicsId = ArcadePhysicsController.nextPhysicsId++;
+
+        return obj1.physicsId < obj2.physicsId
+            ? obj1.physicsId * PAIR_KEY_STRIDE + obj2.physicsId
+            : obj2.physicsId * PAIR_KEY_STRIDE + obj1.physicsId;
     }
 
     private getVelocityMagnitudeSquared(obj: ArcadeObject): number
@@ -923,13 +1076,13 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
         for (let i = 0; i < collisionObjects.length; i++) {
             const obj = collisionObjects[i];
-            const bounds = this.getObjectBounds(obj);
+            if (!obj.physicsHitbox?.active) continue;
 
-            if (!bounds) {
-                continue;
-            }
+            const shape = this.getShape(obj);
+            if (!shape) continue;
 
-            entries.push({ bounds, value: obj });
+            const bounds = shape.bounds;
+            entries.push(shape.treeItem);
 
             left = Math.min(left, bounds.x);
             top = Math.min(top, bounds.y);
@@ -947,34 +1100,77 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         return { x: left, y: top, width, height };
     }
 
+    // THE OBJECT'S CACHED SHAPE BOUNDS (SEE getShape): DON'T KEEP THEM
     private getObjectBounds(obj: ArcadeObject): Rectangle | null
     {
         if (!obj.physicsHitbox?.active) {
             return null;
         }
 
-        if (obj.physicsHitbox.type === HitboxType.Circle) {
-            const radius = obj.physicsHitbox.GetRadius();
+        return this.getShape(obj)?.bounds ?? null;
+    }
 
-            if (radius <= 0) {
-                return null;
+    // THE OBJECT'S HITBOX IN WORLD SPACE, null WHEN IT'S EMPTY. DURING A STEP IT'S COMPUTED ONCE PER ROOT
+    // OBJECT, AND MOVING THE OBJECT SHIFTS IT. OTHER CHANGES DURING A STEP (ROTATION, SCALE, PIVOT, HITBOX,
+    // EG FROM A COLLISION EVENT) COUNT FROM THE NEXT STEP. CHILDREN, WHOSE WORLD POSITION FOLLOWS THEIR
+    // PARENT, ARE COMPUTED EVERY TIME. THE SHAPE BELONGS TO THE OBJECT: DON'T KEEP IT
+    private getShape(obj: ArcadeObject): ArcadeShape | null
+    {
+        const shape = obj.physicsShape;
+
+        if (this.stepping && shape.step === this.step && !obj.parent)
+        {
+            const dx = obj.x - shape.x;
+            const dy = obj.y - shape.y;
+
+            if (dx !== 0 || dy !== 0) {
+                shape.x += dx;
+                shape.y += dy;
+                shape.cx += dx;
+                shape.cy += dy;
+                shape.bounds.x += dx;
+                shape.bounds.y += dy;
             }
 
-            const circle = this.getWorldCircle(obj);
-
-            if (!circle) {
-                return null;
-            }
-
-            return {
-                x: circle.x - circle.radius,
-                y: circle.y - circle.radius,
-                width: circle.radius * 2,
-                height: circle.radius * 2
-            };
+            return shape.valid ? shape : null;
         }
 
-        return this.getWorldHitboxRect(obj);
+        shape.step = this.stepping ? this.step : -1;
+        shape.x = obj.x;
+        shape.y = obj.y;
+        shape.circle = obj.physicsHitbox.type === HitboxType.Circle;
+
+        const bounds = shape.bounds;
+
+        if (shape.circle) {
+            const circle = this.getWorldCircle(obj);
+            shape.valid = !!circle;
+
+            if (circle) {
+                shape.cx = circle.x;
+                shape.cy = circle.y;
+                shape.radius = circle.radius;
+                bounds.x = circle.x - circle.radius;
+                bounds.y = circle.y - circle.radius;
+                bounds.width = circle.radius * 2;
+                bounds.height = circle.radius * 2;
+            }
+        } else {
+            const rect = this.getWorldHitboxRect(obj);
+            shape.valid = !!rect;
+
+            if (rect) {
+                shape.cx = rect.x + rect.width / 2;
+                shape.cy = rect.y + rect.height / 2;
+                shape.radius = 0;
+                bounds.x = rect.x;
+                bounds.y = rect.y;
+                bounds.width = rect.width;
+                bounds.height = rect.height;
+            }
+        }
+
+        return shape.valid ? shape : null;
     }
 
     GetObjectHitboxRadius(obj: ArcadeObject): number
@@ -1076,202 +1272,6 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         };
     }
 
-    private checkCircleRectCollision(circle: ArcadeObject, obj: ArcadeObject): {
-        collision: boolean;
-        dx: number;
-        dy: number;
-        distance: number;
-        angle: number;
-    }
-    {
-        const circleBounds = this.getWorldCircle(circle);
-        const rectBounds = this.getWorldHitboxRect(obj);
-
-        if (!circleBounds || !rectBounds) {
-            return {
-                collision: false,
-                dx: 0,
-                dy: 0,
-                distance: 0,
-                angle: 0
-            };
-        }
-
-        // Get rectangle bounds
-        const rectLeft = rectBounds.x;
-        const rectRight = rectLeft + rectBounds.width;
-        const rectTop = rectBounds.y;
-        const rectBottom = rectTop + rectBounds.height;
-
-        const insideRect =
-            circleBounds.x >= rectLeft &&
-            circleBounds.x <= rectRight &&
-            circleBounds.y >= rectTop &&
-            circleBounds.y <= rectBottom;
-
-        // Find closest point on rectangle to circle center
-        const closestX = Math.max(rectLeft, Math.min(circleBounds.x, rectRight));
-        const closestY = Math.max(rectTop, Math.min(circleBounds.y, rectBottom));
-
-        // Calculate distance from circle center to closest point
-        const dx = circleBounds.x - closestX;
-        const dy = circleBounds.y - closestY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (insideRect) {
-            const distLeft = circleBounds.x - rectLeft;
-            const distRight = rectRight - circleBounds.x;
-            const distTop = circleBounds.y - rectTop;
-            const distBottom = rectBottom - circleBounds.y;
-
-            const minDist = Math.min(distLeft, distRight, distTop, distBottom);
-
-            if (minDist === distLeft) {
-                return {
-                    collision: true,
-                    dx: -1,
-                    dy: 0,
-                    distance: circleBounds.radius + distLeft,
-                    angle: Math.PI
-                };
-            }
-
-            if (minDist === distRight) {
-                return {
-                    collision: true,
-                    dx: 1,
-                    dy: 0,
-                    distance: circleBounds.radius + distRight,
-                    angle: 0
-                };
-            }
-
-            if (minDist === distTop) {
-                return {
-                    collision: true,
-                    dx: 0,
-                    dy: -1,
-                    distance: circleBounds.radius + distTop,
-                    angle: -Math.PI / 2
-                };
-            }
-
-            return {
-                collision: true,
-                dx: 0,
-                dy: 1,
-                distance: circleBounds.radius + distBottom,
-                angle: Math.PI / 2
-            };
-        }
-
-        if (distance < circleBounds.radius) {
-            return {
-                collision: true,
-                dx: dx,
-                dy: dy,
-                distance: circleBounds.radius - distance, // Penetration depth
-                angle: Math.atan2(dy, dx)
-            };
-        }
-
-        return {
-            collision: false,
-            dx: 0,
-            dy: 0,
-            distance: 0,
-            angle: 0
-        };
-    }
-
-
-
-    private checkRectRectCollision(obj1: ArcadeObject, obj2: ArcadeObject): {
-        collision: boolean;
-        dx: number;
-        dy: number;
-        distance: number;
-        angle: number;
-    } {
-        const rect1 = this.getWorldHitboxRect(obj1);
-        const rect2 = this.getWorldHitboxRect(obj2);
-
-        if (!rect1 || !rect2) {
-            return {
-                collision: false,
-                dx: 0,
-                dy: 0,
-                distance: 0,
-                angle: 0
-            };
-        }
-
-        // Get rectangle 1 bounds
-        const rect1Left = rect1.x;
-        const rect1Right = rect1Left + rect1.width;
-        const rect1Top = rect1.y;
-        const rect1Bottom = rect1Top + rect1.height;
-
-        // Get rectangle 2 bounds
-        const rect2Left = rect2.x;
-        const rect2Right = rect2Left + rect2.width;
-        const rect2Top = rect2.y;
-        const rect2Bottom = rect2Top + rect2.height;
-
-        // Check for AABB collision
-        const colliding = rect1Left < rect2Right &&
-            rect1Right > rect2Left &&
-            rect1Top < rect2Bottom &&
-            rect1Bottom > rect2Top;
-
-        if (!colliding) {
-            return {
-                collision: false,
-                dx: 0,
-                dy: 0,
-                distance: 0,
-                angle: 0
-            };
-        }
-
-        // Calculate overlap amounts
-        const overlapX = Math.min(rect1Right - rect2Left, rect2Right - rect1Left);
-        const overlapY = Math.min(rect1Bottom - rect2Top, rect2Bottom - rect1Top);
-
-        // Calculate center points
-        const center1X = (rect1Left + rect1Right) / 2;
-        const center1Y = (rect1Top + rect1Bottom) / 2;
-        const center2X = (rect2Left + rect2Right) / 2;
-        const center2Y = (rect2Top + rect2Bottom) / 2;
-
-        // Use the minimum overlap to determine collision direction and separation vector
-        let dx: number, dy: number, distance: number;
-
-        if (overlapX < overlapY) {
-            // Horizontal collision - separate horizontally
-            distance = overlapX;
-            // Direction from obj2 to obj1 (so obj1 moves away from obj2)
-            dx = (center1X > center2X) ? overlapX : -overlapX;
-            dy = 0;
-        } else {
-            // Vertical collision - separate vertically
-            distance = overlapY;
-            dx = 0;
-            // Direction from obj2 to obj1 (so obj1 moves away from obj2)
-            dy = (center1Y > center2Y) ? overlapY : -overlapY;
-        }
-
-        const angle = Math.atan2(dy, dx);
-
-        return {
-            collision: true,
-            dx: dx,
-            dy: dy,
-            distance: distance,  // This is the overlap amount
-            angle: angle
-        };
-    }
-
     private rotateVector(vector: Vec2, angle: number): Vec2 {
         return new Vec2(
             vector.x * Math.cos(angle) - vector.y * Math.sin(angle),
@@ -1315,43 +1315,27 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         return this.GetCollisionInfo(obj1, obj2).collision;
     }
 
+    // FOR TWO CIRCLES dx/dy POINT FROM obj1 TO obj2 AND distance IS BETWEEN THEIR CENTERS. FOR TWO RECTANGLES dx/dy
+    // IS THE OVERLAP, POINTING FROM obj2 TO obj1. FOR A CIRCLE AND A RECTANGLE dx/dy POINT FROM THE RECTANGLE TO
+    // THE CIRCLE, AND distance IS HOW DEEP THEY OVERLAP
     GetCollisionInfo(obj1: ArcadeObject, obj2: ArcadeObject): {collision: boolean, dx: number, dy: number, distance: number, angle: number}
     {
-        if (obj1.physicsHitbox.type === HitboxType.Rectangle && obj2.physicsHitbox.type === HitboxType.Rectangle) {
-            return this.checkRectRectCollision(obj1, obj2);
-        }
+        const hit = this.hit;
+        this.testPair(obj1, obj2);
 
-        if (obj1.physicsHitbox.type === HitboxType.Circle && obj2.physicsHitbox.type === HitboxType.Circle) {
-            const circle1 = this.getWorldCircle(obj1);
-            const circle2 = this.getWorldCircle(obj2);
-
-            if (!circle1 || !circle2) {
-                return { collision: false, dx: 0, dy: 0, distance: 0, angle: 0 };
-            }
-
-            const dx = circle2.x - circle1.x;
-            const dy = circle2.y - circle1.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-
-            return {
-                collision: distance < circle1.radius + circle2.radius,
-                dx,
-                dy,
-                distance,
-                angle: Math.atan2(dy, dx)
-            };
-        }
-
-        const circle = obj1.physicsHitbox.type === HitboxType.Circle ? obj1 : obj2;
-        const rectObj = obj1.physicsHitbox.type === HitboxType.Rectangle ? obj1 : obj2;
-        return this.checkCircleRectCollision(circle, rectObj);
+        return {
+            collision: hit.collision,
+            dx: hit.dx,
+            dy: hit.dy,
+            distance: hit.distance,
+            angle: Math.atan2(hit.dy, hit.dx)
+        };
     }
 
     // object1 IS ALWAYS THE OBJECT WITH THE HIGHEST VELOCITY
     HandleCollision(object1: ArcadeObject, object2: ArcadeObject, emitEvents: boolean = true)
     {
-        // Create a unique key for this collision pair
-        const collisionKey = this.getCollisionKey(object1, object2);
+        const collisionKey = this.pairKey(object1, object2);
         const alreadyTrackedThisFrame = this.currentFrameCollisions.has(collisionKey);
 
         this.currentFrameCollisions.add(collisionKey);
@@ -1360,10 +1344,9 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
         if (isNewCollision)
         {
-            this.activeCollisions.add(collisionKey);
+            this.activeCollisions.set(collisionKey, [object1, object2]);
+            this.addCollidingObjects(object1, object2);
         }
-
-        this.addCollidingObjects(object1, object2);
 
         if (!emitEvents) {
             return;
@@ -1391,17 +1374,11 @@ export class ArcadePhysicsController extends PhysicsControllerBase
     private CheckCollisionEnd()
     {
         // Check for collisions that were active but didn't occur this frame
-        for (const collisionKey of this.activeCollisions)
+        for (const [collisionKey, [object1, object2]] of this.activeCollisions)
         {
             if (this.currentFrameCollisions.has(collisionKey)) continue;
 
-            // Find the actual objects
-            const [obj1ID, obj2ID] = collisionKey.split('##');
-            const collisionObjects = this.getCollisionObjects();
-            const object1 = collisionObjects.find(obj => obj.uniqueID == obj1ID);
-            const object2 = collisionObjects.find(obj => obj.uniqueID == obj2ID);
-
-            if (object1 && object2)
+            if (this.collisionObjectSet.has(object1) && this.collisionObjectSet.has(object2))
             {
                 this.removeCollidingObjects(object1, object2);
                 object1.CollisionEnd(object2);
@@ -1439,15 +1416,10 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         }
     }
 
-    private getCollisionNormal(
-        obj1: ArcadeObject,
-        obj2: ArcadeObject,
-        collisionInfo: { dx: number; dy: number; distance: number; angle: number }
-    ): { nx: number; ny: number }
+    // THE CONTACT NORMAL FROM obj1 TO obj2, INTO normalX / normalY
+    private setCollisionNormal(obj1: ArcadeObject, obj2: ArcadeObject, dx: number, dy: number): void
     {
-        const rectRect = (obj1.physicsHitbox.type === HitboxType.Rectangle && obj2.physicsHitbox.type === HitboxType.Rectangle);
-
-        const len = Math.hypot(collisionInfo.dx, collisionInfo.dy);
+        const len = Math.sqrt(dx * dx + dy * dy);
 
         if (len <= 1e-8) {
             const centerDx = obj2.x - obj1.x;
@@ -1455,10 +1427,9 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             const centerLen = Math.hypot(centerDx, centerDy);
 
             if (centerLen > 1e-8) {
-                return {
-                    nx: centerDx / centerLen,
-                    ny: centerDy / centerLen
-                };
+                this.normalX = centerDx / centerLen;
+                this.normalY = centerDy / centerLen;
+                return;
             }
 
             const relVelX = obj2.velocity.x - obj1.velocity.x;
@@ -1466,97 +1437,78 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             const relVelLen = Math.hypot(relVelX, relVelY);
 
             if (relVelLen > 1e-8) {
-                return {
-                    nx: relVelX / relVelLen,
-                    ny: relVelY / relVelLen
-                };
+                this.normalX = relVelX / relVelLen;
+                this.normalY = relVelY / relVelLen;
+                return;
             }
 
-            return { nx: 1, ny: 0 };
+            this.normalX = 1;
+            this.normalY = 0;
+            return;
         }
 
-        if (rectRect) {
-            return {
-                nx: -collisionInfo.dx / len,
-                ny: -collisionInfo.dy / len
-            };
-        }
-
-        return {
-            nx: collisionInfo.dx / len,
-            ny: collisionInfo.dy / len
-        };
+        // rect-rect dx/dy point from obj2 to obj1
+        const sign = (obj1.physicsHitbox.type === HitboxType.Rectangle && obj2.physicsHitbox.type === HitboxType.Rectangle) ? -1 : 1;
+        this.normalX = sign * dx / len;
+        this.normalY = sign * dy / len;
     }
 
-    private ResolveSolidCollision(
-        obj1: ArcadeObject,
-        obj2: ArcadeObject,
-        collisionInfo: { dx: number; dy: number; distance: number; angle: number }
-    ): { xAddObj1: number; yAddObj1: number; xAddObj2: number; yAddObj2: number; nx: number; ny: number } | null
+    // PUSHES THE OBJECTS APART AND BOUNCES THEM. RETURNS TRUE WHEN IT MOVED ONE
+    private ResolveSolidCollision(obj1: ArcadeObject, obj2: ArcadeObject, dx: number, dy: number, penetration: number): boolean
     {
-        let xAddObj1 = 0, yAddObj1 = 0;
-        let xAddObj2 = 0, yAddObj2 = 0;
-
         // --- penetration depth (DO NOT /2 for rect-rect)
-        let penetration = 0;
-
-        if (obj1.physicsHitbox.type === HitboxType.Circle && obj2.physicsHitbox.type === HitboxType.Circle) {
-            const circle1 = this.getWorldCircle(obj1);
-            const circle2 = this.getWorldCircle(obj2);
-            if (!circle1 || !circle2) return null;
-
-            penetration = (circle1.radius + circle2.radius) - collisionInfo.distance;
-        } else if (obj1.physicsHitbox.type === HitboxType.Rectangle && obj2.physicsHitbox.type === HitboxType.Rectangle) {
-            penetration = collisionInfo.distance; // already overlap depth
-        } else {
-            penetration = collisionInfo.distance; // circle-rect returns penetration depth already
-        }
-
-        if (penetration <= 0) return null;
-
-        // --- choose normal
-        const { nx, ny } = this.getCollisionNormal(obj1, obj2, collisionInfo);
+        if (penetration <= 0) return false;
 
         // --- mass
         const invMass1 = obj1.static ? 0 : 1;
         const invMass2 = obj2.static ? 0 : 1;
         const invMassSum = invMass1 + invMass2;
-        if (invMassSum <= 0) return null;
+        if (invMassSum <= 0) return false;
 
-        // --- positional correction along MTV normal
-        {
-            const corr = (penetration + 1e-6) / invMassSum;
-
-            xAddObj1 -= corr * nx * invMass1;
-            yAddObj1 -= corr * ny * invMass1;
-
-            xAddObj2 += corr * nx * invMass2;
-            yAddObj2 += corr * ny * invMass2;
-        }
+        // --- choose normal
+        this.setCollisionNormal(obj1, obj2, dx, dy);
+        const nx = this.normalX;
+        const ny = this.normalY;
 
         // --- impulse along MTV normal
-        {
-            const rvx = obj2.velocity.x - obj1.velocity.x;
-            const rvy = obj2.velocity.y - obj1.velocity.y;
-            const velAlongNormal = rvx * nx + rvy * ny;
+        const rvx = obj2.velocity.x - obj1.velocity.x;
+        const rvy = obj2.velocity.y - obj1.velocity.y;
+        const velAlongNormal = rvx * nx + rvy * ny;
 
-            if (velAlongNormal < 0) {
-                // the bouncier of the two, so a bouncy object also bounces off walls left at 0, like off the level bounds
-                const restitution = Math.max(obj1.restitution ?? 0, obj2.restitution ?? 0);
-                const j = -(1 + restitution) * velAlongNormal / invMassSum;
+        if (velAlongNormal < 0) {
+            // the bouncier of the two, so a bouncy object also bounces off walls left at 0, like off the level bounds
+            const restitution = Math.max(obj1.restitution ?? 0, obj2.restitution ?? 0);
+            const j = -(1 + restitution) * velAlongNormal / invMassSum;
 
-                const impX = j * nx;
-                const impY = j * ny;
+            const impX = j * nx;
+            const impY = j * ny;
 
-                obj1.velocity.x -= impX * invMass1;
-                obj1.velocity.y -= impY * invMass1;
+            obj1.velocity.x -= impX * invMass1;
+            obj1.velocity.y -= impY * invMass1;
 
-                obj2.velocity.x += impX * invMass2;
-                obj2.velocity.y += impY * invMass2;
-            }
+            obj2.velocity.x += impX * invMass2;
+            obj2.velocity.y += impY * invMass2;
         }
 
-        return { xAddObj1, yAddObj1, xAddObj2, yAddObj2, nx, ny };
+        this.applyBlockedStatesFromNormal(obj1, obj2, nx, ny);
+
+        // --- positional correction along MTV normal
+        const corr = (penetration + 1e-6) / invMassSum;
+        let moved = false;
+
+        if (invMass1 !== 0) {
+            obj1.x -= corr * nx;
+            obj1.y -= corr * ny;
+            moved = true;
+        }
+
+        if (invMass2 !== 0) {
+            obj2.x += corr * nx;
+            obj2.y += corr * ny;
+            moved = true;
+        }
+
+        return moved;
     }
 
     GetObjectAtPoint(position: Vec2, ignoredObject?: ArcadeObject): ArcadeObject | null
@@ -1589,11 +1541,16 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
     Clear(includingPersistent: boolean = true)
     {
+        this.pairs.length = 0;
+        this.pairCount = 0;
+
         if (includingPersistent)
         {
             this.objects.length = 0;
             this.collisionObjects.length = 0;
             this.collisionObjectSet.clear();
+            this.activeCollisions.clear();
+            this.currentFrameCollisions.clear();
             return;
         }
 
@@ -1617,6 +1574,12 @@ export class ArcadePhysicsController extends PhysicsControllerBase
                 this.collisionObjectSet.delete(collisionObject);
                 this.collisionObjects.splice(i, 1);
             }
+        }
+
+        for (const [collisionKey, [object1, object2]] of this.activeCollisions)
+        {
+            if (!this.collisionObjectSet.has(object1) || !this.collisionObjectSet.has(object2))
+                this.activeCollisions.delete(collisionKey);
         }
     }
 }

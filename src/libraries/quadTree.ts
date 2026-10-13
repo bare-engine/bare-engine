@@ -114,6 +114,13 @@ export class QuadTree<T>
 
     getPairsInto(results: QuadTreePair<T>[]): void
     {
+        this.visitPairs((p1, p2) => results.push({ p1, p2 }));
+    }
+
+    // CALLS visit FOR EVERY PAIR OF ITEMS WHOSE BOUNDS INTERSECT, THE SAME PAIRS getPairsInto
+    // RETURNS, WITHOUT CREATING AN OBJECT PER PAIR
+    visitPairs(visit: (p1: T, p2: T) => void): void
+    {
         // Pairs stored directly in this node.
         for (let i = 0; i < this.items.length - 1; i++) {
             const item1 = this.items[i];
@@ -121,7 +128,7 @@ export class QuadTree<T>
             for (let j = i + 1; j < this.items.length; j++) {
                 const item2 = this.items[j];
                 if (QuadTree.intersects(item1.bounds, item2.bounds)) {
-                    results.push({ p1: item1.value, p2: item2.value });
+                    visit(item1.value, item2.value);
                 }
             }
         }
@@ -131,7 +138,7 @@ export class QuadTree<T>
         for (const item of this.items) {
             for (const node of this.nodes) {
                 if (QuadTree.intersects(item.bounds, node.bounds)) {
-                    node.getPairsAgainstItem(item, results);
+                    node.visitPairsAgainstItem(item, visit);
                 }
             }
         }
@@ -139,21 +146,21 @@ export class QuadTree<T>
         // Objects fully contained by different children cannot overlap, so only
         // recurse within each child.
         for (const node of this.nodes) {
-            node.getPairsInto(results);
+            node.visitPairs(visit);
         }
     }
 
-    private getPairsAgainstItem(item: QuadTreeItem<T>, results: QuadTreePair<T>[]): void
+    private visitPairsAgainstItem(item: QuadTreeItem<T>, visit: (p1: T, p2: T) => void): void
     {
         for (const other of this.items) {
             if (QuadTree.intersects(item.bounds, other.bounds)) {
-                results.push({ p1: item.value, p2: other.value });
+                visit(item.value, other.value);
             }
         }
 
         for (const node of this.nodes) {
             if (QuadTree.intersects(item.bounds, node.bounds)) {
-                node.getPairsAgainstItem(item, results);
+                node.visitPairsAgainstItem(item, visit);
             }
         }
     }

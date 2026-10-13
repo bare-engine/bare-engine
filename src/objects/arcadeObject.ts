@@ -1,4 +1,5 @@
 import { GameMode, MakePathForEntity } from "../globals";
+import type { QuadTreeItem } from "../libraries/quadTree";
 import { Texture, Vec2 } from "../libraries/rapid-render";
 import { Scene } from "../scenes/scene";
 import { BareEvent, BlockedState, ConstructEntityOptions, Entity, HitboxType, Position, Rectangle, Rectangle2Vec } from "../types/bareTypes";
@@ -28,6 +29,35 @@ export interface ArcadeObjectEntity extends Entity
     pivotBasedOnHitbox?: Position | string;
 }
 
+// AN OBJECT'S HITBOX IN WORLD SPACE, CACHED BY ArcadePhysicsController FOR ONE FIXED STEP. MOVING
+// THE OBJECT SHIFTS IT
+export class ArcadeShape
+{
+    // THE PHYSICS STEP IT WAS COMPUTED IN, -1 WHEN COMPUTED OUTSIDE A STEP
+    step: number = -1;
+
+    // THE POSITION IT IS FOR
+    x: number = 0;
+    y: number = 0;
+
+    // FALSE WHEN THE HITBOX IS EMPTY
+    valid: boolean = false;
+    circle: boolean = false;
+    // CIRCLE CENTER AND RADIUS. FOR A RECTANGLE, ITS CENTER AND 0
+    cx: number = 0;
+    cy: number = 0;
+    radius: number = 0;
+    // AXIS ALIGNED BOUNDING BOX
+    readonly bounds: Rectangle = { x: 0, y: 0, width: 0, height: 0 };
+    // THE BROAD PHASE QUADTREE ENTRY, REUSED EVERY STEP
+    readonly treeItem: QuadTreeItem<ArcadeObject>;
+
+    constructor(owner: ArcadeObject)
+    {
+        this.treeItem = { bounds: this.bounds, value: owner };
+    }
+}
+
 export class ArcadeObject extends GameObject
 {
     declare entity: ArcadeObjectEntity | null;
@@ -52,6 +82,10 @@ export class ArcadeObject extends GameObject
     
     blocked:BlockedState = BlockedState.None;
     collidingObjects: ArcadeObject[] = [];
+
+    // SET BY ArcadePhysicsController: A NUMBER FOR COLLISION PAIR KEYS, AND THE WORLD SPACE HITBOX OF THE CURRENT STEP
+    physicsId: number = 0;
+    physicsShape: ArcadeShape = new ArcadeShape(this);
 
     static dummyPhysicsObjectBare: ArcadeObject = new ArcadeObject();
 
@@ -252,7 +286,7 @@ export class ArcadeObject extends GameObject
     // emitted untyped, see ArcadePhysicsController.HandleCollision
     CollisionStart(collidingObject: ArcadeObject)
     {
-        this.events.emit(BareEvent.collision_start as string, collidingObject, this);
+        this._events?.emit(BareEvent.collision_start as string, collidingObject, this);
         this.OnCollisionStart(collidingObject);
     }
 
@@ -263,7 +297,7 @@ export class ArcadeObject extends GameObject
 
     CollisionUpdate(collidingObject: ArcadeObject)
     {
-        this.events.emit(BareEvent.collision_update as string, collidingObject, this);
+        this._events?.emit(BareEvent.collision_update as string, collidingObject, this);
         this.OnCollisionUpdate(collidingObject);
     }
 
@@ -274,7 +308,7 @@ export class ArcadeObject extends GameObject
 
     CollisionEnd(collidingObject: ArcadeObject)
     {
-        this.events.emit(BareEvent.collision_end as string, collidingObject, this);
+        this._events?.emit(BareEvent.collision_end as string, collidingObject, this);
         this.OnCollisionEnd(collidingObject);
     }
 
@@ -327,6 +361,9 @@ export class ArcadeObject extends GameObject
     override ResetValues(): this
     {
         super.ResetValues();
+
+        if (this.physicsShape)
+            this.physicsShape.step = -1;
 
         this.collide = true;
         this.sensor = false;

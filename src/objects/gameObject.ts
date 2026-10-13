@@ -164,7 +164,7 @@ export class GameObject
         this._OnTextureLoadedCallbacks = value;
     }
 
-    private _events: ReturnType<typeof mitt<Events>> | null = null;
+    protected _events: ReturnType<typeof mitt<Events>> | null = null;
 
     // ONLY ALLOCATING EVENTS WHEN NEEDED, SAVES SOME MEMORY
     get events(): ReturnType<typeof mitt<Events>>
