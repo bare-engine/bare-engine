@@ -464,14 +464,6 @@ export class Helper
         return classes;
     }
 
-    // bare.AddClass RESTORES THE TRUE cls.name AT REGISTRATION, SO THIS USUALLY
-    // RETURNS IT DIRECTLY. FALLBACK STRIPS THE LEADING _ AND TRAILING NUMBER THE
-    // DECORATOR TRANSFORM ADDS TO UNREGISTERED CLASSES, EG: Weapon -> Weapon2.
-    static GetNameFromClass(_class: any): string
-    {
-        return _class.name.replace(/^_/, '').replace(/\d+$/, '');
-    }
-
     static RemoveExtension(path: string): string
     {
         return path.replace(/\.[^/.]+$/, "");

@@ -7,6 +7,7 @@ const MagicString = require("magic-string");
 const ts = require("./projectRequire")("typescript");
 const createControllerProxyTransformer = require("./controllerProxyTransformer");
 const createGameObjectNameTransformer = require("./gameObjectNameTransformer");
+const createClassNameTransformer = require("./classNameTransformer");
 const createDecoratorStripTransformer = require("./decoratorStripTransformer");
 const { stripTexturePackImages } = require("../scripts/stripTexturePackImages.cjs");
 const emojiMappingEmojiToName = require("./emojiMappingEmojiToName.json");
@@ -1537,7 +1538,8 @@ function emitTransformedTs(filePath, code, compilerOptions, stripDecorators) {
             before: [
                 ...(stripDecorators ? [createDecoratorStripTransformer()] : []),
                 createControllerProxyTransformer(program),
-                createGameObjectNameTransformer(program)
+                createGameObjectNameTransformer(program),
+                createClassNameTransformer()
             ]
         }
     );
@@ -1565,7 +1567,8 @@ function transpileTransformedTs(filePath, code, compilerOptions, stripDecorators
             before: [
                 ...(stripDecorators ? [createDecoratorStripTransformer()] : []),
                 createControllerProxyTransformer(),
-                createGameObjectNameTransformer()
+                createGameObjectNameTransformer(),
+                createClassNameTransformer()
             ]
         }
     });

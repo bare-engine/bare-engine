@@ -108,7 +108,9 @@ module.exports = ({ mode }) => {
             }
         },
         esbuild: {
-            keepNames: true
+            // Class names are kept by vite/classNameTransformer.js instead. keepNames would also
+            // wrap every named function in an Object.defineProperty call, which is slow in hot code
+            keepNames: false
         },
         build: {
             outDir: path.join(projectRoot, "dist"),

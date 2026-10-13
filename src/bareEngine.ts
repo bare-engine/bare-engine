@@ -644,11 +644,9 @@ export class BareEngine
     // DOESN'T ALWAYS DO SOMETHING, BUT JUST A HOAX TO LET THE DEV REFFERENCE THE CLASS
     AddClass(_class: any, name?: string): void
     {
-        // The auto-register plugin passes the true source name; for a manual
-        // AddClass(Cls) we strip the decorator-added suffix off the mangled .name
-        // as a best-effort guess. Either way, write it back onto cls.name so every
-        // later read - cls.name, instance.constructor.name, GetNameFromClass - is clean.
-        const className = name ?? Helper.GetNameFromClass(_class);
+        // cls.name is already the source name (vite/classNameTransformer.js). A name passed in
+        // is written onto the class, so every later cls.name / instance.constructor.name read matches
+        const className = name ?? _class.name;
         Object.defineProperty(_class, "name", { value: className, configurable: true });
 
         const existingClass = bare.registeredClasses[className];
@@ -703,10 +701,8 @@ export class BareEngine
 
     RegisterComponent(componentClass: any, name?: string)
     {
-        // The components plugin calls this directly with the true source name; for a
-        // direct call without one, strip the decorator-added suffix off .name. Write
-        // it back so every cls.name / instance.constructor.name read stays clean.
-        const className = name ?? Helper.GetNameFromClass(componentClass);
+        // Same as AddClass: a name passed in is written onto the class
+        const className = name ?? componentClass.name;
         Object.defineProperty(componentClass, "name", { value: className, configurable: true });
 
         bare.componentClasses[className] = componentClass;

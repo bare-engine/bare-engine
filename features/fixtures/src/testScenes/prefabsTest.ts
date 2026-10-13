@@ -1,4 +1,4 @@
-import { GameObject, Scene } from "bare-engine";
+import { GameObject, InspectorBaseClass, Scene } from "bare-engine";
 
 class FruitObject extends GameObject
 {
@@ -7,6 +7,14 @@ class FruitObject extends GameObject
         this.AddChild();
     }
 }
+
+// A name that really ends in a digit must stay whole when registered
+class Boss2 extends GameObject {}
+
+// A class decorator compiles to a class expression, which used to give the class a suffixed
+// name (DecoratedFruit2). Not exported, so it's registered by hand below rather than by the plugin
+@InspectorBaseClass
+class DecoratedFruit extends GameObject {}
 
 export class PrefabsTest extends Scene
 {
@@ -44,6 +52,16 @@ export class PrefabsTest extends Scene
                     texture: "NONE",
                 },
                 {
+                    name: "boss",
+                    baseClass: "Boss2",
+                    texture: "NONE",
+                },
+                {
+                    name: "decoratedFruit",
+                    baseClass: "DecoratedFruit",
+                    texture: "NONE",
+                },
+                {
                     name: "apple",
                     extends: "bigAndNoRotation",
                     texture: "NONE",
@@ -69,6 +87,8 @@ export class PrefabsTest extends Scene
     override OnAwake(): void
     {
         bare.AddClass(FruitObject);
+        bare.AddClass(Boss2);
+        bare.AddClass(DecoratedFruit);
     }
 
     override OnStart(): void
@@ -81,6 +101,11 @@ export class PrefabsTest extends Scene
         assert(banana instanceof FruitObject, "baseClass should create a registered GameObject subclass");
         assert(banana.children.length === 1, "FruitObject should run its awake behavior");
         assert(apple.scale.x === 2 && apple.scale.y === 2, "base prefab chain should apply scale");
+
+        assert(Boss2.name === "Boss2" && bare.pool.get("Boss2") !== undefined, "a class name ending in a digit should be registered whole: " + Boss2.name);
+        assert(this.AddGameObject("boss") instanceof Boss2, "baseClass should find a class whose name ends in a digit");
+        assert(DecoratedFruit.name === "DecoratedFruit", "a decorated class should keep its source name: " + DecoratedFruit.name);
+        assert(this.AddGameObject("decoratedFruit") instanceof DecoratedFruit, "baseClass should find a decorated class");
         assert(apple.rotation === 0, "propertiesRemoved should prevent inherited rotation");
 
         const extendedPlayerTile = this.settingsHandler.GetExtendedPrefab("playerTile");

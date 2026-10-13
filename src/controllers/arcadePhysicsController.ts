@@ -434,34 +434,31 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         let top = bounds.y;
         let bottom = bounds.y + bounds.height;
 
-        // Helpers to shift obj so the hitbox aligns with boundary
-        const shiftX = (dx: number) => { obj.x += dx; };
-        const shiftY = (dy: number) => { obj.y += dy; };
 
         // Left wall
         if (left < boundsLeft) {
-            shiftX((boundsLeft - left) + eps);
+            obj.x += (boundsLeft - left) + eps;
             this.addBlockedState(obj, BlockedState.Left);
             if (obj.velocity.x < 0) obj.velocity.x = -obj.velocity.x * e;
         }
 
         // Right wall
         if (right > boundsRight) {
-            shiftX((boundsRight - right) - eps);
+            obj.x += (boundsRight - right) - eps;
             this.addBlockedState(obj, BlockedState.Right);
             if (obj.velocity.x > 0) obj.velocity.x = -obj.velocity.x * e;
         }
 
         // Top wall
         if (top < boundsTop) {
-            shiftY((boundsTop - top) + eps);
+            obj.y += (boundsTop - top) + eps;
             this.addBlockedState(obj, BlockedState.Up);
             if (obj.velocity.y < 0) obj.velocity.y = -obj.velocity.y * e;
         }
 
         // Bottom wall
         if (bottom > boundsBottom) {
-            shiftY((boundsBottom - bottom) - eps);
+            obj.y += (boundsBottom - bottom) - eps;
             this.addBlockedState(obj, BlockedState.Down);
             if (obj.velocity.y > 0) obj.velocity.y = -obj.velocity.y * e;
         }

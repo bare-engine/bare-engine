@@ -190,7 +190,7 @@ const controllerFieldNames: Record<string, string> = {
 // NEED VALUE IMPORTS OF THE CONTROLLERS AND UNUSED CONTROLLER MODULES STAY TREE-SHAKEN
 export function RegisterController(controllerClass: new (...args: any[]) => any): void
 {
-    const name = controllerClass.name.replace(/^_/, "");
+    const name = controllerClass.name;
     const controllerName = controllerFieldNames[name] || name.charAt(0).toLowerCase() + name.slice(1);
 
     const classKey = controllerName + "Class";
