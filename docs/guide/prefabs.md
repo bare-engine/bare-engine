@@ -143,11 +143,12 @@ Prefabs and entities can have these properties. Most can also be a [preset](#pre
 
 | Property | Description |
 | --- | --- |
-| `position`, or `x` and `y` | Position. For children, relative to the parent's pivot. Usually set per object, in a level or in code, not in a prefab. |
+| `position`, or `x` and `y` | Position. For children, relative to the top left of the parent's image, or to its pivot with `childrenAtPivot`. Usually set per object, in a level or in code, not in a prefab. |
 | `scale` | Scale as `{ x, y }`. |
 | `rotation` | Rotation in degrees. |
 | `flipped` | Flip horizontally. |
 | `pivot` | Pivot point. `{ x: 0, y: 0 }` is the top left; values above 0 and up to 1 are a fraction of the image size, larger values are pixels. On the GameObject it reads back in pixels. See [Pivot](./game-objects#pivot). |
+| `childrenAtPivot` | Measure children's positions from the pivot instead of the top left of the image. Off by default. See [Children](./game-objects#children). |
 
 ### Inner transform
 

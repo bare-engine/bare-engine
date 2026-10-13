@@ -98,9 +98,13 @@ ship.GetChildByName('gun');
 gun.RemoveFromParent();
 ```
 
-A child's position is measured from its parent's [pivot](#pivot), in the parent's image pixels, and it moves, turns and scales along with the parent. So `SetPosition(0, 0)` puts it on the parent's position, whatever the parent's pivot is, like an anchor in Pixi:
+A child's position is measured from the top left of its parent's image, in the parent's image pixels, and it moves, turns and scales along with the parent. Changing the parent's [pivot](#pivot) moves its children along with its image.
+
+Set `childrenAtPivot = true` on the parent to measure from its pivot instead. `SetPosition(0, 0)` then puts a child on the parent's position, whatever the parent's pivot is, like an anchor in Pixi:
 
 ```ts
+ball.CenterPivot();
+ball.childrenAtPivot = true;
 const face = ball.AddChild('face').CenterPivot();   // on the ball's position
 ```
 

@@ -134,6 +134,7 @@ export interface Entity
     innerScale?: any; // Position
     innerRotation?: any; // number
     childrenInheritInnerTransform?: any; // boolean
+    childrenAtPivot?: any; // boolean
 
     texture?: string;
     color?: string;

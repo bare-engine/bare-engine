@@ -878,9 +878,9 @@ export class GameObject
     }
 
     /**
-     * The space this object's children live in: content space, unless they ignore the inner transform,
-     * moved to the pivot. Like Pixi's anchor, a child at (0, 0) sits on its parent's pivot point,
-     * whatever the parent's pivot is.
+     * The space this object's children live in: content space, unless they ignore the inner transform.
+     * A child at (0, 0) sits on the texture's top left, so changing the pivot moves the children along
+     * with the texture. With childrenAtPivot it sits on the pivot point instead, like Pixi's anchor.
      */
     private ComposeChildSpaceMatrix(store: MatrixStore, out: number, parent: number): void
     {
@@ -889,8 +889,13 @@ export class GameObject
         else
             this.ComposeOuterMatrix(store, out, parent);
 
+        this.MoveChildSpaceToPivot(store, out);
+    }
+
+    private MoveChildSpaceToPivot(store: MatrixStore, out: number): void
+    {
         const pivot = this.transform.pivot;
-        if (pivot && (pivot.x !== 0 || pivot.y !== 0))
+        if (this.childrenAtPivot && pivot && (pivot.x !== 0 || pivot.y !== 0))
             store.multiplyAffineInPlace(out, 1, 0, 0, 1, pivot.x, pivot.y);
     }
 
@@ -1158,6 +1163,11 @@ export class GameObject
     
     @SerializeField(GameMode.Edit)
     childrenInheritInnerTransform: boolean = true;
+
+    // false: a child at (0, 0) sits on this object's texture top left (children move along when the
+    // pivot changes). true: it sits on the pivot point, so on this object's position, like Pixi's anchor.
+    @SerializeField(GameMode.Edit)
+    childrenAtPivot: boolean = false;
 
     @SerializeField(GameMode.Edit)
     persistent: boolean = false;
@@ -1452,8 +1462,12 @@ export class GameObject
             // Child space.
             if (applyObjectTransform)
                 obj.ComposeChildSpaceMatrix(m.matrix, m.curWorldM, -1);
-            else if (obj.childrenInheritInnerTransform)
-                obj.ComposeInnerMatrix(m.matrix, m.curWorldM);
+            else
+            {
+                if (obj.childrenInheritInnerTransform)
+                    obj.ComposeInnerMatrix(m.matrix, m.curWorldM);
+                obj.MoveChildSpaceToPivot(m.matrix, m.curWorldM);
+            }
 
             for (var child of obj.children)
                 recurse(child);
@@ -1737,8 +1751,8 @@ export class GameObject
         return out;
     }*/
 
-    // Convert a point from this object's child space (where child.SetPosition(x, y) operates,
-    // (0, 0) is the pivot) to world space. The inverse of ToLocal().
+    // Convert a point from this object's child space (where child.SetPosition(x, y) operates: (0, 0) is
+    // the texture's top left, or the pivot with childrenAtPivot) to world space. The inverse of ToLocal().
     ToGlobal(localPoint: Vec2 = new Vec2()): Vec2
     {
         const m = rapid.matrixStack;
@@ -1949,6 +1963,7 @@ export class GameObject
         this.transform.Reset();
         this.innerTransform.Reset();
         this.childrenInheritInnerTransform = true;
+        this.childrenAtPivot = false;
         this.renderParentTransform = null;
 
         this._OnTextureLoadedCallbacks = null;

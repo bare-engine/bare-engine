@@ -79,9 +79,21 @@ export class HierarchyAdvancedTest extends Scene
         c.check(nearVec(notInherited, before.x, before.y), "with childrenInheritInnerTransform off, the inner rotation should not move children: " + show(notInherited));
         c.check(holder.x === 200 && holder.y === 200, "an inner rotation should not move the object itself");
 
-        // like Pixi's anchor, children are placed relative to the parent's pivot, not its texture's top left
+        // by default children are placed relative to the parent's texture's top left, and move along with its pivot
+        const topLeft = this.AddGameObject("box").SetPosition(300, 300).CenterPivot();
+        topLeft.scale.set(40, 20);
+        const onCorner = topLeft.AddChild("box");
+        const cornerOffset = topLeft.AddChild("box").SetPosition(0.25, 0);
+        c.check(nearVec(onCorner.ToGlobal(), 280, 290), "a child at (0, 0) should sit on its parent's texture's top left: " + show(onCorner.ToGlobal()));
+        c.check(nearVec(cornerOffset.ToGlobal(), 290, 290), "a child's position should be scaled from its parent's top left: " + show(cornerOffset.ToGlobal()));
+        topLeft.SetPivot(1, 1);
+        c.check(nearVec(onCorner.ToGlobal(), 260, 280), "changing the parent's pivot should move its children along with its texture: " + show(onCorner.ToGlobal()));
+        c.check(nearVec(topLeft.ToLocal(cornerOffset.ToGlobal()), 0.25, 0), "ToLocal should give the child's position back: " + show(topLeft.ToLocal(cornerOffset.ToGlobal())));
+
+        // with childrenAtPivot, like Pixi's anchor, children are placed relative to the parent's pivot instead
         const anchored = this.AddGameObject("box").SetPosition(300, 300).CenterPivot();
         anchored.scale.set(40, 20);
+        anchored.childrenAtPivot = true;
         const onPivot = anchored.AddChild("box");
         const offset = anchored.AddChild("box").SetPosition(0.25, 0);
         c.check(nearVec(onPivot.ToGlobal(), 300, 300), "a child at (0, 0) should sit on its parent's pivot: " + show(onPivot.ToGlobal()));
@@ -177,6 +189,7 @@ export class HierarchyAdvancedTest extends Scene
         used.innerScale = new Vec2(2, 2);
         used.innerRotation = 30;
         used.flipped = true;
+        used.childrenAtPivot = true;
         used.visible = false;
         used.persistent = true;
         used.tags.push("dirty");
@@ -190,6 +203,7 @@ export class HierarchyAdvancedTest extends Scene
         c.check(reused.innerScale.x === 1 && reused.innerRotation === 0 && !reused.flipped, "a reused object should have a default inner transform");
         c.check(reused.alpha === 1 && reused.visible && !reused.persistent, "a reused object should be visible, opaque and not persistent");
         c.check(reused.pivot.x === 0 && reused.pivot.y === 0, "a reused object should have a default pivot");
+        c.check(!reused.childrenAtPivot, "a reused object should place its children from its texture's top left");
         c.check(reused.tags.length === 0, "a reused object should have no tags: " + reused.tags.join(","));
         c.check(reused.children.length === 0, "a reused object should have no children: " + reused.children.length);
         c.check(!reused.HasComponent(RemovalProbeComponent), "a reused object should have no components");

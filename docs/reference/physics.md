@@ -177,7 +177,7 @@ Set one of these as a prefab's `baseClass`:
 | `Circle` | A circle with a radius of half the image's smaller side, times its scale. `hitboxRadius` sets another radius. |
 | `Polygon` | Any convex shape, from `polygonVertices`: a flat list of points, `[x1, y1, x2, y2, …]`. |
 
-A body turns around its center, so while the game runs its pivot is always the center of its image, whatever the prefab says. Children and `SetPosition` work from that center too.
+A body turns around its center, so while the game runs its pivot is always the center of its image, whatever the prefab says. `SetPosition` works from that center too; children stay measured from the top left of the image, unless the body has `childrenAtPivot`.
 
 ```json
 {
