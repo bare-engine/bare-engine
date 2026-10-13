@@ -196,5 +196,17 @@ export class DocsPhysicsTest extends Scene
         await waitFrame(1);
         c.check(oval.hitboxRadius === 8, "a circle hitbox should default to half the smaller side: " + oval.hitboxRadius);
         oval.Remove();
+
+        // bounds: without a level they follow the screen, until the game sets its own
+        const physics = this.arcade;
+        const screenResize = { prevWidth: bare.width, prevHeight: bare.height, newWidth: 640, newHeight: 480 };
+        if (this.currentLevelStr === "") {
+            physics.OnResize(screenResize);
+            c.check(physics.GetBounds().width === 640 && physics.GetBounds().height === 480, "without a level, bounds should follow the screen: " + JSON.stringify(physics.GetBounds()));
+        }
+        physics.SetBounds({ x: -100, y: -50, width: 3000, height: 2000 });
+        physics.OnResize({ ...screenResize, newWidth: 800, newHeight: 600 });
+        const bounds = physics.GetBounds();
+        c.check(bounds.x === -100 && bounds.y === -50 && bounds.width === 3000 && bounds.height === 2000, "bounds set with SetBounds should stay when the screen resizes: " + JSON.stringify(bounds));
     }
 }

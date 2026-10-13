@@ -16,6 +16,8 @@ export class InputAdvancedTest extends Scene
     probeMouse = false;
     mouseReleasedFrames = 0;
     mousePressedFrames = 0;
+    // every non-zero wheel delta OnUpdate saw, as [x, y]
+    wheelSeen: number[][] = [];
 
     constructor()
     {
@@ -44,6 +46,8 @@ export class InputAdvancedTest extends Scene
         }
         if (this.probeMouse && bare.mouse.IsReleased())
             this.mouseReleasedFrames++;
+        if (bare.mouse.wheelDelta !== 0 || bare.mouse.wheelDeltaX !== 0)
+            this.wheelSeen.push([bare.mouse.wheelDeltaX, bare.mouse.wheelDelta]);
         if (this.probeMouse && bare.mouse.IsPressed())
             this.mousePressedFrames++;
 
@@ -326,5 +330,12 @@ export class InputAdvancedTest extends Scene
         c.check(bare.keyboard.IsKeyDown("space"), "the space bar should be called 'space'");
         document.dispatchEvent(new KeyboardEvent("keyup", { key: " ", code: "Space" }));
         bare.keyboard.ClearAll();
+
+        // the wheel: what scrolled since the last frame, seen in one frame, lines turned into pixels
+        this.wheelSeen.length = 0;
+        document.dispatchEvent(new WheelEvent("wheel", { deltaY: 120 }));
+        document.dispatchEvent(new WheelEvent("wheel", { deltaX: -1, deltaY: 3, deltaMode: WheelEvent.DOM_DELTA_LINE }));
+        await waitFrame(3);
+        c.check(JSON.stringify(this.wheelSeen) === "[[-16,168]]", "the wheel should add up to one frame's delta, in pixels: " + JSON.stringify(this.wheelSeen));
     }
 }
