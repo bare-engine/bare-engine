@@ -109,6 +109,8 @@ this.hud = await bare.scene.Add(HUD);
 
 `UI` and `resize` are [scene options](../reference/configuration#scene-options); `persistent` keeps the scene when others are cleared.
 
+A click on a button in the UI scene isn't a click in the game scene below: there `bare.mouse.IsPressed()` stays false. See [Mouse](../reference/mouse).
+
 For quick UI there's also `bare.uiScene`, a ready-made UI scene that's created the first time you use it:
 
 ```ts

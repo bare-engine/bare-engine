@@ -4,7 +4,7 @@ import type { Scene } from "../scenes/scene";
 import { BareEvent, BareEventPayload, CollisionHandlingType, HitboxType, Rectangle2Vec } from '../types/bareTypes';
 import { Hitbox } from "../types/hitbox";
 import { Helper } from "../utils/helper";
-import { RegisterController } from "../globals";
+import { hitboxPress, RegisterController } from "../globals";
 import { InspectorField } from "../utils/decorators";
 
 export type AnyPress = (go: any, ...args: any[]) => any;
@@ -504,6 +504,12 @@ export class HitboxController
         else
         {
             this.currentHitboxDown = hitbox;
+        }
+
+        if (hitbox)
+        {
+            hitboxPress.event = event;
+            hitboxPress.scene = this.scene;
         }
 
         hitbox?.OnPress?.(hitbox.parent, event);

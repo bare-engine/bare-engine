@@ -10,6 +10,10 @@ export const globalEvents = mitt<Events>();
 
 export type { Scene } from './scenes/scene';
 
+// THE LAST PRESS THAT LANDED ON A HITBOX, AND IN WHICH SCENE. SET BY HitboxController, READ BY THE
+// MouseController OF EACH SCENE BELOW IT, SO A CLICK ON A BUTTON IN A UI SCENE ISN'T A CLICK IN THE GAME TOO
+export const hitboxPress: { event: PointerEvent | null; scene: Scene | null } = { event: null, scene: null };
+
 export enum GameMode
 {
   Play,

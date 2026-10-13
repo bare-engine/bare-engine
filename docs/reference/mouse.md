@@ -34,3 +34,5 @@ override OnUpdate()
 ```
 
 `IsPressed`, `IsReleased` and `wheelDelta` are per frame, so read them in `OnUpdate`, not `OnFixedUpdate`. See the warning on [Keyboard](./keyboard).
+
+A press on a [hitbox](./hitbox) in a scene above this one, like a button in a UI scene, belongs to that scene. Here `IsPressed`, `IsDown` and `IsReleased` stay false until the pointer goes down again, so clicking a HUD button doesn't also click the world below it.

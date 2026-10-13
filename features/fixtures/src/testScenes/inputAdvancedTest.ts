@@ -3,6 +3,19 @@ import { Checks } from "./checks";
 
 // covers docs/reference/input: pointer events from real DOM events, hitbox rules, mouse state, per-frame keys
 
+// a UI scene on top, for presses that land on its hitboxes
+class InputOverlay extends Scene
+{
+    constructor()
+    {
+        super({
+            UI: true,
+            basePrefabs: [{ name: "ANY", texture: "PIXEL" }],
+            prefabs: [{ name: "square", scale: { x: 100, y: 100 } }],
+        });
+    }
+}
+
 export class InputAdvancedTest extends Scene
 {
     checks = new Checks();
@@ -370,5 +383,30 @@ export class InputAdvancedTest extends Scene
         document.dispatchEvent(new WheelEvent("wheel", { deltaX: -1, deltaY: 3, deltaMode: WheelEvent.DOM_DELTA_LINE }));
         await waitFrame(3);
         c.check(JSON.stringify(this.wheelSeen) === "[[-16,168]]", "the wheel should add up to one frame's delta, in pixels: " + JSON.stringify(this.wheelSeen));
+
+        // a press on a hitbox in a scene above belongs to that scene: here the mouse isn't down, pressed or released
+        const overlay = await bare.scene.Add(InputOverlay);
+        const buttonAt = bare.camera.WorldToScreen(700, 300);
+        let overlayPresses = 0;
+        overlay.AddGameObject("square").SetTexture(bare.asset.whiteTexture).SetScale(100).SetPosition(buttonAt.x - 50, buttonAt.y - 50).OnPointerDown(() => overlayPresses++);
+        this.probeMouse = true;
+        this.mousePressedFrames = 0;
+        this.mouseReleasedFrames = 0;
+        await this.MoveTo(700, 300);
+        this.Pointer("pointerdown", 700, 300);
+        await waitFrame(2);
+        c.check(overlayPresses === 1, "the button in the UI scene should get the press: " + overlayPresses);
+        c.check(overlay.mouse.IsDown(), "the UI scene's own mouse should be down");
+        c.check(this.mousePressedFrames === 0 && !bare.mouse.IsDown(), "a press on a button in a UI scene above shouldn't press the mouse here: " + this.mousePressedFrames);
+        this.Pointer("pointerup", 700, 300);
+        await waitFrame(2);
+        c.check(this.mouseReleasedFrames === 0, "nor release it: " + this.mouseReleasedFrames);
+
+        // next to the button, the press is this scene's again
+        await this.Click(900, 300);
+        await waitFrame(2);
+        c.check(this.mousePressedFrames === 1 && this.mouseReleasedFrames === 1, "a press next to the button should count here: " + this.mousePressedFrames + "/" + this.mouseReleasedFrames);
+        this.probeMouse = false;
+        bare.scene.Remove(overlay);
     }
 }

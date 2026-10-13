@@ -2,7 +2,7 @@ import { Vec2 } from "../libraries/rapid-render";
 import { Scene } from '../scenes/scene';
 import { BareEvent, BareEventPayload } from '../types/bareTypes';
 import { Helper } from "../utils/helper";
-import { RegisterController } from '../globals';
+import { hitboxPress, RegisterController } from '../globals';
 import { InspectorField } from "../utils/decorators";
 
 type MouseSpace = {
@@ -42,6 +42,11 @@ export class MouseController
     private middleMouseIsDown:boolean = false;
     private rightMouseIsDown:boolean = false;
 
+    // THE PRESS LANDED ON A HITBOX IN A SCENE ABOVE THIS ONE (eg A BUTTON IN A UI SCENE), SO IN THIS SCENE IT ISN'T
+    // DOWN, PRESSED OR RELEASED. DECIDED IN THE FIRST Update AFTER THE PRESS, WHEN EVERY SCENE HAS SEEN IT
+    private pressTakenAbove: boolean = false;
+    private downEvent: PointerEvent | null = null;
+
     /** False until the pointer has been over the canvas, while world.position still holds the (-1000, -1000) placeholder. */
     hasPosition: boolean = false;
 
@@ -67,7 +72,7 @@ export class MouseController
     static lastMouseX: number = -10000;
     static lastMouseY: number = -10000;
 
-    IsDown(): boolean { return this.mouseIsDown; }
+    IsDown(): boolean { return this.mouseIsDown && !this.pressTakenAbove; }
     IsMiddleDown(): boolean { return this.middleMouseIsDown; }
     IsRightDown(): boolean { return this.rightMouseIsDown; }
 
@@ -159,6 +164,8 @@ export class MouseController
         this.pointersDown.add(event.pointerId);
         this.mouseFramesDown = 0;
         this.mouseIsDown = true;
+        this.downEvent = event;
+        this.pressTakenAbove = false;
     }
 
     PointerUpAny({ mouseX, mouseY, event }: BareEventPayload['pointer_up_any']): void
@@ -224,12 +231,21 @@ export class MouseController
 
     IsPressed(): boolean
     {
-        return this.mouseFramesDown == 1;
+        return this.mouseFramesDown == 1 && !this.pressTakenAbove;
     }
 
     IsReleased(): boolean
     {
-        return this.mouseFramesUp == 1;
+        return this.mouseFramesUp == 1 && !this.pressTakenAbove;
+    }
+
+    private PressTakenAbove(): boolean
+    {
+        if (hitboxPress.event !== this.downEvent || !hitboxPress.scene || hitboxPress.scene === this.scene)
+            return false;
+
+        const scenes = bare.scene.GetAll();
+        return scenes.indexOf(hitboxPress.scene) > scenes.indexOf(this.scene);
     }
 
     SetPosition(x:number, y:number)
@@ -245,6 +261,9 @@ export class MouseController
         // BEFORE THE EARLY RETURNS, SO A RELEASE ALSO COUNTS ON MOBILE, WHERE THE REST IS SKIPPED WHILE NOTHING IS DOWN
         this.mouseFramesDown++;
         this.mouseFramesUp++;
+
+        if (this.mouseFramesDown == 1)
+            this.pressTakenAbove = this.PressTakenAbove();
 
         this.wheelDelta = this.wheelSumY;
         this.wheelDeltaX = this.wheelSumX;
@@ -298,6 +317,8 @@ export class MouseController
         this.mouseFramesUp = 2;
         this.pointersDown.clear();
         this.mouseIsDown = false;
+        this.pressTakenAbove = false;
+        this.downEvent = null;
         this.middleMouseIsDown = false;
         this.rightMouseIsDown = false;
     }
