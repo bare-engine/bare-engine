@@ -930,9 +930,11 @@ export class BareEngine
     {
         const className = cls.name;
 
-        if (this.gameObjectPools.has(className))
+        const pool = this.gameObjectPools.get(className);
+        if (pool)
         {
-            // SET DIFFERENT defaultPoolSize?
+            if (pool.GetSize() < defaultPoolSize)
+                pool.Create(defaultPoolSize - pool.GetSize());
             return;
         }
 

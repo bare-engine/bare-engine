@@ -82,11 +82,13 @@ Creating and removing many objects, like bullets, costs time and memory. A pool 
 
 Registered GameObject classes get a pool automatically. When you `Remove()` a pooled object, it goes back to its pool, and the next `AddGameObject(Bullet)` reuses it.
 
-To create the objects up front:
+To create the objects up front, for example in your scene's `OnAwake`:
 
 ```ts
 bare.RegisterGameObjectPool(Bullet, 200);
 ```
+
+This also fills the pool of a class that's already registered. Without it, a pool starts with one object and makes new ones as you add more, so a big wave of spawns creates them all mid-game.
 
 Pooled objects get their standard values back when they're reused, but your own fields don't. Reset them in `OnAwake`, and release listeners in `OnRemoved`; see [pooled objects](./lifecycle#pooled-objects).
 

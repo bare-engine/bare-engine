@@ -81,7 +81,7 @@ bare.scene.Get(Game).level.Load('level1');
 | `bare.TogglePause()` | Pause or unpause the game. Returns nothing; read `bare.paused`. |
 | `bare.SendEvent(type, ...args)` | Send an event to `bare.globalEvents` and to every active scene's `bare.events`. |
 | `bare.AddClass(SomeClass)` | Register a class. A controller (like `ArcadePhysicsController`) is switched on for all scenes; a GameObject class gets an object pool so it can be created by name. |
-| `bare.RegisterGameObjectPool(cls, size?)` | Create an object pool for a GameObject class yourself. |
+| `bare.RegisterGameObjectPool(cls, size?)` | Create an object pool for a GameObject class, or fill its existing pool up to `size` objects. |
 | `bare.SetBackgroundColor(color)` | Set the canvas background color. An opaque color also colors the page around the canvas, eg the bars of a fitted resolution. |
 | `bare.SetDebugKey`, `bare.DisableDebugKey`, … | Change the [debug keys](../guide/debugging#changing-keys-while-the-game-runs) while the game runs. Development only. |
 | `bare.DisableRightClick()` | Stop right-click from [selecting objects](../guide/debugging#selecting-objects-in-the-game), for games that use the right mouse button. Development only. |

@@ -269,6 +269,9 @@ export class DocsGuideObjectsTest extends Scene
         c.check(reused === pooled, "removed pooled objects should be reused");
         c.check(reused.health === 3, "OnAwake should reset custom fields on reuse");
         c.check(bare.pool.get("DocEnemy") !== undefined, "bare.pool should expose pools by class name");
+        // the guide's "create the objects up front", for a class that's already registered (and so has a pool)
+        bare.RegisterGameObjectPool(DocEnemy, 25);
+        c.check(bare.pool.get("DocEnemy")!.GetSize() >= 25, "RegisterGameObjectPool should fill an existing pool: " + bare.pool.get("DocEnemy")!.GetSize());
 
         // ordering within a layer
         const a = this.AddGameObject();
