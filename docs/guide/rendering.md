@@ -195,6 +195,6 @@ this.AddGameObject(canvas);
 this.RenderTo(stamp, canvas);
 ```
 
-`this.RenderTo(source, target, clear?)` works with a GameObject or a texture as source. Call `canvas.destroy()` when you don't need it anymore, for example in `OnClear`.
+`this.RenderTo(source, target, clear?)` works with a GameObject or a texture as source. With `clear`, the texture is first cleared to its `clearColor`, transparent unless you pass one: `new RenderTexture(rapid, { width, height, clearColor: Color.Black })`. Call `canvas.destroy()` when you don't need it anymore, for example in `OnClear`.
 
 **Example:** the [Showcase](https://github.com/bare-engine/bare-showcase)'s [render texture demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/renderTexture/src/DemoRenderTexture.ts) stamps a random emoji into a texture every frame.

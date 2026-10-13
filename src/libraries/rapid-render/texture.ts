@@ -496,7 +496,7 @@ class RenderTexture extends Texture {
         super();
         this.gl = render.gl;
 
-        this.clearColor = options.clearColor ?? Color.Black;
+        this.clearColor = options.clearColor ?? Color.Transparent;
 
         const width = Math.max(Math.round(options.width), 1);
         const height = Math.max(Math.round(options.height), 1);

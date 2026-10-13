@@ -640,6 +640,7 @@ export class Rapid {
 
     /**
      * Convenience wrapper: enters a RenderTexture, optionally clears it, runs a callback, then leaves.
+     * The callback draws without the current transform (like a camera), so (0, 0) is the RT's top left corner.
      * @param rt    The RenderTexture to render into.
      * @param cb    The callback containing draw calls to execute inside the RT.
      * @param color Clear color before rendering. Pass `null` to skip clearing. Defaults to transparent black.
@@ -651,12 +652,16 @@ export class Rapid {
      */
     drawToRenderTexture(rt: RenderTexture, cb: () => void, color: Color | null = new Color(0, 0, 0, 0)): void {
         this.enterRenderTexture(rt);
+        // WHEN CALLED WHILE A SCENE RENDERS, ITS CAMERA TRANSFORM WOULD OTHERWISE APPLY INSIDE THE RT TOO
+        this.matrixStack.save();
+        this.matrixStack.identity();
         try {
             if (color !== null) {
                 this.clearRenderTexture(color);
             }
             cb();
         } finally {
+            this.matrixStack.restore();
             this.leaveRenderTexture();
         }
     }
