@@ -59,7 +59,7 @@ SaveData.highScore = 1200;
 bare.storage.Save();
 ```
 
-Numbers, strings, booleans, objects, arrays, `Set` and `Map` are all supported.
+Numbers, strings, booleans, objects, arrays, `Set` and `Map` are all supported. Typed arrays like `Uint8Array` and `ArrayBuffer`s are too, also inside objects. They're stored as base64.
 
 **Example:** the [Showcase](https://github.com/bare-engine/bare-showcase)'s [extend demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/extend/src/DemoExtend.ts#L55-L65) adds a `happyEmojisClicked` field.
 
@@ -76,11 +76,13 @@ Numbers, strings, booleans, objects, arrays, `Set` and `Map` are all supported.
 | Method | Description |
 | --- | --- |
 | `bare.storage.Load()` | Read saved values, or use the defaults. |
-| `bare.storage.Save()` | Write all values. |
+| `bare.storage.Save()` | Write all values. Returns `false` when the browser refused, for example because the storage is full. |
 | `bare.storage.Clear()` | Delete the save. |
 | `bare.storage.SetDefaults(values)` | Add fields with default values. |
 
 Saves are stored under your game's `gameId` from `package.json`, so games on the same domain don't overwrite each other.
+
+Everything is stored in one `localStorage` entry, and browsers allow about 5 MB per site. When a save doesn't fit, `Save()` logs an error and returns `false`; the previous save stays as it was. For big worlds, compress the data yourself, for example with `CompressionStream`.
 
 ## Saving destinations
 

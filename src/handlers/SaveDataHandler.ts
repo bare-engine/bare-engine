@@ -2,6 +2,23 @@ import { globalEvents } from "../globals";
 import { SaveData, BareEvent } from '../types/bareTypes';
 import { Helper } from "../utils/helper";
 
+// TYPED ARRAYS AND ArrayBuffers, WHICH JSON CAN'T HOLD, ARE SAVED AS { $binary: "Uint8Array", base64: "..." }
+const binaryTypes: Record<string, (buffer: ArrayBuffer) => ArrayBuffer | ArrayBufferView> = {
+    ArrayBuffer: b => b,
+    DataView: b => new DataView(b),
+    Int8Array: b => new Int8Array(b),
+    Uint8Array: b => new Uint8Array(b),
+    Uint8ClampedArray: b => new Uint8ClampedArray(b),
+    Int16Array: b => new Int16Array(b),
+    Uint16Array: b => new Uint16Array(b),
+    Int32Array: b => new Int32Array(b),
+    Uint32Array: b => new Uint32Array(b),
+    Float32Array: b => new Float32Array(b),
+    Float64Array: b => new Float64Array(b),
+    BigInt64Array: b => new BigInt64Array(b),
+    BigUint64Array: b => new BigUint64Array(b),
+};
+
 export class SaveDataHandler
 {
     static saveEnabled: boolean = true;
@@ -62,10 +79,11 @@ export class SaveDataHandler
         }
     }
 
-    static Save()
+    /** Writes SaveData to localStorage. Returns false when it couldn't, for example because the storage is full. */
+    static Save(): boolean
     {
         if (!localStorage || !this.saveEnabled)
-            return;
+            return false;
 
         const save: Record<string, any> = {};
         for (const key in SaveData)
@@ -77,7 +95,53 @@ export class SaveDataHandler
             save[key] = value instanceof Set || value instanceof Map ? Array.from(value as any) : value;
         }
 
-        localStorage.setItem(this.GetStorageKey(), JSON.stringify(save));
+        const json = JSON.stringify(save, SaveDataHandler.ToJson);
+
+        // THE STORAGE CAN BE FULL (ABOUT 5 MB PER SITE) OR BLOCKED. DON'T THROW INTO GAME CODE, BUT DON'T STAY QUIET EITHER
+        try
+        {
+            localStorage.setItem(this.GetStorageKey(), json);
+        }
+        catch (error)
+        {
+            if (!(error instanceof DOMException))
+                throw error;
+
+            console.error(`SaveData wasn't saved (${error.name}): ${Math.round(json.length / 1024)} KB of save data. ${error.message}`);
+            return false;
+        }
+
+        return true;
+    }
+
+    private static ToJson(_key: string, value: any): any
+    {
+        if (typeof value !== "object" || value === null || !(ArrayBuffer.isView(value) || value instanceof ArrayBuffer))
+            return value;
+
+        const bytes = value instanceof ArrayBuffer ? new Uint8Array(value) : new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+        let binary = "";
+        for (let i = 0; i < bytes.length; i += 0x8000)
+            binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000) as unknown as number[]);
+
+        return { $binary: Object.prototype.toString.call(value).slice(8, -1), base64: btoa(binary) };
+    }
+
+    private static FromJson(_key: string, value: any): any
+    {
+        if (typeof value !== "object" || value === null || typeof value.$binary !== "string" || typeof value.base64 !== "string")
+            return value;
+
+        const create = binaryTypes[value.$binary];
+        if (!create)
+            return value;
+
+        const binary = atob(value.base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++)
+            bytes[i] = binary.charCodeAt(i);
+
+        return create(bytes.buffer);
     }
 
     static Load()
@@ -86,7 +150,7 @@ export class SaveDataHandler
             return;
 
         const item = localStorage.getItem(this.GetStorageKey());
-        const save = item === null ? null : JSON.parse(item);
+        const save = item === null ? null : JSON.parse(item, SaveDataHandler.FromJson);
 
         if (save === null)
             return;
