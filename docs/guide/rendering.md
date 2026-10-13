@@ -123,6 +123,8 @@ There's also `bare.drawRoundedRect`, `bare.drawSprite` (a texture) and `bare.dra
 
 Like a GameObject's, a shape's `rotation` is in degrees: `bare.drawSprite({ texture, position, rotation: 45 })`.
 
+Shapes and sprites are drawn in separate batches, and every switch between the two costs a draw call. So does a switch to another shader. Drawing a rect, then an icon, then a rect again for 800 tiles costs 1,600 draw calls; drawing all the rects first and then all the icons costs two. When you draw many things, group them by kind. The [performance panel](./debugging#performance) shows how many draw calls a frame takes.
+
 ## Tiled textures
 
 A GameObject stretches its texture to its scale. To repeat it instead, like a floor or a long wall, give it a `TiledComponent`. Scale the object to cover the area; every repeat is the texture's own size times `tileScale`:
