@@ -557,56 +557,72 @@ export class BareEngine
 
     RunMainLoop()
     {
-        if (!this.freezeOnUnfocus || this.hasFocus)
+        // SCHEDULED FIRST, SO AN ERROR IN THIS FRAME DOESN'T STOP THE GAME. IT STAYS UNCAUGHT: IT STILL SHOWS IN
+        // THE CONSOLE, PAUSES THE DEBUGGER AND REACHES window.onerror
+        requestAnimationFrame(this.RunMainLoopBound);
+
+        let updating = false;
+
+        try
         {
-            const currentTime = performance.now();
-            this.unscaledDeltaTime = Math.min((currentTime - this.lastUpdateTimeRef) / 1000, this.maxDeltaTime);
-            this.deltaTime = this.unscaledDeltaTime * this.timeScale;
-
-            // WHEN FIXED STEPS COST MORE REAL TIME THAN THEY SIMULATE, CATCHING UP MAKES THE NEXT FRAME LONGER
-            // STILL, AND THE FRAME RATE COLLAPSES. THEN SIMULATE ONE STEP PER FRAME: THE WHOLE GAME (PHYSICS,
-            // OnUpdate, TWEENS, WAITS) SLOWS DOWN TOGETHER, BUT KEEPS RESPONDING
-            if (this.fixedStepsBehind)
-                this.deltaTime = Math.min(this.deltaTime, this.fixedTimestep);
-            this.lastUpdateTimeRef = currentTime;
-            this.time = currentTime;
-            this.gameSpeed = 1 / (this.unscaledDeltaTime / .0166666);
-            this.count++;
-            //trace("gameSpeed", this.gameSpeed);
-
-            this.accumulator += this.deltaTime;
-
-            // CAPPING ACCUMULATOR - TO PREVENT TOO MANY FIXED UPDATES AFTER LAG
-            if (!this.paused)
+            if (!this.freezeOnUnfocus || this.hasFocus)
             {
-                this.gameTime += this.deltaTime * 1000;
-                AdvanceTimeWaits(this.gameTime);
+                const currentTime = performance.now();
+                this.unscaledDeltaTime = Math.min((currentTime - this.lastUpdateTimeRef) / 1000, this.maxDeltaTime);
+                this.deltaTime = this.unscaledDeltaTime * this.timeScale;
 
-                const maxSteps = 5 * Math.max(1, this.timeScale);
-                if (this.accumulator > this.fixedTimestep * maxSteps)
-                    this.accumulator = this.fixedTimestep * maxSteps;
+                // WHEN FIXED STEPS COST MORE REAL TIME THAN THEY SIMULATE, CATCHING UP MAKES THE NEXT FRAME LONGER
+                // STILL, AND THE FRAME RATE COLLAPSES. THEN SIMULATE ONE STEP PER FRAME: THE WHOLE GAME (PHYSICS,
+                // OnUpdate, TWEENS, WAITS) SLOWS DOWN TOGETHER, BUT KEEPS RESPONDING
+                if (this.fixedStepsBehind)
+                    this.deltaTime = Math.min(this.deltaTime, this.fixedTimestep);
+                this.lastUpdateTimeRef = currentTime;
+                this.time = currentTime;
+                this.gameSpeed = 1 / (this.unscaledDeltaTime / .0166666);
+                this.count++;
+                //trace("gameSpeed", this.gameSpeed);
 
-                const stepsStart = performance.now();
-                let steps = 0;
+                this.accumulator += this.deltaTime;
 
-                while (this.accumulator >= this.fixedTimestep)
+                // CAPPING ACCUMULATOR - TO PREVENT TOO MANY FIXED UPDATES AFTER LAG
+                if (!this.paused)
                 {
-                    this.FixedUpdate(this.fixedTimestep);
-                    AdvanceFrameWaits();
-                    this.accumulator -= this.fixedTimestep;
-                    steps++;
+                    this.gameTime += this.deltaTime * 1000;
+                    AdvanceTimeWaits(this.gameTime);
+
+                    const maxSteps = 5 * Math.max(1, this.timeScale);
+                    if (this.accumulator > this.fixedTimestep * maxSteps)
+                        this.accumulator = this.fixedTimestep * maxSteps;
+
+                    const stepsStart = performance.now();
+                    let steps = 0;
+
+                    while (this.accumulator >= this.fixedTimestep)
+                    {
+                        this.FixedUpdate(this.fixedTimestep);
+                        AdvanceFrameWaits();
+                        this.accumulator -= this.fixedTimestep;
+                        steps++;
+                    }
+
+                    if (steps > 0)
+                        this.fixedStepsBehind = (performance.now() - stepsStart) / steps > this.fixedTimestep * 1000;
+
+                    updating = true;
+                    this.Update(this.deltaTime);
+                    updating = false;
                 }
 
-                if (steps > 0)
-                    this.fixedStepsBehind = (performance.now() - stepsStart) / steps > this.fixedTimestep * 1000;
-
-                this.Update(this.deltaTime);
-            }
-
-            this.Render();
-        }   
-
-        requestAnimationFrame(this.RunMainLoopBound);
+                this.Render();
+            }   
+        }
+        finally
+        {
+            // AN ERROR DURING THE UPDATE SKIPPED game_update, WHICH CLEARS THIS FRAME'S KEY PRESSES. CLEAR THEM
+            // HERE, OR THE NEXT FRAME WOULD SEE THE SAME PRESSES AGAIN
+            if (updating)
+                this.keyboard?.Update();
+        }
     }
 
     FixedUpdate(fixedDeltaTime: number)
