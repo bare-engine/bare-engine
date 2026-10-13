@@ -33,7 +33,8 @@ Override these methods on your scene. All are optional. Mark each one `override`
 | `OnAwake(payload?)` | Once, when the scene is created. Register classes here. |
 | `OnStart(payload?)` | After awake, and again on every restart. Add your objects here. |
 | `OnFixedUpdate(fixedDeltaTime)` | At a fixed rate (60 per second by default). Good for gameplay logic. |
-| `OnUpdate(deltaTime)` | Every frame. |
+| `OnPreUpdate(deltaTime)` | Every frame, after the fixed updates and mouse input, before objects and components update. Set values here that components read in their `OnUpdate`. |
+| `OnUpdate(deltaTime)` | Every frame, after objects and components. |
 | `OnPreRender()` / `OnRender()` / `OnPostRender()` | Around rendering, for custom drawing. |
 | `OnPreLoadLevel(level)` / `OnPostLoadLevel(level)` | Before and after a [level](./levels-and-layers) loads. |
 | `OnResize(prevW, prevH, newW, newH)` | When the canvas size changes. |

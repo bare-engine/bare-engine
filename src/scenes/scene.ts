@@ -1346,7 +1346,7 @@ Or remove "stripGeneratedAssets": true from "bareEngine" in package.json.`);
         // BACKING FIELD (_) READS: ONLY TICK CONTROLLERS THAT EXIST, NEVER LAZY-CREATE THEM
         this._mouse?.Update(deltaTime);
         this._hitbox?.Update();
-        this.OnPreUpdate(deltaTime); // NOT QUITE PRE-UPDATE HUH, BUT HERE JUST FOR EditorControlsHandler ATM, SO IT DRAGS OBJECTS AT POSITION AND AFTER THEY CAN BE SNAPPED TO OTHER POSITION
+        this.OnPreUpdate(deltaTime);
         this.object.Update(deltaTime);
         this._tween?.Update(bare.gameTime);
         this._component?.Update(deltaTime);

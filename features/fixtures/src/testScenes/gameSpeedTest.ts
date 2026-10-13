@@ -159,5 +159,22 @@ export class GameSpeedTest extends Scene
         bare.DisableRightClick();
         c.check(!bare.rightClickSelect, "DisableRightClick should turn off right click select");
         bare.rightClickSelect = before;
+
+        // fixedAlpha: how far the game is between two fixed updates
+        const alphas: number[] = [];
+        for (let i = 0; i < 10; i++)
+        {
+            await waitFrame();
+            alphas.push(bare.fixedAlpha);
+        }
+        c.check(alphas.every(alpha => alpha >= 0 && alpha <= 1), "fixedAlpha should stay between 0 and 1: " + alphas.join(","));
+
+        // a pause doesn't bank time, or unpausing would run a burst of catch-up fixed updates
+        bare.TogglePause();
+        const pausedSteps = this.fixedSteps;
+        await waitRealTime(0.3);
+        c.check(this.fixedSteps === pausedSteps, "no fixed updates should run while paused");
+        c.check(bare.fixedAlpha < 1, "time shouldn't build up for fixed updates while paused: fixedAlpha " + bare.fixedAlpha);
+        bare.TogglePause();
     }
 }

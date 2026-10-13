@@ -73,6 +73,7 @@ bare.scene.Get(Game).level.Load('level1');
 | `bare.defaultFont` | Font family used by text that doesn't set `fontFamily`. See [Fonts](../guide/text-and-ui#fonts). |
 | `bare.fixedTimestep` | Seconds per fixed update (default `1/60`). |
 | `bare.fixedStepsBehind` | Read-only. True while fixed updates cost more time than they simulate. The game then runs one fixed update per frame and slows down, instead of falling further behind. |
+| `bare.fixedAlpha` | Read-only. How far the game is between the last fixed update and the next, from `0` to `1`. To draw something that moves in `OnFixedUpdate` smoothly, draw it between its previous and current position: `prev + (pos - prev) * bare.fixedAlpha`. |
 
 ## Methods
 

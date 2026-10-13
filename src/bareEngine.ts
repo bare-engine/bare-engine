@@ -78,6 +78,12 @@ export class BareEngine
     public maxDeltaTime: number = 1 / 15; // CAPS FRAME DELTA, USEFUL AFTER LAG OR TAB REFOCUS
     private accumulator: number = 0;
     public fixedStepsBehind: boolean = false;
+
+    /** How far the game is between the last fixed update and the next, from 0 to 1. Use it to draw a fixed-step simulation smoothly. */
+    get fixedAlpha(): number
+    {
+        return Math.min(this.accumulator / this.fixedTimestep, 1);
+    }
     private perfOverlay: PerfOverlay | null = null;
 
     private debugKeyActions = new Map<string, () => void>();
@@ -613,14 +619,15 @@ export class BareEngine
                 this.count++;
                 //trace("gameSpeed", this.gameSpeed);
 
-                this.accumulator += this.deltaTime;
-
-                // CAPPING ACCUMULATOR - TO PREVENT TOO MANY FIXED UPDATES AFTER LAG
                 if (!this.paused)
                 {
+                    // ONLY WHILE RUNNING, OR UNPAUSING WOULD RUN A BURST OF CATCH-UP STEPS
+                    this.accumulator += this.deltaTime;
+
                     this.gameTime += this.deltaTime * 1000;
                     AdvanceTimeWaits(this.gameTime);
 
+                    // CAPPING ACCUMULATOR - TO PREVENT TOO MANY FIXED UPDATES AFTER LAG
                     const maxSteps = 5 * Math.max(1, this.timeScale);
                     if (this.accumulator > this.fixedTimestep * maxSteps)
                         this.accumulator = this.fixedTimestep * maxSteps;
