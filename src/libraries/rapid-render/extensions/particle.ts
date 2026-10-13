@@ -43,7 +43,7 @@ export enum ParticleShape {
 export interface IParticleAnimation {
     /** Directional speed along the rotation axis (pixels/sec). */
     speed?: ParticleAttribute<number> | number;
-    /** Rotation angle in radians. */
+    /** Rotation angle in radians. Defaults to a random angle for POINT, the outward spawn angle for CIRCLE, and 0 for RECT. */
     rotation?: ParticleAttribute<number> | number;
     /** Uniform scale. */
     scale?: ParticleAttribute<number> | number;
@@ -321,6 +321,8 @@ export class ParticleEmitter {
         this.remainingLife.push(lifeTime)
         let spawnX = 0
         let spawnY = 0
+        // Without an explicit rotation, POINT and CIRCLE particles face (and so move) outward from the center.
+        let defaultRotation = 0
 
         switch (this.options.emitShape) {
             case ParticleShape.CIRCLE: {
@@ -328,6 +330,7 @@ export class ParticleEmitter {
                 const radius = (this.options.emitRadius ?? 0) * Math.sqrt(Math.random());
                 spawnX = Math.cos(angle) * radius
                 spawnY = Math.sin(angle) * radius
+                defaultRotation = angle
                 break;
             }
             case ParticleShape.RECT: {
@@ -337,6 +340,7 @@ export class ParticleEmitter {
             }
             case ParticleShape.POINT:
             default:
+                defaultRotation = Math.random() * Math.PI * 2
                 break;
         }
         const ms = this.rapid.matrixStack
@@ -353,7 +357,7 @@ export class ParticleEmitter {
         const particleAttribute = this.animations
 
         const s = particleAttribute.scale.create(animation.scale, 1, lifeTime)
-        const r = particleAttribute.rotation.create(animation.rotation, 0, lifeTime)
+        const r = particleAttribute.rotation.create(animation.rotation, defaultRotation, lifeTime)
         particleAttribute.speed.create(animation.speed, 0, lifeTime)
 
         particleAttribute.velocity.create(animation.velocity, Vec2.ZERO, lifeTime)

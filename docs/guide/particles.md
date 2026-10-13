@@ -114,8 +114,8 @@ Each value in `animation` changes over a particle's life:
 | Value | Description |
 | --- | --- |
 | `scale` | Size. |
-| `rotation` | Angle in **radians**. |
-| `speed` | Speed in the particle's direction, in pixels per second. |
+| `rotation` | Angle in **radians**. Without it, `"POINT"` particles get a random angle and `"CIRCLE"` particles face outward from the center, so a burst spreads in all directions. `"RECT"` particles default to 0 (facing right); give them a `rotation` or a `velocity` to move them. |
+| `speed` | Speed in the particle's direction (its `rotation`), in pixels per second. |
 | `velocity` | Extra movement as `{ x, y }`. A `delta` of `{ x: 0, y: 300 }` works like gravity. |
 | `color` | Tint as a hex string, including alpha (`"#ffffff00"` is transparent). |
 
