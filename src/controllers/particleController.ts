@@ -221,7 +221,7 @@ export class ParticleController
 
         return {
             life: data.life ?? 1,
-            texture: texture ?? (typeof data.texture === "string" ? assetsHandler.GetTexture(data.texture) : data.texture),
+            texture: texture ?? (typeof data.texture === "string" ? assetsHandler.textures.get(data.texture) : data.texture),
             shader: data.shader,
             origin: ParticleController.ToVec2(data.origin),
             emitRate: data.emitRate,
