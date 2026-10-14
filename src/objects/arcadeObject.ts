@@ -40,6 +40,10 @@ export class ArcadeShape
     // THE POSITION IT IS FOR
     x: number = 0;
     y: number = 0;
+    // THE POSITION IT WAS COMPUTED FOR. THE CONTROLLER COMPUTES IT BEFORE MOVING THE OBJECT, SO COLLISIONS
+    // KNOW WHERE THE OBJECT CAME FROM THIS STEP
+    startX: number = 0;
+    startY: number = 0;
 
     // FALSE WHEN THE HITBOX IS EMPTY
     valid: boolean = false;
@@ -50,12 +54,14 @@ export class ArcadeShape
     radius: number = 0;
     // AXIS ALIGNED BOUNDING BOX
     readonly bounds: Rectangle = { x: 0, y: 0, width: 0, height: 0 };
+    // bounds GROWN BY CONTACT_TOLERANCE, SO THE BROAD PHASE ALSO PAIRS OBJECTS THAT ONLY TOUCH
+    readonly treeBounds: Rectangle = { x: 0, y: 0, width: 0, height: 0 };
     // THE BROAD PHASE QUADTREE ENTRY, REUSED EVERY STEP
     readonly treeItem: QuadTreeItem<ArcadeObject>;
 
     constructor(owner: ArcadeObject)
     {
-        this.treeItem = { bounds: this.bounds, value: owner };
+        this.treeItem = { bounds: this.treeBounds, value: owner };
     }
 }
 
@@ -89,10 +95,6 @@ export class ArcadeObject extends GameObject
     // SET BY ArcadePhysicsController: A NUMBER FOR COLLISION PAIR KEYS, AND THE WORLD SPACE HITBOX OF THE CURRENT STEP
     physicsId: number = 0;
     physicsShape: ArcadeShape = new ArcadeShape(this);
-    // SET BY ArcadePhysicsController: THE POSITION AT THE START OF STEP physicsStartStep, SO COLLISIONS KNOW WHERE AN OBJECT CAME FROM
-    physicsStartX: number = 0;
-    physicsStartY: number = 0;
-    physicsStartStep: number = -1;
 
     static dummyPhysicsObjectBare: ArcadeObject = new ArcadeObject();
 
@@ -382,7 +384,6 @@ export class ArcadeObject extends GameObject
         this.removeOnOutOfBounds = false;
         this.continuous = false;
         this.oneWay = false;
-        this.physicsStartStep = -1;
         this.gravity = null;
 
         if (this.collidingObjects)

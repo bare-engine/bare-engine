@@ -30,6 +30,7 @@ declare module "../types/bareTypes" {
 }
 
 type CollisionPair = { p1: ArcadeObject; p2: ArcadeObject; collisionHandled?: boolean };
+export type CollisionHit = { collision: boolean; normalX: number; normalY: number; depth: number };
 
 // physicsId OF THE FIRST OBJECT TIMES THIS, PLUS THAT OF THE SECOND, IS A PAIR'S KEY. EXACT FOR IDS BELOW 2^26
 const PAIR_KEY_STRIDE = 67108864;
@@ -44,12 +45,12 @@ export class ArcadePhysicsController extends PhysicsControllerBase
     static MAX_CONTINUOUS_STEPS: int = 64;
     // AN OBJECT WITH drag STOPS COMPLETELY BELOW THIS SPEED, IN UNITS PER SECOND. DRAG ALONE NEVER REACHES 0
     static DRAG_STOP_SPEED: number = 5;
-    // HOW FAR BELOW A oneWay OBJECT'S TOP AN OBJECT'S BOTTOM MAY HAVE STARTED THE STEP AND STILL LAND ON IT
+    // HOW CLOSE TO ANOTHER OBJECT'S EDGE COUNTS AS AT THAT EDGE: OBJECTS THIS CLOSE TOUCH (FOR blocked), AND AN OBJECT
+    // THAT STARTED THE STEP THIS FAR INSIDE ANOTHER'S SIDE STILL CAME FROM THAT SIDE. COVERS THE GAP LEFT AFTER A PUSH OUT
+    static CONTACT_TOLERANCE: number = 0.01;
+    // THE SAME FOR LANDING ON A oneWay OBJECT, LARGER BECAUSE MISSING IT MEANS FALLING THROUGH. IT ALSO COVERS
+    // PLATFORMS MOVED BY CODE BETWEEN STEPS AND HITBOXES THAT CHANGED SIZE, WHICH THE START POSITION DOESN'T SEE
     static ONE_WAY_TOLERANCE: number = 0.5;
-    // HOW FAR AN OBJECT MAY HAVE STARTED THE STEP INSIDE ANOTHER ONE'S SIDE AND STILL BE PUSHED BACK OUT THAT SIDE
-    static ENTRY_TOLERANCE: number = 0.01;
-    // OBJECTS THIS CLOSE COUNT AS TOUCHING FOR blocked, EVEN WHEN THEY DON'T OVERLAP
-    static TOUCH_DISTANCE: number = 0.01;
 
     public objects: ArcadeObject[] = [];
     private collisionObjects: ArcadeObject[] = [];
@@ -76,13 +77,12 @@ export class ArcadePhysicsController extends PhysicsControllerBase
     private pairCount = 0;
     private treeEntries: QuadTreeItem<ArcadeObject>[] = [];
     private treeQuery: QuadTreeItem<ArcadeObject>[] = [];
-    private touchRegion: Rectangle = { x: 0, y: 0, width: 0, height: 0 };
 
-    // NARROW PHASE RESULT OF testPair, REUSED SO NO OBJECT IS CREATED PER PAIR. dx, dy AND distance
-    // MEAN WHAT THEY DO IN GetCollisionInfo
-    private hit = { collision: false, dx: 0, dy: 0, distance: 0, radiusSum: 0 };
-    private normalX = 0;
-    private normalY = 0;
+    // NARROW PHASE RESULT OF testPair, REUSED SO NO OBJECT IS CREATED PER PAIR: THE CONTACT NORMAL, POINTING FROM
+    // obj1 TO obj2, AND HOW DEEP THEY OVERLAP. queryHit IS FOR THE PUBLIC CHECKS, WHICH GAME CODE MAY CALL FROM A
+    // COLLISION EVENT WHILE THE SOLVER STILL NEEDS hit
+    private hit: CollisionHit = { collision: false, normalX: 0, normalY: 0, depth: 0 };
+    private queryHit: CollisionHit = { collision: false, normalX: 0, normalY: 0, depth: 0 };
     public OnPreCollisionResolve: ((obj1: ArcadeObject, obj2: ArcadeObject) => boolean) | null = null;
     
     @InspectorField
@@ -269,9 +269,10 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             }
 
             obj.blocked = BlockedState.None;
-            obj.physicsStartX = obj.x;
-            obj.physicsStartY = obj.y;
-            obj.physicsStartStep = this.step;
+
+            // BEFORE IT MOVES, SO ITS SHAPE'S startX / startY ARE WHERE IT STARTED THE STEP
+            if (this.collisionsEnabled)
+                this.getShape(obj);
 
             if (!obj.physicsHitbox.rectangle || obj.physicsHitbox.rectangle.width == 0 || obj.physicsHitbox.rectangle.height == 0)
             {
@@ -336,14 +337,6 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             {
                 (objectsToRemove ??= []).push(obj);
             }
-            // Check if object stopped moving
-            /*let hadCollision = false;
-             for (const key of this.activeCollisions) {
-             if (key.startsWith(obj.uniqueID + "##") || key.endsWith("##" + obj.uniqueID)) {
-             hadCollision = true;
-             break;
-             }
-             }*/
         }
 
         if (sweepObjects)
@@ -367,68 +360,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
         if (this.collisionsEnabled) {
             this.handleObjectCollisions();
-            this.addTouchingBlockedStates();
         }
-    }
-
-    // AN OBJECT RESTING AGAINST A SOLID OBJECT WITHOUT PUSHING INTO IT IS BLOCKED TOO, SO A PLAYER STANDING
-    // AGAINST A WALL IS IsBlocked(Left / Right) WITHOUT WALKING INTO IT. DOESN'T SEND COLLISION EVENTS
-    private addTouchingBlockedStates(): void
-    {
-        const all = BlockedState.Up | BlockedState.Down | BlockedState.Left | BlockedState.Right;
-        const d = ArcadePhysicsController.TOUCH_DISTANCE;
-        const region = this.touchRegion;
-        const found = this.treeQuery;
-        let tree: QuadTree<ArcadeObject> | null | undefined;
-
-        for (const obj of this.objects)
-        {
-            if (obj.static || obj.sensor || !obj.collide || !obj.physicsHitbox.active) continue;
-            if ((obj.blocked & all) === all) continue;
-
-            const shape = this.getShape(obj);
-            if (!shape) continue;
-
-            tree ??= this.buildTree(this.getCollisionObjects());
-            if (!tree) return;
-
-            const b = shape.bounds;
-            region.x = b.x - d;
-            region.y = b.y - d;
-            region.width = b.width + d * 2;
-            region.height = b.height + d * 2;
-
-            found.length = 0;
-            tree.queryInto(region, found);
-
-            for (const item of found)
-            {
-                const other = item.value;
-                if (other === obj || other.parent || other.sensor || !other.collide || !other.physicsHitbox.active) continue;
-                if (this.shouldSkipInternalCollision(obj, other) || !this.canObjectsCollideByLayer(obj, other)) continue;
-                if (this.OnPreCollisionResolve && !this.OnPreCollisionResolve(obj, other)) continue;
-
-                const o = item.bounds;
-                // THE OVERLAP ALONG THE TOUCHING SIDE MUST BE MORE THAN d, SO TOUCHING CORNERS DON'T COUNT
-                const overlapX = Math.min(b.x + b.width, o.x + o.width) - Math.max(b.x, o.x);
-                const overlapY = Math.min(b.y + b.height, o.y + o.height) - Math.max(b.y, o.y);
-
-                if (overlapX > d && Math.abs(o.y - (b.y + b.height)) <= d)
-                    obj.blocked |= BlockedState.Down;
-
-                if (other.oneWay) continue;
-
-                if (overlapX > d && Math.abs(o.y + o.height - b.y) <= d)
-                    obj.blocked |= BlockedState.Up;
-
-                if (overlapY > d && Math.abs(o.x - (b.x + b.width)) <= d)
-                    obj.blocked |= BlockedState.Right;
-                else if (overlapY > d && Math.abs(o.x + o.width - b.x) <= d)
-                    obj.blocked |= BlockedState.Left;
-            }
-        }
-
-        found.length = 0;
     }
 
     // NUMBER OF SUB STEPS A continuous OBJECT NEEDS THIS FIXED UPDATE, 1 WHEN IT CAN MOVE IN ONE GO.
@@ -473,9 +405,9 @@ export class ArcadePhysicsController extends PhysicsControllerBase
     }
 
     // EVERY OBJECT obj COULD TOUCH WHILE MOVING travel UNITS IN ANY DIRECTION, SO BOUNCES ARE COVERED TOO
-    private getSweepPairs(obj: ArcadeObject, travel: number): { p1: ArcadeObject; p2: ArcadeObject; collisionHandled?: boolean }[]
+    private getSweepPairs(obj: ArcadeObject, travel: number): CollisionPair[]
     {
-        const pairs: { p1: ArcadeObject; p2: ArcadeObject; collisionHandled?: boolean }[] = [];
+        const pairs: CollisionPair[] = [];
         const bounds = this.getObjectBounds(obj);
 
         if (!bounds)
@@ -486,7 +418,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         const right = bounds.x + bounds.width + travel;
         const bottom = bounds.y + bounds.height + travel;
 
-        for (const other of this.getCollisionObjects())
+        for (const other of this.collisionObjects)
         {
             if (other === obj || !other.collide)
                 continue;
@@ -565,28 +497,28 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         // Left wall
         if (left < boundsLeft) {
             obj.x += (boundsLeft - left) + eps;
-            this.addBlockedState(obj, BlockedState.Left);
+            obj.blocked |= BlockedState.Left;
             if (obj.velocity.x < 0) obj.velocity.x = -obj.velocity.x * e;
         }
 
         // Right wall
         if (right > boundsRight) {
             obj.x += (boundsRight - right) - eps;
-            this.addBlockedState(obj, BlockedState.Right);
+            obj.blocked |= BlockedState.Right;
             if (obj.velocity.x > 0) obj.velocity.x = -obj.velocity.x * e;
         }
 
         // Top wall
         if (top < boundsTop) {
             obj.y += (boundsTop - top) + eps;
-            this.addBlockedState(obj, BlockedState.Up);
+            obj.blocked |= BlockedState.Up;
             if (obj.velocity.y < 0) obj.velocity.y = -obj.velocity.y * e;
         }
 
         // Bottom wall
         if (bottom > boundsBottom) {
             obj.y += (boundsBottom - bottom) - eps;
-            this.addBlockedState(obj, BlockedState.Down);
+            obj.blocked |= BlockedState.Down;
             if (obj.velocity.y > 0) obj.velocity.y = -obj.velocity.y * e;
         }
     }
@@ -622,6 +554,21 @@ export class ArcadePhysicsController extends PhysicsControllerBase
                 this.handleBoundaryCollisions(obj);
             }
         }
+
+        for (let i = 0; i < pairCount; i++)
+            this.addTouchingBlockedState(pairs[i]);
+    }
+
+    // BOTH OBJECTS TAKE PART IN COLLISIONS RIGHT NOW
+    private canCollide(obj1: ArcadeObject, obj2: ArcadeObject): boolean
+    {
+        return obj1.collide && obj2.collide && obj1.physicsHitbox.active && obj2.physicsHitbox.active;
+    }
+
+    // SENSORS AND CHILDREN ONLY SEND COLLISION EVENTS, THEY ARE NEVER PUSHED
+    private isSensorPair(obj1: ArcadeObject, obj2: ArcadeObject): boolean
+    {
+        return obj1.sensor || obj2.sensor || !!obj1.parent || !!obj2.parent;
     }
 
     // TESTS ONE PAIR, SENDS ITS COLLISION EVENTS ONCE (pair.collisionHandled), AND PUSHES THE OBJECTS APART
@@ -631,20 +578,13 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         const obj1 = pair.p1;
         const obj2 = pair.p2;
 
-        const sensorCollision = obj1.sensor || obj2.sensor || !!obj1.parent || !!obj2.parent;
+        const sensorCollision = this.isSensorPair(obj1, obj2);
 
         if (!sensorCollision && obj1.static && obj2.static) return false;
-        if (!obj1.collide || !obj2.collide) return false;
-        if (!obj1.physicsHitbox.active || !obj2.physicsHitbox.active) return false;
+        if (!this.canCollide(obj1, obj2)) return false;
 
-        if (!this.testPair(obj1, obj2))
+        if (!this.testPair(obj1, obj2, this.hit))
             return false;
-
-        // COPIED: COLLISION EVENTS RUN GAME CODE THAT MAY TEST OTHER PAIRS
-        let dx = this.hit.dx;
-        let dy = this.hit.dy;
-        let distance = this.hit.distance;
-        const radiusSum = this.hit.radiusSum;
 
         if (!pair.collisionHandled)
         {
@@ -662,40 +602,34 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             return false;
         }
 
-        // Make dx/dy always point from obj1 -> obj2
-        if (obj1.physicsHitbox.type === HitboxType.Circle && obj2.physicsHitbox.type === HitboxType.Rectangle) {
-            // testPair returns rect->circle, but we need circle->rect here
-            dx = -dx;
-            dy = -dy;
-        }
-
         if (this.OnPreCollisionResolve && !this.OnPreCollisionResolve(obj1, obj2)) return false;
 
-        if (obj1.oneWay || obj2.oneWay)
-            return this.resolveOneWayCollision(obj1, obj2);
+        // A oneWay OBJECT ONLY STOPS WHAT CAME DOWN ONTO ITS TOP, AND PUSHES IT BACK UP. TWO RECTANGLES ARE PUSHED
+        // BACK OUT THE SIDE obj1 CAME FROM, NOT ALONG THEIR SMALLER OVERLAP: AN OBJECT WALKING OVER THE SEAM BETWEEN
+        // TWO FLOOR PIECES HAS SUNK INTO THE NEXT PIECE'S TOP FURTHER THAN INTO ITS SIDE, AND WOULD SNAG ON THAT SIDE
+        const oneWay = obj1.oneWay || obj2.oneWay;
 
-        if (radiusSum === 0 && obj1.physicsHitbox.type === HitboxType.Rectangle && obj2.physicsHitbox.type === HitboxType.Rectangle && this.pushFromEntrySide(obj1, obj2))
+        if (oneWay || (!obj1.physicsShape.circle && !obj2.physicsShape.circle))
         {
-            dx = this.hit.dx;
-            dy = this.hit.dy;
-            distance = this.hit.distance;
+            const side = this.getEntrySide(obj1, obj2, oneWay ? ArcadePhysicsController.ONE_WAY_TOLERANCE : ArcadePhysicsController.CONTACT_TOLERANCE);
+
+            if (oneWay && side !== (obj2.oneWay ? BlockedState.Down : BlockedState.Up))
+                return false;
+
+            if (side !== BlockedState.None)
+                this.setHitFromSide(obj1, obj2, side);
         }
 
-        // for two circles the penetration is what's left of the radii, otherwise the distance already is
-        const penetration = radiusSum > 0 ? radiusSum - distance : distance;
-
-        return this.ResolveSolidCollision(obj1, obj2, dx, dy, penetration);
+        return this.ResolveSolidCollision(obj1, obj2, this.hit.normalX, this.hit.normalY, this.hit.depth);
     }
 
-    // NARROW PHASE ON THE CACHED SHAPES, INTO this.hit. RETURNS hit.collision
-    private testPair(obj1: ArcadeObject, obj2: ArcadeObject): boolean
+    // NARROW PHASE ON THE CACHED SHAPES, INTO hit. RETURNS hit.collision
+    private testPair(obj1: ArcadeObject, obj2: ArcadeObject, hit: CollisionHit): boolean
     {
-        const hit = this.hit;
         hit.collision = false;
-        hit.dx = 0;
-        hit.dy = 0;
-        hit.distance = 0;
-        hit.radiusSum = 0;
+        hit.normalX = 0;
+        hit.normalY = 0;
+        hit.depth = 0;
 
         const shape1 = this.getShape(obj1);
         const shape2 = this.getShape(obj2);
@@ -704,29 +638,57 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             return false;
 
         if (shape1.circle && shape2.circle)
-        {
-            const dx = shape2.cx - shape1.cx;
-            const dy = shape2.cy - shape1.cy;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-
-            hit.radiusSum = shape1.radius + shape2.radius;
-            hit.collision = distance < hit.radiusSum;
-            hit.dx = dx;
-            hit.dy = dy;
-            hit.distance = distance;
-        }
+            this.testCircleCircle(obj1, obj2, shape1, shape2, hit);
         else if (!shape1.circle && !shape2.circle)
-            this.testRectRect(shape1.bounds, shape2.bounds);
+            this.testRectRect(shape1.bounds, shape2.bounds, hit);
+        else if (shape1.circle)
+            this.testCircleRect(shape1, shape2.bounds, hit);
         else
-            this.testCircleRect(shape1.circle ? shape1 : shape2, shape1.circle ? shape2.bounds : shape1.bounds);
+        {
+            // testCircleRect'S NORMAL POINTS FROM THE CIRCLE, HERE obj2
+            this.testCircleRect(shape2, shape1.bounds, hit);
+            hit.normalX = -hit.normalX;
+            hit.normalY = -hit.normalY;
+        }
 
         return hit.collision;
     }
 
-    // dx/dy POINT FROM THE RECTANGLE TO THE CIRCLE, distance IS THE PENETRATION DEPTH
-    private testCircleRect(circle: ArcadeShape, rect: Rectangle): void
+    private testCircleCircle(obj1: ArcadeObject, obj2: ArcadeObject, circle1: ArcadeShape, circle2: ArcadeShape, hit: CollisionHit): void
     {
-        const hit = this.hit;
+        const dx = circle2.cx - circle1.cx;
+        const dy = circle2.cy - circle1.cy;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const radiusSum = circle1.radius + circle2.radius;
+
+        if (distance >= radiusSum)
+            return;
+
+        hit.collision = true;
+        hit.depth = radiusSum - distance;
+
+        if (distance > 1e-8) {
+            hit.normalX = dx / distance;
+            hit.normalY = dy / distance;
+            return;
+        }
+
+        // SAME CENTER: PUSH THEM APART THE WAY THEY ARE MOVING APART
+        const relVelX = obj2.velocity.x - obj1.velocity.x;
+        const relVelY = obj2.velocity.y - obj1.velocity.y;
+        const relVelLen = Math.hypot(relVelX, relVelY);
+
+        if (relVelLen > 1e-8) {
+            hit.normalX = relVelX / relVelLen;
+            hit.normalY = relVelY / relVelLen;
+        } else {
+            hit.normalX = 1;
+        }
+    }
+
+    // THE NORMAL POINTS FROM THE CIRCLE TO THE RECTANGLE
+    private testCircleRect(circle: ArcadeShape, rect: Rectangle, hit: CollisionHit): void
+    {
         const cx = circle.cx;
         const cy = circle.cy;
         const radius = circle.radius;
@@ -748,32 +710,30 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
             hit.collision = true;
 
-            if (minDist === distLeft) { hit.dx = -1; hit.dy = 0; hit.distance = radius + distLeft; }
-            else if (minDist === distRight) { hit.dx = 1; hit.dy = 0; hit.distance = radius + distRight; }
-            else if (minDist === distTop) { hit.dx = 0; hit.dy = -1; hit.distance = radius + distTop; }
-            else { hit.dx = 0; hit.dy = 1; hit.distance = radius + distBottom; }
+            if (minDist === distLeft) { hit.normalX = 1; hit.depth = radius + distLeft; }
+            else if (minDist === distRight) { hit.normalX = -1; hit.depth = radius + distRight; }
+            else if (minDist === distTop) { hit.normalY = 1; hit.depth = radius + distTop; }
+            else { hit.normalY = -1; hit.depth = radius + distBottom; }
             return;
         }
 
         // Closest point on the rectangle to the circle center
-        const dx = cx - Math.max(rectLeft, Math.min(cx, rectRight));
-        const dy = cy - Math.max(rectTop, Math.min(cy, rectBottom));
+        const dx = Math.max(rectLeft, Math.min(cx, rectRight)) - cx;
+        const dy = Math.max(rectTop, Math.min(cy, rectBottom)) - cy;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance < radius)
         {
             hit.collision = true;
-            hit.dx = dx;
-            hit.dy = dy;
-            hit.distance = radius - distance;
+            hit.normalX = dx / distance;
+            hit.normalY = dy / distance;
+            hit.depth = radius - distance;
         }
     }
 
-    // dx/dy IS THE OVERLAP ON THE AXIS OF LEAST OVERLAP, POINTING FROM rect2 TO rect1. distance IS THAT OVERLAP
-    private testRectRect(rect1: Rectangle, rect2: Rectangle): void
+    // PUSHES APART ALONG THE AXIS OF LEAST OVERLAP
+    private testRectRect(rect1: Rectangle, rect2: Rectangle, hit: CollisionHit): void
     {
-        const hit = this.hit;
-
         const rect1Left = rect1.x;
         const rect1Right = rect1Left + rect1.width;
         const rect1Top = rect1.y;
@@ -794,15 +754,103 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
         if (overlapX < overlapY)
         {
-            hit.distance = overlapX;
-            hit.dx = (rect1Left + rect1Right > rect2Left + rect2Right) ? overlapX : -overlapX;
-            hit.dy = 0;
+            hit.depth = overlapX;
+            hit.normalX = (rect1Left + rect1Right > rect2Left + rect2Right) ? -1 : 1;
         }
         else
         {
-            hit.distance = overlapY;
-            hit.dx = 0;
-            hit.dy = (rect1Top + rect1Bottom > rect2Top + rect2Bottom) ? overlapY : -overlapY;
+            hit.depth = overlapY;
+            hit.normalY = (rect1Top + rect1Bottom > rect2Top + rect2Bottom) ? -1 : 1;
+        }
+    }
+
+    // WHICH SIDE OF obj2 obj1 STARTED THE STEP ON, AS THE SIDE OF obj1 THAT HIT: Down WHEN IT CAME FROM ABOVE.
+    // MOVEMENT OF obj2 COUNTS TOO, SO MOVING PLATFORMS WORK. ABOVE AND BELOW GO FIRST, SO LANDING ON A CORNER LANDS.
+    // None WHEN THEY ALREADY OVERLAPPED. USES THE CACHED SHAPES, SO CALL IT AFTER testPair
+    private getEntrySide(obj1: ArcadeObject, obj2: ArcadeObject, tolerance: number): BlockedState
+    {
+        const shape1 = obj1.physicsShape;
+        const shape2 = obj2.physicsShape;
+        const b1 = shape1.bounds;
+        const b2 = shape2.bounds;
+
+        // HOW FAR obj1 MOVED THIS STEP, RELATIVE TO obj2
+        const movedX = (shape1.x - shape1.startX) - (shape2.x - shape2.startX);
+        const movedY = (shape1.y - shape1.startY) - (shape2.y - shape2.startY);
+
+        if (b1.y + b1.height - movedY <= b2.y + tolerance) return BlockedState.Down;
+        if (b1.y - movedY >= b2.y + b2.height - tolerance) return BlockedState.Up;
+        if (b1.x + b1.width - movedX <= b2.x + tolerance) return BlockedState.Right;
+        if (b1.x - movedX >= b2.x + b2.width - tolerance) return BlockedState.Left;
+
+        return BlockedState.None;
+    }
+
+    // INTO this.hit: PUSH obj1 BACK OUT OF obj2 THROUGH side, THE SIDE OF obj1 THAT HIT
+    private setHitFromSide(obj1: ArcadeObject, obj2: ArcadeObject, side: BlockedState): void
+    {
+        const b1 = obj1.physicsShape.bounds;
+        const b2 = obj2.physicsShape.bounds;
+        const hit = this.hit;
+
+        hit.normalX = 0;
+        hit.normalY = 0;
+
+        if (side === BlockedState.Down) { hit.normalY = 1; hit.depth = b1.y + b1.height - b2.y; }
+        else if (side === BlockedState.Up) { hit.normalY = -1; hit.depth = b2.y + b2.height - b1.y; }
+        else if (side === BlockedState.Right) { hit.normalX = 1; hit.depth = b1.x + b1.width - b2.x; }
+        else { hit.normalX = -1; hit.depth = b2.x + b2.width - b1.x; }
+    }
+
+    // AN OBJECT RESTING AGAINST A SOLID OBJECT WITHOUT PUSHING INTO IT IS BLOCKED TOO, SO A PLAYER STANDING AGAINST
+    // A WALL IS IsBlocked(Left / Right) WITHOUT WALKING INTO IT. THE BROAD PHASE ALSO PAIRS OBJECTS THAT ONLY TOUCH
+    // (SEE ArcadeShape.treeBounds). DOESN'T SEND COLLISION EVENTS
+    private addTouchingBlockedState(pair: CollisionPair): void
+    {
+        const obj1 = pair.p1;
+        const obj2 = pair.p2;
+
+        if (!this.canCollide(obj1, obj2) || this.isSensorPair(obj1, obj2) || (obj1.static && obj2.static)) return;
+
+        const shape1 = this.getShape(obj1);
+        const shape2 = this.getShape(obj2);
+        if (!shape1 || !shape2) return;
+
+        const b1 = shape1.bounds;
+        const b2 = shape2.bounds;
+        const d = ArcadePhysicsController.CONTACT_TOLERANCE;
+
+        // THE OVERLAP ALONG THE TOUCHING SIDE MUST BE MORE THAN d, SO TOUCHING CORNERS DON'T COUNT
+        const overlapX = Math.min(b1.x + b1.width, b2.x + b2.width) - Math.max(b1.x, b2.x);
+        const overlapY = Math.min(b1.y + b1.height, b2.y + b2.height) - Math.max(b1.y, b2.y);
+
+        let side = BlockedState.None;
+
+        if (overlapX > d && Math.abs(b2.y - (b1.y + b1.height)) <= d) side = BlockedState.Down;
+        else if (overlapX > d && Math.abs(b2.y + b2.height - b1.y) <= d) side = BlockedState.Up;
+        else if (overlapY > d && Math.abs(b2.x - (b1.x + b1.width)) <= d) side = BlockedState.Right;
+        else if (overlapY > d && Math.abs(b2.x + b2.width - b1.x) <= d) side = BlockedState.Left;
+
+        if (side === BlockedState.None) return;
+
+        // A oneWay OBJECT IS ONLY TOUCHED FROM ABOVE
+        if (obj2.oneWay && side !== BlockedState.Down) return;
+        if (obj1.oneWay && side !== BlockedState.Up) return;
+
+        if (this.OnPreCollisionResolve && !this.OnPreCollisionResolve(obj1, obj2)) return;
+
+        obj1.blocked |= side;
+        obj2.blocked |= ArcadePhysicsController.oppositeSide(side);
+    }
+
+    private static oppositeSide(side: BlockedState): BlockedState
+    {
+        switch (side) {
+            case BlockedState.Up: return BlockedState.Down;
+            case BlockedState.Down: return BlockedState.Up;
+            case BlockedState.Left: return BlockedState.Right;
+            case BlockedState.Right: return BlockedState.Left;
+            default: return BlockedState.None;
         }
     }
 
@@ -844,7 +892,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
     private clearCollidingObjects(): void
     {
-        for (const obj of this.getCollisionObjects()) {
+        for (const obj of this.collisionObjects) {
             obj.collidingObjects.length = 0;
         }
     }
@@ -853,7 +901,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
     private buildBroadPhasePairs(): number
     {
         this.pairCount = 0;
-        const collisionObjects = this.getCollisionObjects();
+        const collisionObjects = this.collisionObjects;
 
         if (!this.hasLayerCollisionRules()) {
             this.addPairsWithin(collisionObjects);
@@ -949,7 +997,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             if (!shape) continue;
 
             found.length = 0;
-            tree.queryInto(shape.bounds, found);
+            tree.queryInto(shape.treeBounds, found);
 
             for (const item of found)
                 this.addCollisionPair(obj, item.value);
@@ -1084,11 +1132,6 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         return collidesWith.some(name => (name === otherLayerName));
     }
 
-    private getCollisionObjects(): ArcadeObject[]
-    {
-        return this.collisionObjects;
-    }
-
     private shouldSkipInternalCollision(obj1: ArcadeObject, obj2: ArcadeObject): boolean
     {
         if (!obj1.parent && !obj2.parent) {
@@ -1167,7 +1210,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             const shape = this.getShape(obj);
             if (!shape) continue;
 
-            const bounds = shape.bounds;
+            const bounds = shape.treeBounds;
             entries.push(shape.treeItem);
 
             left = Math.min(left, bounds.x);
@@ -1216,14 +1259,16 @@ export class ArcadePhysicsController extends PhysicsControllerBase
                 shape.cy += dy;
                 shape.bounds.x += dx;
                 shape.bounds.y += dy;
+                shape.treeBounds.x += dx;
+                shape.treeBounds.y += dy;
             }
 
             return shape.valid ? shape : null;
         }
 
         shape.step = this.stepping ? this.step : -1;
-        shape.x = obj.x;
-        shape.y = obj.y;
+        shape.x = shape.startX = obj.x;
+        shape.y = shape.startY = obj.y;
         shape.circle = obj.physicsHitbox.type === HitboxType.Circle;
 
         const bounds = shape.bounds;
@@ -1256,17 +1301,13 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             }
         }
 
+        const d = ArcadePhysicsController.CONTACT_TOLERANCE;
+        shape.treeBounds.x = bounds.x - d;
+        shape.treeBounds.y = bounds.y - d;
+        shape.treeBounds.width = bounds.width + d * 2;
+        shape.treeBounds.height = bounds.height + d * 2;
+
         return shape.valid ? shape : null;
-    }
-
-    GetObjectHitboxRadius(obj: ArcadeObject): number
-    {
-        if (obj.physicsHitbox.radius)
-            return obj.physicsHitbox.radius;
-        if (obj.physicsHitbox.rectangle)
-            return Math.min(obj.physicsHitbox.rectangle.width, obj.physicsHitbox.rectangle.height)
-
-        return 0;
     }
 
     private getWorldHitboxRect(obj: ArcadeObject): Rectangle | null
@@ -1358,17 +1399,10 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         };
     }
 
-    private rotateVector(vector: Vec2, angle: number): Vec2 {
-        return new Vec2(
-            vector.x * Math.cos(angle) - vector.y * Math.sin(angle),
-            vector.x * Math.sin(angle) + vector.y * Math.cos(angle)
-        );
-    }
-
     GetCollidingObjectsAgainst(obj: ArcadeObject): ArcadeObject[]
     {
         var collidingObjects: ArcadeObject[] = [];
-        const collisionObjects = this.getCollisionObjects();
+        const collisionObjects = this.collisionObjects;
 
         for (let i = 0; i < collisionObjects.length; i++)
         {
@@ -1398,24 +1432,15 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             return false;
         }
 
-        return this.GetCollisionInfo(obj1, obj2).collision;
+        return this.testPair(obj1, obj2, this.queryHit);
     }
 
-    // FOR TWO CIRCLES dx/dy POINT FROM obj1 TO obj2 AND distance IS BETWEEN THEIR CENTERS. FOR TWO RECTANGLES dx/dy
-    // IS THE OVERLAP, POINTING FROM obj2 TO obj1. FOR A CIRCLE AND A RECTANGLE dx/dy POINT FROM THE RECTANGLE TO
-    // THE CIRCLE, AND distance IS HOW DEEP THEY OVERLAP
-    GetCollisionInfo(obj1: ArcadeObject, obj2: ArcadeObject): {collision: boolean, dx: number, dy: number, distance: number, angle: number}
+    // normalX / normalY IS THE DIRECTION FROM obj1 TO obj2 TO PUSH THEM APART, depth IS HOW DEEP THEY OVERLAP
+    GetCollisionInfo(obj1: ArcadeObject, obj2: ArcadeObject): CollisionHit
     {
-        const hit = this.hit;
-        this.testPair(obj1, obj2);
+        this.testPair(obj1, obj2, this.queryHit);
 
-        return {
-            collision: hit.collision,
-            dx: hit.dx,
-            dy: hit.dy,
-            distance: hit.distance,
-            angle: Math.atan2(hit.dy, hit.dx)
-        };
+        return { ...this.queryHit };
     }
 
     // object1 IS ALWAYS THE OBJECT WITH THE HIGHEST VELOCITY
@@ -1476,152 +1501,29 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         }
     }
 
-    private addBlockedState(obj: ArcadeObject, state: BlockedState): void
-    {
-        obj.blocked |= state;
-    }
-
     private applyBlockedStatesFromNormal(obj1: ArcadeObject, obj2: ArcadeObject, nx: number, ny: number): void
     {
         const eps = 1e-6;
 
         if (nx > eps) {
-            this.addBlockedState(obj1, BlockedState.Right);
-            this.addBlockedState(obj2, BlockedState.Left);
+            obj1.blocked |= BlockedState.Right;
+            obj2.blocked |= BlockedState.Left;
         } else if (nx < -eps) {
-            this.addBlockedState(obj1, BlockedState.Left);
-            this.addBlockedState(obj2, BlockedState.Right);
+            obj1.blocked |= BlockedState.Left;
+            obj2.blocked |= BlockedState.Right;
         }
 
         if (ny > eps) {
-            this.addBlockedState(obj1, BlockedState.Down);
-            this.addBlockedState(obj2, BlockedState.Up);
+            obj1.blocked |= BlockedState.Down;
+            obj2.blocked |= BlockedState.Up;
         } else if (ny < -eps) {
-            this.addBlockedState(obj1, BlockedState.Up);
-            this.addBlockedState(obj2, BlockedState.Down);
+            obj1.blocked |= BlockedState.Up;
+            obj2.blocked |= BlockedState.Down;
         }
     }
 
-    // THE CONTACT NORMAL FROM obj1 TO obj2, INTO normalX / normalY
-    private setCollisionNormal(obj1: ArcadeObject, obj2: ArcadeObject, dx: number, dy: number): void
-    {
-        const len = Math.sqrt(dx * dx + dy * dy);
-
-        if (len <= 1e-8) {
-            const centerDx = obj2.x - obj1.x;
-            const centerDy = obj2.y - obj1.y;
-            const centerLen = Math.hypot(centerDx, centerDy);
-
-            if (centerLen > 1e-8) {
-                this.normalX = centerDx / centerLen;
-                this.normalY = centerDy / centerLen;
-                return;
-            }
-
-            const relVelX = obj2.velocity.x - obj1.velocity.x;
-            const relVelY = obj2.velocity.y - obj1.velocity.y;
-            const relVelLen = Math.hypot(relVelX, relVelY);
-
-            if (relVelLen > 1e-8) {
-                this.normalX = relVelX / relVelLen;
-                this.normalY = relVelY / relVelLen;
-                return;
-            }
-
-            this.normalX = 1;
-            this.normalY = 0;
-            return;
-        }
-
-        // rect-rect dx/dy point from obj2 to obj1
-        const sign = (obj1.physicsHitbox.type === HitboxType.Rectangle && obj2.physicsHitbox.type === HitboxType.Rectangle) ? -1 : 1;
-        this.normalX = sign * dx / len;
-        this.normalY = sign * dy / len;
-    }
-
-    // HOW FAR THE OBJECT MOVED THIS STEP, 0 WHEN IT WAS ADDED DURING THE STEP
-    private movedX(obj: ArcadeObject): number
-    {
-        return obj.physicsStartStep === this.step ? obj.x - obj.physicsStartX : 0;
-    }
-
-    private movedY(obj: ArcadeObject): number
-    {
-        return obj.physicsStartStep === this.step ? obj.y - obj.physicsStartY : 0;
-    }
-
-    // TWO RECTANGLES ARE NORMALLY PUSHED APART ALONG THEIR SMALLER OVERLAP. AN OBJECT WALKING OVER THE SEAM BETWEEN TWO
-    // FLOOR PIECES HAS SUNK INTO THE NEXT PIECE'S TOP FURTHER THAN INTO ITS SIDE, SO IT WOULD GET STOPPED BY THAT SIDE.
-    // WHEN obj1 STARTED THE STEP ON ONE SIDE OF obj2, IT'S PUSHED BACK OUT THAT SIDE INSTEAD, INTO this.hit LIKE testRectRect.
-    // ABOVE OR BELOW GOES FIRST, SO LANDING ON A CORNER LANDS. RETURNS FALSE WHEN THEY ALREADY OVERLAPPED
-    private pushFromEntrySide(obj1: ArcadeObject, obj2: ArcadeObject): boolean
-    {
-        const shape1 = this.getShape(obj1);
-        const shape2 = this.getShape(obj2);
-        if (!shape1 || !shape2) return false;
-
-        const b1 = shape1.bounds;
-        const b2 = shape2.bounds;
-        const tolerance = ArcadePhysicsController.ENTRY_TOLERANCE;
-        const hit = this.hit;
-
-        // WHERE obj1 STARTED, RELATIVE TO WHERE obj2 STARTED
-        const startDx = this.movedX(obj1) - this.movedX(obj2);
-        const startDy = this.movedY(obj1) - this.movedY(obj2);
-
-        if (b1.y + b1.height - startDy <= b2.y + tolerance) {
-            hit.dx = 0;
-            hit.distance = b1.y + b1.height - b2.y;
-            hit.dy = -hit.distance;
-        } else if (b1.y - startDy >= b2.y + b2.height - tolerance) {
-            hit.dx = 0;
-            hit.distance = b2.y + b2.height - b1.y;
-            hit.dy = hit.distance;
-        } else if (b1.x + b1.width - startDx <= b2.x + tolerance) {
-            hit.dy = 0;
-            hit.distance = b1.x + b1.width - b2.x;
-            hit.dx = -hit.distance;
-        } else if (b1.x - startDx >= b2.x + b2.width - tolerance) {
-            hit.dy = 0;
-            hit.distance = b2.x + b2.width - b1.x;
-            hit.dx = hit.distance;
-        } else {
-            return false;
-        }
-
-        return hit.distance > 0;
-    }
-
-    // A oneWay OBJECT ONLY STOPS WHAT CAME DOWN ONTO ITS TOP THIS STEP, AND ALWAYS PUSHES IT UP. EVERYTHING ELSE PASSES
-    private resolveOneWayCollision(obj1: ArcadeObject, obj2: ArcadeObject): boolean
-    {
-        const platform = obj2.oneWay ? obj2 : obj1;
-        const mover = platform === obj1 ? obj2 : obj1;
-
-        const platformShape = this.getShape(platform);
-        const moverShape = this.getShape(mover);
-        if (!platformShape || !moverShape) return false;
-
-        const top = platformShape.bounds.y;
-        const bottom = moverShape.bounds.y + moverShape.bounds.height;
-
-        // WHERE BOTH WERE AT THE START OF THE STEP, SO MOVING PLATFORMS WORK TOO
-        const startTop = top - this.movedY(platform);
-        const startBottom = bottom - this.movedY(mover);
-
-        if (startBottom > startTop + ArcadePhysicsController.ONE_WAY_TOLERANCE) return false;
-
-        const penetration = bottom - top;
-
-        // THE NORMAL FROM obj1 TO obj2 POINTS DOWN WHEN obj1 IS THE MOVER. RECT-RECT dx/dy POINT FROM obj2 TO obj1
-        const rectRect = obj1.physicsHitbox.type === HitboxType.Rectangle && obj2.physicsHitbox.type === HitboxType.Rectangle;
-        const dy = (mover === obj1 ? 1 : -1) * (rectRect ? -1 : 1) * penetration;
-
-        return this.ResolveSolidCollision(obj1, obj2, 0, dy, penetration);
-    }
-
-    // PUSHES THE OBJECTS APART AND BOUNCES THEM. RETURNS TRUE WHEN IT MOVED ONE
-    private ResolveSolidCollision(obj1: ArcadeObject, obj2: ArcadeObject, dx: number, dy: number, penetration: number): boolean
+    // PUSHES THE OBJECTS APART ALONG THE NORMAL (FROM obj1 TO obj2) AND BOUNCES THEM. RETURNS TRUE WHEN IT MOVED ONE
+    private ResolveSolidCollision(obj1: ArcadeObject, obj2: ArcadeObject, nx: number, ny: number, penetration: number): boolean
     {
         // --- penetration depth (DO NOT /2 for rect-rect)
         if (penetration <= 0) return false;
@@ -1631,11 +1533,6 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         const invMass2 = obj2.static ? 0 : 1;
         const invMassSum = invMass1 + invMass2;
         if (invMassSum <= 0) return false;
-
-        // --- choose normal
-        this.setCollisionNormal(obj1, obj2, dx, dy);
-        const nx = this.normalX;
-        const ny = this.normalY;
 
         // --- impulse along MTV normal
         const rvx = obj2.velocity.x - obj1.velocity.x;
@@ -1680,7 +1577,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
     GetObjectAtPoint(position: Vec2, ignoredObject?: ArcadeObject): ArcadeObject | null
     {
-        const collisionObjects = this.getCollisionObjects();
+        const collisionObjects = this.collisionObjects;
 
         for (let i = 0; i < collisionObjects.length; i++)
         {
