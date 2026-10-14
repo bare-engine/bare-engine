@@ -22,6 +22,7 @@ export interface ArcadeObjectEntity extends Entity
     stayInBounds?: boolean;
     removeOnOutOfBounds?: boolean;
     continuous?: boolean;
+    oneWay?: boolean;
     hitboxInheritsInnerTransform?: boolean;
     hitboxType?: "Rectangle" | "Circle";
     hitbox?: Rectangle2Vec | string;
@@ -77,6 +78,8 @@ export class ArcadeObject extends GameObject
     @SerializeField(GameMode.Edit) removeOnOutOfBounds: boolean = false;
     // IF TRUE, A FAST OBJECT IS MOVED IN SMALL STEPS SO IT CAN'T PASS THROUGH OTHER OBJECTS (CONTINUOUS COLLISION DETECTION)
     @SerializeField(GameMode.Edit) continuous: boolean = false;
+    // IF TRUE, IT'S ONLY SOLID FROM ABOVE: WHAT LANDS ON ITS TOP STANDS ON IT, EVERYTHING ELSE PASSES THROUGH (ONE-WAY PLATFORMS)
+    @SerializeField(GameMode.Edit) oneWay: boolean = false;
     
     @SerializeField(GameMode.Edit) hitboxInheritsInnerTransform: boolean = true;
     
@@ -86,6 +89,8 @@ export class ArcadeObject extends GameObject
     // SET BY ArcadePhysicsController: A NUMBER FOR COLLISION PAIR KEYS, AND THE WORLD SPACE HITBOX OF THE CURRENT STEP
     physicsId: number = 0;
     physicsShape: ArcadeShape = new ArcadeShape(this);
+    // SET BY ArcadePhysicsController: y AT THE START OF THE CURRENT STEP, SO oneWay KNOWS WHERE AN OBJECT CAME FROM
+    physicsStepStartY: number = 0;
 
     static dummyPhysicsObjectBare: ArcadeObject = new ArcadeObject();
 
@@ -374,6 +379,7 @@ export class ArcadeObject extends GameObject
         this.stayInBounds = true;
         this.removeOnOutOfBounds = false;
         this.continuous = false;
+        this.oneWay = false;
         this.gravity = null;
 
         if (this.collidingObjects)

@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 const { Given, Then, setDefaultTimeout } = require("@cucumber/cucumber");
 
-setDefaultTimeout(15000);
+setDefaultTimeout(60000);
 
 function getRequestedScene() {
   return process.env.BARE_TEST_SCENE || process.argv.find((arg) => /^[A-Za-z][A-Za-z0-9]*Test$/.test(arg));

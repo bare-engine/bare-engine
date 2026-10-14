@@ -44,6 +44,10 @@ export class ArcadePhysicsController extends PhysicsControllerBase
     static MAX_CONTINUOUS_STEPS: int = 64;
     // AN OBJECT WITH drag STOPS COMPLETELY BELOW THIS SPEED, IN UNITS PER SECOND. DRAG ALONE NEVER REACHES 0
     static DRAG_STOP_SPEED: number = 5;
+    // HOW FAR BELOW A oneWay OBJECT'S TOP AN OBJECT'S BOTTOM MAY HAVE STARTED THE STEP AND STILL LAND ON IT
+    static ONE_WAY_TOLERANCE: number = 0.5;
+    // OBJECTS THIS CLOSE COUNT AS TOUCHING FOR blocked, EVEN WHEN THEY DON'T OVERLAP
+    static TOUCH_DISTANCE: number = 0.01;
 
     public objects: ArcadeObject[] = [];
     private collisionObjects: ArcadeObject[] = [];
@@ -70,6 +74,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
     private pairCount = 0;
     private treeEntries: QuadTreeItem<ArcadeObject>[] = [];
     private treeQuery: QuadTreeItem<ArcadeObject>[] = [];
+    private touchRegion: Rectangle = { x: 0, y: 0, width: 0, height: 0 };
 
     // NARROW PHASE RESULT OF testPair, REUSED SO NO OBJECT IS CREATED PER PAIR. dx, dy AND distance
     // MEAN WHAT THEY DO IN GetCollisionInfo
@@ -262,6 +267,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             }
 
             obj.blocked = BlockedState.None;
+            obj.physicsStepStartY = obj.y;
 
             if (!obj.physicsHitbox.rectangle || obj.physicsHitbox.rectangle.width == 0 || obj.physicsHitbox.rectangle.height == 0)
             {
@@ -357,7 +363,68 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
         if (this.collisionsEnabled) {
             this.handleObjectCollisions();
+            this.addTouchingBlockedStates();
         }
+    }
+
+    // AN OBJECT RESTING AGAINST A SOLID OBJECT WITHOUT PUSHING INTO IT IS BLOCKED TOO, SO A PLAYER STANDING
+    // AGAINST A WALL IS IsBlocked(Left / Right) WITHOUT WALKING INTO IT. DOESN'T SEND COLLISION EVENTS
+    private addTouchingBlockedStates(): void
+    {
+        const all = BlockedState.Up | BlockedState.Down | BlockedState.Left | BlockedState.Right;
+        const d = ArcadePhysicsController.TOUCH_DISTANCE;
+        const region = this.touchRegion;
+        const found = this.treeQuery;
+        let tree: QuadTree<ArcadeObject> | null | undefined;
+
+        for (const obj of this.objects)
+        {
+            if (obj.static || obj.sensor || !obj.collide || !obj.physicsHitbox.active) continue;
+            if ((obj.blocked & all) === all) continue;
+
+            const shape = this.getShape(obj);
+            if (!shape) continue;
+
+            tree ??= this.buildTree(this.getCollisionObjects());
+            if (!tree) return;
+
+            const b = shape.bounds;
+            region.x = b.x - d;
+            region.y = b.y - d;
+            region.width = b.width + d * 2;
+            region.height = b.height + d * 2;
+
+            found.length = 0;
+            tree.queryInto(region, found);
+
+            for (const item of found)
+            {
+                const other = item.value;
+                if (other === obj || other.parent || other.sensor || !other.collide || !other.physicsHitbox.active) continue;
+                if (this.shouldSkipInternalCollision(obj, other) || !this.canObjectsCollideByLayer(obj, other)) continue;
+                if (this.OnPreCollisionResolve && !this.OnPreCollisionResolve(obj, other)) continue;
+
+                const o = item.bounds;
+                // THE OVERLAP ALONG THE TOUCHING SIDE MUST BE MORE THAN d, SO TOUCHING CORNERS DON'T COUNT
+                const overlapX = Math.min(b.x + b.width, o.x + o.width) - Math.max(b.x, o.x);
+                const overlapY = Math.min(b.y + b.height, o.y + o.height) - Math.max(b.y, o.y);
+
+                if (overlapX > d && Math.abs(o.y - (b.y + b.height)) <= d)
+                    obj.blocked |= BlockedState.Down;
+
+                if (other.oneWay) continue;
+
+                if (overlapX > d && Math.abs(o.y + o.height - b.y) <= d)
+                    obj.blocked |= BlockedState.Up;
+
+                if (overlapY > d && Math.abs(o.x - (b.x + b.width)) <= d)
+                    obj.blocked |= BlockedState.Right;
+                else if (overlapY > d && Math.abs(o.x + o.width - b.x) <= d)
+                    obj.blocked |= BlockedState.Left;
+            }
+        }
+
+        found.length = 0;
     }
 
     // NUMBER OF SUB STEPS A continuous OBJECT NEEDS THIS FIXED UPDATE, 1 WHEN IT CAN MOVE IN ONE GO.
@@ -599,6 +666,9 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         }
 
         if (this.OnPreCollisionResolve && !this.OnPreCollisionResolve(obj1, obj2)) return false;
+
+        if (obj1.oneWay || obj2.oneWay)
+            return this.resolveOneWayCollision(obj1, obj2);
 
         // for two circles the penetration is what's left of the radii, otherwise the distance already is
         const penetration = radiusSum > 0 ? radiusSum - distance : distance;
@@ -1456,6 +1526,34 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         const sign = (obj1.physicsHitbox.type === HitboxType.Rectangle && obj2.physicsHitbox.type === HitboxType.Rectangle) ? -1 : 1;
         this.normalX = sign * dx / len;
         this.normalY = sign * dy / len;
+    }
+
+    // A oneWay OBJECT ONLY STOPS WHAT CAME DOWN ONTO ITS TOP THIS STEP, AND ALWAYS PUSHES IT UP. EVERYTHING ELSE PASSES
+    private resolveOneWayCollision(obj1: ArcadeObject, obj2: ArcadeObject): boolean
+    {
+        const platform = obj2.oneWay ? obj2 : obj1;
+        const mover = platform === obj1 ? obj2 : obj1;
+
+        const platformShape = this.getShape(platform);
+        const moverShape = this.getShape(mover);
+        if (!platformShape || !moverShape) return false;
+
+        const top = platformShape.bounds.y;
+        const bottom = moverShape.bounds.y + moverShape.bounds.height;
+
+        // WHERE BOTH WERE AT THE START OF THE STEP, SO MOVING PLATFORMS WORK TOO
+        const startTop = top - (platform.y - platform.physicsStepStartY);
+        const startBottom = bottom - (mover.y - mover.physicsStepStartY);
+
+        if (startBottom > startTop + ArcadePhysicsController.ONE_WAY_TOLERANCE) return false;
+
+        const penetration = bottom - top;
+
+        // THE NORMAL FROM obj1 TO obj2 POINTS DOWN WHEN obj1 IS THE MOVER. RECT-RECT dx/dy POINT FROM obj2 TO obj1
+        const rectRect = obj1.physicsHitbox.type === HitboxType.Rectangle && obj2.physicsHitbox.type === HitboxType.Rectangle;
+        const dy = (mover === obj1 ? 1 : -1) * (rectRect ? -1 : 1) * penetration;
+
+        return this.ResolveSolidCollision(obj1, obj2, 0, dy, penetration);
     }
 
     // PUSHES THE OBJECTS APART AND BOUNCES THEM. RETURNS TRUE WHEN IT MOVED ONE

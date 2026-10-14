@@ -55,6 +55,7 @@ Set gravity at the top level of `settingsData.json`:
 | `stayInBounds` | `true` | Keep the object inside the [bounds](#bounds). |
 | `removeOnOutOfBounds` | `false` | Remove the object when it's fully outside the [bounds](#bounds). |
 | `continuous` | `false` | Stop a fast object from passing through walls. See [Fast objects](#fast-objects). |
+| `oneWay` | `false` | Solid only from above, like a platform you can jump up through. See [One-way platforms](#one-way-platforms). |
 | `hitbox` | the image | Rectangle as `{ x1, y1, x2, y2 }`. Values between 0 and 1 are a fraction of the image size, larger ones are pixels. `"FULL"` covers the whole image. |
 | `hitboxType` / `hitboxRadius` | `"Rectangle"` | `"Rectangle"` or `"Circle"`, and the circle's radius, by default half the hitbox's smaller side. The circle is centered on the object's [pivot](../guide/game-objects#pivot), so use a `CENTER` pivot to center it on the image. |
 
@@ -64,7 +65,7 @@ A child ArcadeObject always acts as a sensor, so it reports collisions without p
 | --- | --- |
 | `SetVelocity(vec)` / `SetVelocityXY(x, y)` / `ResetVelocity()` | Change velocity. |
 | `IsGrounded()` | Standing on something. Same as `IsBlocked(BlockedState.Down)`. |
-| `IsBlocked(direction)` | Blocked in a direction: `BlockedState.Up`, `Down`, `Left` or `Right`. |
+| `IsBlocked(direction)` | Blocked in a direction: `BlockedState.Up`, `Down`, `Left` or `Right`. Touching a solid object counts, so a player standing against a wall is blocked without pushing into it. |
 | `IsMoving()` | Has velocity. |
 
 ### Bounds
@@ -118,6 +119,21 @@ export class CoinComponent extends Component<ArcadeObject>
 A [custom](../guide/custom-game-objects) `ArcadeObject` can override the same three methods itself.
 
 **Examples:** [Platformer](https://github.com/bare-engine/bare-platformer) coins [are collected on collision](https://github.com/bare-engine/bare-platformer/blob/main/src/components/collectableComponent.ts#L13-L20), and [Shmup](https://github.com/bare-engine/bare-shmup) ships [take damage from bullets](https://github.com/bare-engine/bare-shmup/blob/main/src/components/aliveComponent.ts#L25-L28).
+
+### One-way platforms
+
+A `oneWay` object only stops what lands on its top. Objects that come from below or the sides pass through it, so players can jump up through it and land on it:
+
+```json
+{
+  "name": "platform",
+  "baseClass": "ArcadeObject",
+  "static": true,
+  "oneWay": true
+}
+```
+
+Collision events still fire while an object passes through. To let the player drop down through a platform, skip the response for a moment with [`OnPreCollisionResolve`](#filtering-solid-collision-response).
 
 ### Filtering solid collision response
 

@@ -1,4 +1,4 @@
-import { BareEvent, CollisionEventComponent, Component, GameObject, Scene } from "bare-engine";
+import { BareEvent, BlockedState, CollisionEventComponent, Component, GameObject, Scene } from "bare-engine";
 import { ArcadeObject, ArcadePhysicsController } from "bare-engine/arcade";
 import { Checks } from "./checks";
 
@@ -82,6 +82,28 @@ export class DocsPhysicsTest extends Scene
         c.check(player.IsGrounded(), "the player should come to rest on the static block");
         c.check(player.y + 32 <= ground.y + 0.5, "the static block should stop the player: " + player.y);
         c.check(ground.y === 400, "a static object should not move");
+
+        // touching a wall without pushing into it counts as blocked
+        const sideWall = this.AddGameObject<ArcadeObject>("block").SetPosition(player.x + 32, 0);
+        sideWall.scale.x = 32;
+        sideWall.scale.y = 390;
+        await this.WaitFrame(3);
+        c.check(player.IsBlocked(BlockedState.Right), "touching a wall should count as blocked");
+        c.check(!player.IsBlocked(BlockedState.Left), "nothing touches the player's left");
+        sideWall.Remove();
+        await this.WaitFrame(2);
+        c.check(!player.IsBlocked(BlockedState.Right), "a removed wall should not block");
+
+        // oneWay: jump up through it, land on top
+        const platform = this.AddGameObject<ArcadeObject>("block").SetPosition(0, 250);
+        platform.oneWay = true;
+        player.SetVelocityXY(0, -1500);
+        await this.WaitFrame(40);
+        c.check(Math.abs(player.y + 32 - 250) < 1, "the player should jump through a oneWay platform and land on it: " + player.y);
+        c.check(player.IsGrounded(), "standing on a oneWay platform is grounded");
+        platform.Remove();
+        await this.WaitFrame(20);
+        c.check(player.IsGrounded() && player.y > 300, "the player should fall back to the ground: " + player.y);
 
         player.SetVelocityXY(300, 0);
         c.check(player.IsMoving(), "IsMoving should be true with velocity");
@@ -186,7 +208,7 @@ export class DocsPhysicsTest extends Scene
         this.settingsData.gravity = 0;
         const drifting = this.AddGameObject<ArcadeObject>({ extends: "enemy", drag: 0.1 } as any).SetPosition(450, 100);
         drifting.SetVelocityXY(200, 0);
-        await this.WaitFrame(60);
+        await this.WaitFrame(40);
         c.check(drifting.velocity.x === 0 && !drifting.IsMoving(), "an object with drag should come to a full stop: " + drifting.velocity.x);
         drifting.Remove();
         this.settingsData.gravity = 5000;
