@@ -8,7 +8,14 @@ Simple rectangle and circle collisions, good for platformers and top-down games.
 
 Hitboxes are axis-aligned boxes (AABB) and circles. Rotating an `ArcadeObject` doesn't rotate its hitbox; the box grows to fit around the rotated object. For bodies that rotate, use [realistic physics](#realistic-physics).
 
-Import from `bare-engine/arcade` and register it in your scene. When a prefab or entity has `"baseClass": "ArcadeObject"`, or a class extending it, this happens automatically:
+Arcade physics turns on by itself when a prefab in `settingsData.json` or an entity in code has `"baseClass": "ArcadeObject"` (or a class extending it), or when your code imports anything from `bare-engine/arcade`, such as `ArcadeObject`. `import type` doesn't count.
+
+You almost never need to register it yourself. Only when the `baseClass` can't be seen while building:
+
+- The name is built while the game runs, like `{ baseClass: shapeType }`. Only names written out as text, like `baseClass: "ArcadeObject"`, count.
+- The name is in a JSON file other than `public/data/settingsData.json`, like a second settings file loaded while the game runs, or a level file where an object sets a different `baseClass` than its prefab.
+
+Then register it in your scene:
 
 ```ts
 import { ArcadePhysicsController } from 'bare-engine/arcade';
@@ -22,7 +29,7 @@ export class Game extends Scene
 }
 ```
 
-Then give your prefabs `"baseClass": "ArcadeObject"`:
+Give your prefabs `"baseClass": "ArcadeObject"`:
 
 ```json
 {
@@ -163,7 +170,14 @@ Now your bullets hit enemies, enemy bullets and enemies hit you, and nothing els
 
 Rigid-body physics with rotation, friction, mass and joints, based on [Sopiro/Physics](https://github.com/Sopiro/Physics). Use it when objects should tumble, stack, swing or roll. It works, but it isn't as well supported as arcade physics yet.
 
-Import it from `bare-engine/sopiro` and register the controller. That also registers all its body and joint classes. When a prefab or entity has a Sopiro `baseClass`, like `"Box"` or `"Circle"`, this happens automatically:
+Realistic physics turns on by itself when a prefab in `settingsData.json` or an entity in code has a Sopiro `baseClass`, like `"Box"`, `"Circle"` or `"RevoluteJointObject"`, or when your code imports anything from `bare-engine/sopiro`, such as `Circle` or `Type`. `import type` doesn't count. That also registers all its body and joint classes.
+
+You almost never need to register it yourself. Only when the `baseClass` can't be seen while building:
+
+- The name is built while the game runs, like `{ baseClass: shapeType }`. Only names written out as text, like `baseClass: "Box"`, count.
+- The name is in a JSON file other than `public/data/settingsData.json`, like a second settings file loaded while the game runs, or a level file where an object sets a different `baseClass` than its prefab.
+
+Then register it in your scene:
 
 ```ts
 import { SopiroPhysicsController } from 'bare-engine/sopiro';
