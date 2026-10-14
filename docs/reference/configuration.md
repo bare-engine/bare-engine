@@ -87,7 +87,7 @@ export class HUD extends Scene
 | `resize` | `false` | When the window size changes, move every object so it keeps its relative place on screen. |
 | `persistent` | `false` | Keep the scene when `bare.scene.Goto` clears the others. |
 
-`super(settingsData)` is shorthand for `super({ settingsData })`.
+Always pass an options object. `super(settingsData)` is a type error; write `super({ settingsData })`.
 
 ## package.json
 

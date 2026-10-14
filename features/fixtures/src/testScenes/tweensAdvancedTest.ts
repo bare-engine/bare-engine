@@ -15,10 +15,10 @@ export class TweensAdvancedTest extends Scene
 
     constructor()
     {
-        super({
+        super({ settingsData: {
             basePrefabs: [{ name: "ANY", texture: "PIXEL" }],
             layers: ["objects"],
-        });
+        } });
     }
 
     override OnUpdate(): void

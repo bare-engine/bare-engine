@@ -1,6 +1,6 @@
 # Keyboard
 
-`bare.keyboard` reads keys. Key names are the browser's key name with a lowercase first letter, for example `'a'`, `'space'`, `'enter'`, `'shift'`, `'arrowUp'`.
+`bare.keyboard` reads keys. Key names are the browser's key name with a lowercase first letter, for example `'a'`, `'space'`, `'enter'`, `'shift'`, `'arrowUp'`. The space bar is `'space'`; the browser's own name for it, `' '`, works too.
 
 ```ts
 if (bare.keyboard.IsKeyDown('a')) { /* held */ }

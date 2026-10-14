@@ -20,7 +20,7 @@ export class PrefabsTest extends Scene
 {
     constructor()
     {
-        super({
+        super({ settingsData: {
             basePrefabs: [
                 {
                     name: "ANY",
@@ -83,7 +83,7 @@ export class PrefabsTest extends Scene
                 },
             ],
             layers: ["objects"],
-        });
+        } });
     }
 
     override OnAwake(): void

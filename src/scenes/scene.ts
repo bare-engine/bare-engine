@@ -134,24 +134,10 @@ export class Scene implements SceneI
     
     //private pipes = matt<Pipes>();
     
-    constructor(sceneOptions: SceneOptions | SettingsData = {settingsData: defaultSettingsData})
+    constructor(sceneOptions: SceneOptions = {settingsData: defaultSettingsData})
     {
-        let options: SceneOptions;
-        const isSceneOptions =
-            sceneOptions &&
-            typeof sceneOptions === "object" &&
-            Object.keys(sceneOptionKeys).some(key => key in sceneOptions);
+        const options: SceneOptions = { ...sceneOptions };
 
-        if (isSceneOptions)
-        {
-            // IS A sceneOptions
-            options = sceneOptions as SceneOptions;
-        }
-        else
-        {
-            // IS A SETTINGSDATA DIRECTLY
-            options = { settingsData: sceneOptions as SettingsData };
-        }
 
         if (!options.settingsData)
             options.settingsData = defaultSettingsData;

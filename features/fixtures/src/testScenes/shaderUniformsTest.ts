@@ -18,7 +18,7 @@ export class ShaderUniformsTest extends Scene
 
     constructor()
     {
-        super({ layers: ["objects"] });
+        super({ settingsData: { layers: ["objects"] } });
     }
 
     override OnStart(): void

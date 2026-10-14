@@ -11,11 +11,11 @@ export class SopiroJointsTest extends Scene
 
     constructor()
     {
-        super({
+        super({ settingsData: {
             basePrefabs: [{ name: "ANY", texture: "PIXEL" }],
             prefabs: [],
             gravity: 1200,
-        } as any);
+        } });
     }
 
     override OnUpdate(): void

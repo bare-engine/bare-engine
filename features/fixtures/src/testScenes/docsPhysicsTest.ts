@@ -23,7 +23,7 @@ export class DocsPhysicsTest extends Scene
 
     constructor()
     {
-        super({
+        super({ settingsData: {
             basePrefabs: [{ name: "ANY", texture: "PIXEL" }],
             prefabs: [
                 { name: "player", baseClass: "ArcadeObject", scale: { x: 32, y: 32 } },
@@ -32,14 +32,14 @@ export class DocsPhysicsTest extends Scene
                 { name: "exitDoor", baseClass: "ArcadeObject", scale: { x: 16, y: 16 }, sensor: true, components: { collisionEvent: { object: "player", event: "levelExit", once: true } } },
                 { name: "bullet", baseClass: "ArcadeObject", scale: { x: 8, y: 8 } },
                 { name: "enemy", baseClass: "ArcadeObject", scale: { x: 8, y: 8 } },
-            ] as any,
+            ],
             layers: ["objects", "bullets", "enemies"],
             layersInfo: {
                 objects: { collidesWith: ["objects"] },
                 bullets: { collidesWith: ["enemies"] },
             },
             gravity: 5000,
-        } as any);
+        } });
     }
 
     override OnAwake(): void

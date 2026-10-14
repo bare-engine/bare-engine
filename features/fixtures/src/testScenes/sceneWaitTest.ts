@@ -6,7 +6,7 @@ class WaitTarget extends Scene
     steps = 0;
     startupWait = false;
 
-    constructor() { super({ UI: true, layers: ['objects'] }); }
+    constructor() { super({ UI: true, settingsData: { layers: ['objects'] } }); }
     override async OnStart() { this.startupWait = await this.WaitRealTime(0.01); }
     override OnFixedUpdate() { this.steps++; }
 }

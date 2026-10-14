@@ -61,11 +61,11 @@ export class SerializeModesTest extends Scene
 
     constructor()
     {
-        super({
+        super({ settingsData: {
             basePrefabs: [{ name: "ANY", texture: "PIXEL" }],
             prefabs: [{ name: "modes", baseClass: "ModesObject" }],
             saveVars: { SavedText: ["text"] },
-        } as any);
+        } });
     }
 
     override OnAwake(): void

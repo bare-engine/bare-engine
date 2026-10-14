@@ -40,7 +40,7 @@ export class LevelSaveTest extends Scene
 
     constructor()
     {
-        super({
+        super({ settingsData: {
             basePrefabs: [{ name: "ANY", texture: "PIXEL" }],
             prefabs: [
                 { name: "hero", components: { healthSave: {} } },
@@ -55,7 +55,7 @@ export class LevelSaveTest extends Scene
             layersInfo: {
                 fx: { save: false },
             },
-        } as any);
+        } });
     }
 
     override OnAwake(): void

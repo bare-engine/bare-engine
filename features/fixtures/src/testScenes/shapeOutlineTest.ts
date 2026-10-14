@@ -10,7 +10,7 @@ export class ShapeOutlineTest extends Scene
 
     constructor()
     {
-        super({ layers: ["objects"] });
+        super({ settingsData: { layers: ["objects"] } });
     }
 
     // the number of vertices a draw call submits

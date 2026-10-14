@@ -26,11 +26,11 @@ export class ParticleComponentTest extends Scene
 
     constructor()
     {
-        super({
+        super({ settingsData: {
             basePrefabs: [{ name: "ANY", texture: "PIXEL" }],
-            prefabs: [{ name: "sparkler", components: { particle: SETTINGS } } as any],
+            prefabs: [{ name: "sparkler", components: { particle: SETTINGS } }],
             layers: ["objects"],
-        });
+        } });
     }
 
     override OnAwake(): void

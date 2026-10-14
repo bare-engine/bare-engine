@@ -29,7 +29,7 @@ export class SettingsEditingTest extends Scene
 
     constructor()
     {
-        super(settingsData());
+        super({ settingsData: settingsData() });
     }
 
     override async OnStart()

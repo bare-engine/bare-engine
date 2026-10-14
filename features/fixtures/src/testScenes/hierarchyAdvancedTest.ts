@@ -22,11 +22,11 @@ export class HierarchyAdvancedTest extends Scene
 
     constructor()
     {
-        super({
+        super({ settingsData: {
             basePrefabs: [{ name: "ANY", texture: "PIXEL" }],
             prefabs: [{ name: "box" }],
             layers: ["objects"],
-        });
+        } });
     }
 
     override OnAwake(): void

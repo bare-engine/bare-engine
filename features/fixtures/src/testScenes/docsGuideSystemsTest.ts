@@ -43,7 +43,7 @@ export class DocsGuideSystemsTest extends Scene
 
     constructor()
     {
-        super({
+        super({ settingsData: {
             basePrefabs: [
                 { name: "ANY", texture: "PIXEL" },
             ],
@@ -52,9 +52,9 @@ export class DocsGuideSystemsTest extends Scene
                 { name: "saw", components: { animation: {} } },
                 { name: "explosion", texture: "NONE", components: { animation: {} } },
                 { name: "coin", components: { particle: "SPARKLE" } },
-                { name: "label", baseClass: "TextObject", text: "Hi", fontSize: 12 } as any,
-                { name: "floor", scale: { x: 64, y: 32 }, components: { tiled: { tileScale: 2 } } } as any,
-                { name: "conveyor", scale: { x: 64, y: 8 }, components: { tiled: { scroll: { x: 2, y: 0 } } } } as any,
+                { name: "label", baseClass: "TextObject", text: "Hi", fontSize: 12 },
+                { name: "floor", scale: { x: 64, y: 32 }, components: { tiled: { tileScale: 2 } } },
+                { name: "conveyor", scale: { x: 64, y: 8 }, components: { tiled: { scroll: { x: 2, y: 0 } } } },
             ],
             presets: {
                 SPARKLE: { particle: { texture: "PIXEL", life: 1, emitRate: 5 } },
@@ -71,7 +71,7 @@ export class DocsGuideSystemsTest extends Scene
             layersInfo: {
                 background: { pointerCollisionType: "RADIUS" },
             },
-        } as any);
+        } });
     }
 
     override OnAwake(): void

@@ -94,7 +94,7 @@ export class DocsGuideObjectsTest extends Scene
 
     constructor()
     {
-        super({
+        super({ settingsData: {
             basePrefabs: [
                 // PIXEL is 1x1, so fractional pivots read back unchanged (pivot is stored in texture pixels)
                 { name: "ANY", pivot: { x: 0.25, y: 0.25 }, texture: "PIXEL" },
@@ -118,7 +118,7 @@ export class DocsGuideObjectsTest extends Scene
                 HALF: { ANY: { x: 0.5, y: 0.5 } },
             },
             layers: ["background", "objects"],
-        });
+        } });
     }
 
     override OnAwake(): void

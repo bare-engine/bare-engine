@@ -14,7 +14,7 @@ export class HitboxInnerTransformTest extends Scene
 
     constructor()
     {
-        super({ basePrefabs: [{ name: "ANY", texture: "PIXEL" }], layers: ["objects"] });
+        super({ settingsData: { basePrefabs: [{ name: "ANY", texture: "PIXEL" }], layers: ["objects"] } });
     }
 
     override OnAwake(): void

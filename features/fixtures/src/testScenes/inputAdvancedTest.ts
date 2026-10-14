@@ -10,8 +10,10 @@ class InputOverlay extends Scene
     {
         super({
             UI: true,
-            basePrefabs: [{ name: "ANY", texture: "PIXEL" }],
-            prefabs: [{ name: "square", scale: { x: 100, y: 100 } }],
+            settingsData: {
+                basePrefabs: [{ name: "ANY", texture: "PIXEL" }],
+                prefabs: [{ name: "square", scale: { x: 100, y: 100 } }],
+            },
         });
     }
 }
@@ -34,11 +36,11 @@ export class InputAdvancedTest extends Scene
 
     constructor()
     {
-        super({
+        super({ settingsData: {
             basePrefabs: [{ name: "ANY", texture: "PIXEL" }],
             prefabs: [{ name: "square", scale: { x: 100, y: 100 } }],
             layers: ["back", "front"],
-        });
+        } });
     }
 
     step = "";

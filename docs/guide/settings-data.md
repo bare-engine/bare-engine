@@ -11,7 +11,7 @@ export class Game extends Scene
 {
     constructor()
     {
-        super(settingsData);
+        super({ settingsData });
     }
 }
 ```
@@ -141,7 +141,7 @@ export class Menu extends Scene
 {
     constructor()
     {
-        super(menuData);
+        super({ settingsData: menuData });
     }
 }
 ```

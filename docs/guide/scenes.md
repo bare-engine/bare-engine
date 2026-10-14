@@ -10,7 +10,7 @@ export class Game extends Scene
 {
     constructor()
     {
-        super(settingsData);
+        super({ settingsData });
     }
 
     override OnStart()

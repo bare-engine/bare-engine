@@ -9,7 +9,7 @@ export class AnimationsAdvancedTest extends Scene
 
     constructor()
     {
-        super({
+        super({ settingsData: {
             basePrefabs: [{ name: "ANY", texture: "PIXEL" }],
             prefabs: [
                 { name: "knight", texture: "NONE" },
@@ -24,7 +24,7 @@ export class AnimationsAdvancedTest extends Scene
                 knight_folder: { imagePath: "animDir", frames: ["frame"], framesPerSecond: 10 },
             },
             layers: ["objects"],
-        } as any);
+        } });
     }
 
     override OnAwake(): void

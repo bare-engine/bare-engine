@@ -13,10 +13,10 @@ export class GameSpeedTest extends Scene
 
     constructor()
     {
-        super({
+        super({ settingsData: {
             basePrefabs: [{ name: "ANY", texture: "PIXEL" }],
             layers: ["objects"],
-        });
+        } });
     }
 
     override OnFixedUpdate(): void

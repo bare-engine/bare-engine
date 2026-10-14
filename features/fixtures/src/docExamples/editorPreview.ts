@@ -5,7 +5,7 @@ export class EditorPreview extends Scene
 {
     constructor()
     {
-        super({
+        super({ settingsData: {
             name: 'Documentation example',
             settings: { gridEnabled: true, gridSize: 32 },
             layers: ['objects'],
@@ -15,7 +15,7 @@ export class EditorPreview extends Scene
                 { name: 'goal', texture: 'PIXEL', scale: { x: 24, y: 64 }, color: '#b9a0ff' },
             ],
             categories: { gameplay: { entries: ['player', 'platform', 'goal'], expanded: true } },
-        });
+        } });
     }
 
     override async OnStart()

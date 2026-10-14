@@ -11,12 +11,12 @@ export class TextObjectTest extends Scene
 
     constructor()
     {
-        super({
+        super({ settingsData: {
             basePrefabs: [{ name: "ANY", texture: "PIXEL" }],
             prefabs: [
-                { name: "label", baseClass: "TextObject", text: "Hi", pivot: { x: 5, y: 6 } } as any,
+                { name: "label", baseClass: "TextObject", text: "Hi", pivot: { x: 5, y: 6 } },
             ],
-        } as any);
+        } });
     }
 
     override OnAwake(): void
