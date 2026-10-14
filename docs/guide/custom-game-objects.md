@@ -76,6 +76,20 @@ The `EnemyEntity` interface and the `declare entity` line in the class above des
 
 **Example:** the engine's own [`Button`](https://github.com/bare-engine/bare-engine/blob/main/src/objects/button.ts#L17-L29) does this with `ButtonEntity`, which adds `text`, `fontSize`, `buttonColor` and more.
 
+Settings data written in code, like `super({ settingsData: { prefabs: [...] } })`, checks every prefab against the fields of all GameObject classes, since a prefab can have any `baseClass`. Add your class to `EntityTypes` so its fields count too:
+
+```ts
+declare module 'bare-engine'
+{
+    interface EntityTypes
+    {
+        Enemy: EnemyEntity;
+    }
+}
+```
+
+`{ name: 'goblin', baseClass: 'Enemy', health: 5 }` is then accepted, and a typo like `helth` is still an error. Prefabs in `settingsData.json` don't need this; TypeScript only checks objects written in your code.
+
 ## Object pools
 
 Creating and removing many objects, like bullets, costs time and memory. A pool keeps removed objects and hands them out again.

@@ -171,7 +171,21 @@ export interface Entity
 }
 
 // ENTITY OF AN UNKNOWN CLASS (ENGINE INTERNALS, SERIALIZING, EDITORS) - ALLOWS EVERY CLASS-SPECIFIC FIELD
-export type AnyEntity = Entity & ArcadeObjectEntity & CircleEntity & PolygonEntity & ButtonEntity & TextObjectEntity;
+// THE ENTITY TYPE OF EVERY GameObject CLASS, BY CLASS NAME. ADD YOUR OWN, SO PREFABS WRITTEN IN CODE ACCEPT ITS FIELDS:
+// declare module 'bare-engine' { interface EntityTypes { Enemy: EnemyEntity } }
+export interface EntityTypes
+{
+    GameObject: Entity;
+    ArcadeObject: ArcadeObjectEntity;
+    Circle: CircleEntity;
+    Polygon: PolygonEntity;
+    Button: ButtonEntity;
+    TextObject: TextObjectEntity;
+}
+
+type UnionToIntersection<U> = (U extends any ? (u: U) => void : never) extends (i: infer I) => void ? I : never;
+
+export type AnyEntity = UnionToIntersection<EntityTypes[keyof EntityTypes]>;
 
 export type ConstructEntityOptions = { propsToIgnoreInEntity?: string[], fillPresets?: boolean, forceAllEntityVars?: boolean, keepRuntimeUIDs?: boolean };
 export type EntityVarsNestedGroup = Record<string, string[]>;
@@ -281,8 +295,8 @@ export interface SettingsData
 {
     name?: string; // WHEN SettingsData IS SAVED TO FILE, THIS NAME IS USED AS THE FILE NAME. IF LEFT EMPTY, THE DEFAULT settingsData.json IS USED. SO ANY EXTRA SettingsData json NEEDS A UNIQUE NAME, ELSE THEY WILL OVERRIDE THE DEFAULT ONE
     categories?: Record<string, Category>;
-    basePrefabs?: Entity[];
-    prefabs?: Entity[];
+    basePrefabs?: AnyEntity[];
+    prefabs?: AnyEntity[];
     tilesheets?: Array<Entity>;//
     layers?: Array<string>;
     layersInfo?: Record<string, Partial<LayerInfo>>; // Partial, SINCE I'LL BE ASSIGNING MORE KEYS TO IT DURING PROCESSING
@@ -348,7 +362,7 @@ export interface LayerInfo {
     name: string;
     ui?: boolean;
     save?: boolean;
-    pointerCollisionType?:CollisionHandlingType;
+    pointerCollisionType?: CollisionHandlingType | `${CollisionHandlingType}`; // THE ENUM, OR ITS STRING AS IN settingsData.json
     showInEditor?: boolean;
     collidesWith?: string[];
 }
