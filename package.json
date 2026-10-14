@@ -1,6 +1,6 @@
 {
   "name": "bare-engine",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "scripts": {
     "build:lib": "node scripts/cleanDist.cjs && vite build",
     "analyze": "node scripts/analyze.cjs",
