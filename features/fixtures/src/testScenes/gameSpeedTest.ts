@@ -48,11 +48,11 @@ export class GameSpeedTest extends Scene
 
         // timeScale 2: game time and fixed updates run about twice as fast as real time
         bare.timeScale = 2;
-        await waitFrame();
+        await this.WaitFrame();
         const startGame = bare.gameTime;
         const startSteps = this.fixedSteps;
         const startReal = performance.now();
-        await waitRealTime(0.3);
+        await this.WaitRealTime(0.3);
         const realMs = performance.now() - startReal;
         const gameMs = bare.gameTime - startGame;
         const steps = this.fixedSteps - startSteps;
@@ -63,7 +63,7 @@ export class GameSpeedTest extends Scene
         // tweens follow the time scale: a 0.4s tween is done after 0.2s of real time
         const fast = { x: 0 };
         TweenTo(fast, 0.4, { x: 100, ease: Easing.Linear.None });
-        await waitRealTime(0.25);
+        await this.WaitRealTime(0.25);
         c.check(fast.x > 90, "a tween should run twice as fast at timeScale 2: " + fast.x);
 
         // a tween updates once per frame, not once per update source
@@ -71,21 +71,21 @@ export class GameSpeedTest extends Scene
         let tweenUpdates = 0;
         const counted = { x: 0 };
         TweenTo(counted, 10, { x: 100, onUpdate: () => tweenUpdates++ });
-        await waitFrame();
+        await this.WaitFrame();
         const startFrame = bare.count;
         const startUpdates = tweenUpdates;
-        await wait(0.25);
+        await this.Wait(0.25);
         const frames = bare.count - startFrame;
         c.check(Math.abs((tweenUpdates - startUpdates) - frames) <= 1, `a tween should update once per frame: ${tweenUpdates - startUpdates} updates in ${frames} frames`);
         bare.tween.RemoveAllFrom(counted);
 
         // timeScale 0 stops game time and tweens
         bare.timeScale = 0;
-        await waitRealTime(0.05);
+        await this.WaitRealTime(0.05);
         const frozenAt = bare.gameTime;
         const frozen = { x: 0 };
         TweenTo(frozen, 0.1, { x: 100 });
-        await waitRealTime(0.15);
+        await this.WaitRealTime(0.15);
         c.check(bare.gameTime === frozenAt, "game time should stand still at timeScale 0");
         c.check(frozen.x === 0, "a tween should not move at timeScale 0: " + frozen.x);
         bare.tween.RemoveAllFrom(frozen);
@@ -103,7 +103,7 @@ export class GameSpeedTest extends Scene
         // shaking again mid-wobble settles where the first shake started
         const twice = { v: 1 };
         bare.tween.Shake(twice, "v", 0.3, 0.5);
-        await wait(0.05);
+        await this.Wait(0.05);
         await bare.tween.Shake(twice, "v", 0.2, 0.5).promise;
         c.check(twice.v === 1, "a second Shake mid-wobble should settle at the first one's rest value: " + twice.v);
 
@@ -116,23 +116,23 @@ export class GameSpeedTest extends Scene
         // FlashShader without settings uses the defaults (0.1s white, 0.3s fade) and removes itself
         obj.RemoveShaders();
         obj.AddShader(FlashShader);
-        await wait(0.6);
+        await this.Wait(0.6);
         c.check(!obj.HasShader(FlashShader), "a FlashShader without settings should be done after its default duration");
 
         // FlashShader runs on game time, so it waits at timeScale 0
         obj.AddShader(FlashShader, { duration: 0.05, fadePreDuration: 0 });
         bare.timeScale = 0;
-        await waitRealTime(0.15);
+        await this.WaitRealTime(0.15);
         c.check(obj.HasShader(FlashShader), "a FlashShader should not finish at timeScale 0");
         bare.timeScale = 1;
-        await wait(0.2);
+        await this.Wait(0.2);
         c.check(!obj.HasShader(FlashShader), "a FlashShader should finish once game time runs again");
 
-        // wait() runs on game time: faster at timeScale 2, not at all at timeScale 0
+        // this.Wait() runs on game time: faster at timeScale 2, not at all at timeScale 0
         bare.timeScale = 2;
         const waitStartGame = bare.gameTime;
         const waitStartReal = performance.now();
-        await wait(0.3);
+        await this.Wait(0.3);
         const waitGameMs = bare.gameTime - waitStartGame;
         const waitRealMs = performance.now() - waitStartReal;
         c.check(waitGameMs >= 300, "wait should last its seconds in game time: " + waitGameMs.toFixed(0));
@@ -140,19 +140,19 @@ export class GameSpeedTest extends Scene
 
         bare.timeScale = 0;
         let waitDone = false;
-        void wait(0.05).then(() => waitDone = true);
-        await waitRealTime(0.15);
+        void this.Wait(0.05).then(() => waitDone = true);
+        await this.WaitRealTime(0.15);
         c.check(!waitDone, "wait should not finish at timeScale 0");
         bare.timeScale = 1;
-        await waitRealTime(0.15);
+        await this.WaitRealTime(0.15);
         c.check(waitDone, "wait should finish once game time runs again");
 
-        // a cancelled wait never finishes, and is dropped right away
-        let cancelledDone = false;
-        void wait(0.05).then(() => cancelledDone = true);
-        cancelWaits();
-        await waitRealTime(0.15);
-        c.check(!cancelledDone, "a cancelled wait should never finish");
+        // cancellation settles explicitly and allows cleanup
+        let cancelledDone: boolean | undefined;
+        void this.Wait(0.05).then(completed => cancelledDone = completed);
+        this.CancelWaits();
+        await this.WaitRealTime(0.15);
+        c.check(cancelledDone === false, "a cancelled wait should resolve false");
 
         // DisableRightClick turns off the development right click select
         const before = bare.rightClickSelect;
@@ -164,7 +164,7 @@ export class GameSpeedTest extends Scene
         const alphas: number[] = [];
         for (let i = 0; i < 10; i++)
         {
-            await waitFrame();
+            await this.WaitFrame();
             alphas.push(bare.fixedAlpha);
         }
         c.check(alphas.every(alpha => alpha >= 0 && alpha <= 1), "fixedAlpha should stay between 0 and 1: " + alphas.join(","));
@@ -172,7 +172,7 @@ export class GameSpeedTest extends Scene
         // a pause doesn't bank time, or unpausing would run a burst of catch-up fixed updates
         bare.TogglePause();
         const pausedSteps = this.fixedSteps;
-        await waitRealTime(0.3);
+        await this.WaitRealTime(0.3);
         c.check(this.fixedSteps === pausedSteps, "no fixed updates should run while paused");
         c.check(bare.fixedAlpha < 1, "time shouldn't build up for fixed updates while paused: fixedAlpha " + bare.fixedAlpha);
         bare.TogglePause();

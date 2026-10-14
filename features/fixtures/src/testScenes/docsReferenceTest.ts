@@ -58,7 +58,7 @@ export class DocsReferenceTest extends Scene
         c.check(bare.fixedTimestep === 1 / 60, "fixedTimestep should default to 1/60");
         c.check(typeof bare.deltaTime === "number" && bare.deltaTime >= 0, "deltaTime should be a number of seconds");
         const count = bare.count;
-        await waitFrame(2);
+        await this.WaitFrame(2);
         c.check(bare.count > count, "bare.count should increase as frames render");
         c.check(typeof bare.gameSpeed === "number", "gameSpeed should be a number");
         c.check(bScene === this, "bScene should be the current scene");
@@ -150,18 +150,18 @@ export class DocsReferenceTest extends Scene
 
         let timerFired = false;
         bare.tween.SetTimer(0.02, () => timerFired = true);
-        await wait(0.1);
+        await this.Wait(0.1);
         c.check(timerFired, "SetTimer should call after the delay");
 
         let removedTimerFired = false;
         bare.tween.SetTimer(0.02, () => removedTimerFired = true);
         bare.tween.RemoveTimers();
-        await wait(0.1);
+        await this.Wait(0.1);
         c.check(!removedTimerFired, "RemoveTimers should cancel timers");
 
         const shaker = this.AddGameObject("hero");
         bare.tween.Shake(shaker, "innerRotation", 0.05, 20);
-        await wait(0.2);
+        await this.Wait(0.2);
         c.check(Math.abs(shaker.innerRotation) < 0.001, "Shake should settle back to 0: " + shaker.innerRotation);
 
         // --- camera
@@ -201,11 +201,11 @@ export class DocsReferenceTest extends Scene
         bare.camera.StopShake();
         const followed = { x: 300, y: 200 };
         bare.camera.Follow(followed);
-        await wait(0.05);
+        await this.Wait(0.05);
         c.check(Math.abs(bare.camera.GetPosition().x - 300) < 0.001 && Math.abs(bare.camera.GetPosition().y - 200) < 0.001, "Follow without a speed should stay on the target: " + JSON.stringify(bare.camera.GetPosition()));
         bare.camera.Follow(followed, 5);
         followed.x = 400;
-        await wait(0.1);
+        await this.Wait(0.1);
         const followX = bare.camera.GetPosition().x;
         c.check(followX > 300 && followX < 400, "Follow with a speed should catch up over time: " + followX);
         bare.camera.StopFollow();
@@ -340,18 +340,18 @@ export class DocsReferenceTest extends Scene
         copy.a.b = 2;
         c.check(deep.a.b === 1, "DeepCopy should copy nested objects");
 
-        // --- globals: waits
-        let waited = false;
-        void wait(10).then(() => waited = true);
-        cancelWaits();
-        await waitFrame();
-        c.check(!waited, "cancelWaits should leave cancelled waits pending");
+        // --- scene-owned waits
+        let waited: boolean | undefined;
+        void this.Wait(10).then(completed => waited = completed);
+        this.CancelWaits();
+        await this.WaitFrame();
+        c.check(waited === false, "CancelWaits should resolve cancelled waits false");
 
         let persistentWaited = false;
-        void wait(0.01, true).then(() => persistentWaited = true);
-        cancelWaits();
-        await wait(0.1, true);
-        c.check(persistentWaited, "persistent waits should survive cancelWaits");
+        void this.Wait(0.01, true).then(() => persistentWaited = true);
+        this.CancelWaits();
+        await this.Wait(0.1, true);
+        c.check(persistentWaited, "persistent waits should survive CancelWaits");
 
         this.done = true;
     }

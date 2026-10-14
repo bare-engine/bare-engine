@@ -54,7 +54,7 @@ export class TweensAdvancedTest extends Scene
         const quadOut = { x: 0 };
         TweenTo(linear, 0.4, { x: 100, ease: Easing.Linear.None });
         TweenTo(quadOut, 0.4, { x: 100 });
-        await wait(0.2);
+        await this.Wait(0.2);
         c.check(linear.x > 20 && linear.x < 80, "linear ease should be partway at the halfway point: " + linear.x);
         c.check(quadOut.x > linear.x, "the default Quadratic.Out ease should be ahead of linear halfway: " + quadOut.x + " vs " + linear.x);
         bare.tween.RemoveAllFrom(linear);
@@ -64,7 +64,7 @@ export class TweensAdvancedTest extends Scene
         const delayed = { x: 0 };
         let delayedStarted = 0;
         const delayedTween = TweenTo(delayed, 0.05, { x: 10, delay: 0.2, onStart: () => delayedStarted++ });
-        await wait(0.08);
+        await this.Wait(0.08);
         c.check(delayed.x === 0 && delayedStarted === 0, "delay should hold back the tween and onStart: " + delayed.x);
         await delayedTween.promise;
         c.check(delayed.x === 10 && delayedStarted === 1, "a delayed tween should still finish and start once");
@@ -147,7 +147,7 @@ export class TweensAdvancedTest extends Scene
         let stopCalls = 0;
         let stopRepeats = 0;
         const stopTween = TweenTo(stopped, 0.05, { x: 10, repeat: 1, onStop: () => stopCalls++, onRepeat: () => stopRepeats++ });
-        await waitFrame(2);
+        await this.WaitFrame(2);
         stopTween.stop();
         c.check(stopCalls === 1, "stop() should call onStop: " + stopCalls);
         bare.tween.Remove(stopTween);
@@ -163,9 +163,9 @@ export class TweensAdvancedTest extends Scene
         const first = new Tween(chained).to({ x: 10 }, 50).onComplete(() => order.push("x:" + chained.y));
         const second = new Tween(chained).to({ y: 10 }, 50).onStart(() => order.push("start y")).onComplete(() => order.push("y"));
         bare.tween.AddChain(first, second);
-        await wait(0.03);
+        await this.Wait(0.03);
         c.check(chained.x > 0 && chained.y === 0, "the second chained tween should wait for the first: " + JSON.stringify(chained));
-        await wait(0.3);
+        await this.Wait(0.3);
         c.check(chained.x === 10 && chained.y === 10, "a chain should run every tween: " + JSON.stringify(chained));
         c.check(order.join(",") === "x:0,start y,y", "chained tweens should run in order: " + order.join(","));
 
@@ -173,7 +173,7 @@ export class TweensAdvancedTest extends Scene
         const timerOrder: number[] = [];
         bare.tween.SetTimer(0.08, () => timerOrder.push(2));
         bare.tween.SetTimer(0.02, () => timerOrder.push(1));
-        await wait(0.2);
+        await this.Wait(0.2);
         c.check(timerOrder.join(",") === "1,2", "timers should fire in order of their delay: " + timerOrder.join(","));
 
         // Shake starts at amount, never swings further than amount, and settles back to 0
@@ -181,7 +181,7 @@ export class TweensAdvancedTest extends Scene
         let biggestSwing = 0;
         bare.tween.Shake(shaken, "innerRotation", 0.3, 15).onUpdate(() => biggestSwing = Math.max(biggestSwing, Math.abs(shaken.innerRotation)));
         c.check(shaken.innerRotation === 15, "Shake should start at amount: " + shaken.innerRotation);
-        await wait(0.45);
+        await this.Wait(0.45);
         c.check(biggestSwing <= 15.001, "Shake should not swing further than amount: " + biggestSwing);
         c.check(near(shaken.innerRotation, 0), "Shake should settle at 0: " + shaken.innerRotation);
 
@@ -199,7 +199,7 @@ export class TweensAdvancedTest extends Scene
         helper.tween.To(kept, 0.1, { x: 10, persistent: true });
         helper.tween.To(dropped, 0.1, { x: 10 });
         await helper.Restart();
-        await wait(0.25);
+        await this.Wait(0.25);
         c.check(kept.x === 10, "a persistent tween should survive a restart: " + kept.x);
         c.check(dropped.x < 10, "an ordinary tween should be cleared by a restart: " + dropped.x);
         bare.scene.Remove(helper);

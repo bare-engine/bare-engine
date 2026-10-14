@@ -21,10 +21,12 @@ import { InspectorClass, InspectorField, Label } from "../utils/decorators";
 import { GameObjectSerializer } from "../utils/entitySerializer";
 import { Helper } from "../utils/helper";
 import { Hitbox } from "../types/hitbox";
+import { WaitQueue } from "../utils/waitQueue";
 
 export class Scene implements SceneI
 {
     public started: boolean = false;
+    private waits?: WaitQueue;
 
     @InspectorField public enabled: boolean = true;
     @InspectorField public paused: boolean = false;
@@ -1353,6 +1355,7 @@ Or remove "stripGeneratedAssets": true from "bareEngine" in package.json.`);
 
     Update(deltaTime: number): void
     {
+        this.waits?.AdvanceTime(deltaTime);
         // BACKING FIELD (_) READS: ONLY TICK CONTROLLERS THAT EXIST, NEVER LAZY-CREATE THEM
         this._mouse?.Update(deltaTime);
         this._hitbox?.Update();
@@ -1373,6 +1376,8 @@ Or remove "stripGeneratedAssets": true from "bareEngine" in package.json.`);
 
     FixedUpdate(fixedDeltaTime: number): void
     {
+        // Resolve promises before the step; continuations run after its physics/hooks finish.
+        this.waits?.AdvanceFrame();
         this._object?.FixedUpdate(fixedDeltaTime);
 
         this._arcade?.FixedUpdate(fixedDeltaTime);
@@ -1647,9 +1652,7 @@ Or remove "stripGeneratedAssets": true from "bareEngine" in package.json.`);
 
     Clear(includingPersistent: boolean = true)
     {
-        // THIS CANCELS ALL AWAITS, PREVENTING SOME NASTY PROBLEMS ON SCENE SWITCHING AND RESTART
-        // CAN STILL SUPPLY A persistent PARAMETER TO wait() TO PREVENT THIS
-        window.cancelWaits();
+        this.CancelWaits(includingPersistent);
 
         for (var controller of this.GetInstantiatedControllers())
         {
@@ -1701,11 +1704,41 @@ Or remove "stripGeneratedAssets": true from "bareEngine" in package.json.`);
         this.hitbox?.OnPointerLeave(gameObject, callback);
     }
 
-    async Sleep(seconds: number): Promise<void>
+    /** Scene game time; returns false when cancelled. Do not await during this scene's startup. */
+    Wait(seconds: number, persistent = false): Promise<boolean>
     {
+        return (this.waits ??= new WaitQueue()).Wait(seconds, persistent);
+    }
+
+    /** Counts this scene's fixed updates; returns false when cancelled. */
+    WaitFrame(frames = 1, persistent = false): Promise<boolean>
+    {
+        return (this.waits ??= new WaitQueue()).WaitFrame(frames, persistent);
+    }
+
+    /** Real time, even while paused or starting; still cancelled with this scene. */
+    WaitRealTime(seconds: number, persistent = false): Promise<boolean>
+    {
+        return (this.waits ??= new WaitQueue()).WaitRealTime(seconds, persistent);
+    }
+
+    CancelWaits(includingPersistent = false): void
+    {
+        this.waits?.Cancel(includingPersistent);
+    }
+
+    async Sleep(seconds: number): Promise<boolean>
+    {
+        const wasPaused = this.paused;
         this.paused = true;
-        await wait(seconds);
-        this.paused = false;
+        try
+        {
+            return await this.WaitRealTime(seconds);
+        }
+        finally
+        {
+            this.paused = wasPaused;
+        }
     }
 
     get currentLevel(): LevelData | null | undefined

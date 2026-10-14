@@ -9,7 +9,7 @@ import type { ParticleController } from "./controllers/particleController";
 import { SceneController } from "./controllers/sceneController";
 import type { SopiroPhysicsController } from "./controllers/sopiroPhysicsController";
 import type { TweenController } from "./controllers/tweenController";
-import { AdvanceFrameWaits, AdvanceTimeWaits, GameMode, globalEvents } from "./globals";
+import { GameMode, globalEvents } from "./globals";
 import { assetsHandler } from "./handlers/assetsHandler";
 import type { CameraHandler } from "./handlers/cameraHandler";
 import type { LevelHandler } from "./handlers/levelHandler";
@@ -625,7 +625,6 @@ export class BareEngine
                     this.accumulator += this.deltaTime;
 
                     this.gameTime += this.deltaTime * 1000;
-                    AdvanceTimeWaits(this.gameTime);
 
                     // CAPPING ACCUMULATOR - TO PREVENT TOO MANY FIXED UPDATES AFTER LAG
                     const maxSteps = 5 * Math.max(1, this.timeScale);
@@ -638,7 +637,6 @@ export class BareEngine
                     while (this.accumulator >= this.fixedTimestep)
                     {
                         this.FixedUpdate(this.fixedTimestep);
-                        AdvanceFrameWaits();
                         this.accumulator -= this.fixedTimestep;
                         steps++;
                     }

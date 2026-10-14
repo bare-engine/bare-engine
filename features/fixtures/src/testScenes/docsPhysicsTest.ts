@@ -77,7 +77,7 @@ export class DocsPhysicsTest extends Scene
         c.check(player instanceof ArcadeObject, "baseClass ArcadeObject should create an ArcadeObject");
         c.check(player.velocity.x === 0 && player.velocity.y === 0, "velocity should default to zero");
         c.check(player.collide === true && player.sensor === false && player.static === false, "collide/sensor/static defaults");
-        await waitFrame(40);
+        await this.WaitFrame(40);
         c.check(player.y > 300, "gravity should pull the player down: " + player.y);
         c.check(player.IsGrounded(), "the player should come to rest on the static block");
         c.check(player.y + 32 <= ground.y + 0.5, "the static block should stop the player: " + player.y);
@@ -90,14 +90,14 @@ export class DocsPhysicsTest extends Scene
 
         // OnCollisionStart in a component, sensors don't block
         const coin = this.AddGameObject<ArcadeObject>("coin").SetPosition(player.x + 8, player.y + 8);
-        await waitFrame(3);
+        await this.WaitFrame(3);
         c.check(coin.GetComponent(CoinDocComponent)?.collected === 1, "OnCollisionStart should fire once for an overlapping sensor: " + coin.GetComponent(CoinDocComponent)?.collected);
 
         // CollisionEventComponent sends an event, once removes the component
         let exits = 0;
         bare.events.on("levelExit" as any, () => exits++);
         const door = this.AddGameObject<ArcadeObject>("exitDoor").SetPosition(player.x + 8, player.y + 8);
-        await waitFrame(5);
+        await this.WaitFrame(5);
         c.check(exits === 1, "CollisionEventComponent should send its event once: " + exits);
         c.check(!door.HasComponent(CollisionEventComponent), "once should remove the component after firing");
 
@@ -107,7 +107,7 @@ export class DocsPhysicsTest extends Scene
         // the type-check includes all of src, so both src/arcade.ts and src/sopiro.ts declare collision payloads here,
         // which games never do. the handlers are cast for that
         coin2.events.on(BareEvent.collision_start, ((other: GameObject) => { if (other === player) objectHits++; }) as any);
-        await waitFrame(3);
+        await this.WaitFrame(3);
         c.check(objectHits >= 1, "gameObject.events should receive collision_start");
 
         // collision layers: bullets hit enemies, bullets don't hit each other
@@ -122,7 +122,7 @@ export class DocsPhysicsTest extends Scene
             if (other === enemy) bulletHitsEnemy++;
             if (other === bulletB) bulletHitsBullet++;
         }) as any);
-        await waitFrame(3);
+        await this.WaitFrame(3);
         c.check(bulletHitsEnemy >= 1, "layers listed in collidesWith should collide");
         c.check(bulletHitsBullet === 0, "a layer without itself in collidesWith should not collide with itself");
 
@@ -134,14 +134,14 @@ export class DocsPhysicsTest extends Scene
 
         let wall = thinWall(50);
         const tunneling = fast(100);
-        await waitFrame(2);
+        await this.WaitFrame(2);
         c.check(tunneling.x > 304, "without continuous, a fast object should pass through a thin wall: " + tunneling.x);
         tunneling.Remove();
 
         let wallHits = 0;
         const stopped = fast(100, { continuous: true });
         stopped.events.on(BareEvent.collision_start, ((other: GameObject) => { if (other === wall) wallHits++; }) as any);
-        await waitFrame(2);
+        await this.WaitFrame(2);
         c.check(stopped.x + 8 <= 300.5, "a continuous object should stop at a thin wall: " + stopped.x);
         c.check(Math.abs(stopped.velocity.x) < 1, "a continuous object without restitution should lose its speed on the wall: " + stopped.velocity.x);
         c.check(wallHits === 1, "a continuous object should get collision_start from the wall it stopped at: " + wallHits);
@@ -150,7 +150,7 @@ export class DocsPhysicsTest extends Scene
         wall.restitution = 1;
         const bouncing = fast(100, { continuous: true, restitution: 1 });
         // the 2nd step moves 42 units to the wall, then the remaining 58 back
-        await waitFrame(2);
+        await this.WaitFrame(2);
         c.check(bouncing.velocity.x < -5000, "a continuous object should bounce off a thin wall: " + bouncing.velocity.x);
         c.check(bouncing.x < 250, "after bouncing, a continuous object should spend the rest of the step moving back: " + bouncing.x);
         bouncing.Remove();
@@ -158,7 +158,7 @@ export class DocsPhysicsTest extends Scene
 
         wall = thinWall(50);
         const ball = fast(100, { continuous: true, hitboxType: "Circle", pivot: "CENTER" });
-        await waitFrame(2);
+        await this.WaitFrame(2);
         c.check(ball.x + 4 <= 300.5, "a continuous circle should stop at a thin wall: " + ball.x);
         ball.Remove();
         wall.Remove();
@@ -168,7 +168,7 @@ export class DocsPhysicsTest extends Scene
         let gateHits = 0;
         const runner = fast(250, { continuous: true });
         runner.events.on(BareEvent.collision_start, ((other: GameObject) => { if (other === gate) gateHits++; }) as any);
-        await waitFrame(2);
+        await this.WaitFrame(2);
         c.check(runner.x > 304, "a continuous object should pass through a sensor: " + runner.x);
         c.check(gateHits === 1, "a continuous object should report a sensor it passed within one step: " + gateHits);
         runner.Remove();
@@ -177,7 +177,7 @@ export class DocsPhysicsTest extends Scene
         // two objects bounce with the higher restitution, so a bouncy object bounces off a wall left at 0
         wall = thinWall(50);
         const bouncy = fast(100, { continuous: true, restitution: 1 });
-        await waitFrame(2);
+        await this.WaitFrame(2);
         c.check(wall.restitution === 0 && bouncy.velocity.x < -5000, "a bouncy object should bounce off a wall without restitution: " + bouncy.velocity.x);
         bouncy.Remove();
         wall.Remove();
@@ -186,14 +186,14 @@ export class DocsPhysicsTest extends Scene
         this.settingsData.gravity = 0;
         const drifting = this.AddGameObject<ArcadeObject>({ extends: "enemy", drag: 0.1 } as any).SetPosition(450, 100);
         drifting.SetVelocityXY(200, 0);
-        await waitFrame(60);
+        await this.WaitFrame(60);
         c.check(drifting.velocity.x === 0 && !drifting.IsMoving(), "an object with drag should come to a full stop: " + drifting.velocity.x);
         drifting.Remove();
         this.settingsData.gravity = 5000;
 
         // a circle hitbox defaults to half the image's smaller side
         const oval = this.AddGameObject<ArcadeObject>({ baseClass: "ArcadeObject", texture: "PIXEL", hitboxType: "Circle", hitbox: { x1: 0, y1: 0, x2: 32, y2: 16 }, static: true } as any).SetPosition(450, 300);
-        await waitFrame(1);
+        await this.WaitFrame(1);
         c.check(oval.hitboxRadius === 8, "a circle hitbox should default to half the smaller side: " + oval.hitboxRadius);
         oval.Remove();
 

@@ -107,7 +107,7 @@ export class InputAdvancedTest extends Scene
         this.step = "move " + x + "," + y + " frame " + bare.count;
         this.Pointer("pointermove", x, y);
         // hover is resolved in the hitbox controller's update
-        await waitFrame(2);
+        await this.WaitFrame(2);
     }
 
     async Click(x: number, y: number): Promise<void>
@@ -115,7 +115,7 @@ export class InputAdvancedTest extends Scene
         await this.MoveTo(x, y);
         this.Pointer("pointerdown", x, y);
         this.Pointer("pointerup", x, y);
-        await waitFrame();
+        await this.WaitFrame();
     }
 
     Square(x: number, y: number, layer = "back"): GameObject
@@ -288,7 +288,7 @@ export class InputAdvancedTest extends Scene
         this.probeMouse = true;
         this.Pointer("pointerup", 1100, 850);
         c.check(!bare.mouse.IsDown(), "IsDown should be false after release");
-        await waitFrame(3);
+        await this.WaitFrame(3);
         c.check(this.mouseReleasedFrames === 1, "IsReleased should be seen in exactly one update: " + this.mouseReleasedFrames);
 
         // a quick tap, down and up between two frames, is still pressed and released for one frame
@@ -296,14 +296,14 @@ export class InputAdvancedTest extends Scene
         this.mouseReleasedFrames = 0;
         this.Pointer("pointerdown", 1100, 850);
         this.Pointer("pointerup", 1100, 850);
-        await waitFrame(3);
+        await this.WaitFrame(3);
         c.check(this.mousePressedFrames === 1 && this.mouseReleasedFrames === 1, "a tap should be pressed and released in exactly one update: " + this.mousePressedFrames + "/" + this.mouseReleasedFrames);
         c.check(!bare.mouse.IsDown() && !bare.mouse.IsPressed() && !bare.mouse.IsReleased(), "after a tap nothing should be down, pressed or released");
         this.probeMouse = false;
 
         // the world position stays under the pointer when only the camera moves
         bare.camera.AddPosition(40, 30);
-        await waitFrame(2);
+        await this.WaitFrame(2);
         const moved = bare.mouse.world.position;
         c.check(Math.abs(moved.x - 1140) < 1 && Math.abs(moved.y - 880) < 1, "mouse.world.position should follow a moving camera: " + JSON.stringify(moved));
         c.check(!bare.mouse.IsMoving(), "a moving camera shouldn't count as pointer movement");
@@ -317,12 +317,12 @@ export class InputAdvancedTest extends Scene
         this.probeKey = "k";
         document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", code: "KeyK" }));
         document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", code: "KeyK", repeat: true }));
-        await waitFrame(3);
+        await this.WaitFrame(3);
         c.check(this.pressedFrames === 1, "IsKeyPressed should be seen in exactly one update: " + this.pressedFrames);
         c.check(keyPressedEvents === 1 && keyDownEvents === 2, "key_pressed should fire once, key_down for every repeat: " + keyPressedEvents + "/" + keyDownEvents);
         c.check(bare.keyboard.IsKeyDown("k") && !bare.keyboard.IsKeyPressed("k"), "a held key should be down but no longer pressed");
         document.dispatchEvent(new KeyboardEvent("keyup", { key: "k", code: "KeyK" }));
-        await waitFrame(3);
+        await this.WaitFrame(3);
         c.check(this.releasedFrames === 1, "IsKeyReleased should be seen in exactly one update: " + this.releasedFrames);
 
         // a quick tap, down and up between two frames, is still pressed and released for one frame
@@ -331,7 +331,7 @@ export class InputAdvancedTest extends Scene
         document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", code: "KeyK" }));
         document.dispatchEvent(new KeyboardEvent("keyup", { key: "k", code: "KeyK" }));
         c.check(bare.keyboard.IsKeyPressed("k") && bare.keyboard.IsKeyReleased("k") && !bare.keyboard.IsKeyDown("k"), "a tap should be pressed and released, but not down");
-        await waitFrame(3);
+        await this.WaitFrame(3);
         c.check(this.pressedFrames === 1 && this.releasedFrames === 1, "a tap should be pressed and released in exactly one update: " + this.pressedFrames + "/" + this.releasedFrames);
         this.probeKey = null;
 
@@ -381,7 +381,7 @@ export class InputAdvancedTest extends Scene
         this.wheelSeen.length = 0;
         document.dispatchEvent(new WheelEvent("wheel", { deltaY: 120 }));
         document.dispatchEvent(new WheelEvent("wheel", { deltaX: -1, deltaY: 3, deltaMode: WheelEvent.DOM_DELTA_LINE }));
-        await waitFrame(3);
+        await this.WaitFrame(3);
         c.check(JSON.stringify(this.wheelSeen) === "[[-16,168]]", "the wheel should add up to one frame's delta, in pixels: " + JSON.stringify(this.wheelSeen));
 
         // a press on a hitbox in a scene above belongs to that scene: here the mouse isn't down, pressed or released
@@ -394,17 +394,17 @@ export class InputAdvancedTest extends Scene
         this.mouseReleasedFrames = 0;
         await this.MoveTo(700, 300);
         this.Pointer("pointerdown", 700, 300);
-        await waitFrame(2);
+        await this.WaitFrame(2);
         c.check(overlayPresses === 1, "the button in the UI scene should get the press: " + overlayPresses);
         c.check(overlay.mouse.IsDown(), "the UI scene's own mouse should be down");
         c.check(this.mousePressedFrames === 0 && !bare.mouse.IsDown(), "a press on a button in a UI scene above shouldn't press the mouse here: " + this.mousePressedFrames);
         this.Pointer("pointerup", 700, 300);
-        await waitFrame(2);
+        await this.WaitFrame(2);
         c.check(this.mouseReleasedFrames === 0, "nor release it: " + this.mouseReleasedFrames);
 
         // next to the button, the press is this scene's again
         await this.Click(900, 300);
-        await waitFrame(2);
+        await this.WaitFrame(2);
         c.check(this.mousePressedFrames === 1 && this.mouseReleasedFrames === 1, "a press next to the button should count here: " + this.mousePressedFrames + "/" + this.mouseReleasedFrames);
         this.probeMouse = false;
         bare.scene.Remove(overlay);

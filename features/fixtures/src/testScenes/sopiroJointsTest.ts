@@ -50,14 +50,14 @@ export class SopiroJointsTest extends Scene
         // on a single body, a joint pins it to the spot, also with SetPosition chained after AddGameObject
         const pinned = this.AddBox(200, 100, "pinned");
         const pin = this.AddGameObject<GameObject>({ baseClass: "RevoluteJointObject" } as any).SetPosition(200, 100);
-        await waitFrame(30);
+        await this.WaitFrame(30);
         c.check(joints() === 1, "a joint added mid-game should connect: " + joints());
         c.check(Math.abs(pinned.y - 100) < 2, "a joint on one body should pin it: " + pinned.y);
 
         // removing the joint lets go of the body
         pin.Remove();
         c.check(joints() === 0, "a removed joint should leave the world: " + joints());
-        await waitFrame(30);
+        await this.WaitFrame(30);
         c.check(pinned.y > 130, "a body should fall once its joint is removed: " + pinned.y);
 
         // body names set after AddGameObject count too
@@ -66,12 +66,12 @@ export class SopiroJointsTest extends Scene
         const weld = this.AddGameObject<GameObject & { baseName: string, targetName: string }>({ baseClass: "WeldJointObject" } as any);
         weld.baseName = "left";
         weld.targetName = "right";
-        await waitFrame(2);
+        await this.WaitFrame(2);
         c.check(joints() === 1, "a joint should connect the bodies named after AddGameObject: " + joints());
 
         // removed in the same frame it was added: never connects
         this.AddGameObject<GameObject>({ baseClass: "RevoluteJointObject" } as any).SetPosition(400, 100).Remove();
-        await waitFrame(2);
+        await this.WaitFrame(2);
         c.check(joints() === 1, "a joint removed before it connected should not connect: " + joints());
     }
 }

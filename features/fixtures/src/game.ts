@@ -25,6 +25,7 @@ import { SerializeModesTest } from "./testScenes/serializeModesTest";
 import { TextObjectTest } from "./testScenes/textObjectTest";
 import { SettingsEditingTest } from "./testScenes/settingsEditingTest";
 import { GameSpeedTest } from "./testScenes/gameSpeedTest";
+import { SceneWaitTest } from "./testScenes/sceneWaitTest";
 import { ParticleComponentTest } from "./testScenes/particleComponentTest";
 import { ShapeOutlineTest } from "./testScenes/shapeOutlineTest";
 import { HitboxInnerTransformTest } from "./testScenes/hitboxInnerTransformTest";
@@ -71,6 +72,7 @@ class MainGame extends Scene
         TextObjectTest,
         SettingsEditingTest,
         GameSpeedTest,
+        SceneWaitTest,
         ParticleComponentTest,
         ShapeOutlineTest,
         HitboxInnerTransformTest,
