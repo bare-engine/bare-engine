@@ -2057,8 +2057,11 @@ async function waitForStableFiles(dir, { intervalMs = 100, stableMs = 500, timeo
     }
 }
 
+// Forward slashes and an upper-case drive letter, so paths compare equal however they were
+// made: process.cwd() keeps the drive letter the shell started in (VS Code terminals often
+// open in c:\), while Vite, TypeScript and chokidar report C:\
 function normalize(value) {
-    return value.replace(/\\/g, "/");
+    return value.replace(/\\/g, "/").replace(/^([a-z]):/, (_, drive) => drive.toUpperCase() + ":");
 }
 
 const STRIP_ALWAYS_KEEP = new Set(["constructor"]);

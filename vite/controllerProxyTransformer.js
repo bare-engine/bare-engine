@@ -253,9 +253,6 @@ function createControllerProxyTransformer(program) {
 
             // bare.sound / bare.keyboard / bare.storage -> __Bare_soundHandler / ... (imported from bare-engine)
             function maybeRewriteBareGlobalModule(n) {
-                if (!isProjectSource) {
-                    return null;
-                }
                 if (!ts.isPropertyAccessExpression(n)) {
                     return null;
                 }
@@ -267,6 +264,17 @@ function createControllerProxyTransformer(program) {
                 }
                 const exportName = bareGlobalModuleImports.get(n.name.text);
                 if (!exportName) {
+                    return null;
+                }
+                if (!isProjectSource) {
+                    // engine sources assign these themselves. Anywhere else, leaving bare.storage
+                    // as is lets the module be tree-shaken out, so the game would only fail at runtime
+                    if (isUnknownSourceFile(sourceFile)) {
+                        throw new Error(
+                            `[controller-proxy] ${sourceFile.fileName} uses bare.${n.name.text}, but it isn't under the project root (${process.cwd()}), ` +
+                            `so it can't be rewritten to an import and ${exportName} would be left out of the build. Run the build from the project folder.`
+                        );
+                    }
                     return null;
                 }
                 usedGlobalModulesInSource.add(exportName);
@@ -929,13 +937,22 @@ function collectStartBareTargets(sourceFile) {
     return targets;
 }
 
+// Windows paths are case-insensitive, and process.cwd() keeps the drive letter the shell
+// started in (VS Code terminals often open in c:\) while TypeScript reports C:\
+function isUnderDir(filePath, dir) {
+    const file = path.resolve(filePath);
+    const root = path.resolve(dir) + path.sep;
+    return process.platform === "win32"
+        ? file.toLowerCase().startsWith(root.toLowerCase())
+        : file.startsWith(root);
+}
+
 function isProjectSourceFile(sourceFile) {
     // Anything under the project root counts as project source (src/, public/demos/, ...),
     // except dependencies. Engine sources resolve through the node_modules symlink to their
     // real path outside the project root, so they stay non-project.
     const filePath = path.resolve(sourceFile.fileName);
-    const projectRoot = path.resolve(process.cwd());
-    if (!filePath.startsWith(projectRoot + path.sep)) {
+    if (!isUnderDir(filePath, process.cwd())) {
         return false;
     }
     // building from inside the engine repo (fixtures): engine src sits under the project root
@@ -943,6 +960,14 @@ function isProjectSourceFile(sourceFile) {
         return false;
     }
     return !filePath.includes(path.sep + "node_modules" + path.sep);
+}
+
+// Neither project, engine nor dependency source
+function isUnknownSourceFile(sourceFile) {
+    const filePath = path.resolve(sourceFile.fileName);
+    return !getEngineSrcInfo(sourceFile.fileName)
+        && !filePath.includes(path.sep + "node_modules" + path.sep)
+        && !isUnderDir(filePath, process.cwd());
 }
 
 function collectAddClassDirectiveMapFromDirs(dirs) {
