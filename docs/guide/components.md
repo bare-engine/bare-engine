@@ -33,7 +33,7 @@ const spin = obj.AddComponent(SpinComponent);
 spin.speed = 180;
 ```
 
-In a prefab, using the name without `Component`, starting lowercase:
+In a prefab, using the name without `Component`, starting lowercase. Only that first letter changes, so the key `aiDriver` needs a class named `AiDriverComponent`, not `AIDriverComponent`; the dev server and the build stop with an error when a key almost matches a class:
 
 ```json
 {

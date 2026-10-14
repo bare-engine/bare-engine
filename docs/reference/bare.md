@@ -35,7 +35,7 @@ These belong to a scene. When you write `bare.tween`, `bare.object` and so on, t
 | `bare.hitbox` | Pointer hit detection on GameObjects. See [Hitbox](./hitbox). |
 | `bare.particle` | Particle emitters. See [Particles](../guide/particles). |
 | `bare.arcade` | Simple physics, imported from `bare-engine/arcade`. See [Physics](./physics). |
-| `bare.sopiro` | Realistic physics (experimental), imported from `bare-engine/sopiro`. See [Physics](./physics). |
+| `bare.sopiro` | Realistic physics, imported from `bare-engine/sopiro`. See [Physics](./physics). |
 
 A scene module only exists once your code uses it. If you never reference `bare.tween`, the tween code isn't in your build.
 

@@ -32,7 +32,7 @@ Override these methods on your scene. All are optional. Mark each one `override`
 | --- | --- |
 | `OnAwake(payload?)` | Once, when the scene is created. Register classes here. |
 | `OnStart(payload?)` | After awake, and again on every restart. Add your objects here. |
-| `OnFixedUpdate(fixedDeltaTime)` | At a fixed rate (60 per second by default). Good for gameplay logic. |
+| `OnFixedUpdate(fixedDeltaTime)` | At a fixed rate (60 per second by default). For physics and logic that must run at a steady rate. Something moved here can stutter under a following camera; see [Smooth movement](../reference/camera#smooth-movement). |
 | `OnPreUpdate(deltaTime)` | Every frame, after the fixed updates and mouse input, before objects and components update. Set values here that components read in their `OnUpdate`. |
 | `OnUpdate(deltaTime)` | Every frame, after objects and components. |
 | `OnPreRender()` / `OnRender()` / `OnPostRender()` | Around rendering, for custom drawing. |

@@ -178,6 +178,76 @@ StartBare(Game);
     });
 });
 
+// runs the transform like Vite does, collecting what it warns about and the error it stops with
+function componentKeyCheck(root) {
+    const plugin = bareAutoRegisterClassesPlugin({ projectRoot: root });
+    plugin.buildStart.call({});
+    const id = path.resolve(root, 'src/game.ts').split(path.sep).join('/');
+    const warnings = [];
+    let error = null;
+    const context = {
+        warn: message => warnings.push(message),
+        error: message => { throw new Error(message); },
+    };
+    try {
+        plugin.transform.call(context, fs.readFileSync(id, 'utf8'), id);
+    } catch (e) {
+        error = e.message;
+    }
+    return { warnings, error };
+}
+
+const component = (name, exported = true) =>
+    `import { Component } from 'bare-engine';\n${exported ? 'export ' : ''}class ${name} extends Component {}\n`;
+
+test('component keys that match a class pass without warnings', () => {
+    withProject({
+        'src/game.ts': GAME(),
+        'src/components/aiDriverComponent.ts': component('AiDriverComponent'),
+        ...settings([{ name: 'car', components: { aiDriver: {}, tiled: {} } }]),
+    }, root => {
+        assert.deepEqual(componentKeyCheck(root), { warnings: [], error: null });
+    });
+});
+
+test('a key whose class differs in case stops with an error naming both fixes', () => {
+    withProject({
+        'src/game.ts': GAME(),
+        'src/components/aiDriverComponent.ts': component('AIDriverComponent'),
+        ...settings([{ name: 'blueCar', components: { aiDriver: {} } }]),
+    }, root => {
+        const { error } = componentKeyCheck(root);
+        assert.match(error, /"aiDriver" \(prefab "blueCar" in settingsData\.json\) looks for AiDriverComponent, but the class is called AIDriverComponent/);
+        assert.match(error, /rename the class to AiDriverComponent or the key to "AIDriver"/);
+    });
+});
+
+test('a misspelled key stops with an error, also in children and base prefabs', () => {
+    withProject({
+        'src/game.ts': GAME(),
+        'src/components/enemyComponent.ts': component('EnemyComponent'),
+        ...settings([{ name: 'boss', children: [{ name: 'arm', components: { enemi: {} } }] }], [{ name: 'ground', components: { tild: {} } }]),
+    }, root => {
+        const { error } = componentKeyCheck(root);
+        assert.match(error, /"enemi" \(prefab "boss" in settingsData\.json\) looks for EnemiComponent, but the class is called EnemyComponent/);
+        assert.match(error, /"tild" \(base prefab "ground" in settingsData\.json\) looks for TildComponent, but the class is called TiledComponent/);
+    });
+});
+
+test('a key with no class at all, or an unexported one, only warns', () => {
+    withProject({
+        'src/game.ts': GAME(),
+        'src/components/hiddenComponent.ts': component('HiddenComponent', false),
+        ...settings([{ name: 'thing', components: { hidden: {}, somethingElseEntirely: {} } }]),
+    }, root => {
+        const { warnings, error } = componentKeyCheck(root);
+        assert.equal(error, null);
+        assert.equal(warnings.length, 2);
+        assert.match(warnings[0], /HiddenComponent isn't exported/);
+        assert.match(warnings[1], /SomethingElseEntirelyComponent, which isn't in src\//);
+    });
+});
+
 test('generateAssets lists prefabs, base prefabs and layers from settingsData', () => {
     withProject({
         'src/game.ts': GAME(),

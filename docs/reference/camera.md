@@ -32,6 +32,21 @@ const t = 1 - Math.exp(-5 * deltaTime);
 bare.camera.SetPosition(bare.util.Lerp(camera.x, player.x + 200, t), camera.y);
 ```
 
+### Smooth movement
+
+The camera moves every frame, but an object moved in `OnFixedUpdate`, or by [physics](./physics), only moves on frames that run a fixed step. On a screen faster than 60 Hz some frames run none, so the object stands still while the camera glides on, and it stutters.
+
+For an object the camera follows, move it in `OnUpdate`, multiplied by `deltaTime`:
+
+```ts
+override OnUpdate(deltaTime: number)
+{
+    this.go.x += this.speed * deltaTime;
+}
+```
+
+If it has to stay in `OnFixedUpdate`, draw it between its last two fixed positions with [`bare.fixedAlpha`](./bare#general-properties).
+
 ## Fitting the level
 
 To show a whole level on any screen size:

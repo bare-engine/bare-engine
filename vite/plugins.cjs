@@ -179,6 +179,19 @@ function readEngineClasses() {
     };
 }
 
+// How many single letters to add, remove or change to turn a into b
+function EditDistance(a, b) {
+    let previous = Array.from({ length: b.length + 1 }, (_, i) => i);
+    for (let i = 1; i <= a.length; i++) {
+        const current = [i];
+        for (let j = 1; j <= b.length; j++) {
+            current[j] = Math.min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+        }
+        previous = current;
+    }
+    return previous[b.length];
+}
+
 // Class names named as `baseClass: "X"` in source code, eg AddGameObject({ baseClass: "TextObject", ... })
 function findBaseClassReferences(source) {
     const names = new Set();
@@ -417,6 +430,89 @@ function bareAutoRegisterClassesPlugin(options = {}) {
     function computeSettingsComponentSignature() {
         const { components, baseClasses } = getSettingsReferences();
         return [...components].sort().join(",") + "|" + [...baseClasses].sort().join(",");
+    }
+
+    // Every component key in settingsData.json, with where it's used, eg
+    // { key: "aiDriver", className: "AiDriverComponent", where: 'prefab "blueCar" in settingsData.json' }
+    function getComponentKeyUses() {
+        const uses = [];
+        const visit = (entity, where) => {
+            if (!entity || typeof entity !== "object") return;
+            if (entity.components && typeof entity.components === "object") {
+                for (const key in entity.components) {
+                    uses.push({ key, className: key.charAt(0).toUpperCase() + key.slice(1) + "Component", where });
+                }
+            }
+            if (Array.isArray(entity.children)) {
+                entity.children.forEach(child => visit(child, where));
+            }
+        };
+        let settings;
+        try {
+            settings = JSON.parse(fs.readFileSync(settingsDataPath, "utf8"));
+        } catch {
+            return uses;
+        }
+
+        for (const [groupName, label] of [["prefabs", "prefab"], ["basePrefabs", "base prefab"]]) {
+            const group = settings?.[groupName];
+            if (!group || typeof group !== "object") continue;
+            for (const entity of Array.isArray(group) ? group : Object.values(group)) {
+                visit(entity, `${label} "${entity?.name}" in settingsData.json`);
+            }
+        }
+        return uses;
+    }
+
+    // The engine looks a component key up as <Key>Component, with only the first letter capitalized,
+    // so "aiDriver" needs AiDriverComponent. Anything else only shows as a console error once the
+    // object is created, and the object quietly goes without the component. A class that's almost the
+    // name, like AIDriverComponent or a typo, is clearly meant: an error. A missing class could be
+    // registered by hand, or be a component the extension is creating right now: a warning.
+    function checkComponentKeys(context) {
+        const known = new Map();
+        for (const name of ENGINE_COMPONENT_BASES) {
+            if (name !== "Component") known.set(name, { exported: true });
+        }
+        for (const [name, info] of classMap) {
+            if (resolveKind(name) === "component") known.set(name, { exported: info.exported });
+        }
+
+        const errors = [];
+        const warnings = [];
+        const reported = new Set();
+        for (const { key, className, where } of getComponentKeyUses()) {
+            if (reported.has(className)) continue;
+            const found = known.get(className);
+            if (found?.exported) continue;
+            reported.add(className);
+
+            if (found) {
+                warnings.push(`${className} isn't exported, so the components key "${key}" (${where}) can't find it. Add export to its class.`);
+                continue;
+            }
+            const near = [...known.keys()].find(name => name.toLowerCase() === className.toLowerCase())
+                ?? [...known.keys()].find(name => EditDistance(name.toLowerCase(), className.toLowerCase()) <= 2);
+            if (near) {
+                // "Enemy" -> "enemy", but an acronym stays as it is: "AIDriver", not "aIDriver"
+                const base = near.slice(0, -"Component".length);
+                const nearKey = /^[A-Z][A-Z]/.test(base) ? base : base.charAt(0).toLowerCase() + base.slice(1);
+                errors.push(`The components key "${key}" (${where}) looks for ${className}, but the class is called ${near}. `
+                    + `Only the first letter of a key is capitalized, so rename the class to ${className} or the key to "${nearKey}".`);
+            } else {
+                warnings.push(`The components key "${key}" (${where}) looks for ${className}, which isn't in src/. `
+                    + `Create and export it, or register it yourself with bare.AddClass(${className}).`);
+            }
+        }
+
+        for (const warning of warnings) {
+            context?.warn ? context.warn(warning) : console.warn(warning);
+        }
+        if (errors.length) {
+            const message = errors.join("\n");
+            if (context?.error) context.error(message);
+            throw new Error(message);
+        }
     }
 
     // The engine class a project class ends up extending, eg "ArcadeObject" for `class Player extends Hero`
@@ -676,6 +772,10 @@ function bareAutoRegisterClassesPlugin(options = {}) {
             // edits to the start scene's file itself.
             scanAll();
             scanFile(normalizedPath);
+
+            // runs on every load of the start scene: dev start, reloads after settingsData or a
+            // component class changes, and builds
+            checkComponentKeys(this);
 
             return injectRegistrations(code, filePath, startSceneClass);
         }
