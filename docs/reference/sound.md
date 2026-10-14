@@ -59,5 +59,9 @@ bare.sound.Play('bell', { src: `${bare.soundPath}/bell.wav` });
 | `Stop(id)` / `StopAll()` | Stop playback. |
 | `SetVolume(id, volume)` | Change volume. |
 | `FadeIn(id, seconds)` / `FadeOut(id, seconds)` / `FadeTo(id, volume, seconds)` | Fade volume. |
+| `Mute()` / `Unmute()` | Silence all sound, for example during an ad. Playing sounds hold their place and continue on `Unmute()`. |
+| `isMuted` | `true` between `Mute()` and `Unmute()`. |
 
 Sounds don't play when `SaveData.soundEnabled` is `false`, so you can build a mute toggle with [Save Data](./save-data).
+
+`Mute()` is for silencing the game for a while, not a player setting: it isn't saved, and sounds started while muted wait and play on `Unmute()`. When the tab is hidden the sound is paused the same way, and coming back doesn't unmute a muted game.

@@ -21,28 +21,52 @@ export class SoundHandler
     private sounds: Map<string, SoundJsSound> = new Map();
     private loads: Map<string, Promise<SoundJsSound>> = new Map();
     private soundPaths: Map<string, string> = new Map();
-    private suspendedForVisibility: boolean = false;
+    private suspendedByHandler: boolean = false;
+    private muted: boolean = false;
 
     constructor()
     {
         globalEvents.persistent.on(BareEvent.game_awake, () => bare.sound = this);
 
-        document.addEventListener('visibilitychange', () => this.SyncToTabVisibility());
+        document.addEventListener('visibilitychange', () => this.SyncAudioContext());
     }
 
-    private SyncToTabVisibility(): void
+    /** True between `Mute()` and `Unmute()`. */
+    public get isMuted(): boolean
     {
-        if (document.hidden)
+        return this.muted;
+    }
+
+    /** Silences all sound, for example during an ad. Sounds that are playing hold their place
+     *  and carry on from there on `Unmute()`. */
+    public Mute(): void
+    {
+        this.muted = true;
+        this.SyncAudioContext();
+    }
+
+    public Unmute(): void
+    {
+        this.muted = false;
+        this.SyncAudioContext();
+    }
+
+    // The context runs only while the game is unmuted and the tab is visible. It is only
+    // resumed when this handler suspended it, so a context the browser holds until the first
+    // tap stays that way.
+    private SyncAudioContext(): void
+    {
+        if (this.muted || document.hidden)
         {
-            if (actx.state === 'running')
+            if (actx.state === 'running' && !this.suspendedByHandler)
             {
-                this.suspendedForVisibility = true;
+                this.suspendedByHandler = true;
                 actx.suspend().catch(() => {});
             }
         }
-        else if (this.suspendedForVisibility)
+        else if (this.suspendedByHandler)
         {
-            this.suspendedForVisibility = false;
+            this.suspendedByHandler = false;
             actx.resume().catch(() => {});
         }
     }
