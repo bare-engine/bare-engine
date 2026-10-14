@@ -328,4 +328,12 @@ To use a joint, make a prefab for it:
 }
 ```
 
+You can also add a joint while the game runs. It connects the bodies at its position, so add the bodies first:
+
+```ts
+const hinge = this.AddGameObject('hinge').SetPosition(x, y);
+```
+
+Or name the bodies to connect with `baseName` and `targetName`; a `DistanceJointObject` added in code needs these. Removing the joint lets go of the bodies.
+
 **Example:** the [Showcase](https://github.com/bare-engine/bare-showcase)'s [realistic physics demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/realisticPhysics/src/DemoRealisticPhysics.ts) has [a prefab for every body and joint](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/realisticPhysics/data/settingsData.json), and creates a ball wherever you click.

@@ -38,7 +38,13 @@ export abstract class JointObject extends GameObject
     {
         if (bare.gameMode == GameMode.Play)
         {
-            bare.events.once(BareEvent.level_loaded, this.InitJointGame.bind(this));
+            // WHILE A LEVEL LOADS, ITS BODIES MAY NOT ALL EXIST YET, SO WAIT FOR IT
+            // ADDED LATER (EG FROM CODE MID-GAME, OR IN A SCENE WITHOUT A LEVEL): CONNECT ONCE THE CODE THAT ADDED IT
+            // IS DONE, SO A CHAINED SetPosition() OR baseName/targetName SET AFTER AddGameObject COUNTS
+            if (this.scene.Get("_level")?.loading)
+                bare.events.once(BareEvent.level_loaded, this.InitJointGame.bind(this));
+            else
+                queueMicrotask(() => this.InitJointGame());
             return;
         }
 
@@ -51,18 +57,27 @@ export abstract class JointObject extends GameObject
 
     InitJointGame(): void
     {
-        if (bare.gameMode == GameMode.Edit)
+        // REMOVED BEFORE IT GOT TO CONNECT
+        if (bare.gameMode == GameMode.Edit || !this.addedToScene)
             return;
 
         var bodyA: RigidBody | null = null;
         var bodyB: RigidBody | null = null;
-        
-        if (this.baseName == "jointAnchor")
-            bodyA = this.CreateAnchor();
-        else
-            bodyA = bare.object.GetByName(this.baseName) as RigidBody;
 
-        bodyB = bare.object.GetByName(this.targetName) as RigidBody;
+        if (!this.baseName && !this.targetName)
+        {
+            // NO BODY NAMES, EG A JOINT CREATED IN CODE: CONNECT THE BODIES AT ITS POSITION, LIKE THE EDITOR DOES
+            ({ bodyA, bodyB } = this.GetBodies());
+        }
+        else
+        {
+            if (this.baseName == "jointAnchor")
+                bodyA = this.CreateAnchor();
+            else
+                bodyA = bare.object.GetByName(this.baseName) as RigidBody;
+
+            bodyB = bare.object.GetByName(this.targetName) as RigidBody;
+        }
 
         if (!bodyA || !bodyB)
         {
@@ -76,6 +91,23 @@ export abstract class JointObject extends GameObject
     override OnRemoved(): void
     {
         bare.events.offAlias("joint_level_preSave");
+
+        if (bare.gameMode != GameMode.Play)
+            return;
+
+        // REMOVED WHILE THE GAME RUNS: LET GO OF THE BODIES (BACKING _sopiro READ, DON'T CREATE A CONTROLLER FOR THIS)
+        var world = this.scene.Get("_sopiro")?.world as World | undefined;
+        if (world)
+        {
+            // A BODY HELD STILL BY THE JOINT MAY HAVE FALLEN ASLEEP
+            this.AwakeBodies();
+            if (this.joint)
+                world.unregister(this.joint.id, true);
+            if (this.staticAnchor)
+                world.unregister(this.staticAnchor.id);
+        }
+        this.joint = null;
+        this.staticAnchor = null!;
     }
 
     protected CheckAddJoint(): void

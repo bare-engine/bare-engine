@@ -79,7 +79,7 @@ export class DistanceJointObject extends JointObject
             this.targetObject = null!;
         }
 
-        bare.events.offAlias("joint_level_preSave");
+        super.OnRemoved();
     }
 
     override GetBodies(): { bodyA: RigidBody | null; bodyB: RigidBody | null; }

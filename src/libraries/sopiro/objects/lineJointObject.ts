@@ -56,11 +56,6 @@ export class LineJointObject extends JointObject
         super.OnAdded();
     }
 
-    override OnRemoved(): void
-    {
-        bare.events.offAlias("joint_level_preSave");
-    }
-
     override GetBodies(): { bodyA: RigidBody | null; bodyB: RigidBody | null; }
     {
         var bodyB = this.GetBodyUnderPosition(this.position);

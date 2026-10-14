@@ -29,6 +29,7 @@ import { ParticleComponentTest } from "./testScenes/particleComponentTest";
 import { ShapeOutlineTest } from "./testScenes/shapeOutlineTest";
 import { HitboxInnerTransformTest } from "./testScenes/hitboxInnerTransformTest";
 import { ShaderUniformsTest } from "./testScenes/shaderUniformsTest";
+import { SopiroJointsTest } from "./testScenes/sopiroJointsTest";
 import { EditorPreview } from "./docExamples/editorPreview";
 
 function sceneName(scene: SceneClass): string {
@@ -74,6 +75,7 @@ class MainGame extends Scene
         ShapeOutlineTest,
         HitboxInnerTransformTest,
         ShaderUniformsTest,
+        SopiroJointsTest,
     ];
 
     constructor() 

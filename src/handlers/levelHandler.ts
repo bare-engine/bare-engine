@@ -17,7 +17,10 @@ export class LevelHandler
     static levelCache: Map<string, LevelData> = new Map();
     
     currentLevel: LevelData | null = null;
-    
+
+    // TRUE FROM THE START OF Load() UNTIL JUST BEFORE level_loaded, WHILE THE LEVEL'S OBJECTS ARE BEING ADDED
+    loading: boolean = false;
+
     scene: Scene;
 
     @InspectorField
@@ -176,6 +179,7 @@ export class LevelHandler
         this.scene.Clear(false);
         
         this.scene.render = false;
+        this.loading = true;
 
         var level: LevelData;
         try
@@ -186,12 +190,14 @@ export class LevelHandler
         {
             console.error('Failed to load level', error);
             this.scene.render = true;
+            this.loading = false;
             return;
         }
 
         this.scene.render = true;
         this.scene.PostLoadLevel(level, persistenObjUIDs);
-        
+        this.loading = false;
+
         //bare.SendEvent(BareEvent.level_loaded, {levelStr: SaveData.currentLevelStr, level: this.currentLevel});
         // NOT USING bare.SendEvent, SINCE THAT SENDS IT TO ALL SCENES, TRIGGERING ENGINE CODE LIKE CAMERA HANDLER EVENT LISTENER THAT RESETS THE BOUNDS TO THE LEVEL
         bare.events.emit(BareEvent.level_loaded, {levelStr: SaveData.currentLevelStr, level: this.currentLevel!});
