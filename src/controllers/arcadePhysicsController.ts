@@ -46,6 +46,8 @@ export class ArcadePhysicsController extends PhysicsControllerBase
     static DRAG_STOP_SPEED: number = 5;
     // HOW FAR BELOW A oneWay OBJECT'S TOP AN OBJECT'S BOTTOM MAY HAVE STARTED THE STEP AND STILL LAND ON IT
     static ONE_WAY_TOLERANCE: number = 0.5;
+    // HOW FAR AN OBJECT MAY HAVE STARTED THE STEP INSIDE ANOTHER ONE'S SIDE AND STILL BE PUSHED BACK OUT THAT SIDE
+    static ENTRY_TOLERANCE: number = 0.01;
     // OBJECTS THIS CLOSE COUNT AS TOUCHING FOR blocked, EVEN WHEN THEY DON'T OVERLAP
     static TOUCH_DISTANCE: number = 0.01;
 
@@ -267,7 +269,9 @@ export class ArcadePhysicsController extends PhysicsControllerBase
             }
 
             obj.blocked = BlockedState.None;
-            obj.physicsStepStartY = obj.y;
+            obj.physicsStartX = obj.x;
+            obj.physicsStartY = obj.y;
+            obj.physicsStartStep = this.step;
 
             if (!obj.physicsHitbox.rectangle || obj.physicsHitbox.rectangle.width == 0 || obj.physicsHitbox.rectangle.height == 0)
             {
@@ -639,7 +643,7 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         // COPIED: COLLISION EVENTS RUN GAME CODE THAT MAY TEST OTHER PAIRS
         let dx = this.hit.dx;
         let dy = this.hit.dy;
-        const distance = this.hit.distance;
+        let distance = this.hit.distance;
         const radiusSum = this.hit.radiusSum;
 
         if (!pair.collisionHandled)
@@ -669,6 +673,13 @@ export class ArcadePhysicsController extends PhysicsControllerBase
 
         if (obj1.oneWay || obj2.oneWay)
             return this.resolveOneWayCollision(obj1, obj2);
+
+        if (radiusSum === 0 && obj1.physicsHitbox.type === HitboxType.Rectangle && obj2.physicsHitbox.type === HitboxType.Rectangle && this.pushFromEntrySide(obj1, obj2))
+        {
+            dx = this.hit.dx;
+            dy = this.hit.dy;
+            distance = this.hit.distance;
+        }
 
         // for two circles the penetration is what's left of the radii, otherwise the distance already is
         const penetration = radiusSum > 0 ? radiusSum - distance : distance;
@@ -1528,6 +1539,59 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         this.normalY = sign * dy / len;
     }
 
+    // HOW FAR THE OBJECT MOVED THIS STEP, 0 WHEN IT WAS ADDED DURING THE STEP
+    private movedX(obj: ArcadeObject): number
+    {
+        return obj.physicsStartStep === this.step ? obj.x - obj.physicsStartX : 0;
+    }
+
+    private movedY(obj: ArcadeObject): number
+    {
+        return obj.physicsStartStep === this.step ? obj.y - obj.physicsStartY : 0;
+    }
+
+    // TWO RECTANGLES ARE NORMALLY PUSHED APART ALONG THEIR SMALLER OVERLAP. AN OBJECT WALKING OVER THE SEAM BETWEEN TWO
+    // FLOOR PIECES HAS SUNK INTO THE NEXT PIECE'S TOP FURTHER THAN INTO ITS SIDE, SO IT WOULD GET STOPPED BY THAT SIDE.
+    // WHEN obj1 STARTED THE STEP ON ONE SIDE OF obj2, IT'S PUSHED BACK OUT THAT SIDE INSTEAD, INTO this.hit LIKE testRectRect.
+    // ABOVE OR BELOW GOES FIRST, SO LANDING ON A CORNER LANDS. RETURNS FALSE WHEN THEY ALREADY OVERLAPPED
+    private pushFromEntrySide(obj1: ArcadeObject, obj2: ArcadeObject): boolean
+    {
+        const shape1 = this.getShape(obj1);
+        const shape2 = this.getShape(obj2);
+        if (!shape1 || !shape2) return false;
+
+        const b1 = shape1.bounds;
+        const b2 = shape2.bounds;
+        const tolerance = ArcadePhysicsController.ENTRY_TOLERANCE;
+        const hit = this.hit;
+
+        // WHERE obj1 STARTED, RELATIVE TO WHERE obj2 STARTED
+        const startDx = this.movedX(obj1) - this.movedX(obj2);
+        const startDy = this.movedY(obj1) - this.movedY(obj2);
+
+        if (b1.y + b1.height - startDy <= b2.y + tolerance) {
+            hit.dx = 0;
+            hit.distance = b1.y + b1.height - b2.y;
+            hit.dy = -hit.distance;
+        } else if (b1.y - startDy >= b2.y + b2.height - tolerance) {
+            hit.dx = 0;
+            hit.distance = b2.y + b2.height - b1.y;
+            hit.dy = hit.distance;
+        } else if (b1.x + b1.width - startDx <= b2.x + tolerance) {
+            hit.dy = 0;
+            hit.distance = b1.x + b1.width - b2.x;
+            hit.dx = -hit.distance;
+        } else if (b1.x - startDx >= b2.x + b2.width - tolerance) {
+            hit.dy = 0;
+            hit.distance = b2.x + b2.width - b1.x;
+            hit.dx = hit.distance;
+        } else {
+            return false;
+        }
+
+        return hit.distance > 0;
+    }
+
     // A oneWay OBJECT ONLY STOPS WHAT CAME DOWN ONTO ITS TOP THIS STEP, AND ALWAYS PUSHES IT UP. EVERYTHING ELSE PASSES
     private resolveOneWayCollision(obj1: ArcadeObject, obj2: ArcadeObject): boolean
     {
@@ -1542,8 +1606,8 @@ export class ArcadePhysicsController extends PhysicsControllerBase
         const bottom = moverShape.bounds.y + moverShape.bounds.height;
 
         // WHERE BOTH WERE AT THE START OF THE STEP, SO MOVING PLATFORMS WORK TOO
-        const startTop = top - (platform.y - platform.physicsStepStartY);
-        const startBottom = bottom - (mover.y - mover.physicsStepStartY);
+        const startTop = top - this.movedY(platform);
+        const startBottom = bottom - this.movedY(mover);
 
         if (startBottom > startTop + ArcadePhysicsController.ONE_WAY_TOLERANCE) return false;
 

@@ -89,8 +89,10 @@ export class ArcadeObject extends GameObject
     // SET BY ArcadePhysicsController: A NUMBER FOR COLLISION PAIR KEYS, AND THE WORLD SPACE HITBOX OF THE CURRENT STEP
     physicsId: number = 0;
     physicsShape: ArcadeShape = new ArcadeShape(this);
-    // SET BY ArcadePhysicsController: y AT THE START OF THE CURRENT STEP, SO oneWay KNOWS WHERE AN OBJECT CAME FROM
-    physicsStepStartY: number = 0;
+    // SET BY ArcadePhysicsController: THE POSITION AT THE START OF STEP physicsStartStep, SO COLLISIONS KNOW WHERE AN OBJECT CAME FROM
+    physicsStartX: number = 0;
+    physicsStartY: number = 0;
+    physicsStartStep: number = -1;
 
     static dummyPhysicsObjectBare: ArcadeObject = new ArcadeObject();
 
@@ -380,6 +382,7 @@ export class ArcadeObject extends GameObject
         this.removeOnOutOfBounds = false;
         this.continuous = false;
         this.oneWay = false;
+        this.physicsStartStep = -1;
         this.gravity = null;
 
         if (this.collidingObjects)

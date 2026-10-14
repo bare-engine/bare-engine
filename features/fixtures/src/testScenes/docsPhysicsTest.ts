@@ -94,6 +94,26 @@ export class DocsPhysicsTest extends Scene
         await this.WaitFrame(2);
         c.check(!player.IsBlocked(BlockedState.Right), "a removed wall should not block");
 
+        // walking over the seam between two floor pieces doesn't snag on the second piece's side
+        // B first, so it's resolved before A pushes the walker up
+        const floorB = this.AddGameObject<ArcadeObject>("block").SetPosition(200, 200);
+        const floorA = this.AddGameObject<ArcadeObject>("block").SetPosition(0, 200);
+        floorA.scale.x = 200;
+        floorB.scale.x = 200;
+        const walker = this.AddGameObject<ArcadeObject>("player").SetPosition(160, 150);
+        await this.WaitFrame(10);
+        let snagged = 0;
+        for (let i = 0; i < 20; i++)
+        {
+            walker.velocity.x = 60;
+            await this.WaitFrame(1);
+            if (walker.IsBlocked(BlockedState.Right)) snagged++;
+        }
+        c.check(snagged === 0 && walker.x > 175, "walking over a floor seam should not snag: " + snagged + " " + walker.x);
+        floorA.Remove();
+        floorB.Remove();
+        walker.Remove();
+
         // oneWay: jump up through it, land on top
         const platform = this.AddGameObject<ArcadeObject>("block").SetPosition(0, 250);
         platform.oneWay = true;
