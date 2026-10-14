@@ -25,7 +25,6 @@ export class SaveDataHandler
     static readonly gameId: string = __BARE_GAME_ID__;
 
     private static defaults: Map<string, any> = new Map();
-    private static readonly storagePrefix = `${this.gameId}:`;
 
     public static GetStorageKey(): string
     {
@@ -171,8 +170,6 @@ export class SaveDataHandler
                 (SaveData as any)[key] = save[key];
         }
 
-        if (item === null && Array.from(this.defaults.keys()).some(key => localStorage.getItem(`${this.storagePrefix}${key}`) !== null))
-            this.Save();
     }
 
     static Clear()
