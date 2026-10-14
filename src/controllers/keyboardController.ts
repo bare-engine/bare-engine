@@ -113,24 +113,30 @@ export class KeyboardController
         this.keysJustReleased.clear();
     }
 
+    // THE BROWSER NAMES THE SPACE BAR " ", BARE NAMES IT "space". ACCEPT BOTH WHEN ASKED
+    private static KeyName(key: string): string
+    {
+        return key == " " ? "space" : key;
+    }
+
     public IsKeyDown(key: string): boolean
     {
-        return this.keysPressed.has(key);
+        return this.keysPressed.has(KeyboardController.KeyName(key));
     }
 
     public IsKeyPressed(key: string): boolean
     {
-        return this.keysJustPressed.has(key);
+        return this.keysJustPressed.has(KeyboardController.KeyName(key));
     }
 
     public IsKeyUp(key: string): boolean
     {
-        return !this.keysPressed.has(key);
+        return !this.keysPressed.has(KeyboardController.KeyName(key));
     }
 
     public IsKeyReleased(key: string): boolean
     {
-        return this.keysJustReleased.has(key);
+        return this.keysJustReleased.has(KeyboardController.KeyName(key));
     }
 
     public IsAnyKeyDown(): boolean
