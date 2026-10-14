@@ -1001,12 +1001,12 @@ function bareInitialAssetsPlugin(options = {}) {
 // though the running game already applied the change in-memory.
 let skipReloadUntil = 0;
 
-// Set while a texturePackImages (AssetPack) build is clearing + rewriting
-// public/initial/generated. The generated-assets watcher honors it so it doesn't
-// fire a racy full-reload while the atlas is momentarily missing from disk - which
-// would reload the page with no initial-asset tags and leave window.initialAssets
-// empty. The texturePackImages plugin does the single authoritative reload once the
-// build finishes and the atlas is back on disk.
+// Set while this dev server's texturePackImages (AssetPack) build runs. buildAssets.cjs
+// moves the new atlas into public/initial/generated file by file (installPackedOutput.cjs),
+// so the generated-assets watcher ignores those events and the texturePackImages plugin
+// does the single reload once the whole atlas is in place. The flag lives in this
+// process only: another process's pack (a `npm run build` next to the dev server) is
+// covered by the folder never going empty, not by this flag.
 let texturePackBuilding = false;
 
 // Set by bare:generated-assets in dev. The texturePackImages plugin calls it once a
@@ -2323,9 +2323,8 @@ function bareGeneratedAssetsPlugin(options = {}) {
                 if (norm === outputNorm) {
                     return; // never react to our own output
                 }
-                // Mid-build, public/initial holds a half-moved atlas (the new webp before its
-                // json is moved next to it), which would generate a bogus assets.ts. The
-                // texturePackImages plugin regenerates once the build has finished.
+                // Mid-pack, the new webp can be in place before its json. The texturePackImages
+                // plugin regenerates and reloads once, after the build has finished.
                 if (texturePackBuilding) {
                     return;
                 }
