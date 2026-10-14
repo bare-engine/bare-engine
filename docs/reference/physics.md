@@ -10,24 +10,10 @@ Hitboxes are axis-aligned boxes (AABB) and circles. Rotating an `ArcadeObject` d
 
 Arcade physics turns on by itself when a prefab in `settingsData.json` or an entity in code has `"baseClass": "ArcadeObject"` (or a class extending it), or when your code imports anything from `bare-engine/arcade`, such as `ArcadeObject`. `import type` doesn't count.
 
-You almost never need to register it yourself. Only when the `baseClass` can't be seen while building:
+Only two cases need `bare.AddClass(ArcadePhysicsController)` in your scene's `OnAwake`, imported from `bare-engine/arcade`:
 
-- The name is built while the game runs, like `{ baseClass: shapeType }`. Only names written out as text, like `baseClass: "ArcadeObject"`, count.
+- The `baseClass` name is built while the game runs, like `{ baseClass: shapeType }`. Only names written out as text, like `baseClass: "ArcadeObject"`, count.
 - The name is in a JSON file other than `public/data/settingsData.json`, like a second settings file loaded while the game runs, or a level file where an object sets a different `baseClass` than its prefab.
-
-Then register it in your scene:
-
-```ts
-import { ArcadePhysicsController } from 'bare-engine/arcade';
-
-export class Game extends Scene
-{
-    override OnAwake()
-    {
-        bare.AddClass(ArcadePhysicsController);
-    }
-}
-```
 
 Give your prefabs `"baseClass": "ArcadeObject"`:
 
@@ -172,24 +158,10 @@ Rigid-body physics with rotation, friction, mass and joints, based on [Sopiro/Ph
 
 Realistic physics turns on by itself when a prefab in `settingsData.json` or an entity in code has a Sopiro `baseClass`, like `"Box"`, `"Circle"` or `"RevoluteJointObject"`, or when your code imports anything from `bare-engine/sopiro`, such as `Circle` or `Type`. `import type` doesn't count. That also registers all its body and joint classes.
 
-You almost never need to register it yourself. Only when the `baseClass` can't be seen while building:
+Only two cases need `bare.AddClass(SopiroPhysicsController)` in your scene's `OnAwake`, imported from `bare-engine/sopiro`:
 
-- The name is built while the game runs, like `{ baseClass: shapeType }`. Only names written out as text, like `baseClass: "Box"`, count.
+- The `baseClass` name is built while the game runs, like `{ baseClass: shapeType }`. Only names written out as text, like `baseClass: "Box"`, count.
 - The name is in a JSON file other than `public/data/settingsData.json`, like a second settings file loaded while the game runs, or a level file where an object sets a different `baseClass` than its prefab.
-
-Then register it in your scene:
-
-```ts
-import { SopiroPhysicsController } from 'bare-engine/sopiro';
-
-export class Game extends Scene
-{
-    override OnAwake()
-    {
-        bare.AddClass(SopiroPhysicsController);
-    }
-}
-```
 
 Gravity is read from `gravity` in `settingsData.json`, like arcade physics. Without it, realistic physics uses a gravity of 1200. A body can have its own `gravity` instead, see below.
 

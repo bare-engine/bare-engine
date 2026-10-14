@@ -83,7 +83,7 @@ bare.scene.Get(Game).level.Load('level1');
 | `bare.TogglePause()` | Pause or unpause the game. Returns nothing; read `bare.paused`. |
 | `bare.TogglePerfOverlay()` | Show or hide the [performance panel](../guide/debugging#performance). Development only. |
 | `bare.SendEvent(type, ...args)` | Send an event to `bare.globalEvents` and to every active scene's `bare.events`. |
-| `bare.AddClass(SomeClass)` | Register a class. A controller (like `ArcadePhysicsController`) is switched on for all scenes; a GameObject class gets an object pool so it can be created by name. |
+| `bare.AddClass(SomeClass)` | Register a class: a GameObject class gets an object pool so it can be created by name, and a controller is switched on for all scenes. Classes named in `settingsData.json` or in your code are registered automatically, so you rarely need this. |
 | `bare.RegisterGameObjectPool(cls, size?)` | Create an object pool for a GameObject class, or fill its existing pool up to `size` objects. |
 | `bare.SetBackgroundColor(color)` | Set the canvas background color. An opaque color also colors the page around the canvas, eg the bars of a fitted resolution. |
 | `bare.SetDebugKey`, `bare.DisableDebugKey`, … | Change the [debug keys](../guide/debugging#changing-keys-while-the-game-runs) while the game runs. Development only. |
