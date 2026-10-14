@@ -85,7 +85,9 @@ bare.scene.Get(Game).level.Load('level1');
 | `bare.SendEvent(type, ...args)` | Send an event to `bare.globalEvents` and to every active scene's `bare.events`. |
 | `bare.AddClass(SomeClass)` | Register a class: a GameObject class gets an object pool so it can be created by name, and a controller is switched on for all scenes. Classes named in `settingsData.json` or in your code are registered automatically, so you rarely need this. |
 | `bare.RegisterGameObjectPool(cls, size?)` | Create an object pool for a GameObject class, or fill its existing pool up to `size` objects. |
-| `bare.SetBackgroundColor(color)` | Set the canvas background color. An opaque color also colors the page around the canvas, eg the bars of a fitted resolution. |
+| `bare.SetBackgroundColor(color)` | Set the canvas background color. |
+| `bare.SetBackgroundColorHTML(color)` | Color the page around the canvas, eg the bars of a fitted resolution. A transparent color clears it. |
+| `bare.SetResolution(resolution?)` | Change the [resolution](./configuration#resolution) while the game runs, for example to swap between a landscape and a portrait size when the screen turns. Without an argument, the game fills the window. Every scene's `OnResize` runs after. |
 | `bare.SetDebugKey`, `bare.DisableDebugKey`, … | Change the [debug keys](../guide/debugging#changing-keys-while-the-game-runs) while the game runs. Development only. |
 | `bare.DisableRightClick()` | Stop right-click from [selecting objects](../guide/debugging#selecting-objects-in-the-game), for games that use the right mouse button. Development only. |
 | `bare.LoadFont(name, url?)` | Load a font from `public/fonts/`. The first font loaded becomes `bare.defaultFont`. |

@@ -15,7 +15,7 @@ StartBare(Game, {
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `backgroundColor` | renderer startup color | Canvas background color, as a `Color`. Set it explicitly for a predictable appearance. An opaque color also colors the page around the canvas, so the bars of a fitted `resolution` match. |
+| `backgroundColor` | renderer startup color | Canvas background color, as a `Color`. Set it explicitly for a predictable appearance. It doesn't color the page around the canvas; use [`bare.SetBackgroundColorHTML`](./bare#methods) for that. |
 | `resolution` | full window | Render size, see below. |
 | `antiAlias` | `true` | Smooth edges. |
 | `textureFilter` | `LINEAR` | Use `NEAREST` for pixel art. |
@@ -39,7 +39,7 @@ See [Resolution & Pixel Art](../guide/resolution) for common setups.
 | --- | --- |
 | `width`, `height` | Fixed game size in game units. |
 | `scale` | A fixed CSS scale, or `CanvasScale.Fit` to fit the window. |
-| `position` | `CanvasPosition.Center` or `CanvasPosition.TopLeft`. |
+| `position` | `CanvasPosition.Center` or `CanvasPosition.TopLeft`. Defaults to `Center` with `CanvasScale.Fit`, and `TopLeft` otherwise. |
 | `integerScale` | Only scale by whole numbers, for crisp pixel art. |
 | `pixelScale` | Fill the window, but render at a lower resolution so everything appears `pixelScale` times bigger. Overrides `width`, `height` and `scale`. |
 

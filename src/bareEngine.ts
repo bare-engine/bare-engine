@@ -564,7 +564,7 @@ export class BareEngine
 
     PositionCanvas(resolution: BareOptions['resolution'], cssWidth: number, cssHeight: number)
     {
-        var position = resolution?.position ?? CanvasPosition.TopLeft;
+        var position = resolution?.position ?? (resolution?.scale === CanvasScale.Fit ? CanvasPosition.Center : CanvasPosition.TopLeft);
 
         rapid.canvas.style.position = 'absolute';
 
