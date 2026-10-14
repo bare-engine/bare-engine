@@ -922,24 +922,12 @@ export class TransformToolHandler
     // the outer transform (o.scale / o.rotation).
     private GetOuterAxes(o: GameObject): { ax: number, ay: number, bx: number, by: number }
     {
-        const origin = o.ContentToGlobal(new Vec2(0, 0), false);
-        const xPt    = o.ContentToGlobal(new Vec2(1, 0), false);
-        const yPt    = o.ContentToGlobal(new Vec2(0, 1), false);
-        let ax = xPt.x - origin.x;
-        let ay = xPt.y - origin.y;
-        const len = Math.hypot(ax, ay) || 1;
-        ax /= len; ay /= len;          // outer X axis (unit)
-
-        // A mirror anywhere in the chain (own flip/negative scale OR an ancestor's) reverses the
-        // world X axis. The gizmo should still treat the unmirrored orientation as "top", otherwise
-        // the frame angle jumps by 180 degrees and the rotation knob appears below the box.
-        // Detect it from the world transform's determinant rather than just this object's flags.
-        const det = (xPt.x - origin.x) * (yPt.y - origin.y) - (xPt.y - origin.y) * (yPt.x - origin.x);
-        if (det < 0)
-        {
-            ax = -ax;
-            ay = -ay;
-        }
+        // GetGlobalTransform reports a mirror anywhere in the chain as flipped rather than as a
+        // turn of 180 degrees, so the gizmo keeps the unmirrored orientation as "top" and the
+        // rotation knob doesn't jump below the box.
+        const angle = o.GetGlobalTransform().rotation * Math.PI / 180;
+        const ax = Math.cos(angle);
+        const ay = Math.sin(angle);
 
         return { ax, ay, bx: -ay, by: ax };  // bx/by: outer Y axis (perpendicular, unit)
     }

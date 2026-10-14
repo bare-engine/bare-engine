@@ -67,6 +67,53 @@ export class HierarchyAdvancedTest extends Scene
         const world = cc.ToGlobal(point);
         c.check(nearVec(cc.ToLocal(world), point.x, point.y, 0.001), "ToLocal should invert ToGlobal through a complex tree: " + show(cc.ToLocal(world)));
 
+        // GetGlobalTransform combines every ancestor into one position, rotation, scale and flip
+        const gt = grandchild.GetGlobalTransform();
+        c.check(nearVec(gt.position, -10, 20) && near(Math.abs(gt.rotation), 180) && nearVec(gt.scale, 2, 2) && !gt.flipped,
+            `the global transform should add up the rotations and scales of the ancestors: ${show(gt.position)} ${gt.rotation} ${show(gt.scale)} ${gt.flipped}`);
+
+        const pivoted = this.AddGameObject("box").SetScale(10).SetPivot(0.5, 0.5).SetPosition(50, 60).SetRotation(45);
+        const pt = pivoted.GetGlobalTransform();
+        c.check(nearVec(pt.position, 50, 60) && near(pt.rotation, 45) && nearVec(pt.scale, 10, 10),
+            "a root object's global transform should be its own, measured at its pivot: " + show(pt.position));
+
+        const turned = this.AddGameObject().SetRotation(30);
+        const flippedChild = turned.AddChild().SetRotation(20);
+        flippedChild.flipped = true;
+        const ft = flippedChild.GetGlobalTransform();
+        c.check(near(ft.rotation, 50) && ft.flipped, `a flipped child should keep its rotation and report the flip: ${ft.rotation} ${ft.flipped}`);
+
+        const mirror = this.AddGameObject();
+        mirror.flipped = true;
+        const mirrored = mirror.AddChild().SetRotation(20);
+        const mt = mirrored.GetGlobalTransform();
+        c.check(near(mt.rotation, -20) && mt.flipped, `a flipped parent should mirror its child's rotation: ${mt.rotation} ${mt.flipped}`);
+        mirrored.flipped = true;
+        c.check(!mirrored.GetGlobalTransform().flipped, "two flips should cancel out");
+
+        const upsideDown = this.AddGameObject().SetRotation(10);
+        upsideDown.scale.set(2, -3);
+        const ut = upsideDown.GetGlobalTransform();
+        c.check(ut.flipped && near(ut.rotation, -170) && nearVec(ut.scale, 2, 3),
+            `a negative y scale should be a flip plus half a turn: ${ut.rotation} ${show(ut.scale)}`);
+
+        // a root object given the global values should look the same as the nested one
+        const parentTree = this.AddGameObject().SetPosition(30, -20).SetRotation(-35).SetScale(1.5);
+        parentTree.flipped = true;
+        const nested = parentTree.AddChild().SetPosition(8, 6).SetRotation(70).SetScale(0.5);
+        const nt = nested.GetGlobalTransform();
+        const copy = this.AddGameObject().SetPosition(nt.position.x, nt.position.y).SetRotation(nt.rotation).SetScaleXY(nt.scale.x, nt.scale.y);
+        copy.flipped = nt.flipped;
+        const probe = new Vec2(5, -7);
+        c.check(nearVec(copy.ContentToGlobal(probe, false), nested.ContentToGlobal(probe, false).x, nested.ContentToGlobal(probe, false).y, 0.001),
+            "a root object with the global transform should match the nested object: " + show(copy.ContentToGlobal(probe, false)) + " " + show(nested.ContentToGlobal(probe, false)));
+
+        // the inner transform only counts when asked for
+        const spinner = this.AddGameObject().SetRotation(15);
+        spinner.innerRotation = 90;
+        c.check(near(spinner.GetGlobalTransform().rotation, 15) && near(spinner.GetGlobalTransform(true).rotation, 105),
+            "the inner rotation should only count with includeInnerTransform");
+
         // children follow the inner transform unless childrenInheritInnerTransform is off
         const holder = this.AddGameObject().SetPosition(200, 200);
         const rider = holder.AddChild().SetPosition(10, 0);

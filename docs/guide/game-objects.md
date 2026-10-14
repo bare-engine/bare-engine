@@ -77,7 +77,7 @@ this.AddGameObject('ball')
 | `pivot`, `pivotX`, `pivotY` | Anchor point, in texture pixels from the top left. See [Pivot](#pivot). |
 | `alpha`, `color`, `visible` | Appearance. |
 | `flipped` | Mirror horizontally. |
-| `width`, `height` | Size (read-only). |
+| `width`, `height` | Size of the box around the object and its children, in its parent's space (read-only). See [Bounds](#bounds). |
 | `active` | Inactive objects are not updated. |
 | `tags`, `customData` | Your own data, saved with the object. |
 
@@ -132,7 +132,47 @@ To make that the default for a whole game, set `GameObject.childrenAtPivotDefaul
 
 A child of a scaled parent is scaled too. If the parent is scaled differently in width and height, a turned child is skewed, so keep things like that as separate objects that follow the parent instead.
 
+A child also takes over its parent's look: the parent's `color` and `alpha` multiply with its own, and a parent that is hidden, or has `alpha` 0, hides its children. To fade or hide only the parent's own image, give the parent no texture and put the image in a child next to the others.
+
 Use `ToGlobal(point)` and `ToLocal(point)` to convert between a child's space and world space. For a point on the object's image, in its image pixels from the top left, like a corner of a hitbox, use `ContentToGlobal(point)`.
+
+## World transform
+
+A child's `position`, `rotation` and `scale` are relative to its parent. `GetGlobalTransform()` combines the whole parent chain, and returns the values the object would need as a root object to look the same:
+
+```ts
+const hand = arm.AddChild('hand').SetPosition(0, 60).SetRotation(20);
+
+const { position, rotation, scale, flipped } = hand.GetGlobalTransform();
+sparkle.SetPosition(position.x, position.y).SetRotation(rotation);
+```
+
+| Field | Description |
+| --- | --- |
+| `position` | Where the object's [pivot](#pivot) is in the world. |
+| `rotation` | In degrees, between -180 and 180. |
+| `scale` | Always positive. A mirror shows up in `flipped` instead. |
+| `flipped` | Mirrored by its own flip or a parent's. Two flips cancel out. |
+
+A negative scale is a mirror too: a negative `scaleY` comes back as `flipped`, with half a turn added to `rotation`. Pass `true` to include the [inner transform](#inner-transform). Skew, which a turned child of a parent with different width and height scales gets, can't be expressed in these values and is left out.
+
+## Bounds
+
+`GetBounds()` returns the box around the object's own image, and `GetBoundsWithChildren()` the box around its image and all its children's, as `{ x, y, width, height }` in world space. The box is aligned with the screen, so a turned object gets a box that fits around it.
+
+To put an object made of several images in a spot by its top left corner, whatever its pivot:
+
+```ts
+const box = piece.GetBoundsWithChildren();
+piece.SetPosition(piece.x + left - box.x, piece.y + top - box.y);
+```
+
+| Method | Description |
+| --- | --- |
+| `GetBounds(global = true)` | The object's own image. An object without a texture gives the box around its children. |
+| `GetBoundsWithChildren(global = true, includeRootTransform = true)` | The image and all children, grandchildren and so on. |
+
+With `global` set to `false`, the box is in the parent's space instead of the world. With `includeRootTransform` set to `false`, the object's own position, rotation and scale are left out, which gives the box in its own image pixels. Hidden children count too. `width` and `height` are `GetBoundsWithChildren(false)`'s size.
 
 ## Components
 

@@ -24,6 +24,7 @@ export const HOOK_POST_RENDER = 8;
 export const HOOK_RENDER = 16;
 
 const DEG_TO_RAD = Math.PI / 180;
+const RAD_TO_DEG = 180 / Math.PI;
 
 /**
  * Applies one transform stage - `translate(origin + position) rotate scale [flip] translate(-pivot)` -
@@ -67,6 +68,15 @@ function composeStage(store: MatrixStore, out: number, parent: number, transform
         store.multiplyAffineInPlace(out, a, b, c, d, x, y);
     else
         store.multiplyAffine(parent, out, a, b, c, d, x, y);
+}
+
+// A GameObject's transform in world space, see GameObject.GetGlobalTransform().
+export interface GlobalTransform
+{
+    position: Vec2;
+    rotation: number;   // degrees, between -180 and 180
+    scale: Vec2;        // always positive; a mirror shows up as flipped
+    flipped: boolean;
 }
 
 export class Transform {
@@ -1786,10 +1796,56 @@ export class GameObject
             this.ComposeOuterMatrix(m.matrix, m.curWorldM, -1);
 
         const {x, y} = m.localToWorld(localPoint.x, localPoint.y);
-        
+
         m.restore();
-        
+
         return new Vec2(x, y);
+    }
+
+    // This object's position, rotation, scale and flip in world space, with all parents applied: the
+    // values it would need as a root object to look the same. Pass true to include the inner transform.
+    // Skew, from a turned child of an unevenly scaled parent, can't be expressed and is left out.
+    GetGlobalTransform(includeInnerTransform: boolean = false): GlobalTransform
+    {
+        const m = rapid.matrixStack;
+        m.save();
+        m.identity();
+
+        this.buildAncestorMatrix(m);
+        if (includeInnerTransform)
+            this.ComposeContentMatrix(m.matrix, m.curWorldM, -1);
+        else
+            this.ComposeOuterMatrix(m.matrix, m.curWorldM, -1);
+
+        const pivot = this.pivot;
+        const position = m.localToWorld(pivot.x, pivot.y);
+        const xAxis = m.localToWorld(pivot.x + 1, pivot.y);
+        const yAxis = m.localToWorld(pivot.x, pivot.y + 1);
+
+        m.restore();
+
+        let ax = xAxis.x - position.x;
+        let ay = xAxis.y - position.y;
+        const bx = yAxis.x - position.x;
+        const by = yAxis.y - position.y;
+
+        // a mirror anywhere in the chain reverses the x axis. Report it as flipped, like the
+        // flipped property, instead of as a rotation of 180 degrees
+        const det = ax * by - ay * bx;
+        const flipped = det < 0;
+        if (flipped)
+        {
+            ax = -ax;
+            ay = -ay;
+        }
+
+        const scaleX = Math.hypot(ax, ay);
+        return {
+            position: new Vec2(position.x, position.y),
+            rotation: Math.atan2(ay, ax) * RAD_TO_DEG,
+            scale: new Vec2(scaleX, scaleX === 0 ? 0 : Math.abs(det) / scaleX),
+            flipped,
+        };
     }
 
     // Convert a world point to the outer-transform space.

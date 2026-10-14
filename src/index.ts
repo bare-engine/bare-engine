@@ -7,6 +7,7 @@ export { GameMode, globalEvents } from "./globals";
 export { MakePath, StartBare } from "./main";
 export { Button, type ButtonEntity } from "./objects/button";
 export { GameObject } from "./objects/gameObject";
+export type { GlobalTransform } from "./objects/gameObject";
 export { TextObject, type TextObjectEntity } from "./objects/textObject";
 
 export { Scene } from "./scenes/scene";
