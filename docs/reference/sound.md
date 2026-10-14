@@ -17,6 +17,23 @@ await bare.sound.Load('explosion');
 
 **Examples:** the [Platformer](https://github.com/bare-engine/bare-platformer) plays [win](https://github.com/bare-engine/bare-platformer/blob/main/src/game.ts#L87) and [lose](https://github.com/bare-engine/bare-platformer/blob/main/src/game.ts#L96) sounds, and the [Showcase](https://github.com/bare-engine/bare-showcase)'s [sound demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/sound/src/DemoSound.ts#L17-L24) uses `Register` and `PlayWithRandomRate`.
 
+## Other audio file formats
+
+Unregistered sound names default to `<name>.mp3`. To reuse a name for a WAV or another browser-supported format, register its path once:
+
+```ts
+bare.sound.Register('splash', 'splash.wav');
+bare.sound.Play('splash');
+```
+
+Registered paths are relative to `public/sounds/`. Registration maps the name without preloading the sound. Alternatively, supply a browser URL to `Load(id, src)` or the `src` playback option. Those URLs are used directly, so include `bare.soundPath` for a file in the sound directory:
+
+```ts
+await bare.sound.Load('splash', `${bare.soundPath}/splash.wav`);
+bare.sound.Play('splash');
+bare.sound.Play('bell', { src: `${bare.soundPath}/bell.wav` });
+```
+
 ## Play options
 
 | Option | Description |

@@ -102,6 +102,6 @@ bare.timeScale = 0.25;  // slow motion
 bare.timeScale = 1;     // normal
 ```
 
-It scales `deltaTime` in `OnUpdate`, and runs more or fewer fixed updates per second, so `OnFixedUpdate` and physics keep their step size and stay stable. [Tweens](./tweens), particles, camera shake, `FlashShader` and [`wait()`](./globals#waiting) follow it too.
+It scales `deltaTime` in `OnUpdate`, and runs more or fewer fixed updates per second, so `OnFixedUpdate` and physics keep their step size and stay stable. [Tweens](./tweens), particles, camera shake, `FlashShader` and [scene waits](../guide/scenes#waiting) follow it too.
 
-`timeScale = 0` also stops tweens and `wait()`, so animate a pause menu with `bare.unscaledDeltaTime` and `waitRealTime()`, or pause with `bare.TogglePause()` instead. `bare.Restart()` sets it back to `1`.
+`timeScale = 0` also stops tweens and `Scene.Wait()`, so animate a pause menu with `bare.unscaledDeltaTime` and `Scene.WaitRealTime()`, or pause with `bare.TogglePause()` instead. `bare.Restart()` sets it back to `1`.

@@ -4,21 +4,7 @@ Besides [`bare`](./bare), a few helpers are available everywhere without an impo
 
 ## Waiting
 
-```ts
-await wait(0.5);          // wait half a second of game time
-await waitFrame();        // wait one game frame
-await waitFrame(3);       // wait three game frames
-await waitRealTime(0.5);  // wait half a second, even while the game is paused
-```
-
-| Function | Description |
-| --- | --- |
-| `wait(seconds, persistent?)` | Resolves after a number of seconds of game time: it follows [`bare.timeScale`](./bare#game-speed), and waits while the game is paused or frozen because the tab lost focus. Before the game loop runs, in `OnInit` or the first scene's `OnAwake` and `OnStart`, it counts real time instead. |
-| `waitRealTime(seconds, persistent?)` | Resolves after a number of seconds of real time, also while the game is paused or `timeScale` is 0. For a pause menu, for example. |
-| `waitFrame(frames?, persistent?)` | Resolves after a number of game frames (fixed updates), so movement and collisions have run in between. Default 1. |
-| `cancelWaits()` | Cancels every pending wait that isn't persistent. |
-
-A cancelled wait never resolves, so the code after its `await` doesn't run on a scene that's gone. A `finally` after it doesn't run either. Nothing keeps the cancelled wait or its function in memory.
+Waits belong to a scene: use `this.Wait`, `this.WaitFrame` and `this.WaitRealTime` inside a scene, or `this.scene.Wait` from a component. See [Scene waits](../guide/scenes#waiting). The global `wait`, `waitFrame`, `waitRealTime` and `cancelWaits` helpers have been removed.
 
 ## Logging and checks
 

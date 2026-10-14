@@ -19,6 +19,10 @@ A scene owns its GameObjects and controllers. Your code still owns external reso
 
 Configure component values through a constructor or prefab when they must be available during its startup hooks; setting them after `AddComponent` may be too late.
 
+### Level loading
+
+Level loads into an already-started scene run new objects' and components' `OnStart` while creating entities, before scene `OnPostLoadLevel`. Initialize per-level state they need in `OnPreLoadLevel`. A first load awaited inside scene `OnStart` has deferred object/component starts instead. See [Level startup order](../reference/level#startup-order-during-loading).
+
 ## Pooled objects
 
 Registered GameObject classes are [pooled](./custom-game-objects#object-pools): `Remove()` returns the object to its pool, and the next `AddGameObject` reuses it without running its constructor again.
@@ -47,7 +51,7 @@ Registered GameObject classes are [pooled](./custom-game-objects#object-pools): 
 
 Persistence belongs to each API separately. A persistent scene does not make its timers, listeners, or GameObjects persistent automatically.
 
-Clearing any scene cancels **all** nonpersistent global `wait` and `waitFrame` calls, even those started by another scene. Cancelled waits never resolve. See [Globals](../reference/globals#waiting).
+Clearing a scene cancels only its own waits. A level load or partial restart preserves waits marked persistent; removing a scene cancels all of its waits. Cancelled waits resolve `false`, allowing `finally` blocks to run. Check the result before continuing gameplay work. See [Scene waits](./scenes#waiting).
 
 ## Global listeners
 

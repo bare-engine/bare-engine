@@ -27,6 +27,26 @@ The second argument is the parent: a layer name, a layer index or another GameOb
 
 **Example:** the [Showcase](https://github.com/bare-engine/bare-showcase)'s [basics demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/basics/src/DemoBasics.ts) adds and rotates a single GameObject.
 
+## Changing the texture
+
+Use `InitTexture(name)` to change an existing object's image by its asset name:
+
+```ts
+await chest.InitTexture('chest_open');
+```
+
+Names follow the [asset paths](./assets): atlas images use their generated names, and images in `public/images/` use paths without the `.webp` extension. The generated `Asset.Image` constants can be used too.
+
+`InitTexture` applies an already cached texture immediately; otherwise it loads and applies the texture asynchronously. It returns a promise for the texture, or `undefined` for the special `NONE` and `NAME` suffixes. Await it when subsequent work needs the new image or dimensions.
+
+`SetTexture(texture)` takes an existing `Texture` object, rather than an asset name, and returns the GameObject for chaining:
+
+```ts
+chest.SetTexture(bare.asset.GetTexture('chest_open'));
+```
+
+`GetTexture` requires the image to be loaded already; use `InitTexture` when it may need loading.
+
 ## Transform
 
 Setters return the object, so you can chain them:

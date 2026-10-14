@@ -119,6 +119,25 @@ A [custom](../guide/custom-game-objects) `ArcadeObject` can override the same th
 
 **Examples:** [Platformer](https://github.com/bare-engine/bare-platformer) coins [are collected on collision](https://github.com/bare-engine/bare-platformer/blob/main/src/components/collectableComponent.ts#L13-L20), and [Shmup](https://github.com/bare-engine/bare-shmup) ships [take damage from bullets](https://github.com/bare-engine/bare-shmup/blob/main/src/components/aliveComponent.ts#L25-L28).
 
+### Filtering solid collision response
+
+`bare.arcade.OnPreCollisionResolve` is a nullable callback receiving the two `ArcadeObject` instances. Return `false` to skip their solid collision response, or `true` to allow it. Collision events have already been dispatched, so filtering the response does not suppress those events.
+
+For example, in a scene with a `player` field, allow the player to swim through water colliders:
+
+```ts
+this.arcade.OnPreCollisionResolve = (a, b) => {
+    const playerTouchesWater =
+        (a === this.player && b.tags.includes('water')) ||
+        (b === this.player && a.tags.includes('water'));
+    return !playerTouchesWater;
+};
+```
+
+The callback is used for solid object collisions after sensor handling; it does not filter sensor contacts or world-boundary responses. It may run more than once for a pair during the solver's iterations, so avoid one-time gameplay effects here.
+
+There is one callback slot per scene's arcade controller. Assigning another replaces it. Combine conditions in one callback, or capture and call the previous callback when adding another filter. Assign `null` to remove it.
+
 ### Collision layers
 
 By default, every object collides with every other object.

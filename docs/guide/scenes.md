@@ -110,6 +110,34 @@ For startup order, restart differences, and ownership of subscriptions and textu
 
 **Examples:** the [Platformer](https://github.com/bare-engine/bare-platformer) [adds its UI scene](https://github.com/bare-engine/bare-platformer/blob/main/src/game.ts#L36) on top of the game, the [RPG](https://github.com/bare-engine/bare-rpg) [goes to a game over scene](https://github.com/bare-engine/bare-rpg/blob/main/src/game.ts#L58-L61) when the player dies, and the RPG [puts its joystick on `bare.uiScene`](https://github.com/bare-engine/bare-rpg/blob/main/src/game.ts#L40-L44).
 
+## Waiting
+
+All waits belong to a scene. In a scene use `this.Wait`; in a component use `this.scene.Wait`.
+
+| Method | Behavior |
+| --- | --- |
+| `Wait(seconds, persistent = false)` | Counts this scene's game time. Stops while the scene is paused or disabled, while the game is paused or unfocused, and at `bare.timeScale = 0`. Follows `timeScale` otherwise. |
+| `WaitFrame(frames = 1, persistent = false)` | Counts this scene's fixed updates. Continuations run after the fixed step's physics and hooks. Frames are rounded up, with a minimum of one. |
+| `WaitRealTime(seconds, persistent = false)` | Counts real time, including while the scene/game is paused, disabled, unfocused or starting. |
+| `CancelWaits(includingPersistent = false)` | Cancels this scene's waits, optionally including persistent ones. |
+
+The three wait methods return `Promise<boolean>`: `true` when completed, `false` when cancelled. Cancellation resumes the awaiting function and runs `finally` blocks. Check the result before continuing gameplay work:
+
+```ts
+if (!await this.scene.Wait(0.3))
+    return;
+
+this.OpenGate();
+```
+
+Here the component defines `OpenGate`. Wait durations must be finite and nonnegative; invalid values throw `RangeError`.
+
+Loading a level or partially restarting a scene cancels its nonpersistent waits. Waits marked persistent survive those operations. Removing a scene, or calling `Clear(true)`, cancels all its waits, including persistent real-time timers. Other scenes' waits are unaffected.
+
+`Wait` and `WaitFrame` only advance once the scene starts updating. Do not await them inside that scene's constructor, `OnAwake` or `OnStart`: startup would wait for updates that cannot begin yet. Use `WaitRealTime` during startup. No scene exists during `StartBare`'s `OnInit`; asynchronous initialization there can await its own resources or a browser timer.
+
+The global `wait`, `waitFrame`, `waitRealTime` and `cancelWaits` helpers have been removed. Replace them with the corresponding scene methods, and check cancellation results.
+
 ## Useful scene methods
 
 | Method | Description |
@@ -119,5 +147,5 @@ For startup order, restart differences, and ownership of subscriptions and textu
 | `LoadLevel(name)` | Load a level into this scene. |
 | `AddLayer(name)` | Add a layer at runtime. |
 | `ScreenToWorld(x, y)` / `WorldToScreen(x, y)` | Convert between screen and world positions. |
-| `Sleep(seconds)` | Pause the scene for a while: `await this.Sleep(1)`. To wait without pausing, use [`wait`](../reference/globals#waiting). |
+| `Sleep(seconds)` | Pause the scene for real-time seconds, then restore its previous pause state. Returns `true` on completion or `false` on cancellation. To wait without pausing, use [`Wait`](#waiting). |
 | `Restart(full?)` | Restart the scene. |
