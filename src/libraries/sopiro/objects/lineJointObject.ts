@@ -1,7 +1,7 @@
 import { keyboardController } from "../../../controllers/keyboardController";
 import { GameMode, Scene } from "../../../globals";
 import { GameObject } from "../../../objects/gameObject";
-import { BareEvent } from "../../../types/bareTypes";
+import { BareEvent, Rectangle } from "../../../types/bareTypes";
 import { Hidden } from "../../../utils/decorators";
 import { SerializeField } from "../../../utils/serializeFields";
 import { Color, Vec2 } from "../../rapid-render";
@@ -136,6 +136,12 @@ class DirectionTargetObject extends GameObject
     {
         super(scene);
         this.CenterPivot();
+    }
+
+    // no texture of its own - the arrow is drawn in OnRenderWorld, so report it here for bounds and the transform tool
+    override GetLocalContentBounds(): Rectangle
+    {
+        return { x: 0, y: 0, width: this.width, height: this.height };
     }
 
     // Holding shift while dragging snaps the direction (angle from the owner) to 15 degree steps.

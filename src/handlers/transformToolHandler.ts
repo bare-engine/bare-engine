@@ -245,31 +245,34 @@ export class TransformToolHandler
         const scene = this.GetScene();
         if (!scene) return;
 
-        const frame = this.GetFrame(this.GetTransformableTargets(this.targets));
-        if (!frame) return;
-
         // Global events are emitted before the scene MouseController receives the same event.
         // Convert the event coordinates directly so grabbing never uses the previous mouse position.
         const mouse = scene.ScreenToWorld(mouseX, mouseY);
         this.dragStartScreenPosition = new Vec2(mouseX, mouseY);
         this.dragActivated = false;
 
-        // Rotation knob takes priority - it sits outside the box, above the top edge.
-        if (this.HitTestRotation(scene, frame, mouse))
+        const frame = this.GetFrame(this.GetTransformableTargets(this.targets));
+        if (frame)
         {
-            this.BeginRotate(frame, mouse);
-            return;
+            // Rotation knob takes priority - it sits outside the box, above the top edge.
+            if (this.HitTestRotation(scene, frame, mouse))
+            {
+                this.BeginRotate(frame, mouse);
+                return;
+            }
+
+            const handle = this.HitTest(scene, frame, mouse);
+            if (handle)
+            {
+                this.BeginResize(handle, frame);
+                return;
+            }
         }
 
-        const handle = this.HitTest(scene, frame, mouse);
-        if (handle)
-        {
-            this.BeginResize(handle, frame);
-            return;
-        }
-
-        // dragging the selection's body moves it in an editor, in-game only the handles transform
-        if (this.EditorOf(scene) && this.FrameContains(frame, mouse))
+        // dragging the selection's body moves it in an editor, in-game only the handles transform.
+        // moving ignores resizeable, so fixed-size targets (eg joints and their handles) move too
+        const moveFrame = this.GetFrame(this.targets);
+        if (moveFrame && this.EditorOf(scene) && this.FrameContains(moveFrame, mouse))
             this.StartMoveFromPointer(scene, mouse, picked);
     };
 
@@ -371,21 +374,19 @@ export class TransformToolHandler
 
         // HOVER: pick the cursor + decide whether to suppress body-drag.
         const frame = this.GetFrame(this.GetTransformableTargets(this.targets));
+        const moveFrame = this.GetFrame(this.targets);
+        const mouse = scene.mouse.world.position;
         let cursor: string | null = null;
 
-        if (frame)
+        if (frame && this.HitTestRotation(scene, frame, mouse))
         {
-            const mouse = scene.mouse.world.position;
-            if (this.HitTestRotation(scene, frame, mouse))
-            {
-                cursor = 'grab';
-            }
-            else
-            {
-                const handle = this.HitTest(scene, frame, mouse);
-                if (handle) cursor = this.CursorFor(handle.name);
-                else if (this.EditorOf(scene) && this.FrameContains(frame, mouse)) cursor = 'move';
-            }
+            cursor = 'grab';
+        }
+        else
+        {
+            const handle = frame ? this.HitTest(scene, frame, mouse) : null;
+            if (handle) cursor = this.CursorFor(handle.name);
+            else if (moveFrame && this.EditorOf(scene) && this.FrameContains(moveFrame, mouse)) cursor = 'move';
         }
 
         this.SetHitboxesActive(cursor == null);
@@ -533,7 +534,7 @@ export class TransformToolHandler
         this.rotating = false;
         this.handle = null;
         this.startMousePosition = new Vec2(mouse.x, mouse.y);
-        this.RecordStarts();
+        this.RecordStarts(this.targets);
         this.movePrimaryObj = primaryObj;
 
         const target = this.starts.length == 1 ? this.starts[0].obj : null;
@@ -656,9 +657,10 @@ export class TransformToolHandler
 
     // ================= GESTURE LIFECYCLE =================
 
-    private RecordStarts(): void
+    // resize/rotate only record the transformable targets, a move passes them all
+    private RecordStarts(targets: GameObject[] = this.GetTransformableTargets(this.targets)): void
     {
-        this.starts = this.GetTransformableTargets(this.targets).map(o => ({
+        this.starts = targets.map(o => ({
             obj: o,
             pos: o.parent ? o.parent.ToGlobal(new Vec2(o.x, o.y)) : new Vec2(o.x, o.y),
             scaleX: o.scale.x,
@@ -831,7 +833,8 @@ export class TransformToolHandler
         if (!scene)
             return false;
 
-        const frame = this.GetFrame(this.GetTransformableTargets(this.targets));
+        // all targets: the body moves fixed-size targets too
+        const frame = this.GetFrame(this.targets);
         if (!frame)
             return false;
 
