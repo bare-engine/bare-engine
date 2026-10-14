@@ -1061,6 +1061,9 @@ export class Scene implements SceneI
     AddGameObject<T extends GameObject = GameObject>(input?: NonNullable<T["entity"]> | string | GameObject | (new (...args: any[]) => T) | Texture, parent?: int | string | GameObject): T;
     AddGameObject<T extends GameObject = GameObject>(input?: NonNullable<T["entity"]> | string | GameObject | (new (...args: any[]) => T) | Texture, parent: int | string | GameObject = "objects"): T
     {
+        if (__DEV__ && arguments.length > 0 && input === undefined)
+            console.warn(`AddGameObject(undefined): the image or prefab name is undefined, so the object is empty. Check the name, such as an Asset.Image.X that src/generated/assets.ts doesn't have.`);
+
         // CREATE
         {
             var gameObject: GameObject;

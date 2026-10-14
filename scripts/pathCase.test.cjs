@@ -1,5 +1,6 @@
-// Tests for project paths whose drive letter case differs (c:\ vs C:\)
-// (vite/plugins.cjs, vite/controllerProxyTransformer.js).
+// Tests for project paths whose drive letter case differs (c:\ vs C:\), and for the dev
+// server noticing an assets.ts that something else regenerated (vite/plugins.cjs,
+// vite/controllerProxyTransformer.js).
 // Run: node --test scripts/pathCase.test.cjs
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -8,7 +9,7 @@ const os = require('node:os');
 const path = require('node:path');
 const ts = require('typescript');
 const createControllerProxyTransformer = require('../vite/controllerProxyTransformer');
-const { bareGeneratedAssetsPlugin } = require('../vite/plugins.cjs');
+const { bareGeneratedAssetsPlugin, generateAssets } = require('../vite/plugins.cjs');
 
 const windowsOnly = { skip: process.platform !== 'win32' && 'drive letters only exist on Windows' };
 
@@ -89,6 +90,25 @@ test('a new image reloads the game with the new assets.ts', () => {
         assert.equal(invalidated.length, 1);
         assert.equal(reloads.length, 1);
         assert.match(fs.readFileSync(path.join(root, 'src/generated/assets.ts'), 'utf8'), /COIN: "coin"/);
+    });
+});
+
+test('an assets.ts written by something else (npm run build:assets) still reaches the game', () => {
+    withDevServer(({ root, handlers, invalidated, reloads }) => {
+        const image = addImage(root, 'coin');
+        // build:assets regenerates the file before the dev server's watcher gets to it
+        generateAssets(root, path.join(root, 'src/generated/assets.ts'));
+        handlers.add(image);
+        assert.equal(invalidated.length, 1, 'the cached old assets.ts must be dropped');
+        assert.equal(reloads.length, 1);
+    });
+});
+
+test('an unrelated change leaves the served assets.ts alone', () => {
+    withDevServer(({ root, handlers, invalidated, reloads }) => {
+        handlers.change(path.join(root, 'public/data/settingsData.json'));
+        assert.equal(invalidated.length, 0);
+        assert.equal(reloads.length, 0);
     });
 });
 

@@ -2295,6 +2295,29 @@ function bareGeneratedAssetsPlugin(options = {}) {
             const outputNorm = normalize(outputPath);
             const outputResolved = normalize(path.resolve(outputPath));
             const sources = [normalize(settingsPath), ...watchDirs.map(normalize)];
+
+            // assets.ts is excluded from the dev watcher (vite.config server.watch.ignored) to avoid
+            // reacting to our own writes, so Vite won't HMR it on its own. Compare against what Vite
+            // serves, not against the disk: `npm run build:assets`, a git pull or a second dev server
+            // can write the new file first, and generateAssets then finds nothing to change.
+            const readOutput = () => fs.existsSync(outputPath) ? fs.readFileSync(outputPath, "utf8") : "";
+            let servedContent = readOutput();
+            // regenerates assets.ts and drops Vite's cached copy when it differs; true when it did
+            const refreshServedAssets = () => {
+                generateAssets(projectRoot, outputPath, imageGlobs);
+                const current = readOutput();
+                if (current === servedContent) {
+                    return false;
+                }
+                servedContent = current;
+                const mods = server.moduleGraph.getModulesByFile(outputResolved);
+                if (mods) {
+                    for (const mod of mods) {
+                        server.moduleGraph.invalidateModule(mod);
+                    }
+                }
+                return true;
+            };
             const regenerate = (filePath) => {
                 const norm = normalize(filePath);
                 if (norm === outputNorm) {
@@ -2307,16 +2330,8 @@ function bareGeneratedAssetsPlugin(options = {}) {
                     return;
                 }
                 const isSource = sources.some(src => norm === src || norm.startsWith(src + "/"));
-                if (isSource && generateAssets(projectRoot, outputPath, imageGlobs)) {
-                    // assets.ts is excluded from the dev watcher (vite.config server.watch.ignored)
-                    // to avoid reacting to our own writes, so Vite won't HMR it on its own. Drop its
-                    // cached transform and full-reload so the running game picks up the new module.
-                    const mods = server.moduleGraph.getModulesByFile(outputResolved);
-                    if (mods) {
-                        for (const mod of mods) {
-                            server.moduleGraph.invalidateModule(mod);
-                        }
-                    }
+                if (isSource && refreshServedAssets()) {
+                    // full-reload so the running game picks up the new module.
                     // Keep the regenerated assets.ts on disk (correct for the next real reload),
                     // but skip the full-reload while a skipReload save is in flight - the running
                     // game already applied the entity change in-memory via the plugin handler -
@@ -2328,18 +2343,7 @@ function bareGeneratedAssetsPlugin(options = {}) {
                 }
             };
 
-            regenerateGeneratedAssets = () => {
-                if (!generateAssets(projectRoot, outputPath, imageGlobs)) {
-                    return false;
-                }
-                const mods = server.moduleGraph.getModulesByFile(outputResolved);
-                if (mods) {
-                    for (const mod of mods) {
-                        server.moduleGraph.invalidateModule(mod);
-                    }
-                }
-                return true;
-            };
+            regenerateGeneratedAssets = refreshServedAssets;
 
             server.watcher.on("add", regenerate);
             server.watcher.on("unlink", regenerate);

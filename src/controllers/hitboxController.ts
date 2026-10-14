@@ -738,6 +738,9 @@ export class HitboxController
     {
         var rect = this.GetLocalRect(gameobject);
 
+        if (rect.x1 === 0 && rect.y1 === 0 && rect.x2 === 0 && rect.y2 === 0 && !gameobject.texture && !gameobject.texturePromise)
+            throw new Error(`Cannot add hitbox to "${gameobject.name}": it has no texture and no size. If it was made with AddGameObject(x) or AddChild(x), check that x isn't undefined.`);
+
         if (rect.x1 === 0 && rect.y1 === 0 && rect.x2 === 0 && rect.y2 === 0)
             throw new Error("Cannot add hitbox to an object with no size. GameObject likely has not loaded its texture yet. Load the texture before adding the GameObject, or use this.obj.WhenTextureLoaded(...) to queue a callback.");
 

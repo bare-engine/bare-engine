@@ -1927,7 +1927,11 @@ export class GameObject
         //this.cachedChildrenWidth = -1;
         //this.cachedChildrenHeight = -1;
 
-        return this.scene.AddGameObject<T>(input, this);
+        if (__DEV__ && arguments.length > 0 && input === undefined)
+            console.warn(`AddChild(undefined) on "${this.name}": the image or prefab name is undefined, so the child is an empty object. Check the name, such as an Asset.Image.X that src/generated/assets.ts doesn't have.`);
+
+        // null, not undefined, so AddGameObject doesn't warn about it again
+        return this.scene.AddGameObject<T>(input ?? null as any, this);
     }
 
     RemoveChild(child: GameObject)
