@@ -85,7 +85,10 @@ export class KeyboardController
 
             bare.SendEvent(BareEvent.key_down, { key: key, allKeys: Array.from(this.keysPressed) });
 
-            event.preventDefault();
+            // let the browser open devtools (f12, ctrl+shift+i/j/c)
+            const devtools = __DEV__ && (event.key === "F12" || (event.ctrlKey && event.shiftKey && ["KeyI", "KeyJ", "KeyC"].includes(event.code)));
+            if (!devtools)
+                event.preventDefault();
         });
 
         // KEY UP
