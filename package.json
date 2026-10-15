@@ -21,6 +21,7 @@
   "license": "MIT",
   "files": [
     "config",
+    "!config/node_modules",
     "docs/guide",
     "docs/reference",
     "features/fixtures/src/docExamples",
