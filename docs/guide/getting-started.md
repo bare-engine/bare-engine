@@ -18,7 +18,7 @@ This copies the [Bare Template](https://github.com/bare-engine/bare-template) in
 
 Ctrl-click the localhost URL shown in the terminal to open your game.
 
-You should see a rotating gear. Keep the terminal running while you edit; saving `src/game.ts` restarts the game through Vite's hot reload.
+You should see a rotating gear. Keep the terminal running while you edit.
 
 ## Engine versions
 

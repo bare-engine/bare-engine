@@ -24,11 +24,11 @@ Learn more here: https://youtu.be/8Kv4FF7yNAs
 
 ## Get started
 
-1. `npm create bare-game@latest my-game`: start your project from the [Bare Template](https://github.com/bare-engine/bare-template)
+1. [Create Your Game](https://bare-engine.github.io/bare-engine/guide/getting-started): `npm create bare-game@latest my-game`
 2. [Chrome Extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) ([Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)): inspect and edit your game while it runs
 3. [Bare Showcase](https://github.com/bare-engine/bare-showcase): a small demo for each feature
 4. [Examples](https://github.com/bare-engine/bare-example-games): complete example games
-5. [Documentation](https://bare-engine.github.io/bare-engine/guide/getting-started): guides and reference
+5. [Documentation](https://bare-engine.github.io/bare-engine/guide/project-structure): guides and reference
    
 ## Community
 
