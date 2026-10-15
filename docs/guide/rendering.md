@@ -1,6 +1,6 @@
 # Rendering
 
-Most of the time you just add GameObjects and they draw themselves. This page covers the extras: shaders, masks, drawing shapes and render textures.
+Most of the time you just add GameObjects and they draw themselves. This page covers the extras: shaders, masks, drawing shapes and render textures. For ground and walls made of tiles, see [Tile Maps](./tilemaps).
 
 ## Shaders
 

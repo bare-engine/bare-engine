@@ -23,6 +23,7 @@ import { HierarchyAdvancedTest } from "./testScenes/hierarchyAdvancedTest";
 import { LevelSaveTest } from "./testScenes/levelSaveTest";
 import { SerializeModesTest } from "./testScenes/serializeModesTest";
 import { TextObjectTest } from "./testScenes/textObjectTest";
+import { TileMapTest } from "./testScenes/tileMapTest";
 import { SettingsEditingTest } from "./testScenes/settingsEditingTest";
 import { GameSpeedTest } from "./testScenes/gameSpeedTest";
 import { SceneWaitTest } from "./testScenes/sceneWaitTest";
@@ -70,6 +71,7 @@ class MainGame extends Scene
         LevelSaveTest,
         SerializeModesTest,
         TextObjectTest,
+        TileMapTest,
         SettingsEditingTest,
         GameSpeedTest,
         SceneWaitTest,

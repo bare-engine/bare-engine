@@ -134,7 +134,7 @@ Methods whose name appears as a string anywhere in your code are kept automatica
 
 ## autoRegisterClasses
 
-Components exported from files in `src/` are registered with the engine automatically, as are components named in `settingsData.json`, built-in components named in a `components` object in your code, exported GameObject classes marked `@InspectorBaseClass`, and every `baseClass` named in `settingsData.json` or in your code: your own exported class, `TextObject`, `Button`, or the physics controller for physics classes like `ArcadeObject`. Children in `settingsData.json` count too. Set to `false` to register them yourself with `bare.AddClass(MyComponent)`.
+Components exported from files in `src/` are registered with the engine automatically, as are components named in `settingsData.json`, built-in components named in a `components` object in your code, exported GameObject classes marked `@InspectorBaseClass`, and every `baseClass` named in `settingsData.json`, in a level file or in your code: your own exported class, `TextObject`, `Button`, `TileMap`, or the physics controller for physics classes like `ArcadeObject`. Children in `settingsData.json` count too. Set to `false` to register them yourself with `bare.AddClass(MyComponent)`.
 
 ```json
 "autoRegisterClasses": false

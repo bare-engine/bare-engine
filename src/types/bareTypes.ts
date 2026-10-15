@@ -3,6 +3,7 @@ import type { GameObject } from "../objects/gameObject";
 import type { ArcadeObjectEntity } from "../objects/arcadeObject";
 import type { ButtonEntity } from "../objects/button";
 import type { TextObjectEntity } from "../objects/textObject";
+import type { TileMapEntity } from "../objects/tileMap";
 import type { CircleEntity } from "../libraries/sopiro/circle";
 import type { PolygonEntity } from "../libraries/sopiro/polygon";
 import type { RigidBody } from "../libraries/sopiro/rigidbody";
@@ -181,6 +182,7 @@ export interface EntityTypes
     Polygon: PolygonEntity;
     Button: ButtonEntity;
     TextObject: TextObjectEntity;
+    TileMap: TileMapEntity;
 }
 
 type UnionToIntersection<U> = (U extends any ? (u: U) => void : never) extends (i: infer I) => void ? I : never;

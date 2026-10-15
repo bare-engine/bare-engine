@@ -58,6 +58,7 @@ export default defineConfig({
                     { text: "Events", link: "/guide/events" },
                     { text: "Text & UI", link: "/guide/text-and-ui" },
                     { text: "Rendering", link: "/guide/rendering" },
+                    { text: "Tile Maps", link: "/guide/tilemaps" },
                     { text: "Animations", link: "/guide/animations" },
                     { text: "Particles", link: "/guide/particles" },
                     { text: "Resolution & Pixel Art", link: "/guide/resolution" },

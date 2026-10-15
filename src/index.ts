@@ -9,6 +9,7 @@ export { Button, type ButtonEntity } from "./objects/button";
 export { GameObject } from "./objects/gameObject";
 export type { GlobalTransform } from "./objects/gameObject";
 export { TextObject, type TextObjectEntity } from "./objects/textObject";
+export { TileMap, type TileMapEntity, type TileTransform } from "./objects/tileMap";
 
 export { Scene } from "./scenes/scene";
 export type { SoundJsSound } from "./libraries/soundjs/index";
