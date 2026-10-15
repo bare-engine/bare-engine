@@ -142,6 +142,16 @@ test('a baseClass in code registers too', () => {
     });
 });
 
+test('a baseClass in a level file registers too, also in a subfolder', () => {
+    withProject({
+        'src/game.ts': GAME(),
+        'public/data/levels/level1.json': { name: 'level1', entitiesByLayer: { ground: [{ baseClass: 'TileMap', tiles: [[0]] }] } },
+        'public/data/levels/caves/cave1.json': { name: 'cave1', entitiesByLayer: { objects: [{ baseClass: 'ArcadeObject' }] } },
+    }, root => {
+        assert.deepEqual(registrations(root), { ArcadePhysicsController: 'bare-engine/arcade', TileMap: 'bare-engine' });
+    });
+});
+
 test('project GameObject classes register when named as a baseClass, with the physics controller they extend', () => {
     withProject({
         'src/game.ts': GAME(),

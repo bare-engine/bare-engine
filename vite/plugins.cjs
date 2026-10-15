@@ -239,6 +239,7 @@ function bareAutoRegisterClassesPlugin(options = {}) {
     const projectRoot = options.projectRoot || process.cwd();
     const srcDir = normalize(path.resolve(options.srcDir || path.join(projectRoot, "src")));
     const settingsDataPath = normalize(path.resolve(path.join(projectRoot, "public/data/settingsData.json")));
+    const levelsDir = normalize(path.resolve(path.join(projectRoot, "public/data/levels")));
 
     const gameObjectBases = new Set([
         ...ENGINE_GAMEOBJECT_BASES,
@@ -427,9 +428,47 @@ function bareAutoRegisterClassesPlugin(options = {}) {
         return { components, baseClasses };
     }
 
+    // baseClasses named in level files, eg a generated level with a TileMap that no prefab or code names.
+    // Levels can be big, so a regex instead of parsing them, cached until the file changes
+    const levelBaseClassCache = new Map();
+    function getLevelBaseClasses() {
+        const names = new Set();
+        const visitDir = (dir) => {
+            let entries;
+            try {
+                entries = fs.readdirSync(dir, { withFileTypes: true });
+            } catch {
+                return;
+            }
+            for (const entry of entries) {
+                const filePath = path.join(dir, entry.name);
+                if (entry.isDirectory()) {
+                    visitDir(filePath);
+                    continue;
+                }
+                if (!entry.name.endsWith(".json")) continue;
+                let cached = levelBaseClassCache.get(filePath);
+                try {
+                    const mtimeMs = fs.statSync(filePath).mtimeMs;
+                    if (!cached || cached.mtimeMs !== mtimeMs) {
+                        const source = fs.readFileSync(filePath, "utf8");
+                        cached = { mtimeMs, names: new Set([...source.matchAll(/"baseClass"\s*:\s*"([A-Za-z_$][\w$]*)"/g)].map(m => m[1])) };
+                        levelBaseClassCache.set(filePath, cached);
+                    }
+                } catch {
+                    continue;
+                }
+                for (const name of cached.names) names.add(name);
+            }
+        };
+        visitDir(levelsDir);
+        return names;
+    }
+
     function computeSettingsComponentSignature() {
         const { components, baseClasses } = getSettingsReferences();
-        return [...components].sort().join(",") + "|" + [...baseClasses].sort().join(",");
+        const levelBaseClasses = getLevelBaseClasses();
+        return [...components].sort().join(",") + "|" + [...baseClasses].sort().join(",") + "|" + [...levelBaseClasses].sort().join(",");
     }
 
     // Every component key in settingsData.json, with where it's used, eg
@@ -564,10 +603,10 @@ function bareAutoRegisterClassesPlugin(options = {}) {
                 seen.add(className);
             }
         }
-        // Classes named as a baseClass in settingsData.json or in code. A project GameObject class
+        // Classes named as a baseClass in settingsData.json, in a level or in code. A project GameObject class
         // registers without @InspectorBaseClass then; an engine class registers what it needs,
         // eg ArcadeObject its physics controller - also for a project class extending it.
-        const baseClasses = new Set(settingsReferences.baseClasses);
+        const baseClasses = new Set([...settingsReferences.baseClasses, ...getLevelBaseClasses()]);
         for (const names of fileBaseClasses.values()) {
             for (const name of names) baseClasses.add(name);
         }
@@ -650,7 +689,7 @@ function bareAutoRegisterClassesPlugin(options = {}) {
 
     function onWatcherEvent(filePath, kind) {
         filePath = normalize(path.resolve(filePath));
-        if (filePath === settingsDataPath) {
+        if (filePath === settingsDataPath || (filePath.startsWith(`${levelsDir}/`) && filePath.endsWith(".json"))) {
             // Only adding/removing a referenced component changes which classes get
             // registered. Editing anything else in settingsData (positions, values,
             // layers, ...) leaves registration identical, so skip the reload to avoid
@@ -718,6 +757,9 @@ function bareAutoRegisterClassesPlugin(options = {}) {
                 server.watcher.add(srcDir);
             }
             server.watcher.add(settingsDataPath);
+            if (fs.existsSync(levelsDir)) {
+                server.watcher.add(levelsDir);
+            }
             server.watcher.on("add", (p) => onWatcherEvent(p, "add"));
             server.watcher.on("change", (p) => onWatcherEvent(p, "change"));
             server.watcher.on("unlink", (p) => onWatcherEvent(p, "unlink"));
