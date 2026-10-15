@@ -3,7 +3,7 @@ import { Color } from "../libraries/rapid-render";
 import type { GameObject } from "../objects/gameObject";
 import { Shader } from "../types/bareTypes";
 
-export type OutlineShaderPayload = { color: Color, width: number };
+export type OutlineShaderPayload = { color: Color | string, width: number };
 
 export class OutlineShader extends Shader
 {
@@ -52,7 +52,7 @@ export class OutlineShader extends Shader
 
         super(outlineVertexShaderSource, outlineFragmentShaderSource);
 
-        this.color = args.color;
+        this.color = typeof args.color === "string" ? Color.fromHex(args.color) : args.color;
         this.width = args.width;
 
         this.SetUniforms({

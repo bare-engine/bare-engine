@@ -3,7 +3,7 @@
 // Core
 export { BareEngine } from "./bareEngine";
 export { Bare } from "./types/bare";
-export { GameMode, globalEvents } from "./globals";
+export { GameMode, globalEvents, MakePathForEntity } from "./globals";
 export { MakePath, StartBare } from "./main";
 export { Button, type ButtonEntity } from "./objects/button";
 export { GameObject } from "./objects/gameObject";
@@ -25,6 +25,7 @@ export { KeyboardController, keyboardController } from "./controllers/keyboardCo
 export { MouseController } from "./controllers/mouseController";
 export { ObjectController } from "./controllers/objectController";
 export { ParticleController } from "./controllers/particleController";
+export type { ParticleData, ParticleEmitterOptions } from "./controllers/particleController";
 export { SceneController } from "./controllers/sceneController";
 export { TweenController, TweenTo } from "./controllers/tweenController";
 
@@ -102,6 +103,8 @@ export type {
 // export * from "./libraries/rapid-render/interface";
 // export * from "./libraries/rapid-render/math";
 // export { Particle, ParticleEmitter } from "./libraries/rapid-render/particle";
+export { ParticleEmitter } from "./libraries/rapid-render";
+export type { IParticleOptions, IParticleAnimation } from "./libraries/rapid-render";
 // export { graphicAttributes, spriteAttributes } from "./libraries/rapid-render/regions/attributes";
 // export * from "./libraries/rapid-render/render";
 // export { default as Rapid } from "./libraries/rapid-render/render";

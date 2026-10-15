@@ -31,7 +31,7 @@ export class LevelHandler
     
     @InspectorField
     get backgroundColor():Color | undefined {return this.currentLevel ? rapid.backgroundColor : undefined;}
-    set backgroundColor(value:Color) {bare.SetBackgroundColor(value);}
+    set backgroundColor(value:Color | string) {bare.SetBackgroundColor(value);}
 
     // YOUR OWN VALUES FOR THE LEVEL. SAVED WITH IT WHEN THE LEVEL EDITOR SAVES
     @InspectorField

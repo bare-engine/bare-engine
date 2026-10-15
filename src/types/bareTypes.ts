@@ -14,7 +14,7 @@ export type Scalar = (number | string | boolean);
 
 export type BareOptions =
 {
-    backgroundColor?: Color;
+    backgroundColor?: Color | string;
     resolution?: ResolutionOptions,
     antiAlias?: boolean;
     textureFilter?: TextureFilterMode;

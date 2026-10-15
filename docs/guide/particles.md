@@ -128,6 +128,31 @@ Each one takes `start` and `end`, or `start` and `delta`, the change per second.
 }
 ```
 
+## Storing an emitter
+
+To create an emitter once and fire it many times, keep it in a field. Its type is `ParticleEmitter`:
+
+```ts
+import { Scene, Vec2, type ParticleEmitter } from 'bare-engine';
+
+export class Game extends Scene
+{
+    sparks!: ParticleEmitter;
+
+    override OnStart()
+    {
+        this.sparks = bare.particle.CreateEmitter({ texture: 'spark', life: 0.5, emitRate: 20 });
+    }
+
+    Explode(x: number, y: number)
+    {
+        bare.particle.OneShot(this.sparks, { position: new Vec2(x, y) });
+    }
+}
+```
+
+The settings you pass to `CreateEmitter` are typed `ParticleData`, and the options of `Add` are `ParticleEmitterOptions`.
+
 ## bare.particle
 
 | Method | Description |

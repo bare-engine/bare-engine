@@ -580,13 +580,16 @@ export class BareEngine
         rapid.canvas.style.top = '0px';
     }
     
-    SetBackgroundColor(backgroundColor: Color)
+    SetBackgroundColor(backgroundColor: Color | string)
     {
-        rapid.backgroundColor = backgroundColor;
+        rapid.backgroundColor = typeof backgroundColor === 'string' ? Color.fromHex(backgroundColor) : backgroundColor;
     }
     
-    SetBackgroundColorHTML(backgroundColor: Color)
+    SetBackgroundColorHTML(backgroundColor: Color | string)
     {
+        if (typeof backgroundColor === 'string')
+            backgroundColor = Color.fromHex(backgroundColor);
+
         const pageColor = backgroundColor.a == 255 ? `rgb(${backgroundColor.r}, ${backgroundColor.g}, ${backgroundColor.b})` : "";
         document.documentElement.style.backgroundColor = pageColor;
         document.body.style.backgroundColor = pageColor;

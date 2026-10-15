@@ -476,7 +476,8 @@ class Texture {
 export interface IRenderTextureOptions extends ITextureOptions {
     width: number;
     height: number;
-    clearColor?: Color;
+    /** A `Color` or a hex string. */
+    clearColor?: Color | string;
 }
 
 /**
@@ -496,7 +497,7 @@ class RenderTexture extends Texture {
         super();
         this.gl = render.gl;
 
-        this.clearColor = options.clearColor ?? Color.Transparent;
+        this.clearColor = typeof options.clearColor === "string" ? Color.fromHex(options.clearColor) : options.clearColor ?? Color.Transparent;
 
         const width = Math.max(Math.round(options.width), 1);
         const height = Math.max(Math.round(options.height), 1);

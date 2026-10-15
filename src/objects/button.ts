@@ -8,7 +8,7 @@ import { SerializeField } from "../utils/serializeFields";
 import { GameObject } from "./gameObject";
 
 interface TextOptions extends ITextOptions, ButtonHandlers<Button> {
-    buttonColor?: Color;
+    buttonColor?: Color | string;
     margin?: number;
     minWidth?: number;
     cornerRadius?: number;
@@ -46,8 +46,11 @@ export class Button extends GameObject
     get textColor(): Color {return Color.fromHex(this.textTexture.style.fill as string ?? "#ffffff");}
     set textColor(value: Color | string) {this.textTexture.style.fill = typeof value === "string" ? value : value.toHex(); this.UpdateText();}
 
+    private _buttonColor = Color.fromHex('#000000');
+
     @SerializeField(GameMode.Edit)
-    buttonColor: Color;
+    get buttonColor(): Color {return this._buttonColor;}
+    set buttonColor(value: Color | string) {this._buttonColor = typeof value === "string" ? Color.fromHex(value) : value;}
 
     private _margin = 10;
 
@@ -79,7 +82,7 @@ export class Button extends GameObject
         this.margin = options?.margin ?? 10;
         this.minWidth = options?.minWidth ?? 0;
         this.cornerRadius = options?.cornerRadius ?? 0;
-        this.buttonColor = options?.buttonColor || Color.fromHex('#000000');
+        this.buttonColor = options?.buttonColor || '#000000';
 
         this.textTexture = bare.texture.createTextTexture({
             fontSize: 22,

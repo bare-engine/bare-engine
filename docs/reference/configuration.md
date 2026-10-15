@@ -15,7 +15,7 @@ StartBare(Game, {
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `backgroundColor` | renderer startup color | Canvas background color, as a `Color`. Set it explicitly for a predictable appearance. It doesn't color the page around the canvas; use [`bare.SetBackgroundColorHTML`](./bare#methods) for that. |
+| `backgroundColor` | renderer startup color | Canvas background color, as a `Color` or hex string. Set it explicitly for a predictable appearance. It doesn't color the page around the canvas; use [`bare.SetBackgroundColorHTML`](./bare#methods) for that. |
 | `resolution` | full window | Render size, see below. |
 | `antiAlias` | `true` | Smooth edges. |
 | `textureFilter` | `LINEAR` | Use `NEAREST` for pixel art. |

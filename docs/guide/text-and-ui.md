@@ -66,12 +66,12 @@ A text object that's removed, and doesn't go back to an [object pool](./custom-g
 `Button` is a text button with a background:
 
 ```ts
-import { Button, Color } from 'bare-engine';
+import { Button } from 'bare-engine';
 
 const play = new Button(this, {
     text: 'Play',
     fontSize: 28,
-    buttonColor: Color.fromHex('#3060c0'),
+    buttonColor: '#3060c0',
     cornerRadius: 8,
     margin: 16,
     OnPress: () => bare.scene.Goto(Game),
