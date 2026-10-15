@@ -1,7 +1,7 @@
 import { defineConfig } from "vitepress";
 
 // the only copy of the discord invite in the docs; pages link to it as [Discord](discord:)
-const discord = "https://discord.gg/zq3Qh45JE";
+const discord = "https://discord.gg/pDevvfR4rM";
 
 export default defineConfig({
     title: "Bare Engine",

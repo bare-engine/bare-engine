@@ -32,7 +32,7 @@ Learn more here: https://youtu.be/8Kv4FF7yNAs
    
 ## Community
 
-Questions and bug reports are welcome on [Discord](https://discord.gg/zq3Qh45JE).
+Questions and bug reports are welcome on [Discord](https://discord.gg/pDevvfR4rM).
 
 ## Video
 https://github.com/user-attachments/assets/0ef548b4-dace-4182-8b51-a7800b6c325c
