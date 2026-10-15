@@ -40,7 +40,7 @@ To move to a newer release, run:
 npm run update-engine
 ```
 
-This moves to the newest 1.x release, which won't break your game. A new major version (1.x to 2.0) can change how things work: read the [release notes](https://github.com/bare-engine/bare-engine/releases) first, then raise the version in `"bare-engine"` in `package.json` to allow it.
+This moves to the newest 1.x release, which won't break your game. A new major version (1.x to 2.0) can change how things work, and comes with [release notes](https://github.com/bare-engine/bare-engine/releases) that list what changed. To move to it, raise the version in `"bare-engine"` in `package.json`.
 
 ## Your first scene
 

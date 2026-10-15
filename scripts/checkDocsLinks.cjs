@@ -21,7 +21,7 @@ const repoFolders = {
     "bare-platformer": "BarePlatformer",
     "bare-shmup": "BareShmup",
     "bare-rpg": "BareRPG",
-    "bare-trust": "BareTrust",
+    "bare-vibes": "BareVibes",
     "bare-showcase": "BareDemos",
     "bare-resolution-demo": "BareResolutionDemo",
     "bare-template": "BareTemplate",

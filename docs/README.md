@@ -26,7 +26,7 @@ git clone https://github.com/bare-engine/bare-template BareTemplate
 git clone https://github.com/bare-engine/bare-platformer BarePlatformer
 git clone https://github.com/bare-engine/bare-shmup BareShmup
 git clone https://github.com/bare-engine/bare-rpg BareRPG
-git clone https://github.com/bare-engine/bare-trust BareTrust
+git clone https://github.com/bare-engine/bare-vibes BareVibes
 git clone https://github.com/bare-engine/bare-showcase BareDemos
 git clone https://github.com/bare-engine/bare-resolution-demo BareResolutionDemo
 ```
