@@ -1174,12 +1174,12 @@ export class GameObject
     @SerializeField(GameMode.Edit)
     childrenInheritInnerTransform: boolean = true;
 
+    static childrenAtPivotDefault: boolean = false;
+
     // false: a child at (0, 0) sits on this object's texture top left (children move along when the
     // pivot changes). true: it sits on the pivot point, so on this object's position, like Pixi's anchor.
     @SerializeField(GameMode.Edit)
     childrenAtPivot: boolean = GameObject.childrenAtPivotDefault;
-
-    static childrenAtPivotDefault: boolean = false;
 
     @SerializeField(GameMode.Edit)
     persistent: boolean = false;

@@ -24,7 +24,8 @@ export interface ArcadeObjectEntity extends Entity
     continuous?: boolean;
     oneWay?: boolean;
     hitboxInheritsInnerTransform?: boolean;
-    hitboxType?: "Rectangle" | "Circle";
+    // (string & {}) so an imported settingsData.json, whose strings are typed string, still fits; keeps autocomplete
+    hitboxType?: "Rectangle" | "Circle" | (string & {});
     hitbox?: Rectangle2Vec | string;
     hitboxRadius?: number;
     pivotBasedOnHitbox?: Position | string;
