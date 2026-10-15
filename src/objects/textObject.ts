@@ -11,10 +11,13 @@ export interface TextObjectEntity extends Entity
 {
     text?: string;
     fontSize?: number;
+    fontFamily?: string;
+    fontWeight?: string;
     align?: "left" | "center" | "right";
     fill?: Color | string;
     stroke?: Color | string;
     strokeThickness?: number;
+    lineHeight?: number;
 }
 
 export class TextObject extends GameObject
@@ -33,6 +36,15 @@ export class TextObject extends GameObject
     set fontSize(value:number) {this.textTexture.style.fontSize = value; this.UpdateText();}
 
     @SerializeField(GameMode.Edit)
+    get fontFamily(): string {return this.textTexture.style.fontFamily ?? "Arial";}
+    set fontFamily(value: string) {this.textTexture.style.fontFamily = value; this.UpdateText();}
+
+    @SerializeField(GameMode.Edit)
+    @Dropdown(["normal", "bold"])
+    get fontWeight(): string {return this.textTexture.style.fontWeight ?? "normal";}
+    set fontWeight(value: string) {this.textTexture.style.fontWeight = value; this.UpdateText();}
+
+    @SerializeField(GameMode.Edit)
     @Dropdown(["left", "center", "right"])
     get align():string | undefined {return this.textTexture.style.align;}
     set align(value:"left" | "center" | "right") {this.textTexture.style.align = value; this.UpdateText();}
@@ -48,7 +60,12 @@ export class TextObject extends GameObject
     @SerializeField(GameMode.Edit) @Limit(0, Infinity)
     get strokeThickness(): number {return this.textTexture.style.strokeThickness ?? 0;}
     set strokeThickness(value: number) {this.textTexture.style.strokeThickness = value; this.UpdateText();}
-    
+
+    // Line spacing as a multiple of fontSize
+    @SerializeField(GameMode.Edit) @Limit(0, Infinity)
+    get lineHeight(): number {return this.textTexture.style.lineHeight ?? 1;}
+    set lineHeight(value: number) {this.textTexture.style.lineHeight = value; this.UpdateText();}
+
     declare texture: TextTexture; // always the text texture, set in the constructor
 
     override get specialMap(): Record<string, (obj: GameObject, value: any) => void>

@@ -104,6 +104,18 @@ export class TextObjectTest extends Scene
         styled.stroke = "#0000ff";
         styled.strokeThickness = 3;
         c.check(styled.stroke.toHex() === "#0000ffff" && styled.strokeThickness === 3, "stroke and strokeThickness should be set");
+        styled.SetText("a\nb");
+        const spaced = styled.textTexture.height;
+        styled.lineHeight = 2;
+        c.check(styled.lineHeight === 2 && styled.textTexture.height > spaced, "lineHeight should spread the lines: " + spaced + " -> " + styled.textTexture.height);
+        // Narrow letters get much wider in a monospace font
+        styled.SetText("iiiiiiiiii");
+        const proportional = styled.textTexture.width;
+        styled.fontFamily = "monospace";
+        c.check(styled.fontFamily === "monospace" && styled.textTexture.width > proportional,
+            "fontFamily should re-render the text: " + proportional + " -> " + styled.textTexture.width);
+        styled.fontWeight = "bold";
+        c.check(styled.fontWeight === "bold", "fontWeight should be set");
         styled.align = "right";
         c.check(styled.align === "right", "align should be set");
 
