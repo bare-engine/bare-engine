@@ -10,7 +10,7 @@ Learn more here: https://youtu.be/8Kv4FF7yNAs
 
 ## Features
 
-- Small minimum size: 38kb gzip
+- Small minimum size: 40kb gzip
 - Fast loading time ([Benchmark](https://github.com/bare-engine/bare-benchmarks))
 - Easy asset streaming
 - In-game level editor
