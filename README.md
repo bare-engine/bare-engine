@@ -20,13 +20,14 @@ Learn more here: https://youtu.be/8Kv4FF7yNAs
 - Save/load levels
 - Fast rendering ([Rapid](https://github.com/Nightre/Rapid.js))
 - Arcade and rigidbody physics
+- Works well with AI coding agents ([Bare Vibes](https://github.com/bare-engine/bare-vibes))
 
 ## Get started
 
 1. [Bare Template](https://github.com/bare-engine/bare-template): start your project
 2. [Chrome Extension](https://chromewebstore.google.com/detail/bare-engine/dbohigkcdpdnchgaffmofeoffnpkmphb) ([Firefox](https://addons.mozilla.org/en-GB/firefox/addon/bare-engine/)): inspect and edit your game while it runs
 3. [Bare Showcase](https://github.com/bare-engine/bare-showcase): a small demo for each feature
-4. [Examples](https://bare-engine.github.io/bare-engine/guide/examples): complete example games
+4. [Examples](https://github.com/bare-engine/bare-example-games): complete example games
 5. [Documentation](https://bare-engine.github.io/bare-engine/): guides and reference
    
 ## Community
