@@ -19,6 +19,13 @@
   },
   "description": "Bare Game Engine - Build for Web",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bare-engine/bare-engine.git"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "files": [
     "config",
     "!config/node_modules",
