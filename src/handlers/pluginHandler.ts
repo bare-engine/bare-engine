@@ -3244,7 +3244,7 @@ export class PluginHandler
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ levelPath: levelPath, levelData: level, skipReload: true })
                     });
-                    console.log(`updated reference in level '${file}'`);
+                    trace(`updated reference in level '${file}'`);
                 }
             }
         }

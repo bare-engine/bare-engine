@@ -90,7 +90,7 @@ export class SettingsHandler
         for (const entity of [...settingsData.prefabs ?? [], ...settingsData.basePrefabs ?? []])
         {
             if (SettingsHandler.RenameExtendsReferences(entity, oldName, newName))
-                console.log(`updated reference in prefab '${entity.name}'`);
+                trace(`updated reference in prefab '${entity.name}'`);
         }
 
         for (const [categoryName, category] of Object.entries(settingsData.categories ?? {}))
@@ -108,7 +108,7 @@ export class SettingsHandler
             else if (category.entries === oldName)
                 category.entries = newName;
 
-            console.log(`updated reference in category '${categoryName}'`);
+            trace(`updated reference in category '${categoryName}'`);
         }
     }
 

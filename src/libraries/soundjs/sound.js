@@ -239,7 +239,7 @@ var sounds = {
   //`assets.load(["images/anyImage.png", "fonts/anyFont.otf"]);`.
 
   load: function (sources) {
-    console.log("Loading sounds..");
+    trace("Loading sounds..");
 
     //Get a reference to this asset object so we can
     //refer to it in the `forEach` loop ahead.
@@ -273,7 +273,7 @@ var sounds = {
 
       //Display a message if the file type isn't recognized.
       else {
-        console.log("File type not recognized: " + source);
+        trace("File type not recognized: " + source);
       }
     });
   },
@@ -292,7 +292,7 @@ var sounds = {
     if (self.toLoad === self.loaded) {
 
       //If it has, run the callback function that was assigned to the `whenLoaded` property
-      console.log("Sounds finished loading");
+      trace("Sounds finished loading");
 
       //Reset `loaded` and `toLoaded` so we can load more assets
       //later if we want to.

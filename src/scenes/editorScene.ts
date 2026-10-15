@@ -405,7 +405,7 @@ export class EditorScene extends Scene
 
             if (response.ok) {
                 const result = await response.json();
-                console.log('✅ Level saved:', result.message);
+                trace('✅ Level saved:', result.message);
 
                 // a level child overriding a settings child references the child's uid, which may only exist at runtime so far
                 if (SettingsHandler.PersistUIDsReferencedBy(level))
