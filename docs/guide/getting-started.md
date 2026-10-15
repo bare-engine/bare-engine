@@ -2,29 +2,19 @@
 
 ## Requirements
 
-Install [Node.js](https://nodejs.org/en/download) and [Git](https://git-scm.com/downloads).
+Install [Node.js](https://nodejs.org/en/download) 20.9 or newer.
 
 ## Create a project
 
-The easiest start is the [Bare Template](https://github.com/bare-engine/bare-template).
-
-**Option 1: use the template on GitHub**
-
-1. On the template page, click **Use this template** and create your repo.
-2. Clone it and start the dev server:
+Open a terminal in the folder where you keep your projects and run:
 
 ```sh
-git clone https://github.com/YOUR-NAME/YOUR-REPO.git bare-game
-cd bare-game
-npm install
+npm create bare-game@latest my-game
+cd my-game
 npm run dev
 ```
 
-**Option 2: download the ZIP**
-
-1. On the template page, click **Code → Download ZIP** and unzip it.
-2. Open a terminal in the unzipped folder.
-3. Run `npm install`, then `npm run dev`.
+This copies the [Bare Template](https://github.com/bare-engine/bare-template) into `my-game` and installs its dependencies. If [Git](https://git-scm.com/downloads) is installed, it also offers to set up a repository.
 
 Ctrl-click the localhost URL shown in the terminal to open your game.
 
