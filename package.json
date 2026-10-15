@@ -91,7 +91,7 @@
   },
   "dependencies": {
     "acorn": "^8.15.0",
-    "bare-tools": "github:bare-engine/bare-tools#semver:^1.0.1",
+    "bare-tools": "^1.0.1",
     "magic-string": "^0.30.21"
   },
   "allowScripts": {
