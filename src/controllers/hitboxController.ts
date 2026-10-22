@@ -55,6 +55,37 @@ export class HitboxController
         HitboxController.pointerClaimedBy = this;
     }
 
+    // pointer_down REACHES SCENES BOTTOM TO TOP, SO WITHOUT A FRESH HOVER CLAIM FROM THE FRAME
+    // BEFORE (TOUCH HAS NO HOVER, OR THE POINTER JUMPED) A LOWER SCENE WOULD TAKE THE PRESS. THE
+    // FIRST CONTROLLER TO SEE A PRESS HANDS THE CLAIM TO THE TOPMOST SCENE WITH A HITBOX UNDER IT.
+    private static pressClaimedFor: PointerEvent | null = null;
+
+    private static ClaimPress(mouseX: number, mouseY: number, event: PointerEvent): void
+    {
+        if (HitboxController.pressClaimedFor === event)
+            return;
+
+        HitboxController.pressClaimedFor = event;
+        HitboxController.pointerClaimedFrame = -1;
+        HitboxController.pointerClaimedBy = null;
+
+        const scenes = bare.scene.GetAll();
+        for (var i = scenes.length - 1; i >= 0; i--)
+        {
+            const scene = scenes[i];
+            // THE BACKING FIELD, SO A SCENE WITHOUT HITBOXES DOESN'T GET A CONTROLLER CREATED
+            const controller: HitboxController | undefined = scene.Get("_hitbox");
+            if (!controller?.active || !scene.started || !scene.enabled || scene.paused)
+                continue;
+
+            if (controller.GetHitboxAtPoint(scene.ScreenToWorld(mouseX, mouseY)))
+            {
+                controller.ClaimPointer();
+                return;
+            }
+        }
+    }
+
     constructor(scene: Scene)
     {
         this.scene = scene;
@@ -493,6 +524,7 @@ export class HitboxController
 
     private PointerDown({ mouseX, mouseY, event }: BareEventPayload['pointer_down']): void
     {
+        HitboxController.ClaimPress(mouseX, mouseY, event);
         this.Update();
 
         const hitbox = this.currentHitboxHover;

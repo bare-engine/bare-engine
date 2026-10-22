@@ -3,18 +3,29 @@ import { Checks } from "./checks";
 
 // covers docs/reference/input: pointer events from real DOM events, hitbox rules, mouse state, per-frame keys
 
+const overlaySettings = {
+    UI: true,
+    settingsData: {
+        basePrefabs: [{ name: "ANY", texture: "PIXEL" }],
+        prefabs: [{ name: "square", scale: { x: 100, y: 100 } }],
+    },
+};
+
 // a UI scene on top, for presses that land on its hitboxes
 class InputOverlay extends Scene
 {
     constructor()
     {
-        super({
-            UI: true,
-            settingsData: {
-                basePrefabs: [{ name: "ANY", texture: "PIXEL" }],
-                prefabs: [{ name: "square", scale: { x: 100, y: 100 } }],
-            },
-        });
+        super(overlaySettings);
+    }
+}
+
+// a second UI scene over that one
+class InputOverlayTop extends Scene
+{
+    constructor()
+    {
+        super(overlaySettings);
     }
 }
 
@@ -409,6 +420,21 @@ export class InputAdvancedTest extends Scene
         await this.WaitFrame(2);
         c.check(this.mousePressedFrames === 1 && this.mouseReleasedFrames === 1, "a press next to the button should count here: " + this.mousePressedFrames + "/" + this.mouseReleasedFrames);
         this.probeMouse = false;
+
+        // a press with no hover over it first (a tap, or the pointer jumped) still goes to the
+        // topmost scene, though pointer_down reaches the lower UI scene first
+        const top = await bare.scene.Add(InputOverlayTop);
+        let topPresses = 0;
+        top.AddGameObject("square").SetTexture(bare.asset.whiteTexture).SetScale(20).SetPosition(buttonAt.x - 10, buttonAt.y - 10).OnPointerDown(() => topPresses++);
+        overlayPresses = 0;
+        // hover only the lower scene's button, then press on both in the same frame
+        const beside = bare.camera.ScreenToWorld(buttonAt.x + 35, buttonAt.y);
+        await this.MoveTo(beside.x, beside.y);
+        this.Pointer("pointerdown", 700, 300);
+        this.Pointer("pointerup", 700, 300);
+        await this.WaitFrame(2);
+        c.check(topPresses === 1 && overlayPresses === 0, "a press without hover should go to the topmost scene's hitbox: top " + topPresses + ", below " + overlayPresses);
+        bare.scene.Remove(top);
         bare.scene.Remove(overlay);
     }
 }
