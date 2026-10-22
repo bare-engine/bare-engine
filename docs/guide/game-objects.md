@@ -215,7 +215,10 @@ Pooled objects are returned to their pool, so they can be reused without new all
 obj.AddShader(FlashShader);
 obj.RemoveShader(FlashShader);
 obj.SetMask(maskObject);
+obj.clipChildren = true;   // children only draw on this object's own image
 ```
+
+See [Rendering](./rendering#masks).
 
 ## Custom GameObject classes
 

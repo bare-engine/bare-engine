@@ -552,6 +552,7 @@ const gameDebugApi = {
     info.innerFlipped = "Apply an additional horizontal flip to the visual content.";
     info.childrenInheritInnerTransform = "Whether children also inherit the parent's inner transform. Enabled by default.";
     info.childrenAtPivot = "Where a child at 0,0 sits: on the top left of the texture (off, the default, so children move along when the pivot changes) or on the pivot point (on).";
+    info.clipChildren = "Children only draw where this entity's own texture isn't transparent. Costs a few extra draw calls per entity. Nests up to 4 deep.";
     info.color = "The color used to tint the entity's texture. White keeps the original colors.";
     info.alpha = "The opacity of the entity's texture. 0 is fully transparent, 1 is fully opaque.";
     info.visible = "Whether the entity is rendered.";

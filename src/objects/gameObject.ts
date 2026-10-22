@@ -787,6 +787,12 @@ export class GameObject
 
         if (this.children.length > 0)
         {
+            // clipChildren: the own image goes into the stencil buffer, so the children only draw where it is.
+            // Past maxClipDepth they're only clipped by the outer clips
+            const clip = this.clipChildren && !!this.texture && !rapid.inCreateMask && rapid.clipDepth < rapid.maxClipDepth;
+            if (clip)
+                this.DrawClipShape(false);
+
             stack.save();
             this.ApplyChildTransform();
 
@@ -797,6 +803,10 @@ export class GameObject
             }
 
             stack.restore();
+
+            // erase just this image from the stencil again, so the next clipping object starts clean
+            if (clip)
+                this.DrawClipShape(true);
         }
     }
     
@@ -830,6 +840,19 @@ export class GameObject
     {
         const stack = rapid.matrixStack;
         this.ComposeChildSpaceMatrix(stack.matrix, stack.curWorldM, -1);
+    }
+
+    // Draws this object's own image into the stencil buffer as a clip, or erases it again, wherever it isn't
+    // fully transparent. While a clip is drawn, a sprite only goes into the stencil buffer
+    private DrawClipShape(erase: boolean)
+    {
+        const stack = rapid.matrixStack;
+        stack.save();
+        this.ApplyContentTransform();
+        rapid.startDrawClip(erase);
+        drawSpriteWithMatrix(rapid, this.texture!, stack.curWorldM);
+        rapid.endDrawClip();
+        stack.restore();
     }
 
     protected ApplyContentTransform()
@@ -967,9 +990,16 @@ export class GameObject
 
     RenderSprite(color?: Color, matrixIndex: number = rapid.matrixStack.curWorldM)
     {
+        // the mask goes into the stencil's low bits, under the clips' ones, so it's tested together with the
+        // clips this object is in. For NOT_EQUAL those bits are filled first and the mask is cut out of them
+        const maskBits = rapid.maskBits;
+        const outside = this.maskType === MaskType.NOT_EQUAL;
+
         if (this.mask)
         {
-            rapid.startDrawMask(1, 0xFF)
+            if (outside)
+                rapid.clearMask(maskBits, 1);
+            rapid.startDrawMask(outside ? 0 : 1, maskBits)
             //rapid.drawMask(this.maskType, () => {
                 rapid.matrixStack.save();
                 if (this.renderParentTransform)
@@ -994,13 +1024,15 @@ export class GameObject
         // });
         
         if (this.mask) {
-            rapid.enterMask(this.maskType, 1, 0xFF);
+            const clipBits = rapid.clipBits;
+            rapid.enterMask(MaskType.EQUAL, 1 | clipBits, maskBits | clipBits);
         }
         
         var texture = this.texture;
         var drawColor = renderColor;
 
-        if (this._shaders && this._shaders.length > 0)
+        // while drawn as a mask itself, the plain image is the shape
+        if (this._shaders && this._shaders.length > 0 && !rapid.inCreateMask)
         {
             // THE SHADERS GET THE TINTED COLOR, SO EG A FLASH TURNS A TINTED SPRITE WHITE INSTEAD OF BACK INTO ITS TINT.
             // THE ALPHA COMES AFTER THEM, SO A FADING OBJECT ALSO FADES WHAT THE SHADERS ADDED, LIKE AN OUTLINE
@@ -1016,7 +1048,8 @@ export class GameObject
 
         if (this.mask)
         {
-            //rapid.clearMask();
+            // clean the mask out again, so it doesn't leak into the next one
+            rapid.clearMask(maskBits);
             rapid.exitMask()
         }
     }
@@ -1180,6 +1213,12 @@ export class GameObject
     // pivot changes). true: it sits on the pivot point, so on this object's position, like Pixi's anchor.
     @SerializeField(GameMode.Edit)
     childrenAtPivot: boolean = GameObject.childrenAtPivotDefault;
+
+    // Children only draw where this object's own image isn't fully transparent, eg a shadow that stays on a
+    // lumpy shape. Each clipping object costs a few extra draw calls. Clipping objects nest up to 4 deep, and
+    // masked objects inside one are clipped too.
+    @SerializeField(GameMode.Edit)
+    clipChildren: boolean = false;
 
     @SerializeField(GameMode.Edit)
     persistent: boolean = false;
@@ -2026,6 +2065,7 @@ export class GameObject
         this.innerTransform.Reset();
         this.childrenInheritInnerTransform = true;
         this.childrenAtPivot = GameObject.childrenAtPivotDefault;
+        this.clipChildren = false;
         this.renderParentTransform = null;
 
         this._OnTextureLoadedCallbacks = null;

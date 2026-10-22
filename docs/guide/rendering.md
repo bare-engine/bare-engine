@@ -73,6 +73,17 @@ flower.RemoveMask();
 
 **Example:** the [Showcase](https://github.com/bare-engine/bare-showcase)'s [graphics demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/graphics/src/DemoGraphics.ts#L17-L24) masks a flower with a tree.
 
+### Clipping children to an image
+
+To draw an object's children only where its own image is, set `clipChildren`. Transparent pixels don't count, so a shadow or a shine child follows the image's shape, however irregular:
+
+```ts
+rock.clipChildren = true;
+rock.AddChild('shine');   // only shows on the rock, not past its edge
+```
+
+The image itself still draws as usual. Each clipping object costs a few extra draw calls, so keep it to the objects that need it. Clipping objects nest up to 4 deep: a clipping child's own children only draw where both images are. Masked objects inside one are clipped too.
+
 ## Drawing shapes
 
 Draw shapes in a scene's `OnRender` (or a component's). They're drawn fresh every frame:

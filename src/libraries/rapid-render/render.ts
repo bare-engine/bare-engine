@@ -174,6 +174,13 @@ export class Rapid {
     drawcallCount: number = 0;
     /** Indicates whether we are currently writing to the stencil buffer to create a mask. */
     inCreateMask: boolean = false;
+    /** How many clips (see startDrawClip) are active inside each other right now. */
+    clipDepth: number = 0;
+    /** How deep clips can nest. Each one takes a stencil bit from the top down, leaving the low bits to masks. */
+    readonly maxClipDepth: number = 4;
+    /** The stencil bits under the clips' ones, left to masks. */
+    readonly maskBits: number = 0xFF >> this.maxClipDepth;
+    private erasingClip: boolean = false;
 
     /** Manager for creating and organizing textures. */
     texture: TextureManager;
@@ -507,6 +514,7 @@ export class Rapid {
             gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
         }
         this.drawcallCount = 0;
+        this.clipDepth = 0;
         this.matrixStack.reset()
     }
 
@@ -564,6 +572,11 @@ export class Rapid {
         let inputTex: Texture = source.clone(this._filterInput); // no new object
         let rtIndex = 0;
 
+        // the passes bake the texture offscreen, so the stencil test stays off for them: a mask or clip
+        // applies when the result is drawn, and would otherwise test the render texture's empty stencil
+        this.flush();
+        this.gl.disable(this.gl.STENCIL_TEST);
+
         this.matrixStack.save()
         this.matrixStack.identity();
         for (let i = 0; i < shaders.length; i++) {
@@ -595,6 +608,7 @@ export class Rapid {
             rtIndex++;
         }
         this.matrixStack.restore()
+        this.gl.enable(this.gl.STENCIL_TEST);
 
         inputTex.offsetX = -paddingOffset
         inputTex.offsetY = -paddingOffset
@@ -805,12 +819,15 @@ export class Rapid {
     /**
      * Clears bounds created into the stencil mask.
      * @param mask The bitmask specifying which stencil layer to clear.
+     * @param value The value the cleared bits get.
      */
-    clearMask(mask: number = 0xFF): void {
+    clearMask(mask: number = 0xFF, value: number = 0): void {
         this.flush();
         const gl = this.gl;
         gl.stencilMask(mask);
+        gl.clearStencil(value);
         gl.clear(gl.STENCIL_BUFFER_BIT);
+        gl.clearStencil(0);
         this.inCreateMask = false;
     }
 
@@ -832,17 +849,71 @@ export class Rapid {
     }
 
     /**
-     * Exits the masked rendering phase, restoring default full-screen stencil values tests.
+     * Exits the masked rendering phase, back to drawing everywhere, or inside the active clips if there are any.
      */
     exitMask(): void {
         this.flush();
-        const gl = this.gl;
-
-        gl.colorMask(true, true, true, true);
-        gl.stencilMask(0xFF);
-        gl.stencilFunc(gl.ALWAYS, 1, 0xFF);
-        gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+        this.gl.colorMask(true, true, true, true);
         this.inCreateMask = false;
+        this.applyClipTest();
+    }
+
+    /** The stencil bits of the active clips, to test a mask together with them. */
+    get clipBits(): number {
+        return (0xFF00 >> this.clipDepth) & 0xFF;
+    }
+
+    /**
+     * Starts drawing a clip's shape into the stencil buffer, with mask graphics (eg drawMaskImage). After
+     * endDrawClip, everything draws only inside it. Unlike masks, clips nest: each one has its own stencil bit,
+     * so what's drawn inside it stays inside the outer ones too. To end the clip, draw the same shape again
+     * with erase, which cleans its bit for the next one.
+     * @param erase Ends the innermost clip and removes its shape instead.
+     */
+    startDrawClip(erase: boolean = false): void {
+        this.flush();
+        if (erase) {
+            this.clipDepth--;
+        }
+        this.erasingClip = erase;
+
+        const gl = this.gl;
+        const bit = 0x80 >> this.clipDepth;
+        const outer = this.clipBits;
+
+        gl.colorMask(false, false, false, false);
+        gl.stencilMask(bit);
+        // only inside the outer clips, so a nested clip is what both shapes have in common
+        gl.stencilFunc(gl.EQUAL, erase ? outer : outer | bit, outer);
+        gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
+
+        this.enterRegion(this.graphicRegion, this.graphicRegion.maskShader);
+        this.inCreateMask = true;
+    }
+
+    /**
+     * Finishes drawing a clip's shape, and starts drawing inside it, or back in the outer clips after an erase.
+     */
+    endDrawClip(): void {
+        if (!this.erasingClip) {
+            this.clipDepth++;
+        }
+        this.exitMask();
+    }
+
+    private applyClipTest(): void {
+        const gl = this.gl;
+        const bits = this.clipBits;
+
+        gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+        if (bits) {
+            gl.stencilMask(0x00);
+            gl.stencilFunc(gl.EQUAL, bits, bits);
+        } else {
+            // the default state, in which the frame's clear also clears the whole stencil buffer
+            gl.stencilMask(0xFF);
+            gl.stencilFunc(gl.ALWAYS, 1, 0xFF);
+        }
     }
 
     /**

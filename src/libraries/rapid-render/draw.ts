@@ -198,7 +198,13 @@ export const drawSpriteWithMatrix = (
     rapid: Rapid, texture: Texture, matrix: number, color?: Color, shader?: DrawShader,
     flipX: boolean = false, flipY: boolean = false, padding?: number,
 ): void => {
-    if (!texture?.base || rapid.inCreateMask) {
+    if (!texture?.base) {
+        return;
+    }
+
+    if (rapid.inCreateMask) {
+        // while a mask is drawn, a sprite counts wherever it isn't fully transparent
+        drawMaskSprite(rapid, texture, matrix, flipX, flipY);
         return;
     }
 
@@ -320,18 +326,45 @@ export const drawLine = (rapid: Rapid, options: ILineOptions): void => {
 };
 
 export const drawMaskImage = (rapid: Rapid, options: IMaskImageOptions): void => {
+    const texture = options.texture;
+    if (!texture.base) {
+        return;
+    }
     const matrix = withOptionsTransform(
         rapid,
         options,
-        options.texture.rawWidth,
-        options.texture.rawHeight,
+        texture.rawWidth,
+        texture.rawHeight,
     );
-    rapid.startMaskGraphic(
-        rapid.gl.TRIANGLE_FAN,
-        options.texture,
-        matrix ?? options.customMatrix,
-    );
-    rapid.addRectVertex(options.texture.rawWidth, options.texture.rawHeight);
+    drawMaskSprite(rapid, texture, matrix ?? options.customMatrix ?? rapid.matrixStack.curWorldM);
+};
+
+// The quad drawSprite covers, as mask graphics, so it only counts where the texture isn't fully transparent.
+// Its corners are placed the way the sprite region places them, offsets, flips and rotated atlas frames included.
+const drawMaskSprite = (rapid: Rapid, texture: Texture, matrix: number, flipX: boolean = false, flipY: boolean = false): void => {
+    flipY = flipY !== !!texture.flipY;
+    const w = texture.width;
+    const h = texture.height;
+
+    // the corner at uv (0, 0), and the steps to uv (1, 0) and (0, 1)
+    const x = texture.offsetX + (flipX ? w : 0);
+    let y: number, ax: number, ay: number, bx: number, by: number;
+    if (texture.isRotated) {
+        // a rotated atlas frame is stored turned a quarter
+        y = texture.offsetY + (flipY ? 0 : h);
+        ax = 0; ay = flipY ? h : -h;
+        bx = flipX ? -w : w; by = 0;
+    } else {
+        y = texture.offsetY + (flipY ? h : 0);
+        ax = flipX ? -w : w; ay = 0;
+        bx = 0; by = flipY ? -h : h;
+    }
+
+    rapid.startMaskGraphic(rapid.gl.TRIANGLE_FAN, texture, matrix);
+    rapid.addGraphicVertex(x, y, 0, 0);
+    rapid.addGraphicVertex(x + ax, y + ay, 1, 0);
+    rapid.addGraphicVertex(x + ax + bx, y + ay + by, 1, 1);
+    rapid.addGraphicVertex(x + bx, y + by, 0, 1);
     rapid.endGraphic();
 };
 
