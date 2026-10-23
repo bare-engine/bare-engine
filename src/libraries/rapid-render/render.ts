@@ -17,8 +17,10 @@ import {
     drawRect,
     drawRoundedRect,
     drawSprite,
+    drawSpriteWithMatrix,
     getColorUint32,
 } from "./draw";
+import { ClipShape } from "./clip";
 import type {
     ICircleOptions,
     IDrawParticleBatchOptions,
@@ -182,6 +184,14 @@ export class Rapid {
     readonly maskBits: number = 0xFF >> this.maxClipDepth;
     private erasingClip: boolean = false;
 
+    /** How many clips (see pushClip) one sprite batch can hold, as many as the fragment shader has uniforms for. */
+    readonly maxBatchClips: number;
+    /** The clips pushed while drawing to the screen, then those of each render texture being drawn into. */
+    private clipLayers: ClipShape[][] = [[]];
+    private spareClipLayers: ClipShape[][] = [];
+    private clipPool: ClipShape[] = [];
+    private clipsUsed = 0;
+
     /** Manager for creating and organizing textures. */
     texture: TextureManager;
 
@@ -223,6 +233,8 @@ export class Rapid {
         this.gl = gl;
 
         this.maxTextureUnits = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
+        // 3 vectors a clip, leaving some to custom shaders. WebGL 2 promises at least 224
+        this.maxBatchClips = Math.max(8, Math.min(128, Math.floor((gl.getParameter(gl.MAX_FRAGMENT_UNIFORM_VECTORS) - 64) / 3)));
         this.matrix = this.matrixStack.matrix;
 
         this.spriteRegion = new SpriteRegion(this);
@@ -286,6 +298,12 @@ export class Rapid {
      * @param customShader An optional custom shader to use for this region.
      */
     enterRegion(region: Region, customShader?: GLShader | CustomGlShader): void {
+        // only the sprite shader tests clips. Anything else drawn inside one, like a shape, needs them in the
+        // stencil buffer; not the shapes of clips and masks themselves
+        if (this.clips.length > 0 && region !== this.spriteRegion && !this.inCreateMask
+            && customShader !== this.graphicRegion.maskShader) {
+            this.stencilClips();
+        }
         if (this.currentRegion === region && this.currentRegion.isSameShader(customShader)) {
             return;
         }
@@ -515,6 +533,9 @@ export class Rapid {
         }
         this.drawcallCount = 0;
         this.clipDepth = 0;
+        this.clipLayers.length = 1;
+        this.clipLayers[0].length = 0;
+        this.clipsUsed = 0;
         this.matrixStack.reset()
     }
 
@@ -620,6 +641,8 @@ export class Rapid {
     enterRenderTexture(rt: RenderTexture): void {
         this.flush();
         rt.activate();
+        // what's drawn into it isn't in the clips of the screen, whose positions are on the screen
+        this.clipLayers.push(this.spareClipLayers.pop() ?? []);
 
         this.viewport.restoreViewportScissor();
         this.gl.viewport(0, 0, rt.rawWidth, rt.rawHeight);
@@ -645,6 +668,11 @@ export class Rapid {
      */
     leaveRenderTexture(): void {
         this.flush();
+        if (this.clipLayers.length > 1) {
+            const layer = this.clipLayers.pop()!;
+            while (layer.length > 0) this.popClip();
+            this.spareClipLayers.push(layer);
+        }
 
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
@@ -861,6 +889,67 @@ export class Rapid {
     /** The stencil bits of the active clips, to test a mask together with them. */
     get clipBits(): number {
         return (0xFF00 >> this.clipDepth) & 0xFF;
+    }
+
+    /** The clips being drawn into, outermost first. */
+    get clips(): ClipShape[] {
+        return this.clipLayers[this.clipLayers.length - 1];
+    }
+
+    /** The innermost clip, which sprites drawn now are clipped to, or null. */
+    get clip(): ClipShape | null {
+        const clips = this.clips;
+        return clips.length > 0 ? clips[clips.length - 1] : null;
+    }
+
+    /**
+     * Until popClip, draws only where the image isn't fully transparent, and inside the clips pushed before.
+     * Sprites test it in their shader, so clipped sprites batch like any others; anything else drawn inside it
+     * puts it in the stencil buffer first, which costs a few draw calls.
+     * @param texture The image.
+     * @param matrix The matrix it's drawn with.
+     * @returns false when maxClipDepth clips are on already: then it's only clipped to those.
+     */
+    pushClip(texture: Texture, matrix: number): boolean {
+        const clips = this.clips;
+        if (clips.length >= this.maxClipDepth || !texture.base) {
+            return false;
+        }
+        this.spriteRegion.enableClips();
+        const clip = this.clipPool[this.clipsUsed++] ??= new ClipShape();
+        clips.push(clip.set(texture, this.matrix.data, matrix * 6, this.roundPixels, this.clip));
+        return true;
+    }
+
+    /** Ends the innermost clip. */
+    popClip(): void {
+        const clip = this.clips.pop();
+        if (!clip) {
+            return;
+        }
+        this.clipsUsed--;
+        if (clip.stencilled) {
+            this.drawClipShape(clip, true);
+        }
+    }
+
+    // puts the clips in the stencil buffer that aren't yet, outermost first, each inside the ones before it
+    private stencilClips(): void {
+        for (const clip of this.clips) {
+            if (!clip.stencilled) {
+                this.drawClipShape(clip, false);
+                clip.stencilled = true;
+            }
+        }
+    }
+
+    private drawClipShape(clip: ClipShape, erase: boolean): void {
+        const matrix = this.matrix.allocDirty();
+        this.matrix.data.set(clip.matrix, matrix * 6);
+        this.startDrawClip(erase);
+        drawSpriteWithMatrix(this, clip.texture, matrix);
+        this.endDrawClip();
+        this.matrix.free(matrix);
     }
 
     /**

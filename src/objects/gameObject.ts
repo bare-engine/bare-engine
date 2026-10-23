@@ -787,11 +787,16 @@ export class GameObject
 
         if (this.children.length > 0)
         {
-            // clipChildren: the own image goes into the stencil buffer, so the children only draw where it is.
-            // Past maxClipDepth they're only clipped by the outer clips
-            const clip = this.clipChildren && !!this.texture && !rapid.inCreateMask && rapid.clipDepth < rapid.maxClipDepth;
-            if (clip)
-                this.DrawClipShape(false);
+            // clipChildren: the children only draw where the own image is. Past maxClipDepth they're only
+            // clipped by the outer clips
+            let clip = false;
+            if (this.clipChildren && this.texture && !rapid.inCreateMask)
+            {
+                stack.save();
+                this.ApplyContentTransform();
+                clip = rapid.pushClip(this.texture, stack.curWorldM);
+                stack.restore();
+            }
 
             stack.save();
             this.ApplyChildTransform();
@@ -804,9 +809,8 @@ export class GameObject
 
             stack.restore();
 
-            // erase just this image from the stencil again, so the next clipping object starts clean
             if (clip)
-                this.DrawClipShape(true);
+                rapid.popClip();
         }
     }
     
@@ -840,19 +844,6 @@ export class GameObject
     {
         const stack = rapid.matrixStack;
         this.ComposeChildSpaceMatrix(stack.matrix, stack.curWorldM, -1);
-    }
-
-    // Draws this object's own image into the stencil buffer as a clip, or erases it again, wherever it isn't
-    // fully transparent. While a clip is drawn, a sprite only goes into the stencil buffer
-    private DrawClipShape(erase: boolean)
-    {
-        const stack = rapid.matrixStack;
-        stack.save();
-        this.ApplyContentTransform();
-        rapid.startDrawClip(erase);
-        drawSpriteWithMatrix(rapid, this.texture!, stack.curWorldM);
-        rapid.endDrawClip();
-        stack.restore();
     }
 
     protected ApplyContentTransform()
@@ -1218,7 +1209,18 @@ export class GameObject
     // lumpy shape. Each clipping object costs a few extra draw calls. Clipping objects nest up to 4 deep, and
     // masked objects inside one are clipped too.
     @SerializeField(GameMode.Edit)
-    clipChildren: boolean = false;
+    get clipChildren(): boolean
+    {
+        return this._clipChildren;
+    }
+    set clipChildren(value: boolean)
+    {
+        // the clip shader starts compiling now, mostly while the scene loads, instead of on the first frame with a clip
+        if (value && !this._clipChildren)
+            rapid.spriteRegion.prepareClips();
+        this._clipChildren = value;
+    }
+    private _clipChildren: boolean = false;
 
     @SerializeField(GameMode.Edit)
     persistent: boolean = false;

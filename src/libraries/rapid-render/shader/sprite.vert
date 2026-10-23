@@ -20,6 +20,15 @@ in float aTextureId;
 // per-instance: 1 = discard samples outside aUVRect (atlas regions)
 in float aClampUV;
 
+// only once a clip has been drawn, as in sprite.frag
+#ifdef CLIP
+// per-instance: the slot + 1 of the innermost clip the sprite is in, 0 for none (see SpriteRegion.addClip)
+in float aClip;
+
+flat out int vClip;
+out highp vec2 vPosition;
+#endif
+
 uniform mat4 u_projection;
 uniform vec2 uPadding[%TEXTURE_NUM%];
 
@@ -49,5 +58,10 @@ void main(void) {
     );
     // CUSTOM_CODE_CALL
 
+#ifdef CLIP
+    // after the custom code, so a clip cuts where the sprite ends up
+    vClip = int(aClip);
+    vPosition = position.xy;
+#endif
     gl_Position = u_projection * position;
 }

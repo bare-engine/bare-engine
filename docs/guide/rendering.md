@@ -82,7 +82,7 @@ rock.clipChildren = true;
 rock.AddChild('shine');   // only shows on the rock, not past its edge
 ```
 
-The image itself still draws as usual. Each clipping object costs a few extra draw calls, so keep it to the objects that need it. Clipping objects nest up to 4 deep: a clipping child's own children only draw where both images are. Masked objects inside one are clipped too.
+The image itself still draws as usual. Images inside a clip are cut while they're drawn, so clipping objects batch like any other sprites: a hundred clipping tiles with a shadow child each can still take one draw call. A shape, particles or a tilemap inside a clipping object is clipped through the stencil buffer instead, which costs about 4 extra draw calls for that object. Clipping objects nest up to 4 deep: a clipping child's own children only draw where both images are. Masked objects inside one are clipped too. The first time a game turns `clipChildren` on, the clipping version of the sprite shader starts building in the background, which takes up to about 0.1 s. A clipping object drawn before it's ready makes that one frame wait for the rest, so the earlier it's turned on before the object is first drawn, the shorter that wait. Games that never clip don't build it.
 
 ## Drawing shapes
 

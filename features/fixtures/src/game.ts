@@ -32,6 +32,7 @@ import { ShapeOutlineTest } from "./testScenes/shapeOutlineTest";
 import { HitboxInnerTransformTest } from "./testScenes/hitboxInnerTransformTest";
 import { ShaderUniformsTest } from "./testScenes/shaderUniformsTest";
 import { ClipChildrenTest } from "./testScenes/clipChildrenTest";
+import { ClipBatchTest } from "./testScenes/clipBatchTest";
 import { SopiroJointsTest } from "./testScenes/sopiroJointsTest";
 import { EditorPreview } from "./docExamples/editorPreview";
 
@@ -81,6 +82,7 @@ class MainGame extends Scene
         HitboxInnerTransformTest,
         ShaderUniformsTest,
         ClipChildrenTest,
+        ClipBatchTest,
         SopiroJointsTest,
     ];
 

@@ -98,8 +98,8 @@ export class Region {
 
     createShader(vs: string, fs: string) {
         const maxTextureUnits = this.getMaxTexutreUnit()
-        fs = generateShader(fs, maxTextureUnits);
-        vs = generateShader(vs, maxTextureUnits);
+        fs = this.generateShader(fs, maxTextureUnits);
+        vs = this.generateShader(vs, maxTextureUnits);
         return new GLShader(this.gl, vs, fs);
     }
 
@@ -107,10 +107,14 @@ export class Region {
         void this.defaultShader; // this.vs / this.fs are set alongside the default shader
         const maxTextureUnits = this.getMaxTexutreUnit(customShader)
 
-        const fs = generateShader(this.fs, maxTextureUnits);
-        const vs = generateShader(this.vs, maxTextureUnits);
+        const fs = this.generateShader(this.fs, maxTextureUnits);
+        const vs = this.generateShader(this.vs, maxTextureUnits);
 
         return customShader.getGLShader(this, this.KEY, vs, fs)
+    }
+
+    private generateShader(source: string, maxTextureUnits: number) {
+        return generateShader(source, maxTextureUnits).split("%CLIP_VECTORS%").join(String(this.rapid.maxBatchClips * 3));
     }
 
     getCustomShader(customShader?: GLShader | CustomGlShader): GLShader {

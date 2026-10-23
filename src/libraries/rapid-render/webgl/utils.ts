@@ -177,6 +177,10 @@ export function generateShader(fs: string, max: number, id = "vTextureId", uv = 
         }
         fs = fs.split("%GET_COLOR%").join(code)
     }
+    // the same for a texture unit given by an `int unit` and a `uv`, eg the sprite shader's clip image
+    if (fs.includes("%GET_UNIT_COLOR%")) {
+        fs = generateShader(fs.split("%GET_UNIT_COLOR%").join("%GET_COLOR%"), max, "unit", "uv", set)
+    }
     return fs
 }
 export const FLOAT = 5126;
