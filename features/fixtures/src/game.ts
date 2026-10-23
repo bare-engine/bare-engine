@@ -34,7 +34,7 @@ import { ShaderUniformsTest } from "./testScenes/shaderUniformsTest";
 import { ClipChildrenTest } from "./testScenes/clipChildrenTest";
 import { ClipBatchTest } from "./testScenes/clipBatchTest";
 import { SopiroJointsTest } from "./testScenes/sopiroJointsTest";
-import { ResolutionTest } from "./testScenes/resolutionTest";
+import { ResolutionTest, listenForTurns, resizeWhileFirstSceneStarts } from "./testScenes/resolutionTest";
 import { EditorPreview } from "./docExamples/editorPreview";
 
 function sceneName(scene: SceneClass): string {
@@ -111,6 +111,8 @@ class MainGame extends Scene
 
     override async OnStart(): Promise<void>
     {
+        // still inside StartBare here, ResolutionTest checks the result
+        resizeWhileFirstSceneStarts();
         await this.startTest(sceneName(this.tests[0]));
     }
 
@@ -165,4 +167,4 @@ class MainGame extends Scene
     }
 }
 
-StartBare(MainGame);
+StartBare(MainGame, { OnInit: listenForTurns });

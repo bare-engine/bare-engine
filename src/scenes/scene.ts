@@ -272,6 +272,9 @@ export class Scene implements SceneI
             controller.Start?.();
         }
 
+        // THE SIZE THE SCENE LAYS OUT AT. RESIZES DURING AN ASYNC OnStart SKIP THIS SCENE, IT CATCHES UP BELOW
+        var width = bare.width, height = bare.height;
+
         await this.OnStart(payload);
 
         // START ALL GAME OBJECTS
@@ -295,6 +298,10 @@ export class Scene implements SceneI
         this._component?.StartAll();
 
         this.started = true;
+
+        // OnResize MEANS "THE SIZE CHANGED SINCE YOU LAST LAID OUT", SO A SCENE NEVER MISSES ONE
+        if (bare.width != width || bare.height != height)
+            this.Resize(width, height, bare.width, bare.height);
     }
 
     OnStart(payload?: any): void | Promise<void>

@@ -344,9 +344,11 @@ export class SceneController
 
     OnResize(prevWidth: number, prevHeight: number, newWidth: number, newHeight: number)
     {
+        // A SCENE THAT IS STILL STARTING CATCHES UP ONCE STARTED, IN Scene.Start
         for (var scene of this.currentScenes)
         {
-            scene.Resize(prevWidth, prevHeight, newWidth, newHeight);
+            if (scene.started)
+                scene.Resize(prevWidth, prevHeight, newWidth, newHeight);
         }
     }
 }

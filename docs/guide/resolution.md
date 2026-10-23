@@ -72,7 +72,7 @@ StartBare(Game, {
 });
 ```
 
-Every scene's `OnResize` runs after, so move things to fit there. `bare.height > bare.width` tells you it's standing up.
+Every scene's `OnResize` runs after, once per new size, so move things to fit there. `bare.height > bare.width` tells you it's standing up. Add the listener in `OnInit`, like here: the engine adds its own `resize` listener after that, so it finds the new size already set and doesn't resize to the old resolution first.
 
 ## Pixel art
 

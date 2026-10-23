@@ -368,11 +368,14 @@ export class BareEngine
 
         await this.onInit?.();
 
+        // BEFORE Goto, SO TURNING THE SCREEN WHILE THE FIRST SCENE LOADS STILL RESIZES THE CANVAS. SAFE BECAUSE SCENES ONLY
+        // GET OnResize ONCE STARTED, AND CATCH UP THEN (Scene.Start). AFTER OnInit, SO A resize LISTENER ADDED THERE THAT
+        // CALLS bare.SetResolution RUNS FIRST, AND THIS ONE FINDS THE SIZE UNCHANGED INSTEAD OF RESIZING TO THE OLD RESOLUTION
+        window.addEventListener('resize', () => this.ResizeCanvas(this.resolution));
+
         var scene = await bare.scene.Goto(sceneClass);
 
         this.dummyGameObject = new GameObject(scene); // TOO LATE IF USER WANTS TO USE IT IN sceneClass, BUT FINE FOR MY CURRENT USAGE
-        
-        window.addEventListener('resize', () => this.ResizeCanvas(this.resolution));
 
         document.addEventListener('pointerdown', this.PointerDown.bind(this), { passive: false });
         document.addEventListener('pointerup', this.PointerUp.bind(this), { passive: false });
@@ -511,6 +514,11 @@ export class BareEngine
         );
 
         this.PositionCanvas(resolution, cssWidth, cssHeight);
+
+        // THE CSS SIZE CAN CHANGE ON ITS OWN (A FIXED resolution IN A RESIZED WINDOW), BUT ONLY A NEW GAME SIZE IS A RESIZE.
+        // ALSO STOPS bare.SetResolution AND THE window resize LISTENER FROM RESIZING TWICE FOR ONE TURN OF THE SCREEN
+        if (rapid.width == prevWidth && rapid.height == prevHeight)
+            return;
 
         this.SendEvent(BareEvent.game_resize, { prevWidth: prevWidth, prevHeight: prevHeight, newWidth: gameWidth, newHeight: gameHeight });
 

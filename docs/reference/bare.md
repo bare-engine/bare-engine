@@ -87,7 +87,7 @@ bare.scene.Get(Game).level.Load('level1');
 | `bare.RegisterGameObjectPool(cls, size?)` | Create an object pool for a GameObject class, or fill its existing pool up to `size` objects. |
 | `bare.SetBackgroundColor(color)` | Set the canvas background color, as a `Color` or hex string. |
 | `bare.SetBackgroundColorHTML(color)` | Color the page around the canvas, eg the bars of a fitted resolution, as a `Color` or hex string. A transparent color clears it. |
-| `bare.SetResolution(resolution?)` | Change the [resolution](./configuration#resolution) while the game runs, for example to swap between a landscape and a portrait size when the screen turns. Without an argument, the game fills the window. Every scene's `OnResize` runs after. |
+| `bare.SetResolution(resolution?)` | Change the [resolution](./configuration#resolution) while the game runs, for example to swap between a landscape and a portrait size when the screen turns. Without an argument, the game fills the window. Every started scene's `OnResize` runs after, if the game size changed. |
 | `bare.SetDebugKey`, `bare.DisableDebugKey`, … | Change the [debug keys](../guide/debugging#changing-keys-while-the-game-runs) while the game runs. Development only. |
 | `bare.DisableRightClick()` | Stop right-click from [selecting objects](../guide/debugging#selecting-objects-in-the-game), for games that use the right mouse button. Development only. |
 | `bare.LoadFont(name, url?)` | Load a font from `public/fonts/`. The first font loaded becomes `bare.defaultFont`. |

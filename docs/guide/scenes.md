@@ -37,7 +37,7 @@ Override these methods on your scene. All are optional. Mark each one `override`
 | `OnUpdate(deltaTime)` | Every frame, after objects and components. |
 | `OnPreRender()` / `OnRender()` / `OnPostRender()` | Around rendering, for custom drawing. |
 | `OnPreLoadLevel(level)` / `OnPostLoadLevel(level)` | Before and after a [level](./levels-and-layers) loads. |
-| `OnResize(prevW, prevH, newW, newH)` | When the canvas size changes. |
+| `OnResize(prevW, prevH, newW, newH)` | When the game size (`bare.width`, `bare.height`) changes, once the scene has started. A resize during an async `OnStart` comes as one call right after it, from the size the scene started at. |
 | `OnRestart()` / `OnClear()` | On restart and when the scene is cleared. |
 
 ::: tip
