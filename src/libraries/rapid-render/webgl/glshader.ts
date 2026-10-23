@@ -345,6 +345,8 @@ export class CustomGlShader {
      * @param uniforms Map of uniform values or WebGL textures to apply.
      */
     setUniforms(uniforms: Record<string, UniformValue | WebGLTexture | WebGLTexture[]>) {
+        // the same values again don't flush, so objects that share a shader and its uniforms draw in one batch
+        if (this.hasUniforms(uniforms)) return;
         this.rapid.flush()
         const normalUniforms: Record<string, UniformValue> = {};
         const textureUniforms: Record<string, WebGLTexture> = {};
@@ -354,9 +356,10 @@ export class CustomGlShader {
             if (value instanceof WebGLTexture) {
                 textureUniforms[key] = value;
             } else if (Array.isArray(value) && value[0] instanceof WebGLTexture) {
-                uniformArrayTexture[key] = value
+                uniformArrayTexture[key] = [...value]
             } else {
-                normalUniforms[key] = value as UniformValue;
+                // a copy, so an array the caller changes later still compares against what was set
+                normalUniforms[key] = (typeof value === "number" ? value : value.slice()) as UniformValue;
             }
         }
 
@@ -367,6 +370,27 @@ export class CustomGlShader {
         for (const key of this.glshader.keys()) {
             this.uniformDirty.add(key);
         }
+    }
+
+    /** Whether every one of these uniforms already has this value. */
+    private hasUniforms(uniforms: Record<string, UniformValue | WebGLTexture | WebGLTexture[]>): boolean {
+        for (const [key, value] of Object.entries(uniforms)) {
+            if (value instanceof WebGLTexture) {
+                if (this.uniformTextures[key] !== value) return false;
+                continue;
+            }
+            const current: ArrayLike<unknown> | number | undefined = Array.isArray(value) && value[0] instanceof WebGLTexture
+                ? this.uniformArrayTexture[key] : this.uniforms[key];
+            if (typeof value === "number" || typeof current === "number" || current === undefined) {
+                if (current !== value) return false;
+                continue;
+            }
+            const values = value as ArrayLike<unknown>;
+            if (current.length !== values.length) return false;
+            for (let i = 0; i < values.length; i++)
+                if (current[i] !== values[i]) return false;
+        }
+        return true;
     }
 
     /**
@@ -428,6 +452,9 @@ export class CustomGlShader {
         baseVS = baseVS.replace("// CUSTOM_CODE_CALL", prefix.map(p => p + "vertex(position, vRegion);").join(""));
         baseVS = this.replaceCustomCode(baseVS, this.vs);
         baseFS = baseFS.replace("// CUSTOM_CODE_CALL", prefix.map(p => p + "fragment(fragColor, vRegion);").join(""));
+        // the sprite shader hands fragment() the tint without the alpha when these are defined (see sprite.frag)
+        baseFS = baseFS.replace(/^#version[^\n]*\n/, version => version + "#define CUSTOM_FRAGMENT\n"
+            + (this.rapid.premultipliedAlpha ? "#define PREMULTIPLIED\n" : ""));
         baseFS = this.replaceCustomCode(baseFS, this.fs);
 
         const shader = region.createShader(baseVS, baseFS);

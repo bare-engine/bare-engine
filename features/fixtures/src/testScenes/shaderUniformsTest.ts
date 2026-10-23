@@ -1,9 +1,47 @@
-import { Color, FlashShader, GameObject, Scene } from "bare-engine";
+import { Color, FlashShader, GameObject, Scene, Shader } from "bare-engine";
 import { Checks } from "./checks";
 
 // covers shader uniforms per object: every Shader class shares one compiled GL shader, so two objects
 // with the same shader at a different stage (one flash just started, one almost done) must still each
-// draw with their own uniform values
+// draw with their own uniform values. Objects with one shader and the same uniforms batch
+
+// sets the same uniform on every object, so the objects that have it draw in one batch
+class TintShader extends Shader
+{
+    constructor()
+    {
+        super(`
+            void vertex(inout vec4 position, inout vec2 region) {}
+        `, `
+            uniform vec3 uTintBy;
+            void fragment(inout vec4 color, vec2 vRegion) {
+                color.rgb *= uTintBy;
+            }
+        `);
+    }
+
+    override Update()
+    {
+        this.SetUniforms({ uTintBy: [1, 0.5, 0.5] });
+    }
+}
+
+// the draw calls of the objects between a start probe and an end probe
+class DrawCallProbe extends GameObject
+{
+    static start = 0;
+    end = false;
+    calls = -1;
+
+    override OnRender(): void
+    {
+        rapid.flush();
+        if (this.end)
+            this.calls = rapid.drawcallCount - DrawCallProbe.start;
+        else
+            DrawCallProbe.start = rapid.drawcallCount;
+    }
+}
 
 export class ShaderUniformsTest extends Scene
 {
@@ -15,6 +53,7 @@ export class ShaderUniformsTest extends Scene
     tinted!: GameObject;
     faded!: GameObject;
     previousBackground!: Color;
+    batchEnd!: DrawCallProbe;
 
     constructor()
     {
@@ -56,6 +95,13 @@ export class ShaderUniformsTest extends Scene
         bare.SetBackgroundColor(Color.Black);
         this.faded = this.AddGameObject("PIXEL").SetPosition(500, 100).SetScale(40).SetColor(Color.Red).SetAlpha(0.5);
         this.faded.AddShader(FlashShader, { fadePreDuration: 1000, duration: 1 });
+
+        // twenty objects with a shader each, between two probes
+        this.AddGameObject(DrawCallProbe);
+        for (let i = 0; i < 20; i++)
+            this.AddGameObject("PIXEL").SetPosition(100 + i * 10, 300).SetScale(8).AddShader(TintShader);
+        this.batchEnd = this.AddGameObject(DrawCallProbe);
+        this.batchEnd.end = true;
     }
 
     // the color drawn at the center of an object, read back from the canvas
@@ -97,6 +143,8 @@ export class ShaderUniformsTest extends Scene
         const faded = this.ReadCenter(this.faded);
         c.check(faded.slice(0, 3).every(channel => Math.abs(channel - 128) < 20), "a half faded tinted object should flash half white: " + faded.join(","));
         bare.SetBackgroundColor(this.previousBackground);
+
+        c.check(this.batchEnd.calls === 1, "objects with the same shader and uniforms should draw in one batch: " + this.batchEnd.calls + " draw calls");
 
         c.flush();
     }

@@ -57,7 +57,28 @@ export class WobbleShader extends Shader
 }
 ```
 
-In the fragment function, `color` starts as the texture's color at that pixel, times the object's tint, and `vRegion` holds the texture coordinate. The object's alpha is applied after your shader, so whatever it draws fades along with the object. If your effect draws outside the image, like an outline, make room with `this.SetPadding(pixels)`.
+In the fragment function, `color` starts as the texture's color at that pixel, times the object's tint, and `vRegion` holds the texture coordinate. The object's alpha is applied after your shader, so whatever it draws fades along with the object. To sample the texture again, for example at an offset, use `sampleClampTexture(uv)` and multiply by `spriteTint`, the object's tint without its alpha. If your effect draws outside the image, like an outline, make room with `this.SetPadding(pixels)`.
+
+### What a shader costs
+
+An object with one shader and no padding is drawn straight into the sprite batch, so objects with the same shader class draw together, as long as they set the same uniforms. `SetUniforms` with different values than the last object ends the batch, which costs a draw call. So for an effect on many objects, keep the uniforms the same on all of them: take the time from `bare.gameTime` rather than counting it per shader, and get variation from the position instead of a value per object. In `vertex`, `position` is where the corner is in the world, which you can hand to the fragment function:
+
+```ts
+super(`
+    out highp vec2 vWorld;
+    void vertex(inout vec4 position, inout vec2 region) {
+        vWorld = position.xy;
+    }
+`, `
+    in highp vec2 vWorld;
+    uniform highp float uTime;
+    void fragment(inout vec4 color, vec2 vRegion) {
+        color *= 0.75 + 0.25 * sin(vWorld.x * 0.05 + uTime);
+    }
+`);
+```
+
+An object with padding, or with more than one shader, is drawn through a render texture first: about 2 draw calls per object, and it doesn't batch with anything.
 
 **Example:** the [Showcase](https://github.com/bare-engine/bare-showcase)'s [ghost shader](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/shaders/src/ghostShader.ts) wobbles and pulses, and the [shaders demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/shaders/src/DemoShaders.ts) adds it to a GameObject.
 

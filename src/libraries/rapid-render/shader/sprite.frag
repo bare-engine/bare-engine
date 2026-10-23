@@ -70,14 +70,39 @@ float clipCoverage() {
     return coverage;
 }
 #endif
+
+#ifdef CUSTOM_FRAGMENT
+// the object's color without its alpha, for a custom fragment() that samples the texture again
+vec4 spriteTint;
+#endif
 // CUSTOM_CODE
 
 void main(void) {
     // atlas regions clamp so padding never samples a neighbouring frame; plain textures keep
     // their wrap mode. one program for both, picked per instance
-    fragColor = (vClampUV == 1 ? sampleClampTexture(vRegion) : sampleTexture(vRegion)) * vColor;
+    vec4 texel = vClampUV == 1 ? sampleClampTexture(vRegion) : sampleTexture(vRegion);
+
+#ifdef CUSTOM_FRAGMENT
+    // a custom fragment() sees the tint without the alpha, and the alpha comes after it, so what it adds (a flash,
+    // an outline) fades along with the object. The same as when it's drawn as a filter, which has alpha 1 here
+    float alpha = vColor.a;
+#ifdef PREMULTIPLIED
+    spriteTint = vec4(alpha > 0.0 ? vColor.rgb / alpha : vec3(0.0), 1.0);
+#else
+    spriteTint = vec4(vColor.rgb, 1.0);
+#endif
+    fragColor = texel * spriteTint;
 
     // CUSTOM_CODE_CALL
+
+#ifdef PREMULTIPLIED
+    fragColor *= alpha;
+#else
+    fragColor.a *= alpha;
+#endif
+#else
+    fragColor = texel * vColor;
+#endif
 
 #ifdef CLIP
     // last, so it also cuts what a custom shader draws, like an outline

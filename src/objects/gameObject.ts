@@ -1020,22 +1020,32 @@ export class GameObject
         }
         
         var texture = this.texture;
-        var drawColor = renderColor;
+        var shaders = this._shaders;
 
         // while drawn as a mask itself, the plain image is the shape
-        if (this._shaders && this._shaders.length > 0 && !rapid.inCreateMask)
+        if (shaders && shaders.length > 0 && !rapid.inCreateMask)
         {
             // THE SHADERS GET THE TINTED COLOR, SO EG A FLASH TURNS A TINTED SPRITE WHITE INSTEAD OF BACK INTO ITS TINT.
             // THE ALPHA COMES AFTER THEM, SO A FADING OBJECT ALSO FADES WHAT THE SHADERS ADDED, LIKE AN OUTLINE
-            GameObject.shaderTint.setRGBA(renderColor.r, renderColor.g, renderColor.b, 255);
-            GameObject.shaderAlpha.setRGBA(255, 255, 255, renderColor.a);
+            const shader = shaders[0].shader;
+            if (shaders.length === 1 && shader.padding === 0)
+            {
+                // ONE SHADER THAT DRAWS NOTHING PAST THE IMAGE GOES STRAIGHT INTO THE SPRITE BATCH, SO OBJECTS THAT SHARE
+                // IT AND ITS UNIFORMS BATCH. THE SPRITE SHADER SPLITS THE TINT AND THE ALPHA AROUND IT (SEE sprite.frag)
+                drawSpriteWithMatrix(rapid, texture!, matrixIndex, renderColor, shader);
+            }
+            else
+            {
+                GameObject.shaderTint.setRGBA(renderColor.r, renderColor.g, renderColor.b, 255);
+                GameObject.shaderAlpha.setRGBA(255, 255, 255, renderColor.a);
 
-            const glShaders = this._shaders.map(shader => shader.shader);
-            texture = rapid.applyFilters(this.texture!, glShaders, GameObject.shaderTint);
-            drawColor = GameObject.shaderAlpha;
+                const glShaders = shaders.map(shader => shader.shader);
+                texture = rapid.applyFilters(this.texture!, glShaders, GameObject.shaderTint);
+                drawSpriteWithMatrix(rapid, texture, matrixIndex, GameObject.shaderAlpha);
+            }
         }
-
-        drawSpriteWithMatrix(rapid, texture!, matrixIndex, drawColor);
+        else
+            drawSpriteWithMatrix(rapid, texture!, matrixIndex, renderColor);
 
         if (this.mask)
         {
