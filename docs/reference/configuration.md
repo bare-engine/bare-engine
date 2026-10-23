@@ -37,9 +37,9 @@ See [Resolution & Pixel Art](../guide/resolution) for common setups.
 
 | Field | Description |
 | --- | --- |
-| `width`, `height` | Fixed game size in game units. |
-| `scale` | A fixed CSS scale, or `CanvasScale.Fit` to fit the window. |
-| `position` | `CanvasPosition.Center` or `CanvasPosition.TopLeft`. Defaults to `Center` with `CanvasScale.Fit`, and `TopLeft` otherwise. |
+| `width`, `height` | Fixed game size in game units. With `CanvasScale.Expand`, the smallest game size; leave one out to put no minimum on that side. |
+| `scale` | A fixed CSS scale, `CanvasScale.Fit` to fit the window with bars around it, or `CanvasScale.Expand` to fit the window without bars: the game gets bigger on the side the window has room on. See [Scaled to fit, without bars](../guide/resolution#scaled-to-fit-without-bars). |
+| `position` | `CanvasPosition.Center` or `CanvasPosition.TopLeft`. Defaults to `Center` with `CanvasScale.Fit`, and `TopLeft` otherwise. `CanvasScale.Expand` fills the window, so it doesn't matter there. |
 | `integerScale` | Only scale by whole numbers, for crisp pixel art. |
 | `pixelScale` | Fill the window, but render at a lower resolution so everything appears `pixelScale` times bigger. Overrides `width`, `height` and `scale`. |
 

@@ -53,7 +53,9 @@ export enum CanvasPosition
 
 export enum CanvasScale
 {
-    Fit = -1
+    Fit = -1,
+    // SCALED LIKE Fit, BUT THE GAME GROWS ON THE SIDE THE WINDOW HAS ROOM ON, SO THE CANVAS FILLS THE WINDOW WITHOUT BARS
+    Expand = -2
 }
 
 export interface Position

@@ -34,6 +34,7 @@ import { ShaderUniformsTest } from "./testScenes/shaderUniformsTest";
 import { ClipChildrenTest } from "./testScenes/clipChildrenTest";
 import { ClipBatchTest } from "./testScenes/clipBatchTest";
 import { SopiroJointsTest } from "./testScenes/sopiroJointsTest";
+import { ResolutionTest } from "./testScenes/resolutionTest";
 import { EditorPreview } from "./docExamples/editorPreview";
 
 function sceneName(scene: SceneClass): string {
@@ -84,6 +85,7 @@ class MainGame extends Scene
         ClipChildrenTest,
         ClipBatchTest,
         SopiroJointsTest,
+        ResolutionTest,
     ];
 
     constructor() 

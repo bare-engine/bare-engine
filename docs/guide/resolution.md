@@ -26,6 +26,54 @@ StartBare(Game, {
 
 **Example:** the [Resolution Demo](https://github.com/bare-engine/bare-resolution-demo/blob/main/src/game.ts#L66-L76) uses a fixed 320×107 game size.
 
+## Scaled to fit, without bars
+
+`CanvasScale.Expand` scales like `Fit`, but instead of bars, the game gets bigger on the side the window has room to spare, so the canvas fills the window:
+
+```ts
+import { CanvasScale, StartBare } from 'bare-engine';
+
+StartBare(Game, {
+    resolution: {
+        width: 1280,
+        height: 720,
+        scale: CanvasScale.Expand,
+    },
+});
+```
+
+The whole 1280×720 always shows, as big as with `Fit`. Around it is more room on one side:
+
+| Window | `Fit` | `Expand` |
+| --- | --- | --- |
+| 1920×1080 | 1280×720 | 1280×720 |
+| 2560×1080 | 1280×720, bars left and right | 1707×720 |
+| 1024×768 | 1280×720, bars above and below | 1280×960 |
+
+`bare.width` and `bare.height` are at least 1280 and 720, and change when the window resizes. Lay things out relative to them, like a score in the top right corner at `bare.width - 20`.
+
+Leave out `height` to only keep the width: the game is always 1280 wide, and its height follows the window.
+
+### Portrait and landscape
+
+A phone turns, but a game designed for 1280×720 shows tiny on a phone held upright. To switch to a portrait size, call [`bare.SetResolution`](../reference/bare#methods) when the window turns:
+
+```ts
+import { CanvasScale, StartBare } from 'bare-engine';
+
+// lying down or standing up, the way the window is
+const Resolution = () => innerWidth >= innerHeight
+    ? { width: 1280, height: 720, scale: CanvasScale.Expand }
+    : { width: 720, height: 1280, scale: CanvasScale.Expand };
+
+StartBare(Game, {
+    resolution: Resolution(),
+    OnInit: () => window.addEventListener('resize', () => bare.SetResolution(Resolution())),
+});
+```
+
+Every scene's `OnResize` runs after, so move things to fit there. `bare.height > bare.width` tells you it's standing up.
+
 ## Pixel art
 
 For crisp pixels, turn off smoothing and only scale by whole numbers:

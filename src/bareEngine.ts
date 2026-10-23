@@ -472,6 +472,28 @@ export class BareEngine
             cssHeight = viewportSize.height;
             this.resolutionScale = resolution.pixelScale;
         }
+        else if (resolution?.scale == CanvasScale.Expand)
+        {
+            // SCALED LIKE Fit, SO width × height ALWAYS SHOWS WHOLE, BUT THE GAME IS THE WINDOW'S SIZE AT THAT SCALE:
+            // AT LEAST width × height, AND BIGGER ON THE SIDE THE WINDOW HAS ROOM ON. A LEFT OUT width OR height PUTS
+            // NO MINIMUM ON THAT SIDE. NOT ROUNDED, A ROUNDED SIZE WOULD LEAVE UP TO A PIXEL OF PAGE ON ONE SIDE
+            var scale = Math.min(
+                resolution.width ? viewportSize.width / resolution.width : Infinity,
+                resolution.height ? viewportSize.height / resolution.height : Infinity
+            );
+
+            if (!isFinite(scale))
+                scale = 1;
+
+            if (resolution.integerScale)
+                scale = Math.max(1, Math.floor(scale));
+
+            gameWidth = viewportSize.width / scale;
+            gameHeight = viewportSize.height / scale;
+            cssWidth = viewportSize.width;
+            cssHeight = viewportSize.height;
+            this.resolutionScale = scale;
+        }
         else
         {
             gameWidth = resolution?.width ?? viewportSize.width;
