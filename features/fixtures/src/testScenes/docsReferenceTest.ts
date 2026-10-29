@@ -1,4 +1,4 @@
-import { CameraScaleMode, Color, GameObject, SaveData, Scene, TweenTo, Vec2 } from "bare-engine";
+import { CameraScaleMode, Color, Component, GameObject, SaveData, Scene, TweenTo, Vec2 } from "bare-engine";
 import { Checks } from "./checks";
 
 // covers docs/reference: bare, objects, input, tweens, camera, scene-manager, level, save-data, math, globals
@@ -20,6 +20,14 @@ class HelperScene extends Scene
 }
 
 class OtherScene extends Scene {}
+
+class MoveCounterComponent extends Component
+{
+    awakes = 0;
+    removes = 0;
+    override OnAwake() { this.awakes++; }
+    override OnRemoved() { this.removes++; }
+}
 
 class StickyScene extends Scene
 {
@@ -236,8 +244,16 @@ export class DocsReferenceTest extends Scene
 
         const moved = this.AddGameObject("hero");
         const target = await bare.scene.Add(HelperScene);
+        const movedChild = moved.AddChild("hero");
+        const movedGrandchild = movedChild.AddChild("hero");
+        const counter = movedGrandchild.AddComponent(MoveCounterComponent);
+        TweenTo(movedGrandchild, 10, { x: 50 });
         bare.scene.MoveGameObjectTo(moved, target);
         c.check(moved.scene === target, "MoveGameObjectTo should move the object to the scene");
+        c.check(movedChild.scene === target && movedGrandchild.scene === target, "MoveGameObjectTo should move the children along");
+        c.check(this.tween.GetAllFrom(movedGrandchild).length === 0 && target.tween.GetAllFrom(movedGrandchild).length === 1, "MoveGameObjectTo should move a child's tweens");
+        c.check(target.component.Get(movedGrandchild, MoveCounterComponent) === counter && this.component.Get(movedGrandchild, MoveCounterComponent) === null, "MoveGameObjectTo should move a child's components");
+        c.check(counter.scene === target && counter.awakes === 1 && counter.removes === 0, "a moved component should keep its lifecycle and know its new scene: " + JSON.stringify({ awakes: counter.awakes, removes: counter.removes }));
         bare.scene.Remove(target);
 
         // --- level

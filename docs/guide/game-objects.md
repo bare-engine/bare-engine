@@ -118,6 +118,17 @@ ship.GetChildByName('gun');
 gun.RemoveFromParent();
 ```
 
+`children` lists an object's children in draw order: the first is drawn first, so the last is on top. `parent` is the object it's a child of, or `null` for an object added straight to the scene. Add and remove children only with `AddChild` and `RemoveFromParent`, which also add them to the scene and take them out again. Reordering `children` in place is fine: it's what `BringToFront()` and `BringToBack()` do for a child (see [Ordering](#ordering)), and it puts a child at an exact spot among its siblings:
+
+```ts
+// the glow goes right under the gun, over the children before it
+const glow = ship.AddChild('glow');
+ship.children.splice(ship.children.indexOf(glow), 1);
+ship.children.splice(ship.children.indexOf(gun), 0, glow);
+```
+
+A parent's own image is always drawn before its children, so no child can go under it.
+
 A child's position is measured from the top left of its parent's image, in the parent's image pixels, and it moves, turns and scales along with the parent. Changing the parent's [pivot](#pivot) moves its children along with its image.
 
 Set `childrenAtPivot = true` on the parent to measure from its pivot instead. `SetPosition(0, 0)` then puts a child on the parent's position, whatever the parent's pivot is, like an anchor in Pixi:
@@ -199,7 +210,7 @@ See [Hitbox](../reference/hitbox).
 
 ## Ordering
 
-`BringToFront()` and `BringToBack()` change draw order within the object's [layer](./levels-and-layers).
+`BringToFront()` and `BringToBack()` change draw order within the object's [layer](./levels-and-layers). On a child, they move it among its parent's [children](#children).
 
 ## Removing
 

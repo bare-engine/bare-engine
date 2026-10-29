@@ -1935,7 +1935,7 @@ export class GameObject
         return new Vec2(x, y);
     }
 
-    BringToFront()
+    BringToFront():this
     {
         if (this.parent)
         {
@@ -1950,9 +1950,11 @@ export class GameObject
         {
             this.scene.object.BringToFront(this);
         }
+
+        return this;
     }
 
-    BringToBack()
+    BringToBack():this
     {
         if (this.parent)
         {
@@ -1967,6 +1969,8 @@ export class GameObject
         {
             this.scene.object.BringToBack(this);
         }
+
+        return this;
     }
 
     // A GAMEOBJECT INSTANCE IS RETURNED AS ITS OWN TYPE, SAME AS Scene.AddGameObject()

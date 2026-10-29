@@ -239,6 +239,45 @@ export class ComponentController
         return this.GetAllFromUID(object.uniqueID);
     }
 
+    // MOVES AN OBJECT'S COMPONENTS TO ANOTHER SCENE'S CONTROLLER AS THEY ARE, WITHOUT RUNNING THEIR LIFECYCLE AGAIN.
+    // ONE THAT WAS WAITING TO START STARTS IN THE NEW SCENE
+    TransferTo(go: GameObject, to: ComponentController): void
+    {
+        const components = this.componentsByGameObject.get(go.uniqueID);
+        if (!components || to == this)
+            return;
+
+        this.componentsByGameObject.delete(go.uniqueID);
+        for (const component of components)
+        {
+            const type = component.constructor as Ctor<Component<any>>;
+            const typeComponents = this.componentsByType.get(type);
+            const typeIndex = typeComponents ? typeComponents.indexOf(component) : -1;
+            if (typeIndex > -1)
+            {
+                typeComponents!.splice(typeIndex, 1);
+                if (typeComponents!.length == 0)
+                    this.componentsByType.delete(type);
+            }
+
+            if (!to.componentsByType.has(type))
+                to.componentsByType.set(type, []);
+            to.componentsByType.get(type)!.push(component);
+
+            component.scene = to.scene;
+        }
+
+        const existing = to.componentsByGameObject.get(go.uniqueID);
+        to.componentsByGameObject.set(go.uniqueID, existing ? existing.concat(components) : components);
+
+        const queued = this.queuedForStart.filter(c => c.go == go);
+        if (queued.length > 0)
+        {
+            this.queuedForStart = this.queuedForStart.filter(c => c.go != go);
+            to.queuedForStart.push(...queued);
+        }
+    }
+
     // A COPY, SO COMPONENTS CAN BE REMOVED WHILE LOOPING OVER THE RESULT
     GetAllFromUID(uniqueID: string): Component<any>[]
     {

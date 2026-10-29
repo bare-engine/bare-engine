@@ -18,7 +18,7 @@ await bare.scene.Goto(Game, { level: 2 });   // the payload goes to OnAwake/OnSt
 | `GetMainScene()` | The first scene in draw order. |
 | `GetLevelScene(checkEnabled = true)` | Prefers an enabled level scene, then falls back to any level scene. |
 | `MoveUp(sceneOrClass)` / `MoveDown(sceneOrClass)` / `MoveToFront(sceneOrClass)` / `MoveToBack(sceneOrClass)` | Changes draw order. |
-| `MoveGameObjectTo(obj, scene)` | Moves a `GameObject` to the destination `Scene`. |
+| `MoveGameObjectTo(obj, scene)` | Moves a `GameObject` and its children to the destination `Scene`, at the same place on the screen. Their tweens, components and pointer handlers come along, and components don't run `OnAwake` again. Scale isn't converted between cameras, and physics bodies don't move. |
 | `DisableAll()` / `EnableAll()` | Disables/enables scenes. Disabled scenes are neither updated nor rendered. |
 | `SendEvent(type, ...args)` | Sends the typed event payload to started scenes. |
 | `Clear(includePersistent = false)` | Removes nonpersistent scenes; pass `true` to remove persistent scenes too. |

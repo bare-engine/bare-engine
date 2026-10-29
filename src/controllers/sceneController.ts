@@ -226,56 +226,51 @@ export class SceneController
     }
 
 
+    // MOVES AN OBJECT AND EVERYTHING UNDER IT TO ANOTHER SCENE. IT STAYS IN THE SAME PLACE ON THE SCREEN, AND ITS
+    // CHILDREN, TWEENS AND COMPONENTS COME ALONG (THE COMPONENTS WITHOUT RUNNING THEIR LIFECYCLE AGAIN). POINTER
+    // HANDLERS LIVE ON THE OBJECTS, SO THEY COME ALONG TOO.
     // DOESN'T WORK ATM FOR PHYSICS OBJECTS, WOULD ALSO NEED TO MOVE
     // ALSO DOESN'T ALTER SCALE, SO OBJECT CAN CHANGE SIZE WHEN COMING FROM A ZOOMED-IN SCENE FOR EXAMPLE. HAVE TO HANDLY THIS YOURSELF IF NEEDED
     // EG LIKE: this.go.SetScale(previousScene.camera.GetScale());
     MoveGameObjectTo(gameObject: GameObject, scene: UIScene)
     {
-        if (gameObject.scene != scene)
-        {
-            // MOVE BETWEEN objectControllers
-            gameObject.scene.object.Remove(gameObject);
-            scene.object.Add(gameObject);
+        const from = gameObject.scene;
+        if (from == scene)
+            return;
 
-            // MOVE BETWEEN tweenControllers
-            var oldTweenController = gameObject.scene.tween;
-            var newTweenController = scene.tween;
-            if (oldTweenController && newTweenController)
+        // CONVERT POSITION BETWEEN SCENES, SO IT STAYS THE SAME
+        const screenPos = from.WorldToScreen(gameObject.x, gameObject.y);
+        const newWorldPos = scene.ScreenToWorld(screenPos.x, screenPos.y);
+        gameObject.x = newWorldPos.x;
+        gameObject.y = newWorldPos.y;
+
+        // MOVE BETWEEN objectControllers. CHILDREN AREN'T IN ONE, THEY COME ALONG WITH THEIR PARENT
+        from.object.Remove(gameObject);
+        scene.object.Add(gameObject);
+
+        // THE WHOLE SUBTREE: TWEENS, COMPONENTS, AND WHICH SCENE AND LAYER EACH OBJECT IS IN. THE CONTROLLERS ARE
+        // MADE ON FIRST USE, SO THE NEW SCENE ONLY GETS ONE WHEN THERE'S SOMETHING TO MOVE INTO IT
+        const layer = gameObject.layer;
+        const oldTweenController = from.Has("tween") ? from.tween : null;
+        const oldComponentController = from.Has("component") ? from.component : null;
+        const move = (obj: GameObject) => {
+            const tweens = oldTweenController?.GetAllFrom(obj) ?? [];
+            if (tweens.length > 0)
             {
-                var tweens = oldTweenController.GetAllFrom(gameObject);
-                oldTweenController.RemoveAllFrom(gameObject);
-                for (var tween of tweens)
-                {
-                    newTweenController.Add(tween);
-                }
+                oldTweenController!.RemoveAllFrom(obj);
+                for (const tween of tweens)
+                    scene.tween.Add(tween);
             }
 
-            // MOVE BETWEEN componentControllers
-            var oldComponentController = gameObject.scene.component;
-            if (oldComponentController)
-            {
-                var components = oldComponentController.GetAllFrom(gameObject);
-                if (components.length > 0)
-                {
-                    var newComponentController = scene.component;
-                
-                    oldComponentController.RemoveAllFrom(gameObject);
-                    for (var component of components)
-                    {
-                        newComponentController.AddComponent(gameObject, component);
-                    }
-                }
-            }
+            if (oldComponentController && oldComponentController.GetAllFrom(obj).length > 0)
+                oldComponentController.TransferTo(obj, scene.component);
 
-            // CONVERT POSITION BETWEEN SCENES, SO IT STAYS THE SAME
-            const screenPos = gameObject.scene.WorldToScreen(gameObject.x, gameObject.y);
-            const newWorldPos = scene.ScreenToWorld(screenPos.x, screenPos.y);
-            gameObject.x = newWorldPos.x;
-            gameObject.y = newWorldPos.y;
-
-            // REDEFINE THE SCENE
-            gameObject.scene = scene;
-        }
+            obj.scene = scene;
+            obj.layer = layer;
+            for (const child of obj.children)
+                move(child);
+        };
+        move(gameObject);
     }
 
     Has<T extends Scene>(sceneClass: SceneClass<T>): boolean
