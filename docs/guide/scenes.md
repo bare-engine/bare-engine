@@ -4,13 +4,13 @@ Scenes organize the parts of your game: gameplay, UI, menus. Your game starts fr
 
 ```ts
 import { Scene, StartBare } from 'bare-engine';
-import settingsData from '../public/data/settingsData.json';
+import settingsDataJson from '../public/data/settingsData.json';
 
 export class Game extends Scene
 {
     constructor()
     {
-        super({ settingsData });
+        super({ settingsData: settingsDataJson });
     }
 
     override OnStart()

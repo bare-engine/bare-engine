@@ -69,13 +69,13 @@ A scene's constructor passes options to `super`:
 
 ```ts
 import { Scene } from 'bare-engine';
-import settingsData from '../public/data/settingsData.json';
+import settingsDataJson from '../public/data/settingsData.json';
 
 export class HUD extends Scene
 {
     constructor()
     {
-        super({ settingsData, UI: true, persistent: true });
+        super({ settingsData: settingsDataJson, UI: true, persistent: true });
     }
 }
 ```
@@ -87,7 +87,7 @@ export class HUD extends Scene
 | `resize` | `false` | When the window size changes, move every object so it keeps its relative place on screen. |
 | `persistent` | `false` | Keep the scene when `bare.scene.Goto` clears the others. |
 
-Always pass an options object. `super(settingsData)` is a type error; write `super({ settingsData })`.
+Always pass an options object. `super(settingsDataJson)` is a type error; write `super({ settingsData: settingsDataJson })`.
 
 ## package.json
 

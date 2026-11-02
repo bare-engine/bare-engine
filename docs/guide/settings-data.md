@@ -5,13 +5,13 @@
 Pass it to your scene to use it:
 
 ```ts
-import settingsData from '../public/data/settingsData.json';
+import settingsDataJson from '../public/data/settingsData.json';
 
 export class Game extends Scene
 {
     constructor()
     {
-        super({ settingsData });
+        super({ settingsData: settingsDataJson });
     }
 }
 ```
