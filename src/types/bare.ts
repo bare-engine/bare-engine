@@ -16,10 +16,12 @@ export class Bare
         sounds: string[];
         fonts: string[];
         levels: string[];
+        atlases: Record<string, string[]>;      // the images in each atlas in public/images, by the name LoadAtlas takes
     } = {
         images: [],
         sounds: [],
         fonts: [],
         levels: [],
+        atlases: {},
     };
 }

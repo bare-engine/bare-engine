@@ -277,3 +277,25 @@ test('generateAssets lists prefabs, base prefabs and layers from settingsData', 
         assert.match(code, /ENEMIES: \d+/);
     });
 });
+
+test('generateAssets lists the frames of an atlas in public/images, and the atlas itself', () => {
+    withProject({
+        'src/game.ts': GAME(),
+        'public/images/sky.webp': '',
+        'public/images/field.webp': '',
+        'public/images/field.json': { frames: { cowBody: {}, 'grassTuft.png': {} }, meta: { image: 'field.webp' } },
+        'public/images/notAnAtlas.json': { cow: 1 },
+    }, root => {
+        const output = path.join(root, 'src/generated/assets.ts');
+        generateAssets(root, output);
+        const code = fs.readFileSync(output, 'utf8');
+        assert.match(code, /SKY: "sky"/);
+        assert.match(code, /FIELD: "field"/);
+        assert.match(code, /COW_BODY: "cowBody"/);
+        assert.match(code, /GRASS_TUFT: "grassTuft"/);
+        assert.doesNotMatch(code, /NOT_AN_ATLAS|COW:/);
+        // which images each atlas holds, so using one before LoadAtlas can warn
+        const atlases = code.match(/^Bare\.assets\.atlases = (.*);$/m)[1];
+        assert.deepEqual(JSON.parse(atlases), { field: ['cowBody', 'grassTuft'] });
+    });
+});

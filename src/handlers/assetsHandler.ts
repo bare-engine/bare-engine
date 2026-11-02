@@ -1,5 +1,6 @@
 
 import { BaseTexture, Texture } from '../libraries/rapid-render';
+import { Bare } from '../types/bare';
 import { AnimationData, Atlas } from '../types/bareTypes';
 import { Helper } from '../utils/helper';
 
@@ -54,6 +55,9 @@ class AssetsHandler
         if (loadingPromise)
             return loadingPromise;
 
+        if (__DEV__)
+            this.WarnIfInAtlas(texturePath);
+
         const fullPath = this.GetFullImagePath(texturePath);
         const texturePromise = rapid.texture.load(fullPath).then(tex => {
             this.AddTexture(texturePath, tex);
@@ -67,6 +71,17 @@ class AssetsHandler
         this.loading.set(texturePath, texturePromise);
 
         return texturePromise;
+    }
+
+    // An image from an atlas in public/images (Bare.assets.atlases, from assets.ts) only exists once LoadAtlas is
+    // done: streamed on its own, it's a 404 and a red pixel.
+    private WarnIfInAtlas(texturePath: string): void
+    {
+        const atlas = Object.keys(Bare.assets.atlases).find(name => Bare.assets.atlases[name].includes(texturePath));
+        if (!atlas || this.warnedMissing.has(texturePath))
+            return;
+        this.warnedMissing.add(texturePath);
+        console.warn(`LoadTexture: "${texturePath}" is in the atlas "${atlas}", which isn't loaded yet. await bare.asset.LoadAtlas("${atlas}") before using it; drawing a red pixel instead.`);
     }
 
     LoadTextureBatch(texturePaths: string[]): Promise<Texture[]> 

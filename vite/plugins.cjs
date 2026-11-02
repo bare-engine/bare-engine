@@ -2775,7 +2775,11 @@ function generateAssets(projectRoot, outputPath, imageGlobs = []) {
     try {
         const publicDir = path.join(projectRoot, "public");
 
-        const images = collectAssetFiles(path.join(publicDir, "images"), ASSET_GENERATED_IMAGE_EXTENSIONS);
+        // the .webp images in public/images and the frames of every atlas there, which
+        // bare.asset.LoadAtlas adds by name. The atlas itself stays listed too, for LoadAtlas.
+        const streamed = collectAtlasEntries(path.join(publicDir, "images"));
+        const images = [...collectAssetFiles(path.join(publicDir, "images"), ASSET_GENERATED_IMAGE_EXTENSIONS), ...streamed.frameEntries]
+            .sort((a, b) => a.relNoExt.localeCompare(b.relNoExt));
         const initialImages = collectInitialImageEntries(path.join(publicDir, "initial"));
         const sounds = collectAssetFiles(path.join(publicDir, "sounds"), ASSET_SOUND_EXTENSIONS);
         const fonts = collectAssetFiles(path.join(publicDir, "fonts"), ASSET_FONT_EXTENSIONS);
@@ -2829,7 +2833,7 @@ function generateAssets(projectRoot, outputPath, imageGlobs = []) {
                 Animation: animationEntries,
                 Layer: layerEntries
             }
-        });
+        }, streamed.atlases);
 
         fs.mkdirSync(path.dirname(outputPath), { recursive: true });
         const existing = fs.existsSync(outputPath) ? fs.readFileSync(outputPath, "utf8") : "";
@@ -2878,22 +2882,25 @@ function collectAssetFiles(dir, extensions) {
 
 function collectInitialImageEntries(initialDir) {
     const images = collectAssetFiles(initialDir, ASSET_IMAGE_EXTENSIONS);
-    const atlasData = collectInitialAtlasEntries(initialDir);
+    const atlasData = collectAtlasEntries(initialDir);
     const regularImages = images.filter(file => !atlasData.atlasImageRelNoExt.has(file.relNoExt));
 
     return [...regularImages, ...atlasData.frameEntries]
         .sort((a, b) => a.relNoExt.localeCompare(b.relNoExt));
 }
 
-function collectInitialAtlasEntries(initialDir) {
+// Every atlas json under dir: its sheet, its frames, and per atlas (by its path
+// without .json, the name LoadAtlas takes) the names of its frames.
+function collectAtlasEntries(dir) {
     const atlasImageRelNoExt = new Set();
     const frameEntries = [];
+    const atlases = {};
 
-    if (!fs.existsSync(initialDir)) {
-        return { atlasImageRelNoExt, frameEntries };
+    if (!fs.existsSync(dir)) {
+        return { atlasImageRelNoExt, frameEntries, atlases };
     }
 
-    for (const filePath of getFilesRecursive(initialDir)) {
+    for (const filePath of getFilesRecursive(dir)) {
         if (path.extname(filePath).toLowerCase() !== ".json") {
             continue;
         }
@@ -2909,9 +2916,10 @@ function collectInitialAtlasEntries(initialDir) {
             continue;
         }
 
-        const relJsonPath = normalize(path.relative(initialDir, filePath));
+        const relJsonPath = normalize(path.relative(dir, filePath));
         const atlasImageRel = normalize(path.posix.join(path.posix.dirname(relJsonPath), json.meta.image));
         atlasImageRelNoExt.add(removePathExtension(atlasImageRel));
+        const frames = atlases[removePathExtension(relJsonPath)] = [];
 
         for (const frameName of Object.keys(json.frames)) {
             const relNoExt = frameName.split(".")[0];
@@ -2922,10 +2930,11 @@ function collectInitialAtlasEntries(initialDir) {
                 base: path.posix.basename(relNoExt),
                 relNoExt
             });
+            frames.push(relNoExt);
         }
     }
 
-    return { atlasImageRelNoExt, frameEntries };
+    return { atlasImageRelNoExt, frameEntries, atlases };
 }
 
 function removePathExtension(value) {
@@ -3094,7 +3103,7 @@ function replaceEmojiWithNames(value) {
     return result;
 }
 
-function buildAssetsFile(groups) {
+function buildAssetsFile(groups, atlases = {}) {
     const renderValue = value => typeof value === "number" ? value : JSON.stringify(value);
     // Image -> Images, BasePrefab -> BasePrefabs. The plural holds every value of
     // the group, so Asset.Images is the "get all" counterpart of Asset.Image.X.
@@ -3143,6 +3152,8 @@ Bare.data.prefabs = Object.values(Data.Prefab);
 Bare.data.basePrefabs = Object.values(Data.BasePrefab);
 Bare.data.animations = Object.values(Data.Animation);
 Bare.data.layers = Object.values(Data.Layer);
+// the images in each atlas in public/images, so using one before bare.asset.LoadAtlas warns in dev
+Bare.assets.atlases = ${JSON.stringify(atlases)};
 `;
 }
 

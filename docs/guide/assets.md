@@ -52,6 +52,8 @@ bare.sound.Play(Asset.Sound.JUMP);
 bare.level.Load(Asset.Level.LEVEL_1);
 ```
 
+An atlas in `public/images/` (a `.json` and `.webp` pair) is listed under its own name, and so is every image in it. Load the atlas with [`bare.asset.LoadAtlas`](../reference/assets#atlases) before you use its images.
+
 Don't edit this file; it's regenerated whenever your assets change.
 
 ## Sounds

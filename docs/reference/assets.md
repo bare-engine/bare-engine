@@ -29,6 +29,13 @@ Texture names are paths relative to `public/images/`, without the extension. Ima
 
 The atlas built from `texturePackImages/` is loaded automatically.
 
+`src/generated/assets.ts` lists the atlas (`Asset.Image.ALIEN_FIELD` for `public/images/alienField.json`) and every image in it (`Asset.Image.COW_BODY`). An image from an atlas you load yourself only shows after `LoadAtlas` is done. Used before that, it draws a red pixel, and in development the console says which atlas to load:
+
+```ts
+await bare.asset.LoadAtlas(Asset.Image.ALIEN_FIELD);
+this.AddGameObject(Asset.Image.COW_BODY);
+```
+
 ## Animations
 
 | Method | Description |
