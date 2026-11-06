@@ -6,7 +6,7 @@ export type WebGLContext = WebGL2RenderingContext;
 
 export const supportsWebGL = (canvas: HTMLCanvasElement): boolean => {
     const options = { stencil: true }
-    const gl = canvas.getContext("webgl2", options) || canvas.getContext("webgl", options)
+    const gl = canvas.getContext("webgl2", options)
     return !!gl
 }
 /**
