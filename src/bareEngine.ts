@@ -918,7 +918,7 @@ export class BareEngine
 
     private IsFirstTouch(event:PointerEvent): boolean
     {
-        if (event.pointerType == 'mouse')
+        if (event.pointerType == 'mouse' || event.pointerType == 'pen')
             return true;
 
         return (event.pointerType == 'touch' && (event.isPrimary || this.multiTouch));
