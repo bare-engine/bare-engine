@@ -47,6 +47,8 @@ chest.SetTexture(bare.asset.GetTexture('chest_open'));
 
 `GetTexture` requires the image to be loaded already; use `InitTexture` when it may need loading.
 
+`textureName` is the name of the image an object shows: the asset name it was loaded by (an atlas frame's name too), or the name given to `bare.asset.AddTexture`. It's `''` for an object without an image.
+
 ## Transform
 
 Setters return the object, so you can chain them:
@@ -218,7 +220,16 @@ See [Hitbox](../reference/hitbox).
 obj.Remove();
 ```
 
-Pooled objects are returned to their pool, so they can be reused without new allocations.
+Pooled objects are returned to their pool, so they can be reused without new allocations. Its children are removed with it, and every object goes when its scene does.
+
+`removed` says whether an object was removed, for code that keeps a reference to one, like a component that follows a target. It's `false` again once the object is added again. Objects made from an image name are pooled, so a removed one can come back as a different object, with `removed` false. To tell, keep its `generation` along with the reference: it goes up by one every time the object is removed, so a different number means the object you kept is gone. Moving an object to another parent or scene doesn't count as removing it.
+
+```ts
+const target = { object: bat, generation: bat.generation };
+// later
+if (target.object.removed || target.object.generation !== target.generation)
+    this.FindNewTarget();
+```
 
 ## Shaders and masks
 

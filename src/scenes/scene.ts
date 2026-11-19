@@ -1345,7 +1345,7 @@ Or remove "stripGeneratedAssets": true from "bareEngine" in package.json.`);
         else
         {
             gameObject.pooled = wasPooled;
-            gameObject.Removed();
+            gameObject.Removed(false);
         }
     }
 

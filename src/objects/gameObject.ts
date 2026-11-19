@@ -119,6 +119,12 @@ export class GameObject
 
     active:boolean = true;
     texture: Texture | null = null;
+
+    /** The name of the image it shows: the asset name it was loaded by, or the name given to `AddTexture`. '' without one. */
+    get textureName(): string
+    {
+        return this.texture?.texturePath ?? "";
+    }
     
     private _shaders: Shader[] | null = null;
 
@@ -142,6 +148,28 @@ export class GameObject
     addedToScene:boolean = false;
     started:boolean = false;
     pooled:boolean = false;
+
+    private _removed = false;
+    private _generation = 0;
+
+    /**
+     * True once the object is removed: by `Remove()`, by its parent's removal, or when its scene goes. It's false again
+     * if the object is added again, which a pool does when it reuses it; see `generation` for that.
+     */
+    get removed(): boolean
+    {
+        return this._removed;
+    }
+
+    /**
+     * How many times the object was removed. A pooled object is reused after it's removed, so `removed` alone can't
+     * tell a reference kept from before; keep the generation with it, and a different one means it was removed since.
+     * Moving an object to another parent or scene doesn't count.
+     */
+    get generation(): number
+    {
+        return this._generation;
+    }
     revertPivotOnSave: boolean = false; // TODO
 
     resizeable: boolean = true;
@@ -568,6 +596,7 @@ export class GameObject
     Added()
     {
         this.addedToScene = true;
+        this._removed = false;
 
         // Re-read the hooks now the object is fully constructed and parented.
         this.RefreshLifecycleHooks();
@@ -622,10 +651,16 @@ export class GameObject
         // FOR OVERRIDE
     }
 
-    Removed()
+    // `final`: removed for good (it's reset, and pooled or released), rather than moved to another parent or scene
+    Removed(final: boolean = true)
     {
         this.addedToScene = false;
         this.started = false;
+        if (final)
+        {
+            this._removed = true;
+            this._generation++;
+        }
         this.OnRemoved();
     }
 

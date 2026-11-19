@@ -33,6 +33,8 @@ import { HitboxInnerTransformTest } from "./testScenes/hitboxInnerTransformTest"
 import { ShaderUniformsTest } from "./testScenes/shaderUniformsTest";
 import { ClipChildrenTest } from "./testScenes/clipChildrenTest";
 import { ClipBatchTest } from "./testScenes/clipBatchTest";
+import { TextureNameTest } from "./testScenes/textureNameTest";
+import { RemovedTest } from "./testScenes/removedTest";
 import { SopiroJointsTest } from "./testScenes/sopiroJointsTest";
 import { ResolutionTest, listenForTurns, resizeWhileFirstSceneStarts } from "./testScenes/resolutionTest";
 import { EditorPreview } from "./docExamples/editorPreview";
@@ -84,6 +86,8 @@ class MainGame extends Scene
         ShaderUniformsTest,
         ClipChildrenTest,
         ClipBatchTest,
+        TextureNameTest,
+        RemovedTest,
         SopiroJointsTest,
         ResolutionTest,
     ];
