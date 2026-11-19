@@ -11,10 +11,68 @@ export interface Size {
 
 export class Helper
 {
+    // structuredClone is missing on some older browsers/webviews; fall back to a manual clone with the same
+    // semantics (Map/Set/Date/typed arrays/cycles kept, class instances become plain objects, throws on functions)
     static DeepCopy<T>(obj: T): T
     {
-        //return JSON.parse(JSON.stringify(obj)) as T;
-        return structuredClone(obj);
+        if (typeof structuredClone === "function")
+            return structuredClone(obj);
+        return Helper.manualClone(obj, new Map()) as T;
+    }
+
+    private static manualClone(value: any, seen: Map<any, any>): any
+    {
+        const type = typeof value;
+        if (type === "function" || type === "symbol")
+            throw new Error("DeepCopy: value of type " + type + " could not be cloned");
+        if (value === null || type !== "object")
+            return value;
+
+        if (seen.has(value))
+            return seen.get(value);
+
+        let copy: any;
+        if (Array.isArray(value))
+        {
+            copy = new Array(value.length);
+            seen.set(value, copy);
+            for (let i = 0; i < value.length; i++)
+                copy[i] = Helper.manualClone(value[i], seen);
+            return copy;
+        }
+        if (value instanceof Date)
+            copy = new Date(value.getTime());
+        else if (value instanceof RegExp)
+            copy = new RegExp(value.source, value.flags);
+        else if (value instanceof ArrayBuffer)
+            copy = value.slice(0);
+        else if (ArrayBuffer.isView(value))
+            copy = new (value.constructor as any)(value as any);
+        else if (value instanceof Map)
+        {
+            copy = new Map();
+            seen.set(value, copy);
+            value.forEach((v, k) => copy.set(Helper.manualClone(k, seen), Helper.manualClone(v, seen)));
+            return copy;
+        }
+        else if (value instanceof Set)
+        {
+            copy = new Set();
+            seen.set(value, copy);
+            value.forEach(v => copy.add(Helper.manualClone(v, seen)));
+            return copy;
+        }
+        else
+        {
+            copy = {};
+            seen.set(value, copy);
+            for (const key of Object.keys(value))
+                copy[key] = Helper.manualClone(value[key], seen);
+            return copy;
+        }
+
+        seen.set(value, copy);
+        return copy;
     }
 
     static DeepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T

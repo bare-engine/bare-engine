@@ -383,7 +383,7 @@ export class GameObjectSerializer
             var isPlain = Array.isArray(serializedValue) || proto === Object.prototype || proto === null;
             if (!isPlain)
             {
-                try { structuredClone(serializedValue); } // throws on non-cloneable -> drop it
+                try { Helper.DeepCopy(serializedValue); } // throws on non-cloneable -> drop it
                 catch (_e) { serializedValue = undefined; }
             }
         }
