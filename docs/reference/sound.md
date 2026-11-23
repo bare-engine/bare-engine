@@ -52,7 +52,7 @@ bare.sound.Play('bell', { src: `${bare.soundPath}/bell.wav` });
 | Method | Description |
 | --- | --- |
 | `Play(id, options?)` | Play a sound. |
-| `PlayWithRandomRate(id, range?, options?)` | Play with a random rate, default ±10%. |
+| `PlayWithRandomRate(id, variation?, options?)` | Play at `options.rate` (default 1), up to `variation` higher or lower (default 0.1, ±10%). `{ rate: 0.7 }` plays at 0.63 to 0.77. |
 | `Load(id, src?)` | Load without playing. |
 | `Register(id, src)` | Map a name to a file in `public/sounds/`. |
 | `Get(id)` | The loaded sound. |

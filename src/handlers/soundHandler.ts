@@ -146,9 +146,10 @@ export class SoundHandler
         return sound;
     }
 
-    public PlayWithRandomRate(id: string, randomRange: number = .2, options: SoundOptions = {}): SoundJsSound | null
+    public PlayWithRandomRate(id: string, variation: number = .1, options: SoundOptions = {}): SoundJsSound | null
     {
-        return this.Play(id, { ...options, rate: Helper.RandomRange(1 - randomRange*.5, 1 + randomRange*.5) });
+        const rate = (options.rate ?? 1) * Helper.RandomRange(1 - variation, 1 + variation);
+        return this.Play(id, { ...options, rate });
     }
 
     public Stop(id: string): void
