@@ -8,7 +8,7 @@ import { TweenTo } from 'bare-engine';
 TweenTo(player, 0.5, { x: 300, rotation: 90 });
 ```
 
-`TweenTo(object, seconds, props)` is shorthand for `bare.tween.To(...)`. Both return a tween with a `promise`, so you can wait for it:
+`TweenTo(object, seconds, props)` is shorthand for `bare.tween.To(...)`, and works anywhere, including plain functions outside a scene or component: it runs on the object's scene, so the object must be in one. `bare.tween` only works inside a scene, component or GameObject (see [Troubleshooting](../guide/troubleshooting)); elsewhere, write `obj.scene.tween.To(...)`. Both return a tween with a `promise`, so you can wait for it:
 
 ```ts
 await TweenTo(door, 1, { y: 0 }).promise;
