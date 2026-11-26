@@ -76,8 +76,11 @@ const explosion = bare.particle.CreateEmitter({
     },
 });
 
-// a burst of 20 particles where the enemy was
+// a burst of 20 particles (the emitRate) where the enemy was
 bare.particle.OneShot(explosion, { position: enemy.position });
+
+// a bigger burst from the same emitter
+bare.particle.OneShot(explosion, { position: boss.position, count: 60 });
 ```
 
 For a continuous emitter, add it with `autoStart`. `position` places it, and the emitter's own `position` moves it later:
@@ -89,6 +92,13 @@ smoke.position.set(x, y);   // move it around
 ```
 
 With `localSpace: false` the smoke stays where it was emitted and trails behind as the emitter moves. With the default `true`, the particles move along with it.
+
+To change how much a running emitter emits, for example thicker smoke as a fire grows:
+
+```ts
+smoke.setEmitRate(30);   // particles per second, or per burst with emitTime
+smoke.setEmitTime(0.5);  // emit in bursts every 0.5 seconds, 0 to emit continuously again
+```
 
 **Example:** the [Showcase](https://github.com/bare-engine/bare-showcase)'s [particles demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/particles/src/DemoParticles.ts#L22-L98) has smoke that follows the mouse and random explosions.
 
@@ -185,6 +195,16 @@ export class Museum extends Scene
 | --- | --- |
 | `CreateEmitter(data, options?)` | Create an emitter from settings like the ones above. |
 | `Add(emitter, options?)` | Start updating and drawing an emitter. Options: `autoStart`, `autoRemove`, `autoOneShot`. |
-| `OneShot(emitter, { position? })` | Emit one burst, at `position` if given. |
+| `OneShot(emitter, { position?, count? })` | Emit one burst of `count` particles (defaults to `emitRate`), at `position` if given. |
 | `Remove(emitter)` / `Has(emitter)` | Manage emitters. |
 | `Clear()` | Remove all emitters. |
+
+## ParticleEmitter
+
+| Method | Description |
+| --- | --- |
+| `start()` / `stop()` | Emit continuously, or stop emitting. Particles already alive finish their life. |
+| `oneShot(count?)` | Emit `count` particles right away (defaults to `emitRate`). |
+| `setEmitRate(rate)` | Change `emitRate`: particles per second, or per burst with `emitTime`. |
+| `setEmitTime(time)` | Change `emitTime`: emit in bursts every this many seconds, `0` for continuous. |
+| `position` / `scale` | Move the emitter, or scale the whole effect around its position. |

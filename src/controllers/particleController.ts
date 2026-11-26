@@ -21,6 +21,7 @@ export type ParticleEmitterOptions = {
 
 export type ParticleOneShotOptions = {
     position?: Vec2;
+    count?: number;
 };
 
 // PLAIN DATA AS IT COMES OUT OF settingsData.json / AN @InspectorField COMPONENT:
@@ -269,12 +270,12 @@ export class ParticleController
         // ALREADY MANAGED BY THIS CONTROLLER (EG ADDED ONCE AT STARTUP) - Add() WOULD IGNORE
         // THE autoOneShot AND NOTHING WOULD BE EMITTED, SO FIRE IT DIRECTLY
         if (this.Has(emitter))
+        if (!this.Has(emitter))
         {
-            emitter.oneShot();
-            return;
+            this.Add(emitter, { autoRemove: true });
         }
 
-        this.Add(emitter, { autoRemove: true, autoOneShot: true });
+        emitter.oneShot(options.count);
     }
 
     Clear()

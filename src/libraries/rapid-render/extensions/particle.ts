@@ -494,10 +494,10 @@ export class ParticleEmitter {
     }
 
     /**
-     * Convenience: emit `emitRate` particles in one shot (fire-and-forget burst).
+     * Convenience: emit `count` particles (default `emitRate`) in one shot (fire-and-forget burst).
      */
-    oneShot() {
-        this.emit(this.emitRate);
+    oneShot(count: number = this.emitRate) {
+        this.emit(count);
     }
 }
 
