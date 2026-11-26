@@ -65,6 +65,25 @@ An active component attached to an already started object can run `OnAwake`, `On
 | `OnCollisionStart(other)` / `OnCollisionUpdate(other)` / `OnCollisionEnd(other)` | With [physics](../reference/physics). |
 | `OnPostLoadLevel()` / `OnPreSaveLevel()` | Around level loading and saving. |
 
+## Waiting
+
+Components have `Wait(seconds)`, `WaitFrame(frames = 1)` and `WaitRealTime(seconds)`. They count time like the [scene's waits](./scenes#waiting) and return `Promise<boolean>`, but also settle `false` when the component or its GameObject is removed, so a staggered loop stops by itself:
+
+```ts
+async ClearAll()
+{
+    for (const cell of this.cells)
+    {
+        if (!await this.Wait(0.05))
+            return;
+
+        this.Clear(cell);
+    }
+}
+```
+
+Waits on a `persistent` GameObject survive level loads; other waits are cancelled by them. `CancelWaits()` cancels only this component's waits. A component that isn't added (for example in the editor) gets `false` straight away. [GameObjects have the same waits](./game-objects#waiting).
+
 ## Finding components
 
 ```ts

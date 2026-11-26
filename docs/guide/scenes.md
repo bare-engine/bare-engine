@@ -112,7 +112,7 @@ For startup order, restart differences, and ownership of subscriptions and textu
 
 ## Waiting
 
-All waits belong to a scene. In a scene use `this.Wait`; in a component use `this.scene.Wait`.
+All waits belong to a scene. In a scene use `this.Wait`; components and GameObjects have their own `this.Wait` ([components](./components#waiting), [GameObjects](./game-objects#waiting)), which also cancels when its owner is removed.
 
 | Method | Behavior |
 | --- | --- |
@@ -124,7 +124,7 @@ All waits belong to a scene. In a scene use `this.Wait`; in a component use `thi
 The three wait methods return `Promise<boolean>`: `true` when completed, `false` when cancelled. Cancellation resumes the awaiting function and runs `finally` blocks. Check the result before continuing gameplay work:
 
 ```ts
-if (!await this.scene.Wait(0.3))
+if (!await this.Wait(0.3))
     return;
 
 this.OpenGate();

@@ -4,7 +4,7 @@ Besides [`bare`](./bare), a few helpers are available everywhere without an impo
 
 ## Waiting
 
-Waits belong to a scene: use `this.Wait`, `this.WaitFrame` and `this.WaitRealTime` inside a scene, or `this.scene.Wait` from a component. See [Scene waits](../guide/scenes#waiting). The global `wait`, `waitFrame`, `waitRealTime` and `cancelWaits` helpers have been removed.
+Waits belong to a scene: use `this.Wait`, `this.WaitFrame` and `this.WaitRealTime` inside a scene, a component or a GameObject. See [Scene waits](../guide/scenes#waiting), [Component waits](../guide/components#waiting) and [GameObject waits](../guide/game-objects#waiting). The global `wait`, `waitFrame`, `waitRealTime` and `cancelWaits` helpers have been removed.
 
 ## Logging and checks
 

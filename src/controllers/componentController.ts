@@ -4,6 +4,7 @@ import type { Scene } from "../scenes/scene";
 import { BareEvent, Ctor } from '../types/bareTypes';
 import { InspectorField } from "../utils/decorators";
 import { RUN_MODES_KEY } from "../utils/runModes";
+import { OwnedWaits } from "../utils/waitQueue";
 
 // REFERENCING A CLASS EXTENDING BASECOMPONENT WILL AUTOMATICALLY ALSO INCLUDE COMPONENTCONTROLLER
 export abstract class Component<T extends GameObject = GameObject>
@@ -14,6 +15,7 @@ export abstract class Component<T extends GameObject = GameObject>
     save: boolean = true; // IF FALSE, DOES NOT SERIALIZE
     hasAdded: boolean = false;
     hasStarted: boolean = false;
+    private waits?: OwnedWaits;
 
     constructor(scene: Scene)
     {
@@ -40,6 +42,40 @@ export abstract class Component<T extends GameObject = GameObject>
 
         this.hasAdded = false;
         this.hasStarted = false;
+        this.CancelWaits();
+    }
+
+    /** Scene game time; returns false when cancelled, including when this component or its GameObject is removed. */
+    Wait(seconds: number): Promise<boolean>
+    {
+        return this.TrackWait(persistent => this.scene.Wait(seconds, persistent));
+    }
+
+    /** Counts the scene's fixed updates; returns false when cancelled or when this component is removed. */
+    WaitFrame(frames = 1): Promise<boolean>
+    {
+        return this.TrackWait(persistent => this.scene.WaitFrame(frames, persistent));
+    }
+
+    /** Real time, even while paused; returns false when cancelled or when this component is removed. */
+    WaitRealTime(seconds: number): Promise<boolean>
+    {
+        return this.TrackWait(persistent => this.scene.WaitRealTime(seconds, persistent));
+    }
+
+    /** Settles this component's pending waits false. Other waits of the scene are unaffected. */
+    CancelWaits(): void
+    {
+        this.waits?.Cancel();
+    }
+
+    // waits on a persistent GameObject survive level loads, like the object itself
+    private TrackWait(schedule: (persistent: boolean) => Promise<boolean>): Promise<boolean>
+    {
+        if (!this.hasAdded)
+            return Promise.resolve(false);
+
+        return (this.waits ??= new OwnedWaits()).Track(schedule(this.go.persistent));
     }
 
     Start(): void

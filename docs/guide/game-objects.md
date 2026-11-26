@@ -231,6 +231,28 @@ if (target.object.removed || target.object.generation !== target.generation)
     this.FindNewTarget();
 ```
 
+## Waiting
+
+GameObjects have `Wait(seconds)`, `WaitFrame(frames = 1)` and `WaitRealTime(seconds)`, like [components](./components#waiting). They count time like the [scene's waits](./scenes#waiting) and settle `false` when the object is removed, also by its parent's removal or its scene going. That includes pooled objects: a wait started before removal never resumes on the reused object.
+
+```ts
+async Flash()
+{
+    for (let i = 0; i < 3; i++)
+    {
+        this.visible = false;
+        if (!await this.Wait(0.1))
+            return;
+
+        this.visible = true;
+        if (!await this.Wait(0.1))
+            return;
+    }
+}
+```
+
+Removing an object also removes its components, so their waits settle `false` too. Waits of a `persistent` object survive level loads. `CancelWaits()` cancels only the object's own waits. Moving an object to another parent or scene keeps its waits, but they keep counting in the scene they started in.
+
 ## Shaders and masks
 
 ```ts

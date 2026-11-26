@@ -12,6 +12,7 @@ import { Hitbox } from '../types/hitbox';
 import { Percentage, isInspectorFieldDescriptor } from "../utils/decorators";
 import { Helper } from '../utils/helper';
 import { getOwnSerializeFieldNames, SerializeField } from "../utils/serializeFields";
+import { OwnedWaits } from "../utils/waitQueue";
 
 // Lifecycle hook bits. GameObject's hooks are empty virtuals, so walking a whole scene to call them
 // costs real time and does nothing. Every object caches which hooks its own class implements (`hooks`)
@@ -151,6 +152,7 @@ export class GameObject
 
     private _removed = false;
     private _generation = 0;
+    private waits?: OwnedWaits;
 
     /**
      * True once the object is removed: by `Remove()`, by its parent's removal, or when its scene goes. It's false again
@@ -660,8 +662,42 @@ export class GameObject
         {
             this._removed = true;
             this._generation++;
+            this.CancelWaits();
         }
         this.OnRemoved();
+    }
+
+    /** Scene game time; returns false when cancelled, including when this object is removed (before a pool reuses it). */
+    Wait(seconds: number): Promise<boolean>
+    {
+        return this.TrackWait(persistent => this.scene.Wait(seconds, persistent));
+    }
+
+    /** Counts the scene's fixed updates; returns false when cancelled or when this object is removed. */
+    WaitFrame(frames = 1): Promise<boolean>
+    {
+        return this.TrackWait(persistent => this.scene.WaitFrame(frames, persistent));
+    }
+
+    /** Real time, even while paused; returns false when cancelled or when this object is removed. */
+    WaitRealTime(seconds: number): Promise<boolean>
+    {
+        return this.TrackWait(persistent => this.scene.WaitRealTime(seconds, persistent));
+    }
+
+    /** Settles this object's pending waits false. Its components' waits and the scene's other waits are unaffected. */
+    CancelWaits(): void
+    {
+        this.waits?.Cancel();
+    }
+
+    // waits of a persistent object survive level loads, like the object itself
+    private TrackWait(schedule: (persistent: boolean) => Promise<boolean>): Promise<boolean>
+    {
+        if (!this.addedToScene)
+            return Promise.resolve(false);
+
+        return (this.waits ??= new OwnedWaits()).Track(schedule(this.persistent));
     }
 
     OnRemoved()

@@ -79,3 +79,32 @@ export class WaitQueue
             throw new RangeError('Wait duration must be a finite nonnegative number.');
     }
 }
+
+// scene waits owned by a component or GameObject: settles them false when the owner goes, without
+// touching the scene's other waits. a cancelled entry stays in the scene queue until it fires; settling twice is harmless
+export class OwnedWaits
+{
+    private cancels?: Set<() => void>;
+
+    Track(wait: Promise<boolean>): Promise<boolean>
+    {
+        return new Promise(resolve => {
+            const cancels = (this.cancels ??= new Set());
+            const cancel = () => resolve(false);
+            cancels.add(cancel);
+            wait.then(completed => {
+                cancels.delete(cancel);
+                resolve(completed);
+            });
+        });
+    }
+
+    Cancel(): void
+    {
+        const cancels = this.cancels;
+        if (!cancels) return;
+        this.cancels = undefined;
+        for (const cancel of cancels)
+            cancel();
+    }
+}
