@@ -308,6 +308,7 @@ export interface SettingsData
     presets?: Record<string, Record<string, any>>;
     saveVars?: Record<string, Array<string>>
     animations?: Record<string, AnimationDataInfo>
+    sounds?: Record<string, { src?: string, volume?: number }>, // per sound name: the file in the sound folder and/or its default volume, as bare.sound.Register takes them
     showUI?: boolean,
     settings?: {gridEnabled?: boolean, gridSize?: int},
     selectionEnabled?: boolean,

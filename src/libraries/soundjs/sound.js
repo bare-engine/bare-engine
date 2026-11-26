@@ -581,8 +581,10 @@ function makeSound(source, loadHandler, shouldLoadSound, xhr, failHandler) {
   };
 
   //Fade a sound in, from an initial volume level of zero.
+  //fades up to endValue, 1 when left out
 
-  o.fadeIn = function(durationInSeconds) {
+  o.fadeIn = function(durationInSeconds, endValue) {
+    if (endValue === undefined) endValue = 1;
 
     //Set the volume to 0 so that you can fade
     //in from silence. any fade that's still going is dropped first
@@ -590,8 +592,8 @@ function makeSound(source, loadHandler, shouldLoadSound, xhr, failHandler) {
     gain.cancelScheduledValues(0);
     gain.setValueAtTime(0, actx.currentTime);
     if (o.playing) {
-      gain.linearRampToValueAtTime(1, actx.currentTime + durationInSeconds);
-      o.volumeValue = 1;
+      gain.linearRampToValueAtTime(endValue, actx.currentTime + durationInSeconds);
+      o.volumeValue = endValue;
     }
 
   };

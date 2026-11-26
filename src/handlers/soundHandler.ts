@@ -16,11 +16,19 @@ export type SoundOptions = {
     loaded?: (sound: SoundJsSound) => void;
 };
 
+export type SoundRegisterOptions = {
+    /** How loud this sound is wherever it plays, to level files that are louder or quieter than
+     *  the rest. Every volume given in code for it (`Play`, `SetVolume`, `FadeTo`, `FadeIn`) is
+     *  multiplied by this. Above 1 makes it louder. Default 1. */
+    volume?: number;
+};
+
 export class SoundHandler
 {
     private sounds: Map<string, SoundJsSound> = new Map();
     private loads: Map<string, Promise<SoundJsSound>> = new Map();
     private soundPaths: Map<string, string> = new Map();
+    private defaultVolumes: Map<string, number> = new Map();
     private suspendedByHandler: boolean = false;
     private muted: boolean = false;
     private unlocked: boolean = actx.state === 'running';
@@ -147,9 +155,39 @@ export class SoundHandler
         }
     }
 
-    public Register(id: string, src: string): void
+    /** Maps a name to a file in the sound folder and/or sets its default volume:
+     *  `Register('coin', 'coin.wav')`, `Register('coin', 'coin.mp3', { volume: 1.4 })` or
+     *  `Register('coin', { volume: 1.4 })`. Doesn't load the sound. */
+    public Register(id: string, src?: string, options?: SoundRegisterOptions): void;
+    public Register(id: string, options: SoundRegisterOptions): void;
+    public Register(id: string, srcOrOptions?: string | SoundRegisterOptions, options: SoundRegisterOptions = {}): void
     {
-        this.soundPaths.set(id, `${bare.soundPath}/${src}`);
+        if (typeof srcOrOptions === 'object')
+            options = srcOrOptions;
+        else if (srcOrOptions !== undefined)
+            this.soundPaths.set(id, `${bare.soundPath}/${srcOrOptions}`);
+
+        if (options.volume !== undefined)
+            this.SetDefaultVolume(id, options.volume);
+    }
+
+    /** The volume set with `Register` or in `settingsData.json`'s `sounds`. 1 when none is set. */
+    public GetDefaultVolume(id: string): number
+    {
+        return this.defaultVolumes.get(id) ?? 1;
+    }
+
+    private SetDefaultVolume(id: string, volume: number): void
+    {
+        const previous = this.GetDefaultVolume(id);
+        this.defaultVolumes.set(id, volume);
+
+        // a sound that's already loaded keeps the volume it was given in code, now on top of
+        // the new default
+        const sound = this.sounds.get(id);
+
+        if (sound)
+            sound.volume = (previous === 0 ? 1 : sound.volume / previous) * volume;
     }
 
     public Get(id: string): SoundJsSound | undefined
@@ -187,6 +225,7 @@ export class SoundHandler
                     }
                 );
 
+                sound.volume = this.GetDefaultVolume(id);
                 this.sounds.set(id, sound);
             });
 
@@ -206,7 +245,7 @@ export class SoundHandler
         // Start now if the buffer is ready, otherwise as soon as it decodes.
         if (sound.hasLoaded || sound.buffer)
         {
-            this.StartPlayback(sound, options);
+            this.StartPlayback(id, sound, options);
         }
         else
         {
@@ -214,7 +253,7 @@ export class SoundHandler
                 .then(() =>
                     {
                         options.loaded?.(sound);
-                        this.StartPlayback(sound, options);
+                        this.StartPlayback(id, sound, options);
                     })
                 .catch(() => { /* load failure already reported in Load */ });
         }
@@ -246,17 +285,17 @@ export class SoundHandler
         const sound = this.sounds.get(id);
 
         if (sound)
-            sound.volume = volume;
+            sound.volume = volume * this.GetDefaultVolume(id);
     }
 
     public FadeTo(id: string, endValue: number, durationInSeconds: number): void
     {
-        this.sounds.get(id)?.fade(endValue, durationInSeconds);
+        this.sounds.get(id)?.fade(endValue * this.GetDefaultVolume(id), durationInSeconds);
     }
 
     public FadeIn(id: string, durationInSeconds: number): void
     {
-        this.sounds.get(id)?.fadeIn(durationInSeconds);
+        this.sounds.get(id)?.fadeIn(durationInSeconds, this.GetDefaultVolume(id));
     }
 
     public FadeOut(id: string, durationInSeconds: number): void
@@ -283,9 +322,9 @@ export class SoundHandler
         sound.startOffset = 0;
     }
 
-    private StartPlayback(sound: SoundJsSound, options: SoundOptions): void
+    private StartPlayback(id: string, sound: SoundJsSound, options: SoundOptions): void
     {
-        this.ApplyOptions(sound, options);
+        this.ApplyOptions(id, sound, options);
 
         if (options.start !== undefined)
             sound.playFrom(options.start);
@@ -295,10 +334,10 @@ export class SoundHandler
         this.AttachCompleteHandler(sound, options);
     }
 
-    private ApplyOptions(sound: SoundJsSound, options: SoundOptions): void
+    private ApplyOptions(id: string, sound: SoundJsSound, options: SoundOptions): void
     {
         if (options.volume !== undefined)
-            sound.volume = options.volume;
+            sound.volume = options.volume * this.GetDefaultVolume(id);
 
         if (options.pan !== undefined)
             sound.pan = options.pan;

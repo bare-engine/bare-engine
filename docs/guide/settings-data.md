@@ -57,6 +57,7 @@ Every key is optional. A small file using most of them:
 | `basePrefabs` | `ANY` and `NONE` | Building blocks for other prefabs. See [Base prefabs](./prefabs#base-prefabs). |
 | `presets` | `FULL`, `CENTER` | Reusable property values. See [Presets](./prefabs#presets). |
 | `animations` | | Named frame animations, used by `AnimationComponent`. See [Animations](./animations#defining-animations). |
+| `sounds` | | A file and/or default volume per sound name, like `"coin": { "src": "coin.mp3", "volume": 1.4 }`. See [Default volume per sound](../reference/sound#default-volume-per-sound). |
 | `layers` | `["objects"]` | Layer names, in draw order. See [Layers](#layers). |
 | `layersInfo` | | Settings per layer. See [Layers](#layers). |
 | `gravity` | `0` | Downward gravity for [physics](../reference/physics). |

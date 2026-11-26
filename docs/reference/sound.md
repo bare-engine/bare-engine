@@ -34,11 +34,33 @@ bare.sound.Play('splash');
 bare.sound.Play('bell', { src: `${bare.soundPath}/bell.wav` });
 ```
 
+## Default volume per sound
+
+To level a file that's louder or quieter than the rest, give it a volume once, where it's registered, instead of in every `Play`:
+
+```ts
+bare.sound.Register('coin', 'coin.mp3', { volume: 1.4 });
+bare.sound.Register('explosion', { volume: 0.6 });    // keeps the default file, explosion.mp3
+```
+
+Or in [`settingsData.json`](../guide/settings-data), keyed by sound name. `src` is optional:
+
+```json
+"sounds": {
+  "coin": { "src": "coin.mp3", "volume": 1.4 },
+  "explosion": { "volume": 0.6 }
+}
+```
+
+Every volume given in code for that sound is multiplied by it: `Play('coin', { volume: 0.5 })` plays at 0.7, and `SetVolume`, `FadeTo` and `FadeIn` work the same way. So the volumes in code only say how loud a sound should be at that moment, not how loud its file is. `GetDefaultVolume(id)` returns it, 1 when none is set. `Get(id).volume` is the volume that's actually used, with the default already applied.
+
+The entries in `sounds` are registered when a scene with that settings data starts, and from then on they hold for the whole game.
+
 ## Play options
 
 | Option | Description |
 | --- | --- |
-| `volume` | 0 to 1. |
+| `volume` | 1 is the file as it is, 0 is silent. Above 1 makes it louder, though very loud sounds can distort. Multiplied by the sound's [default volume](#default-volume-per-sound). |
 | `loop` | Repeat forever. |
 | `rate` | Playback speed and pitch. |
 | `pan` | -1 (left) to 1 (right). |
@@ -54,10 +76,11 @@ bare.sound.Play('bell', { src: `${bare.soundPath}/bell.wav` });
 | `Play(id, options?)` | Play a sound. |
 | `PlayWithRandomRate(id, variation?, options?)` | Play at `options.rate` (default 1), up to `variation` higher or lower (default 0.1, ±10%). `{ rate: 0.7 }` plays at 0.63 to 0.77. |
 | `Load(id, src?)` | Load without playing. |
-| `Register(id, src)` | Map a name to a file in `public/sounds/`. |
+| `Register(id, src?, { volume }?)` / `Register(id, { volume })` | Map a name to a file in `public/sounds/`, and/or set its [default volume](#default-volume-per-sound). |
+| `GetDefaultVolume(id)` | The sound's [default volume](#default-volume-per-sound), 1 when none is set. |
 | `Get(id)` | The loaded sound. |
 | `Stop(id)` / `StopAll()` | Stop playback. |
-| `SetVolume(id, volume)` | Change volume. |
+| `SetVolume(id, volume)` | Change volume. Above 1 makes it louder. |
 | `FadeIn(id, seconds)` / `FadeOut(id, seconds)` / `FadeTo(id, volume, seconds)` | Fade volume. A newer fade, or `SetVolume`, replaces a fade that's still going: it starts from the volume heard at that moment. `FadeIn` starts from silence. Fades only work on a sound that's playing. |
 | `Mute()` / `Unmute()` | Silence all sound, for example during an ad. Playing sounds hold their place and continue on `Unmute()`. |
 | `isMuted` | `true` between `Mute()` and `Unmute()`. |

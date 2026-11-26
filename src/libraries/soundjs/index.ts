@@ -27,7 +27,7 @@ export interface SoundJsSound
   setEcho(delayValue?: number, feedbackValue?: number, filterValue?: number): void;
   setReverb(duration?: number, decay?: number, reverse?: boolean): void;
   fade(endValue: number, durationInSeconds: number): void;
-  fadeIn(durationInSeconds: number): void;
+  fadeIn(durationInSeconds: number, endValue?: number): void;
   fadeOut(durationInSeconds: number): void;
 }
 
