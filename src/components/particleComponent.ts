@@ -1,6 +1,6 @@
 import { Component } from "../controllers/componentController";
 import { GameMode } from "../globals";
-import { ParticleController } from "../controllers/particleController";
+import type { ParticleData } from "../controllers/particleController";
 import { ParticleEmitter } from "../libraries/rapid-render";
 import { GameObject } from "../objects/gameObject";
 import type { Scene } from "../scenes/scene";
@@ -30,7 +30,7 @@ export class ParticleComponent extends Component
     private localSpace: boolean = false;
 
     @SerializeField(GameMode.Edit)
-    private emitShape: string = "POINT";
+    private emitShape: NonNullable<ParticleData["emitShape"]> = "POINT";
 
     @SerializeField(GameMode.Edit)
     private emitRadius: number = 0;
@@ -89,28 +89,25 @@ export class ParticleComponent extends Component
 
     private followGameObject(go: GameObject): void
     {
-        ParticleController.SetPosition(this.emitter, go.x + this.position.x, go.y + this.position.y);
+        this.emitter.position.set(go.x + this.position.x, go.y + this.position.y);
     }
 
     @InspectorButton
     Fire()
     {
-        ParticleController.Emit(this.emitter);
+        this.emitter.oneShot();
     }
 
     override OnUpdate(deltaTime: number): void
     {
         this.followGameObject(this.go);
-        ParticleController.UpdateEmitter(this.emitter, deltaTime);
+        this.emitter.update(deltaTime);
     }
 
     override OnPostRender(): void
     {
-        // NOTHING TO DRAW WHILE THE TEXTURE IS STILL LOADING
-        if (!ParticleController.IsReady(this.emitter))
-            return;
-
-        ParticleController.RenderEmitter(this.emitter);
+        // draws nothing while the texture is still loading
+        this.emitter.render();
     }
 
     override OnRemoved()

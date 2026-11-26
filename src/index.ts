@@ -25,7 +25,7 @@ export { KeyboardController, keyboardController } from "./controllers/keyboardCo
 export { MouseController } from "./controllers/mouseController";
 export { ObjectController } from "./controllers/objectController";
 export { ParticleController } from "./controllers/particleController";
-export type { ParticleData, ParticleEmitterOptions } from "./controllers/particleController";
+export type { ParticleData, ParticleAnimationData, ParticleAttributeValue, ParticleRange, ParticleEmitterOptions, ParticleOneShotOptions } from "./controllers/particleController";
 export { SceneController } from "./controllers/sceneController";
 export { TweenController, TweenTo } from "./controllers/tweenController";
 

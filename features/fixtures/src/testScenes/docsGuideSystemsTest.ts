@@ -191,9 +191,17 @@ export class DocsGuideSystemsTest extends Scene
         c.check(particle?.emitter != null, "particle preset should attach a ParticleComponent with an emitter");
         particle?.Fire();
 
-        const emitter = bare.particle.CreateEmitter({ texture: "PIXEL", life: 0.8, emitRate: 20, emitShape: "CIRCLE", emitRadius: 10 } as any);
+        const emitter = bare.particle.CreateEmitter({ texture: "PIXEL", life: 0.8, emitRate: 20, emitShape: "CIRCLE", emitRadius: 10, position: { x: 5, y: 6 } });
+        c.check(emitter.position.x === 5 && emitter.position.y === 6, "CreateEmitter should place the emitter at position");
         bare.particle.Add(emitter, { autoStart: true });
         c.check(bare.particle.Has(emitter), "Add should register the emitter");
+        emitter.position.set(30, 40);
+        bare.particle.OneShot(emitter);
+        c.check(emitter.count === 20, "OneShot should emit emitRate particles: " + emitter.count);
+        c.check(Math.hypot(emitter.x.typedArray[0], emitter.y.typedArray[0]) <= 10, "local-space particles should spawn relative to the emitter, within emitRadius");
+        const trail = bare.particle.CreateEmitter({ texture: "PIXEL", emitRate: 1, localSpace: false, position: { x: 30, y: 40 } });
+        trail.oneShot();
+        c.check(trail.x.typedArray[0] === 30 && trail.y.typedArray[0] === 40, "world-space particles should spawn at the emitter's position: " + trail.x.typedArray[0] + "," + trail.y.typedArray[0]);
         bare.particle.OneShot(emitter, { position: hero.position });
         bare.particle.Remove(emitter);
         c.check(!bare.particle.Has(emitter), "Remove should unregister the emitter");

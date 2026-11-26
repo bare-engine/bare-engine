@@ -216,6 +216,12 @@ export class ParticleEmitter {
     /** Whether spawned particles are positioned in local emitter space (default: true). */
     localSpace: boolean = DEFAULT_LOCAL_SPACE;
 
+    /** Where the emitter is. World-space particles spawn here; local-space particles are drawn relative to it. */
+    position: Vec2 = new Vec2(0, 0);
+
+    /** Scales the whole effect around `position` at draw time, live particles included. */
+    scale: number = 1;
+
     private rapid: Rapid;
 
     x = new DynamicArrayBuffer(ArrayType.Float32)
@@ -348,7 +354,7 @@ export class ParticleEmitter {
             this.x.push(spawnX)
             this.y.push(spawnY)
         } else {
-            const { x, y } = ms.localToWorld(spawnX, spawnY)
+            const { x, y } = ms.localToWorld(this.position.x + spawnX, this.position.y + spawnY)
             this.x.push(x)
             this.y.push(y)
         }
@@ -443,12 +449,20 @@ export class ParticleEmitter {
     }
 
     /**
-     * Renders all live particles.
-     * In local-space mode the emitter's own transform is applied around the batch.
+     * Renders all live particles with the current matrix stack (so the camera applies),
+     * moved to `position` and scaled by `scale` around it.
+     * Draws nothing while the emitter has no texture (e.g. while it is still loading).
      */
-    render(customMatrix?: number) {
+    render() {
         const options = this.options
-        const renderMatrix = customMatrix ?? (this.localSpace ? undefined : this.rapid.matrix.alloc())
+        if (!options.texture) return
+
+        const ms = this.rapid.matrixStack
+        ms.save()
+        ms.translate(this.position.x, this.position.y)
+        if (this.scale !== 1) ms.scale(this.scale)
+        // world-space particles already carry the emitter's position
+        if (!this.localSpace) ms.translate(-this.position.x, -this.position.y)
 
         try {
             this.rapid.drawParticles({
@@ -467,12 +481,10 @@ export class ParticleEmitter {
                 originX: options.origin?.x ?? 0.5,
                 originY: options.origin?.y ?? 0.5,
 
-                customMatrix: renderMatrix
+                customMatrix: ms.curWorldM
             })
         } finally {
-            if (customMatrix === undefined && renderMatrix !== undefined && !this.localSpace) {
-                this.rapid.matrix.free(renderMatrix)
-            }
+            ms.restore()
         }
     }
 

@@ -1,4 +1,4 @@
-import { ParticleComponent, ParticleController, Scene } from "bare-engine";
+import { ParticleComponent, Scene } from "bare-engine";
 import { Checks } from "./checks";
 
 // covers ParticleComponent: every setting a prefab gives it reaches the emitter, like with bare.particle.CreateEmitter
@@ -61,7 +61,7 @@ export class ParticleComponentTest extends Scene
         c.check(options.maxParticles === 5, "maxParticles should reach the emitter: " + options.maxParticles);
         c.check(options.emitTime === 0.5, "emitTime should reach the emitter: " + options.emitTime);
         c.check(options.emitRect?.width === 10 && options.emitRect?.height === 20, "emitRect should reach the emitter: " + JSON.stringify(options.emitRect));
-        c.check(ParticleController.GetTransform(emitter).scale === 2, "scale should reach the emitter: " + ParticleController.GetTransform(emitter).scale);
+        c.check(emitter.scale === 2, "scale should reach the emitter: " + emitter.scale);
 
         // 0 maxParticles means no limit
         const unlimited = this.AddGameObject({ components: { particle: { texture: "PIXEL" } } });

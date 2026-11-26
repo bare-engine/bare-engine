@@ -80,32 +80,35 @@ const explosion = bare.particle.CreateEmitter({
 bare.particle.OneShot(explosion, { position: enemy.position });
 ```
 
-For a continuous emitter, add it with `autoStart`:
+For a continuous emitter, add it with `autoStart`. `position` places it, and the emitter's own `position` moves it later:
 
 ```ts
-const smoke = bare.particle.CreateEmitter({ texture: 'particles/smoke', life: 2, emitRate: 10 });
+const smoke = bare.particle.CreateEmitter({ texture: 'particles/smoke', life: 2, emitRate: 10, localSpace: false, position: { x: 100, y: 200 } });
 bare.particle.Add(smoke, { autoStart: true });
 smoke.position.set(x, y);   // move it around
 ```
+
+With `localSpace: false` the smoke stays where it was emitted and trails behind as the emitter moves. With the default `true`, the particles move along with it.
 
 **Example:** the [Showcase](https://github.com/bare-engine/bare-showcase)'s [particles demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/particles/src/DemoParticles.ts#L22-L98) has smoke that follows the mouse and random explosions.
 
 ## Settings
 
-These work the same in a prefab's `particle` component and in `bare.particle.CreateEmitter`.
+These work the same in a prefab's `particle` component and in `bare.particle.CreateEmitter`. In TypeScript they're typed `ParticleData`, so a misspelled setting is an error.
 
 | Setting | Description |
 | --- | --- |
 | `texture` | Image name. |
+| `position` | Where the emitter is, as `{ x, y }`. In a `particle` component it's an offset from the GameObject. |
 | `life` | Seconds a particle lives, or `[min, max]`. |
 | `emitRate` | Particles per second, or per burst with `emitTime`. |
 | `emitTime` | When above 0, emit in bursts every this many seconds. |
 | `emitShape` | `"POINT"`, `"CIRCLE"` or `"RECT"`. |
 | `emitRadius` / `emitRect` | Size of the circle, or `{ width, height }` of the rectangle. |
 | `maxParticles` | Upper limit on particles alive at once. |
-| `localSpace` | Particles move along with the emitter. |
+| `localSpace` | Particles move along with the emitter. Defaults to `true` in `CreateEmitter` and `false` in a `particle` component. |
 | `origin` | Pivot of each particle, `{ x: 0.5, y: 0.5 }` is centered. |
-| `scale` | Scales the whole effect. |
+| `scale` | Scales the whole effect around `position`. Change it later with `emitter.scale`. |
 
 ### Animation
 
@@ -153,12 +156,35 @@ export class Game extends Scene
 
 The settings you pass to `CreateEmitter` are typed `ParticleData`, and the options of `Add` are `ParticleEmitterOptions`.
 
+## Which scene the emitters belong to
+
+Every scene has its own `scene.particle`, and `bare.particle` is the one of the current scene. Emitters are updated and drawn with their scene and go away with it, so an emitter that should last as long as a scene goes on that scene's `particle`:
+
+```ts
+export class Museum extends Scene
+{
+    override OnStart()
+    {
+        // gold sparkles over the floor of a hall, for as long as this scene runs
+        const sparkles = this.particle.CreateEmitter({
+            texture: 'particles/star',
+            emitShape: 'RECT',
+            emitRect: { width: 800, height: 400 },
+            position: { x: 400, y: 300 },
+            emitRate: 8,
+            animation: { color: { start: '#ffcb02', end: '#ffcb0200' } },
+        });
+        this.particle.Add(sparkles, { autoStart: true });
+    }
+}
+```
+
 ## bare.particle
 
 | Method | Description |
 | --- | --- |
 | `CreateEmitter(data, options?)` | Create an emitter from settings like the ones above. |
 | `Add(emitter, options?)` | Start updating and drawing an emitter. Options: `autoStart`, `autoRemove`, `autoOneShot`. |
-| `OneShot(emitter, { position? })` | Emit one burst. |
+| `OneShot(emitter, { position? })` | Emit one burst, at `position` if given. |
 | `Remove(emitter)` / `Has(emitter)` | Manage emitters. |
 | `Clear()` | Remove all emitters. |

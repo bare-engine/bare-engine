@@ -1,4 +1,4 @@
-import { Color, IParticleAnimation, IParticleOptions, ParticleEmitter, ParticleShape, Texture, Vec2 } from "../libraries/rapid-render";
+import { Color, CustomGlShader, IParticleAnimation, IParticleOptions, ParticleEmitter, ParticleShape, Texture, Vec2 } from "../libraries/rapid-render";
 import { assetsHandler } from "../handlers/assetsHandler";
 import { Scene } from "../scenes/scene";
 import { RegisterController } from "../globals";
@@ -23,27 +23,54 @@ export type ParticleOneShotOptions = {
     position?: Vec2;
 };
 
-// where an emitter sits and how big its burst is - Rapid's emitter has no transform of its own,
-// it takes it from the matrix stack, so the controller pushes this around every emit and draw
-export type ParticleTransform = {
-    x: number;
-    y: number;
-    scale: number;
-};
-
 // PLAIN DATA AS IT COMES OUT OF settingsData.json / AN @InspectorField COMPONENT:
 // TEXTURE AND COLORS AS STRINGS, VECTORS AS { x, y } OBJECTS, EMIT SHAPE AS "CIRCLE"
-export type ParticleData = Record<string, any>;
+// the engine classes (Texture, Color, Vec2, ParticleShape) are accepted too
+export type ParticleVec2Data = Vec2 | { x: number; y: number };
+export type ParticleColorData = Color | string;
+
+// a fixed value or a [min, max] range to pick from at random
+export type ParticleRange<T> = T | [T, T];
+
+// a value that changes over a particle's life: a bare value, or start + end (or start + delta, the
+// change per second), each of which can be a range
+export type ParticleAttributeValue<T> = ParticleRange<T> | {
+    start?: ParticleRange<T>;
+    end?: ParticleRange<T>;
+    delta?: ParticleRange<T>;
+    damping?: number;
+};
+
+export type ParticleAnimationData = {
+    scale?: ParticleAttributeValue<number>;
+    rotation?: ParticleAttributeValue<number>;
+    speed?: ParticleAttributeValue<number>;
+    color?: ParticleAttributeValue<ParticleColorData>;
+    velocity?: ParticleAttributeValue<ParticleVec2Data>;
+};
+
+export type ParticleData = {
+    texture?: string | Texture;
+    shader?: CustomGlShader;
+    life?: ParticleRange<number>;
+    // where the emitter sits; move it later with emitter.position
+    position?: ParticleVec2Data;
+    // scales the whole effect around position
+    scale?: number;
+    origin?: ParticleVec2Data;
+    emitRate?: number;
+    emitTime?: number;
+    localSpace?: boolean;
+    emitShape?: keyof typeof ParticleShape | ParticleShape;
+    emitRadius?: number;
+    emitRect?: { width: number; height: number };
+    maxParticles?: number;
+    animation?: ParticleAnimationData;
+};
 
 export class ParticleController
 {
     private emitters: ParticleEmitterEntry[] = [];
-
-    // EMITTERS WHOSE TEXTURE IS STILL LOADING - THEY MUST NOT RENDER YET, DRAWING WITHOUT A
-    // TEXTURE THROWS. STATIC SO IT ALSO HOLDS FOR EMITTERS USED OUTSIDE THEIR OWN SCENE.
-    private static awaitingTexture: WeakSet<ParticleEmitter> = new WeakSet();
-
-    private static transforms: WeakMap<ParticleEmitter, ParticleTransform> = new WeakMap();
 
     public scene: Scene;
 
@@ -78,7 +105,7 @@ export class ParticleController
 
         if (options.autoOneShot)
         {
-            ParticleController.Emit(emitter);
+            emitter.oneShot();
         }
         else if (options.autoStart)
         {
@@ -109,7 +136,7 @@ export class ParticleController
             const entry = this.emitters[i];
             if (entry.update)
             {
-                ParticleController.UpdateEmitter(entry.emitter, deltaTime);
+                entry.emitter.update(deltaTime);
             }
 
             if (entry.emitter.isActive())
@@ -128,88 +155,11 @@ export class ParticleController
     {
         for (const entry of this.emitters)
         {
-            if (entry.render && ParticleController.IsReady(entry.emitter))
+            if (entry.render)
             {
-                ParticleController.RenderEmitter(entry.emitter);
+                entry.emitter.render();
             }
         }
-    }
-
-    static GetTransform(emitter: ParticleEmitter): ParticleTransform
-    {
-        var transform = ParticleController.transforms.get(emitter);
-        if (!transform)
-        {
-            transform = { x: 0, y: 0, scale: 1 };
-            ParticleController.transforms.set(emitter, transform);
-        }
-        return transform;
-    }
-
-    static SetPosition(emitter: ParticleEmitter, x: number, y: number): void
-    {
-        const transform = ParticleController.GetTransform(emitter);
-        transform.x = x;
-        transform.y = y;
-    }
-
-    static SetScale(emitter: ParticleEmitter, scale: number): void
-    {
-        ParticleController.GetTransform(emitter).scale = scale;
-    }
-
-    // world-space emitters bake the matrix stack into each particle as it spawns, so spawning
-    // (update / oneShot) has to happen while the emitter's position is on the stack
-    private static WithSpawnTransform(emitter: ParticleEmitter, spawn: () => void): void
-    {
-        if (emitter.localSpace)
-        {
-            spawn();
-            return;
-        }
-
-        const transform = ParticleController.GetTransform(emitter);
-        const ms = rapid.matrixStack;
-        ms.save();
-        ms.translate(transform.x, transform.y);
-        spawn();
-        ms.restore();
-    }
-
-    static UpdateEmitter(emitter: ParticleEmitter, deltaTime: number): void
-    {
-        ParticleController.WithSpawnTransform(emitter, () => emitter.update(deltaTime));
-    }
-
-    static Emit(emitter: ParticleEmitter): void
-    {
-        ParticleController.WithSpawnTransform(emitter, () => emitter.oneShot());
-    }
-
-    // scale is applied at draw time around the emitter's position, so it resizes size and
-    // spread of live particles too. call inside the camera's scope (scene render)
-    static RenderEmitter(emitter: ParticleEmitter): void
-    {
-        const transform = ParticleController.GetTransform(emitter);
-        const ms = rapid.matrixStack;
-        ms.save();
-        ms.translate(transform.x, transform.y);
-        if (transform.scale !== 1)
-            ms.scale(transform.scale);
-        // world-space particles already carry the emitter's position
-        if (!emitter.localSpace)
-            ms.translate(-transform.x, -transform.y);
-        // passing the current matrix keeps the camera - without it, Rapid draws world-space
-        // particles with an identity matrix
-        emitter.render(ms.curWorldM);
-        ms.restore();
-    }
-
-    // FALSE WHILE AN EMITTER MADE BY CreateEmitter IS STILL WAITING FOR ITS TEXTURE - RENDERING
-    // IT BEFORE THAT THROWS, SINCE THE DRAW CALL READS THE TEXTURE'S UVS
-    static IsReady(emitter: ParticleEmitter): boolean
-    {
-        return !ParticleController.awaitingTexture.has(emitter);
     }
 
     // CONVERTS PLAIN PARTICLE DATA (JSON PRESET OR COMPONENT FIELDS) INTO IParticleOptions:
@@ -217,11 +167,11 @@ export class ParticleController
     // THE EMIT SHAPE NAME INTO ParticleShape. PASS texture TO OVERRIDE THE NAME LOOKUP.
     ToOptions(data: ParticleData, texture?: Texture): IParticleOptions
     {
-        const animation: ParticleData = data.animation ?? {};
+        const animation: ParticleAnimationData = data.animation ?? {};
 
         return {
             life: data.life ?? 1,
-            texture: texture ?? (typeof data.texture === "string" ? assetsHandler.textures.get(data.texture) : data.texture),
+            texture: texture ?? (typeof data.texture === "string" ? assetsHandler.textures.get(data.texture) : data.texture) as Texture,
             shader: data.shader,
             origin: ParticleController.ToVec2(data.origin),
             emitRate: data.emitRate,
@@ -250,17 +200,14 @@ export class ParticleController
         const emitter = new ParticleEmitter(rapid, particleOptions);
 
         const position = ParticleController.ToVec2(data.position);
-        ParticleController.transforms.set(emitter, { x: position?.x ?? 0, y: position?.y ?? 0, scale: data.scale ?? 1 });
+        if (position)
+            emitter.position.set(position.x, position.y);
+        emitter.scale = data.scale ?? 1;
 
+        // the emitter draws nothing until its texture is set
         if (!particleOptions.texture && typeof data.texture === "string" && data.texture)
         {
-            ParticleController.awaitingTexture.add(emitter);
-
-            assetsHandler.LoadTexture(data.texture).then(texture =>
-            {
-                emitter.setTexture(texture);
-                ParticleController.awaitingTexture.delete(emitter);
-            });
+            assetsHandler.LoadTexture(data.texture).then(texture => emitter.setTexture(texture));
         }
 
         if (options)
@@ -316,14 +263,14 @@ export class ParticleController
     {
         if (options.position)
         {
-            ParticleController.SetPosition(emitter, options.position.x, options.position.y);
+            emitter.position.set(options.position.x, options.position.y);
         }
 
         // ALREADY MANAGED BY THIS CONTROLLER (EG ADDED ONCE AT STARTUP) - Add() WOULD IGNORE
         // THE autoOneShot AND NOTHING WOULD BE EMITTED, SO FIRE IT DIRECTLY
         if (this.Has(emitter))
         {
-            ParticleController.Emit(emitter);
+            emitter.oneShot();
             return;
         }
 
