@@ -177,7 +177,7 @@ export class ParticleController
             origin: ParticleController.ToVec2(data.origin),
             emitRate: data.emitRate,
             emitTime: data.emitTime,
-            localSpace: data.localSpace,
+            localSpace: data.localSpace ?? false,
             emitShape: ParticleController.ToEmitShape(data.emitShape),
             emitRadius: data.emitRadius,
             emitRect: data.emitRect,
@@ -269,7 +269,6 @@ export class ParticleController
 
         // ALREADY MANAGED BY THIS CONTROLLER (EG ADDED ONCE AT STARTUP) - Add() WOULD IGNORE
         // THE autoOneShot AND NOTHING WOULD BE EMITTED, SO FIRE IT DIRECTLY
-        if (this.Has(emitter))
         if (!this.Has(emitter))
         {
             this.Add(emitter, { autoRemove: true });

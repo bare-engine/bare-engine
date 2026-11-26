@@ -14,6 +14,7 @@ import
     TextComponent,
     TextObject,
     TiledComponent,
+    Vec2,
 } from "bare-engine";
 import { Checks } from "./checks";
 
@@ -191,7 +192,7 @@ export class DocsGuideSystemsTest extends Scene
         c.check(particle?.emitter != null, "particle preset should attach a ParticleComponent with an emitter");
         particle?.Fire();
 
-        const emitter = bare.particle.CreateEmitter({ texture: "PIXEL", life: 0.8, emitRate: 20, emitShape: "CIRCLE", emitRadius: 10, position: { x: 5, y: 6 } });
+        const emitter = bare.particle.CreateEmitter({ texture: "PIXEL", life: 0.8, emitRate: 20, emitShape: "CIRCLE", emitRadius: 10, localSpace: true, position: { x: 5, y: 6 } });
         c.check(emitter.position.x === 5 && emitter.position.y === 6, "CreateEmitter should place the emitter at position");
         bare.particle.Add(emitter, { autoStart: true });
         c.check(bare.particle.Has(emitter), "Add should register the emitter");
@@ -199,9 +200,17 @@ export class DocsGuideSystemsTest extends Scene
         bare.particle.OneShot(emitter);
         c.check(emitter.count === 20, "OneShot should emit emitRate particles: " + emitter.count);
         c.check(Math.hypot(emitter.x.typedArray[0], emitter.y.typedArray[0]) <= 10, "local-space particles should spawn relative to the emitter, within emitRadius");
-        const trail = bare.particle.CreateEmitter({ texture: "PIXEL", emitRate: 1, localSpace: false, position: { x: 30, y: 40 } });
+        // CreateEmitter defaults to world space
+        const trail = bare.particle.CreateEmitter({ texture: "PIXEL", emitRate: 1, position: { x: 30, y: 40 } });
         trail.oneShot();
         c.check(trail.x.typedArray[0] === 30 && trail.y.typedArray[0] === 40, "world-space particles should spawn at the emitter's position: " + trail.x.typedArray[0] + "," + trail.y.typedArray[0]);
+
+        // OneShot on an emitter that was never added should register it so it updates and draws
+        const burst = bare.particle.CreateEmitter({ texture: "PIXEL", emitRate: 3 });
+        bare.particle.OneShot(burst, { position: new Vec2(50, 60) });
+        c.check(bare.particle.Has(burst), "OneShot should register an emitter that wasn't added");
+        c.check(burst.count === 3 && burst.x.typedArray[0] === 50 && burst.y.typedArray[0] === 60, "OneShot should burst at the given position: " + burst.count + " at " + burst.x.typedArray[0] + "," + burst.y.typedArray[0]);
+        bare.particle.Remove(burst);
         bare.particle.OneShot(emitter, { position: hero.position });
         bare.particle.Remove(emitter);
         c.check(!bare.particle.Has(emitter), "Remove should unregister the emitter");

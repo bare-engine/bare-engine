@@ -86,12 +86,12 @@ bare.particle.OneShot(explosion, { position: boss.position, count: 60 });
 For a continuous emitter, add it with `autoStart`. `position` places it, and the emitter's own `position` moves it later:
 
 ```ts
-const smoke = bare.particle.CreateEmitter({ texture: 'particles/smoke', life: 2, emitRate: 10, localSpace: false, position: { x: 100, y: 200 } });
+const smoke = bare.particle.CreateEmitter({ texture: 'particles/smoke', life: 2, emitRate: 10, position: { x: 100, y: 200 } });
 bare.particle.Add(smoke, { autoStart: true });
 smoke.position.set(x, y);   // move it around
 ```
 
-With `localSpace: false` the smoke stays where it was emitted and trails behind as the emitter moves. With the default `true`, the particles move along with it.
+The smoke stays where it was emitted and trails behind as the emitter moves. With `localSpace: true` the particles move along with it instead, for effects that stick to something, like a flame on a moving ship.
 
 To change how much a running emitter emits, for example thicker smoke as a fire grows:
 
@@ -116,7 +116,7 @@ These work the same in a prefab's `particle` component and in `bare.particle.Cre
 | `emitShape` | `"POINT"`, `"CIRCLE"` or `"RECT"`. |
 | `emitRadius` / `emitRect` | Size of the circle, or `{ width, height }` of the rectangle. |
 | `maxParticles` | Upper limit on particles alive at once. |
-| `localSpace` | Particles move along with the emitter. Defaults to `true` in `CreateEmitter` and `false` in a `particle` component. |
+| `localSpace` | Particles move along with the emitter. Defaults to `false`: particles stay where they were emitted. |
 | `origin` | Pivot of each particle, `{ x: 0.5, y: 0.5 }` is centered. |
 | `scale` | Scales the whole effect around `position`. Change it later with `emitter.scale`. |
 
