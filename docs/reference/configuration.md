@@ -57,6 +57,20 @@ StartBare(Menu, {
 });
 ```
 
+`OnInit` can also pick the first scene, for example from the save it just loaded. Return a scene class to start there instead; return nothing to start on the scene passed to `StartBare`:
+
+```ts
+StartBare(Menu, {
+    OnInit: () => {
+        bare.storage.Load();
+        if (SaveData.level > 0)
+            return Map;     // a saved game skips the menu
+    },
+});
+```
+
+The scene starts without a payload, so if it needs to know it's the first one, it can check for a missing payload in `OnStart`.
+
 The promise `StartBare` returns resolves only after the first scene's `OnStart`, so code in `.then()` is too late for anything that scene reads. `OnInit` runs again on every `bare.Restart()`, including the debug key **Alt+R** and clearing save data, so keep it safe to repeat.
 
 ### Debug keys

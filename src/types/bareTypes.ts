@@ -30,7 +30,7 @@ export type BareOptions =
     scaleMode?: CanvasScaleMode;
     // GAME-WIDE SETUP (SAVE DATA, SOUNDS, FONTS). RUNS ONCE bare EXISTS, BEFORE THE FIRST SCENE IS CREATED,
     // AND AGAIN ON EVERY bare.Restart(). AWAITED WHEN IT RETURNS A PROMISE
-    OnInit?: () => void | Promise<void>;
+    OnInit?: () => SceneClass | void | Promise<SceneClass | void>;
 };
 
 export type ResolutionOptions =

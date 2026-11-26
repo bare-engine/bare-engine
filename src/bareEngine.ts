@@ -74,7 +74,7 @@ export class BareEngine
     public multiTouch: boolean = false;
     
     public fixedTimestep: number = 1 / 60;
-    private onInit?: () => void | Promise<void>;
+    private onInit?: BareOptions['OnInit'];
     public maxDeltaTime: number = 1 / 15; // CAPS FRAME DELTA, USEFUL AFTER LAG OR TAB REFOCUS
     private accumulator: number = 0;
     public fixedStepsBehind: boolean = false;
@@ -366,14 +366,14 @@ export class BareEngine
 
         globalEvents.emit(BareEvent.game_awake);
 
-        await this.onInit?.();
+        var sceneClassFromInit = await this.onInit?.();
 
         // BEFORE Goto, SO TURNING THE SCREEN WHILE THE FIRST SCENE LOADS STILL RESIZES THE CANVAS. SAFE BECAUSE SCENES ONLY
         // GET OnResize ONCE STARTED, AND CATCH UP THEN (Scene.Start). AFTER OnInit, SO A resize LISTENER ADDED THERE THAT
         // CALLS bare.SetResolution RUNS FIRST, AND THIS ONE FINDS THE SIZE UNCHANGED INSTEAD OF RESIZING TO THE OLD RESOLUTION
         window.addEventListener('resize', () => this.ResizeCanvas(this.resolution));
 
-        var scene = await bare.scene.Goto(sceneClass);
+        var scene = await bare.scene.Goto(sceneClassFromInit || sceneClass);
 
         this.dummyGameObject = new GameObject(scene); // TOO LATE IF USER WANTS TO USE IT IN sceneClass, BUT FINE FOR MY CURRENT USAGE
 
@@ -1003,9 +1003,9 @@ export class BareEngine
 
         this.ResizeCanvas(this.resolution);
 
-        await this.onInit?.();
+        const sceneClassFromInit = await this.onInit?.();
 
-        const scene = await bare.scene.Goto(this.initialSceneClass);
+        const scene = await bare.scene.Goto(sceneClassFromInit || this.initialSceneClass);
         this.lastUpdateTimeRef = performance.now();
         this.fixedStepsBehind = false;
 
