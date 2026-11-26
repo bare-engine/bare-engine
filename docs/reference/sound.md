@@ -58,7 +58,7 @@ bare.sound.Play('bell', { src: `${bare.soundPath}/bell.wav` });
 | `Get(id)` | The loaded sound. |
 | `Stop(id)` / `StopAll()` | Stop playback. |
 | `SetVolume(id, volume)` | Change volume. |
-| `FadeIn(id, seconds)` / `FadeOut(id, seconds)` / `FadeTo(id, volume, seconds)` | Fade volume. |
+| `FadeIn(id, seconds)` / `FadeOut(id, seconds)` / `FadeTo(id, volume, seconds)` | Fade volume. A newer fade, or `SetVolume`, replaces a fade that's still going: it starts from the volume heard at that moment. `FadeIn` starts from silence. Fades only work on a sound that's playing. |
 | `Mute()` / `Unmute()` | Silence all sound, for example during an ad. Playing sounds hold their place and continue on `Unmute()`. |
 | `isMuted` | `true` between `Mute()` and `Unmute()`. |
 | `isUnlocked` | `true` once the browser lets the game make sound. See [Before the first tap](#before-the-first-tap). |

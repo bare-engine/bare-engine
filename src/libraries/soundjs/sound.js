@@ -177,6 +177,17 @@ if (window['module'] && module.exports) {
 	exports = module.exports = {};
 }
 
+//holds an AudioParam at the value it has now and drops everything scheduled after now. the
+//value is read first, as cancelling changes it. not cancelAndHoldAtTime: after a plain set
+//long ago, chrome anchors nothing at now, so the next ramp is measured from that set and the
+//volume jumps (1 to 0.46 for a 3 second fade to 0, 3 seconds after setting 1)
+function holdGain(param) {
+  var now = actx.currentTime;
+  var value = param.value;
+  param.cancelScheduledValues(now);
+  param.setValueAtTime(value, now);
+}
+
 /*
 Define the audio context
 ------------------------
@@ -556,14 +567,16 @@ function makeSound(source, loadHandler, shouldLoadSound, xhr, failHandler) {
   //The first argument is the volume that the sound should
   //fade to, and the second value is the duration, in seconds,
   //that the fade should last.
+  //a newer fade replaces one that's still going: the gain is held where it is now and
+  //whatever was scheduled after that is dropped. otherwise the older ramp's end, still in
+  //the future, would stay on the timeline and pull the volume back after this one
   o.fade = function (endValue, durationInSeconds) {
     if (o.playing) {
-      o.volumeNode.gain.linearRampToValueAtTime(
-        o.volumeNode.gain.value, actx.currentTime
-      );
+      holdGain(o.volumeNode.gain);
       o.volumeNode.gain.linearRampToValueAtTime(
         endValue, actx.currentTime + durationInSeconds
       );
+      o.volumeValue = endValue;
     }
   };
 
@@ -572,9 +585,14 @@ function makeSound(source, loadHandler, shouldLoadSound, xhr, failHandler) {
   o.fadeIn = function(durationInSeconds) {
 
     //Set the volume to 0 so that you can fade
-    //in from silence
-    o.volumeNode.gain.value = 0;
-    o.fade(1, durationInSeconds);
+    //in from silence. any fade that's still going is dropped first
+    var gain = o.volumeNode.gain;
+    gain.cancelScheduledValues(0);
+    gain.setValueAtTime(0, actx.currentTime);
+    if (o.playing) {
+      gain.linearRampToValueAtTime(1, actx.currentTime + durationInSeconds);
+      o.volumeValue = 1;
+    }
 
   };
 
@@ -590,6 +608,8 @@ function makeSound(source, loadHandler, shouldLoadSound, xhr, failHandler) {
         return o.volumeValue;
       },
       set: function (value) {
+        //drops a fade that's still going, which would otherwise carry on over this value
+        o.volumeNode.gain.cancelScheduledValues(0);
         o.volumeNode.gain.value = value;
         o.volumeValue = value;
       },
