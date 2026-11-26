@@ -483,6 +483,16 @@ function makeSound(source, loadHandler, shouldLoadSound, xhr, failHandler) {
     //Will the sound loop? This can be `true` or `false`.
     o.soundNode.loop = o.loop;
 
+    //clear `playing` when the sound ends on its own. a node that was replaced
+    //(restart/playFrom) or stopped by `pause` (which already cleared `playing`)
+    //is ignored, so its `ended` doesn't clobber the current state.
+    var node = o.soundNode;
+    node.onended = function () {
+      if (o.soundNode !== node || !o.playing) return;
+      o.playing = false;
+      o.startOffset = 0;
+    };
+
     //Finally, use the `start` method to play the sound.
     //The start time will either be `0`,
     //or a later time if the sound was paused.
