@@ -80,6 +80,8 @@ Numbers, strings, booleans, objects, arrays, `Set` and `Map` are all supported. 
 | `bare.storage.Clear()` | Delete the save. |
 | `bare.storage.SetDefaults(values)` | Add fields with default values. |
 
+`bare.storage.data` is `SaveData` itself, for code that can't import it, like the browser console or a [headless test](../guide/debugging#testing-in-a-headless-browser): `bare.storage.data.highScore`.
+
 Saves are stored under your game's `gameId` from `package.json`, so games on the same domain don't overwrite each other.
 
 Everything is stored in one `localStorage` entry, and browsers allow about 5 MB per site. When a save doesn't fit, `Save()` logs an error and returns `false`; the previous save stays as it was. For big worlds, compress the data yourself, for example with `CompressionStream`.

@@ -151,7 +151,7 @@ Automated tests and screenshots often run the game in a headless browser, throug
 
 - **Wait in real time.** The game loop runs on `requestAnimationFrame`, which Chrome's `--virtual-time-budget` doesn't drive reliably, so `--screenshot` with a time budget can capture a game that hardly moved. Open the page, wait real seconds, then take the screenshot.
 - **WebGL needs a software renderer** on machines without a GPU. For Chrome and Edge, pass `--use-angle=swiftshader --enable-unsafe-swiftshader`.
-- **Read the game's state with `bare`.** It's a global, so a test can evaluate expressions like `bare.scene.GetAll().map(s => s.constructor.name)`. In a production build, [unused methods are removed](../reference/package-json#stripunusedmethods), so a method your game never calls may not exist there.
+- **Read the game's state with `bare`.** It's a global, so a test can evaluate expressions like `bare.scene.GetAll().map(s => s.constructor.name)`. `SaveData` isn't a global, so read it as `bare.storage.data`, for example `bare.storage.data.coins`. In a production build, [unused methods are removed](../reference/package-json#stripunusedmethods), so a method your game never calls may not exist there.
 - **Send real input.** Mouse and keyboard events from the testing tool reach the game like a player's. For keys like Escape, include the key code (`windowsVirtualKeyCode: 27` in the DevTools Protocol), or the browser may not fire a `keydown`.
 
 ## More help

@@ -24,6 +24,8 @@ export class SaveDataHandler
     static saveEnabled: boolean = true;
     static readonly gameId: string = __BARE_GAME_ID__;
 
+    static readonly data: typeof SaveData = SaveData; // MOSTLY HERE FOR DEBUGGING
+
     private static defaults: Map<string, any> = new Map();
 
     public static GetStorageKey(): string
