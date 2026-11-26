@@ -139,6 +139,8 @@ if (bare.mobile)
 
 Do this again in `OnResize`, because the scale changes with the window.
 
+For a phone's notch and rounded corners, use [`bare.util.SafeArea()`](../guide/mobile#notches-and-rounded-corners), which is already in game units.
+
 ### From game units to page pixels
 
 There's no method for the other way, eg to place an HTML element over a game object, but it's the same sum backwards:

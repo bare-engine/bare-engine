@@ -78,3 +78,5 @@ bare.util.Clamp(health, 0, 100);
 | `IsPointInRectangle(point, rect)` | Hit test. |
 | `DeepCopy(obj)` | Copy an object and everything in it. |
 | `MobileAndTabletCheck()`, `IsAndroid()`, `HasNotch()` | Device checks. |
+| `NotchSide()` | The side a phone's notch is on when it's held sideways: `'left'`, `'right'` or `null`. |
+| `SafeArea()` | How far in from each edge to keep clear of a notch, rounded corners and home indicator, as `{ top, right, bottom, left }` in screen units. See [Notches and rounded corners](../guide/mobile#notches-and-rounded-corners). |

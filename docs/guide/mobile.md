@@ -73,13 +73,73 @@ bare.camera.SetScaleMode(CameraScaleMode.Contain);
 
 To show a whole loaded level instead, use `SetDimensionsToLevel()` with `Contain` (see [fitting a level](./resolution#fitting-a-level)). If you want the camera framing itself to change on rotation, update its dimensions in your scene's `OnResize` using the new screen width and height.
 
+## Notches and rounded corners
+
+The game fills the whole screen, under a phone's notch, rounded corners and home indicator. Keep buttons and text out of them with `bare.util.SafeArea()`: how far in from each edge to stay, as `{ top, right, bottom, left }` in screen units, the units of a UI scene.
+
+```ts
+class Hud extends Scene
+{
+    OnStart() { this.Layout(); }
+    OnResize() { this.Layout(); }
+
+    Layout()
+    {
+        const safe = bare.util.SafeArea();
+        this.pauseButton.x = safe.left + 16;
+        this.pauseButton.y = safe.top + 16;
+    }
+}
+```
+
+The safe area changes when the phone turns: held sideways, the notch is on the left or the right. iOS reports the same room on both sides then, so `SafeArea()` keeps only the side the notch is on, which `bare.util.NotchSide()` tells you: `'left'`, `'right'`, or `null` when the phone is upright. Where the canvas doesn't reach the edge of the page, eg beside the bars of a [fitted resolution](./resolution), the bar already keeps that room clear, so that side is smaller or `0`.
+
+Read it again in `OnResize`. Turning the phone straight from one side to the other moves the notch without resizing the page, so listen for that too, and lay out once more a moment later, because the browser may give the new safe area late:
+
+```ts
+OnStart()
+{
+    window.addEventListener('orientationchange', this.OnTurn);      // iOS
+    screen.orientation?.addEventListener('change', this.OnTurn);    // other browsers
+}
+
+OnClear()
+{
+    window.removeEventListener('orientationchange', this.OnTurn);
+    screen.orientation?.removeEventListener('change', this.OnTurn);
+}
+
+private readonly OnTurn = async () =>
+{
+    this.Layout();
+    if (await this.Wait(0.3))
+        this.Layout();
+};
+```
+
+Inside an iframe, such as a game portal's page, the browser may report no safe area at all. To be sure, keep some room clear on the notch's side of a phone held sideways anyway:
+
+```ts
+const safe = bare.util.SafeArea();
+if (bare.mobile && bare.width > bare.height)
+{
+    const min = bare.GetCanvasScreenDelta(40, 0).x; // 40 CSS pixels, in game units
+    const side = bare.util.NotchSide();             // null: not known, so keep both sides clear
+    if (side != 'right') safe.left = Math.max(safe.left, min);
+    if (side != 'left') safe.right = Math.max(safe.right, min);
+}
+```
+
+For other things a page draws over the game, see [Keeping the HUD clear of the page](../reference/bare#keeping-the-hud-clear-of-the-page).
+
 ## Device checks
 
 | Check | Description |
 | --- | --- |
 | `bare.mobile` | A phone or tablet. |
 | `bare.util.IsAndroid()` | An Android device. |
-| `bare.util.HasNotch()` | A screen with a notch. |
+| `bare.util.HasNotch()` | A screen with a notch, rounded corners or a home indicator to keep clear of. See [Notches and rounded corners](#notches-and-rounded-corners). |
+| `bare.util.NotchSide()` | `'left'` or `'right'`: the side the notch is on, on a phone held sideways. |
 
 ## Leaving the game
 

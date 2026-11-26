@@ -218,40 +218,76 @@ export class Helper
         return (('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || ((navigator as any).msMaxTouchPoints > 0));
     }
 
+    // true when the browser reports a safe area on any side, eg for a notch, rounded corners or a home indicator
     static HasNotch(): boolean
     {
-        // get the <html> element
-        var root = document.documentElement;
+        const css = Helper.SafeAreaCss();
+        return css.top > 0 || css.right > 0 || css.bottom > 0 || css.left > 0;
+    }
 
-        // add CSS variables so we can read them back
-        root.style.setProperty('--notch-top', 'env(safe-area-inset-top)');
-        root.style.setProperty('--notch-right', 'env(safe-area-inset-right)');
-        root.style.setProperty('--notch-bottom', 'env(safe-area-inset-bottom)');
-        root.style.setProperty('--notch-left', 'env(safe-area-inset-left)');
+    // how far in from each edge of the game to keep clear of the notch, rounded corners and home indicator, in screen
+    // units (the units of a UI scene). the page asks to go under them (viewport-fit=cover), and the browser reports
+    // them as env(safe-area-inset-*). on a phone held sideways iOS reports the same room on both sides, so only the
+    // notch's side (see NotchSide) is kept. where the canvas doesn't reach the page's edge, eg beside the bars of a
+    // fitted resolution, the bar already keeps that much clear, so that side is less or 0. it changes when the phone
+    // turns, so read it again in OnResize
+    static SafeArea(): { top: number, right: number, bottom: number, left: number }
+    {
+        const css = Helper.SafeAreaCss();
 
-        // get runtime styles
-        var computedStyle = window.getComputedStyle(root);
+        // a browser that reports the two sides apart (android) already gives only the notch's side
+        const side = Helper.NotchSide();
+        if (side && css.left == css.right)
+        {
+            if (side == 'left') css.right = 0;
+            else css.left = 0;
+        }
 
-        // read env values back and check if we have any values
-        var hasNotch = [
-            computedStyle.getPropertyValue('--notch-top') || '-1',
-            computedStyle.getPropertyValue('--notch-right') || '-1',
-            computedStyle.getPropertyValue('--notch-bottom') || '-1',
-            computedStyle.getPropertyValue('--notch-left') || '-1'
-        ]
-            .map(parseInt)
-            .filter(function(val) {
-                return val > 0;
-            })
-            .length > 0;
+        const topLeft = bare.GetCanvasScreenPosition(css.left, css.top);
+        const bottomRight = bare.GetCanvasScreenPosition(window.innerWidth - css.right, window.innerHeight - css.bottom);
 
-        // remove CSS variables
-        root.style.removeProperty('--notch-top');
-        root.style.removeProperty('--notch-right');
-        root.style.removeProperty('--notch-bottom');
-        root.style.removeProperty('--notch-left');
+        return {
+            top: Math.max(0, topLeft.y),
+            right: Math.max(0, bare.width - bottomRight.x),
+            bottom: Math.max(0, bare.height - bottomRight.y),
+            left: Math.max(0, topLeft.x)
+        };
+    }
 
-        return hasNotch;
+    // which side of the page a phone's notch is on when it's held sideways, by which way it's turned: its top, where
+    // the camera is, goes left when it's turned counterclockwise. iOS gives that as window.orientation 90 (-90 the
+    // other way), other browsers as the screen's angle 90 (270). null when it's upright or the browser doesn't say.
+    // it doesn't check that there is a notch, see HasNotch for that
+    static NotchSide(): 'left' | 'right' | null
+    {
+        const orientation = (window as { orientation?: unknown }).orientation;
+        if (typeof orientation === 'number')
+            return orientation === 90 ? 'left' : orientation === -90 ? 'right' : null;
+
+        const angle = screen.orientation?.angle;
+        return angle === 90 ? 'left' : angle === 270 ? 'right' : null;
+    }
+
+    // the browser's safe area at each edge of the page, in css pixels. read through a hidden element's padding,
+    // because env() only resolves inside a css property
+    private static SafeAreaCss(): { top: number, right: number, bottom: number, left: number }
+    {
+        const probe = document.createElement('div');
+        probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;'
+            + 'padding-top:env(safe-area-inset-top,0px);padding-right:env(safe-area-inset-right,0px);'
+            + 'padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px)';
+        document.body.appendChild(probe);
+
+        const style = getComputedStyle(probe);
+        const inset = {
+            top: parseFloat(style.paddingTop) || 0,
+            right: parseFloat(style.paddingRight) || 0,
+            bottom: parseFloat(style.paddingBottom) || 0,
+            left: parseFloat(style.paddingLeft) || 0
+        };
+        probe.remove();
+
+        return inset;
     }
 
     static IsAndroid(): boolean
