@@ -15,7 +15,7 @@ A scene owns its GameObjects and controllers. Your code still owns external reso
 | Object/component `OnStart` | Initialize behavior for this attachment. A component added to an already started object may start immediately, before `AddComponent` returns. |
 | `OnFixedUpdate(dt)` / `OnUpdate(dt)` | Fixed simulation steps / frame updates. Both receive seconds. Read key/mouse presses in `OnUpdate`, see [Keyboard](../reference/keyboard). |
 | Object/component `OnRemoved` | Release resources and subscriptions owned by this attachment. |
-| Scene `OnClear(includingPersistent)` | Release scene-owned resources after its controllers have been cleared. Also runs during level loads, not just final scene removal. |
+| Scene `OnClear(includingPersistent)` | Save state and release scene-owned resources. Runs first, while the scene's objects are still live, before its waits are cancelled and its objects removed. Also runs during level loads and restarts, not just final scene removal. |
 
 Configure component values through a constructor or prefab when they must be available during its startup hooks; setting them after `AddComponent` may be too late.
 

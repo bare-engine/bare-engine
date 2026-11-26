@@ -38,7 +38,7 @@ Override these methods on your scene. All are optional. Mark each one `override`
 | `OnPreRender()` / `OnRender()` / `OnPostRender()` | Around rendering, for custom drawing. |
 | `OnPreLoadLevel(level)` / `OnPostLoadLevel(level)` | Before and after a [level](./levels-and-layers) loads. |
 | `OnResize(prevW, prevH, newW, newH)` | When the game size (`bare.width`, `bare.height`) changes, once the scene has started. A resize during an async `OnStart` comes as one call right after it, from the size the scene started at. |
-| `OnRestart()` / `OnClear()` | On restart and when the scene is cleared. |
+| `OnRestart()` / `OnClear()` | On restart and when the scene is cleared. `OnClear` runs before the scene's objects are removed, so it can still read or save them. See [Lifecycle](./lifecycle#startup-order). |
 
 ::: tip
 `AddGameObject` only works once the scene has awoken, so call it from `OnAwake` or `OnStart`, not the constructor.

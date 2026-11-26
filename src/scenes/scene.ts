@@ -1648,14 +1648,14 @@ Or remove "stripGeneratedAssets": true from "bareEngine" in package.json.`);
 
     Clear(includingPersistent: boolean = true)
     {
+        this.OnClear(includingPersistent);
+
         this.CancelWaits(includingPersistent);
 
         for (var controller of this.GetInstantiatedControllers())
         {
             controller.Clear?.(includingPersistent);
         }
-
-        this.OnClear(includingPersistent);
     }
 
     OnClear(includingPersistent: boolean = true)
