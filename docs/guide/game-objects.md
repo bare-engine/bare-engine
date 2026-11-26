@@ -39,13 +39,14 @@ Names follow the [asset paths](./assets): atlas images use their generated names
 
 `InitTexture` applies an already cached texture immediately; otherwise it loads and applies the texture asynchronously. It returns a promise for the texture, or `undefined` for the special `NONE` and `NAME` suffixes. Await it when subsequent work needs the new image or dimensions.
 
-`SetTexture(texture)` takes an existing `Texture` object, rather than an asset name, and returns the GameObject for chaining:
+`SetTexture` takes an asset name or a `Texture` object, applies it right away and returns the GameObject for chaining:
 
 ```ts
-chest.SetTexture(bare.asset.GetTexture('chest_open'));
+chest.SetTexture(Asset.Image.CHEST_OPEN);
+chest.SetTexture(someTexture);
 ```
 
-`GetTexture` requires the image to be loaded already; use `InitTexture` when it may need loading.
+A name has to be loaded already (in the atlas or streamed in before); otherwise the object shows the red placeholder pixel. Use `InitTexture` when it may need loading.
 
 `textureName` is the name of the image an object shows: the asset name it was loaded by (an atlas frame's name too), or the name given to `bare.asset.AddTexture`. It's `''` for an object without an image.
 

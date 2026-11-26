@@ -1,4 +1,5 @@
 import { GameMode, MakePathForEntity } from "../globals";
+import { assetsHandler } from "../handlers/assetsHandler";
 import type { QuadTreeItem } from "../libraries/quadTree";
 import { Texture, Vec2 } from "../libraries/rapid-render";
 import { Scene } from "../scenes/scene";
@@ -156,8 +157,11 @@ export class ArcadeObject extends GameObject
         super.Added();
     }
 
-    override SetTexture(texture:Texture): this
+    override SetTexture(texture: Texture | string): this
     {
+        if (typeof texture === "string")
+            texture = assetsHandler.GetTexture(texture);
+
         if (this.physicsHitbox && this.physicsHitbox.rectangle.x == 0 && this.physicsHitbox.rectangle.y == 0 && this.physicsHitbox.rectangle.width == 0 && this.physicsHitbox.rectangle.height == 0)
             this.physicsHitbox.rectangle = {x: 0, y: 0, width: texture!.width, height: texture!.height};
 

@@ -534,8 +534,12 @@ export class GameObject
         return tex;
     }
 
-    SetTexture(texture:Texture): this
+    /** Show a texture, given as a Texture or a loaded image's asset name (eg Asset.Image.X). A name that isn't loaded yet shows the red placeholder pixel; use InitTexture to stream it in. */
+    SetTexture(texture: Texture | string): this
     {
+        if (typeof texture === "string")
+            texture = assetsHandler.GetTexture(texture);
+
         if (!texture)
             console.error("SetTexture has supplied an invalid texture: " + texture);
 

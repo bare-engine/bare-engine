@@ -395,7 +395,7 @@ export class TileMap extends GameObject
     }
 
     // a tile map draws its tiles, never a texture of its own (eg from the ANY prefab)
-    override SetTexture(texture: Texture): this
+    override SetTexture(texture: Texture | string): this
     {
         return this;
     }
