@@ -84,9 +84,16 @@ class AssetsHandler
         console.warn(`LoadTexture: "${texturePath}" is in the atlas "${atlas}", which isn't loaded yet. await bare.asset.LoadAtlas("${atlas}") before using it; drawing a red pixel instead.`);
     }
 
-    LoadTextureBatch(texturePaths: string[]): Promise<Texture[]> 
+    // onProgress is called each time one is in (already loaded ones too, right away), with how many are in so far.
+    // a failed load counts as in (it resolves with the red pixel), so it always reaches total
+    LoadTextureBatch(texturePaths: string[], onProgress?: (loaded: number, total: number) => void): Promise<Texture[]>
     {
-        const promises = texturePaths.map(p => this.LoadTexture(p));
+        const total = texturePaths.length;
+        let loaded = 0;
+        const promises = texturePaths.map(p => {
+            const promise = this.LoadTexture(p);
+            return onProgress ? promise.then(texture => { onProgress(++loaded, total); return texture; }) : promise;
+        });
         return Promise.all(promises);
     }
 

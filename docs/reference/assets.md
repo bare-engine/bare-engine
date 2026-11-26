@@ -14,7 +14,7 @@ Texture names are paths relative to `public/images/`, without the extension. Ima
 | Method | Description |
 | --- | --- |
 | `LoadTexture(name)` | Load a `.png` from `public/images/`, served as `.webp`. Resolves with the texture; already loaded or loading textures aren't fetched twice. A failed load resolves with a red placeholder pixel. |
-| `LoadTextureBatch(names)` | Load several textures in parallel. |
+| `LoadTextureBatch(names, onProgress?)` | Load several textures in parallel. `onProgress(loaded, total)` is called each time one is in, for a loading bar: already loaded ones count right away, and a failed one counts too (as the red pixel), so it always reaches `total`. |
 | `GetTexture(name)` / `HasTexture(name)` | A loaded texture, or whether it's loaded. For a name that isn't loaded, `GetTexture` returns a red placeholder pixel and warns in development. |
 | `AddTexture(name, texture)` | Register a texture you made, for example a `RenderTexture`, so it can be used by name. |
 | `RemoveTexture(name)` | Forget a texture. |
