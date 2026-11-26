@@ -510,7 +510,8 @@ function makeSound(source, loadHandler, shouldLoadSound, xhr, failHandler) {
     //`startOffset` to save the current position.
     if (o.playing) {
       o.soundNode.stop(0);
-      o.startOffset += actx.currentTime - o.startTime;
+      //scaled by the rate, so the offset stays in seconds into the file
+      o.startOffset += (actx.currentTime - o.startTime) * o.soundNode.playbackRate.value;
       o.playing = false;
     }
   };

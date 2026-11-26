@@ -71,6 +71,7 @@ import { BareEvent } from 'bare-engine';
 | `pointer_doubleClick` | `{ mouseX, mouseY, event }` |
 | `key_pressed`, `key_down`, `key_released` | `{ key, allKeys }` |
 | `collision_start`, `collision_update`, `collision_end` | the two objects (with [physics](../reference/physics)) |
+| `sound_unlocked` | none; sent once, when the browser first lets the game make sound (see [Sound](../reference/sound#before-the-first-tap)) |
 
 ## Collision events on an object
 

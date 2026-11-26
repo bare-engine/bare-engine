@@ -61,7 +61,34 @@ bare.sound.Play('bell', { src: `${bare.soundPath}/bell.wav` });
 | `FadeIn(id, seconds)` / `FadeOut(id, seconds)` / `FadeTo(id, volume, seconds)` | Fade volume. |
 | `Mute()` / `Unmute()` | Silence all sound, for example during an ad. Playing sounds hold their place and continue on `Unmute()`. |
 | `isMuted` | `true` between `Mute()` and `Unmute()`. |
+| `isUnlocked` | `true` once the browser lets the game make sound. See [Before the first tap](#before-the-first-tap). |
+| `Position(id)` | The seconds into the file that are heard now, output latency included. See [Following the music](#following-the-music). |
 
 Sounds don't play when `SaveData.soundEnabled` is `false`, so you can build a mute toggle with [Save Data](./save-data).
 
 `Mute()` is for silencing the game for a while, not a player setting: it isn't saved, and sounds started while muted wait and play on `Unmute()`. When the tab is hidden the sound is paused the same way, and coming back doesn't unmute a muted game.
+
+## Before the first tap
+
+Browsers hold back sound until the player first taps, clicks or presses a key. Sounds played before that count as playing (`Get(id).playing` is `true`), but they are silent and don't move forward. On that first tap they start where they were, so music started on load begins from the top then.
+
+`bare.sound.isUnlocked` is `true` from then on, also while muted or while the tab is hidden, and `BareEvent.sound_unlocked` is sent the moment it turns true. If the browser allows sound right away, `isUnlocked` is `true` from the start and the event isn't sent, so check it first:
+
+```ts
+if (bare.sound.isUnlocked)
+    this.HideTapHint();
+else
+    bare.globalEvents.once(BareEvent.sound_unlocked, () => this.HideTapHint());
+```
+
+## Following the music
+
+To keep animation on the beat that's heard, read the music's position instead of counting game time, which can drift away from the audio:
+
+```ts
+const BEAT = 60 / 120;    // 120 beats per minute
+
+const beat = Math.floor(bare.sound.Position('music') / BEAT);
+```
+
+`Position(id)` is the seconds into the file that are heard right now, with the delay before sound reaches the speakers taken off. It wraps around for a looping sound and takes the `rate` into account. It stands still whenever nothing is heard: before the first tap, while muted and while the tab is hidden. It is `0` for a sound that hasn't loaded or was stopped.

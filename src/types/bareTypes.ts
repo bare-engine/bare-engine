@@ -423,6 +423,8 @@ const eventDefs = {
 
     physics_refreshBody: ev<RigidBody>(),
 
+    sound_unlocked: ev<undefined>(),
+
     // MOVE TO EDITOR, PROBABLY MAKE EVENTS STRINGS - TODO?
     editor_layerSelected: ev<{ layerName: string }>(),
     editor_opened: ev<{ settingsDataName: string, levelName: string }>(),

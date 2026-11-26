@@ -23,18 +23,63 @@ export class SoundHandler
     private soundPaths: Map<string, string> = new Map();
     private suspendedByHandler: boolean = false;
     private muted: boolean = false;
+    private unlocked: boolean = actx.state === 'running';
+
+    private static readonly unlockGestures = ['pointerdown', 'touchend', 'keydown', 'click'];
+    private readonly unlockOnGesture = (): void => this.UnlockOnGesture();
 
     constructor()
     {
         globalEvents.persistent.on(BareEvent.game_awake, () => bare.sound = this);
 
         document.addEventListener('visibilitychange', () => this.SyncAudioContext());
+        actx.addEventListener('statechange', () => this.OnAudioStateChange());
+
+        if (!this.unlocked)
+        {
+            for (const type of SoundHandler.unlockGestures)
+                window.addEventListener(type, this.unlockOnGesture, { capture: true });
+        }
     }
 
     /** True between `Mute()` and `Unmute()`. */
     public get isMuted(): boolean
     {
         return this.muted;
+    }
+
+    /** True once the browser lets the game make sound, which most browsers only allow after the
+     *  first tap or key press. Before that, sounds that are played count as playing, but they are
+     *  silent and their `Position` stands still. Stays true after that, also while muted or while
+     *  the tab is hidden. `BareEvent.sound_unlocked` is sent the moment it turns true. */
+    public get isUnlocked(): boolean
+    {
+        return this.unlocked;
+    }
+
+    /** The seconds into the sound's file that are heard right now, output latency included, so
+     *  animation can follow the music. Stands still while nothing is heard: before the first tap
+     *  (see `isUnlocked`), while muted and while the tab is hidden. Wraps around for a looping
+     *  sound. 0 for a sound that hasn't loaded or was stopped. */
+    public Position(id: string): number
+    {
+        const sound = this.sounds.get(id);
+
+        if (!sound?.buffer)
+            return 0;
+
+        let position = sound.startOffset ?? 0;
+
+        if (sound.playing && sound.soundNode)
+        {
+            const latency = (actx.outputLatency || 0) + (actx.baseLatency || 0);
+            const elapsed = Math.max(0, actx.currentTime - latency - sound.startTime);
+            position += elapsed * sound.soundNode.playbackRate.value;
+        }
+
+        const duration = sound.buffer.duration;
+
+        return sound.loop ? position % duration : Math.min(position, duration);
     }
 
     /** Silences all sound, for example during an ad. Sounds that are playing hold their place
@@ -51,9 +96,40 @@ export class SoundHandler
         this.SyncAudioContext();
     }
 
+    // the browser holds the context until the first tap or key press. resuming it inside that
+    // gesture is what lets it run (safari needs this; chrome resumes it by itself). not while
+    // muted or hidden: the next gesture after that tries again
+    private UnlockOnGesture(): void
+    {
+        if (actx.state !== 'running' && !this.muted && !document.hidden && !this.suspendedByHandler)
+            actx.resume().catch(() => {});
+    }
+
+    private OnAudioStateChange(): void
+    {
+        if (actx.state === 'running' && !this.unlocked)
+        {
+            this.unlocked = true;
+
+            for (const type of SoundHandler.unlockGestures)
+                window.removeEventListener(type, this.unlockOnGesture, { capture: true });
+
+            // firefox can start the context a moment after the page loads, before the game is
+            // up, so then only the global bus hears it
+            if (typeof bare !== 'undefined' && bare.scene)
+                bare.SendEvent(BareEvent.sound_unlocked);
+            else
+                globalEvents.emit(BareEvent.sound_unlocked);
+        }
+
+        // a browser that resumes the context by itself on the first tap can do so while muted
+        // or hidden, so it is suspended again here
+        this.SyncAudioContext();
+    }
+
     // The context runs only while the game is unmuted and the tab is visible. It is only
     // resumed when this handler suspended it, so a context the browser holds until the first
-    // tap stays that way.
+    // tap stays that way (UnlockOnGesture resumes that one).
     private SyncAudioContext(): void
     {
         if (this.muted || document.hidden)

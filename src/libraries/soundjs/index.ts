@@ -19,6 +19,7 @@ export interface SoundJsSound
   volume: number;
   pan: number;
   startOffset?: number;
+  startTime: number;
   play(): void;
   pause(): void;
   restart(): void;
