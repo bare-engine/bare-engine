@@ -26,10 +26,23 @@ async function withProject(files, run) {
     }
 }
 
+function fakeServer(middlewares = { use() {} }) {
+    const handlers = {};
+    const sent = [];
+    return {
+        middlewares,
+        config: { logger: { error() {} } },
+        watcher: { on(event, handler) { handlers[event] = handler; } },
+        ws: { send: message => sent.push(message) },
+        handlers,
+        sent,
+    };
+}
+
 // the plugin's middleware, called like connect would: resolves with the response, or 'next'
 function request(plugin, url, method = 'GET') {
     let middleware;
-    plugin.configureServer({ middlewares: { use: fn => { middleware = fn; } }, config: { logger: { error() {} } } });
+    plugin.configureServer(fakeServer({ use: fn => { middleware = fn; } }));
 
     return new Promise((resolve, reject) => {
         const chunks = [];
@@ -112,6 +125,23 @@ test('webpQuality makes lossy images, and keeps its own cache', async () => {
         await request(bareStreamedImagesPlugin({ projectRoot: root, webpQuality: 80 }), '/images/coin.webp');
         assert.ok(fs.existsSync(path.join(root, 'node_modules/.bare-engine/images/q80/public/images/coin.webp')));
     });
+});
+
+test('a changed streamed PNG tells the game which image to swap', () => {
+    const root = path.join(os.tmpdir(), 'bare-images-watch');
+    const server = fakeServer();
+    bareStreamedImagesPlugin({ projectRoot: root, imageGlobs: ['demos/**/images/**'] }).configureServer(server);
+
+    server.handlers.change(path.join(root, 'public/images/player/idle.png'));
+    server.handlers.add(path.join(root, 'public/demos/basics/images/cat.png'));
+    server.handlers.change(path.join(root, 'public/initial/hud.png'));
+    server.handlers.change(path.join(root, 'public/images/old.webp'));
+    server.handlers.change(path.join(root, 'src/game.ts'));
+
+    assert.deepEqual(server.sent, [
+        { type: 'custom', event: 'bare:image-changed', data: { url: 'images/player/idle.webp' } },
+        { type: 'custom', event: 'bare:image-changed', data: { url: 'demos/basics/images/cat.webp' } },
+    ]);
 });
 
 test('the build writes a .webp for every streamed PNG and copies everything else', async () => {

@@ -47,6 +47,19 @@ function bareStreamedImagesPlugin(options = {}) {
                     res.end();
                 });
             });
+
+            // vite doesn't reload for a public file, nothing imports it. The engine swaps the image in
+            // place instead (assetsHandler.ReloadImage), so the game keeps running
+            const imageChanged = filePath => {
+                const rel = path.relative(publicDir, filePath).split(path.sep).join("/");
+                if (rel.startsWith("../") || !isStreamed(rel)) {
+                    return;
+                }
+                server.ws.send({ type: "custom", event: "bare:image-changed", data: { url: rel.replace(/\.png$/i, ".webp") } });
+            };
+            server.watcher.on("change", imageChanged);
+            // some image editors save by writing a new file over the old one
+            server.watcher.on("add", imageChanged);
         }
     };
 }

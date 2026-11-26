@@ -215,6 +215,58 @@ class AssetsHandler
         // ALSO PREVENTED DESTROYING IT ABOVE
         this.AddTexture("PIXEL", this.whiteTexture);
     }
+
+    // dev only: an image in public/images changed on disk (vite/streamedImages.cjs). Puts the new pixels in
+    // the loaded texture, so everything using it updates without a reload. url: relative to public/
+    async ReloadImage(url: string): Promise<void>
+    {
+        const target = new URL("/" + url, location.origin).pathname;
+        const textures = new Set([...this.textures.values(), ...rapid.texture.texture]);
+        const bases = new Set<BaseTexture>();
+        for (const texture of textures)
+            if (texture.base?.uid && new URL(texture.base.uid, location.href).pathname === target)
+                bases.add(texture.base);
+
+        // not loaded (yet): the next load fetches the new file anyway
+        if (bases.size === 0)
+            return;
+
+        const image = new Image();
+        image.src = `${target}?t=${Date.now()}`;
+        try {
+            await image.decode();
+        } catch {
+            return; // mid-save, the file can be half written; the save that finishes it sends another change
+        }
+
+        for (const base of bases)
+        {
+            // whole-image textures follow a new size; atlas frames keep their region
+            const wholeImage = [...textures].filter(texture => texture.base === base && !texture.isAtlas);
+            this.UploadImage(base, image);
+            for (const texture of wholeImage)
+                texture.setRegion(0, 0, base.width, base.height);
+        }
+    }
+
+    // like rapid's createTexture: not flipped, premultiplied when the renderer is
+    private UploadImage(base: BaseTexture, image: HTMLImageElement): void
+    {
+        const gl = rapid.gl;
+        gl.bindTexture(gl.TEXTURE_2D, base.glTexture);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, rapid.premultipliedAlpha);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        base.width = image.width;
+        base.height = image.height;
+    }
 }
 
 export const assetsHandler = new AssetsHandler();
+
+// vite's hot channel; import.meta.hot has no type without vite/client
+if (__DEV__)
+    (import.meta as ImportMeta & { hot?: { on(event: string, listener: (data: { url: string }) => void): void } })
+        .hot?.on("bare:image-changed", data => assetsHandler.ReloadImage(data.url));

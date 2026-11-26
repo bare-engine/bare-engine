@@ -20,7 +20,7 @@ While the dev server runs, every image in `texturePackImages/` is packed into on
 
 ## Streaming images
 
-Put `.png` images in `public/images/`, in subfolders if you like. The dev server and the build turn them into `.webp`, which loads faster, so only PNGs go in this folder. A GameObject using a streamed image appears as soon as its image has loaded. Prefabs can point to a subfolder with `imagePath`:
+Put `.png` images in `public/images/`, in subfolders if you like. The dev server and the build turn them into `.webp`, which loads faster, so only PNGs go in this folder. A GameObject using a streamed image appears as soon as its image has loaded. Save a changed PNG while the dev server runs and the game shows it right away, without reloading. Prefabs can point to a subfolder with `imagePath`:
 
 ```json
 {
