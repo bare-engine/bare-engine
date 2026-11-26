@@ -1,6 +1,6 @@
 # Tweens
 
-Tweens animate any numeric property over time.
+Tweens animate any numeric property over time, and colors.
 
 ```ts
 import { TweenTo } from 'bare-engine';
@@ -61,6 +61,25 @@ TweenTo(coin, 0.4, { innerY: '+=10', ease: Easing.Sinusoidal.InOut, yoyo: true, 
 ```
 
 Relative values like `'+=10'` and `'-=10'` add to the current value.
+
+## Colors
+
+Tween a [`Color`](./math#color) property, like an object's `color`, to a hex string or a `Color`. It fades channel by channel:
+
+```ts
+TweenTo(floor, 1.5, { color: '#ffdf6e' });                   // fade the tint to gold
+TweenTo(ghost, 0.5, { color: '#ff0000', alpha: 0.5 });        // redden and fade out together
+TweenTo(lamp, 0.5, { color: Color.Black, yoyo: true, repeat: -1 });
+```
+
+A hex without alpha (`#rrggbb` or `#rgb`) leaves alpha alone, so it can run next to an `alpha` tween. `#rrggbbaa` and a `Color` tween alpha too.
+
+A property that hands out a new `Color` every time you read it, like a text object's `fill`, can't be tweened this way. Tween a number instead and mix the colors with [`Color.lerp`](./math#color):
+
+```ts
+const tween = { t: 0 };
+bare.tween.To(tween, 1, { t: 1, onUpdate: () => label.fill = Color.lerp('#ffffff', '#ffdf6e', tween.t) });
+```
 
 By default, a new tween on the same object and property replaces the old one. Pass `false` as the fourth argument to keep both.
 

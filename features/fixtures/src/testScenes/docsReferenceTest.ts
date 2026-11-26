@@ -167,6 +167,22 @@ export class DocsReferenceTest extends Scene
         await this.Wait(0.1);
         c.check(!removedTimerFired, "RemoveTimers should cancel timers");
 
+        // colors tween per channel; a hex without alpha leaves alpha to its own tween
+        const tinted = this.AddGameObject("hero");
+        tinted.color = Color.White; // frozen shared color: the tween must work on a copy
+        TweenTo(tinted, 1, { color: '#ffdf6e', alpha: 0.5 });
+        bare.tween.FinishAllFrom(tinted);
+        c.check(tinted.color.toHex() === '#ffdf6e80', "TweenTo color should end at the hex, keeping the alpha tween: " + tinted.color.toHex());
+        c.check(Color.White.toHex() === '#ffffffff', "tweening a shared color should not change it");
+        TweenTo(tinted, 1, { color: Color.fromHex('#00000000') });
+        bare.tween.FinishAllFrom(tinted);
+        c.check(tinted.color.toHex() === '#00000000', "TweenTo color should take a Color, alpha included: " + tinted.color.toHex());
+        TweenTo(tinted, 1, { color: '#ff0000' });
+        TweenTo(tinted, 1, { color: '#0000ff' });
+        c.check(bare.tween.GetAllFrom(tinted).length === 1, "a new color tween should replace the old one");
+        bare.tween.RemoveAllFrom(tinted);
+        c.check(Color.lerp('#000000', '#ffffff', 0.5).toHex() === '#808080ff', "Color.lerp should mix per channel: " + Color.lerp('#000000', '#ffffff', 0.5).toHex());
+
         const shaker = this.AddGameObject("hero");
         bare.tween.Shake(shaker, "innerRotation", 0.05, 20);
         await this.Wait(0.2);

@@ -6,6 +6,7 @@ import type { Scene } from "../scenes/scene";
 import { GameObject } from "../objects/gameObject";
 import { RegisterController } from '../globals';
 import { InspectorField } from '../utils/decorators';
+import { Color } from '../libraries/rapid-render/color';
 
 // TWEENS RUN ON GAME TIME, SO THEY FOLLOW bare.timeScale AND STAND STILL WHILE THE GAME IS PAUSED
 setNow(() => bare.gameTime);
@@ -126,6 +127,8 @@ export class TweenController
         const normalizedProps = this.NormalizeProps(props);
         for (const configProp of configProps)
             delete normalizedProps[configProp];
+
+        this.ResolveColors(object, normalizedProps);
 
         if (overwrite) 
         {
@@ -278,6 +281,9 @@ export class TweenController
 
     private NormalizeValue(value: any): any
     {
+        if (value instanceof Color)
+            return value; // ResolveColors turns it into channels
+
         if (typeof value === 'string' && (value.startsWith('+=') || value.startsWith('-=')))
             return value[0] + value.slice(2);
 
@@ -288,6 +294,45 @@ export class TweenController
             return this.NormalizeProps(value);
 
         return value;
+    }
+
+    // a color tweens per channel: a Color or hex string tweens the r, g, b (and a) of the Color the object holds.
+    // a hex without alpha (#rrggbb / #rgb) leaves alpha alone, so it can run alongside an alpha tween
+    private ResolveColors(target: any, props: any)
+    {
+        if (!target || typeof target !== 'object')
+            return;
+
+        for (const key in props)
+        {
+            const value = props[key];
+            const current = target[key];
+
+            if (current instanceof Color && (value instanceof Color || typeof value === 'string'))
+            {
+                // a getter that builds a new Color on every read (like a TextObject's fill) would only get its copies tweened
+                if (__DEV__ && target[key] !== current)
+                    console.warn(`TweenTo: '${key}' returns a new Color every time it's read, so it can't be tweened. Tween a { t } from 0 to 1 instead and set ${key} = Color.lerp(from, to, t) in onUpdate.`);
+
+                // shared colors like Color.White are frozen: tween a copy of it instead
+                if (Object.isFrozen(current))
+                    target[key] = current.clone();
+
+                const color = value instanceof Color ? value : Color.fromHex(value);
+                const digits = typeof value === 'string' ? value.replace('#', '').length : 8;
+                props[key] = digits === 4 || digits === 8
+                    ? { r: color.r, g: color.g, b: color.b, a: color.a }
+                    : { r: color.r, g: color.g, b: color.b };
+            }
+            else if (value instanceof Color)
+            {
+                props[key] = { r: value.r, g: value.g, b: value.b, a: value.a };
+            }
+            else if (value && typeof value === 'object' && !Array.isArray(value))
+            {
+                this.ResolveColors(current, value);
+            }
+        }
     }
 
     Add(tween:Tween):Tween
@@ -422,6 +467,7 @@ export class TweenController
 // EG: TweenTo(this.go, 1, { alpha: 0, innerPosition$y: "+=" + 100 })
 // EG: TweenTo(this.go, 1, { alpha: 0, "innerPosition.y": "-=" + 100 })
 // EG: await TweenTo(this.go, 1, { scale: 0 })
+// EG: TweenTo(this.go, 1, { color: '#ffdf6e' })
 export function TweenTo(object: any, seconds: number, props: any, overwrite: boolean = true, scene: Scene | null = null): AwaitableTween
 {
     // IT SHOULD NEVER ACTUALLY GETS HERE, controllerProxyTransformer TRANSFORMS IT INTO obj.scene.tween.To / this.scene.tween.To

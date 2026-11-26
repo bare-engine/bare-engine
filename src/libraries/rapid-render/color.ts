@@ -267,6 +267,24 @@ export class Color {
     }
 
     /**
+     * Mixes two colors per channel, alpha included.
+     * @param from - The color at t = 0.
+     * @param to - The color at t = 1.
+     * @param t - How far to mix, 0–1.
+     * @returns A new Color instance.
+     */
+    static lerp(from: Color | string, to: Color | string, t: number): Color {
+        const a = typeof from === 'string' ? Color.fromHex(from) : from;
+        const b = typeof to === 'string' ? Color.fromHex(to) : to;
+        return new Color(
+            Math.round(a.r + (b.r - a.r) * t),
+            Math.round(a.g + (b.g - a.g) * t),
+            Math.round(a.b + (b.b - a.b) * t),
+            Math.round(a.a + (b.a - a.a) * t)
+        );
+    }
+
+    /**
      * Adds the components of another color to this color, clamping the result to 255.
      * @param color - The color to add.
      * @returns A new Color instance with the result of the addition.
