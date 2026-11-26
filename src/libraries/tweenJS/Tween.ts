@@ -17,10 +17,8 @@ import type {EasingFunction} from './Easing'
 import type {InterpolationFunction} from './Interpolation'
 import type Group from './Group'
 
-export interface TweenWithPromise extends Tween
-{
-    promise: Promise<Tween>;
-}
+// awaitable: `await tween` waits for it to complete, resolving with nothing
+export interface AwaitableTween extends Tween, PromiseLike<void> {}
 
 export class Tween<T extends UnknownProps = any> {
 	static autoStartOnUpdate = false

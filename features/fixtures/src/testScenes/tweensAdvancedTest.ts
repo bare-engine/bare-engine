@@ -44,7 +44,7 @@ export class TweensAdvancedTest extends Scene
         // a custom ease is used for every step, and the value ends exactly at the target
         const eased = { x: 0 };
         const easeInputs: number[] = [];
-        await TweenTo(eased, 0.1, { x: 100, ease: (k: number) => { easeInputs.push(k); return k * k; } }).promise;
+        await TweenTo(eased, 0.1, { x: 100, ease: (k: number) => { easeInputs.push(k); return k * k; } });
         c.check(easeInputs.length > 0, "a custom ease function should be called");
         c.check(easeInputs.every((k) => k >= 0 && k <= 1), "ease input should stay between 0 and 1: " + easeInputs.join(","));
         c.check(eased.x === 100, "a tween should end exactly at its target: " + eased.x);
@@ -66,14 +66,14 @@ export class TweensAdvancedTest extends Scene
         const delayedTween = TweenTo(delayed, 0.05, { x: 10, delay: 0.2, onStart: () => delayedStarted++ });
         await this.Wait(0.08);
         c.check(delayed.x === 0 && delayedStarted === 0, "delay should hold back the tween and onStart: " + delayed.x);
-        await delayedTween.promise;
+        await delayedTween;
         c.check(delayed.x === 10 && delayedStarted === 1, "a delayed tween should still finish and start once");
 
         // yoyo goes there and back, and implies one repeat
         const yoyo = { x: 0 };
         let yoyoRepeats = 0;
         let yoyoCompletes = 0;
-        await TweenTo(yoyo, 0.05, { x: 50, yoyo: true, onRepeat: () => yoyoRepeats++, onComplete: () => yoyoCompletes++ }).promise;
+        await TweenTo(yoyo, 0.05, { x: 50, yoyo: true, onRepeat: () => yoyoRepeats++, onComplete: () => yoyoCompletes++ });
         c.check(near(yoyo.x, 0), "yoyo should come back to the start value: " + yoyo.x);
         c.check(yoyoRepeats === 1, "yoyo without repeat should repeat once: " + yoyoRepeats);
         c.check(yoyoCompletes === 1, "onComplete should run once after the last pass: " + yoyoCompletes);
@@ -91,7 +91,7 @@ export class TweensAdvancedTest extends Scene
             onEveryStart: () => everyStarts++,
             onRepeat: () => repeats++,
             onUpdate: () => updates++,
-        }).promise;
+        });
         c.check(starts === 1, "onStart should run once with repeats: " + starts);
         c.check(everyStarts === 3, "onEveryStart should run for the first pass and each repeat: " + everyStarts);
         c.check(repeats === 2, "onRepeat should run once per repeat: " + repeats);
@@ -101,11 +101,11 @@ export class TweensAdvancedTest extends Scene
         // initialDelay only waits before the first pass, delay waits before every repeat
         const initial = { x: 0 };
         const initialStart = bare.time;
-        await TweenTo(initial, 0.03, { x: 5, initialDelay: 0.15, repeat: 2 }).promise;
+        await TweenTo(initial, 0.03, { x: 5, initialDelay: 0.15, repeat: 2 });
         const initialElapsed = (bare.time - initialStart) / 1000;
         const everyDelay = { x: 0 };
         const everyStart = bare.time;
-        await TweenTo(everyDelay, 0.03, { x: 5, delay: 0.15, repeat: 2 }).promise;
+        await TweenTo(everyDelay, 0.03, { x: 5, delay: 0.15, repeat: 2 });
         const everyElapsed = (bare.time - everyStart) / 1000;
         c.check(initialElapsed >= 0.2 && initialElapsed < 0.4, "initialDelay should wait once: " + initialElapsed);
         c.check(everyElapsed >= 0.5, "delay should wait before every pass: " + everyElapsed);
@@ -154,8 +154,19 @@ export class TweensAdvancedTest extends Scene
 
         const stopRepeat = { x: 0 };
         let stopOnRepeat = 0;
-        await TweenTo(stopRepeat, 0.03, { x: 10, repeat: 1, onStop: () => stopOnRepeat++ }).promise;
+        await TweenTo(stopRepeat, 0.03, { x: 10, repeat: 1, onStop: () => stopOnRepeat++ });
         c.check(stopOnRepeat === 0, "onStop should not run when the tween repeats or finishes: " + stopOnRepeat);
+
+        // a tween itself is awaitable, and waits like its promise
+        const awaited = { x: 0 };
+        let completedBeforeResume = false;
+        await TweenTo(awaited, 0.05, { x: 10, onComplete: () => completedBeforeResume = true });
+        c.check(completedBeforeResume && awaited.x === 10, "awaiting a tween should wait for it to complete: " + awaited.x);
+        c.check(await TweenTo({ x: 0 }, 0.01, { x: 1 }) === undefined, "awaiting a tween should resolve with nothing");
+        c.check(!("promise" in TweenTo({ x: 0 }, 0.01, { x: 1 })), "tweens should no longer have a promise");
+        const shakeTarget = { x: 0 };
+        await bare.tween.Shake(shakeTarget, "x", 0.05);
+        c.check(shakeTarget.x === 0, "awaiting a shake should wait for it to settle: " + shakeTarget.x);
 
         // AddChain plays tweens one after another
         const chained = { x: 0, y: 0 };

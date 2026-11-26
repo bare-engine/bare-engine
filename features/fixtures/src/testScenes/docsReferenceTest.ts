@@ -140,7 +140,7 @@ export class DocsReferenceTest extends Scene
         // --- tweens
         const box = this.AddGameObject("hero").SetPosition(0, 0);
         const tween = TweenTo(box, 0.05, { x: 100 });
-        await tween.promise;
+        await tween;
         c.check(Math.abs(box.x - 100) < 0.001, "awaiting a tween's promise should end at the target");
 
         TweenTo(box, 0.05, { y: "+=10" } as any);

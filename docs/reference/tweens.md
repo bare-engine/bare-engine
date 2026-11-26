@@ -8,16 +8,33 @@ import { TweenTo } from 'bare-engine';
 TweenTo(player, 0.5, { x: 300, rotation: 90 });
 ```
 
-`TweenTo(object, seconds, props)` is shorthand for `bare.tween.To(...)`, and works anywhere, including plain functions outside a scene or component: it runs on the object's scene, so the object must be in one. `bare.tween` only works inside a scene, component or GameObject (see [Troubleshooting](../guide/troubleshooting)); elsewhere, write `obj.scene.tween.To(...)`. Both return a tween with a `promise`, so you can wait for it:
+`TweenTo(object, seconds, props)` is shorthand for `bare.tween.To(...)`, and works anywhere, including plain functions outside a scene or component: it runs on the object's scene, so the object must be in one. `bare.tween` only works inside a scene, component or GameObject (see [Troubleshooting](../guide/troubleshooting)); elsewhere, write `obj.scene.tween.To(...)`. Both return a tween you can await, which waits until it completes:
 
 ```ts
-await TweenTo(door, 1, { y: 0 }).promise;
+await TweenTo(door, 1, { y: 0 });
 ```
+
+It resolves with nothing. `Promise.all` and `Promise.race` take tweens too. A stopped tween never completes, so awaiting it waits forever.
 
 Tweens run on game time, so they follow [`bare.timeScale`](./bare#game-speed) and wait while the game is paused.
 
 ::: warning
-Tweens only run once the scene has started, and a scene starts after its `OnStart` has finished. So don't await a tween inside a scene's `OnStart`: it would wait forever. Start the tween there without awaiting it, or await it later, for example from `OnUpdate` or an event. During development, reading `.promise` before the scene has started logs an error if the scene still hasn't started 3 seconds later. To hold startup for a moment, await [`this.Wait`](../guide/scenes#waiting) instead: waits do count during `OnStart`.
+Tweens only run once the scene has started, and a scene starts after its `OnStart` has finished. So don't await a tween inside a scene's `OnStart`: it would wait forever. Start the sequence without awaiting it instead, so `OnStart` can finish while the tweens run, or use the tween's `onComplete`:
+
+```ts
+override OnStart()
+{
+    void this.Intro();
+}
+
+async Intro()
+{
+    await TweenTo(this.logo, 1, { alpha: 1 });
+    await this.Wait(0.5);
+}
+```
+
+During development, awaiting a tween before the scene has started logs an error if the scene still hasn't started 3 seconds later. To hold startup for a moment, await [`this.Wait`](../guide/scenes#waiting) instead: waits do count during `OnStart`.
 :::
 
 **Example:** a [Platformer](https://github.com/bare-engine/bare-platformer) coin [waits for its fade-out tween](https://github.com/bare-engine/bare-platformer/blob/main/src/components/collectableComponent.ts#L33-L35) before removing itself.

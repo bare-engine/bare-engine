@@ -1,6 +1,6 @@
 import { BareEvent } from '../types/bareTypes';
 import Easing from "../libraries/tweenJS/Easing";
-import Tween, { TweenWithPromise } from "../libraries/tweenJS/Tween";
+import Tween, { AwaitableTween } from "../libraries/tweenJS/Tween";
 import { setNow } from "../libraries/tweenJS/Now";
 import type { Scene } from "../scenes/scene";
 import { GameObject } from "../objects/gameObject";
@@ -53,7 +53,7 @@ export class TweenController
 
     // SWINGS property UP TO amount AWAY FROM ITS CURRENT VALUE, THEN WOBBLES IT BACK. WITH THE DEFAULTS IT STARTS AT amount
     // COULD PUT ALL SPRING VALUES IN AN OPTIONS OBJECT - TODO
-    Shake(object: any, property: string, duration: number, amount: number = -32, decay: number = 6, frequency: number = 4, phase: number = 0.075, overwrite: boolean = true): TweenWithPromise
+    Shake(object: any, property: string, duration: number, amount: number = -32, decay: number = 6, frequency: number = 4, phase: number = 0.075, overwrite: boolean = true): AwaitableTween
     {
         const spring = (t: number) => Math.pow(2, -decay * t) * Math.sin((t - phase) * frequency * Math.PI);
 
@@ -102,7 +102,7 @@ export class TweenController
         return tween;
     }
 
-    To(object: any, seconds: number, props: any, overwrite: boolean = true): TweenWithPromise
+    To(object: any, seconds: number, props: any, overwrite: boolean = true): AwaitableTween
     {
         //if (object.name && object.name == "sparkPickup")
         //    trace(4)
@@ -206,41 +206,41 @@ export class TweenController
             tween.onStop(props.onStop);
         }
 
-        const promise = new Promise<Tween>((resolve) => {
+        const promise = new Promise<void>((resolve) => {
             if (!props.onComplete)
             {
-                tween.onComplete(() => resolve(tween));
+                tween.onComplete(() => resolve());
             }
             else
             {
                 tween.onComplete(() => {
                     props.onComplete(tween);
-                    resolve(tween);
+                    resolve();
                 });
             }
         });
 
-        // tweens only advance once the scene has started, which waits for the scene's OnStart:
-        // awaiting this promise inside OnStart would never resolve. reading it there is fine as long as
-        // OnStart doesn't wait on it (e.g. a 'void' async call), so only warn if the scene stays stuck
+        // makes `await tween` wait for it to complete.
+        // tweens only advance once the scene has started, which waits for the scene's OnStart: awaiting one inside
+        // OnStart would never resolve. then also runs for uses OnStart doesn't wait on (e.g. a 'void Promise.all(...)'), so only warn if the scene stays stuck
         let startCheckQueued = false;
-        Object.defineProperty(tween, "promise", {
-            get: () => {
+        Object.defineProperty(tween, "then", {
+            value: (onFulfilled?: any, onRejected?: any) => {
                 if (__DEV__ && !this.scene.started && !startCheckQueued)
                 {
                     startCheckQueued = true;
                     setTimeout(() => {
                         if (!this.scene.started)
-                            console.error("A tween's promise was read before its scene started, and the scene still hasn't started. Tweens don't run until the scene's OnStart has finished, so awaiting it in OnStart never resolves. Start the tween without awaiting it, or await it after OnStart, for example in OnUpdate or an event.");
+                            console.error("A tween was awaited before its scene started, and the scene still hasn't started. Tweens only run once OnStart has finished, so awaiting one inside OnStart never resolves. Start the sequence without awaiting it, e.g. `void this.Intro()` from OnStart with the awaits inside Intro, or use the tween's onComplete. To hold startup for a moment, await this.Wait(seconds) instead.");
                     }, 3000);
                 }
-                return promise;
+                return promise.then(onFulfilled, onRejected);
             },
             configurable: true,
         });
         this.Add(tween).start();
 
-        return (tween as TweenWithPromise);
+        return (tween as AwaitableTween);
     }
 
     // nested props only overlap where they share a leaf, so innerPosition.x and innerPosition.y can run side by side
@@ -421,8 +421,8 @@ export class TweenController
 // EG: TweenTo(this.go, 1, { alpha: 0, innerPosition: {y: "-=" + 100 }})
 // EG: TweenTo(this.go, 1, { alpha: 0, innerPosition$y: "+=" + 100 })
 // EG: TweenTo(this.go, 1, { alpha: 0, "innerPosition.y": "-=" + 100 })
-// EG: await TweenTo(this.go, 1, { scale: 0 }).promise
-export function TweenTo(object: any, seconds: number, props: any, overwrite: boolean = true, scene: Scene | null = null): TweenWithPromise
+// EG: await TweenTo(this.go, 1, { scale: 0 })
+export function TweenTo(object: any, seconds: number, props: any, overwrite: boolean = true, scene: Scene | null = null): AwaitableTween
 {
     // IT SHOULD NEVER ACTUALLY GETS HERE, controllerProxyTransformer TRANSFORMS IT INTO obj.scene.tween.To / this.scene.tween.To
     const targetScene = scene ?? object?.scene;

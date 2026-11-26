@@ -93,18 +93,18 @@ export class GameSpeedTest extends Scene
 
         // Shake settles at the property's own value, not at 0
         const scaled = { v: 1 };
-        await bare.tween.Shake(scaled, "v", 0.2, 0.5).promise;
+        await bare.tween.Shake(scaled, "v", 0.2, 0.5);
         c.check(scaled.v === 1, "Shake should settle at the value it started from: " + scaled.v);
 
         const zero = { v: 0 };
-        await bare.tween.Shake(zero, "v", 0.2, 10).promise;
+        await bare.tween.Shake(zero, "v", 0.2, 10);
         c.check(zero.v === 0, "Shake on a value at 0 should settle at 0: " + zero.v);
 
         // shaking again mid-wobble settles where the first shake started
         const twice = { v: 1 };
         bare.tween.Shake(twice, "v", 0.3, 0.5);
         await this.Wait(0.05);
-        await bare.tween.Shake(twice, "v", 0.2, 0.5).promise;
+        await bare.tween.Shake(twice, "v", 0.2, 0.5);
         c.check(twice.v === 1, "a second Shake mid-wobble should settle at the first one's rest value: " + twice.v);
 
         // AddShader replaces a shader of the same class
