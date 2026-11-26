@@ -66,7 +66,7 @@ bare.scene.Get(Game).level.Load('level1');
 | `bare.width` / `bare.height` | The game's render size in game units. |
 | `bare.paused` | Whether the game is paused. |
 | `bare.hasFocus` | Whether the game has focus. Changes are sent as the `game_focusChange` event. |
-| `bare.mobile` | Read-only. Running on a phone or tablet (a touch device). |
+| `bare.mobile` | Read-only. `true` on a phone or tablet (a touch device). Use it for mobile-only layout, eg moving the HUD out from under a button the host site draws over the canvas on mobile, see [Keeping the HUD clear of the page](#keeping-the-hud-clear-of-the-page). |
 | `bare.debug` | Whether debug drawing is on. See [Debugging](../guide/debugging). |
 | `bare.gameSpeed` | Read-only. The current frame rate relative to 60 fps: `1` at 60 fps, `0.5` at 30 fps. Updated every frame. |
 | `bare.levelEditorOpen` | Whether the [level editor](../guide/level-editor) is open. |
@@ -92,6 +92,8 @@ bare.scene.Get(Game).level.Load('level1');
 | `bare.DisableRightClick()` | Stop right-click from [selecting objects](../guide/debugging#selecting-objects-in-the-game), for games that use the right mouse button. Development only. |
 | `bare.LoadFont(name, url?)` | Load a font from `public/fonts/`. The first font loaded becomes `bare.defaultFont`. |
 | `bare.SetCursor(css)` | Set the mouse cursor. |
+| `bare.GetCanvasScreenPosition(clientX, clientY)` | Turn a page position in CSS pixels, such as `event.clientX/Y`, into a screen position in game units, as a `Vec2`. See [Page pixels and game units](#page-pixels-and-game-units). |
+| `bare.GetCanvasScreenDelta(deltaX, deltaY)` | Turn a distance in CSS pixels, such as `event.movementX/Y`, into game units, as a `Vec2`. |
 | `bare.drawRect`, `bare.drawCircle`, `bare.drawLine`, … | Immediate drawing, for use in `OnRender`. |
 
 ## Game speed
@@ -107,3 +109,51 @@ bare.timeScale = 1;     // normal
 It scales `deltaTime` in `OnUpdate`, and runs more or fewer fixed updates per second, so `OnFixedUpdate` and physics keep their step size and stay stable. [Tweens](./tweens), particles, camera shake, `FlashShader` and [scene waits](../guide/scenes#waiting) follow it too.
 
 `timeScale = 0` also stops tweens and `Scene.Wait()`, so animate a pause menu with `bare.unscaledDeltaTime` and `Scene.WaitRealTime()`, or pause with `bare.TogglePause()` instead. `bare.Restart()` sets it back to `1`.
+
+## Page pixels and game units
+
+The page measures in CSS pixels; the game measures in game units. They differ by the resolution scale, the device pixel ratio and, with a fitted resolution, the bars around the canvas. `bare.GetCanvasScreenPosition` takes all of that into account, so use it rather than reading the canvas from `document` and doing the maths yourself:
+
+```ts
+window.addEventListener('pointerdown', (e) => {
+    const screen = bare.GetCanvasScreenPosition(e.clientX, e.clientY); // game units, (0, 0) at the canvas's top left
+    const world = bScene.ScreenToWorldPos(screen);                     // through the scene's camera
+});
+```
+
+The result is a **screen** position: `(0, 0)` is the top left of the canvas and `(bare.width, bare.height)` its bottom right. A scene without a camera, like `bare.uiScene`, uses screen positions as they are; for a scene with a camera, pass it through `ScreenToWorldPos`. A point outside the canvas, eg on a bar of a fitted resolution, gives a value below `0` or past `bare.width` / `bare.height`.
+
+`bare.GetCanvasScreenDelta` does the same for a distance, without the offset, eg to turn `event.movementX/Y` into how far the pointer moved in game units.
+
+### Keeping the HUD clear of the page
+
+Some pages draw over the game. On Poki's mobile site, for example, a pill covers the top left corner, from 24 to 88 CSS pixels down. Turn that area into game units and lay out the HUD below it:
+
+```ts
+if (bare.mobile)
+{
+    const pillBottom = bare.GetCanvasScreenPosition(0, 88).y;
+    hudColumn.y = Math.max(hudColumn.y, pillBottom + 8);
+}
+```
+
+Do this again in `OnResize`, because the scale changes with the window.
+
+### From game units to page pixels
+
+There's no method for the other way, eg to place an HTML element over a game object, but it's the same sum backwards:
+
+```ts
+function ScreenToPage(screen: Vec2): Vec2
+{
+    const rect = document.querySelector('canvas')!.getBoundingClientRect();
+    return new Vec2(
+        rect.left + screen.x * rect.width / bare.width,
+        rect.top + screen.y * rect.height / bare.height
+    );
+}
+
+const page = ScreenToPage(bScene.WorldToScreenPos(player.position));
+label.style.left = `${page.x}px`;
+label.style.top = `${page.y}px`;
+```
