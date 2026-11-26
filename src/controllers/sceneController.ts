@@ -2,7 +2,7 @@ import { EventArgs } from "../libraries/mitt";
 import { globalEvents } from "../globals";
 import { GameObject } from "../objects/gameObject";
 import { Scene } from "../scenes/scene";
-import { UIScene } from "../scenes/uiScene";
+import { Vec2 } from "../libraries/rapid-render";
 import { AwakePayload, BareEvent, Events, SceneClass } from "../types/bareTypes";
 
 export class SceneController
@@ -232,15 +232,45 @@ export class SceneController
 
     // MOVES AN OBJECT AND EVERYTHING UNDER IT TO ANOTHER SCENE. IT STAYS IN THE SAME PLACE ON THE SCREEN, AND ITS
     // CHILDREN, TWEENS AND COMPONENTS COME ALONG (THE COMPONENTS WITHOUT RUNNING THEIR LIFECYCLE AGAIN). POINTER
-    // HANDLERS LIVE ON THE OBJECTS, SO THEY COME ALONG TOO.
+    // HANDLERS AND SHADERS LIVE ON THE OBJECTS, SO THEY COME ALONG TOO.
     // DOESN'T WORK ATM FOR PHYSICS OBJECTS, WOULD ALSO NEED TO MOVE
-    // ALSO DOESN'T ALTER SCALE, SO OBJECT CAN CHANGE SIZE WHEN COMING FROM A ZOOMED-IN SCENE FOR EXAMPLE. HAVE TO HANDLY THIS YOURSELF IF NEEDED
-    // EG LIKE: this.go.SetScale(previousScene.camera.GetScale());
-    MoveGameObjectTo(gameObject: GameObject, scene: UIScene)
+    // EG A COLLECTIBLE FLYING FROM THE GAME SCENE TO A COUNTER IN THE HUD
+    MoveGameObjectTo(gameObject: GameObject, scene: Scene)
     {
         const from = gameObject.scene;
         if (from == scene)
             return;
+
+        // a child leaves its parent and becomes a top level object in the new scene. its position, rotation and
+        // scale take on the parent's, so it stays where it was in the world (exact unless an ancestor has a
+        // non-uniform scale and a rotation, which would skew it)
+        const parent = gameObject.parent;
+        if (parent)
+        {
+            const origin = parent.ToGlobal(new Vec2(0, 0));
+            const axisX = parent.ToGlobal(new Vec2(1, 0));
+            const axisY = parent.ToGlobal(new Vec2(0, 1));
+            const ax = axisX.x - origin.x, ay = axisX.y - origin.y;
+            const bx = axisY.x - origin.x, by = axisY.y - origin.y;
+            const flipped = ax * by - ay * bx < 0;
+
+            const world = parent.ToGlobal(new Vec2(gameObject.x, gameObject.y));
+            gameObject.x = world.x;
+            gameObject.y = world.y;
+            gameObject.rotation += Math.atan2(ay, ax) * 180 / Math.PI;
+            gameObject.scaleX *= Math.hypot(ax, ay);
+            gameObject.scaleY *= Math.hypot(bx, by) * (flipped ? -1 : 1);
+
+            const index = parent.children.indexOf(gameObject);
+            if (index !== -1)
+                parent.children.splice(index, 1);
+            gameObject.parent = null;
+        }
+        else
+        {
+            // CHILDREN AREN'T IN AN objectController, THEY COME ALONG WITH THEIR PARENT
+            from.object.Remove(gameObject);
+        }
 
         // CONVERT POSITION BETWEEN SCENES, SO IT STAYS THE SAME
         const screenPos = from.WorldToScreen(gameObject.x, gameObject.y);
@@ -248,8 +278,11 @@ export class SceneController
         gameObject.x = newWorldPos.x;
         gameObject.y = newWorldPos.y;
 
-        // MOVE BETWEEN objectControllers. CHILDREN AREN'T IN ONE, THEY COME ALONG WITH THEIR PARENT
-        from.object.Remove(gameObject);
+        // and the size on screen: a world unit is zoom pixels in each scene (a UI scene's zoom is 1)
+        const zoomRatio = from.GetCameraZoom() / scene.GetCameraZoom();
+        gameObject.scaleX *= zoomRatio;
+        gameObject.scaleY *= zoomRatio;
+
         scene.object.Add(gameObject);
 
         // THE WHOLE SUBTREE: TWEENS, COMPONENTS, AND WHICH SCENE AND LAYER EACH OBJECT IS IN. THE CONTROLLERS ARE

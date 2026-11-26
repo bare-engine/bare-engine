@@ -119,6 +119,18 @@ bare.uiScene.AddGameObject(pauseButton);
 
 **Examples:** the [Platformer](https://github.com/bare-engine/bare-platformer)'s [UI scene](https://github.com/bare-engine/bare-platformer/blob/main/src/ui.ts), and the [RPG](https://github.com/bare-engine/bare-rpg)'s [touch joystick](https://github.com/bare-engine/bare-rpg/blob/main/src/ui/joystick.ts) on [`bare.uiScene`](https://github.com/bare-engine/bare-rpg/blob/main/src/game.ts#L40-L44).
 
+### Moving an object into the UI
+
+A UI scene draws above the game scene, and its units are screen pixels. To fly a collected coin to the coin counter without it passing under the HUD, move it into the UI scene first with `bare.scene.MoveGameObjectTo`. It keeps its place and size on screen, whatever the camera's position and zoom:
+
+```ts
+bare.scene.MoveGameObjectTo(coin, this.hud);
+await TweenTo(coin, 0.5, { x: counter.x, y: counter.y });
+coin.Remove();
+```
+
+Its children, tweens, components and shaders come along. See [Scene manager](../reference/scene-manager).
+
 ### Anchoring
 
 Use the pivot to anchor UI to the edges of the screen:

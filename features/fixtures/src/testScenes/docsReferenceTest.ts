@@ -21,6 +21,14 @@ class HelperScene extends Scene
 
 class OtherScene extends Scene {}
 
+class UIMoveTarget extends Scene
+{
+    constructor()
+    {
+        super({ UI: true });
+    }
+}
+
 class MoveCounterComponent extends Component
 {
     awakes = 0;
@@ -270,6 +278,23 @@ export class DocsReferenceTest extends Scene
         c.check(this.tween.GetAllFrom(movedGrandchild).length === 0 && target.tween.GetAllFrom(movedGrandchild).length === 1, "MoveGameObjectTo should move a child's tweens");
         c.check(target.component.Get(movedGrandchild, MoveCounterComponent) === counter && this.component.Get(movedGrandchild, MoveCounterComponent) === null, "MoveGameObjectTo should move a child's components");
         c.check(counter.scene === target && counter.awakes === 1 && counter.removes === 0, "a moved component should keep its lifecycle and know its new scene: " + JSON.stringify({ awakes: counter.awakes, removes: counter.removes }));
+
+        // a child moved on its own keeps its place and size on screen, from a zoomed and panned camera to a UI scene
+        const zoomedParent = this.AddGameObject("hero").SetPosition(30, 40).SetScale(2);
+        const zoomedChild = zoomedParent.AddChild("hero").SetPosition(5, 10);
+        const previousZoom = this.camera.GetZoom();
+        this.camera.SetZoom(3);
+        const screenBefore = this.WorldToScreenPos(zoomedParent.ToGlobal(new Vec2(zoomedChild.x, zoomedChild.y)));
+        const expectedScale = 2 * this.GetCameraZoom();
+        const ui = await bare.scene.Add(UIMoveTarget);
+        bare.scene.MoveGameObjectTo(zoomedChild, ui);
+        const near = (a: number, b: number) => Math.abs(a - b) < 0.001;
+        c.check(zoomedChild.parent === null && !zoomedParent.children.includes(zoomedChild) && ui.object.GetAll().includes(zoomedChild), "MoveGameObjectTo should take a child out of its parent: " + JSON.stringify({ parent: zoomedChild.parent?.name }));
+        c.check(near(zoomedChild.x, screenBefore.x) && near(zoomedChild.y, screenBefore.y), "MoveGameObjectTo should keep a child's place on screen: " + JSON.stringify({ x: zoomedChild.x, y: zoomedChild.y, screen: screenBefore }));
+        c.check(near(zoomedChild.scaleX, expectedScale) && near(zoomedChild.scaleY, expectedScale), "MoveGameObjectTo should keep the size on screen (parent scale times camera scale): " + JSON.stringify({ scaleX: zoomedChild.scaleX, scaleY: zoomedChild.scaleY, expectedScale }));
+        this.camera.SetZoom(previousZoom);
+        zoomedParent.Remove();
+        bare.scene.Remove(ui);
         bare.scene.Remove(target);
 
         // --- level
