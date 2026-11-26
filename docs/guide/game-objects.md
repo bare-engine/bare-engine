@@ -69,7 +69,7 @@ this.AddGameObject('ball')
 | `SetScaleToReachDimensions(width, height, keepRatio?)` | Scale the image to a size in game units. With `keepRatio`, it fits inside that size without stretching. |
 | `SetRotation(degrees)` | Rotation. |
 | `SetPivot(x, y)` / `CenterPivot()` | Pivot, see [Pivot](#pivot). |
-| `SetColor(color)` / `SetAlpha(alpha)` | Tint, as a `Color` or hex string, and opacity from 0 to 1. |
+| `SetColor(color)` / `SetAlpha(alpha)` | Tint, as a `Color` or hex string, and opacity from 0 to 1. A hex without alpha (`#rrggbb`) keeps the current opacity; `#rrggbbaa` or a `Color` sets it too. |
 
 | Property | Description |
 | --- | --- |

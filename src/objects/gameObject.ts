@@ -1798,12 +1798,17 @@ export class GameObject
         return this;
     }
 
-    // COLOR DECIDES ALPHA AS WELL
-    // SO IT CAN OVERRIDE, EG IF ALPHA IS .5, YOU SET COLOR TO COLOR.WHITE, ALPHA IS NOW 1 - TODO?
+    // a hex without alpha (#rgb / #rrggbb) only changes the tint and keeps the current alpha.
+    // a hex with alpha (#rgba / #rrggbbaa) or a Color object sets the alpha too (eg Color.Transparent)
     SetColor(color: Color | string): this
     {
         if(typeof color === 'string')
-            this.color = Color.fromHex(color);
+        {
+            const parsed = Color.fromHex(color);
+            const digits = color.startsWith('#') ? color.length - 1 : color.length;
+            const hasAlpha = digits === 4 || digits === 8;
+            this.color.setRGBA(parsed.r, parsed.g, parsed.b, hasAlpha ? parsed.a : this.color.a);
+        }
         else
             this.color.setRGBA(color.r, color.g, color.b, color.a);
 
