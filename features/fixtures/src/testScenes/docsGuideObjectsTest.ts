@@ -159,6 +159,34 @@ export class DocsGuideObjectsTest extends Scene
         c.check(ball.rotation === 45, "SetRotation should be in degrees");
         c.check(ball.pivot.x === 0.5 && ball.pivot.y === 0.5, "CenterPivot should set pivot to 0.5");
 
+        // a pivot fraction on an object without a texture is of its unscaled box, whatever its scale
+        for (const scale of [0, 1, 2])
+        {
+            const group = this.AddGameObject().SetScale(scale);
+            group.AddChild("PIXEL").SetPivot(0, 0).SetScaleXY(200, 100); // the ANY prefab above gives a 0.25 pivot
+            group.SetPivot(0.5, 1);
+            c.check(group.pivot.x === 100 && group.pivot.y === 100, `container pivot fraction at scale ${scale} should be of the unscaled box: ${group.pivot.x}, ${group.pivot.y}`);
+            group.innerScale.x = 0;
+            group.SetInnerPivot(0.5, 0.5);
+            c.check(group.innerTransform.pivot!.x === 100, `container inner pivot fraction should ignore inner scale: ${group.innerTransform.pivot!.x}`);
+            group.Remove();
+        }
+
+        // ...and of where that box is, so children at negative positions get centered too
+        const spread = this.AddGameObject();
+        spread.AddChild("PIXEL").SetPivot(0, 0).SetPosition(-100, -40).SetScaleXY(10, 10);
+        spread.AddChild("PIXEL").SetPivot(0, 0).SetPosition(90, 30).SetScaleXY(10, 10);
+        spread.CenterPivot();
+        c.check(spread.pivot.x === 0 && spread.pivot.y === 0, `container pivot fraction should use the box's position: ${spread.pivot.x}, ${spread.pivot.y}`);
+        spread.SetPivot(1, 1);
+        c.check(spread.pivot.x === 100 && spread.pivot.y === 40, `container pivot (1, 1) should be the box's bottom right: ${spread.pivot.x}, ${spread.pivot.y}`);
+        spread.childrenAtPivot = true;
+        spread.CenterPivot();
+        const firstPivot = spread.pivot.x;
+        spread.CenterPivot();
+        c.check(spread.pivot.x === firstPivot, `childrenAtPivot container should get the same pivot every time: ${firstPivot}, ${spread.pivot.x}`);
+        spread.Remove();
+
         // entity with extends + override
         const bigBall = this.AddGameObject({ name: "bigBall", extends: "ball", x: 50 });
         c.check(bigBall.x === 50, "entity override should apply");

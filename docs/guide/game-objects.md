@@ -79,7 +79,7 @@ this.AddGameObject('ball')
 | `pivot`, `pivotX`, `pivotY` | Anchor point, in texture pixels from the top left. See [Pivot](#pivot). |
 | `alpha`, `color`, `visible` | Appearance. |
 | `flipped` | Mirror horizontally. |
-| `width`, `height` | Size of the box around the object and its children, in its parent's space (read-only). See [Bounds](#bounds). |
+| `width`, `height` | Size of the box around the object and its children, in its parent's space, so with its scale and rotation (read-only). See [Bounds](#bounds). For the image's own size, use `texture.width` and `texture.height`. |
 | `active` | Inactive objects are not updated. |
 | `tags`, `customData` | Your own data, saved with the object. |
 
@@ -93,6 +93,19 @@ obj.CenterPivot();
 ```
 
 The fraction is of the texture's own size, not the scaled size. Reading `pivot`, `pivotX` or `pivotY` always gives pixels, and assigning to them directly sets pixels too: on a 64×64 image, `obj.SetPivot(0.5, 0.5)` gives a `pivot` of `{ x: 32, y: 32 }`, and `obj.pivotX = 0.5` means half a pixel. A prefab's `pivot` works like `SetPivot`.
+
+Pixels are the texture's own pixels too, before scale. So to work out a pivot in pixels, start from `texture.width` and `texture.height`, not `width` and `height`. Those include the scale and the children, so they are 0 right after `SetScale(0)`:
+
+```ts
+const count = relic.AddChild(text).SetScale(0);
+count.SetPivot(count.width / 2, count.height);                 // wrong: both are 0
+count.SetPivot(count.texture.width / 2, count.texture.height); // right
+count.SetPivot(0.5, 1);                                        // same, and simpler
+```
+
+An object without a texture takes the fraction of what it draws itself, like a `TileMap`'s tiles or a `Button`'s box. A container that draws nothing takes it of the box around its children, in its own unscaled pixels. So `CenterPivot()` centers a container on its children, even when some of them sit at negative positions. The children have to be added first, though: the fraction is turned into pixels when you call it.
+
+When you can, use a fraction. It doesn't depend on the scale, and a `TextObject` keeps it when its text changes, while a pivot in pixels stays where it was.
 
 ## Inner transform
 
@@ -185,7 +198,7 @@ piece.SetPosition(piece.x + left - box.x, piece.y + top - box.y);
 | `GetBounds(global = true)` | The object's own image. An object without a texture gives the box around its children. |
 | `GetBoundsWithChildren(global = true, includeRootTransform = true)` | The image and all children, grandchildren and so on. |
 
-With `global` set to `false`, the box is in the parent's space instead of the world. With `includeRootTransform` set to `false`, the object's own position, rotation and scale are left out, which gives the box in its own image pixels. Hidden children count too. `width` and `height` are `GetBoundsWithChildren(false)`'s size.
+With `global` set to `false`, the box is in the parent's space instead of the world. With `includeRootTransform` set to `false`, the object's own position, rotation and scale are left out, which gives the box in its own image pixels. Hidden children count too. `width` and `height` are `GetBoundsWithChildren(false)`'s size, so they include the object's own scale and rotation. For pivot maths, use the texture's size instead, see [Pivot](#pivot).
 
 ## Components
 

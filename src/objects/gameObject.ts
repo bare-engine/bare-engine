@@ -1562,6 +1562,25 @@ export class GameObject
 
     GetBoundsWithChildren(global:boolean = true, includeRootTransform:boolean = true): Rectangle
     {
+        return this.computeBoundsWithChildren(global, includeRootTransform, true);
+    }
+
+    // the box the fractions passed to SetPivot / SetInnerPivot are of, in unscaled content pixels: the
+    // texture, or the drawn content (eg Button, TileMap), or for a container the box around its children.
+    // a fraction is box.x + fraction * box.width, so children at negative positions are centered too
+    private getPivotFractionBox(): Rectangle
+    {
+        if (this.texture)
+            return { x: 0, y: 0, width: this.texture.width, height: this.texture.height };
+
+        // no outer or inner transform of its own, and for childrenAtPivot not shifted by the current
+        // pivot either, so setting the same fraction twice gives the same pivot
+        return this.GetLocalContentBounds() ?? this.computeBoundsWithChildren(false, false, false);
+    }
+
+    // includeRootLocalTransform false also leaves out the root's inner transform and childrenAtPivot shift
+    private computeBoundsWithChildren(global: boolean, includeRootTransform: boolean, includeRootLocalTransform: boolean): Rectangle
+    {
         var minX = Infinity;
         var minY = Infinity;
         var maxX = -Infinity;
@@ -1601,7 +1620,7 @@ export class GameObject
             m.save();
             if (applyObjectTransform)
                 obj.ComposeContentMatrix(m.matrix, m.curWorldM, -1);
-            else
+            else if (includeRootLocalTransform)
                 obj.ComposeInnerMatrix(m.matrix, m.curWorldM);
             updateBounds(obj);
             m.restore();
@@ -1609,7 +1628,7 @@ export class GameObject
             // Child space.
             if (applyObjectTransform)
                 obj.ComposeChildSpaceMatrix(m.matrix, m.curWorldM, -1);
-            else
+            else if (includeRootLocalTransform)
             {
                 if (obj.childrenInheritInnerTransform)
                     obj.ComposeInnerMatrix(m.matrix, m.curWorldM);
@@ -1734,6 +1753,7 @@ export class GameObject
     // CAN PASS IN PERCENTAGES TOO
     // THESE ARE RELATIVE TO THE SIZE OF THE TEXTURE, NOT THE SIZE OF THE GAMEOBJECT (INCLUDING CHILDREN)
     // MIGHT BE CONFUSING - TODO?
+    // without a texture, of the unscaled box around its content or children (see getPivotFractionBox)
     SetPivot(x: number, y: number): this
     {
         if (!this.texture)
@@ -1745,27 +1765,13 @@ export class GameObject
         }
         
         // OPTION TO PASS IN A PERCENTAGE
-        if (x > 0 && x <= 1)
+        if ((x > 0 && x <= 1) || (y > 0 && y <= 1))
         {
-            if (!this.texture)
-            {
-                x = x * this.width;
-                //console.error("CANNOT SET PERCENTAGE ON A GAMEOBJECT WITHOUT A TEXTURE. LOAD IT FIRST");
-                //return this;
-            }
-            else
-                x = x * this.texture.width;
-        }
-        if (y > 0 && y <= 1)
-        {
-            if (!this.texture)
-            {
-                y = y * this.height;
-                //console.error("CANNOT SET PERCENTAGE ON A GAMEOBJECT WITHOUT A TEXTURE. LOAD IT FIRST");
-                //return this;
-            }
-            else
-                y = y * this.texture.height;
+            const box = this.getPivotFractionBox();
+            if (x > 0 && x <= 1)
+                x = box.x + x * box.width;
+            if (y > 0 && y <= 1)
+                y = box.y + y * box.height;
         }
 
         this.pivot.x = x;
@@ -1847,27 +1853,13 @@ export class GameObject
         }
         
         // OPTION TO PASS IN A PERCENTAGE
-        if (x > 0 && x <= 1)
+        if ((x > 0 && x <= 1) || (y > 0 && y <= 1))
         {
-            if (!this.texture)
-            {
-                x = x * this.width;
-                //console.error("CANNOT SET PERCENTAGE ON A GAMEOBJECT WITHOUT A TEXTURE. LOAD IT FIRST");
-                //return this;
-            }
-            else
-                x = x * this.texture.width;
-        }
-        if (y > 0 && y <= 1)
-        {
-            if (!this.texture)
-            {
-                y = y * this.height;
-                //console.error("CANNOT SET PERCENTAGE ON A GAMEOBJECT WITHOUT A TEXTURE. LOAD IT FIRST");
-                //return this;
-            }
-            else
-                y = y * this.texture.height;
+            const box = this.getPivotFractionBox();
+            if (x > 0 && x <= 1)
+                x = box.x + x * box.width;
+            if (y > 0 && y <= 1)
+                y = box.y + y * box.height;
         }
 
         this.innerTransform.pivot ??= new Vec2();
