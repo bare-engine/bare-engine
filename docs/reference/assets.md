@@ -3,7 +3,7 @@
 `bare.asset` loads and holds textures, atlases and animations. Usually you don't need it: GameObjects load their images by name, and animations load their frames when they first play. See the [Assets guide](../guide/assets) for where to put files.
 
 ```ts
-await bare.asset.LoadTexture('backgrounds/sky');   // public/images/backgrounds/sky.webp
+await bare.asset.LoadTexture('backgrounds/sky');   // public/images/backgrounds/sky.png
 const sky = bare.asset.GetTexture('backgrounds/sky');
 ```
 
@@ -13,7 +13,7 @@ Texture names are paths relative to `public/images/`, without the extension. Ima
 
 | Method | Description |
 | --- | --- |
-| `LoadTexture(name)` | Load a `.webp` from `public/images/`. Resolves with the texture; already loaded or loading textures aren't fetched twice. A failed load resolves with a red placeholder pixel. |
+| `LoadTexture(name)` | Load a `.png` from `public/images/`, served as `.webp`. Resolves with the texture; already loaded or loading textures aren't fetched twice. A failed load resolves with a red placeholder pixel. |
 | `LoadTextureBatch(names)` | Load several textures in parallel. |
 | `GetTexture(name)` / `HasTexture(name)` | A loaded texture, or whether it's loaded. For a name that isn't loaded, `GetTexture` returns a red placeholder pixel and warns in development. |
 | `AddTexture(name, texture)` | Register a texture you made, for example a `RenderTexture`, so it can be used by name. |
@@ -25,7 +25,7 @@ Texture names are paths relative to `public/images/`, without the extension. Ima
 
 | Method | Description |
 | --- | --- |
-| `LoadAtlas(path)` | Load `<path>.json` and `<path>.webp` from `public/images/` and add every image in it by name. |
+| `LoadAtlas(path)` | Load `<path>.json` and `<path>.png` (served as `.webp`) from `public/images/` and add every image in it by name. |
 
 The atlas built from `texturePackImages/` is loaded automatically.
 

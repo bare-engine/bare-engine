@@ -57,7 +57,7 @@ Everything here is loaded before your game runs, in parallel with your code.
 
 ## `public/images/`
 
-Images here are streamed in when first used. No code changes needed: refer to them by name and the engine loads them.
+PNG images here are streamed in when first used, as `.webp`. No code changes needed: refer to them by name and the engine loads them.
 
 ## `package.json`
 

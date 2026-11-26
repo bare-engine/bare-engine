@@ -19,7 +19,8 @@ const {
     readProjectPackage,
     withTransformSourcemap
 } = require("../vite/plugins.cjs");
-const { resolveTexturePackImagesConfig } = require("../scripts/texturePackImagesConfig.cjs");
+const { bareStreamedImagesPlugin, copyPublicDir } = require("../vite/streamedImages.cjs");
+const { resolveImagesConfig, resolveTexturePackImagesConfig } = require("../scripts/texturePackImagesConfig.cjs");
 
 module.exports = ({ mode }) => {
     const projectRoot = process.cwd();
@@ -37,6 +38,11 @@ module.exports = ({ mode }) => {
     const stripDecorators = !isDev && projectPackage.bareEngine?.stripDecorators !== false;
     const autoRegisterClasses = projectPackage.bareEngine?.autoRegisterClasses !== false;
     const texturePackImages = resolveTexturePackImagesConfig(projectPackage);
+    const streamedImages = {
+        projectRoot,
+        imageGlobs: projectPackage.bareEngine?.imageGlobs,
+        webpQuality: resolveImagesConfig(projectPackage).webpQuality
+    };
 
     return {
         root: projectRoot,
@@ -77,6 +83,7 @@ module.exports = ({ mode }) => {
             }),
             bareIndexOutputPlugin(),
             bareInitialAssetsPlugin({ projectRoot }),
+            bareStreamedImagesPlugin(streamedImages),
             bareGeneratedAssetsPlugin({ projectRoot, imageGlobs: projectPackage.bareEngine?.imageGlobs }),
             ...(!isDev && stripGeneratedAssets ? [bareInlineGeneratedAssetsPlugin({ projectRoot })] : []),
             bareEditorAndApiPlugin({
@@ -89,7 +96,7 @@ module.exports = ({ mode }) => {
                 runOnStart: true
             }),
             ...(!isDev && stripOptions !== false ? [stripUnusedMethodsPlugin(typeof stripOptions === "object" ? stripOptions : {})] : []),
-            ...(!isDev ? [barePublicCopyPlugin()] : [])
+            ...(!isDev ? [barePublicCopyPlugin(streamedImages)] : [])
         ],
         server: {
             open: false,
@@ -115,7 +122,8 @@ module.exports = ({ mode }) => {
         build: {
             outDir: path.join(projectRoot, "dist"),
             emptyOutDir: true,
-            // public/ is copied by barePublicCopyPlugin, without its .gitkeep placeholders
+            // public/ is copied by barePublicCopyPlugin, without its .gitkeep placeholders and with
+            // the PNGs in public/images turned into .webp
             copyPublicDir: false,
             sourcemap: false,
             minify: "esbuild",
@@ -225,8 +233,9 @@ function bareFilterSettingsDataWarningPlugin() {
 
 // Copies public/ into the build like Vite's copyPublicDir, but leaves out .gitkeep placeholders and the
 // folders that would only hold them. Copying them and deleting them afterwards failed the build on Windows
-// now and then: an editor's file watcher or a virus scanner can hold a just-copied folder open for seconds
-function barePublicCopyPlugin() {
+// now and then: an editor's file watcher or a virus scanner can hold a just-copied folder open for seconds.
+// Streamed PNGs (public/images, imageGlobs) are written as the .webp the engine loads
+function barePublicCopyPlugin(streamedImages) {
     let publicDir = "";
     let outDir = "";
 
@@ -237,28 +246,15 @@ function barePublicCopyPlugin() {
             publicDir = config.publicDir;
             outDir = path.resolve(config.build.outDir);
         },
-        // after the bundle is written and before closeBundle, where other plugins edit the copied files
-        writeBundle(_options, bundle) {
-            if (publicDir && fs.existsSync(publicDir))
-                copyPublicFiles(publicDir, outDir, new Set(Object.keys(bundle)));
+        // after the bundle is written and before closeBundle, where other plugins edit the copied files.
+        // Bundle output paths win over a public file at the same path, as with Vite's own copy
+        async writeBundle(_options, bundle) {
+            if (publicDir && fs.existsSync(publicDir)) {
+                const written = new Set(Object.keys(bundle));
+                await copyPublicDir(streamedImages.projectRoot, publicDir, outDir, { ...streamedImages, skip: rel => written.has(rel) });
+            }
         }
     };
-}
-
-// written: bundle output paths. Those win over a public file at the same path, as with Vite's own copy
-function copyPublicFiles(fromDir, toDir, written, relativeDir = "") {
-    for (const entry of fs.readdirSync(fromDir, { withFileTypes: true })) {
-        const fromPath = path.join(fromDir, entry.name);
-        const relativePath = relativeDir ? `${relativeDir}/${entry.name}` : entry.name;
-
-        if (fs.statSync(fromPath).isDirectory()) {
-            copyPublicFiles(fromPath, path.join(toDir, entry.name), written, relativePath);
-        } else if (entry.name !== ".gitkeep" && !written.has(relativePath)) {
-            // folders are made for the files that go in them, so a placeholder-only folder never exists
-            fs.mkdirSync(toDir, { recursive: true });
-            fs.copyFileSync(fromPath, path.join(toDir, entry.name));
-        }
-    }
 }
 
 function isSettingsDataPublicImportWarning(message) {

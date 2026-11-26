@@ -20,7 +20,7 @@ While the dev server runs, every image in `texturePackImages/` is packed into on
 
 ## Streaming images
 
-Put `.webp` images in `public/images/`, in subfolders if you like. A GameObject using a streamed image appears as soon as its image has loaded. Prefabs can point to a subfolder with `imagePath`:
+Put `.png` images in `public/images/`, in subfolders if you like. The dev server and the build turn them into `.webp`, which loads faster, so only PNGs go in this folder. A GameObject using a streamed image appears as soon as its image has loaded. Prefabs can point to a subfolder with `imagePath`:
 
 ```json
 {
@@ -52,7 +52,7 @@ bare.sound.Play(Asset.Sound.JUMP);
 bare.level.Load(Asset.Level.LEVEL_1);
 ```
 
-An atlas in `public/images/` (a `.json` and `.webp` pair) is listed under its own name, and so is every image in it. Load the atlas with [`bare.asset.LoadAtlas`](../reference/assets#atlases) before you use its images.
+An atlas in `public/images/` (a `.json` and `.png` pair) is listed under its own name, and so is every image in it. Load the atlas with [`bare.asset.LoadAtlas`](../reference/assets#atlases) before you use its images.
 
 Don't edit this file; it's regenerated whenever your assets change.
 

@@ -2362,7 +2362,8 @@ function buildLineShiftMap(original, next, id) {
 }
 
 const ASSET_IMAGE_EXTENSIONS = new Set([".webp", ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".svg"]);
-const ASSET_GENERATED_IMAGE_EXTENSIONS = new Set([".webp"]);
+// public/images holds PNGs only, served and built as the .webp the engine loads (vite/streamedImages.cjs)
+const ASSET_GENERATED_IMAGE_EXTENSIONS = new Set([".png"]);
 const ASSET_SOUND_EXTENSIONS = new Set([".mp3"]);
 const ASSET_FONT_EXTENSIONS = new Set([".ttf", ".otf", ".woff", ".woff2"]);
 const ASSET_LEVEL_EXTENSIONS = new Set([".json"]);
@@ -2775,7 +2776,7 @@ function generateAssets(projectRoot, outputPath, imageGlobs = []) {
     try {
         const publicDir = path.join(projectRoot, "public");
 
-        // the .webp images in public/images and the frames of every atlas there, which
+        // the PNGs in public/images and the frames of every atlas there, which
         // bare.asset.LoadAtlas adds by name. The atlas itself stays listed too, for LoadAtlas.
         const streamed = collectAtlasEntries(path.join(publicDir, "images"));
         const images = [...collectAssetFiles(path.join(publicDir, "images"), ASSET_GENERATED_IMAGE_EXTENSIONS), ...streamed.frameEntries]
@@ -3159,6 +3160,7 @@ Bare.assets.atlases = ${JSON.stringify(atlases)};
 
 module.exports = {
     generateAssets,
+    globToRegExp,
     bareAutoRegisterClassesPlugin,
     bareEditorAndApiPlugin,
     bareGeneratedAssetsPlugin,

@@ -35,7 +35,7 @@ Use `InitTexture(name)` to change an existing object's image by its asset name:
 await chest.InitTexture('chest_open');
 ```
 
-Names follow the [asset paths](./assets): atlas images use their generated names, and images in `public/images/` use paths without the `.webp` extension. The generated `Asset.Image` constants can be used too.
+Names follow the [asset paths](./assets): atlas images use their generated names, and images in `public/images/` use paths without the `.png` extension. The generated `Asset.Image` constants can be used too.
 
 `InitTexture` applies an already cached texture immediately; otherwise it loads and applies the texture asynchronously. It returns a promise for the texture, or `undefined` for the special `NONE` and `NAME` suffixes. Await it when subsequent work needs the new image or dimensions.
 

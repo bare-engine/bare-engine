@@ -79,7 +79,7 @@ function withDevServer(run) {
 }
 
 const addImage = (root, name) => {
-    const file = path.join(root, 'public/images', name + '.webp');
+    const file = path.join(root, 'public/images', name + '.png');
     fs.writeFileSync(file, '');
     return file;
 };

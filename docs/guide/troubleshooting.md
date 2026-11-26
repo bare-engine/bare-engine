@@ -45,8 +45,8 @@ Inside a component, GameObject or scene, `bare.mouse` becomes `this.scene.mouse`
 
 ## An image is missing
 
-- In development: check the name matches the file name without extension, including folders: `enemies/saw` for `public/images/enemies/saw.webp`.
-- Images in `public/images/` must be `.webp`. Put `.png` files in `texturePackImages/` instead.
+- In development: check the name matches the file name without extension, including folders: `enemies/saw` for `public/images/enemies/saw.png`.
+- Images in `public/images/` must be `.png`. Other formats, `.webp` included, aren't listed in `Asset.Image`.
 - Only in the production build: you probably use [`texturePackImages.stripUnused`](../reference/package-json#texturepackimages), and the image's name is built while the game runs. Add it to `alwaysInclude`.
 
 ## Works in development, broken in the build

@@ -23,6 +23,18 @@ function resolveTexturePackImagesConfig(projectPackage = {}) {
     };
 }
 
+// bareEngine.images: options for the streamed PNGs in public/images
+function resolveImagesConfig(projectPackage = {}) {
+    const bareEngine = isObject(projectPackage.bareEngine) ? projectPackage.bareEngine : {};
+    const options = bareEngine.images === undefined
+        ? {}
+        : readObject(bareEngine.images, "bareEngine.images");
+
+    return {
+        webpQuality: readWebpQuality(options.webpQuality, "bareEngine.images.webpQuality")
+    };
+}
+
 function readWebpQuality(value, name) {
     if (value === undefined) {
         return undefined;
@@ -85,6 +97,7 @@ function isObject(value) {
 
 module.exports = {
     resolveTexturePackImagesConfig,
+    resolveImagesConfig,
     readStringArray,
     readString,
     readWebpQuality

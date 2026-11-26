@@ -278,12 +278,27 @@ test('generateAssets lists prefabs, base prefabs and layers from settingsData', 
     });
 });
 
+test('generateAssets lists only the PNGs in public/images', () => {
+    withProject({
+        'src/game.ts': GAME(),
+        'public/images/enemies/saw.png': '',
+        'public/images/oldWebp.webp': '',
+        'public/images/photo.jpg': '',
+    }, root => {
+        const output = path.join(root, 'src/generated/assets.ts');
+        generateAssets(root, output);
+        const code = fs.readFileSync(output, 'utf8');
+        assert.match(code, /SAW: "enemies\/saw"/);
+        assert.doesNotMatch(code, /OLD_WEBP|PHOTO/);
+    });
+});
+
 test('generateAssets lists the frames of an atlas in public/images, and the atlas itself', () => {
     withProject({
         'src/game.ts': GAME(),
-        'public/images/sky.webp': '',
-        'public/images/field.webp': '',
-        'public/images/field.json': { frames: { cowBody: {}, 'grassTuft.png': {} }, meta: { image: 'field.webp' } },
+        'public/images/sky.png': '',
+        'public/images/field.png': '',
+        'public/images/field.json': { frames: { cowBody: {}, 'grassTuft.png': {} }, meta: { image: 'field.png' } },
         'public/images/notAnAtlas.json': { cow: 1 },
     }, root => {
         const output = path.join(root, 'src/generated/assets.ts');

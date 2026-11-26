@@ -17,6 +17,9 @@ Build settings for your game go in a `bareEngine` object in your project's `pack
     "texturePackImages": {
       "stripUnused": true,
       "webpQuality": 90
+    },
+    "images": {
+      "webpQuality": 85
     }
   }
 }
@@ -40,6 +43,7 @@ Restart the dev server after changing these.
 | [`stripUnusedMethods`](#stripunusedmethods) | on | Remove methods that are never called in production. |
 | [`autoRegisterClasses`](#autoregisterclasses) | `true` | Register your components automatically. |
 | [`texturePackImages`](#texturepackimages) | | How the texture atlas is built. |
+| [`images`](#images) | | How the PNGs in `public/images/` are turned into `.webp`. |
 | [`imageGlobs`](#imageglobs) | | Extra image folders for `Asset.Image`. |
 
 ## gameId
@@ -169,6 +173,22 @@ With `stripUnused`, an image counts as used when it's named by any of these:
 ::: warning
 Image names built while the game runs, like `'walk' + i`, can't be found. Add those images to `alwaysInclude`, for example `"walk*"`, or they'll be missing from the production build. Using `alwaysInclude` without `stripUnused` is an error.
 :::
+
+## images
+
+The PNGs in `public/images/` and the [`imageGlobs`](#imageglobs) folders are served and built as `.webp`.
+
+| Field | Default | Description |
+| --- | --- | --- |
+| `webpQuality` | lossless | Quality from 0 to 100. Leave out for lossless. |
+
+```json
+"images": {
+  "webpQuality": 85
+}
+```
+
+Each image is converted once and kept in `node_modules/.bare-engine/images/`, until the PNG changes.
 
 ## imageGlobs
 
