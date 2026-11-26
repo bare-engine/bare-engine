@@ -22,6 +22,13 @@ skull.OnPointerDown((obj: GameObject, event: PointerEvent) => {
 });
 ```
 
+Any pointer callback shows the hand cursor on hover. Pass `{ cursor: false }` to turn it off for objects that only catch presses, like a menu backdrop:
+
+```ts
+backdrop.OnPointerDown(() => menu.Close(), { cursor: false });
+panel.OnPointerDown(() => {}, { cursor: false }); // stop presses reaching the game below
+```
+
 Each object has its own hitbox, covering only its own texture. Only the topmost hitbox under the pointer gets down/up, and children sit above their parent, so a child with pointer callbacks blocks its parent's `OnPointerDown` where they overlap. A child with no callbacks has no hitbox and doesn't block anything. Hovering a child doesn't fire the parent's `OnPointerLeave`.
 
 **Examples:** the [RPG](https://github.com/bare-engine/bare-rpg)'s level connectors [highlight on hover](https://github.com/bare-engine/bare-rpg/blob/main/src/components/levelConnectorComponent.ts#L26-L45), and the [Showcase](https://github.com/bare-engine/bare-showcase)'s [tweens demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/tweens/src/DemoTweens.ts#L28-L38) uses `AssignButton` with separate press and release handlers.

@@ -19,6 +19,11 @@ export type ButtonHandlers<Arg extends GameObject = GameObject> = {
   showPointer?: boolean;
 };
 
+export type PointerOptions = {
+  // false: no hand cursor on hover, eg a backdrop that only catches presses. Left as is when omitted.
+  cursor?: boolean;
+};
+
 export class HitboxController
 {
     public active: boolean = true;
@@ -702,9 +707,9 @@ export class HitboxController
         return hitbox;
     }
 
-    OnPointerDown(gameobject: GameObject, callback: AnyPress): Hitbox
+    OnPointerDown(gameobject: GameObject, callback: AnyPress, options?: PointerOptions): Hitbox
     {
-        return this.AssignCallback(gameobject, "OnPress", callback);
+        return this.AssignCallback(gameobject, "OnPress", callback, options);
     }
 
     OffPointerDown(gameobject: GameObject): void
@@ -712,9 +717,9 @@ export class HitboxController
         this.AssignCallback(gameobject, "OnPress", null);
     }
 
-    OnPointerUp(gameobject: GameObject, callback: AnyPress): void
+    OnPointerUp(gameobject: GameObject, callback: AnyPress, options?: PointerOptions): void
     {
-        this.AssignCallback(gameobject, "OnRelease", callback);
+        this.AssignCallback(gameobject, "OnRelease", callback, options);
     }
 
     OffPointerUp(gameobject: GameObject): void
@@ -722,9 +727,9 @@ export class HitboxController
         this.AssignCallback(gameobject, "OnRelease", null);
     }
 
-    OnPointerEnter(gameobject: GameObject, callback: AnyPress): void
+    OnPointerEnter(gameobject: GameObject, callback: AnyPress, options?: PointerOptions): void
     {
-        this.AssignCallback(gameobject, "OnEnter", callback);
+        this.AssignCallback(gameobject, "OnEnter", callback, options);
     }
 
     OffPointerEnter(gameobject: GameObject): void
@@ -732,9 +737,9 @@ export class HitboxController
         this.AssignCallback(gameobject, "OnEnter", null);
     }
 
-    OnPointerLeave(gameobject: GameObject, callback: AnyPress): void
+    OnPointerLeave(gameobject: GameObject, callback: AnyPress, options?: PointerOptions): void
     {
-        this.AssignCallback(gameobject, "OnLeave", callback);
+        this.AssignCallback(gameobject, "OnLeave", callback, options);
     }
 
     OffPointerLeave(gameobject: GameObject): void
@@ -766,7 +771,7 @@ export class HitboxController
         gameobject.tapHitbox.showPointer = show;
     }
 
-    AssignCallback(gameobject: GameObject, type: "OnPress" | "OnRelease" | "OnEnter" | "OnLeave", callback: AnyPress | null): Hitbox
+    AssignCallback(gameobject: GameObject, type: "OnPress" | "OnRelease" | "OnEnter" | "OnLeave", callback: AnyPress | null, options?: PointerOptions): Hitbox
     {
         var rect = this.GetLocalRect(gameobject);
 
@@ -778,6 +783,8 @@ export class HitboxController
 
         const hitbox = gameobject.tapHitbox ?? new Hitbox(gameobject, rect);
         hitbox[type] = callback;
+        if (options?.cursor !== undefined)
+            hitbox.showPointer = options.cursor;
         gameobject.tapHitbox = hitbox;
 
         return hitbox;

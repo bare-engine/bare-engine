@@ -1,5 +1,5 @@
 import type { Component } from "../controllers/componentController";
-import type { AnyPress } from "../controllers/hitboxController";
+import type { AnyPress, PointerOptions } from "../controllers/hitboxController";
 import { GameMode } from "../globals";
 import { assetsHandler } from "../handlers/assetsHandler";
 import mitt from "../libraries/mitt";
@@ -296,37 +296,37 @@ export class GameObject
         }
     }
 
-    OnPointerDown(callback: AnyPress | null = null): Hitbox | null
+    OnPointerDown(callback: AnyPress | null = null, options?: PointerOptions): Hitbox | null
     {
         if (this.scene)
         {
-            return this.scene.OnPointerDown(this, callback);
+            return this.scene.OnPointerDown(this, callback, options);
         }
 
         return null;
     }
 
-    OnPointerUp(callback: AnyPress | null = null)
+    OnPointerUp(callback: AnyPress | null = null, options?: PointerOptions)
     {
         if (this.scene)
         {
-            this.scene.OnPointerUp(this, callback);
+            this.scene.OnPointerUp(this, callback, options);
         }
     }
 
-    OnPointerEnter(callback: AnyPress | null = null)
+    OnPointerEnter(callback: AnyPress | null = null, options?: PointerOptions)
     {
         if (this.scene)
         {
-            this.scene.OnPointerEnter(this, callback);
+            this.scene.OnPointerEnter(this, callback, options);
         }
     }
 
-    OnPointerLeave(callback: AnyPress | null = null)
+    OnPointerLeave(callback: AnyPress | null = null, options?: PointerOptions)
     {
         if (this.scene)
         {
-            this.scene.OnPointerLeave(this, callback);
+            this.scene.OnPointerLeave(this, callback, options);
         }
     }
 

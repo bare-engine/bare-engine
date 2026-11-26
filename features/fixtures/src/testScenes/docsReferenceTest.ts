@@ -144,6 +144,13 @@ export class DocsReferenceTest extends Scene
         bare.hitbox.SetCircleHitbox(hero, 10);
         bare.hitbox.SetShowPointerCursor(hero, true);
         c.check(bare.hitbox.GetCurrentDown() == null, "GetCurrentDown should be empty without a press");
+        const blocker = this.AddGameObject("hero").SetPosition(0, 0);
+        c.check(blocker.OnPointerDown(() => {})!.showPointer, "OnPointerDown should show the hand cursor by default");
+        blocker.OnPointerDown(() => {}, { cursor: false });
+        c.check(!blocker.tapHitbox!.showPointer, "OnPointerDown with { cursor: false } should hide the hand cursor");
+        blocker.OnPointerUp(() => {});
+        c.check(!blocker.tapHitbox!.showPointer, "a later callback without options should keep the cursor setting");
+        blocker.Remove();
 
         // --- tweens
         const box = this.AddGameObject("hero").SetPosition(0, 0);

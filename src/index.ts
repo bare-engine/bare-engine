@@ -20,7 +20,7 @@ export type { With, Without, Strict } from "./libraries/miniplex/index";
 // Controllers
 export { Component, ComponentController } from "./controllers/componentController";
 export { HitboxController } from "./controllers/hitboxController";
-export type { ButtonHandlers } from "./controllers/hitboxController";
+export type { ButtonHandlers, PointerOptions } from "./controllers/hitboxController";
 export { KeyboardController, keyboardController } from "./controllers/keyboardController";
 export { MouseController } from "./controllers/mouseController";
 export { ObjectController } from "./controllers/objectController";

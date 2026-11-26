@@ -1,6 +1,6 @@
 import type { ArcadePhysicsController } from "../controllers/arcadePhysicsController";
 import type { ComponentController } from "../controllers/componentController";
-import type { HitboxController } from "../controllers/hitboxController";
+import type { HitboxController, PointerOptions } from "../controllers/hitboxController";
 import type { MouseController } from "../controllers/mouseController";
 import { ObjectController } from "../controllers/objectController";
 import type { ParticleController } from "../controllers/particleController";
@@ -1676,28 +1676,28 @@ Or remove "stripGeneratedAssets": true from "bareEngine" in package.json.`);
     }
 
     // POINTERS
-    OnPointerDown(gameObject: GameObject, callback: any):Hitbox
+    OnPointerDown(gameObject: GameObject, callback: any, options?: PointerOptions):Hitbox
     {
         /* @ AddClass(HitboxController) */
-        return this.hitbox?.OnPointerDown(gameObject, callback);
+        return this.hitbox?.OnPointerDown(gameObject, callback, options);
     }
 
-    OnPointerUp(gameObject: GameObject, callback: any)
+    OnPointerUp(gameObject: GameObject, callback: any, options?: PointerOptions)
     {
         /* @ AddClass(HitboxController) */
-        this.hitbox?.OnPointerUp(gameObject, callback);
+        this.hitbox?.OnPointerUp(gameObject, callback, options);
     }
 
-    OnPointerEnter(gameObject: GameObject, callback: any)
+    OnPointerEnter(gameObject: GameObject, callback: any, options?: PointerOptions)
     {
         /* @ AddClass(HitboxController) */
-        this.hitbox?.OnPointerEnter(gameObject, callback);
+        this.hitbox?.OnPointerEnter(gameObject, callback, options);
     }
 
-    OnPointerLeave(gameObject: GameObject, callback: any)
+    OnPointerLeave(gameObject: GameObject, callback: any, options?: PointerOptions)
     {
         /* @ AddClass(HitboxController) */
-        this.hitbox?.OnPointerLeave(gameObject, callback);
+        this.hitbox?.OnPointerLeave(gameObject, callback, options);
     }
 
     /**
