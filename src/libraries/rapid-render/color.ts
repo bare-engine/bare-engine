@@ -299,52 +299,73 @@ export class Color {
     }
 
     /**
-     * Subtracts the components of another color from this color, clamping the result to 0.
+     * Subtracts the components of another color from this color, clamping the result to 0–255.
      * @param color - The color to subtract.
      * @returns A new Color instance with the result of the subtraction.
      */
     subtract(color: Color) {
-        return new Color(
+        return Color.clamped(
             this.r - color.r,
             this.g - color.g,
             this.b - color.b,
             this.a - color.a
         );
     }
+
+    /**
+     * Divides this color by another color or a scalar, the inverse of `multiply`.
+     * With a color, channels are treated as 0–1 (so `a.multiply(b).divide(b)` gives `a` back, within rounding);
+     * dividing by a 0 channel gives 255 (or 0 if this channel is 0 too).
+     * With a number, every channel (alpha included) is divided by it.
+     * @param color - The color or scalar to divide by.
+     * @returns A new Color instance, rounded and clamped to 0–255.
+     */
     divide(color: Color | number) {
         if (color instanceof Color) {
-            return new Color(
-                this.r / color.r,
-                this.g / color.g,
-                this.b / color.b,
-                this.a / color.a
-            );
-        } else {
-            return new Color(
-                this.r / color,
-                this.g / color,
-                this.b / color,
-                this.a / color
+            return Color.clamped(
+                (this.r / color.r) * 255,
+                (this.g / color.g) * 255,
+                (this.b / color.b) * 255,
+                (this.a / color.a) * 255
             );
         }
+        return Color.clamped(
+            this.r / color,
+            this.g / color,
+            this.b / color,
+            this.a / color
+        );
     }
 
+    /**
+     * Multiplies this color by another color or a scalar.
+     * With a color, channels are treated as 0–1, so this tints one color by another:
+     * white leaves the color unchanged, black gives black.
+     * With a number, every channel (alpha included) is multiplied by it, e.g. `multiply(0.5)` halves them.
+     * @param color - The color or scalar to multiply by.
+     * @returns A new Color instance, rounded and clamped to 0–255.
+     */
     multiply(color: Color | number) {
         if (color instanceof Color) {
-            return new Color(
-                this.r * color.r,
-                this.g * color.g,
-                this.b * color.b,
-                this.a * color.a
-            );
-        } else {
-            return new Color(
-                this.r * color,
-                this.g * color,
-                this.b * color,
-                this.a * color
+            return Color.clamped(
+                (this.r * color.r) / 255,
+                (this.g * color.g) / 255,
+                (this.b * color.b) / 255,
+                (this.a * color.a) / 255
             );
         }
+        return Color.clamped(
+            this.r * color,
+            this.g * color,
+            this.b * color,
+            this.a * color
+        );
+    }
+
+    // rounds and clamps each channel so the uint32 bit packing stays valid; NaN (e.g. 0 / 0) becomes 0
+    private static clamped(r: number, g: number, b: number, a: number): Color {
+        const c = (v: number) => (Number.isNaN(v) ? 0 : Color.clampByte(v));
+        return new Color(c(r), c(g), c(b), c(a));
     }
     clamp() {
         this._r = Math.max(0, Math.min(255, this._r));

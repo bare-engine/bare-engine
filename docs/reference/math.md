@@ -48,7 +48,9 @@ obj.SetColor(Color.Orange);
 | `toHex()` | To a hex string. |
 | `r`, `g`, `b`, `a` | Read or change a channel. |
 | `clone()`, `equals(color)` | Copy and compare. |
-| `add`, `subtract`, `multiply`, `divide` | Mix colors. |
+| `add`, `subtract` | Add or subtract channels, clamped to 0–255. |
+| `multiply(color)` | Tint one color by another, treating channels as 0–1: white keeps the color, black gives black. `divide(color)` undoes it. |
+| `multiply(n)`, `divide(n)` | Scale every channel, alpha included, e.g. `multiply(0.5)`. |
 | `Color.lerp(from, to, t)` | Blend between two colors (or hex strings), channel by channel. `t` goes from 0 to 1. To animate a color, see [Tweens](./tweens#colors). |
 
 Named colors: `Color.Red`, `Green`, `Blue`, `Yellow`, `Orange`, `Purple`, `Pink`, `Cyan`, `Magenta`, `Lime`, `Brown`, `Gray`, `White`, `Black` and `Transparent`.
