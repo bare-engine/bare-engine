@@ -14,6 +14,16 @@ button.OnPointerLeave(() => button.SetScale(1));
 | `OnPointerEnter(cb)` / `OnPointerLeave(cb)` | Pointer moved over or off the object. |
 | `OffPointers()` | Remove all pointer callbacks from the object. |
 
+Callbacks receive `(obj, event)`: the GameObject and, for down/up, the browser `PointerEvent`. Enter/leave get only `obj`.
+
+```ts
+skull.OnPointerDown((obj: GameObject, event: PointerEvent) => {
+    if (event.pointerType === 'touch') obj.SetScale(1.2);
+});
+```
+
+Each object has its own hitbox, covering only its own texture. Only the topmost hitbox under the pointer gets down/up, and children sit above their parent, so a child with pointer callbacks blocks its parent's `OnPointerDown` where they overlap. A child with no callbacks has no hitbox and doesn't block anything. Hovering a child doesn't fire the parent's `OnPointerLeave`.
+
 **Examples:** the [RPG](https://github.com/bare-engine/bare-rpg)'s level connectors [highlight on hover](https://github.com/bare-engine/bare-rpg/blob/main/src/components/levelConnectorComponent.ts#L26-L45), and the [Showcase](https://github.com/bare-engine/bare-showcase)'s [tweens demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/tweens/src/DemoTweens.ts#L28-L38) uses `AssignButton` with separate press and release handlers.
 
 ## More on `bare.hitbox`
