@@ -3,6 +3,32 @@ import { Checks } from './checks';
 
 class WaitingComponent extends Component {}
 
+// awaits game-time waits during its own startup: they must finish, without the scene updating meanwhile
+class StartupWaitTarget extends Scene
+{
+    results: boolean[] = [];
+    updatesDuringStartup = 0;
+    finishedStartup = false;
+
+    constructor() { super({ UI: true, settingsData: { layers: ['objects'] } }); }
+
+    override async OnAwake()
+    {
+        this.results.push(await this.Wait(0.02), await this.WaitFrame(2));
+    }
+
+    override async OnStart()
+    {
+        this.results.push(await this.Wait(0.02), await this.WaitFrame());
+        const go = this.AddGameObject();
+        const comp = go.AddComponent(WaitingComponent);
+        this.results.push(await go.Wait(0.02), await comp.Wait(0.02), await comp.WaitFrame());
+        this.finishedStartup = true;
+    }
+
+    override OnUpdate() { if (!this.finishedStartup) this.updatesDuringStartup++; }
+}
+
 class WaitTarget extends Scene
 {
     steps = 0;
@@ -94,6 +120,7 @@ export class SceneWaitTest extends Scene
         bare.scene.Remove(target);
         c.check((await Promise.all(removed)).every(done => done === false), 'removal must cancel every persistent wait');
 
+        await this.RunStartupChecks();
         await this.RunComponentChecks();
         await this.RunGameObjectChecks();
 
@@ -106,6 +133,27 @@ export class SceneWaitTest extends Scene
         c.check(await cancelledSleep === false && !this.paused, 'cancelled Sleep must restore pause state');
         await c.checkThrows(() => this.Wait(-1), 'negative wait must throw');
         await c.checkThrows(() => this.WaitFrame(Infinity), 'infinite frame wait must throw');
+    }
+
+    private async RunStartupChecks()
+    {
+        const c = this.checks;
+        const starting = await bare.scene.Add(StartupWaitTarget);
+        c.check(starting.started && starting.finishedStartup, 'a scene awaiting game-time waits in OnAwake/OnStart must finish starting');
+        c.check(starting.results.length === 7 && starting.results.every(Boolean), 'waits awaited during startup must complete true');
+        c.check(starting.updatesDuringStartup === 0, 'a starting scene must not update while its startup waits run');
+        bare.scene.Remove(starting);
+
+        // startup waits count game time, so they stop at timeScale zero
+        bare.timeScale = 0;
+        let frozen: StartupWaitTarget | undefined;
+        const adding = bare.scene.Add(StartupWaitTarget).then(scene => frozen = scene);
+        await this.WaitRealTime(0.08);
+        c.check(frozen === undefined, 'startup waits must stop at timeScale zero');
+        bare.timeScale = 1;
+        await adding;
+        c.check(frozen?.started, 'startup waits must resume after timeScale zero');
+        if (frozen) bare.scene.Remove(frozen);
     }
 
     private async RunComponentChecks()

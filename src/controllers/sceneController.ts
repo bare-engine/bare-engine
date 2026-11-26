@@ -27,6 +27,8 @@ export class SceneController
             var scene = this.currentScenes[i];
             if (scene.started && scene.enabled && !scene.paused)
                 scene.FixedUpdate(fixedDeltaTime);
+            else if (!scene.started && scene.enabled && !scene.paused)
+                scene.AdvanceStartingWaitFrame(); // so a WaitFrame awaited in its OnAwake/OnStart can finish
         }
     }
 
@@ -39,6 +41,8 @@ export class SceneController
             var scene = this.currentScenes[i];
             if (scene.started && scene.enabled && !scene.paused)
                 scene.Update(deltaTime);
+            else if (!scene.started && scene.enabled && !scene.paused)
+                scene.AdvanceStartingWaitTime(deltaTime); // so a Wait awaited in its OnAwake/OnStart can finish
         }
     }
     

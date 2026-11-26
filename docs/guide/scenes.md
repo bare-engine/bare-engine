@@ -118,7 +118,7 @@ All waits belong to a scene. In a scene use `this.Wait`; components and GameObje
 | --- | --- |
 | `Wait(seconds, persistent = false)` | Counts this scene's game time. Stops while the scene is paused or disabled, while the game is paused or unfocused, and at `bare.timeScale = 0`. Follows `timeScale` otherwise. |
 | `WaitFrame(frames = 1, persistent = false)` | Counts this scene's fixed updates. Continuations run after the fixed step's physics and hooks. Frames are rounded up, with a minimum of one. |
-| `WaitRealTime(seconds, persistent = false)` | Counts real time, including while the scene/game is paused, disabled, unfocused or starting. |
+| `WaitRealTime(seconds, persistent = false)` | Counts real time, including while the scene/game is paused, disabled or unfocused. |
 | `CancelWaits(includingPersistent = false)` | Cancels this scene's waits, optionally including persistent ones. |
 
 The three wait methods return `Promise<boolean>`: `true` when completed, `false` when cancelled. Cancellation resumes the awaiting function and runs `finally` blocks. Check the result before continuing gameplay work:
@@ -134,7 +134,7 @@ Here the component defines `OpenGate`. Wait durations must be finite and nonnega
 
 Loading a level or partially restarting a scene cancels its nonpersistent waits. Waits marked persistent survive those operations. Removing a scene, or calling `Clear(true)`, cancels all its waits, including persistent real-time timers. Other scenes' waits are unaffected.
 
-`Wait` and `WaitFrame` only advance once the scene starts updating. Do not await them inside that scene's constructor, `OnAwake` or `OnStart`: startup would wait for updates that cannot begin yet. Use `WaitRealTime` during startup. No scene exists during `StartBare`'s `OnInit`; asynchronous initialization there can await its own resources or a browser timer.
+You can await `Wait` and `WaitFrame` in the scene's `OnAwake` and `OnStart`, for example to hold its startup for a moment. The scene doesn't update or render until `OnStart` finishes, but its waits keep counting game time meanwhile, so they still follow `timeScale` and pausing. The very first scene starts before the game loop runs, so its startup waits count real time instead. [Tweens](../reference/tweens) are different: they only run once the scene has started, so don't await one in `OnStart`. No scene exists during `StartBare`'s `OnInit`; asynchronous initialization there can await its own resources or a browser timer.
 
 The global `wait`, `waitFrame`, `waitRealTime` and `cancelWaits` helpers have been removed. Replace them with the corresponding scene methods, and check cancellation results.
 

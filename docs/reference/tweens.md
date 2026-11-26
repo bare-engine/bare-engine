@@ -17,7 +17,7 @@ await TweenTo(door, 1, { y: 0 }).promise;
 Tweens run on game time, so they follow [`bare.timeScale`](./bare#game-speed) and wait while the game is paused.
 
 ::: warning
-Tweens only run once the scene has started, and a scene starts after its `OnStart` has finished. So don't await a tween inside a scene's `OnStart`: it would wait forever. Start the tween there without awaiting it, or await it later, for example from `OnUpdate` or an event. During development, reading `.promise` before the scene has started logs an error.
+Tweens only run once the scene has started, and a scene starts after its `OnStart` has finished. So don't await a tween inside a scene's `OnStart`: it would wait forever. Start the tween there without awaiting it, or await it later, for example from `OnUpdate` or an event. During development, reading `.promise` before the scene has started logs an error if the scene still hasn't started 3 seconds later. To hold startup for a moment, await [`this.Wait`](../guide/scenes#waiting) instead: waits do count during `OnStart`.
 :::
 
 **Example:** a [Platformer](https://github.com/bare-engine/bare-platformer) coin [waits for its fade-out tween](https://github.com/bare-engine/bare-platformer/blob/main/src/components/collectableComponent.ts#L33-L35) before removing itself.

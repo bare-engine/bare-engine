@@ -1700,19 +1700,40 @@ Or remove "stripGeneratedAssets": true from "bareEngine" in package.json.`);
         this.hitbox?.OnPointerLeave(gameObject, callback);
     }
 
-    /** Scene game time; returns false when cancelled. Do not await during this scene's startup. */
+    /**
+     * Scene game time; returns false when cancelled. Also counts while this scene's OnAwake/OnStart is awaited
+     * (without updating or rendering it), or real time before the game loop runs (the first scene's startup).
+     */
     Wait(seconds: number, persistent = false): Promise<boolean>
     {
-        return (this.waits ??= new WaitQueue()).Wait(seconds, persistent);
+        const waits = (this.waits ??= new WaitQueue());
+        return bare.loopStarted ? waits.Wait(seconds, persistent) : waits.WaitRealTime(seconds, persistent);
     }
 
-    /** Counts this scene's fixed updates; returns false when cancelled. */
+    /** Counts this scene's fixed updates, also during its startup; returns false when cancelled. */
     WaitFrame(frames = 1, persistent = false): Promise<boolean>
     {
-        return (this.waits ??= new WaitQueue()).WaitFrame(frames, persistent);
+        const waits = (this.waits ??= new WaitQueue());
+        if (bare.loopStarted)
+            return waits.WaitFrame(frames, persistent);
+
+        // no fixed steps to count before the game loop runs: wait as long as they would take
+        waits.CheckDuration(frames);
+        return waits.WaitRealTime(Math.max(1, Math.ceil(frames)) * bare.fixedTimestep, persistent);
     }
 
-    /** Real time, even while paused or starting; still cancelled with this scene. */
+    // called instead of Update/FixedUpdate while this scene is starting, so its awaited startup waits can finish
+    AdvanceStartingWaitTime(deltaTime: number): void
+    {
+        this.waits?.AdvanceTime(deltaTime);
+    }
+
+    AdvanceStartingWaitFrame(): void
+    {
+        this.waits?.AdvanceFrame();
+    }
+
+    /** Real time, even while paused; still cancelled with this scene. */
     WaitRealTime(seconds: number, persistent = false): Promise<boolean>
     {
         return (this.waits ??= new WaitQueue()).WaitRealTime(seconds, persistent);

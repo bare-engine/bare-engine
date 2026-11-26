@@ -73,7 +73,7 @@ export class WaitQueue
         entry.resolve(completed);
     }
 
-    private CheckDuration(value: number): void
+    CheckDuration(value: number): void
     {
         if (!Number.isFinite(value) || value < 0)
             throw new RangeError('Wait duration must be a finite nonnegative number.');
