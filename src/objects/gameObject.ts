@@ -233,10 +233,10 @@ export class GameObject
         this.y = y;
         this.uniqueID = GameObject.GetUniqueID();
 
-        if (Number.isNaN(x) || Number.isNaN(y))
-            trace('isNaN SetPosition')
-
         this.Init("gameObject");
+
+        if (__DEV__)
+            this.WarnNaN("constructor position", x, y);
 
         // Added() reads them again once the object is parented; this covers objects that render
         // without ever being added to a layer, such as a mask.
@@ -1162,6 +1162,9 @@ export class GameObject
     }
     set scale(value: Vec2 | number)
     {
+        if (__DEV__)
+            typeof value === 'number' ? this.WarnNonFinite("scale", value) : this.WarnNonFinite("scale", value.x, value.y);
+
         if (typeof value === 'number') {
             this.transform.scale.set(value, value);
         } else {
@@ -1177,6 +1180,10 @@ export class GameObject
     }
     set rotation(value: number)
     {
+        // Infinity % 360 is NaN too, so this catches both
+        if (__DEV__)
+            this.WarnNonFinite("rotation", value);
+
         this.transform.rotation = (value % 360);
     }
 
@@ -1357,6 +1364,9 @@ export class GameObject
     }
     set scaleX(value: number)
     {
+        if (__DEV__)
+            this.WarnNonFinite("scaleX", value);
+
         this.scale.x = value;
     }
 
@@ -1366,6 +1376,9 @@ export class GameObject
     }
     set scaleY(value: number)
     {
+        if (__DEV__)
+            this.WarnNonFinite("scaleY", value);
+
         this.scale.y = value;
     }
 
@@ -1644,10 +1657,25 @@ export class GameObject
         );
     }
 
+    // dev-only: a NaN transform value hides the object and all its children without any error,
+    // while position, scale, alpha and visible can all still read fine
+    private WarnNaN(what: string, ...values: number[]): void
+    {
+        if (values.some(v => Number.isNaN(v)))
+            console.warn(`${what} (${values.join(", ")}) on "${this.name}" (#${this.uniqueID}): NaN hides the object and its children. Check the math that produced it, such as Math.sin(Infinity) or 0/0.`);
+    }
+
+    // same, but also catches Infinity, which is never a valid rotation or scale
+    private WarnNonFinite(what: string, ...values: number[]): void
+    {
+        if (values.some(v => !Number.isFinite(v)))
+            console.warn(`${what} (${values.join(", ")}) on "${this.name}" (#${this.uniqueID}): a NaN or Infinity value hides the object and its children. Check the math that produced it, such as Math.sin(Infinity) or 0/0.`);
+    }
+
     SetPosition(x: number, y: number): this
     {
-        if (Number.isNaN(x) || Number.isNaN(y))
-            trace('isNaN SetPosition')
+        if (__DEV__)
+            this.WarnNaN("SetPosition", x, y);
 
         this.transform.position.set(x, y);
 
@@ -1656,6 +1684,9 @@ export class GameObject
 
     SetScale(scale: number): this
     {
+        if (__DEV__)
+            this.WarnNonFinite("SetScale", scale);
+
         this.transform.scale.x = scale;
         this.transform.scale.y = scale;
 
@@ -1666,6 +1697,9 @@ export class GameObject
 
     SetScaleXY(x: number, y: number): this
     {
+        if (__DEV__)
+            this.WarnNonFinite("SetScaleXY", x, y);
+
         this.transform.scale.x = x;
         this.transform.scale.y = y;
 
