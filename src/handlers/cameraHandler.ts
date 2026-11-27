@@ -1,4 +1,4 @@
-import { RegisterController } from "../globals";
+import { globalEvents, RegisterController } from "../globals";
 import { Vec2 } from "../libraries/rapid-render";
 import type { Scene } from "../scenes/scene";
 import { BareEvent, CameraScaleMode, Rectangle, type Size } from "../types/bareTypes";
@@ -74,6 +74,24 @@ export class CameraHandler {
         this.scene = scene;
 
         bare.events.persistent.on(BareEvent.level_loaded, ({ level }) => this.ApplyLevelBounds(level.dimensions));
+
+        // RESIZES AS THEY HAPPEN, ALSO WHILE THE SCENE IS STILL STARTING, DISABLED OR PAUSED: THE CAMERA IS IN USE SINCE
+        // Awake, SO A POSITION SET DURING AN ASYNC OnStart IS FOR THE NEW SIZE. A RESIZE REPLAYED AFTER OnStart (AS THE
+        // SCENE GETS IT, Scene.Start) WOULD SHIFT IT. GLOBAL, SINCE A SCENE'S OWN BUS SKIPS IT WHILE DISABLED OR PAUSED
+        const onResize = ({ prevWidth, prevHeight, newWidth, newHeight }: { prevWidth: number, prevHeight: number, newWidth: number, newHeight: number }) =>
+            this.OnResize(prevWidth, prevHeight, newWidth, newHeight);
+        globalEvents.persistent.on(BareEvent.game_resize, onResize);
+
+        // THE GLOBAL BUS OUTLIVES THE SCENE: STOP LISTENING WITH IT
+        const onSceneRemoved = ({ scene }: { scene: Scene }) =>
+        {
+            if (scene !== this.scene)
+                return;
+
+            globalEvents.off(BareEvent.game_resize, onResize);
+            globalEvents.off(BareEvent.scene_removed, onSceneRemoved);
+        };
+        globalEvents.persistent.on(BareEvent.scene_removed, onSceneRemoved);
 
         // THE CAMERA IS CREATED ON FIRST USE, WHICH CAN BE AFTER A LEVEL LOADED: CATCH UP ON ITS BOUNDS.
         // ONLY HERE, SO BOUNDS A GAME SETS ITSELF ARE LEFT ALONE UNTIL THE NEXT LEVEL LOADS

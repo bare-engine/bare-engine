@@ -1605,7 +1605,7 @@ Or remove "stripGeneratedAssets": true from "bareEngine" in package.json.`);
             }
         }
 
-        this._camera?.OnResize(prevWidth, prevHeight, newWidth, newHeight);
+        // THE CAMERA RESIZES ITSELF, ON game_resize
         this.OnResize(prevWidth, prevHeight, newWidth, newHeight);
     }
 
