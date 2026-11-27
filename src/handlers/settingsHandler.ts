@@ -5,7 +5,6 @@ import { CollisionHandlingType, Entity, LayerInfo, LevelData, ProcessedSettingsD
 import { InspectorField, Int } from "../utils/decorators";
 import { Helper } from "../utils/helper";
 import { assetsHandler } from "./assetsHandler";
-import { soundHandler } from "./soundHandler";
 
 // SettingsHandler KEEPS TRACK OF RAW AND PROCESSED SETTINGS
 // BIT CLUMSY TO HAVE THEM BOTH, BUT HAVING ONLY ONE WOULD MEAN I'D HAVE TO UNDO THE CHANGES THAT HAPPEN IN PROCESS()
@@ -701,12 +700,10 @@ export class SettingsHandler
         return settings;
     }
 
-    // registers the file and default volume of every entry in sounds with bare.sound, so they
-    // hold game-wide from the first scene that has them
     ProcessSounds(settings = this.raw)
     {
         for (const [id, info] of Object.entries(settings.sounds ?? {}))
-            soundHandler.Register(id, info.src, { volume: info.volume });
+            bare.sound?.Register(id, info.src, { volume: info.volume });
     }
 
     ProcessAnimations(settings = this.raw)
