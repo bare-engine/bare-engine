@@ -18,6 +18,7 @@ import { DocsReferenceTest } from "./testScenes/docsReferenceTest";
 import { DocsPhysicsTest } from "./testScenes/docsPhysicsTest";
 import { TweensAdvancedTest } from "./testScenes/tweensAdvancedTest";
 import { InputAdvancedTest } from "./testScenes/inputAdvancedTest";
+import { CanvasOnlyInputTest } from "./testScenes/canvasOnlyInputTest";
 import { AnimationsAdvancedTest } from "./testScenes/animationsAdvancedTest";
 import { HierarchyAdvancedTest } from "./testScenes/hierarchyAdvancedTest";
 import { LevelSaveTest } from "./testScenes/levelSaveTest";
@@ -71,6 +72,7 @@ class MainGame extends Scene
         DocsPhysicsTest,
         TweensAdvancedTest,
         InputAdvancedTest,
+        CanvasOnlyInputTest,
         AnimationsAdvancedTest,
         HierarchyAdvancedTest,
         LevelSaveTest,

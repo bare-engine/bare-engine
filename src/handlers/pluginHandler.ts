@@ -2156,7 +2156,7 @@ export class PluginHandler
 
     private OnRightClickPointerDown = async (ev: PointerEvent) =>
     {
-      if (bare.paused || bare.levelEditorOpen || !bare.rightClickSelect)
+      if (bare.paused || bare.levelEditorOpen || !bare.rightClickSelect || bare.IsOutsideCanvas(ev))
           return;
 
       // a right click on a transform handle already started resizing/rotating

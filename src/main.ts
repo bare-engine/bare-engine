@@ -23,6 +23,7 @@ function GetBareOptions(options?: BareOptions): BareOptions
         gameObjectPoolSize: 50,
         freezeOnUnfocus: true,
         multiTouch: false,
+        canvasOnlyInput: false,
         textureFilter: TextureFilterMode.LINEAR,
         editorButtonPosition: {x: 0, y: 0},
         showEditorButton: undefined,
@@ -71,7 +72,10 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise
             rapid.canvas.tabIndex = 0; // Make canvas focusable
             rapid.canvas.style.outline = 'none';
 
-            document.addEventListener('click', () => {
+            document.addEventListener('click', (ev) => {
+                if (window.bare?.IsOutsideCanvas(ev))
+                    return;
+
                 rapid.canvas.focus();
             });
 
@@ -96,6 +100,7 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise
 
             // PREVENT DEFAULT TOUCH BEHAVIORS
             rapid.canvas.addEventListener('touchstart', function(e) {
+                rapid.canvas.focus();
                 e.preventDefault();
             }, { passive: false });
 
@@ -107,8 +112,10 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise
                 e.preventDefault();
             }, { passive: false });
 
+            // the whole page, so a swipe in the bars around a letterboxed canvas doesn't scroll or zoom.
+            // canvasOnlyInput leaves that to the canvas listeners above
             var preventTouchDefault = (ev: TouchEvent) => {
-                if (bare.MouseIsOnEditor(ev as any))
+                if (bare.canvasOnlyInput || bare.MouseIsOnEditor(ev as any))
                     return;
 
                 if (ev.type === 'touchstart')
@@ -122,20 +129,20 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise
             document.addEventListener('touchend', preventTouchDefault, { passive: false });
             document.addEventListener('touchcancel', preventTouchDefault, { passive: false });
             
-            // PREVENT SCROLLING WITH KEYBOARD KEYS OR MOUSE WHEEL
-            var preventScrollCheck = (ev:MouseEvent | WheelEvent | KeyboardEvent)=>{
-                if (!(ev instanceof KeyboardEvent) && !bare.MouseIsOnEditor(ev as any))
-                    ev.preventDefault();
-            };
-            window.addEventListener("keydown", function(ev:KeyboardEvent) {
-                if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(ev.code) > -1) {
-                    preventScrollCheck(ev);
-                }
-            }, false);
-            window.addEventListener('wheel', ev => preventScrollCheck(ev), { passive: false });
-                
+            // PREVENT SCROLLING WITH THE MOUSE WHEEL
+            // (keys are prevented in KeyboardController)
+            window.addEventListener('wheel', ev => {
+                if (bare.IsOutsideCanvas(ev) || bare.MouseIsOnEditor(ev))
+                    return;
+
+                ev.preventDefault();
+            }, { passive: false });
+
             // PREVENT DEFAULT RIGHT CLICK MENU
             document.addEventListener('contextmenu', (ev) =>{
+                if (window.bare?.IsOutsideCanvas(ev))
+                    return;
+
                 ev.preventDefault();
 
                 return false;
@@ -181,15 +188,20 @@ export function StartBare(gameClass: SceneClass, options?: BareOptions): Promise
             // ALSO NOT IN DEV BECAUSE BIT ANNOYING TO SEE THIS OVERLAY EVERY TIME
             if (!Helper.MobileAndTabletCheck() && !__DEV__)
             {
-                rapid.canvas.addEventListener('focus', function() {
-                    bare.hasFocus = true;
-                    updateFocus();
-                });
+                // focus follows the canvas. with canvasOnlyInput it follows the window instead, so clicking into
+                // html ui next to the canvas doesn't freeze the game
+                var setFocus = (hasFocus: boolean, fromWindow: boolean) => {
+                    if (fromWindow != bare.canvasOnlyInput)
+                        return;
 
-                rapid.canvas.addEventListener('blur', function() {
-                    bare.hasFocus = false;
+                    bare.hasFocus = hasFocus;
                     updateFocus();
-                });
+                };
+
+                rapid.canvas.addEventListener('focus', () => setFocus(true, false));
+                rapid.canvas.addEventListener('blur', () => setFocus(false, false));
+                window.addEventListener('focus', () => setFocus(true, true));
+                window.addEventListener('blur', () => setFocus(false, true));
             }
 
             // START!

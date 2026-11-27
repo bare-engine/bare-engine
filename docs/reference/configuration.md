@@ -25,6 +25,7 @@ StartBare(Game, {
 | `fixedTimestep` | `1/60` | Seconds per fixed update. |
 | `freezeOnUnfocus` | `true` | Pause when the tab loses focus. |
 | `multiTouch` | `false` | Accept more than one touch at once. |
+| `canvasOnlyInput` | `false` | Only take input from the canvas, for games with HTML UI next to it. See [HTML UI next to the canvas](#html-ui-next-to-the-canvas). |
 | `gameObjectPoolSize` | `50` | Default size of object pools. |
 | `showEditorButton` | automatic | `true`: keep the button visible when a level is loaded, including with the extension connected. `false`: hide it. Omitted: hide it when the extension connects. Development only. |
 | `editorButtonPosition` | `{ x: 0, y: 0 }` | Normalized position and pivot, as `{ x: number, y: number }`. `{ x: 1, y: 0 }` anchors it at the top right. Development only; see [Level editor in production](../guide/level-editor#level-editor-in-production). |
@@ -76,6 +77,22 @@ The promise `StartBare` returns resolves only after the first scene's `OnStart`,
 ### Debug keys
 
 The default keys and how to change them are listed under [Debugging](../guide/debugging#debug-keys). They're removed from production builds.
+
+### HTML UI next to the canvas
+
+By default the game takes input from the whole page. That way, touches in the bars around a letterboxed canvas don't scroll or zoom the page. It also means HTML elements on the page don't get their own clicks, scrolling or typing. If the page has HTML UI next to the canvas, like a side panel or a text box, turn on `canvasOnlyInput`:
+
+```ts
+StartBare(Game, { canvasOnlyInput: true });
+```
+
+With `canvasOnlyInput` on:
+
+- Presses, double clicks, the mouse wheel and the right-click menu are only handled on the canvas. A drag that starts on the canvas keeps sending moves and its release after it leaves the canvas.
+- Touches and scrolling outside the canvas behave like on a normal page. On a letterboxed canvas, that includes the bars.
+- Keys typed into a text box, dropdown or editable element don't reach the game. Other focused elements, like a button, still pass keys to the game, and keep their own key behavior, like **Space** pressing the button.
+- Coming back to the tab doesn't take focus away from the HTML element that had it.
+- [`freezeOnUnfocus`](#startbare-options) pauses the game when the tab or window loses focus, not when an HTML element next to the canvas gets focus.
 
 ## Scene options
 

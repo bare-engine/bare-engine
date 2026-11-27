@@ -135,6 +135,15 @@ export class Helper
         return result as T;
     }
 
+    // an html element that takes keys itself (text box, dropdown, checkbox, editable text)
+    static IsTextField(target: EventTarget | null): boolean
+    {
+        return target instanceof HTMLInputElement
+            || target instanceof HTMLTextAreaElement
+            || target instanceof HTMLSelectElement
+            || (target instanceof HTMLElement && target.isContentEditable);
+    }
+
     static ToFixed(value: number, limit = 1e-13): number
     {
         return Math.round(value / limit) * limit;

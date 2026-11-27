@@ -1,5 +1,6 @@
 import { BareEvent } from '../types/bareTypes';
 import { globalEvents } from "../globals";
+import { Helper } from '../utils/helper';
 
 export class KeyboardController
 {
@@ -73,6 +74,12 @@ export class KeyboardController
         document.addEventListener('keydown', (event: KeyboardEvent) => {
             syncModifiers(event);
 
+            // with canvasOnlyInput, keys typed into html fields stay theirs. other html elements (eg a focused
+            // button) still pass keys to the game, but keep their own key behavior, like space pressing the button
+            const onPage = bare.canvasOnlyInput && event.target !== rapid.canvas && event.target !== document.body;
+            if (onPage && Helper.IsTextField(event.target))
+                return;
+
             var key = processKey(event.key);
             this.keyAtCode.set(event.code, key);
 
@@ -87,7 +94,7 @@ export class KeyboardController
 
             // let the browser open devtools (f12, ctrl+shift+i/j/c)
             const devtools = __DEV__ && (event.key === "F12" || (event.ctrlKey && event.shiftKey && ["KeyI", "KeyJ", "KeyC"].includes(event.code)));
-            if (!devtools)
+            if (!devtools && !onPage)
                 event.preventDefault();
         });
 
@@ -103,7 +110,11 @@ export class KeyboardController
         window.addEventListener('blur', () => this.ClearAll());
         window.addEventListener('focus', () => {
             this.ClearAll();
-            rapid.canvas?.focus();
+
+            // with canvasOnlyInput, don't take focus back from html ui that had it before the tab was left
+            const active = document.activeElement;
+            if (!bare.canvasOnlyInput || !active || active === document.body)
+                rapid.canvas?.focus();
         });
     }
 

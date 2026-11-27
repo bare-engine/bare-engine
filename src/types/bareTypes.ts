@@ -23,6 +23,7 @@ export type BareOptions =
     fixedTimestep?: number;
     freezeOnUnfocus?: boolean;
     multiTouch?: boolean;
+    canvasOnlyInput?: boolean;
     editorButtonPosition?: Position;
     showEditorButton?: boolean;
     debugKeys?: Record<string, () => void>[] | null; // null OR [] FOR NONE

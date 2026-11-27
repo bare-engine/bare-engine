@@ -72,7 +72,8 @@ export class BareEngine
     public readonly mobile: boolean = Helper.MobileAndTabletCheck(); // phone or tablet (touch device)
     public freezeOnUnfocus: boolean = true;
     public multiTouch: boolean = false;
-    
+    public canvasOnlyInput: boolean = false;
+
     public fixedTimestep: number = 1 / 60;
     private onInit?: BareOptions['OnInit'];
     public maxDeltaTime: number = 1 / 15; // CAPS FRAME DELTA, USEFUL AFTER LAG OR TAB REFOCUS
@@ -103,6 +104,7 @@ export class BareEngine
     public gameObjectDefaultValues: Record<string, Entity> = {};
 
     private mouseDownOnLeave: boolean = false;
+    private pointersOnCanvas = new Set<number>();
     
     public preloadedLevels: Map<string, LevelData> | null = null;
     
@@ -201,6 +203,7 @@ export class BareEngine
         this.timeScale = 1;
         this.freezeOnUnfocus = options.freezeOnUnfocus ?? true;
         this.multiTouch = options.multiTouch ?? false;
+        this.canvasOnlyInput = options.canvasOnlyInput ?? false;
         this.resolution = options.resolution;
         this.onInit = options.OnInit;
 
@@ -291,6 +294,9 @@ export class BareEngine
         this.debugKeysListener = (event: KeyboardEvent) => {
             // ONLY ON ITS OWN OR WITH ALT, SO SHORTCUTS LIKE CTRL+C KEEP WORKING. CTRL+ALT IS ALTGR ON MANY KEYBOARDS, FOR TYPING
             if (event.repeat || event.ctrlKey || event.metaKey || event.shiftKey)
+                return;
+
+            if (this.canvasOnlyInput && Helper.IsTextField(event.target))
                 return;
 
             const action = this.debugKeyActions.get((event.altKey ? "alt_" : "") + DebugKeyName(event));
@@ -385,6 +391,13 @@ export class BareEngine
         document.addEventListener('dblclick', this.DoubleClick.bind(this), { passive: false });
         document.addEventListener('pointermove', this.PointerMove.bind(this), { passive: false });
         document.addEventListener('wheel', this.Wheel.bind(this), { passive: true });
+
+        // with canvasOnlyInput, moves over the page outside the canvas don't arrive, so leaving the canvas counts as
+        // a last move (off the game area), which clears hover
+        rapid.canvas.addEventListener('pointerleave', (event: PointerEvent) => {
+            if (this.canvasOnlyInput)
+                this.PointerMove(event);
+        });
 
         this.RunMainLoopBound = this.RunMainLoop.bind(this);
         this.loopStarted = true;
@@ -853,7 +866,7 @@ export class BareEngine
 
     private PointerDown(event: PointerEvent)
     {
-        if (this.MouseIsOnEditor(event))
+        if (this.MouseIsOnEditor(event) || this.IsOutsideCanvas(event))
             return;
 
         if (!this.IsFirstTouch(event))
@@ -861,6 +874,9 @@ export class BareEngine
 
         if (this.paused)
             return;
+
+        if (this.canvasOnlyInput)
+            this.pointersOnCanvas.add(event.pointerId);
 
         var pos = this.GetCanvasScreenPosition(event.clientX, event.clientY);
         var isLeftButton = (event.button == 0 || event.pointerType == 'touch');
@@ -875,6 +891,10 @@ export class BareEngine
 
     private PointerUp(event: PointerEvent)
     {
+        var pressedOnCanvas = this.pointersOnCanvas.delete(event.pointerId);
+        if (!pressedOnCanvas && this.IsOutsideCanvas(event))
+            return;
+
         if (!this.IsFirstTouch(event))
             return;
 
@@ -894,6 +914,9 @@ export class BareEngine
 
     private PointerMove(event: PointerEvent)
     {
+        if (this.IsOutsideCanvas(event) && !this.pointersOnCanvas.has(event.pointerId))
+            return;
+
         if (!this.IsFirstTouch(event))
             return;
 
@@ -909,7 +932,7 @@ export class BareEngine
 
     private DoubleClick(event: MouseEvent)
     {
-        if (this.paused)
+        if (this.paused || this.IsOutsideCanvas(event))
             return;
         
         var pos = this.GetCanvasScreenPosition(event.clientX, event.clientY);
@@ -944,7 +967,7 @@ export class BareEngine
     // THE LEVEL EDITOR USES THE WHEEL ITSELF, SO THE GAME DOESN'T GET IT WHILE THE EDITOR IS OPEN
     private Wheel(event: WheelEvent)
     {
-        if (this.paused || this.levelEditorOpen)
+        if (this.paused || this.levelEditorOpen || this.IsOutsideCanvas(event))
             return;
 
         // IN PIXELS: SOME BROWSERS REPORT LINES OR PAGES
@@ -953,6 +976,12 @@ export class BareEngine
             : 1;
 
         bare.SendEvent(BareEvent.pointer_wheel, { deltaX: event.deltaX * unit, deltaY: event.deltaY * unit, event: event });
+    }
+
+    // true when canvasOnlyInput is on and the event happened on the page outside the canvas, so the engine leaves it alone
+    IsOutsideCanvas(event: Event): boolean
+    {
+        return this.canvasOnlyInput && event.target !== rapid.canvas;
     }
 
     MouseIsOnEditor(event: PointerEvent | WheelEvent): boolean
