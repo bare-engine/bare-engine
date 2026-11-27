@@ -100,7 +100,7 @@ smoke.setEmitRate(30);   // particles per second, or per burst with emitTime
 smoke.setEmitTime(0.5);  // emit in bursts every 0.5 seconds, 0 to emit continuously again
 ```
 
-**Example:** the [Showcase](https://github.com/bare-engine/bare-showcase)'s [particles demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/particles/src/DemoParticles.ts#L22-L98) has smoke that follows the mouse and random explosions.
+**Example:** the [Showcase](https://github.com/bare-engine/bare-showcase)'s [particles demo](https://github.com/bare-engine/bare-showcase/blob/main/public/demos/particles/src/DemoParticles.ts#L22-L94) has smoke that follows the mouse and random explosions.
 
 ## Settings
 
